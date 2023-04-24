@@ -33,6 +33,8 @@ public class DefaultTenantConfigResolver {
     private static final String CURRENT_STATIC_TENANT_ID_NULL = "static.tenant.id.null";
     private static final String CURRENT_DYNAMIC_TENANT_CONFIG = "dynamic.tenant.config";
 
+    private DefaultStaticTenantResolver defaultStaticTenantResolver = new DefaultStaticTenantResolver();
+
     @Inject
     Instance<TenantResolver> tenantResolver;
 
@@ -133,6 +135,8 @@ public class DefaultTenantConfigResolver {
         if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
             if (tenantResolver.isResolvable()) {
                 tenantId = tenantResolver.get().resolve(context);
+            } else if (tenantConfigBean.getStaticTenantsConfig().size() > 0) {
+                tenantId = defaultStaticTenantResolver.resolve(context);
             }
             if (tenantId == null) {
                 tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
@@ -234,6 +238,26 @@ public class DefaultTenantConfigResolver {
 
     public TenantConfigBean getTenantConfigBean() {
         return tenantConfigBean;
+    }
+
+    private class DefaultStaticTenantResolver implements TenantResolver {
+
+        @Override
+        public String resolve(RoutingContext context) {
+            String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            if (tenantId != null) {
+                return tenantId;
+            }
+            String[] pathSegments = context.request().path().split("/");
+            if (pathSegments.length > 0) {
+                String lastPathSegment = pathSegments[pathSegments.length - 1];
+                if (tenantConfigBean.getStaticTenantsConfig().containsKey(lastPathSegment)) {
+                    return lastPathSegment;
+                }
+            }
+            return null;
+        }
+
     }
 
 }

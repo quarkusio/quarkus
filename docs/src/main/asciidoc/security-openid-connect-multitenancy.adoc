@@ -306,6 +306,8 @@ public class CustomTenantResolver implements TenantResolver {
 }
 ----
 
+In fact, this is how Quarkus OIDC resolves static custom tenants itself if no custom `TenantResolver` is registered.
+
 A similar technique can be used with `TenantConfigResolver` where a `tenant-id` provided in the context can be used to return `OidcTenantConfig` already prepared with the previous request.
 ====
 

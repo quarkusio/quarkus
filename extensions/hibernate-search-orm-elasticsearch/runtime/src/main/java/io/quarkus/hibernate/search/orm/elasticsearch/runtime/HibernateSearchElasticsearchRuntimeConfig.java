@@ -25,17 +25,17 @@ public interface HibernateSearchElasticsearchRuntimeConfig {
     @ConfigDocMapKey("persistence-unit-name")
     Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> persistenceUnits();
 
-    public static String elasticsearchVersionPropertyKey(String persistenceUnitName, String backendName) {
+    static String elasticsearchVersionPropertyKey(String persistenceUnitName, String backendName) {
         return backendPropertyKey(persistenceUnitName, backendName, null, "version");
     }
 
-    public static String extensionPropertyKey(String radical) {
+    static String extensionPropertyKey(String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
         keyBuilder.append(radical);
         return keyBuilder.toString();
     }
 
-    public static String mapperPropertyKey(String persistenceUnitName, String radical) {
+    static String mapperPropertyKey(String persistenceUnitName, String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
         if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             keyBuilder.append("\"").append(persistenceUnitName).append("\".");
@@ -44,7 +44,7 @@ public interface HibernateSearchElasticsearchRuntimeConfig {
         return keyBuilder.toString();
     }
 
-    public static List<String> mapperPropertyKeys(String persistenceUnitName, String radical) {
+    static List<String> mapperPropertyKeys(String persistenceUnitName, String radical) {
         if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             return List.of("quarkus.hibernate-search-orm." + radical);
         } else {
@@ -54,7 +54,7 @@ public interface HibernateSearchElasticsearchRuntimeConfig {
         }
     }
 
-    public static String backendPropertyKey(String persistenceUnitName, String backendName, String indexName, String radical) {
+    static String backendPropertyKey(String persistenceUnitName, String backendName, String indexName, String radical) {
         StringBuilder keyBuilder = new StringBuilder("quarkus.hibernate-search-orm.");
         if (!PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             keyBuilder.append("\"").append(persistenceUnitName).append("\".");
@@ -70,7 +70,7 @@ public interface HibernateSearchElasticsearchRuntimeConfig {
         return keyBuilder.toString();
     }
 
-    public static List<String> defaultBackendPropertyKeys(String persistenceUnitName, String radical) {
+    static List<String> defaultBackendPropertyKeys(String persistenceUnitName, String radical) {
         return mapperPropertyKeys(persistenceUnitName, "elasticsearch." + radical);
     }
 }

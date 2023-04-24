@@ -51,7 +51,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     CoordinationConfig coordination();
 
     @ConfigGroup
-    public interface ElasticsearchBackendBuildTimeConfig {
+    interface ElasticsearchBackendBuildTimeConfig {
         /**
          * The version of Elasticsearch used in the cluster.
          *
@@ -87,7 +87,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface ElasticsearchIndexBuildTimeConfig {
+    interface ElasticsearchIndexBuildTimeConfig {
         /**
          * Configuration for automatic creation and validation of the Elasticsearch schema:
          * indexes, their mapping, their settings.
@@ -101,7 +101,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface SchemaManagementConfig {
+    interface SchemaManagementConfig {
 
         // @formatter:off
         /**
@@ -163,7 +163,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface LayoutConfig {
+    interface LayoutConfig {
         /**
          * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
          * used to configure layout (e.g. index names, index aliases).
@@ -199,7 +199,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface CoordinationConfig {
+    interface CoordinationConfig {
 
         /**
          * The strategy to use for coordinating between threads or even separate instances of the application,

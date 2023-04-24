@@ -80,7 +80,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     MultiTenancyConfig multiTenancy();
 
     @ConfigGroup
-    public interface ElasticsearchBackendRuntimeConfig {
+    interface ElasticsearchBackendRuntimeConfig {
         /**
          * The list of hosts of the Elasticsearch servers.
          */
@@ -172,7 +172,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         Map<String, ElasticsearchIndexRuntimeConfig> indexes();
     }
 
-    public enum ElasticsearchClientProtocol {
+    enum ElasticsearchClientProtocol {
         /**
          * Use clear-text HTTP, with SSL/TLS disabled.
          */
@@ -207,7 +207,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface ElasticsearchIndexRuntimeConfig {
+    interface ElasticsearchIndexRuntimeConfig {
         /**
          * Configuration for the schema management of the indexes.
          */
@@ -220,7 +220,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface DiscoveryConfig {
+    interface DiscoveryConfig {
 
         /**
          * Defines if automatic discovery is enabled.
@@ -347,7 +347,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
     @ConfigGroup
     @Deprecated
-    public interface AutomaticIndexingConfig {
+    interface AutomaticIndexingConfig {
 
         /**
          * Configuration for synchronization with the index when indexing automatically.
@@ -372,7 +372,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
     @ConfigGroup
     @Deprecated
-    public interface AutomaticIndexingSynchronizationConfig {
+    interface AutomaticIndexingSynchronizationConfig {
 
         // @formatter:off
         /**
@@ -386,7 +386,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface SearchQueryLoadingConfig {
+    interface SearchQueryLoadingConfig {
 
         /**
          * Configuration for cache lookup when loading entities during the execution of a search query.
@@ -411,7 +411,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface SchemaManagementConfig {
+    interface SchemaManagementConfig {
 
         // @formatter:off
         /**
@@ -481,7 +481,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface ThreadPoolConfig {
+    interface ThreadPoolConfig {
         /**
          * The size of the thread pool assigned to the backend.
          *
@@ -507,7 +507,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     // We can't set actual default values in this section,
     // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
-    public interface ElasticsearchIndexSchemaManagementConfig {
+    interface ElasticsearchIndexSchemaManagementConfig {
         /**
          * The minimal https://www.elastic.co/guide/en/elasticsearch/reference/7.17/cluster-health.html[Elasticsearch cluster
          * status] required on startup.
@@ -529,7 +529,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     // We can't set actual default values in this section,
     // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
-    public interface ElasticsearchIndexIndexingConfig {
+    interface ElasticsearchIndexIndexingConfig {
         /**
          * The number of indexing queues assigned to each index.
          *
@@ -581,7 +581,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface MultiTenancyConfig {
+    interface MultiTenancyConfig {
 
         /**
          * An exhaustive list of all tenant identifiers that may be used by the application when multi-tenancy is enabled.

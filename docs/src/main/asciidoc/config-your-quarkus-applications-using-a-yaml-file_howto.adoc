@@ -1,0 +1,316 @@
+////
+This document is maintained in the main Quarkus repository, and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="configure-your-quarkus-applications-using-a-yaml-file"]
+= Configure your Quarkus applications by using a YAML file
+include::_attributes.adoc[]
+:categories: core
+:summary: Use `application.yaml` instead of the `application.properties` file
+
+As an application developer, you can use {project-name} to create microservices-based applications written in Java that run on cloud and serverless environments such as Kubernetes, Knative, and OpenShift.
+Applications compiled to native executables have small memory footprints and fast startup times.
+
+Apply structured configuration by updating the `application.yaml` file to configure your {project-name} application.
+
+[NOTE]
+====
+Alternatively, you can configure your {project-name} application by setting properties in the `application.properties` file.
+For more information, see link:{URL_CONFIGURATION_QUARKUS}#proc_setting-configuration-properties_quarkus-configuration-guide[Setting configuration properties].// TBD update link
+====
+
+The procedures include configuration examples created using the {project-name} `config-quickstart` exercise.
+
+.Prerequisites
+
+* You have installed OpenJDK {JDK-ver-all} and set the `JAVA_HOME` environment variable to specify the location of the Java SDK. // TBD attrib
+
+* You have installed Apache Maven {MavenVersion}. // TBD attrib
+
+* You have configured Apache Maven to use artifacts from the link:https://maven.repository.redhat.com/ga/[{project-name} Maven repository]. // TBD
+** To learn how to configure Apache Maven settings, see link:{URL_GETTING_STARTED_QUARKUS}[Getting started with {project-name}]. // TBD
+
+// include::modules/con_overview-quarkus-configuration.adoc[leveloffset=+1]
+[id="con_overview-quarkus-configuration_{context}"]
+
+== Red Hat configuration options
+
+
+Configuration options enable you to change the settings of your application in a single configuration file.
+{project-name} supports configuration profiles that you can use to group related properties and switch between profiles as required.
+
+By default, {project-name} reads properties from the `application.properties` file located in the `src/main/resources` directory.
+Instead, you can configure {project-name} to read properties from a YAML file.
+
+When you add the `quarkus-config-yaml` dependency to your project `pom.xml` file, you can configure and manage your application properties in the `application.yaml` file.
+For more information, see the xref:proc_adding-yaml-configuration-support_configuring-your-quarkus-applications-using-a-yaml-file[Adding YAML configuration support]. // TBD verify
+
+{project-name} also supports MicroProfile Config, which enables you to load your application's configuration from other sources.
+
+You can use the link:https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] specification from the Eclipse MicroProfile project to inject configuration properties into your application and access them using a method defined in your code.
+
+{project-name} can also read application properties from different origins, including the following sources:
+
+* The file system
+* A database
+* A Kubernetes or OpenShift `ConfigMap` or Secret object
+* Any source that a Java application can load
+
+// include::modules/proc_adding-yaml-configuration-support.adoc[leveloffset=+1]
+[id="proc_adding-yaml-configuration-support_{context}"]
+
+== Adding YAML configuration support
+
+
+{project-name} supports YAML configuration files through the `SmallRye Config` implementation of Eclipse MicroProfile Config.
+You can add the `{project-name} Config YAML` extension and use the YAML configuration file over the properties file for configuration.
+{project-name} supports the use of `application.yml` and `application.yaml` as the name of the YAML file.
+
+The YAML configuration file takes precedence over the `application.properties` file.
+To avoid errors, you can delete the `application.properties` file and use only one type of configuration file.
+
+.Procedure
+
+. Use one of the following methods to add the YAML extension in your project:
++
+** Open the `pom.xml` file and add the `quarkus-config-yaml` extension as a dependency:
++
+.Example `pom.xml` file
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-config-yaml</artifactId>
+</dependency>
+----
++
+** To add the `quarkus-config-yaml` extension from the command line, enter the following command from your project directory:
++
+.Add the `quarkus-config-yaml` extension
+[source,bash]
+----
+./mvnw quarkus:add-extension -Dextensions="quarkus-config-yaml"
+----
+
+// include::modules/proc_using-nested-object-configuration-with-yaml.adoc[leveloffset=+2]
+
+[id="proc_using-nested-object-configuration-with-yaml_{context}"]
+
+== Using nested object configuration with YAML
+
+You can define a nested class inside an already existing class.
+This procedure shows how you can set nested configuration properties for your {project-name} application by using a YAML configuration file.
+
+.Prerequisites
+
+* You have a {project-name} Maven project.
+* You have a PostgreSQL data source.
+* You have the following extensions as dependencies in the `pom.xml` file of your project:
+** `quarkus-rest-client`
+** `quarkus-jdbc-postgresql`
+** `quarkus-config-yaml`
+
+.Procedure
+
+. Open the `src/main/resources/application.yaml` configuration file.
+
+. Add the nested class configuration properties to your `application.yaml` file, as shown in the following example:
++
+.Example `application.yaml` file
+[source,yaml]
+----
+# Properties that configure the JDBC data source driver of your PostgreSQL data source
+quarkus:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/some-database
+    driver: org.postgresql.Driver
+    username: quarkus
+    password: quarkus
+
+# Property that configures the URL of the endpoint to which the rest client sends requests
+org:
+  acme:
+    restclient:
+      CountriesService/mp-rest/url: https://restcountries.eu/rest
+
+# Property that configures the log message level for your application
+quarkus:
+  log:
+    category:
+
+# Do not use spaces in names of configuration properties that you place inside quotation marks
+      "io.quarkus.category":
+        level: INFO
+----
++
+Similarly to using the comments in the `application.properties` file, you can use comments to describe your configuration properties in YAML format.
++
+[NOTE]
+====
+Always use spaces to indent the properties in your YAML configuration file.
+YAML does not support using tabs for indentation.
+====
+
+// include::modules/proc_setting-custom-configuration-profiles-with-yaml.adoc[leveloffset=+2]
+
+[id="proc_setting-custom-configuration-profiles-with-yaml_{context}"]
+
+== Setting custom configuration profiles with YAML
+
+With {project-name}, you can set configuration properties and values specific to your application's different configuration profiles.
+You can start your application with a specific profile to access a particular configuration.
+This procedure shows how you can configure a specific profile in YAML format.
+
+.Prerequisites
+
+* You have a {project-name} Maven project that is configured to use a PostgreSQL data source with a JDBC data source driver.
+* You have the `quarkus-jdbc-postgresql` and `quarkus-config-yaml` extensions as dependencies in the `pom.xml` file of your project.
+
+.Procedure
+
+. Open the `src/main/resources/application.yaml` configuration file.
+
+. To set a profile-dependent configuration, add the profile name before defining the key-value pairs by using the `"%<profile_name>"` syntax.
+Ensure that you place the profile name inside quotation marks.
++
+[TIP]
+====
+In YAML, you must place all strings that begin with a special character inside quotation marks.
+====
++
+In the following example, the PostgreSQL database is configured to be available at the `jdbc:postgresql://localhost:5432/some-database` URL when you start your {project-name} application in development mode:
++
+.src/main/resources/application.yaml
+[source,yaml]
+----
+"%dev":
+  # Properties that configure the JDBC data source driver of your PostgreSQL data source
+  quarkus:
+    datasource:
+      url: jdbc:postgresql://localhost:5432/some-database
+      driver: org.postgresql.Driver
+      username: quarkus
+      password: quarkus
+----
+
+// include::modules/con_property-expressions.adoc[leveloffset=+1]
+
+[id="con_property-expressions_{context}"]
+== Property expressions
+
+Property expressions are combinations of property references and plain text strings that you can use to substitute values of properties in your configuration.
+
+Much like a variable, you can use a property expression in {project-name} to substitute a configuration property value instead of hardcoding it.
+A property expression is resolved when `java.util.Properties` reads the property's value from a configuration source in your application.
+
+If a configuration property is read from your configuration at compile time, the property expression is also resolved at compile time.
+If the configuration property is overridden at runtime, its value is resolved at runtime.
+
+You can resolve property expressions by using more than one configuration source.
+This means that you can use a value of a property defined in one configuration source to expand a property expression that you use in another.
+
+If the value of a property in an expression cannot be resolved, and you do not set a default value for the expression, your application encounters a `NoSuchElementException`.
+
+//Property expressions use the `${<property_name>}` syntax.
+
+// include::modules/ref_example-usage-of-property-expressions-using-a-yaml-file.adoc[leveloffset=+2]
+
+[id="ref_example-usage-of-property-expressions-using-a-yaml-file_{context}"]
+== Example usage of property expressions using a YAML file
+
+This section shows examples of using property expressions to achieve flexibility when configuring your {project-name} application.
+
+[NOTE]
+====
+You can reference nested properties by using the `.` (dot) separator as in {x.factor}.
+====
+
+.Example `application.yaml` file
+[source,properties,options="nowrap"]
+----
+mach: 3
+x:
+  factor: 2.23694
+
+display:
+  mach: ${mach}
+  unit:
+    name: "mph"
+    factor: ${x.factor}
+----
+[role="_additional-resources"]
+
+.Additional resources
+
+* For more information about property expressions, see link:{URL_CONFIGURATION_QUARKUS}#con_property-expressions_assembly_quarkus-configuration-guide[Property expressions]. // TBD update
+* For an example of property expressions using a properties file, see link:{URL_CONFIGURATION_QUARKUS}#ref_example-usage-of-property-expressions_quarkus-configuration-guide[Example usage of property expressions]. // TBD update
+
+// include::modules/con_external-application-yaml-file-for-configuring-properties-at-runtime.adoc[leveloffset=+1]
+
+[id="con_external-application-yaml-file-for-configuring-properties-at-runtime_{context}"]
+== External application.yaml file for configuring properties at runtime
+
+
+To configure your application properties at runtime, add your `application.yaml` file to the `config` directory.
+[NOTE]
+====
+If one exists, the values in the `config/application.yaml` file override any values from the regular `application.yaml` file.
+====
+Ensure that the `config/application.yaml` file is in the root of the working directory relative to the {project-name} application runner, as outlined in the following example:
+
+[source,properties,options="nowrap"]
+----
+├── config
+│    └── application.yaml
+├── my-app-runner
+----
+[role="_additional-resources"]
+.Additional resources
+* For more information about adding YAML configuration support, see xref:proc_adding-yaml-configuration-support_configuring-your-quarkus-applications-using-a-yaml-file[Adding YAML configuration support]. // TBD verify
+
+//include::modules/proc_managing-configuration-key-conflicts.adoc[leveloffset=+1]
+
+[id="proc_managing-configuration-key-conflicts_{context}"]
+
+== Managing configuration key conflicts
+
+Structured formats such as YAML only support a subset of the possible configuration namespace.
+The following procedure shows how to resolve a conflict between two configuration properties, `quarkus.http.cors` and `quarkus.http.cors.methods`, where one property is the prefix of another.
+
+.Prerequisites
+
+* You have a {project-name} project configured to read YAML configuration files.
+
+.Procedure
+
+. Open your YAML configuration file.
+
+. To define a YAML property as a prefix of another property, add a tilde (`~`) in the scope of the property as shown in the following example:
++
+.Example of defining a YAML property as a prefix
+[source,yaml]
+----
+quarkus:
+  http:
+    cors:
+      ~: true
+      methods: GET,PUT,POST
+----
++
+. To compile your {project-name} application in development mode, enter the following command from the project directory:
++
+.Compile your {project-name} application
+[source,bash]
+----
+./mvnw quarkus:dev
+----
++
+[NOTE
+====
+You can use YAML keys for conflicting configuration keys at any level because they are not included in the assembly of the configuration property name.
+====
+
+[role="_additional-resources"]
+== Additional resources
+
+* link:{URL_CONFIGURATION_QUARKUS}[Configuring your {project-name} applications by using a properties file]

@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -28,7 +27,6 @@ import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
-import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
@@ -46,7 +44,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.AsyncResult;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -88,30 +85,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             return;
         }
         requestContext.suspend();
-        Uni<HttpClientRequest> future = createRequest(requestContext)
-                .runSubscriptionOn(new Executor() {
-                    @Override
-                    public void execute(Runnable command) {
-                        Context current = Vertx.currentContext();
-                        ClientRequestContextImpl clientRequestContext = requestContext.getClientRequestContext();
-                        Context captured = null;
-                        if (clientRequestContext != null) {
-                            captured = clientRequestContext.getContext();
-                        }
-                        if (current == captured || captured == null) {
-                            // No need to switch to another context.
-                            command.run();
-                        } else {
-                            // Switch back to the captured context
-                            captured.runOnContext(new Handler<Void>() {
-                                @Override
-                                public void handle(Void ignored) {
-                                    command.run();
-                                }
-                            });
-                        }
-                    }
-                });
+        Uni<HttpClientRequest> future = createRequest(requestContext);
 
         // DNS failures happen before we send the request
         future.subscribe().with(new Consumer<>() {

@@ -22,7 +22,6 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.common.core.BlockingNotAllowedException;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -75,7 +74,6 @@ public class BlockingExceptionMapperTest {
         EVENT_LOOP_THREAD_USED_BY_MAPPER.set(false);
     }
 
-    @Disabled("This test randomly fails because https://github.com/quarkusio/quarkus/issues/32839")
     @Test
     public void shouldUseEventLoopByDefault() {
         assertThrows(BlockingNotAllowedException.class, clientUsingNotBlockingExceptionMapper::nonBlocking);
@@ -91,9 +89,8 @@ public class BlockingExceptionMapperTest {
 
     @Test
     public void shouldUseWorkerThreadOnlyIfExceptionMapperIsAnnotatedWithBlockingIsUsed() {
-        // To be uncommented after https://github.com/quarkusio/quarkus/issues/32839 is fixed:
-        // assertThrows(BlockingNotAllowedException.class, clientUsingBothExceptionMappers::nonBlocking);
-        // assertThat(EVENT_LOOP_THREAD_USED_BY_MAPPER.get()).isTrue();
+        assertThrows(BlockingNotAllowedException.class, clientUsingBothExceptionMappers::nonBlocking);
+        assertThat(EVENT_LOOP_THREAD_USED_BY_MAPPER.get()).isTrue();
 
         RuntimeException exception = assertThrows(RuntimeException.class, clientUsingBothExceptionMappers::blocking);
         assertThat(EVENT_LOOP_THREAD_USED_BY_MAPPER.get()).isFalse();
@@ -102,9 +99,8 @@ public class BlockingExceptionMapperTest {
 
     @Test
     public void shouldUseWorkerThreadWhenClientIsInjected() {
-        // To be uncommented after https://github.com/quarkusio/quarkus/issues/32839 is fixed:
-        // given().get("/client/non-blocking").then().statusCode(500);
-        // assertThat(EVENT_LOOP_THREAD_USED_BY_MAPPER.get()).isTrue();
+        given().get("/client/non-blocking").then().statusCode(500);
+        assertThat(EVENT_LOOP_THREAD_USED_BY_MAPPER.get()).isTrue();
 
         given().get("/client/blocking").then().statusCode(500);
         assertThat(EVENT_LOOP_THREAD_USED_BY_MAPPER.get()).isFalse();

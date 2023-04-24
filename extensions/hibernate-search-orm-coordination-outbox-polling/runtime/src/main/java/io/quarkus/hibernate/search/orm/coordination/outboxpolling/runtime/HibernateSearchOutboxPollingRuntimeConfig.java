@@ -2,29 +2,26 @@ package io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime;
 
 import java.util.Map;
 
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.hibernate-search-orm")
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface HibernateSearchOutboxPollingRuntimeConfig {
 
     /**
-     * Configuration for the default persistence unit.
-     */
-    @WithParentName
-    HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit defaultPersistenceUnit();
-
-    /**
-     * Configuration for additional named persistence units.
+     * Configuration for persistence units.
      */
     @ConfigDocSection
-    @ConfigDocMapKey("persistence-unit-name")
     @WithParentName
+    @WithUnnamedKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+    @ConfigDocMapKey("persistence-unit-name")
     Map<String, HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit> persistenceUnits();
 
 }

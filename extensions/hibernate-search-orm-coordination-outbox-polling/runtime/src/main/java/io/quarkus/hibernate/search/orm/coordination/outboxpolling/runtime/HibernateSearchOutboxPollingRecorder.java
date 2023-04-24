@@ -10,7 +10,6 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
 
-import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit.AgentsConfig;
@@ -21,19 +20,15 @@ public class HibernateSearchOutboxPollingRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
             HibernateSearchOutboxPollingBuildTimeConfig buildTimeConfig, String persistenceUnitName) {
-        HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
-                .isDefaultPersistenceUnit(persistenceUnitName)
-                        ? buildTimeConfig.defaultPersistenceUnit()
-                        : buildTimeConfig.persistenceUnits().get(persistenceUnitName);
+        HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit puConfig = buildTimeConfig.persistenceUnits()
+                .get(persistenceUnitName);
         return new StaticInitListener(puConfig);
     }
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchOutboxPollingRuntimeConfig runtimeConfig, String persistenceUnitName) {
-        HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
-                .isDefaultPersistenceUnit(persistenceUnitName)
-                        ? runtimeConfig.defaultPersistenceUnit()
-                        : runtimeConfig.persistenceUnits().get(persistenceUnitName);
+        HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit puConfig = runtimeConfig.persistenceUnits()
+                .get(persistenceUnitName);
         return new RuntimeInitListener(puConfig);
     }
 

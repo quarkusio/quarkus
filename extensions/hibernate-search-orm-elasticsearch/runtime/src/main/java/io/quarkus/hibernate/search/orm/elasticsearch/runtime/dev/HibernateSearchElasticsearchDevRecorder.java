@@ -25,7 +25,7 @@ public class HibernateSearchElasticsearchDevRecorder {
     public void initController(
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, Set<String> persistenceUnitNames) {
         Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> puConfigs = runtimeConfig
-                .getAllPersistenceUnitConfigsAsMap();
+                .persistenceUnits();
         Set<String> activePersistenceUnitNames = persistenceUnitNames.stream()
                 .filter(name -> {
                     var puConfig = puConfigs.get(name);

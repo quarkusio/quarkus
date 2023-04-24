@@ -293,7 +293,7 @@ class HibernateSearchElasticsearchProcessor {
 
         Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
         Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
-                ? buildTimeConfig.getAllBackendConfigsAsMap()
+                ? buildTimeConfig.backends()
                 : Collections.emptyMap();
 
         Set<String> allBackendNames = new LinkedHashSet<>(configuredPersistenceUnit.getBackendNamesForIndexedEntities());
@@ -385,7 +385,7 @@ class HibernateSearchElasticsearchProcessor {
             // See https://github.com/quarkusio/quarkus/issues/24011
             return null;
         }
-        var defaultPUDefaultBackendConfig = defaultPUConfig.defaultBackend();
+        var defaultPUDefaultBackendConfig = defaultPUConfig.backends().get(null);
         if (defaultPUDefaultBackendConfig == null
                 || !defaultPUDefaultBackendConfig.version().isPresent()) {
             // If the version is not set, the default backend is not in use.

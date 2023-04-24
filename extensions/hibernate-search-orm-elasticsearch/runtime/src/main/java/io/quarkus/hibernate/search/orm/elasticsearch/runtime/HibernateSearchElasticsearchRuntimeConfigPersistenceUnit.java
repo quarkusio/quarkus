@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,6 +20,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigGroup
 public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
@@ -41,18 +41,13 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     Optional<Boolean> active();
 
     /**
-     * Default backend
+     * Configuration for backends.
      */
-    @WithName("elasticsearch")
     @ConfigDocSection
-    ElasticsearchBackendRuntimeConfig defaultBackend();
-
-    /**
-     * Named backends
-     */
     @WithName("elasticsearch")
-    @ConfigDocSection
-    ElasticsearchNamedBackendsRuntimeConfig namedBackends();
+    @WithUnnamedKey // The default backend has the null key
+    @ConfigDocMapKey("backend-name")
+    Map<String, ElasticsearchBackendRuntimeConfig> backends();
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -83,28 +78,6 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      * Configuration for multi-tenancy.
      */
     MultiTenancyConfig multiTenancy();
-
-    default Map<String, ElasticsearchBackendRuntimeConfig> getAllBackendConfigsAsMap() {
-        Map<String, ElasticsearchBackendRuntimeConfig> map = new LinkedHashMap<>();
-        if (defaultBackend() != null) {
-            map.put(null, defaultBackend());
-        }
-        if (namedBackends() != null) {
-            map.putAll(namedBackends().backends());
-        }
-        return map;
-    }
-
-    @ConfigGroup
-    public interface ElasticsearchNamedBackendsRuntimeConfig {
-
-        /**
-         * Named backends
-         */
-        @ConfigDocMapKey("backend-name")
-        Map<String, ElasticsearchBackendRuntimeConfig> backends();
-
-    }
 
     @ConfigGroup
     public interface ElasticsearchBackendRuntimeConfig {

@@ -223,7 +223,7 @@ public class HibernateSearchElasticsearchRecorder {
             // (Well maybe not for backends, but... let's keep it simple.)
             Map<String, ElasticsearchBackendBuildTimeConfig> backendConfigs = buildTimeConfig == null
                     ? Collections.emptyMap()
-                    : buildTimeConfig.getAllBackendConfigsAsMap();
+                    : buildTimeConfig.backends();
             Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
             mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
             for (Entry<String, ElasticsearchBackendBuildTimeConfig> entry : backendConfigs.entrySet()) {
@@ -391,7 +391,7 @@ public class HibernateSearchElasticsearchRecorder {
             // (Well maybe not for backends, but... let's keep it simple.)
             Map<String, ElasticsearchBackendRuntimeConfig> backendConfigs = runtimeConfig == null
                     ? Collections.emptyMap()
-                    : runtimeConfig.getAllBackendConfigsAsMap();
+                    : runtimeConfig.backends();
             Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
             mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
             for (Entry<String, ElasticsearchBackendRuntimeConfig> entry : backendConfigs.entrySet()) {

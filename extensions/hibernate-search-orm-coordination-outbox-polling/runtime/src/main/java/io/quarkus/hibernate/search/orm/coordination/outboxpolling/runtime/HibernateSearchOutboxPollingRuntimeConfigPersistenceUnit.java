@@ -24,14 +24,13 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
     interface CoordinationConfig {
 
         /**
-         * Default config
+         * Default configuration.
          */
-        @ConfigDocSection
         @WithParentName
         AgentsConfig defaults();
 
         /**
-         * Per-tenant config
+         * Per-tenant configuration overrides.
          */
         @ConfigDocSection
         @ConfigDocMapKey("tenant-id")

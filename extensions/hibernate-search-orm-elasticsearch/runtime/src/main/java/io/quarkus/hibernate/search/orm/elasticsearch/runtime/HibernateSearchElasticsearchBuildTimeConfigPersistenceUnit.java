@@ -80,8 +80,9 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
         ElasticsearchIndexBuildTimeConfig indexDefaults();
 
         /**
-         * Per-index specific configuration.
+         * Per-index configuration overrides.
          */
+        @ConfigDocSection
         @ConfigDocMapKey("index-name")
         Map<String, ElasticsearchIndexBuildTimeConfig> indexes();
     }

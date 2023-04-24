@@ -166,8 +166,9 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         ElasticsearchIndexRuntimeConfig indexDefaults();
 
         /**
-         * Per-index specific configuration.
+         * Per-index configuration overrides.
          */
+        @ConfigDocSection
         @ConfigDocMapKey("index-name")
         Map<String, ElasticsearchIndexRuntimeConfig> indexes();
     }

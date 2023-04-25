@@ -12,15 +12,13 @@ import java.sql.Statement;
 import jakarta.inject.Inject;
 
 import org.flywaydb.core.Flyway;
-import org.flywaydb.core.api.MigrationVersion;
-import org.flywaydb.core.api.migration.BaseJavaMigration;
-import org.flywaydb.core.api.migration.Context;
-import org.flywaydb.core.api.migration.JavaMigration;
 import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import db.migration.V1_0_1__Update;
+import db.migration.V1_0_2__Update;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -57,44 +55,6 @@ public class FlywayExtensionFilesystemResourceTest {
         }
         String currentVersion = flyway.info().current().getVersion().toString();
         assertEquals("1.0.3", currentVersion, "Expected to be 1.0.3 as there is a SQL and two Java migration scripts");
-    }
-
-    public static class V1_0_1__Update extends BaseJavaMigration {
-        @Override
-        public void migrate(Context context) throws Exception {
-            try (Statement statement = context.getConnection().createStatement()) {
-                statement.executeUpdate("INSERT INTO quarked_flyway VALUES (1001, 'test')");
-            }
-        }
-    }
-
-    public static class V1_0_2__Update implements JavaMigration {
-        @Override
-        public MigrationVersion getVersion() {
-            return MigrationVersion.fromVersion("1.0.2");
-        }
-
-        @Override
-        public String getDescription() {
-            return getClass().getSimpleName();
-        }
-
-        @Override
-        public Integer getChecksum() {
-            return null;
-        }
-
-        @Override
-        public boolean canExecuteInTransaction() {
-            return true;
-        }
-
-        @Override
-        public void migrate(Context context) throws Exception {
-            try (Statement statement = context.getConnection().createStatement()) {
-                statement.executeUpdate("INSERT INTO quarked_flyway VALUES (1002, 'test')");
-            }
-        }
     }
 
 }

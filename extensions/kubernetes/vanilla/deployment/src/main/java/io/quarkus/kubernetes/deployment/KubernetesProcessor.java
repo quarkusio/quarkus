@@ -30,7 +30,6 @@ import io.dekorate.kubernetes.config.Configurator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.logger.NoopLogger;
 import io.dekorate.processor.SimpleFileReader;
-import io.dekorate.processor.SimpleFileWriter;
 import io.dekorate.project.Project;
 import io.dekorate.utils.Maps;
 import io.dekorate.utils.Strings;
@@ -146,7 +145,7 @@ class KubernetesProcessor {
                         .map(DeploymentTargetEntry::getName)
                         .collect(Collectors.toSet()));
                 final Map<String, String> generatedResourcesMap;
-                final SessionWriter sessionWriter = new SimpleFileWriter(project, false);
+                final SessionWriter sessionWriter = new QuarkusFileWriter(project);
                 final SessionReader sessionReader = new SimpleFileReader(
                         project.getRoot().resolve("src").resolve("main").resolve("kubernetes"), targets);
                 sessionWriter.setProject(project);

@@ -2,10 +2,16 @@ package io.quarkus.rest.client.reactive.converter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Type;
 import java.net.URI;
+import java.util.Arrays;
 
 import jakarta.ws.rs.BeanParam;
 import jakarta.ws.rs.CookieParam;
@@ -74,7 +80,7 @@ public class ParamConverterProviderTest {
     void shouldConvertCookieParams() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
                 .build(Client.class);
-        assertThat(client.getWithHeader(Param.FIRST)).isEqualTo("1");
+        assertThat(client.getWithCookie(Param.FIRST)).isEqualTo("1");
         assertThat(client.sub().getWithCookie(Param.SECOND)).isEqualTo("2");
 
         Bean bean = new Bean();
@@ -93,7 +99,7 @@ public class ParamConverterProviderTest {
 
         @GET
         @Path("/param/{param}")
-        String get(@PathParam("param") Param param);
+        String get(@MyAnnotation("myValue") @PathParam("param") Param param);
 
         @GET
         @Path("/param/{param}")
@@ -101,7 +107,7 @@ public class ParamConverterProviderTest {
 
         @GET
         @Path("/query")
-        String getWithQuery(@QueryParam("param") Param param);
+        String getWithQuery(@MyAnnotation("myValue") @QueryParam("param") Param param);
 
         @GET
         @Path("/query")
@@ -109,7 +115,7 @@ public class ParamConverterProviderTest {
 
         @GET
         @Path("/header")
-        String getWithHeader(@HeaderParam("param") Param param);
+        String getWithHeader(@MyAnnotation("myValue") @HeaderParam("param") Param param);
 
         @GET
         @Path("/header")
@@ -117,7 +123,7 @@ public class ParamConverterProviderTest {
 
         @GET
         @Path("/cookie")
-        String getWithCookie(@HeaderParam("cookie-param") Param param);
+        String getWithCookie(@MyAnnotation("myValue") @CookieParam("cookie-param") Param param);
 
         @GET
         @Path("/cookie")
@@ -127,28 +133,32 @@ public class ParamConverterProviderTest {
     interface SubClient {
         @GET
         @Path("/param/{param}")
-        String get(@PathParam("param") Param param);
+        String get(@MyAnnotation("myValue") @PathParam("param") Param param);
 
         @GET
         @Path("/query")
-        String getWithQuery(@QueryParam("param") Param param);
+        String getWithQuery(@MyAnnotation("myValue") @QueryParam("param") Param param);
 
         @GET
         @Path("/header")
-        String getWithHeader(@HeaderParam("param") Param param);
+        String getWithHeader(@MyAnnotation("myValue") @HeaderParam("param") Param param);
 
         @GET
         @Path("cookie")
-        String getWithCookie(@CookieParam("cookie-param") Param param);
+        String getWithCookie(@MyAnnotation("myValue") @CookieParam("cookie-param") Param param);
     }
 
     public static class Bean {
+        @MyAnnotation("myValue")
         @PathParam("param")
         public Param param;
+        @MyAnnotation("myValue")
         @QueryParam("param")
         public Param queryParam;
+        @MyAnnotation("myValue")
         @HeaderParam("param")
         public Param headerParam;
+        @MyAnnotation("myValue")
         @CookieParam("cookie-param")
         public Param cookieParam;
     }
@@ -156,6 +166,12 @@ public class ParamConverterProviderTest {
     enum Param {
         FIRST,
         SECOND
+    }
+
+    @Target({ ElementType.FIELD, ElementType.PARAMETER })
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface MyAnnotation {
+        String value() default "";
     }
 
     public static class ParamConverter implements ParamConverterProvider {
@@ -170,6 +186,9 @@ public class ParamConverterProviderTest {
             if (annotations == null) {
                 fail("Annotations cannot be null!");
             }
+
+            assertTrue(Arrays.stream(annotations)
+                    .anyMatch(a -> a instanceof MyAnnotation && ((MyAnnotation) a).value().equals("myValue")));
 
             if (rawType == Param.class) {
                 return (jakarta.ws.rs.ext.ParamConverter<T>) new jakarta.ws.rs.ext.ParamConverter<Param>() {

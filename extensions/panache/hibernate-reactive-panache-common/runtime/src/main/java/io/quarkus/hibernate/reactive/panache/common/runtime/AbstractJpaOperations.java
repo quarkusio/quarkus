@@ -360,7 +360,25 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         return query;
     }
 
+    public static Mutiny.SelectionQuery<?> bindParameters(Mutiny.SelectionQuery<?> query, Object[] params) {
+        if (params == null || params.length == 0)
+            return query;
+        for (int i = 0; i < params.length; i++) {
+            query.setParameter(i + 1, params[i]);
+        }
+        return query;
+    }
+
     public static Mutiny.Query<?> bindParameters(Mutiny.Query<?> query, Map<String, Object> params) {
+        if (params == null || params.size() == 0)
+            return query;
+        for (Entry<String, Object> entry : params.entrySet()) {
+            query.setParameter(entry.getKey(), entry.getValue());
+        }
+        return query;
+    }
+
+    public static Mutiny.SelectionQuery<?> bindParameters(Mutiny.SelectionQuery<?> query, Map<String, Object> params) {
         if (params == null || params.size() == 0)
             return query;
         for (Entry<String, Object> entry : params.entrySet()) {

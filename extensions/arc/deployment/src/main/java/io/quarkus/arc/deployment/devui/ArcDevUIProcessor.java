@@ -2,15 +2,30 @@ package io.quarkus.arc.deployment.devui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.ArcConfig;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.devconsole.DevBeanInfo;
 import io.quarkus.arc.deployment.devconsole.DevBeanInfos;
 import io.quarkus.arc.deployment.devconsole.DevDecoratorInfo;
 import io.quarkus.arc.deployment.devconsole.DevInterceptorInfo;
 import io.quarkus.arc.deployment.devconsole.DevObserverInfo;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.runtime.devconsole.InvocationInterceptor;
+import io.quarkus.arc.runtime.devconsole.InvocationTree;
+import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
+import io.quarkus.arc.runtime.devconsole.Monitored;
+import io.quarkus.arc.runtime.devmode.EventsMonitor;
 import io.quarkus.arc.runtime.devui.ArcJsonRPCService;
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -94,12 +109,62 @@ public class ArcDevUIProcessor {
         return new JsonRPCProvidersBuildItem(ArcJsonRPCService.class);
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    void registerMonitoringComponents(ArcConfig config, BuildProducer<AdditionalBeanBuildItem> beans,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationTransformers,
+            CustomScopeAnnotationsBuildItem customScopes, List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        if (!config.devMode.monitoringEnabled) {
+            return;
+        }
+        if (!config.transformUnproxyableClasses) {
+            throw new IllegalStateException(
+                    "Dev UI problem: monitoring of CDI business method invocations not possible\n\t- quarkus.arc.transform-unproxyable-classes was set to false and therefore it would not be possible to apply interceptors to unproxyable bean classes\n\t- please disable the monitoring feature via quarkus.arc.dev-mode.monitoring-enabled=false or enable unproxyable classes transformation");
+        }
+        // Register beans
+        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                .addBeanClasses(EventsMonitor.class, InvocationTree.class, InvocationsMonitor.class,
+                        InvocationInterceptor.class,
+                        Monitored.class)
+                .build());
+
+        // Add @Monitored to all beans
+        Set<DotName> skipNames = Set.of(DotName.createSimple(InvocationTree.class),
+                DotName.createSimple(InvocationsMonitor.class), DotName.createSimple(EventsMonitor.class));
+        annotationTransformers.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer
+                .appliedToClass()
+                .whenClass(c -> (customScopes.isScopeDeclaredOn(c)
+                        || isAdditionalBeanDefiningAnnotationOn(c, beanDefiningAnnotations))
+                        && !skipClass(c, skipNames))
+                .thenTransform(t -> t.add(Monitored.class))));
+    }
+
+    private boolean skipClass(ClassInfo beanClass, Set<DotName> skipNames) {
+        if (skipNames.contains(beanClass.name())) {
+            return true;
+        }
+        if (beanClass.name().packagePrefix().startsWith("io.quarkus.devui.runtime")) {
+            // Skip monitoring for internal devui components
+            return true;
+        }
+        return false;
+    }
+
     private List<DevBeanWithInterceptorInfo> toDevBeanWithInterceptorInfo(List<DevBeanInfo> beans, DevBeanInfos devBeanInfos) {
         List<DevBeanWithInterceptorInfo> l = new ArrayList<>();
         for (DevBeanInfo dbi : beans) {
             l.add(new DevBeanWithInterceptorInfo(dbi, devBeanInfos));
         }
         return l;
+    }
+
+    private boolean isAdditionalBeanDefiningAnnotationOn(ClassInfo beanClass,
+            List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        for (BeanDefiningAnnotationBuildItem beanDefiningAnnotation : beanDefiningAnnotations) {
+            if (beanClass.hasDeclaredAnnotation(beanDefiningAnnotation.getName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static final String BEANS = "beans";

@@ -12,6 +12,7 @@ import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
+import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
@@ -122,6 +123,9 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
 
         // Custom for Hibernate Reactive: ParameterMarkerStrategy
         serviceInitiators.add(NativeParametersHandling.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

@@ -211,7 +211,7 @@ quarkus.http.auth.permission.authenticated.paths=/*
 quarkus.http.auth.permission.authenticated.policy=authenticated
 ----
 
-The first configuration is the default tenant configuration that should be used when the tenant can not be inferred from the request. Note that a `%prod` prodile prefix is used with `quarkus.oidc.auth-server-url` - it is done to support testing a multi-tenant application with `Dev Services For Keycloak`. This configuration is using a Keycloak instance to authenticate users.
+The first configuration is the default tenant configuration that should be used when the tenant can not be inferred from the request. Note that a `%prod` profile prefix is used with `quarkus.oidc.auth-server-url` - it is done to support testing a multi-tenant application with `Dev Services For Keycloak`. This configuration is using a Keycloak instance to authenticate users.
 
 The second configuration is provided by `TenantConfigResolver`, it is the configuration that will be used when an incoming request is mapped to the tenant `tenant-a`.
 

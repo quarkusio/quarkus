@@ -8,6 +8,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_STRUCTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_VALUE;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,8 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.jsonp.JsonValueH
 public class ClientEndpointIndexer
         extends EndpointIndexer<ClientEndpointIndexer, ClientEndpointIndexer.ClientIndexedParam, ResourceMethod> {
     static final DotName CONTINUATION = DotName.createSimple("kotlin.coroutines.Continuation");
+    static final DotName CLIENT_EXCEPTION_MAPPER = DotName
+            .createSimple("io.quarkus.rest.client.reactive.ClientExceptionMapper");
 
     private final String[] defaultProduces;
     private final String[] defaultProducesNegotiated;
@@ -86,8 +89,19 @@ public class ClientEndpointIndexer
     }
 
     private void warnForUnsupportedAnnotations(ClassInfo classInfo) {
-        if ((classInfo.annotationsMap().get(ResteasyReactiveDotNames.BLOCKING) != null)
-                || (classInfo.annotationsMap().get(ResteasyReactiveDotNames.NON_BLOCKING) != null)) {
+        List<AnnotationInstance> offendingBlockingAnnotations = new ArrayList<>();
+
+        List<AnnotationInstance> blockingAnnotations = classInfo.annotationsMap().get(ResteasyReactiveDotNames.BLOCKING);
+        if (blockingAnnotations != null) {
+            for (AnnotationInstance blockingAnnotation : blockingAnnotations) {
+                // If the `@Blocking` annotation is used along with the `@ClientExceptionMapper`, we support it.
+                if (blockingAnnotation.target().annotation(CLIENT_EXCEPTION_MAPPER) == null) {
+                    offendingBlockingAnnotations.add(blockingAnnotation);
+                }
+            }
+        }
+        if (!offendingBlockingAnnotations.isEmpty()
+                || classInfo.annotationsMap().get(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
             log.warn(
                     "'@Blocking' and '@NonBlocking' annotations are not necessary (or supported) on REST Client interfaces. Offending class is '"
                             + classInfo.name()

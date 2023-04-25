@@ -153,7 +153,6 @@ public class ResteasyReactiveScanner {
                     runtimeType = RuntimeType.SERVER;
                 }
                 List<String> mediaTypeStrings = Collections.emptyList();
-                String readerClassName = readerClass.name().toString();
                 AnnotationInstance consumesAnnotation = readerClass.classAnnotation(ResteasyReactiveDotNames.CONSUMES);
                 if (consumesAnnotation != null) {
                     mediaTypeStrings = Arrays.asList(consumesAnnotation.value().asStringArray());
@@ -167,7 +166,7 @@ public class ResteasyReactiveScanner {
                 if (priorityInstance != null) {
                     priority = priorityInstance.value().asInt();
                 }
-                readerList.add(new ScannedSerializer(readerClassName,
+                readerList.add(new ScannedSerializer(readerClass,
                         typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
             }
         }
@@ -192,7 +191,6 @@ public class ResteasyReactiveScanner {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
                         ResteasyReactiveDotNames.MESSAGE_BODY_WRITER,
                         index);
-                String writerClassName = writerClass.name().toString();
                 AnnotationInstance constrainedToInstance = writerClass.classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
                 if (constrainedToInstance != null) {
                     runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
@@ -202,7 +200,7 @@ public class ResteasyReactiveScanner {
                 if (priorityInstance != null) {
                     priority = priorityInstance.value().asInt();
                 }
-                writerList.add(new ScannedSerializer(writerClassName,
+                writerList.add(new ScannedSerializer(writerClass,
                         typeParameters.get(0).name().toString(), mediaTypeStrings, runtimeType, false, priority));
             }
         }

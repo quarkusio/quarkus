@@ -153,7 +153,11 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private Model rawModel(Path pomFile) throws BootstrapMavenException {
-        final Path moduleDir = pomFile.getParent();
+        var moduleDir = pomFile.getParent();
+        if (moduleDir != null) {
+            // the path might not be normalized, while the modelProvider below would typically recognize normalized absolute paths
+            moduleDir = moduleDir.normalize().toAbsolutePath();
+        }
         Model rawModel = rawModelCache.get(moduleDir);
         if (rawModel != null) {
             return rawModel;

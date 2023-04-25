@@ -368,6 +368,8 @@ The `ConfigSourceInterceptorFactory` may initialize an interceptor with access t
 ----
 package org.acme.config;
 
+import static io.smallrye.config.SecretKeys.doLocked;
+
 import jakarta.annotation.Priority;
 
 import io.smallrye.config.ConfigSourceInterceptor;

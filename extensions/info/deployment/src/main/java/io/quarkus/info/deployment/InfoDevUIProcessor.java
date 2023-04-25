@@ -2,34 +2,36 @@ package io.quarkus.info.deployment;
 
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.MenuPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.info.runtime.InfoRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
 /**
  * This processor is responsible for the dev ui widget.
  */
-public class InfoDevUiProcessor {
+public class InfoDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    CardPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+    MenuPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             InfoBuildTimeConfig config,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
-            LaunchModeBuildItem launchModeBuildItem,
-            InfoRecorder unused) {
-        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
+            LaunchModeBuildItem launchModeBuildItem) {
+        MenuPageBuildItem pageBuildItem = new MenuPageBuildItem();
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(),
                 managementInterfaceBuildTimeConfig, launchModeBuildItem);
-        pageBuildItem.addPage(Page.externalPageBuilder("App Information")
+
+        pageBuildItem.addBuildTimeData("infoUrl", path);
+
+        pageBuildItem.addPage(Page.webComponentPageBuilder()
+                .title("Information")
                 .icon("font-awesome-solid:circle-info")
+                .componentLink("qwc-info.js"));
+        pageBuildItem.addPage(Page.externalPageBuilder("Raw")
                 .url(path)
+                .icon("font-awesome-solid:circle-info")
                 .isJsonContent());
 
         return pageBuildItem;

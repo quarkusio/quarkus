@@ -195,6 +195,7 @@ public class OidcUtilsTest {
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
         assertEquals("https://accounts.google.com", config.getAuthServerUrl().get());
+        assertEquals("name", config.getToken().getPrincipalClaim().get());
         assertEquals(List.of("openid", "email", "profile"), config.authentication.scopes.get());
     }
 
@@ -206,12 +207,14 @@ public class OidcUtilsTest {
         tenant.setApplicationType(ApplicationType.HYBRID);
         tenant.setAuthServerUrl("http://localhost/wiremock");
         tenant.authentication.setScopes(List.of("write"));
+        tenant.token.setPrincipalClaim("firstname");
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals("firstname", config.getToken().getPrincipalClaim().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
     }
 

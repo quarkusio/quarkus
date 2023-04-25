@@ -74,6 +74,7 @@ import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
+import io.vertx.core.net.SSLOptions;
 import io.vertx.core.shareddata.SharedData;
 import io.vertx.core.spi.VerticleFactory;
 
@@ -699,6 +700,11 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        public Throwable unavailableNativeTransportCause() {
+            return getDelegate().unavailableNativeTransportCause();
+        }
+
+        @Override
         public Vertx exceptionHandler(Handler<Throwable> handler) {
             return getDelegate().exceptionHandler(handler);
         }
@@ -827,6 +833,11 @@ public class ClientImpl implements Client {
             public Future<WebSocket> webSocketAbs(String url, MultiMap headers, WebsocketVersion version,
                     List<String> subProtocols) {
                 return getDelegate().webSocketAbs(url, headers, version, subProtocols);
+            }
+
+            @Override
+            public Future<Void> updateSSLOptions(SSLOptions options) {
+                return getDelegate().updateSSLOptions(options);
             }
 
             @Override

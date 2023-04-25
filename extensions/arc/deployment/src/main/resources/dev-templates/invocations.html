@@ -79,7 +79,7 @@
     </tr>
    </thead>
    <tbody>
-    {#each info:invocationsMonitor.lastInvocations.orEmpty}
+    {#each info:invocationsMonitor.filteredLastInvocations.orEmpty}
     <tr>
       <td>{it.startFormatted}</td>
       <td><ul id="tree">{#tree it root=true /}</ul></td>

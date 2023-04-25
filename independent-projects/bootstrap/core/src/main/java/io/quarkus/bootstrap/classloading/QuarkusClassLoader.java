@@ -39,19 +39,19 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         registerAsParallelCapable();
     }
 
-    public static List<ClassPathElement> getElements(String resourceName, boolean localOnly) {
+    public static List<ClassPathElement> getElements(String resourceName, boolean onlyFromCurrentClassLoader) {
         final ClassLoader ccl = Thread.currentThread().getContextClassLoader();
         if (!(ccl instanceof QuarkusClassLoader)) {
             throw new IllegalStateException("The current classloader is not an instance of "
                     + QuarkusClassLoader.class.getName() + " but " + ccl.getClass().getName());
         }
-        return ((QuarkusClassLoader) ccl).getElementsWithResource(resourceName, localOnly);
+        return ((QuarkusClassLoader) ccl).getElementsWithResource(resourceName, onlyFromCurrentClassLoader);
     }
 
-    public List<ClassPathElement> getAllElements(boolean localOnly) {
+    public List<ClassPathElement> getAllElements(boolean onlyFromCurrentClassLoader) {
         List<ClassPathElement> ret = new ArrayList<>();
-        if (parent instanceof QuarkusClassLoader && !localOnly) {
-            ret.addAll(((QuarkusClassLoader) parent).getAllElements(localOnly));
+        if (parent instanceof QuarkusClassLoader && !onlyFromCurrentClassLoader) {
+            ret.addAll(((QuarkusClassLoader) parent).getAllElements(onlyFromCurrentClassLoader));
         }
         ret.addAll(elements);
         return ret;

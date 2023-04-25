@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { JsonRpc } from 'jsonrpc';
+import { RouterController } from 'router-controller';
 import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import 'qui/qui-alert.js';
@@ -18,6 +19,7 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import { observeState } from 'lit-element-state';
 import { devuiState } from 'devui-state';
+import 'qui-badge';
 
 /**
  * This component allows users to change the configuration
@@ -25,6 +27,7 @@ import { devuiState } from 'devui-state';
 export class QwcConfiguration extends observeState(LitElement) {
 
     jsonRpc = new JsonRpc(this);
+    routerController = new RouterController(this);
 
     static styles = css`
       .conf {
@@ -87,6 +90,13 @@ export class QwcConfiguration extends observeState(LitElement) {
 
     constructor() {
         super();
+
+        this._filteredValue = this.routerController.getQueryParameter("filter");
+
+        if(this._filteredValue){
+            this._filteredValue = this._filteredValue.replaceAll(",", " OR ");
+        }
+
         this._filtered = devuiState.allConfiguration;
         this.jsonRpc.getAllValues().then(e => {
             this._values = e.result;
@@ -103,10 +113,19 @@ export class QwcConfiguration extends observeState(LitElement) {
         if (! value) {
             return false;
         }
+        if(term.includes(" OR ")){
+            let terms = term.split(" OR ");
+            for (let t of terms) {
+                if(value.toLowerCase().includes(t.toLowerCase())){
+                    return true;
+                }
+            }
+            return false;
+        }
         return value.toLowerCase().includes(term.toLowerCase());
     }
 
-    _filter(e) {
+    _filterTextChanged(e) {
         const searchTerm = (e.detail.value || '').trim();
         if (searchTerm === '') {
             this._filtered = devuiState.allConfiguration
@@ -119,13 +138,15 @@ export class QwcConfiguration extends observeState(LitElement) {
     }
 
     _render() {
-        if (this._filtered  && this._values) {
+        if (this._filtered && this._values) {
             return html`<div class="conf">
                 <vaadin-text-field
                         placeholder="Filter"
+                        value="${this._filteredValue}"
                         style="width: 100%;"
-                        @value-changed="${(e) => this._filter(e)}">
+                        @value-changed="${(e) => this._filterTextChanged(e)}">
                     <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
+                    <qui-badge slot="suffix"><span>${this._filtered.length}</span></qui-badge>
                 </vaadin-text-field>
                 ${this._renderGrid()}
                 </div>`;

@@ -511,6 +511,12 @@ public class BeanDeployment {
         return qualifierNonbindingMembers;
     }
 
+    /**
+     *
+     * @return the collection of interceptor bindings; the container annotations of repeating interceptor binding are not
+     *         included
+     * @see #extractInterceptorBindings(AnnotationInstance)
+     */
     public Collection<ClassInfo> getInterceptorBindings() {
         return Collections.unmodifiableCollection(interceptorBindings.values());
     }
@@ -614,7 +620,7 @@ public class BeanDeployment {
      * @param annotation annotation to be inspected
      * @return a collection of interceptor bindings or an empty collection
      */
-    Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {
+    public Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {
         return extractAnnotations(annotation, interceptorBindings, repeatingInterceptorBindingAnnotations);
     }
 

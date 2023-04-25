@@ -199,6 +199,16 @@ class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    public Future<Void> writeEarlyHints(MultiMap headers) {
+        return delegate.writeEarlyHints(headers);
+    }
+
+    @Override
+    public void writeEarlyHints(MultiMap headers, Handler<AsyncResult<Void>> handler) {
+        delegate.writeEarlyHints(headers, handler);
+    }
+
+    @Override
     public Future<Void> end(String chunk) {
         return delegate.end(chunk);
     }

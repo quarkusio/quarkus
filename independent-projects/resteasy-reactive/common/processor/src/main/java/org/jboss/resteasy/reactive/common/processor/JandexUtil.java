@@ -364,4 +364,39 @@ public final class JandexUtil {
         return isSubclassOf(index, superClass, parentName);
     }
 
+    /**
+     * Returns true if the given Jandex ClassInfo is a subclass of or inherits the given <tt>name</tt>.
+     *
+     * @param index the index to use to look up super classes.
+     * @param info the ClassInfo we want to check.
+     * @param name the name of the superclass or interface we want to find.
+     * @throws RuntimeException if one of the superclasses is not indexed.
+     */
+    public static boolean isImplementorOf(IndexView index, ClassInfo info, DotName name) {
+        // Check interfaces
+        List<DotName> interfaceNames = info.interfaceNames();
+        for (DotName interfaceName : interfaceNames) {
+            if (interfaceName.equals(name)) {
+                return true;
+            }
+        }
+
+        // Check direct hierarchy
+        if (info.superName().equals(DOTNAME_OBJECT) || info.superName().equals(DOTNAME_RECORD)) {
+            return false;
+        }
+        if (info.superName().equals(name)) {
+            return true;
+        }
+
+        // climb up the hierarchy of classes
+        Type superType = info.superClassType();
+        ClassInfo superClass = index.getClassByName(superType.name());
+        if (superClass == null) {
+            // this can happens if the parent is not inside the Jandex index
+            throw new RuntimeException("The class " + superType.name() + " is not inside the Jandex index");
+        }
+        return isImplementorOf(index, superClass, name);
+    }
+
 }

@@ -23,7 +23,6 @@ public class SettingsSpyingIdentifierGenerator implements IdentifierGenerator {
     public static final List<Map<String, Object>> collectedSettings = new ArrayList<>();
 
     @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void configure(Type type, Properties params, ServiceRegistry serviceRegistry) throws MappingException {
         collectedSettings.add(new HashMap<>(serviceRegistry.getService(ConfigurationService.class).getSettings()));
     }

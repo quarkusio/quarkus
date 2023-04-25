@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.Configurable;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
+import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderListener;
 
@@ -215,6 +216,22 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @return the current builder with the style of query params set
      */
     QuarkusRestClientBuilder queryParamStyle(QueryParamStyle style);
+
+    /**
+     * Specifies the client headers factory to use.
+     *
+     * @param clientHeadersFactoryClass the client headers factory class to use.
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder clientHeadersFactory(Class<? extends ClientHeadersFactory> clientHeadersFactoryClass);
+
+    /**
+     * Specifies the client headers factory to use.
+     *
+     * @param clientHeadersFactory the client headers factory to use.
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder clientHeadersFactory(ClientHeadersFactory clientHeadersFactory);
 
     /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls

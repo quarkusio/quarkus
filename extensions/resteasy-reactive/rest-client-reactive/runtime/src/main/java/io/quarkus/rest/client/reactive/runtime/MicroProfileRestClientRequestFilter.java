@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.HeaderFiller;
@@ -65,6 +66,7 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
             requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
         }
 
+        ClientHeadersFactory clientHeadersFactory = clientHeadersFactory(requestContext);
         if (clientHeadersFactory != null) {
             if (clientHeadersFactory instanceof ReactiveClientHeadersFactory) {
                 // reactive
@@ -85,6 +87,18 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
                 }
             }
         }
+    }
+
+    private ClientHeadersFactory clientHeadersFactory(ResteasyReactiveClientRequestContext requestContext) {
+        if (requestContext.getConfiguration() instanceof ConfigurationImpl) {
+            ConfigurationImpl configuration = (ConfigurationImpl) requestContext.getConfiguration();
+            ClientHeadersFactory localHeadersFactory = configuration.getFromContext(ClientHeadersFactory.class);
+            if (localHeadersFactory != null) {
+                return localHeadersFactory;
+            }
+        }
+
+        return clientHeadersFactory;
     }
 
     private static List<String> castToListOfStrings(Collection<Object> values) {

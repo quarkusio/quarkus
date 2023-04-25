@@ -819,6 +819,11 @@ public class BeanGenerator extends AbstractGenerator {
 
         if (bean.isClassBean()) {
             if (!bean.isInterceptor()) {
+                // in case someone calls `Bean.destroy()` directly (i.e., they use the low-level CDI API),
+                // they may pass us a client proxy
+                ResultHandle instance = destroy.invokeStaticInterfaceMethod(MethodDescriptors.CLIENT_PROXY_UNWRAP,
+                        destroy.getMethodParam(0));
+
                 // if there's no `@PreDestroy` interceptor, we'll generate code to invoke `@PreDestroy` callbacks
                 // directly into the `destroy` method:
                 //
@@ -846,7 +851,7 @@ public class BeanGenerator extends AbstractGenerator {
                     destroy.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName),
                                     SubclassGenerator.DESTROY_METHOD_NAME, void.class, Runnable.class),
-                            destroy.getMethodParam(0), preDestroyForwarder.getInstance());
+                            instance, preDestroyForwarder.getInstance());
                 }
 
                 // PreDestroy callbacks
@@ -865,11 +870,11 @@ public class BeanGenerator extends AbstractGenerator {
                                 preDestroyBytecode.loadClass(callback.declaringClass().name().toString()),
                                 preDestroyBytecode.load(callback.name()),
                                 preDestroyBytecode.newArray(Class.class, preDestroyBytecode.load(0)),
-                                destroy.getMethodParam(0),
+                                instance,
                                 preDestroyBytecode.newArray(Object.class, preDestroyBytecode.load(0)));
                     } else {
                         // instance.superCoolDestroyCallback()
-                        preDestroyBytecode.invokeVirtualMethod(MethodDescriptor.of(callback), destroy.getMethodParam(0));
+                        preDestroyBytecode.invokeVirtualMethod(MethodDescriptor.of(callback), instance);
                     }
                 }
                 if (preDestroyBytecode != destroy) {

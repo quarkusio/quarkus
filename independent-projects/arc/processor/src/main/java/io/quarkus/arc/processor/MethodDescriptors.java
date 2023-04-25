@@ -145,6 +145,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE = MethodDescriptor.ofMethod(ClientProxy.class,
             ClientProxyGenerator.GET_CONTEXTUAL_INSTANCE_METHOD_NAME, Object.class);
 
+    public static final MethodDescriptor CLIENT_PROXY_UNWRAP = MethodDescriptor.ofMethod(ClientProxy.class,
+            "unwrap", Object.class, Object.class);
+
     public static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor.ofMethod(InjectableBean.class, "destroy",
             void.class, Object.class,
             CreationalContext.class);

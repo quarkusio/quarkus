@@ -70,13 +70,13 @@ public class NativeImageReflectConfigStep {
             json.put("name", entry.getKey());
 
             ReflectionInfo info = entry.getValue();
+            JsonArrayBuilder methodsArray = Json.array();
             if (info.typeReachable != null) {
                 json.put("condition", Json.object().put("typeReachable", info.typeReachable));
             }
             if (info.constructors) {
                 json.put("allDeclaredConstructors", true);
             } else if (!info.ctorSet.isEmpty()) {
-                JsonArrayBuilder methodsArray = Json.array();
                 for (ReflectiveMethodBuildItem ctor : info.ctorSet) {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", ctor.getName());
@@ -87,12 +87,10 @@ public class NativeImageReflectConfigStep {
                     methodObject.put("parameterTypes", paramsArray);
                     methodsArray.add(methodObject);
                 }
-                json.put("methods", methodsArray);
             }
             if (info.methods) {
                 json.put("allDeclaredMethods", true);
             } else if (!info.methodSet.isEmpty()) {
-                JsonArrayBuilder methodsArray = Json.array();
                 for (ReflectiveMethodBuildItem method : info.methodSet) {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", method.getName());
@@ -103,8 +101,11 @@ public class NativeImageReflectConfigStep {
                     methodObject.put("parameterTypes", paramsArray);
                     methodsArray.add(methodObject);
                 }
+            }
+            if (!methodsArray.isEmpty()) {
                 json.put("methods", methodsArray);
             }
+
             if (info.fields) {
                 json.put("allDeclaredFields", true);
             } else if (!info.fieldSet.isEmpty()) {

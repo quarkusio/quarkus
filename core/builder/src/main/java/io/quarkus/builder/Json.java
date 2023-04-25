@@ -187,7 +187,7 @@ public final class Json {
             }
         }
 
-        boolean isEmpty() {
+        public boolean isEmpty() {
             return isValuesEmpty(values);
         }
 

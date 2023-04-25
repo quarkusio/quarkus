@@ -40,10 +40,10 @@ public class NativeImageJNIConfigStep {
             json.put("name", entry.getKey());
 
             JniInfo info = entry.getValue();
+            JsonArrayBuilder methodsArray = Json.array();
             if (info.constructors) {
                 json.put("allDeclaredConstructors", true);
             } else if (!info.ctorSet.isEmpty()) {
-                JsonArrayBuilder methodsArray = Json.array();
                 for (JniRuntimeAccessMethodBuildItem ctor : info.ctorSet) {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", ctor.getName());
@@ -54,12 +54,10 @@ public class NativeImageJNIConfigStep {
                     methodObject.put("parameterTypes", paramsArray);
                     methodsArray.add(methodObject);
                 }
-                json.put("methods", methodsArray);
             }
             if (info.methods) {
                 json.put("allDeclaredMethods", true);
             } else if (!info.methodSet.isEmpty()) {
-                JsonArrayBuilder methodsArray = Json.array();
                 for (JniRuntimeAccessMethodBuildItem method : info.methodSet) {
                     JsonObjectBuilder methodObject = Json.object();
                     methodObject.put("name", method.getName());
@@ -70,8 +68,11 @@ public class NativeImageJNIConfigStep {
                     methodObject.put("parameterTypes", paramsArray);
                     methodsArray.add(methodObject);
                 }
+            }
+            if (!methodsArray.isEmpty()) {
                 json.put("methods", methodsArray);
             }
+
             if (info.fields) {
                 json.put("allDeclaredFields", true);
             } else if (!info.fieldSet.isEmpty()) {

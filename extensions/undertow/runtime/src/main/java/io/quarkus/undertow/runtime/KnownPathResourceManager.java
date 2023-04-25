@@ -16,6 +16,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.jboss.logging.Logger;
+
 import io.undertow.httpcore.OutputChannel;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.resource.Resource;
@@ -24,6 +26,8 @@ import io.undertow.util.ETag;
 import io.undertow.util.MimeMappings;
 
 public class KnownPathResourceManager implements ResourceManager {
+
+    private static final Logger log = Logger.getLogger(KnownPathResourceManager.class);
 
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
 
@@ -144,10 +148,12 @@ public class KnownPathResourceManager implements ResourceManager {
                             try {
                                 Resource resource = underlying.getResource(i);
                                 if (resource == null) {
-                                    throw new RuntimeException("Unable to get listed resource " + i + " from directory " + path
-                                            + " for path " + slashPath + " from underlying manager " + underlying);
+                                    log.errorv(
+                                            "Unable to get listed resource '{0}' from directory '{1}' for path '{2}'",
+                                            i, path, slashPath);
+                                } else {
+                                    ret.add(resource);
                                 }
-                                ret.add(resource);
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }

@@ -755,7 +755,7 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.reactive.pg.client.PgPoolCreator;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.pgclient.PgPoolOptions;
+import io.vertx.pgclient.PgPool;
 import io.vertx.sqlclient.PoolOptions;
 
 @Singleton
@@ -764,7 +764,7 @@ public class CustomPgPoolCreator implements PgPoolCreator {
     @Override
     public PgPool create(Input input) {
         PgConnectOptions connectOptions = input.pgConnectOptions();
-        PgPoolOptions poolOptions = input.poolOptions();
+        PoolOptions poolOptions = input.poolOptions();
         // Customize connectOptions, poolOptions or both, as required
         return PgPool.pool(input.vertx(), connectOptions, poolOptions);
     }

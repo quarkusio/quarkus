@@ -699,7 +699,7 @@ class HibernateValidatorProcessor {
             case PARAMETERIZED_TYPE:
                 return type.name();
             case ARRAY:
-                return getClassName(type.asArrayType().component());
+                return getClassName(type.asArrayType().constituent());
             default:
                 return null;
         }

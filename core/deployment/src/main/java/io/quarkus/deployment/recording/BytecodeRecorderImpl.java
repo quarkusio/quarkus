@@ -1935,7 +1935,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     static String componentType(MethodInfo method) {
         ArrayType arrayType = method.returnType().asArrayType();
-        return arrayType.component().name().toString();
+        return arrayType.constituent().name().toString();
     }
 
     /**

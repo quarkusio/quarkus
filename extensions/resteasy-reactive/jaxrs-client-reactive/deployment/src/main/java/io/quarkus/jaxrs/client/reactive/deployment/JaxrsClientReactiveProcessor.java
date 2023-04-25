@@ -2535,7 +2535,7 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramArray;
             String componentType = null;
             if (type.kind() == Type.Kind.ARRAY) {
-                componentType = type.asArrayType().component().name().toString();
+                componentType = type.asArrayType().constituent().name().toString();
                 paramArray = notNullParam.checkCast(queryParamHandle, Object[].class);
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {

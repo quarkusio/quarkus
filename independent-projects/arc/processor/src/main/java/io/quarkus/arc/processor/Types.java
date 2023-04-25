@@ -197,7 +197,7 @@ public final class Types {
                 arrayHandle = doLoadClass(creator, array.name().toString(), tccl);
             } else {
                 // E.g. List<String>[] -> new GenericArrayTypeImpl(new ParameterizedTypeImpl(List.class, String.class))
-                Type componentType = type.asArrayType().component();
+                Type componentType = type.asArrayType().constituent();
                 AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
                 getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables);
                 arrayHandle = creator.newInstance(
@@ -349,9 +349,9 @@ public final class Types {
     }
 
     static Type getArrayElementType(ArrayType array) {
-        Type elementType = array.component();
+        Type elementType = array.constituent();
         while (elementType.kind() == Kind.ARRAY) {
-            elementType = elementType.asArrayType().component();
+            elementType = elementType.asArrayType().constituent();
         }
         return elementType;
     }

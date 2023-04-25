@@ -497,7 +497,7 @@ public final class JpaJandexScavenger {
                 }
                 break;
             case ARRAY:
-                collectEmbeddedTypes(embeddedTypes, indexType.asArrayType().component());
+                collectEmbeddedTypes(embeddedTypes, indexType.asArrayType().constituent());
                 break;
             default:
                 // do nothing

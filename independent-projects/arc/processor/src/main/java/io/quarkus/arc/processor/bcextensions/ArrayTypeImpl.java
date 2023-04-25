@@ -13,8 +13,8 @@ class ArrayTypeImpl extends TypeImpl<org.jboss.jandex.ArrayType> implements Arra
     public Type componentType() {
         int dimensions = jandexType.dimensions();
         org.jboss.jandex.Type componentType = dimensions == 1
-                ? jandexType.component()
-                : org.jboss.jandex.ArrayType.create(jandexType.component(), dimensions - 1);
+                ? jandexType.constituent()
+                : org.jboss.jandex.ArrayType.create(jandexType.constituent(), dimensions - 1);
         return fromJandexType(jandexIndex, annotationOverlays, componentType);
     }
 }

@@ -1653,6 +1653,8 @@ public class BeanGenerator extends AbstractGenerator {
                     create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
             TryBlock tryCatch = create.tryBlock();
             CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
+            exceptionCatch.ifFalse(exceptionCatch.instanceOf(exceptionCatch.getCaughtException(), RuntimeException.class))
+                    .falseBranch().throwException(exceptionCatch.getCaughtException());
             // throw new RuntimeException(e)
             exceptionCatch.throwException(RuntimeException.class, "Error invoking aroundConstructs",
                     exceptionCatch.getCaughtException());
@@ -1836,6 +1838,8 @@ public class BeanGenerator extends AbstractGenerator {
 
             TryBlock tryCatch = create.tryBlock();
             CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
+            exceptionCatch.ifFalse(exceptionCatch.instanceOf(exceptionCatch.getCaughtException(), RuntimeException.class))
+                    .falseBranch().throwException(exceptionCatch.getCaughtException());
             // throw new RuntimeException(e)
             exceptionCatch.throwException(RuntimeException.class, "Error invoking postConstructs",
                     exceptionCatch.getCaughtException());

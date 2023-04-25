@@ -441,7 +441,7 @@ public class DevUIProcessor {
 
                         if (metaData.containsKey(CAPABILITIES)) {
                             Map<String, Object> capabilities = (Map<String, Object>) metaData.get(CAPABILITIES);
-                            extension.setConfigFilter((List<String>) capabilities.getOrDefault(PROVIDES, null));
+                            extension.setProvidesCapabilities((List<String>) capabilities.getOrDefault(PROVIDES, null));
                         }
 
                         if (metaData.containsKey(CODESTART)) {

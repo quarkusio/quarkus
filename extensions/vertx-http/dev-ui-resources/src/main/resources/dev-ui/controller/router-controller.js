@@ -154,10 +154,11 @@ export class RouterController {
 
             RouterController.router.addRoutes(routes);
         }
-        // TODO: Pass the other parameters along ?
+        
         var currentSelection = window.location.pathname;
+        var currentQueryString = window.location.search;
 
-        var relocationRequest = this.getFrom();
+        var relocationRequest = this.getQueryParameter("from");
         if (relocationRequest) {
             // We know and already loaded the requested location
             if (relocationRequest === path) {
@@ -188,10 +189,10 @@ export class RouterController {
         return params;
     }
 
-    getFrom(){
+    getQueryParameter(param){
         var params = this.getQueryParameters();
         if(params){
-            return params.from;
+            return params[param] || null;
         }else {
             return null;
         }

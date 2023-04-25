@@ -280,9 +280,9 @@ public class Lesson {
     private String teacher;
     private String studentGroup;
 
-    @PlanningVariable(valueRangeProviderRefs = "timeslotRange")
+    @PlanningVariable
     private Timeslot timeslot;
-    @PlanningVariable(valueRangeProviderRefs = "roomRange")
+    @PlanningVariable
     private Room room;
 
     public Lesson() {
@@ -339,11 +339,8 @@ The `Lesson` class has an `@PlanningEntity` annotation,
 so OptaPlanner knows that this class changes during solving
 because it contains one or more planning variables.
 
-The `timeslot` field has an `@PlanningVariable` annotation,
-so OptaPlanner knows that it can change its value.
-In order to find potential `Timeslot` instances to assign to this field,
-OptaPlanner uses the `valueRangeProviderRefs` property to connect to a value range provider
-(explained later) that provides a `List<Timeslot>` to pick from.
+The `timeslot` field has an `@PlanningVariable` annotation, so OptaPlanner knows that it can change its value.
+In order to find potential Timeslot instances to assign to this field, OptaPlanner uses the variable type to connect to a value range provider that provides a List<Timeslot> to pick from.
 
 The `room` field also has an `@PlanningVariable` annotation, for the same reasons.
 
@@ -468,7 +465,7 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                         Joiners.equal(Lesson::getTeacher),
                         Joiners.lessThan(Lesson::getId))
                 .penalize(HardSoftScore.ONE_HARD)
-                .asConstraint(""Teacher conflict");
+                .asConstraint("Teacher conflict");
     }
 
     Constraint studentGroupConflict(ConstraintFactory constraintFactory) {
@@ -479,7 +476,7 @@ public class TimeTableConstraintProvider implements ConstraintProvider {
                         Joiners.equal(Lesson::getStudentGroup),
                         Joiners.lessThan(Lesson::getId))
                 .penalize(HardSoftScore.ONE_HARD)
-                .asConstraint(""Student group conflict");
+                .asConstraint("Student group conflict");
     }
 
 }
@@ -518,10 +515,10 @@ import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 @PlanningSolution
 public class TimeTable {
 
-    @ValueRangeProvider(id = "timeslotRange")
+    @ValueRangeProvider
     @ProblemFactCollectionProperty
     private List<Timeslot> timeslotList;
-    @ValueRangeProvider(id = "roomRange")
+    @ValueRangeProvider
     @ProblemFactCollectionProperty
     private List<Room> roomList;
     @PlanningEntityCollectionProperty
@@ -585,7 +582,7 @@ However, this class is also the output of the solution:
 The `timeslotList` field is a value range provider.
 It holds the `Timeslot` instances which OptaPlanner can pick from to assign to the `timeslot` field of `Lesson` instances.
 The `timeslotList` field has an `@ValueRangeProvider` annotation to connect the `@PlanningVariable` with the `@ValueRangeProvider`,
-by matching the value of the `id` property with the value of the `valueRangeProviderRefs` property of the `@PlanningVariable` annotation in the `Lesson` class.
+by matching the type of the planning variable with the type returned by the value range provider.
 
 Following the same logic, the `roomList` field also has an `@ValueRangeProvider` annotation.
 

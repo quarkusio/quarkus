@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.client.handlers.ClientResponseCompleteRestHan
 import org.jboss.resteasy.reactive.client.handlers.ClientResponseFilterRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.handlers.ClientSetResponseEntityRestHandler;
+import org.jboss.resteasy.reactive.client.handlers.ClientSwitchToRequestContextRestHandler;
 import org.jboss.resteasy.reactive.client.handlers.PreResponseFilterHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
@@ -25,6 +26,7 @@ class HandlerChain {
 
     private static final ClientRestHandler[] EMPTY_REST_HANDLERS = new ClientRestHandler[0];
 
+    private final ClientRestHandler clientSwitchToRequestContextRestHandler;
     private final ClientRestHandler clientSendHandler;
     private final ClientRestHandler clientSetResponseEntityRestHandler;
     private final ClientRestHandler clientResponseCompleteRestHandler;
@@ -34,6 +36,7 @@ class HandlerChain {
 
     public HandlerChain(boolean followRedirects, LoggingScope loggingScope,
             Map<Class<?>, MultipartResponseData> multipartData, ClientLogger clientLogger) {
+        this.clientSwitchToRequestContextRestHandler = new ClientSwitchToRequestContextRestHandler();
         this.clientSendHandler = new ClientSendRequestHandler(followRedirects, loggingScope, clientLogger, multipartData);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();
@@ -49,7 +52,9 @@ class HandlerChain {
         List<ClientRequestFilter> requestFilters = configuration.getRequestFilters();
         List<ClientResponseFilter> responseFilters = configuration.getResponseFilters();
         if (requestFilters.isEmpty() && responseFilters.isEmpty()) {
-            return new ClientRestHandler[] { clientSendHandler, clientSetResponseEntityRestHandler,
+            return new ClientRestHandler[] { clientSwitchToRequestContextRestHandler,
+                    clientSendHandler,
+                    clientSetResponseEntityRestHandler,
                     clientResponseCompleteRestHandler };
         }
         List<ClientRestHandler> result = new ArrayList<>(
@@ -60,6 +65,7 @@ class HandlerChain {
         for (int i = 0; i < requestFilters.size(); i++) {
             result.add(new ClientRequestFilterRestHandler(requestFilters.get(i)));
         }
+        result.add(clientSwitchToRequestContextRestHandler);
         result.add(clientSendHandler);
         result.add(clientSetResponseEntityRestHandler);
         result.add(new PreResponseFilterHandler());

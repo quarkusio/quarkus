@@ -30,7 +30,7 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
             .withApplicationRoot((jar) -> jar.addClasses(Client.class));
 
     @Test
-    void shouldUseCustomHttpOptions() {
+    void shouldUseCustomHttpOptionsUsingProvider() {
         // First verify the standard configuration
         assertThat(QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class).get())
                 .isEqualTo(EXPECTED_VALUE);
@@ -39,6 +39,21 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
 
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri)
                 .register(CustomHttpClientOptionsWithLimit.class)
+                .build(Client.class);
+        assertThatThrownBy(() -> client.get()).hasMessageContaining("HTTP header is larger than 1 bytes.");
+    }
+
+    @Test
+    void shouldUseCustomHttpOptionsUsingAPI() {
+        // First verify the standard configuration
+        assertThat(QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class).get())
+                .isEqualTo(EXPECTED_VALUE);
+
+        // Now, it should fail if we use a custom http client options with a very limited max header size:
+        HttpClientOptions options = new HttpClientOptions();
+        options.setMaxHeaderSize(1); // this is just to verify that this HttpClientOptions is indeed used.
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri)
+                .httpClientOptions(options)
                 .build(Client.class);
         assertThatThrownBy(() -> client.get()).hasMessageContaining("HTTP header is larger than 1 bytes.");
     }

@@ -497,23 +497,16 @@ public class ExtensionsResource {
     private final ExtensionsService extensionsService;
 
     public ExtensionsResource() {
+        HttpClientOptions options = new HttpClientOptions();
+        // ...
+
         extensionsService = QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create("https://stage.code.quarkus.io/api"))
-            .register(CustomHttpClientOptions.class) <1>
+            .httpClientOptions(options) <1>
             .build(ExtensionsService.class);
     }
 
     // ...
-}
-
-public class CustomHttpClientOptions implements ContextResolver<HttpClientOptions> {
-
-    @Override
-    public HttpClientOptions getContext(Class<?> aClass) {
-        HttpClientOptions options = new HttpClientOptions();
-        // ...
-        return options;
-    }
 }
 ----
 

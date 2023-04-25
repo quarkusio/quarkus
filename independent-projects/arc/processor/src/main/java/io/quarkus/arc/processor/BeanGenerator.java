@@ -1609,10 +1609,20 @@ public class BeanGenerator extends AbstractGenerator {
                     interceptorToWrap, transientReferences, injectableCtorParams, allOtherCtorParams);
 
             // Forwarding function
-            // Supplier<Object> forward = () -> new SimpleBean_Subclass(ctx,lifecycleInterceptorProvider1)
-            FunctionCreator func = create.createFunction(Supplier.class);
+            // Function<Object[], Object> forward = (params) -> new SimpleBean_Subclass(params[0], ctx, lifecycleInterceptorProvider1)
+            FunctionCreator func = create.createFunction(Function.class);
             BytecodeCreator funcBytecode = func.getBytecode();
-            List<ResultHandle> providerHandles = new ArrayList<>(injectableCtorParams);
+            List<ResultHandle> params = new ArrayList<>();
+            if (!injectableCtorParams.isEmpty()) {
+                // `injectableCtorParams` are passed to the first interceptor in the chain
+                // the `Function` generated here obtains the parameter array from `InvocationContext`
+                // these 2 arrays have the same shape (size and element types), but not necessarily the same content
+                ResultHandle paramsArray = funcBytecode.checkCast(funcBytecode.getMethodParam(0), Object[].class);
+                for (int i = 0; i < injectableCtorParams.size(); i++) {
+                    params.add(funcBytecode.readArrayValue(paramsArray, i));
+                }
+            }
+            List<ResultHandle> providerHandles = new ArrayList<>(params);
             providerHandles.addAll(allOtherCtorParams);
             ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, create, providerType.className(),
                     baseName,

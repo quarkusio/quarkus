@@ -4,7 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
  * An {@code InvocationContext} implementation used for {@code AroundConstruct} callbacks.
@@ -12,17 +12,17 @@ import java.util.function.Supplier;
 class AroundConstructInvocationContext extends LifecycleCallbackInvocationContext {
 
     private final Constructor<?> constructor;
-    private final Supplier<Object> aroundConstructForward;
+    private final Function<Object[], Object> forward;
 
     AroundConstructInvocationContext(Constructor<?> constructor, Object[] parameters, Set<Annotation> interceptorBindings,
-            List<InterceptorInvocation> chain, Supplier<Object> aroundConstructForward) {
+            List<InterceptorInvocation> chain, Function<Object[], Object> forward) {
         super(null, parameters, interceptorBindings, chain);
-        this.aroundConstructForward = aroundConstructForward;
+        this.forward = forward;
         this.constructor = constructor;
     }
 
-    protected void interceptorChainCompleted() throws Exception {
-        target = aroundConstructForward.get();
+    protected void interceptorChainCompleted() {
+        target = forward.apply(parameters);
     }
 
     @Override

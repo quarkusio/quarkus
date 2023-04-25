@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.spi.Context;
@@ -173,7 +174,7 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "aroundConstruct",
-            InvocationContext.class, Constructor.class, Object[].class, List.class, Supplier.class, Set.class);
+            InvocationContext.class, Constructor.class, Object[].class, List.class, Function.class, Set.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,

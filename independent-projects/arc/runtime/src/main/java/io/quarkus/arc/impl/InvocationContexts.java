@@ -5,7 +5,7 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import jakarta.interceptor.InvocationContext;
 
@@ -77,10 +77,9 @@ public final class InvocationContexts {
     public static InvocationContext aroundConstruct(Constructor<?> constructor,
             Object[] parameters,
             List<InterceptorInvocation> chain,
-            Supplier<Object> aroundConstructForward,
+            Function<Object[], Object> forward,
             Set<Annotation> interceptorBindings) {
-        return new AroundConstructInvocationContext(constructor, parameters, interceptorBindings, chain,
-                aroundConstructForward);
+        return new AroundConstructInvocationContext(constructor, parameters, interceptorBindings, chain, forward);
     }
 
     /**

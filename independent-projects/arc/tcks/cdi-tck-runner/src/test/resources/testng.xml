@@ -79,8 +79,6 @@
             </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.contract.aroundConstruct.AroundConstructTest">
                 <methods>
-                    <exclude name="testInterceptorInvocation"/>
-                    <exclude name="testReplacingParameters"/>
                     <exclude name="testExceptions"/>
                 </methods>
             </class>
@@ -91,8 +89,6 @@
             </class>
             <class name="org.jboss.cdi.tck.interceptors.tests.contract.aroundConstruct.bindings.AroundConstructTest">
                 <methods>
-                    <exclude name="testInterceptorInvocation"/>
-                    <exclude name="testReplacingParameters"/>
                     <exclude name="testExceptions"/>
                 </methods>
             </class>

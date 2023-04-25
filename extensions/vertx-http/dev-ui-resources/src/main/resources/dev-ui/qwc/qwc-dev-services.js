@@ -1,5 +1,5 @@
-import {LitElement, html, css} from 'lit';
-import {devServices} from 'devui-data';
+import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
+import { devServices } from 'devui-data';
 import '@vaadin/icon';
 import 'qui-code-block';
 import 'qui-card';
@@ -7,11 +7,14 @@ import 'qui-card';
 /**
  * This component shows the Dev Services Page
  */
-export class QwcDevServices extends LitElement {
+export class QwcDevServices extends QwcHotReloadElement {
     static styles = css`
         .cards {
             height: 100%;
             padding-right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
     
         .configHeader {
@@ -56,6 +59,12 @@ export class QwcDevServices extends LitElement {
     constructor() {
         super();
         this._services = devServices;
+    }
+
+    hotReload(){
+        import(`devui/devui-data.js?${Date.now()}`).then(newDevUIData => {
+            this._services = newDevUIData.devServices;
+        });
     }
 
     render() {

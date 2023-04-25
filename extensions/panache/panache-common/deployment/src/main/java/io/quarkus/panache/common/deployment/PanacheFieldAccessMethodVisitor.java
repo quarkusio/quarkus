@@ -36,12 +36,13 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
             return;
         }
 
-        EntityField entityField = getEntityField(fieldOwnerClassName, fieldName);
-        if (entityField == null) {
-            // Not an entity field: don't do anything.
+        EntityModel declaringEntityModel = getDeclaringEntityModel(fieldOwnerClassName, fieldName);
+        if (declaringEntityModel == null) {
+            // Not an entity field, don't do anything.
             super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
             return;
         }
+        EntityField entityField = declaringEntityModel.fields.get(fieldName);
 
         String javaBeanMethodName;
         String librarySpecificMethodName;
@@ -62,8 +63,29 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
         // Instead, we will replace the field access with a call to internal field access methods, if any,
         // e.g. generated methods like $$_hibernate_read_myProperty()
         boolean useJavaBeanAccessor = EntityField.Visibility.PUBLIC.equals(entityField.visibility);
+
+        if (fieldOwnerClassName.equals(this.methodOwnerClassName)
+                && javaBeanMethodName.equals(this.methodName)
+                && methodDescriptor.equals(this.methodDescriptor)) {
+            // The current method accessing the entity field is the corresponding getter/setter.
+
+            // If the current method is defined in the class that declares the field,
+            // we don't perform substitution at all.
+            if (declaringEntityModel.name.equals(methodOwnerClassName)) {
+                super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
+                return;
+            }
+
+            // Otherwise the current method is considered an override of
+            // the getter/setter which should be defined (manually or through bytecode generation)
+            // in the superclass that also declares the field.
+            // We will replace the field access with a call to internal field access methods, if any,
+            // e.g. generated methods like $$_hibernate_read_myProperty()
+            useJavaBeanAccessor = false;
+        }
+
         if (!useJavaBeanAccessor && librarySpecificMethodName == null) {
-            // Field is non-public, so we won't be using JavaBean accessors,
+            // We won't be using JavaBean accessors,
             // and there are no library-specific accessors:
             // don't do anything.
             super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
@@ -71,17 +93,8 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
         }
         String methodName = useJavaBeanAccessor ? javaBeanMethodName : librarySpecificMethodName;
 
-        if (fieldOwnerClassName.equals(this.methodOwnerClassName)
-                && javaBeanMethodName.equals(this.methodName)
-                && methodDescriptor.equals(this.methodDescriptor)) {
-            // The current method accessing the entity field is the corresponding getter/setter.
-            // We don't perform substitution at all.
-            super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
-        } else {
-            // The current method accessing the entity field is *not* the corresponding getter/setter.
-            // We found a relevant field access: replace it with a call to the getter/setter.
-            super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, fieldOwner, methodName, methodDescriptor, false);
-        }
+        // We found a relevant field access: replace it with a call to the correct accessor.
+        super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, fieldOwner, methodName, methodDescriptor, false);
     }
 
     /**
@@ -100,17 +113,18 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     }
 
     /**
-     * Checks that the given field belongs to an entity (any entity)
+     * Returns the entity model that declares the given field in the hierarchy of the given class.
      */
-    EntityField getEntityField(String className, String fieldName) {
-        EntityModel entityModel = modelInfo.getEntityModel(className);
+    EntityModel getDeclaringEntityModel(String encounteredClassName, String fieldName) {
+        EntityModel entityModel = modelInfo.getEntityModel(encounteredClassName);
         if (entityModel == null)
             return null;
         EntityField field = entityModel.fields.get(fieldName);
         if (field != null)
-            return field;
+            return entityModel;
         if (entityModel.superClassName != null)
-            return getEntityField(entityModel.superClassName, fieldName);
+            return getDeclaringEntityModel(entityModel.superClassName, fieldName);
         return null;
     }
+
 }

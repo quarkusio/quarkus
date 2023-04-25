@@ -17,6 +17,8 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.runtime.context.ClientHeadersFactoryContextResolver;
+import io.quarkus.rest.client.reactive.runtime.context.HttpClientOptionsContextResolver;
+import io.vertx.core.http.HttpClientOptions;
 
 public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
 
@@ -195,6 +197,23 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder clientHeadersFactory(ClientHeadersFactory clientHeadersFactory) {
         proxy.register(new ClientHeadersFactoryContextResolver(clientHeadersFactory));
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder httpClientOptions(Class<? extends HttpClientOptions> httpClientOptionsClass) {
+        HttpClientOptions bean = BeanGrabber.getBeanIfDefined(httpClientOptionsClass);
+        if (bean == null) {
+            throw new IllegalArgumentException("Failed to instantiate the HTTP client options " + httpClientOptionsClass
+                    + ". Make sure the bean is properly configured for CDI injection.");
+        }
+
+        return httpClientOptions(bean);
+    }
+
+    @Override
+    public QuarkusRestClientBuilder httpClientOptions(HttpClientOptions httpClientOptions) {
+        proxy.register(new HttpClientOptionsContextResolver(httpClientOptions));
         return this;
     }
 

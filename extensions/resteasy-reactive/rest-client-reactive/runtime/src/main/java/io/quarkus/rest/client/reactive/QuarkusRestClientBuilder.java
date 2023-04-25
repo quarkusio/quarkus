@@ -19,6 +19,7 @@ import org.eclipse.microprofile.rest.client.spi.RestClientBuilderListener;
 
 import io.quarkus.rest.client.reactive.runtime.QuarkusRestClientBuilderImpl;
 import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
+import io.vertx.core.http.HttpClientOptions;
 
 /**
  * This is the main entry point for creating a Type Safe Quarkus Rest Client.
@@ -232,6 +233,22 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @return the current builder
      */
     QuarkusRestClientBuilder clientHeadersFactory(ClientHeadersFactory clientHeadersFactory);
+
+    /**
+     * Specifies the HTTP client options to use.
+     *
+     * @param httpClientOptionsClass the HTTP client options to use.
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder httpClientOptions(Class<? extends HttpClientOptions> httpClientOptionsClass);
+
+    /**
+     * Specifies the HTTP client options to use.
+     *
+     * @param httpClientOptions the HTTP client options to use.
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder httpClientOptions(HttpClientOptions httpClientOptions);
 
     /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls

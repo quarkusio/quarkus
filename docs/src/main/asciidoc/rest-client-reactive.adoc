@@ -818,6 +818,7 @@ More details about this can be found in https://smallrye.io/smallrye-mutiny/late
 There are a few ways in which you can specify custom headers for your REST calls:
 
 - by registering a `ClientHeadersFactory` or a `ReactiveClientHeadersFactory` with the `@RegisterClientHeaders` annotation
+- by programmatically registering a `ClientHeadersFactory` or a `ReactiveClientHeadersFactory` with the `QuarkusRestClientBuilder.clientHeadersFactory(factory)` method
 - by specifying the value of the header with `@ClientHeaderParam`
 - by specifying the value of the header by `@HeaderParam`
 

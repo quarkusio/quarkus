@@ -12,9 +12,11 @@ import javax.net.ssl.SSLContext;
 import jakarta.ws.rs.core.Configuration;
 
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
+import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.quarkus.rest.client.reactive.runtime.context.ClientHeadersFactoryContextResolver;
 
 public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
 
@@ -176,6 +178,23 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder register(Object component, Map<Class<?>, Integer> contracts) {
         proxy.register(component, contracts);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder clientHeadersFactory(Class<? extends ClientHeadersFactory> clientHeadersFactoryClass) {
+        ClientHeadersFactory bean = BeanGrabber.getBeanIfDefined(clientHeadersFactoryClass);
+        if (bean == null) {
+            throw new IllegalArgumentException("Failed to instantiate the client headers factory " + clientHeadersFactoryClass
+                    + ". Make sure the bean is properly configured for CDI injection.");
+        }
+
+        return clientHeadersFactory(bean);
+    }
+
+    @Override
+    public QuarkusRestClientBuilder clientHeadersFactory(ClientHeadersFactory clientHeadersFactory) {
+        proxy.register(new ClientHeadersFactoryContextResolver(clientHeadersFactory));
         return this;
     }
 

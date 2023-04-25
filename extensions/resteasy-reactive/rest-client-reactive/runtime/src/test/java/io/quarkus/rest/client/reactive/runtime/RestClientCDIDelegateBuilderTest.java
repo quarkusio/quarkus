@@ -79,7 +79,7 @@ public class RestClientCDIDelegateBuilderTest {
 
         // when
 
-        RestClientBuilderImpl restClientBuilderMock = Mockito.mock(RestClientBuilderImpl.class);
+        QuarkusRestClientBuilderImpl restClientBuilderMock = Mockito.mock(QuarkusRestClientBuilderImpl.class);
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",
@@ -123,7 +123,7 @@ public class RestClientCDIDelegateBuilderTest {
 
         // when
 
-        RestClientBuilderImpl restClientBuilderMock = Mockito.mock(RestClientBuilderImpl.class);
+        QuarkusRestClientBuilderImpl restClientBuilderMock = Mockito.mock(QuarkusRestClientBuilderImpl.class);
         new RestClientCDIDelegateBuilder<>(TestClient.class,
                 "http://localhost:8080",
                 "test-client",

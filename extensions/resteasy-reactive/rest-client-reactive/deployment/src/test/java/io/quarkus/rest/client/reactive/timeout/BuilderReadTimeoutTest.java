@@ -15,10 +15,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -34,7 +34,7 @@ public class BuilderReadTimeoutTest {
 
     @Test
     void shouldTimeoutIfReadTimeoutSetShort() {
-        Client client = RestClientBuilder.newBuilder()
+        Client client = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(uri)
                 .readTimeout(1, TimeUnit.SECONDS)
                 .build(Client.class);
@@ -45,7 +45,7 @@ public class BuilderReadTimeoutTest {
 
     @Test
     void shouldNotTimeoutOnFastResponse() {
-        Client client = RestClientBuilder.newBuilder()
+        Client client = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(uri)
                 .readTimeout(1, TimeUnit.SECONDS)
                 .build(Client.class);
@@ -55,7 +55,7 @@ public class BuilderReadTimeoutTest {
 
     @Test
     void shouldNotTimeoutOnDefaultTimeout() {
-        Client client = RestClientBuilder.newBuilder()
+        Client client = QuarkusRestClientBuilder.newBuilder()
                 .baseUri(uri)
                 .build(Client.class);
 

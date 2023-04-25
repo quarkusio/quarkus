@@ -9,7 +9,6 @@ import jakarta.ws.rs.Path;
 
 import org.assertj.core.api.Assertions;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -57,7 +56,7 @@ public class InvalidURITest {
     }
 
     private Client clientWithUri(String uri) {
-        return RestClientBuilder.newBuilder().baseUri(URI.create(uri)).build(Client.class);
+        return QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(uri)).build(Client.class);
     }
 
     @Path("/foo")

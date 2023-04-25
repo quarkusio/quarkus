@@ -11,10 +11,10 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -28,14 +28,14 @@ public class SimpleJaxbTest {
 
     @Test
     void shouldConsumeXMLEntity() {
-        var dto = RestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
+        var dto = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
                 .dto();
         assertThat(dto).isEqualTo(new Dto("foo", "bar"));
     }
 
     @Test
     void shouldConsumePlainXMLEntity() {
-        var dto = RestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
+        var dto = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
                 .plain();
         assertThat(dto).isEqualTo(new Dto("foo", "bar"));
     }

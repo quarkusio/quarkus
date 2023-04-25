@@ -11,7 +11,6 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.resteasy.reactive.RestResponse;
 
@@ -23,6 +22,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.quarkus.it.rest.client.main.selfsigned.ExternalSelfSignedClient;
 import io.quarkus.it.rest.client.main.wronghost.WrongHostClient;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.json.Json;
@@ -62,7 +62,7 @@ public class ClientCallingResource {
 
         router.post("/call-client-with-exception-mapper").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            ClientWithExceptionMapper client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+            ClientWithExceptionMapper client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .register(MyResponseExceptionMapper.class)
                     .build(ClientWithExceptionMapper.class);
             callGet(rc, client);
@@ -78,7 +78,7 @@ public class ClientCallingResource {
 
         router.route("/call-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            AppleClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+            AppleClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(AppleClient.class);
             Uni<Apple> apple1 = Uni.createFrom().item(client.swapApple(new Apple("lobo")));
             Uni<Apple> apple2 = Uni.createFrom().completionStage(client.completionSwapApple(new Apple("lobo2")));
@@ -107,7 +107,7 @@ public class ClientCallingResource {
 
         router.route("/call-client-retry").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            AppleClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url + "/does-not-exist"))
+            AppleClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url + "/does-not-exist"))
                     .build(AppleClient.class);
             AtomicInteger count = new AtomicInteger(0);
             client.uniSwapApple(new Apple("lobo")).onFailure().retry().until(t -> count.incrementAndGet() <= 3)
@@ -123,7 +123,7 @@ public class ClientCallingResource {
 
         router.route("/call-hello-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+            HelloClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
             String greeting = client.greeting("John", 2);
             rc.response().end(greeting);
@@ -131,7 +131,7 @@ public class ClientCallingResource {
 
         router.route("/call-hello-client-trace").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+            HelloClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
             String greeting = client.greeting("Mary", 3);
             rc.response().end(greeting);
@@ -139,7 +139,7 @@ public class ClientCallingResource {
 
         router.route("/call-helloFromMessage-client").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+            HelloClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
             String greeting = client.fromMessage(new HelloClient.Message("Hello world"));
             rc.response().end(greeting);
@@ -150,7 +150,7 @@ public class ClientCallingResource {
 
         router.route("/call-params-client-with-param-first").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            ParamClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+            ParamClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(ParamClient.class);
             String result = client.getParam(Param.FIRST);
             rc.response().end(result);
@@ -158,7 +158,7 @@ public class ClientCallingResource {
 
         router.route("/rest-response").blockingHandler(rc -> {
             String url = rc.getBody().toString();
-            RestResponseClient client = RestClientBuilder.newBuilder().baseUri(URI.create(url))
+            RestResponseClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .property("microprofile.rest.client.disable.default.mapper", true)
                     .build(RestResponseClient.class);
             RestResponse<String> restResponse = client.response();

@@ -14,7 +14,6 @@ import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriInfo;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.RestQuery;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,14 +32,14 @@ public class MapParamsTest {
 
     @Test
     void testQueryParamsWithRegularMap() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         String response = client.regularMap(Map.of("foo", "bar", "k", "v"));
         assertThat(response).contains("foo=bar").contains("k=v");
     }
 
     @Test
     void testQueryParamsWithMultiMap() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         MultivaluedMap<String, Integer> map = new MultivaluedHashMap<>();
         map.putSingle("first", 1);
         map.put("second", List.of(2, 4, 6));

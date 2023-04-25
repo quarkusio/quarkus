@@ -351,11 +351,11 @@ There are two interesting parts in this listing:
 
 <1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
 
-== Programmatic client creation with RestClientBuilder
+== Programmatic client creation with QuarkusRestClientBuilder
 
 Instead of annotating the client with `@RegisterRestClient`, and injecting
 a client with `@RestClient`, you can also create REST Client programmatically.
-You do that with `RestClientBuilder`.
+You do that with the `QuarkusRestClientBuilder`.
 
 With this approach the client interface could look as follows:
 
@@ -381,6 +381,40 @@ And the service as follows:
 ----
 package org.acme.rest.client;
 
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import java.net.URI;
+import java.util.Set;
+
+@Path("/extension")
+public class ExtensionsResource {
+
+    private final ExtensionsService extensionsService;
+
+    public ExtensionsResource() {
+        extensionsService = QuarkusRestClientBuilder.newBuilder()
+            .baseUri(URI.create("https://stage.code.quarkus.io/api"))
+            .build(ExtensionsService.class);
+    }
+
+    @GET
+    @Path("/id/{id}")
+    public Set<Extension> id(String id) {
+        return extensionsService.getById(id);
+    }
+}
+----
+
+[TIP]
+====
+The `QuarkusRestClientBuilder` interface is a Quarkus-specific API to programmatically create clients with additional configuration options. Otherwise, you can also use the `RestClientBuilder` interface from the Microprofile API:
+
+[source,java]
+----
+package org.acme.rest.client;
+
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 import jakarta.ws.rs.GET;
@@ -399,13 +433,11 @@ public class ExtensionsResource {
             .build(ExtensionsService.class);
     }
 
-    @GET
-    @Path("/id/{id}")
-    public Set<Extension> id(String id) {
-        return extensionsService.getById(id);
-    }
+    // ...
 }
 ----
+
+====
 
 == Use Custom HTTP Options
 
@@ -450,7 +482,7 @@ Another approach is to provide the custom HTTP Client options when creating the 
 ----
 package org.acme.rest.client;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -465,7 +497,7 @@ public class ExtensionsResource {
     private final ExtensionsService extensionsService;
 
     public ExtensionsResource() {
-        extensionsService = RestClientBuilder.newBuilder()
+        extensionsService = QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create("https://stage.code.quarkus.io/api"))
             .register(CustomHttpClientOptions.class) <1>
             .build(ExtensionsService.class);
@@ -562,7 +594,7 @@ public class ExtensionsResource {
     private final ExtensionsService extensionsService;
 
     public ExtensionsResource() {
-        extensionsService = RestClientBuilder.newBuilder()
+        extensionsService = QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create("https://stage.code.quarkus.io/api"))
             .register(AlwaysRedirectHandler.class) <1>
             .build(ExtensionsService.class);

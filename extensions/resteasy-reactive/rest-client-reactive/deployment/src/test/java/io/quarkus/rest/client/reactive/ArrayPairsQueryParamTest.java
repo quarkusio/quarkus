@@ -16,7 +16,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,7 +86,7 @@ public class ArrayPairsQueryParamTest {
     }
 
     private Client createClient() {
-        return RestClientBuilder.newBuilder()
+        return QuarkusRestClientBuilder.newBuilder()
                 .queryParamStyle(QueryParamStyle.ARRAY_PAIRS)
                 .baseUri(URI.create("http://localhost:8082"))
                 .build(Client.class);

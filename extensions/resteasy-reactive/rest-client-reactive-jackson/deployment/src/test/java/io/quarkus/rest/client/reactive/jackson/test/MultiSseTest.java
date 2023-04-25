@@ -15,7 +15,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
@@ -101,7 +101,7 @@ public class MultiSseTest {
     @Test
     void shouldRestStreamElementTypeOverwriteProducesAtClassLevel() {
         var resultList = new CopyOnWriteArrayList<>();
-        RestClientBuilder.newBuilder().baseUri(uri)
+        QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .build(SeeWithRestStreamElementTypeClient.class)
                 .getJson()
                 .subscribe()
@@ -113,7 +113,9 @@ public class MultiSseTest {
     }
 
     private SseClient createClient() {
-        return RestClientBuilder.newBuilder().baseUri(uri).register(new JacksonBasicMessageBodyReader(new ObjectMapper()))
+        return QuarkusRestClientBuilder.newBuilder()
+                .baseUri(uri)
+                .register(new JacksonBasicMessageBodyReader(new ObjectMapper()))
                 .build(SseClient.class);
     }
 

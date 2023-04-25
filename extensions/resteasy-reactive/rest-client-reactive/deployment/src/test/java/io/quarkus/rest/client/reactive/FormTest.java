@@ -12,7 +12,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +28,7 @@ public class FormTest {
 
     @Test
     void shouldPassUrlEncodedAsForm() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.echo(new Form().param("name", "World"))).isEqualTo("Hello, World!");
     }
 

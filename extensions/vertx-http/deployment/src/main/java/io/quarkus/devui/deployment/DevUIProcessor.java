@@ -38,6 +38,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -124,8 +125,13 @@ public class DevUIProcessor {
             List<StaticContentBuildItem> staticContentBuildItems,
             BuildProducer<RouteBuildItem> routeProducer,
             DevUIRecorder recorder,
+            LaunchModeBuildItem launchModeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             ShutdownContextBuildItem shutdownContext) throws IOException {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
 
         // Websocket for JsonRPC comms
         routeProducer.produce(
@@ -215,6 +221,7 @@ public class DevUIProcessor {
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexProducer,
             List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems) {
+
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(JsonRpcRouter.class)
                 .setUnremovable().build());
@@ -244,9 +251,14 @@ public class DevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     void findAllJsonRPCMethods(BuildProducer<JsonRPCMethodsBuildItem> jsonRPCMethodsProvider,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
+            LaunchModeBuildItem launchModeBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems) {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -354,10 +366,18 @@ public class DevUIProcessor {
     void getAllExtensions(List<CardPageBuildItem> cardPageBuildItems,
             List<MenuPageBuildItem> menuPageBuildItems,
             List<FooterPageBuildItem> footerPageBuildItems,
+            LaunchModeBuildItem launchModeBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ExtensionsBuildItem> extensionsProducer,
             BuildProducer<WebJarBuildItem> webJarBuildProducer,
             BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer) {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            // produce extension build item as cascade of build steps rely on it
+            var emptyExtensionBuildItem = new ExtensionsBuildItem(List.of(), List.of(), List.of(), List.of());
+            extensionsProducer.produce(emptyExtensionBuildItem);
+            return;
+        }
 
         // First create the static resources for our own internal components
         webJarBuildProducer.produce(WebJarBuildItem.builder()
@@ -560,8 +580,13 @@ public class DevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void createAllRoutes(WebJarResultsBuildItem webJarResultsBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
             List<DevUIWebJarBuildItem> devUIWebJarBuiltItems,
             BuildProducer<DevUIRoutesBuildItem> devUIRoutesProducer) {
+
+        if (launchModeBuildItem.isNotLocalDevModeType()) {
+            return;
+        }
 
         for (DevUIWebJarBuildItem devUIWebJarBuiltItem : devUIWebJarBuiltItems) {
             WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem

@@ -10,7 +10,6 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.ext.ContextResolver;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,12 +32,12 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
     @Test
     void shouldUseCustomHttpOptions() {
         // First verify the standard configuration
-        assertThat(RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class).get())
+        assertThat(QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class).get())
                 .isEqualTo(EXPECTED_VALUE);
 
         // Now, it should fail if we use a custom http client options with a very limited max header size:
 
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri)
                 .register(CustomHttpClientOptionsWithLimit.class)
                 .build(Client.class);
         assertThatThrownBy(() -> client.get()).hasMessageContaining("HTTP header is larger than 1 bytes.");

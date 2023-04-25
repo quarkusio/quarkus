@@ -19,7 +19,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.ext.ContextResolver;
 
 import org.apache.http.HttpStatus;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -45,10 +45,10 @@ public class DifferentObjectMapperForClientAndServerTest {
 
     @BeforeEach
     public void setup() {
-        clientUnwrappingRootElement = RestClientBuilder.newBuilder().baseUri(uri)
+        clientUnwrappingRootElement = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .build(MyClientUnwrappingRootElement.class);
 
-        clientNotUnwrappingRootElement = RestClientBuilder.newBuilder().baseUri(uri)
+        clientNotUnwrappingRootElement = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .build(MyClientNotUnwrappingRootElement.class);
     }
 

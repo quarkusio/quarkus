@@ -8,7 +8,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,7 +21,7 @@ public class InvalidHostTest {
 
     @Test
     void shouldThrowDummyException() {
-        Client client = RestClientBuilder.newBuilder().baseUri(URI.create("http://localhost2:1234/"))
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost2:1234/"))
                 .register(DummyExceptionMapper.class).build(Client.class);
 
         Assertions.assertThatThrownBy(client::get).isInstanceOf(DummyException.class);

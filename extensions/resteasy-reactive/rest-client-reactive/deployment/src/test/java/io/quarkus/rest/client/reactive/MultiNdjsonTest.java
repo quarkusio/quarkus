@@ -17,7 +17,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.junit.jupiter.api.Test;
@@ -110,7 +109,7 @@ public class MultiNdjsonTest {
     }
 
     private Client createClient(URI uri) {
-        return RestClientBuilder.newBuilder().baseUri(uri).register(new TestJacksonBasicMessageBodyReader())
+        return QuarkusRestClientBuilder.newBuilder().baseUri(uri).register(new TestJacksonBasicMessageBodyReader())
                 .build(Client.class);
     }
 

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +39,7 @@ public class NoPathInTheAppTest {
 
     @Test
     void shouldGet() {
-        PlaylistService client = RestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8181/hello"))
+        PlaylistService client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8181/hello"))
                 .build(PlaylistService.class);
         assertThat(client.get()).isEqualTo("hello, world!");
     }

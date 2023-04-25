@@ -12,7 +12,6 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -37,7 +36,7 @@ public class ConnectionPoolSizeTest {
 
     @Test
     void shouldPerform20CallsWithoutQueuing() throws InterruptedException {
-        Client client = RestClientBuilder.newBuilder().baseUri(uri)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .build(Client.class);
 
         CountDownLatch latch = executeCalls(client, 20);
@@ -50,7 +49,7 @@ public class ConnectionPoolSizeTest {
     @Test
     @Timeout(5)
     void shouldPerform21CallsWithQueuing() throws InterruptedException {
-        Client client = RestClientBuilder.newBuilder().baseUri(uri)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .build(Client.class);
 
         long start = System.currentTimeMillis();
@@ -63,7 +62,7 @@ public class ConnectionPoolSizeTest {
     @Test
     @Timeout(5)
     void shouldPerform5CallsWithoutQueueingOnQueue6() throws InterruptedException {
-        Client client = RestClientBuilder.newBuilder().baseUri(uri)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 6)
                 .build(Client.class);
 
@@ -77,7 +76,7 @@ public class ConnectionPoolSizeTest {
     @Test
     @Timeout(5)
     void shouldPerform5CallsWithQueueingOnQueue4() throws InterruptedException {
-        Client client = RestClientBuilder.newBuilder().baseUri(uri)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 4)
                 .build(Client.class);
 

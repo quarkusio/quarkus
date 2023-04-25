@@ -19,7 +19,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -65,11 +64,10 @@ public class ClientAndServerSharingResponseTest {
                 @ConfigProperty(name = "quarkus.http.test-port", defaultValue = "8081") Integer testPort)
                 throws MalformedURLException {
             this.mapper = mapper;
-            this.headersService = RestClientBuilder.newBuilder()
+            this.headersService = QuarkusRestClientBuilder.newBuilder()
                     .baseUrl(new URL(String.format("http://localhost:%d", testPort)))
                     .readTimeout(1, TimeUnit.SECONDS)
                     .build(HeadersService.class);
-            ;
         }
 
         @POST

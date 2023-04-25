@@ -19,7 +19,6 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.ext.ContextResolver;
 
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +30,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 
@@ -48,12 +48,12 @@ public class ClientWithCustomObjectMapperTest {
         wireMockServer = new WireMockServer(options().port(20001));
         wireMockServer.start();
 
-        clientAllowsUnknown = RestClientBuilder.newBuilder()
+        clientAllowsUnknown = QuarkusRestClientBuilder.newBuilder()
                 .baseUrl(new URL(wireMockServer.baseUrl()))
                 .register(ClientObjectMapperUnknown.class)
                 .build(MyClient.class);
 
-        clientDisallowsUnknown = RestClientBuilder.newBuilder()
+        clientDisallowsUnknown = QuarkusRestClientBuilder.newBuilder()
                 .baseUrl(new URL(wireMockServer.baseUrl()))
                 .register(ClientObjectMapperNoUnknown.class)
                 .build(MyClient.class);

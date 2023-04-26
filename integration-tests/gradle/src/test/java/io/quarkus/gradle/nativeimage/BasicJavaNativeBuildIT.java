@@ -24,13 +24,8 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         final String buildOutput = build.getOutput();
         // make sure the output log during the build contains some expected logs from the native-image process
-        CharSequence[] expectedOutput;
-        if (buildOutput.contains("Version info:")) { // Starting with 22.0 the native-image output changed
-            expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
-                    "Finished generating '" + NATIVE_IMAGE_NAME + "' in" };
-        } else {
-            expectedOutput = new CharSequence[] { "(clinit):", "(typeflow):", "[total]:" };
-        }
+        CharSequence[] expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
+                "Finished generating '" + NATIVE_IMAGE_NAME + "' in" };
         assertThat(buildOutput)
                 .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
                 .contains(expectedOutput);
@@ -58,13 +53,8 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         final String buildOutput = build.getOutput();
         // make sure the output log during the build contains some expected logs from the native-image process
-        CharSequence[] expectedOutput;
-        if (buildOutput.contains("Version info:")) { // Starting with 22.0 the native-image output changed
-            expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
-                    "Finished generating 'test-runner' in" };
-        } else {
-            expectedOutput = new CharSequence[] { "(clinit):", "(typeflow):", "[total]:" };
-        }
+        CharSequence[] expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
+                "Finished generating 'test-runner' in" };
         assertThat(buildOutput)
                 .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
                 .contains(expectedOutput)
@@ -93,13 +83,8 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(build.getTasks().get(":quarkusBuild")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
         final String buildOutput = build.getOutput();
         // make sure the output log during the build contains some expected logs from the native-image process
-        CharSequence[] expectedOutput;
-        if (buildOutput.contains("Version info:")) { // Starting with 22.0 the native-image output changed
-            expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
-                    "Finished generating 'test' in" };
-        } else {
-            expectedOutput = new CharSequence[] { "(clinit):", "(typeflow):", "[total]:" };
-        }
+        CharSequence[] expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
+                "Finished generating 'test' in" };
         assertThat(buildOutput)
                 .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
                 .contains(expectedOutput)

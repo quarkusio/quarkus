@@ -3,7 +3,6 @@ package io.quarkus.infinispan.client.runtime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -40,7 +39,6 @@ public class InfinispanClientsBuildTimeConfig {
         if (InfinispanClientUtil.isDefault(infinispanClientName)) {
             return defaultInfinispanClient;
         }
-        InfinispanClientBuildTimeConfig infinispanClientBuildTimeConfig = namedInfinispanClients.get(infinispanClientName);
-        return Objects.requireNonNullElseGet(infinispanClientBuildTimeConfig, InfinispanClientBuildTimeConfig::new);
+        return namedInfinispanClients.get(infinispanClientName);
     }
 }

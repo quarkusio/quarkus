@@ -5,12 +5,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.literal.NamedLiteral;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
@@ -55,6 +55,9 @@ public class InfinispanClientProducer {
 
     @Inject
     private Instance<InfinispanClientsRuntimeConfig> infinispanClientsRuntimeConfigHandle;
+
+    @Inject
+    private Instance<InfinispanClientsBuildTimeConfig> infinispanClientsBuildTimeConfigHandle;
 
     private void registerSchemaInServer(String infinispanConfigName,
             Map<String, Properties> properties,
@@ -134,6 +137,9 @@ public class InfinispanClientProducer {
         InfinispanClientRuntimeConfig infinispanClientRuntimeConfig = infinispanClientsRuntimeConfigHandle.get()
                 .getInfinispanClientRuntimeConfig(infinispanClientName);
 
+        InfinispanClientBuildTimeConfig infinispanClientBuildTimeConfig = infinispanClientsBuildTimeConfigHandle.get()
+                .getInfinispanClientBuildTimeConfig(infinispanClientName);
+
         // client name not found
         if (infinispanClientRuntimeConfig == null) {
             return builder;
@@ -173,9 +179,6 @@ public class InfinispanClientProducer {
             }
         }
 
-        properties.put(ConfigurationProperties.TRACING_PROPAGATION_ENABLED,
-                infinispanClientRuntimeConfig.tracingPropagationEnabled);
-
         if (infinispanClientRuntimeConfig.clientIntelligence.isPresent()) {
             properties.put(ConfigurationProperties.CLIENT_INTELLIGENCE, infinispanClientRuntimeConfig.clientIntelligence.get());
         }
@@ -189,13 +192,6 @@ public class InfinispanClientProducer {
         }
         if (infinispanClientRuntimeConfig.authServerName.isPresent()) {
             properties.put(ConfigurationProperties.AUTH_SERVER_NAME, infinispanClientRuntimeConfig.authServerName.get());
-        }
-        if (infinispanClientRuntimeConfig.authClientSubject.isPresent()) {
-            properties.put(ConfigurationProperties.AUTH_CLIENT_SUBJECT, infinispanClientRuntimeConfig.authClientSubject.get());
-        }
-        if (infinispanClientRuntimeConfig.authCallbackHandler.isPresent()) {
-            properties.put(ConfigurationProperties.AUTH_CALLBACK_HANDLER,
-                    infinispanClientRuntimeConfig.authCallbackHandler.get());
         }
 
         if (infinispanClientRuntimeConfig.saslMechanism.isPresent()) {
@@ -222,41 +218,88 @@ public class InfinispanClientProducer {
         }
 
         if (infinispanClientRuntimeConfig.sslCiphers.isPresent()) {
-            properties.put(ConfigurationProperties.SSL_CIPHERS, infinispanClientRuntimeConfig.sslCiphers.get().toArray());
+            properties.put(ConfigurationProperties.SSL_CIPHERS,
+                    infinispanClientRuntimeConfig.sslCiphers.get().stream().collect(Collectors.joining(" ")));
         }
 
         builder.withProperties(properties);
 
-        for (Map.Entry<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cache : infinispanClientRuntimeConfig.cache
-                .entrySet()) {
-            String cacheName = cache.getKey();
-            InfinispanClientRuntimeConfig.RemoteCacheConfig remoteCacheConfig = cache.getValue();
-            if (remoteCacheConfig.configurationUri.isPresent()) {
-                String cacheConfigUri = remoteCacheConfig.configurationUri.get();
-                log.infof("Configuration URI for cache %s found: %s", cacheName, cacheConfigUri);
-                URL configFile = Thread.currentThread().getContextClassLoader()
-                        .getResource(cacheConfigUri);
-                try {
-                    builder.remoteCache(cacheName).configurationURI(configFile.toURI());
-                } catch (Exception e) {
+        if (infinispanClientRuntimeConfig.tracingPropagationEnabled.isPresent()) {
+            if (!infinispanClientRuntimeConfig.tracingPropagationEnabled.get()) {
+                builder.disableTracingPropagation();
+            }
+        }
 
-                    throw new RuntimeException(e);
+        if (infinispanClientBuildTimeConfig != null) {
+            for (Map.Entry<String, InfinispanClientBuildTimeConfig.RemoteCacheConfig> buildCacheConfig : infinispanClientBuildTimeConfig.cache
+                    .entrySet()) {
+                String cacheName = buildCacheConfig.getKey();
+                // Do this if the cache config is only present in the build time configuration
+                if (!infinispanClientRuntimeConfig.cache.containsKey(cacheName)) {
+                    InfinispanClientBuildTimeConfig.RemoteCacheConfig buildCacheConfigValue = buildCacheConfig.getValue();
+                    if (buildCacheConfig.getValue().configurationResource.isPresent()) {
+                        URL configFile = Thread.currentThread().getContextClassLoader()
+                                .getResource(buildCacheConfigValue.configurationResource.get());
+                        configureRemoteCacheConfigurationURI(builder, cacheName, configFile);
+                    }
                 }
-            } else if (remoteCacheConfig.configuration.isPresent()) {
-                builder.remoteCache(cacheName).configuration(remoteCacheConfig.configuration.get());
             }
-            if (remoteCacheConfig.nearCacheMaxEntries.isPresent()) {
-                builder.remoteCache(cacheName).nearCacheMaxEntries(remoteCacheConfig.nearCacheMaxEntries.get());
+        }
+
+        for (Map.Entry<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cacheConfig : infinispanClientRuntimeConfig.cache
+                .entrySet()) {
+            String cacheName = cacheConfig.getKey();
+            InfinispanClientRuntimeConfig.RemoteCacheConfig runtimeCacheConfig = cacheConfig.getValue();
+            URL configFile = null;
+            // Check if the build time resource file configuration exists
+            if (infinispanClientBuildTimeConfig != null) {
+                InfinispanClientBuildTimeConfig.RemoteCacheConfig buildtimeCacheConfig = infinispanClientBuildTimeConfig.cache
+                        .get(
+                                cacheName);
+                if (buildtimeCacheConfig != null && buildtimeCacheConfig.configurationResource.isPresent()) {
+                    configFile = Thread.currentThread().getContextClassLoader()
+                            .getResource(buildtimeCacheConfig.configurationResource.get());
+                }
             }
-            if (remoteCacheConfig.nearCacheMode.isPresent()) {
-                builder.remoteCache(cacheName).nearCacheMode(remoteCacheConfig.nearCacheMode.get());
+
+            // Override build time resource if configuration-uri runtime resource is provided
+            if (runtimeCacheConfig.configurationUri.isPresent()) {
+                configFile = Thread.currentThread().getContextClassLoader()
+                        .getResource(runtimeCacheConfig.configurationUri.get());
             }
-            if (remoteCacheConfig.nearCacheUseBloomFilter.isPresent()) {
-                builder.remoteCache(cacheName).nearCacheUseBloomFilter(remoteCacheConfig.nearCacheUseBloomFilter.get());
+
+            if (configFile != null) {
+                configureRemoteCacheConfigurationURI(builder, cacheName, configFile);
+            } else {
+                // Inline configuration
+                if (runtimeCacheConfig.configuration.isPresent()) {
+                    builder.remoteCache(cacheName).configuration(runtimeCacheConfig.configuration.get());
+                }
+            }
+
+            // Configures near caching
+            if (runtimeCacheConfig.nearCacheMaxEntries.isPresent()) {
+                builder.remoteCache(cacheName).nearCacheMaxEntries(runtimeCacheConfig.nearCacheMaxEntries.get());
+            }
+            if (runtimeCacheConfig.nearCacheMode.isPresent()) {
+                builder.remoteCache(cacheName).nearCacheMode(runtimeCacheConfig.nearCacheMode.get());
+            }
+            if (runtimeCacheConfig.nearCacheUseBloomFilter.isPresent()) {
+                builder.remoteCache(cacheName).nearCacheUseBloomFilter(runtimeCacheConfig.nearCacheUseBloomFilter.get());
             }
         }
 
         return builder;
+    }
+
+    private void configureRemoteCacheConfigurationURI(ConfigurationBuilder builder, String cacheName, URL configFile) {
+        try {
+            builder.remoteCache(cacheName).configurationURI(configFile.toURI());
+        } catch (Exception e) {
+            log.errorf("Provided configuration-resource or configuration-uri can't be loaded. %s",
+                    configFile.getPath());
+            throw new IllegalStateException(e);
+        }
     }
 
     private static void handleProtoStreamMarshaller(ProtoStreamMarshaller marshaller, Properties properties,

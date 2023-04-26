@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
 
 import org.infinispan.client.hotrod.configuration.NearCacheMode;
 
@@ -114,19 +112,6 @@ public class InfinispanClientRuntimeConfig {
     @ConfigItem(defaultValue = "infinispan")
     Optional<String> authServerName;
 
-    /**
-     * Sets client subject, necessary for those SASL mechanisms which require it to access client credentials.
-     */
-    @ConfigItem
-    Optional<String> authClientSubject;
-
-    /**
-     * Specifies a {@link CallbackHandler} to be used during the authentication handshake.
-     * The {@link Callback}s that need to be handled are specific to the chosen SASL mechanism.
-     */
-    @ConfigItem
-    Optional<String> authCallbackHandler;
-
     // @formatter:off
     /**
      * Sets SASL mechanism used by authentication.
@@ -186,14 +171,14 @@ public class InfinispanClientRuntimeConfig {
      * Whether a tracing propagation is enabled in case the Opentelemetry extension is present.
      * By default the propagation of the context is propagated from the client to the Infinispan Server.
      */
-    @ConfigItem(name = "tracing.propagation.enabled", defaultValue = "true")
-    public boolean tracingPropagationEnabled;
+    @ConfigItem(name = "tracing.propagation.enabled")
+    public Optional<Boolean> tracingPropagationEnabled;
 
     /**
      * Configures caches from the client with the provided configuration.
      */
     @ConfigItem
-    Map<String, RemoteCacheConfig> cache = new HashMap<>();
+    public Map<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cache = new HashMap<>();
 
     @ConfigGroup
     public static class RemoteCacheConfig {
@@ -211,7 +196,7 @@ public class InfinispanClientRuntimeConfig {
 
         // @formatter:off
         /**
-         * Cache configuration file in XML whose path will be converted to URI to create the cache on first access.
+         * Cache configuration file in XML, Json or YAML whose path will be converted to URI to create the cache on first access.
          * An example of the user defined property. cacheConfig.xml file is located in the 'resources' folder:
          * quarkus.infinispan-client.cache.bookscache.configuration-uri=cacheConfig.xml
          */

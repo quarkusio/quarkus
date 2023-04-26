@@ -169,14 +169,24 @@ to create it on first access, use one of the following properties:
 
 [source,properties]
 ----
-quarkus.infinispan-client.cache.books.configuration-uri=cacheConfig.json <1>
-quarkus.infinispan-client.cache.magazine.configuration=<distributed-cache><encoding media-type="application/x-protostream"/></distributed-cache> <2>
+quarkus.infinispan-client.cache.magazine.configuration=<distributed-cache><encoding media-type="application/x-protostream"/></distributed-cache> <1>
+quarkus.infinispan-client.cache.books.configuration-resource=booksDistributedCache.json <2>
+quarkus.infinispan-client.cache.authors.configuration-uri=/file/authorsIndexedCache.yaml <3>
 ----
-<1> The file name located under the `resources` folder that contains the configuration of the 'books' cache
-<2> The configuration in xml of the 'magazine' (yaml and json are also supported)
+<1> The configuration in xml of the 'magazine' (yaml and json are also supported)
+<2> The file name located under the `resources` folder that contains the configuration of the 'books' cache
+<3> A provided file URI. The file URI can also be a file under resources
 
-If both `configuration-uri` and `configuration` are configured for the same cache with the same Quarkus profile,
-`configuration-uri` gets preference over `configuration`.
+If  `configuration-resource`, `configuration` and `configuration-uri` are configured for the same cache with
+the same Quarkus profile, `configuration-uri` gets the highest preference, over `configuration-resource` and `configuration`.
+`configuration-resource` gets preference over `configuration`.
+
+[WARNING]
+====
+The `configuration-resource` is build time property and the file will be included in the native build automatically.
+`configuration-uri` can also point to a file under the `resources` folder. However, the file won't be automatically included
+in the native executable, unless you configure the property `quarkus.native.resources.includes`.
+====
 
 [TIP]
 ====

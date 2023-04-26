@@ -10,6 +10,7 @@ import org.hibernate.reactive.mutiny.Mutiny;
 import org.hibernate.reactive.mutiny.Mutiny.Session;
 import org.hibernate.reactive.mutiny.Mutiny.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny.Transaction;
+import org.hibernate.reactive.mutiny.impl.MutinySessionImpl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.impl.LazyValue;
@@ -24,6 +25,11 @@ import io.vertx.core.Vertx;
 public final class SessionOperations {
 
     private static final String ERROR_MSG = "Hibernate Reactive Panache requires a safe (isolated) Vert.x sub-context, but the current context hasn't been flagged as such.";
+
+    /**
+     * We might occasionally store this marker session in the context to help users identify racy code
+     */
+    private static final Mutiny.Session POISON_TOKEN = new MutinySessionImpl(null, null);
 
     private static final LazyValue<Mutiny.SessionFactory> SESSION_FACTORY = new LazyValue<>(
             new Supplier<Mutiny.SessionFactory>() {
@@ -110,6 +116,7 @@ public final class SessionOperations {
         Context context = vertxContext();
         Key<Mutiny.Session> key = getSessionKey();
         Mutiny.Session current = context.getLocal(key);
+        guardAgainstDuplicateOpenRequest(context, key, current);
         if (current != null && current.isOpen()) {
             // reactive session exists - reuse this session
             return work.apply(current);
@@ -120,6 +127,23 @@ public final class SessionOperations {
                     .invoke(s -> context.putLocal(key, s))
                     .chain(work::apply)
                     .eventually(SessionOperations::closeSession);
+        }
+    }
+
+    private static void guardAgainstDuplicateOpenRequest(final Context context, final Key<Session> key, final Session current) {
+        //Guard against "concurrent" usage: even within the same thread and the same context,
+        //there might be multiple streams defined by the end user (or bugs in integration code);
+        //this should be strictly avoided, therefore we'll throw an exception if we're able
+        //to detect it.
+        //In this case we can detect if this method is being invoked twice in a "racy" situation
+        //between the following two instants:
+        // - the check for an existing open Session
+        // - the opening of a new Session and storing it in the context
+        if (current == null) {
+            context.putLocal(key, POISON_TOKEN);
+        } else if (current == POISON_TOKEN) {
+            throw new IllegalStateException(
+                    "Attempting to open two sessions within the same vert.x context: this suggests a lack of correct chaining of operations.");
         }
     }
 
@@ -141,6 +165,7 @@ public final class SessionOperations {
         Context context = vertxContext();
         Key<Mutiny.Session> key = getSessionKey();
         Mutiny.Session current = context.getLocal(key);
+        guardAgainstDuplicateOpenRequest(context, key, current);
         if (current != null && current.isOpen()) {
             // reuse the existing reactive session
             return Uni.createFrom().item(current);

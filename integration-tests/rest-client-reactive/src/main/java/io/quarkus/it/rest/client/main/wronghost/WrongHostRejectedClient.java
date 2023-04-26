@@ -1,0 +1,16 @@
+package io.quarkus.it.rest.client.main.wronghost;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+@RegisterRestClient(baseUri = "https://wrong.host.badssl.com/", configKey = "wrong-host-rejected")
+public interface WrongHostRejectedClient {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    Response invoke();
+}

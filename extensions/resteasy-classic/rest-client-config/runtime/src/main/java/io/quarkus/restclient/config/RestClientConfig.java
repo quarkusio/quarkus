@@ -139,7 +139,8 @@ public class RestClientConfig {
     public Optional<QueryParamStyle> queryParamStyle;
 
     /**
-     * Set whether hostname verification is enabled.
+     * Set whether hostname verification is enabled. Default is enabled.
+     * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
      */
     @ConfigItem
     public Optional<Boolean> verifyHost;

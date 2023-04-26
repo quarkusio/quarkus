@@ -432,6 +432,9 @@ public final class OidcUtils {
         if (tenant.token.principalClaim.isEmpty()) {
             tenant.token.principalClaim = provider.token.principalClaim;
         }
+        if (tenant.token.verifyAccessTokenWithUserInfo.isEmpty()) {
+            tenant.token.verifyAccessTokenWithUserInfo = provider.token.verifyAccessTokenWithUserInfo;
+        }
 
         return tenant;
     }

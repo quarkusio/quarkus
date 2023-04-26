@@ -67,7 +67,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private boolean followRedirects;
     private boolean trustAll;
-    private boolean verifyHost;
+    private boolean verifyHost = true;
 
     private LoggingScope loggingScope;
     private Integer loggingBodySize = 100;

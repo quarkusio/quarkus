@@ -27,6 +27,19 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>gradle-wrapper/.gradle/**</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

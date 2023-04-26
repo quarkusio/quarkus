@@ -58,7 +58,7 @@ public class ResourcePropertiesProvider {
             return annotations;
         }
 
-        for (AnnotationInstance annotation : classInfo.classAnnotations()) {
+        for (AnnotationInstance annotation : classInfo.declaredAnnotations()) {
             if (ANNOTATIONS_TO_COPY.stream().anyMatch(annotation.name().toString()::startsWith)) {
                 annotations.add(annotation);
             }
@@ -76,8 +76,8 @@ public class ResourcePropertiesProvider {
         if (classInfo == null) {
             return null;
         }
-        if (classInfo.classAnnotation(RESOURCE_PROPERTIES_ANNOTATION) != null) {
-            return classInfo.classAnnotation(RESOURCE_PROPERTIES_ANNOTATION);
+        if (classInfo.declaredAnnotation(RESOURCE_PROPERTIES_ANNOTATION) != null) {
+            return classInfo.declaredAnnotation(RESOURCE_PROPERTIES_ANNOTATION);
         }
         if (classInfo.superName() != null) {
             return findResourcePropertiesAnnotation(classInfo.superName());

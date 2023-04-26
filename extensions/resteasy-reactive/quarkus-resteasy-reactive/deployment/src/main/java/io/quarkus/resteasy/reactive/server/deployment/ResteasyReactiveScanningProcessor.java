@@ -295,7 +295,7 @@ public class ResteasyReactiveScanningProcessor {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult()
                     .keepProvider(converterClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
-                AnnotationInstance priorityInstance = converterClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = converterClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 paramConverterBuildItemBuildProducer.produce(new ParamConverterBuildItem(converterClass.name().toString(),
                         priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER, true));
             }

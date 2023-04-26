@@ -553,7 +553,7 @@ public class ResteasyCommonProcessor {
         if (mediaTypeMethodAnnotationInstance == null) {
             // no media types defined on the method, let's consider the class annotations
             AnnotationInstance mediaTypeClassAnnotationInstance = methodTarget.declaringClass()
-                    .classAnnotation(mediaTypeAnnotation);
+                    .declaredAnnotation(mediaTypeAnnotation);
             if (mediaTypeClassAnnotationInstance != null) {
                 AnnotationValue mediaTypeClassValue = mediaTypeClassAnnotationInstance.value();
                 if ((mediaTypeClassValue != null)

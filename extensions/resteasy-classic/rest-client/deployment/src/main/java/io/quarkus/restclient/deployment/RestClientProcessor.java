@@ -333,7 +333,7 @@ class RestClientProcessor {
         }
         Set<DotName> dotNames = new HashSet<>();
         for (ClassInfo interfaze : interfaces.values()) {
-            if (interfaze.classAnnotation(CLIENT_HEADER_PARAM) != null) {
+            if (interfaze.declaredAnnotation(CLIENT_HEADER_PARAM) != null) {
                 boolean hasDefault = false;
                 for (MethodInfo method : interfaze.methods()) {
                     if (isDefault(method.flags())) {
@@ -448,7 +448,7 @@ class RestClientProcessor {
     }
 
     private String getAnnotationParameter(ClassInfo classInfo, String parameterName) {
-        AnnotationInstance instance = classInfo.classAnnotation(REGISTER_REST_CLIENT);
+        AnnotationInstance instance = classInfo.declaredAnnotation(REGISTER_REST_CLIENT);
         if (instance == null) {
             return "";
         }
@@ -566,7 +566,7 @@ class RestClientProcessor {
             ClassInfo restClientClass = index.getClassByName(DotName.createSimple(restClient.getInterfaceName()));
             if (restClientClass != null) {
                 Set<AnnotationInstance> classLevelBindings = new HashSet<>();
-                for (AnnotationInstance annotationInstance : restClientClass.classAnnotations()) {
+                for (AnnotationInstance annotationInstance : restClientClass.declaredAnnotations()) {
                     if (interceptorBindings.contains(annotationInstance.name())) {
                         classLevelBindings.add(annotationInstance);
                     }

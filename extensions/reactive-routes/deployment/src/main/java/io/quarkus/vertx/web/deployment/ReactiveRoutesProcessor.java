@@ -180,7 +180,7 @@ class ReactiveRoutesProcessor {
             // NOTE: inherited business methods are not taken into account
             ClassInfo beanClass = bean.getTarget().get().asClass();
             AnnotationInstance routeBaseAnnotation = beanClass
-                    .classAnnotation(DotNames.ROUTE_BASE);
+                    .declaredAnnotation(DotNames.ROUTE_BASE);
             for (MethodInfo method : beanClass.methods()) {
                 if (method.isSynthetic() || Modifier.isStatic(method.flags()) || method.name().equals("<init>")) {
                     continue;

@@ -148,7 +148,7 @@ public class SpringWebResteasyClassicProcessor {
                     continue;
                 }
 
-                if (targetClass.classAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
+                if (targetClass.declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null) {
                     classesWithoutRestController.add(targetClass.name());
                 }
             }
@@ -248,7 +248,7 @@ public class SpringWebResteasyClassicProcessor {
             String basePath = "/";
             ClassInfo restControllerAnnotatedClass = restControllerInstance.target().asClass();
 
-            AnnotationInstance requestMappingInstance = restControllerAnnotatedClass.classAnnotation(REQUEST_MAPPING);
+            AnnotationInstance requestMappingInstance = restControllerAnnotatedClass.declaredAnnotation(REQUEST_MAPPING);
             if (requestMappingInstance != null) {
                 String basePathFromAnnotation = getMappingValue(requestMappingInstance);
                 if (basePathFromAnnotation != null) {

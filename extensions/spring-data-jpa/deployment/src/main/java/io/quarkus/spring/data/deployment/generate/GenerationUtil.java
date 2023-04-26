@@ -81,7 +81,7 @@ public final class GenerationUtil {
 
     private static AnnotationInstance getNamedQueryAnnotationForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
         String methodName = methodInfo.name();
-        AnnotationInstance namedQueryAnnotation = entityClassInfo.classAnnotation(JPA_NAMED_QUERY);
+        AnnotationInstance namedQueryAnnotation = entityClassInfo.declaredAnnotation(JPA_NAMED_QUERY);
         if (namedQueryAnnotation != null && isMethodDeclaredInNamedQuery(entityClassInfo, methodName, namedQueryAnnotation)) {
             return namedQueryAnnotation;
         }
@@ -91,7 +91,7 @@ public final class GenerationUtil {
 
     private static AnnotationInstance getNamedQueriesAnnotationForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
         String methodName = methodInfo.name();
-        AnnotationInstance namedQueriesAnnotation = entityClassInfo.classAnnotation(JPA_NAMED_QUERIES);
+        AnnotationInstance namedQueriesAnnotation = entityClassInfo.declaredAnnotation(JPA_NAMED_QUERIES);
         if (namedQueriesAnnotation != null) {
             for (AnnotationValue annotationInstanceValues : namedQueriesAnnotation.values()) {
                 for (AnnotationInstance annotationInstance : annotationInstanceValues.asNestedArray()) {

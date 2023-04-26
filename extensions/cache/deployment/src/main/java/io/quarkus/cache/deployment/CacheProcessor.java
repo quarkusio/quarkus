@@ -140,7 +140,7 @@ class CacheProcessor {
                  */
                 if (container.target().kind() == METHOD) {
                     MethodInfo methodInfo = container.target().asMethod();
-                    if (methodInfo.declaringClass().classAnnotation(REGISTER_REST_CLIENT) != null) {
+                    if (methodInfo.declaringClass().declaredAnnotation(REGISTER_REST_CLIENT) != null) {
                         throwables.add(new UnsupportedRepeatedAnnotationException(methodInfo));
                     }
                 }

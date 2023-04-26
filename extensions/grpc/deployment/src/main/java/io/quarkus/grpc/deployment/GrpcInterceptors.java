@@ -36,7 +36,7 @@ final class GrpcInterceptors {
                     || Modifier.isInterface(interceptorImplClass.flags())) {
                 continue;
             }
-            if (interceptorImplClass.classAnnotation(GLOBAL_INTERCEPTOR) == null) {
+            if (interceptorImplClass.declaredAnnotation(GLOBAL_INTERCEPTOR) == null) {
                 nonGlobalInterceptors.add(interceptorImplClass.name().toString());
             } else {
                 globalInterceptors.add(interceptorImplClass.name().toString());

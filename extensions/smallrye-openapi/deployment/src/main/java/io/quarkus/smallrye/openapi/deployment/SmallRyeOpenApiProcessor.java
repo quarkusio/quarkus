@@ -595,7 +595,7 @@ public class SmallRyeOpenApiProcessor {
 
     private boolean isValidOpenAPIMethodForAutoAdd(MethodInfo method, DotName securityRequirement) {
         return isOpenAPIEndpoint(method) && !method.hasAnnotation(securityRequirement)
-                && method.declaringClass().classAnnotation(securityRequirement) == null;
+                && method.declaringClass().declaredAnnotation(securityRequirement) == null;
     }
 
     @BuildStep

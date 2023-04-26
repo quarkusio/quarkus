@@ -896,7 +896,7 @@ public class JaxrsClientReactiveProcessor {
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
                     String[] consumes = extractProducesConsumesValues(
-                            jandexMethod.declaringClass().classAnnotation(CONSUMES), method.getConsumes());
+                            jandexMethod.declaringClass().declaredAnnotation(CONSUMES), method.getConsumes());
                     boolean multipart = isMultipart(consumes, method.getParameters());
 
                     AssignableResultHandle formParams = null;
@@ -1274,7 +1274,7 @@ public class JaxrsClientReactiveProcessor {
                                         + ". It may have unresolved parameter types (generics)"));
                 subMethodIndex++;
                 String[] consumes = extractProducesConsumesValues(
-                        jandexSubMethod.declaringClass().classAnnotation(CONSUMES), method.getConsumes());
+                        jandexSubMethod.declaringClass().declaredAnnotation(CONSUMES), method.getConsumes());
                 consumes = extractProducesConsumesValues(jandexSubMethod.annotation(CONSUMES), consumes);
                 boolean multipart = isMultipart(consumes, subMethod.getParameters());
 
@@ -1916,7 +1916,7 @@ public class JaxrsClientReactiveProcessor {
         }
 
         for (Map.Entry<DotName, String> annoToMethod : httpAnnotationToMethod.entrySet()) {
-            if (subMethod.declaringClass().classAnnotation(annoToMethod.getKey()) != null) {
+            if (subMethod.declaringClass().declaredAnnotation(annoToMethod.getKey()) != null) {
                 return annoToMethod.getValue();
             }
         }

@@ -19,7 +19,7 @@ public class ReflectiveBeanClassesProcessor {
 
         for (BeanInfo classBean : beanDiscoveryFinished.beanStream().classBeans()) {
             ClassInfo beanClass = classBean.getTarget().get().asClass();
-            AnnotationInstance annotation = beanClass.classAnnotation(registerForReflection);
+            AnnotationInstance annotation = beanClass.declaredAnnotation(registerForReflection);
             if (annotation != null) {
                 Type[] targets = annotation.value("targets") != null ? annotation.value("targets").asClassArray()
                         : new Type[] {};

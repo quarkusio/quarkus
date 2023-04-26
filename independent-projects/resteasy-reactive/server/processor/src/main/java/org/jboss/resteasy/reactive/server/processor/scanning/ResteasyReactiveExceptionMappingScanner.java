@@ -53,7 +53,7 @@ public class ResteasyReactiveExceptionMappingScanner {
                         ResteasyReactiveDotNames.EXCEPTION_MAPPER,
                         index);
                 DotName handledExceptionDotName = typeParameters.get(0).name();
-                AnnotationInstance priorityInstance = mapperClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = mapperClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 int priority = Priorities.USER;
                 if (priorityInstance != null) {
                     priority = priorityInstance.value().asInt();

@@ -428,9 +428,9 @@ public class ResteasyServerCommonProcessor {
             @Override
             public void transform(TransformationContext context) {
                 ClassInfo clazz = context.getTarget().asClass();
-                if (clazz.classAnnotation(ResteasyDotNames.PATH) != null) {
+                if (clazz.declaredAnnotation(ResteasyDotNames.PATH) != null) {
                     // Root resources - no need to add scope, @Path is a bean defining annotation
-                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                    if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MyResource.class)
                         context.transform().add(createTypedAnnotationInstance(clazz)).done();
                     }
@@ -440,14 +440,14 @@ public class ResteasyServerCommonProcessor {
                     // Skip classes annotated with built-in scope
                     return;
                 }
-                if (clazz.classAnnotation(ResteasyDotNames.PROVIDER) != null) {
+                if (clazz.declaredAnnotation(ResteasyDotNames.PROVIDER) != null) {
                     Transformation transformation = null;
                     if (clazz.annotationsMap().containsKey(DotNames.INJECT)
                             || hasAutoInjectAnnotation(autoInjectAnnotationNames, clazz)) {
                         // A provider with an injection point but no built-in scope is @Singleton
                         transformation = context.transform().add(BuiltinScope.SINGLETON.getName());
                     }
-                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                    if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MyProvider.class)
                         if (transformation == null) {
                             transformation = context.transform();
@@ -462,7 +462,7 @@ public class ResteasyServerCommonProcessor {
                     Transformation transformation = context.transform()
                             .add(resteasyConfig.singletonResources ? BuiltinScope.SINGLETON.getName()
                                     : BuiltinScope.DEPENDENT.getName());
-                    if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                    if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MySubresource.class)
                         transformation.add(createTypedAnnotationInstance(clazz));
                     }
@@ -675,7 +675,7 @@ public class ResteasyServerCommonProcessor {
             }
 
             boolean hasNonJaxRSAnnotations = false;
-            for (AnnotationInstance instance : classInfo.classAnnotations()) {
+            for (AnnotationInstance instance : classInfo.declaredAnnotations()) {
                 final String packageName = packageName(instance.name());
                 if (packageName == null || !isPackageAllowed(allowedAnnotationPrefixes, packageName)) {
                     hasNonJaxRSAnnotations = true;

@@ -480,7 +480,7 @@ public final class JpaJandexScavenger {
     private static void collectModelType(Collector collector, ClassInfo modelClass) {
         String name = modelClass.name().toString();
         collector.modelTypes.add(name);
-        if (modelClass.classAnnotation(ClassNames.JPA_ENTITY) != null) {
+        if (modelClass.declaredAnnotation(ClassNames.JPA_ENTITY) != null) {
             collector.entityTypes.add(name);
         }
     }

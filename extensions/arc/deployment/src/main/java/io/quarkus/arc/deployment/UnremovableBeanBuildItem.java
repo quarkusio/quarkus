@@ -172,7 +172,7 @@ public final class UnremovableBeanBuildItem extends MultiBuildItem {
             @Override
             public boolean test(BeanInfo bean) {
                 if (bean.isClassBean()) {
-                    return Annotations.contains(bean.getTarget().get().asClass().classAnnotations(), annotationName);
+                    return Annotations.contains(bean.getTarget().get().asClass().declaredAnnotations(), annotationName);
                 } else if (bean.isProducerMethod()) {
                     return !getAnnotations(Kind.METHOD, annotationName, bean.getTarget().get().asMethod().annotations())
                             .isEmpty();

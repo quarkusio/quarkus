@@ -82,7 +82,7 @@ public abstract class ResourcePropertiesProvider {
             return annotations;
         }
 
-        for (AnnotationInstance annotation : classInfo.classAnnotations()) {
+        for (AnnotationInstance annotation : classInfo.declaredAnnotations()) {
             if (ANNOTATIONS_TO_COPY.stream().anyMatch(annotation.name().toString()::startsWith)) {
                 annotations.add(annotation);
             }
@@ -100,11 +100,11 @@ public abstract class ResourcePropertiesProvider {
         if (classInfo == null) {
             return null;
         }
-        if (classInfo.classAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION) != null) {
-            return classInfo.classAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION);
+        if (classInfo.declaredAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION) != null) {
+            return classInfo.declaredAnnotation(REPOSITORY_REST_RESOURCE_ANNOTATION);
         }
-        if (classInfo.classAnnotation(REST_RESOURCE_ANNOTATION) != null) {
-            return classInfo.classAnnotation(REST_RESOURCE_ANNOTATION);
+        if (classInfo.declaredAnnotation(REST_RESOURCE_ANNOTATION) != null) {
+            return classInfo.declaredAnnotation(REST_RESOURCE_ANNOTATION);
         }
         if (classInfo.superName() != null) {
             return findClassAnnotation(classInfo.superName());

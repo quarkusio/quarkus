@@ -137,7 +137,7 @@ public class FunctionScannerBuildStep {
                 }
                 Transformation transformation = transformationContext.transform();
                 transformation.add(BuiltinScope.DEPENDENT.getName());
-                if (clazz.classAnnotation(DotNames.TYPED) == null) {
+                if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                     // Add @Typed(MySubresource.class)
                     transformation.add(createTypedAnnotationInstance(clazz));
                 }

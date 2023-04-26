@@ -210,10 +210,10 @@ public class SpringDIProcessor {
     private DotName getScope(final AnnotationTarget target) {
         AnnotationValue value = null;
         if (target.kind() == AnnotationTarget.Kind.CLASS) {
-            if (target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION) != null) {
-                value = target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION).value();
+            if (target.asClass().declaredAnnotation(SPRING_SCOPE_ANNOTATION) != null) {
+                value = target.asClass().declaredAnnotation(SPRING_SCOPE_ANNOTATION).value();
                 if ((value == null) || value.asString().isEmpty()) {
-                    value = target.asClass().classAnnotation(SPRING_SCOPE_ANNOTATION).value("scopeName");
+                    value = target.asClass().declaredAnnotation(SPRING_SCOPE_ANNOTATION).value("scopeName");
                 }
             }
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
@@ -308,7 +308,7 @@ public class SpringDIProcessor {
             final Set<String> names = new HashSet<>();
             final Set<DotName> clazzAnnotations = classInfo.annotationsMap().keySet();
 
-            for (AnnotationInstance instance : classInfo.classAnnotations()) {
+            for (AnnotationInstance instance : classInfo.declaredAnnotations()) {
                 // make sure that we don't mix and match Spring and CDI annotations since this can cause a lot of problems
                 if (arcScopes.contains(instance.name())) {
                     return annotationsToAdd;
@@ -323,13 +323,13 @@ public class SpringDIProcessor {
                         scopes.addAll(scopeNames);
                     }
                     if (SPRING_STEREOTYPE_ANNOTATIONS.contains(clazzAnnotation) && !classInfo.isAnnotation()) {
-                        names.add(getBeanNameFromStereotypeInstance(classInfo.classAnnotation(clazzAnnotation)));
+                        names.add(getBeanNameFromStereotypeInstance(classInfo.declaredAnnotation(clazzAnnotation)));
                     }
                 }
             }
             DotName declaredScope = getScope(classInfo);
             // @Named is a bean-defining annotation in Spring, but not in Arc.
-            if (declaredScope == null && classInfo.classAnnotation(CDI_NAMED_ANNOTATION) != null) {
+            if (declaredScope == null && classInfo.declaredAnnotation(CDI_NAMED_ANNOTATION) != null) {
                 declaredScope = CDI_SINGLETON_ANNOTATION; // implicit default scope in spring
             }
             final boolean isAnnotation = classInfo.isAnnotation();
@@ -406,7 +406,7 @@ public class SpringDIProcessor {
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
             final MethodInfo methodInfo = target.asMethod();
             if (methodInfo.hasAnnotation(BEAN_ANNOTATION)
-                    && methodInfo.declaringClass().classAnnotation(CONFIGURATION_ANNOTATION) != null) {
+                    && methodInfo.declaringClass().declaredAnnotation(CONFIGURATION_ANNOTATION) != null) {
                 annotationsToAdd.add(create(
                         CDI_PRODUCES_ANNOTATION,
                         target,

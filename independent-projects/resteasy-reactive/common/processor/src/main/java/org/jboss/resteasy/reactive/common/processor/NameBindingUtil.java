@@ -54,7 +54,7 @@ public class NameBindingUtil {
             if (classAnnotation == null) {
                 continue;
             }
-            if (classAnnotation.classAnnotation(NAME_BINDING) != null) {
+            if (classAnnotation.declaredAnnotation(NAME_BINDING) != null) {
                 result.add(classAnnotation.name().toString());
             }
         }

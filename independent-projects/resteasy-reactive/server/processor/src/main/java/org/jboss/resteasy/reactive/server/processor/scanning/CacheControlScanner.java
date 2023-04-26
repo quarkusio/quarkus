@@ -39,7 +39,7 @@ public class CacheControlScanner implements MethodScanner {
         } else {
             cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(actualEndpointClass, NO_CACHE));
             if (cacheControl != null) {
-                if (actualEndpointClass.classAnnotation(CACHE) != null) {
+                if (actualEndpointClass.declaredAnnotation(CACHE) != null) {
                     throw new IllegalStateException(
                             "A resource class cannot be simultaneously annotated with '@Cache' and '@NoCache'. Offending class is '"
                                     + actualEndpointClass.name() + "'");
@@ -52,7 +52,7 @@ public class CacheControlScanner implements MethodScanner {
         if (cacheControl != null) {
             return cacheControlToCustomizerList(cacheControl);
         } else {
-            cacheControl = cacheToCacheControl(actualEndpointClass.classAnnotation(CACHE));
+            cacheControl = cacheToCacheControl(actualEndpointClass.declaredAnnotation(CACHE));
             if (cacheControl != null) {
                 return cacheControlToCustomizerList(cacheControl);
             }

@@ -116,13 +116,13 @@ public class ResteasyReactiveScanner {
                     | InvocationTargetException e) {
                 throw new RuntimeException("Unable to handle class: " + applicationClass, e);
             }
-            if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
-                if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+            if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.BLOCKING) != null) {
+                if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
                     throw new DeploymentException("JAX-RS Application class '" + applicationClassInfo.name()
                             + "' contains both @Blocking and @NonBlocking annotations.");
                 }
                 blocking = BlockingDefault.BLOCKING;
-            } else if (applicationClassInfo.classAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
+            } else if (applicationClassInfo.declaredAnnotation(ResteasyReactiveDotNames.NON_BLOCKING) != null) {
                 blocking = BlockingDefault.NON_BLOCKING;
             }
         }
@@ -153,16 +153,17 @@ public class ResteasyReactiveScanner {
                     runtimeType = RuntimeType.SERVER;
                 }
                 List<String> mediaTypeStrings = Collections.emptyList();
-                AnnotationInstance consumesAnnotation = readerClass.classAnnotation(ResteasyReactiveDotNames.CONSUMES);
+                AnnotationInstance consumesAnnotation = readerClass.declaredAnnotation(ResteasyReactiveDotNames.CONSUMES);
                 if (consumesAnnotation != null) {
                     mediaTypeStrings = Arrays.asList(consumesAnnotation.value().asStringArray());
                 }
-                AnnotationInstance constrainedToInstance = readerClass.classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+                AnnotationInstance constrainedToInstance = readerClass
+                        .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
                 if (constrainedToInstance != null) {
                     runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
                 }
                 int priority = Priorities.USER;
-                AnnotationInstance priorityInstance = readerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = readerClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 if (priorityInstance != null) {
                     priority = priorityInstance.value().asInt();
                 }
@@ -184,19 +185,20 @@ public class ResteasyReactiveScanner {
                     runtimeType = RuntimeType.SERVER;
                 }
                 List<String> mediaTypeStrings = Collections.emptyList();
-                AnnotationInstance producesAnnotation = writerClass.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
+                AnnotationInstance producesAnnotation = writerClass.declaredAnnotation(ResteasyReactiveDotNames.PRODUCES);
                 if (producesAnnotation != null) {
                     mediaTypeStrings = Arrays.asList(producesAnnotation.value().asStringArray());
                 }
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(writerClass.name(),
                         ResteasyReactiveDotNames.MESSAGE_BODY_WRITER,
                         index);
-                AnnotationInstance constrainedToInstance = writerClass.classAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
+                AnnotationInstance constrainedToInstance = writerClass
+                        .declaredAnnotation(ResteasyReactiveDotNames.CONSTRAINED_TO);
                 if (constrainedToInstance != null) {
                     runtimeType = RuntimeType.valueOf(constrainedToInstance.value().asEnum());
                 }
                 int priority = Priorities.USER;
-                AnnotationInstance priorityInstance = writerClass.classAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = writerClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 if (priorityInstance != null) {
                     priority = priorityInstance.value().asInt();
                 }

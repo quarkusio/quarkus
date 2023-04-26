@@ -279,7 +279,7 @@ public class ResteasyReactiveJacksonProcessor {
             if (methodInfo.hasAnnotation(DISABLE_SECURE_SERIALIZATION)) {
                 continue;
             }
-            if (entry.getActualClassInfo().classAnnotation(DISABLE_SECURE_SERIALIZATION) != null) {
+            if (entry.getActualClassInfo().declaredAnnotation(DISABLE_SECURE_SERIALIZATION) != null) {
                 if (!methodInfo.hasAnnotation(ENABLE_SECURE_SERIALIZATION)) {
                     continue;
                 }

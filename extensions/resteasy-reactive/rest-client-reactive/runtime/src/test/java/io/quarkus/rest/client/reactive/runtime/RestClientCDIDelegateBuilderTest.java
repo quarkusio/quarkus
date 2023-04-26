@@ -12,8 +12,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
 import javax.ws.rs.client.ClientRequestContext;
 import javax.ws.rs.client.ClientResponseContext;
 import javax.ws.rs.client.ClientResponseFilter;
@@ -101,7 +99,6 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.USER_AGENT, "agent1");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.STATIC_HEADERS,
                 Collections.singletonMap("header1", "value"));
-        Mockito.verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier1.class));
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 10); // value converted to seconds
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 103);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, false);
@@ -144,7 +141,6 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.USER_AGENT, "agent2");
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.STATIC_HEADERS,
                 Collections.singletonMap("header2", "value"));
-        Mockito.verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier2.class));
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_TTL, 20);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 203);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, true);
@@ -173,8 +169,6 @@ public class RestClientCDIDelegateBuilderTest {
         configRoot.readTimeout = 201L;
         configRoot.userAgent = Optional.of("agent2");
         configRoot.headers = Collections.singletonMap("header2", "value");
-        configRoot.hostnameVerifier = Optional
-                .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyHostnameVerifier2");
         configRoot.connectionTTL = Optional.of(20000); // value in ms, will be converted to seconds
         configRoot.connectionPoolSize = Optional.of(203);
         configRoot.keepAliveEnabled = Optional.of(true);
@@ -212,8 +206,6 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.readTimeout = Optional.of(101L);
         clientConfig.userAgent = Optional.of("agent1");
         clientConfig.headers = Collections.singletonMap("header1", "value");
-        clientConfig.hostnameVerifier = Optional
-                .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyHostnameVerifier1");
         clientConfig.connectionTTL = Optional.of(10000); // value in milliseconds, will be converted to seconds
         clientConfig.connectionPoolSize = Optional.of(103);
         clientConfig.keepAliveEnabled = Optional.of(false);
@@ -248,20 +240,6 @@ public class RestClientCDIDelegateBuilderTest {
     public static class MyResponseFilter2 implements ClientResponseFilter {
         @Override
         public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
-        }
-    }
-
-    public static class MyHostnameVerifier1 implements HostnameVerifier {
-        @Override
-        public boolean verify(String hostname, SSLSession session) {
-            return true;
-        }
-    }
-
-    public static class MyHostnameVerifier2 implements HostnameVerifier {
-        @Override
-        public boolean verify(String hostname, SSLSession session) {
-            return true;
         }
     }
 

@@ -1,8 +1,5 @@
 package io.quarkus.rest.client.reactive;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
-
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -28,13 +25,6 @@ public interface HelloClientWithBaseUri {
     class MyResponseFilter implements ClientResponseFilter {
         @Override
         public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
-        }
-    }
-
-    class MyHostnameVerifier implements HostnameVerifier {
-        @Override
-        public boolean verify(String hostname, SSLSession session) {
-            return true;
         }
     }
 

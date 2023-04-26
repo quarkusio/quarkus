@@ -78,9 +78,6 @@ public class ConfigurationTest {
         assertThat(clientConfig.followRedirects.get()).isEqualTo(true);
         assertThat(clientConfig.queryParamStyle).isPresent();
         assertThat(clientConfig.queryParamStyle.get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
-        assertThat(clientConfig.hostnameVerifier).isPresent();
-        assertThat(clientConfig.hostnameVerifier.get())
-                .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyHostnameVerifier");
 
         if (checkExtraProperties) {
             assertThat(clientConfig.connectionTTL).isPresent();

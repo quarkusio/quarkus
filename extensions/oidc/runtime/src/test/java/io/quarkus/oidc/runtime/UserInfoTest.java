@@ -15,13 +15,48 @@ import io.quarkus.oidc.UserInfo;
 public class UserInfoTest {
     UserInfo userInfo = new UserInfo(
             "{"
+                    + "\"sub\": \"alice123456\","
                     + "\"name\": \"alice\","
+                    + "\"first_name\": \"Alice\","
+                    + "\"family_name\": \"Alice\","
+                    + "\"preferred_username\": \"Alice Alice\","
+                    + "\"email\": \"alice@email.com\","
                     + "\"admin\": true,"
-                    + "\"email\": null,"
+                    + "\"custom\": null,"
                     + "\"id\": 1234,"
                     + "\"permissions\": [\"read\", \"write\"],"
                     + "\"scopes\": {\"scope\": \"see\"}"
                     + "}");
+
+    @Test
+    public void testGetName() {
+        assertEquals("alice", userInfo.getName());
+    }
+
+    @Test
+    public void testGetFirstName() {
+        assertEquals("Alice", userInfo.getFirstName());
+    }
+
+    @Test
+    public void testGetFamilyName() {
+        assertEquals("Alice", userInfo.getFamilyName());
+    }
+
+    @Test
+    public void testPreferredName() {
+        assertEquals("Alice Alice", userInfo.getPreferredUserName());
+    }
+
+    @Test
+    public void testGetEmail() {
+        assertEquals("alice@email.com", userInfo.getEmail());
+    }
+
+    @Test
+    public void testGetSubject() {
+        assertEquals("alice123456", userInfo.getSubject());
+    }
 
     @Test
     public void testGetString() {
@@ -62,6 +97,6 @@ public class UserInfoTest {
 
     @Test
     public void testGetNullProperty() {
-        assertNull(userInfo.getString("email"));
+        assertNull(userInfo.getString("custom"));
     }
 }

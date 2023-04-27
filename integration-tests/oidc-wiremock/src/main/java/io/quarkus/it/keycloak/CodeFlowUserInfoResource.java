@@ -33,7 +33,7 @@ public class CodeFlowUserInfoResource {
     public String access() {
         int cacheSize = tokenCache.getCacheSize();
         tokenCache.clearCache();
-        return identity.getPrincipal().getName() + ":" + userInfo.getString("preferred_username") + ":" + accessToken.getName()
+        return identity.getPrincipal().getName() + ":" + userInfo.getPreferredUserName() + ":" + accessToken.getName()
                 + ", cache size: "
                 + cacheSize;
     }

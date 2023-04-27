@@ -60,7 +60,8 @@ public class BeanManagerImpl implements BeanManager {
                     + "; its bean types are: " + bean.getTypes());
         }
         if (bean instanceof InjectableBean && ctx instanceof CreationalContextImpl) {
-            return ArcContainerImpl.instance().beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx).get();
+            return ArcContainerImpl.beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx, true, null, true)
+                    .get();
         }
         throw new IllegalArgumentException(
                 "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: "
@@ -80,7 +81,7 @@ public class BeanManagerImpl implements BeanManager {
             InjectableBean<?> bean = (InjectableBean<?>) resolve(beans);
             InjectionPoint prev = InjectionPointProvider.set(ij);
             try {
-                return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx, false, null).get();
+                return ArcContainerImpl.beanInstanceHandle(bean, (CreationalContextImpl) ctx, false, null, true).get();
             } finally {
                 InjectionPointProvider.set(prev);
             }

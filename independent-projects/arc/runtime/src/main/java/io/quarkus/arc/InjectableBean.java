@@ -143,6 +143,23 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return 0;
     }
 
+    /**
+     * The return value depends on the {@link #getKind()}.
+     *
+     * <ul>
+     * <li>For managed beans, interceptors, decorators and built-in beans, the bean class is returned.</li>
+     * <li>For a producer method, the class of the return type is returned.</li>
+     * <li>For a producer field, the class of the field is returned.</li>
+     * <li>For a synthetic bean, the implementation class defined by the registrar is returned.
+     * </ul>
+     *
+     * @return the implementation class, or null in case of a producer of a primitive type or an array
+     * @see Kind
+     */
+    default Class<?> getImplementationClass() {
+        return getBeanClass();
+    }
+
     enum Kind {
 
         CLASS,

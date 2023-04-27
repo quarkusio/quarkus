@@ -125,7 +125,7 @@ public class BeanManagerTest {
         });
         Legacy legacy = (Legacy) beanManager.getReference(legacyBean, Legacy.class, ctx);
         assertNotNull(legacy.getBeanManager());
-        ctx.release();
+        legacyBean.destroy((AlternativeLegacy) legacy, ctx);
         assertTrue(Legacy.DESTROYED.get());
     }
 
@@ -179,7 +179,6 @@ public class BeanManagerTest {
         assertNull(injectableReference.injectionPoint.getBean());
     }
 
-    @SuppressWarnings("serial")
     @Test
     public void testResolveInterceptors() {
         BeanManager beanManager = Arc.container().beanManager();

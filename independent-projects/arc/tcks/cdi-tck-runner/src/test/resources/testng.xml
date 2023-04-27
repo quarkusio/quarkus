@@ -383,6 +383,8 @@
                     <exclude name="testInstanceUsedForProducerMethodNotShared"/>
                     <exclude name="testContextIsActive"/>
                     <exclude name="testContextScopeType"/>
+                    <!-- https://github.com/jakartaee/cdi-tck/issues/454 -->
+                    <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"></exclude>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.lookup.manager.ManagerTest">

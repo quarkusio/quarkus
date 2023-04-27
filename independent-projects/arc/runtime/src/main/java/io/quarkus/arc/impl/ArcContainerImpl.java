@@ -471,12 +471,21 @@ public class ArcContainerImpl implements ArcContainer {
 
     static <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext,
             boolean resetCurrentInjectionPoint, Consumer<T> destroyLogic) {
+        return beanInstanceHandle(bean, parentContext, resetCurrentInjectionPoint, destroyLogic, false);
+    }
+
+    static <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext,
+            boolean resetCurrentInjectionPoint, Consumer<T> destroyLogic, boolean useParentCreationalContextDirectly) {
         if (bean != null) {
             if (parentContext == null && Dependent.class.equals(bean.getScope())) {
                 parentContext = new CreationalContextImpl<>(null);
             }
-            CreationalContextImpl<T> creationalContext = parentContext != null ? parentContext.child(bean)
-                    : new CreationalContextImpl<>(bean);
+            CreationalContextImpl<T> creationalContext;
+            if (parentContext != null) {
+                creationalContext = useParentCreationalContextDirectly ? parentContext : parentContext.child(bean);
+            } else {
+                creationalContext = new CreationalContextImpl<>(bean);
+            }
             InjectionPoint prev = null;
             if (resetCurrentInjectionPoint) {
                 prev = InjectionPointProvider.set(CurrentInjectionPointProvider.EMPTY);
@@ -494,7 +503,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
     }
 
-    <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext) {
+    static <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext) {
         return beanInstanceHandle(bean, parentContext, true, null);
     }
 

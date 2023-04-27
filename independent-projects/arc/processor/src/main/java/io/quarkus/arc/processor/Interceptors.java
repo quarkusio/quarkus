@@ -2,16 +2,22 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
@@ -30,17 +36,8 @@ final class Interceptors {
      */
     static InterceptorInfo createInterceptor(ClassInfo interceptorClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
-        Set<AnnotationInstance> bindings = new HashSet<>();
         Integer priority = null;
         for (AnnotationInstance annotation : beanDeployment.getAnnotations(interceptorClass)) {
-            bindings.addAll(beanDeployment.extractInterceptorBindings(annotation));
-            // can also be a transitive binding
-            Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
-                    .getTransitiveInterceptorBindings(annotation.name());
-            if (transitiveInterceptorBindings != null) {
-                bindings.addAll(transitiveInterceptorBindings);
-            }
-
             if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
             }
@@ -55,6 +52,9 @@ final class Interceptors {
             }
         }
 
+        Set<AnnotationInstance> bindings = new HashSet<>();
+        addBindings(beanDeployment, interceptorClass, bindings, false);
+
         if (bindings.isEmpty()) {
             throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);
         }
@@ -65,12 +65,86 @@ final class Interceptors {
             priority = 0;
         }
 
+        checkClassLevelInterceptorBindings(bindings, interceptorClass, beanDeployment);
         checkInterceptorFieldsAndMethods(interceptorClass, beanDeployment);
 
         return new InterceptorInfo(interceptorClass, beanDeployment,
                 bindings.size() == 1 ? Collections.singleton(bindings.iterator().next())
                         : Collections.unmodifiableSet(bindings),
                 Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority);
+    }
+
+    private static void addBindings(BeanDeployment beanDeployment, ClassInfo classInfo, Collection<AnnotationInstance> bindings,
+            boolean onlyInherited) {
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(classInfo)) {
+            ClassInfo annotationClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
+            if (onlyInherited && !beanDeployment.hasAnnotation(annotationClass, DotNames.INHERITED)) {
+                continue;
+            }
+
+            bindings.addAll(beanDeployment.extractInterceptorBindings(annotation));
+            // can also be a transitive binding
+            Set<AnnotationInstance> transitiveInterceptorBindings = beanDeployment
+                    .getTransitiveInterceptorBindings(annotation.name());
+            if (transitiveInterceptorBindings != null) {
+                bindings.addAll(transitiveInterceptorBindings);
+            }
+        }
+
+        if (classInfo.superName() != null && !classInfo.superName().equals(DotNames.OBJECT)) {
+            ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
+            if (superClass != null) {
+                addBindings(beanDeployment, superClass, bindings, true);
+            }
+        }
+    }
+
+    // similar logic already exists in InterceptorResolver, but it doesn't validate
+    static void checkClassLevelInterceptorBindings(Collection<AnnotationInstance> bindings, ClassInfo targetClass,
+            BeanDeployment beanDeployment) {
+        // when called from `createInterceptor` above, `bindings` already include transitive bindings,
+        // but when called from outside, that isn't guaranteed
+        Set<AnnotationInstance> allBindings = new HashSet<>(bindings);
+        for (AnnotationInstance binding : bindings) {
+            Set<AnnotationInstance> transitive = beanDeployment.getTransitiveInterceptorBindings(binding.name());
+            if (transitive != null) {
+                allBindings.addAll(transitive);
+            }
+        }
+
+        IndexView index = beanDeployment.getBeanArchiveIndex();
+
+        Map<DotName, List<AnnotationValue>> seenBindings = new HashMap<>();
+        for (AnnotationInstance binding : allBindings) {
+            DotName name = binding.name();
+            if (beanDeployment.hasAnnotation(index.getClassByName(name), DotNames.REPEATABLE)) {
+                // don't validate @Repeatable interceptor bindings, repeatability is their entire point
+                continue;
+            }
+
+            List<AnnotationValue> seenValues = seenBindings.get(name);
+            if (seenValues != null) {
+                // interceptor binding of the same type already seen
+                // all annotation members (except nonbinding) must have equal values
+                ClassInfo declaration = beanDeployment.getInterceptorBinding(name);
+                Set<String> nonBindingMembers = beanDeployment.getInterceptorNonbindingMembers(name);
+
+                for (AnnotationValue value : seenValues) {
+                    if (declaration.method(value.name()).hasDeclaredAnnotation(DotNames.NONBINDING)
+                            || nonBindingMembers.contains(value.name())) {
+                        continue;
+                    }
+
+                    if (!value.equals(binding.valueWithDefault(index, value.name()))) {
+                        throw new DefinitionException("Multiple instances of non-repeatable interceptor binding annotation "
+                                + name + " with different member values on class " + targetClass);
+                    }
+                }
+            } else {
+                // interceptor binding of that type not seen yet, just remember it
+                seenBindings.put(name, binding.valuesWithDefaults(index));
+            }
+        }
     }
 
     private static void checkInterceptorFieldsAndMethods(ClassInfo interceptorClass, BeanDeployment beanDeployment) {

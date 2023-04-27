@@ -21,13 +21,15 @@ public class MyInterceptor {
     public static AtomicBoolean aroundInvokeInvoked = new AtomicBoolean(false);
 
     @PreDestroy
-    public void preDestroy(InvocationContext ic) {
+    public void preDestroy(InvocationContext ic) throws Exception {
         preDestroyInvoked.set(true);
+        ic.proceed();
     }
 
     @PostConstruct
-    public void postConstruct(InvocationContext ic) {
+    public void postConstruct(InvocationContext ic) throws Exception {
         postConstructInvoked.set(true);
+        ic.proceed();
     }
 
     @AroundConstruct

@@ -5,7 +5,7 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import jakarta.interceptor.InvocationContext;
 
@@ -46,11 +46,12 @@ public final class InvocationContexts {
      * @param target
      * @param chain
      * @param interceptorBindings
+     * @param forward
      * @return a new invocation context
      */
     public static InvocationContext postConstruct(Object target, List<InterceptorInvocation> chain,
-            Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
+            Set<Annotation> interceptorBindings, Runnable forward) {
+        return new PostConstructPreDestroyInvocationContext(target, null, interceptorBindings, chain, forward);
     }
 
     /**
@@ -58,11 +59,12 @@ public final class InvocationContexts {
      * @param target
      * @param chain
      * @param interceptorBindings
+     * @param forward
      * @return a new invocation context
      */
     public static InvocationContext preDestroy(Object target, List<InterceptorInvocation> chain,
-            Set<Annotation> interceptorBindings) {
-        return new LifecycleCallbackInvocationContext(target, null, interceptorBindings, chain);
+            Set<Annotation> interceptorBindings, Runnable forward) {
+        return new PostConstructPreDestroyInvocationContext(target, null, interceptorBindings, chain, forward);
     }
 
     /**
@@ -75,10 +77,9 @@ public final class InvocationContexts {
     public static InvocationContext aroundConstruct(Constructor<?> constructor,
             Object[] parameters,
             List<InterceptorInvocation> chain,
-            Supplier<Object> aroundConstructForward,
+            Function<Object[], Object> forward,
             Set<Annotation> interceptorBindings) {
-        return new AroundConstructInvocationContext(constructor, parameters, interceptorBindings, chain,
-                aroundConstructForward);
+        return new AroundConstructInvocationContext(constructor, parameters, interceptorBindings, chain, forward);
     }
 
     /**

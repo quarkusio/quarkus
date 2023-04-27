@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.spi.Context;
@@ -144,6 +145,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE = MethodDescriptor.ofMethod(ClientProxy.class,
             ClientProxyGenerator.GET_CONTEXTUAL_INSTANCE_METHOD_NAME, Object.class);
 
+    public static final MethodDescriptor CLIENT_PROXY_UNWRAP = MethodDescriptor.ofMethod(ClientProxy.class,
+            "unwrap", Object.class, Object.class);
+
     public static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor.ofMethod(InjectableBean.class, "destroy",
             void.class, Object.class,
             CreationalContext.class);
@@ -173,16 +177,16 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INVOCATION_CONTEXTS_AROUND_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "aroundConstruct",
-            InvocationContext.class, Constructor.class, Object[].class, List.class, Supplier.class, Set.class);
+            InvocationContext.class, Constructor.class, Object[].class, List.class, Function.class, Set.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_POST_CONSTRUCT = MethodDescriptor.ofMethod(
             InvocationContexts.class,
             "postConstruct",
-            InvocationContext.class, Object.class, List.class, Set.class);
+            InvocationContext.class, Object.class, List.class, Set.class, Runnable.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_PRE_DESTROY = MethodDescriptor.ofMethod(InvocationContexts.class,
             "preDestroy",
-            InvocationContext.class, Object.class, List.class, Set.class);
+            InvocationContext.class, Object.class, List.class, Set.class, Runnable.class);
 
     public static final MethodDescriptor INVOCATION_CONTEXTS_PERFORM_SUPERCLASS = MethodDescriptor.ofMethod(
             InvocationContexts.class,

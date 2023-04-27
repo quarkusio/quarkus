@@ -947,9 +947,10 @@ public class SubclassGenerator extends AbstractGenerator {
     protected void createDestroy(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass,
             FieldDescriptor preDestroysField) {
         if (preDestroysField != null) {
-            MethodCreator destroy = subclass
-                    .getMethodCreator(MethodDescriptor.ofMethod(subclass.getClassName(), DESTROY_METHOD_NAME, void.class));
+            MethodCreator destroy = subclass.getMethodCreator(MethodDescriptor.ofMethod(subclass.getClassName(),
+                    DESTROY_METHOD_NAME, void.class, Runnable.class));
             ResultHandle predestroysHandle = destroy.readInstanceField(preDestroysField, destroy.getThis());
+            ResultHandle forward = destroy.getMethodParam(0);
 
             // Interceptor bindings
             InterceptionInfo preDestroy = bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY);
@@ -972,7 +973,8 @@ public class SubclassGenerator extends AbstractGenerator {
             // InvocationContextImpl.preDestroy(this,predestroys)
             ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXTS_PRE_DESTROY,
                     tryCatch.getThis(), predestroysHandle,
-                    tryCatch.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
+                    tryCatch.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray),
+                    forward);
 
             // InvocationContext.proceed()
             tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);

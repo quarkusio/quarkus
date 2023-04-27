@@ -819,16 +819,43 @@ public class BeanGenerator extends AbstractGenerator {
 
         if (bean.isClassBean()) {
             if (!bean.isInterceptor()) {
+                // in case someone calls `Bean.destroy()` directly (i.e., they use the low-level CDI API),
+                // they may pass us a client proxy
+                ResultHandle instance = destroy.invokeStaticInterfaceMethod(MethodDescriptors.CLIENT_PROXY_UNWRAP,
+                        destroy.getMethodParam(0));
+
+                // if there's no `@PreDestroy` interceptor, we'll generate code to invoke `@PreDestroy` callbacks
+                // directly into the `destroy` method:
+                //
+                // public void destroy(MyBean var1, CreationalContext var2) {
+                //     var1.myPreDestroyCallback();
+                //     var2.release();
+                // }
+                BytecodeCreator preDestroyBytecode = destroy;
+
                 // PreDestroy interceptors
                 if (!bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()) {
+                    // if there _is_ some `@PreDestroy` interceptor, however, we'll reify the chain of `@PreDestroy`
+                    // callbacks into a `Runnable` that we pass into the interceptor chain to be called
+                    // by the last `proceed()` call:
+                    //
+                    // public void destroy(MyBean var1, CreationalContext var2) {
+                    //     // this is a `Runnable` that calls `MyBean.myPreDestroyCallback()`
+                    //     MyBean_Bean$$function$$2 var3 = new MyBean_Bean$$function$$2(var1);
+                    //     ((MyBean_Subclass)var1).arc$destroy((Runnable)var3);
+                    //     var2.release();
+                    // }
+                    FunctionCreator preDestroyForwarder = destroy.createFunction(Runnable.class);
+                    preDestroyBytecode = preDestroyForwarder.getBytecode();
+
                     destroy.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName),
-                                    SubclassGenerator.DESTROY_METHOD_NAME,
-                                    void.class),
-                            destroy.getMethodParam(0));
+                                    SubclassGenerator.DESTROY_METHOD_NAME, void.class, Runnable.class),
+                            instance, preDestroyForwarder.getInstance());
                 }
 
                 // PreDestroy callbacks
+                // possibly wrapped into Runnable so that PreDestroy interceptors can proceed() correctly
                 List<MethodInfo> preDestroyCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
                         DotNames.PRE_DESTROY,
                         bean.getDeployment().getBeanArchiveIndex());
@@ -839,15 +866,20 @@ public class BeanGenerator extends AbstractGenerator {
                                     callback.declaringClass().name(), callback.name()));
                         }
                         reflectionRegistration.registerMethod(callback);
-                        destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                                destroy.loadClass(callback.declaringClass().name().toString()),
-                                destroy.load(callback.name()), destroy.newArray(Class.class, destroy.load(0)),
-                                destroy.getMethodParam(0),
-                                destroy.newArray(Object.class, destroy.load(0)));
+                        preDestroyBytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                                preDestroyBytecode.loadClass(callback.declaringClass().name().toString()),
+                                preDestroyBytecode.load(callback.name()),
+                                preDestroyBytecode.newArray(Class.class, preDestroyBytecode.load(0)),
+                                instance,
+                                preDestroyBytecode.newArray(Object.class, preDestroyBytecode.load(0)));
                     } else {
                         // instance.superCoolDestroyCallback()
-                        destroy.invokeVirtualMethod(MethodDescriptor.of(callback), destroy.getMethodParam(0));
+                        preDestroyBytecode.invokeVirtualMethod(MethodDescriptor.of(callback), instance);
                     }
+                }
+                if (preDestroyBytecode != destroy) {
+                    // only if we're generating a `Runnable`, see above
+                    preDestroyBytecode.returnVoid();
                 }
             }
 
@@ -1582,10 +1614,20 @@ public class BeanGenerator extends AbstractGenerator {
                     interceptorToWrap, transientReferences, injectableCtorParams, allOtherCtorParams);
 
             // Forwarding function
-            // Supplier<Object> forward = () -> new SimpleBean_Subclass(ctx,lifecycleInterceptorProvider1)
-            FunctionCreator func = create.createFunction(Supplier.class);
+            // Function<Object[], Object> forward = (params) -> new SimpleBean_Subclass(params[0], ctx, lifecycleInterceptorProvider1)
+            FunctionCreator func = create.createFunction(Function.class);
             BytecodeCreator funcBytecode = func.getBytecode();
-            List<ResultHandle> providerHandles = new ArrayList<>(injectableCtorParams);
+            List<ResultHandle> params = new ArrayList<>();
+            if (!injectableCtorParams.isEmpty()) {
+                // `injectableCtorParams` are passed to the first interceptor in the chain
+                // the `Function` generated here obtains the parameter array from `InvocationContext`
+                // these 2 arrays have the same shape (size and element types), but not necessarily the same content
+                ResultHandle paramsArray = funcBytecode.checkCast(funcBytecode.getMethodParam(0), Object[].class);
+                for (int i = 0; i < injectableCtorParams.size(); i++) {
+                    params.add(funcBytecode.readArrayValue(paramsArray, i));
+                }
+            }
+            List<ResultHandle> providerHandles = new ArrayList<>(params);
             providerHandles.addAll(allOtherCtorParams);
             ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, create, providerType.className(),
                     baseName,
@@ -1616,6 +1658,8 @@ public class BeanGenerator extends AbstractGenerator {
                     create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
             TryBlock tryCatch = create.tryBlock();
             CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
+            exceptionCatch.ifFalse(exceptionCatch.instanceOf(exceptionCatch.getCaughtException(), RuntimeException.class))
+                    .falseBranch().throwException(exceptionCatch.getCaughtException());
             // throw new RuntimeException(e)
             exceptionCatch.throwException(RuntimeException.class, "Error invoking aroundConstructs",
                     exceptionCatch.getCaughtException());
@@ -1750,9 +1794,35 @@ public class BeanGenerator extends AbstractGenerator {
                     SubclassGenerator.MARK_CONSTRUCTED_METHOD_NAME, void.class), instanceHandle);
         }
 
+        // if there's no `@PostConstruct` interceptor, we'll generate code to invoke `@PostConstruct` callbacks
+        // directly into the `doCreate` method:
+        //
+        // private MyBean doCreate(CreationalContext var1) {
+        //     MyBean var2 = new MyBean();
+        //     var2.myPostConstructCallback();
+        //     return var2;
+        // }
+        BytecodeCreator postConstructsBytecode = create;
+
         // PostConstruct lifecycle callback interceptors
         InterceptionInfo postConstructs = bean.getLifecycleInterceptors(InterceptionType.POST_CONSTRUCT);
         if (!postConstructs.isEmpty()) {
+            // if there _is_ some `@PostConstruct` interceptor, however, we'll reify the chain of `@PostConstruct`
+            // callbacks into a `Runnable` that we pass into the interceptor chain to be called
+            // by the last `proceed()` call:
+            //
+            // private MyBean doCreate(CreationalContext var1) {
+            //     ...
+            //     MyBean var7 = new MyBean();
+            //     // this is a `Runnable` that calls `MyBean.myPostConstructCallback()`
+            //     MyBean_Bean$$function$$1 var11 = new MyBean_Bean$$function$$1(var7);
+            //     ...
+            //     InvocationContext var12 = InvocationContexts.postConstruct(var7, (List)var5, var10, (Runnable)var11);
+            //     var12.proceed();
+            //     return var7;
+            // }
+            FunctionCreator postConstructForwarder = create.createFunction(Runnable.class);
+            postConstructsBytecode = postConstructForwarder.getBytecode();
 
             // Interceptor bindings
             ResultHandle bindingsArray = create.newArray(Object.class, postConstructs.bindings.size());
@@ -1768,10 +1838,13 @@ public class BeanGenerator extends AbstractGenerator {
             // InvocationContextImpl.postConstruct(instance,postConstructs).proceed()
             ResultHandle invocationContextHandle = create.invokeStaticMethod(
                     MethodDescriptors.INVOCATION_CONTEXTS_POST_CONSTRUCT, instanceHandle,
-                    postConstructsHandle, create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray));
+                    postConstructsHandle, create.invokeStaticMethod(MethodDescriptors.SETS_OF, bindingsArray),
+                    postConstructForwarder.getInstance());
 
             TryBlock tryCatch = create.tryBlock();
             CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
+            exceptionCatch.ifFalse(exceptionCatch.instanceOf(exceptionCatch.getCaughtException(), RuntimeException.class))
+                    .falseBranch().throwException(exceptionCatch.getCaughtException());
             // throw new RuntimeException(e)
             exceptionCatch.throwException(RuntimeException.class, "Error invoking postConstructs",
                     exceptionCatch.getCaughtException());
@@ -1780,10 +1853,11 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         // PostConstruct callbacks
+        // possibly wrapped into Runnable so that PostConstruct interceptors can proceed() correctly
         if (!bean.isInterceptor()) {
             List<MethodInfo> postConstructCallbacks = Beans.getCallbacks(bean.getTarget().get().asClass(),
-                    DotNames.POST_CONSTRUCT,
-                    bean.getDeployment().getBeanArchiveIndex());
+                    DotNames.POST_CONSTRUCT, bean.getDeployment().getBeanArchiveIndex());
+
             for (MethodInfo callback : postConstructCallbacks) {
                 if (isReflectionFallbackNeeded(callback, targetPackage)) {
                     if (Modifier.isPrivate(callback.flags())) {
@@ -1792,14 +1866,19 @@ public class BeanGenerator extends AbstractGenerator {
                                         callback.name()));
                     }
                     reflectionRegistration.registerMethod(callback);
-                    create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                            create.loadClass(callback.declaringClass().name().toString()),
-                            create.load(callback.name()), create.newArray(Class.class, create.load(0)), instanceHandle,
-                            create.newArray(Object.class, create.load(0)));
+                    postConstructsBytecode.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                            postConstructsBytecode.loadClass(callback.declaringClass().name().toString()),
+                            postConstructsBytecode.load(callback.name()),
+                            postConstructsBytecode.newArray(Class.class, postConstructsBytecode.load(0)), instanceHandle,
+                            postConstructsBytecode.newArray(Object.class, postConstructsBytecode.load(0)));
                 } else {
-                    create.invokeVirtualMethod(MethodDescriptor.of(callback), instanceHandle);
+                    postConstructsBytecode.invokeVirtualMethod(MethodDescriptor.of(callback), instanceHandle);
                 }
             }
+        }
+        if (postConstructsBytecode != create) {
+            // only if we're generating a `Runnable`, see above
+            postConstructsBytecode.returnVoid();
         }
 
         create.returnValue(instanceHandle);

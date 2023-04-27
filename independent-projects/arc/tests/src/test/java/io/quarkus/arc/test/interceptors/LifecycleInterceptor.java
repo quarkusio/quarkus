@@ -22,21 +22,23 @@ public class LifecycleInterceptor {
     static final List<Object> PRE_DESTROYS = new CopyOnWriteArrayList<>();
 
     @PostConstruct
-    void simpleInit(InvocationContext ctx) {
+    void simpleInit(InvocationContext ctx) throws Exception {
         Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }
         POST_CONSTRUCTS.add(ctx.getTarget());
+        ctx.proceed();
     }
 
     @PreDestroy
-    void simpleDestroy(InvocationContext ctx) {
+    void simpleDestroy(InvocationContext ctx) throws Exception {
         Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }
         PRE_DESTROYS.add(ctx.getTarget());
+        ctx.proceed();
     }
 
     @AroundConstruct

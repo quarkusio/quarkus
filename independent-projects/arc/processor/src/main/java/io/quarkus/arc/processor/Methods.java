@@ -272,12 +272,7 @@ final class Methods {
         if (methodLevelBindings.isEmpty()) {
             merged = classLevelBindings;
         } else {
-            merged = new HashSet<>(methodLevelBindings);
-            for (AnnotationInstance binding : classLevelBindings) {
-                if (methodLevelBindings.stream().noneMatch(a -> binding.name().equals(a.name()))) {
-                    merged.add(binding);
-                }
-            }
+            merged = mergeMethodAndClassLevelBindings(methodLevelBindings, classLevelBindings);
 
             if (Modifier.isPrivate(method.flags())
                     && !Annotations.containsAny(methodAnnotations, OBSERVER_PRODUCER_ANNOTATIONS)) {
@@ -300,6 +295,26 @@ final class Methods {
             }
         }
         return merged;
+    }
+
+    static Set<AnnotationInstance> mergeMethodAndClassLevelBindings(Collection<AnnotationInstance> methodLevelBindings,
+            Set<AnnotationInstance> classLevelBindings) {
+        if (methodLevelBindings.isEmpty()) {
+            return classLevelBindings;
+        }
+
+        Set<DotName> methodLevelNames = new HashSet<>();
+        for (AnnotationInstance methodLevelBinding : methodLevelBindings) {
+            methodLevelNames.add(methodLevelBinding.name());
+        }
+
+        Set<AnnotationInstance> result = new HashSet<>(methodLevelBindings);
+        for (AnnotationInstance classLevelBinding : classLevelBindings) {
+            if (!methodLevelNames.contains(classLevelBinding.name())) {
+                result.add(classLevelBinding);
+            }
+        }
+        return result;
     }
 
     static class NameAndDescriptor {

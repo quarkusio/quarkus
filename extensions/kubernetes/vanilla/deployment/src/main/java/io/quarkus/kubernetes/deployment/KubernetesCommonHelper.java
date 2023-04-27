@@ -304,17 +304,17 @@ public class KubernetesCommonHelper {
         }
 
         // Add service account from extensions: use the one provided by the user always
-        String defaultServiceAccount = null;
-        String defaultServiceAccountNamespace = null;
+        Optional<String> effectiveServiceAccount = config.getServiceAccount();
+        String effectiveServiceAccountNamespace = null;
         for (KubernetesServiceAccountBuildItem sa : serviceAccountsFromExtensions) {
-            String saName = defaultIfEmpty(sa.getName(), name);
+            String saName = Optional.ofNullable(sa.getName()).orElse(name);
             result.add(new DecoratorBuildItem(target, new AddServiceAccountResourceDecorator(name, saName,
                     sa.getNamespace(),
                     sa.getLabels())));
 
-            if (sa.isUseAsDefault() || defaultServiceAccount == null) {
-                defaultServiceAccount = saName;
-                defaultServiceAccountNamespace = sa.getNamespace();
+            if (sa.isUseAsDefault() || effectiveServiceAccount.isEmpty()) {
+                effectiveServiceAccount = Optional.of(saName);
+                effectiveServiceAccountNamespace = sa.getNamespace();
             }
         }
 
@@ -325,9 +325,9 @@ public class KubernetesCommonHelper {
                     sa.getValue().namespace.orElse(null),
                     sa.getValue().labels)));
 
-            if (sa.getValue().isUseAsDefault() || defaultServiceAccount == null) {
-                defaultServiceAccount = saName;
-                defaultServiceAccountNamespace = sa.getValue().namespace.orElse(null);
+            if (sa.getValue().isUseAsDefault() || effectiveServiceAccount.isEmpty()) {
+                effectiveServiceAccount = Optional.of(saName);
+                effectiveServiceAccountNamespace = sa.getValue().namespace.orElse(null);
             }
         }
 
@@ -364,8 +364,8 @@ public class KubernetesCommonHelper {
             if (roleBinding.subjects.isEmpty()) {
                 requiresServiceAccount = true;
                 subjects.add(new Subject(null, SERVICE_ACCOUNT,
-                        defaultIfEmpty(defaultServiceAccount, config.getServiceAccount().orElse(name)),
-                        defaultServiceAccountNamespace));
+                        effectiveServiceAccount.orElse(name),
+                        effectiveServiceAccountNamespace));
             } else {
                 for (Map.Entry<String, SubjectConfig> s : roleBinding.subjects.entrySet()) {
                     String subjectName = s.getValue().name.orElse(s.getKey());
@@ -426,8 +426,8 @@ public class KubernetesCommonHelper {
                         Collections.emptyMap(),
                         new RoleRef(defaultRoleName, defaultClusterWide),
                         new Subject(null, SERVICE_ACCOUNT,
-                                defaultIfEmpty(defaultServiceAccount, config.getServiceAccount().orElse(name)),
-                                defaultServiceAccountNamespace))));
+                                effectiveServiceAccount.orElse(name),
+                                effectiveServiceAccountNamespace))));
             } else if (kubernetesClientRequiresRbacGeneration) {
                 // the property `quarkus.kubernetes-client.generate-rbac` is enabled
                 // and the kubernetes-client extension is present
@@ -437,24 +437,25 @@ public class KubernetesCommonHelper {
                         Collections.emptyMap(),
                         new RoleRef(DEFAULT_ROLE_NAME_VIEW, true),
                         new Subject(null, SERVICE_ACCOUNT,
-                                defaultIfEmpty(defaultServiceAccount, config.getServiceAccount().orElse(name)),
-                                defaultServiceAccountNamespace))));
+                                effectiveServiceAccount.orElse(name),
+                                effectiveServiceAccountNamespace))));
             }
         }
 
         // generate service account if none is set, and it's required by other resources
-        if (defaultServiceAccount == null && requiresServiceAccount) {
-            // use the application name
-            defaultServiceAccount = config.getServiceAccount().orElse(name);
+        if (requiresServiceAccount) {
             // and generate the resource
             result.add(new DecoratorBuildItem(target,
-                    new AddServiceAccountResourceDecorator(name, defaultServiceAccount, defaultServiceAccountNamespace,
+                    new AddServiceAccountResourceDecorator(name, effectiveServiceAccount.orElse(name),
+                            effectiveServiceAccountNamespace,
                             Collections.emptyMap())));
         }
 
-        // set service account in deployment resource
-        if (defaultServiceAccount != null) {
-            result.add(new DecoratorBuildItem(target, new ApplyServiceAccountNameDecorator(name, defaultServiceAccount)));
+        // set service account in deployment resource if the user sets a service account,
+        // or it's required for a dependant resource.
+        if (effectiveServiceAccount.isPresent() || requiresServiceAccount) {
+            result.add(new DecoratorBuildItem(target,
+                    new ApplyServiceAccountNameDecorator(name, effectiveServiceAccount.orElse(name))));
         }
 
         return result;
@@ -1047,13 +1048,5 @@ public class KubernetesCommonHelper {
                         .withVerbs(it.verbs.orElse(null))
                         .build())
                 .collect(Collectors.toList());
-    }
-
-    private static String defaultIfEmpty(String str, String defaultStr) {
-        if (str == null || str.length() == 0) {
-            return defaultStr;
-        }
-
-        return str;
     }
 }

@@ -54,11 +54,11 @@ Use `quarkus.infinispan-client.devservices.image-name` property to specify anoth
 Dev Services for Infinispan is automatically enabled unless:
 
 - `quarkus.infinispan-client.devservices.enabled` is set to `false`
-- the `quarkus.infinispan-client.server-list` is configured
+- the `quarkus.infinispan-client.hosts` is configured
 
 Dev Services for Infinispan relies on Docker to start the broker.
 If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
-You can configure the broker address using `quarkus.infinispan-client.server-list`.
+You can configure the broker address using `quarkus.infinispan-client.hosts`.
 
 == Cross Site Replication
 If you want run the Infinispan Server container with Cross Site Replication configuration, you need to provide a site name.

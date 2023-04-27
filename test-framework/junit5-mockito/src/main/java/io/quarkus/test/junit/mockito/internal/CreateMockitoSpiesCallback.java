@@ -6,6 +6,7 @@ import org.mockito.AdditionalAnswers;
 import org.mockito.Mockito;
 
 import io.quarkus.arc.ClientProxy;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.mockito.InjectSpy;
 
@@ -18,22 +19,22 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
             for (Field field : current.getDeclaredFields()) {
                 InjectSpy injectSpyAnnotation = field.getAnnotation(InjectSpy.class);
                 if (injectSpyAnnotation != null) {
-                    Object contextualReference = CreateMockitoMocksCallback.getContextualReference(testInstance, field,
+                    InstanceHandle<?> beanHandle = CreateMockitoMocksCallback.getBeanHandle(testInstance, field,
                             InjectSpy.class);
-                    Object spy = createSpyAndSetTestField(testInstance, field, contextualReference,
+                    Object spy = createSpyAndSetTestField(testInstance, field, beanHandle,
                             injectSpyAnnotation.delegate());
-                    MockitoMocksTracker.track(testInstance, spy, contextualReference);
+                    MockitoMocksTracker.track(testInstance, spy, beanHandle.get());
                 }
             }
             current = current.getSuperclass();
         }
     }
 
-    private Object createSpyAndSetTestField(Object testInstance, Field field, Object contextualReference, boolean delegate) {
+    private Object createSpyAndSetTestField(Object testInstance, Field field, InstanceHandle<?> beanHandle, boolean delegate) {
         Object spy;
-        Object contextualInstance = ClientProxy.unwrap(contextualReference);
+        Object contextualInstance = ClientProxy.unwrap(beanHandle.get());
         if (delegate) {
-            spy = Mockito.mock(CreateMockitoMocksCallback.getImplementationClass(contextualReference),
+            spy = Mockito.mock(beanHandle.getBean().getImplementationClass(),
                     AdditionalAnswers.delegatesTo(contextualInstance));
         } else {
             // Unwrap the client proxy if needed

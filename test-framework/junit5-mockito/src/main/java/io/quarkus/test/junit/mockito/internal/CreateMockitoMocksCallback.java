@@ -13,9 +13,7 @@ import org.mockito.Mockito;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.Subclass;
 import io.quarkus.test.junit.callback.QuarkusTestAfterConstructCallback;
 import io.quarkus.test.junit.mockito.InjectMock;
 
@@ -29,11 +27,11 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
                 InjectMock injectMockAnnotation = field.getAnnotation(InjectMock.class);
                 if (injectMockAnnotation != null) {
                     boolean returnsDeepMocks = injectMockAnnotation.returnsDeepMocks();
-                    Object contextualReference = getContextualReference(testInstance, field, InjectMock.class);
-                    Optional<Object> result = createMockAndSetTestField(testInstance, field, contextualReference,
+                    InstanceHandle<?> beanHandle = getBeanHandle(testInstance, field, InjectMock.class);
+                    Optional<Object> result = createMockAndSetTestField(testInstance, field, beanHandle,
                             new MockConfiguration(returnsDeepMocks));
                     if (result.isPresent()) {
-                        MockitoMocksTracker.track(testInstance, result.get(), contextualReference);
+                        MockitoMocksTracker.track(testInstance, result.get(), beanHandle.get());
                     }
                 }
             }
@@ -41,12 +39,13 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, Object contextualReference,
+    private Optional<Object> createMockAndSetTestField(Object testInstance, Field field, InstanceHandle<?> beanHandle,
             MockConfiguration mockConfiguration) {
-        Class<?> implementationClass = getImplementationClass(contextualReference);
+        Class<?> implementationClass = beanHandle.getBean().getImplementationClass();
         Object mock;
         boolean isNew;
-        Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, contextualReference);
+        // Note that beanHandle.get() returns a client proxy for normal scoped beans; i.e. the contextual instance is not created
+        Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, beanHandle.get());
         if (currentMock.isPresent()) {
             mock = currentMock.get();
             isNew = false;
@@ -71,15 +70,7 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    /**
-     * Contextual reference of a normal scoped bean is a client proxy.
-     *
-     * @param testInstance
-     * @param field
-     * @param annotationType
-     * @return a contextual reference of a bean
-     */
-    static Object getContextualReference(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
+    static InstanceHandle<?> getBeanHandle(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
         Type fieldType = field.getGenericType();
         ArcContainer container = Arc.container();
         BeanManager beanManager = container.beanManager();
@@ -100,15 +91,7 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
                             + ". Offending field is " + field.getName() + " of test class "
                             + testInstance.getClass());
         }
-        return handle.get();
-    }
-
-    static Class<?> getImplementationClass(Object contextualReference) {
-        // Unwrap the client proxy if needed
-        Object contextualInstance = ClientProxy.unwrap(contextualReference);
-        // If the contextual instance is an intercepted subclass then mock the extended implementation class
-        return contextualInstance instanceof Subclass ? contextualInstance.getClass().getSuperclass()
-                : contextualInstance.getClass();
+        return handle;
     }
 
     static Annotation[] getQualifiers(Field fieldToMock, BeanManager beanManager) {

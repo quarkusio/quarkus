@@ -40,6 +40,7 @@ public class KnownOidcProviders {
         ret.getAuthentication().setUserInfoRequired(true);
         ret.getAuthentication().setIdTokenRequired(false);
         ret.getToken().setVerifyAccessTokenWithUserInfo(true);
+        ret.getToken().setPrincipalClaim("name");
         return ret;
     }
 

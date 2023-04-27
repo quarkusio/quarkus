@@ -51,6 +51,7 @@ public class OidcUtilsTest {
         assertTrue(config.authentication.userInfoRequired.get());
         assertTrue(config.token.verifyAccessTokenWithUserInfo.get());
         assertEquals(List.of("user:email"), config.authentication.scopes.get());
+        assertEquals("name", config.getToken().getPrincipalClaim().get());
     }
 
     @Test
@@ -69,6 +70,7 @@ public class OidcUtilsTest {
         tenant.authentication.setUserInfoRequired(false);
         tenant.token.setVerifyAccessTokenWithUserInfo(false);
         tenant.authentication.setScopes(List.of("write"));
+        tenant.token.setPrincipalClaim("firstname");
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
 
@@ -84,6 +86,7 @@ public class OidcUtilsTest {
         assertFalse(config.authentication.userInfoRequired.get());
         assertFalse(config.token.verifyAccessTokenWithUserInfo.get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
+        assertEquals("firstname", config.getToken().getPrincipalClaim().get());
     }
 
     @Test

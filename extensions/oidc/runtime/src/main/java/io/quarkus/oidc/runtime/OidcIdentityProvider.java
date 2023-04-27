@@ -261,7 +261,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             return Uni.createFrom()
                                     .failure(new AuthenticationFailedException("JWT token can not be converted to JSON"));
                         } else {
-                            // ID Token or Bearer access token has been introspected
+                            // ID Token or Bearer access token has been introspected or verified via Userinfo acquisition
                             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
                             builder.addCredential(tokenCred);
                             OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
@@ -270,7 +270,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             if (result.introspectionResult == null) {
                                 if (resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection &&
                                         resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)) {
-                                    userName = "";
+                                    if (resolvedContext.oidcConfig.token.principalClaim.isPresent() && userInfo != null) {
+                                        userName = userInfo.getString(resolvedContext.oidcConfig.token.principalClaim.get());
+                                    } else {
+                                        userName = "";
+                                    }
                                 } else {
                                     // we don't expect this to ever happen
                                     LOG.debug("Illegal state - token introspection result is not available.");
@@ -297,7 +301,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             builder.setPrincipal(new Principal() {
                                 @Override
                                 public String getName() {
-                                    return userName;
+                                    return userName != null ? userName : "";
                                 }
                             });
                             if (userInfo != null) {

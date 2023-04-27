@@ -291,9 +291,7 @@ var port = {config:property('quarkus.http.port')};
 
     {/if}
     
-{/if}
-
-{#if info:oidcApplicationType is 'web-app'}
+{#else}
 function signInToService(servicePath) {
     window.open("http://localhost:" + port + servicePath);
 }

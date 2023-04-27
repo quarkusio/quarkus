@@ -5,6 +5,7 @@ import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReac
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
 import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 
 import java.io.File;
 import java.io.IOException;
@@ -436,9 +437,6 @@ public class ResteasyReactiveProcessor {
         paramConverterProviders.initializeDefaultFactories(factoryFunction);
         paramConverterProviders.sort();
 
-        boolean filtersAccessResourceMethod = filtersAccessResourceMethod(
-                resourceInterceptorsBuildItem.getResourceInterceptors());
-
         GeneratedClassGizmoAdaptor classOutput = new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true);
         try (ClassCreator c = new ClassCreator(classOutput,
                 QUARKUS_INIT_CLASS, null, Object.class.getName(), ResteasyReactiveInitialiser.class.getName());
@@ -529,6 +527,7 @@ public class ResteasyReactiveProcessor {
                                     .source(source)
                                     .build());
 
+                            boolean paramsRequireReflection = false;
                             for (short i = 0; i < method.parametersCount(); i++) {
                                 Type parameterType = method.parameterType(i);
                                 if (!hasAnnotation(method, i, ResteasyReactiveServerDotNames.CONTEXT)) {
@@ -545,16 +544,16 @@ public class ResteasyReactiveProcessor {
                                             .build());
                                 }
                                 if (parameterType.name().equals(FILE)) {
-                                    minimallyRegisterResourceClassForReflection(entry,
-                                            reflectiveClassBuildItemBuildProducer);
+                                    paramsRequireReflection = true;
+                                    break;
+
                                 }
                             }
 
-                            if (filtersAccessResourceMethod) {
-                                minimallyRegisterResourceClassForReflection(entry, reflectiveClassBuildItemBuildProducer);
-                            }
-
-                            if (entry.additionalRegisterClassForReflectionCheck()) {
+                            if (paramsRequireReflection ||
+                                    MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
+                                    filtersAccessResourceMethod(resourceInterceptorsBuildItem.getResourceInterceptors()) ||
+                                    entry.additionalRegisterClassForReflectionCheck()) {
                                 minimallyRegisterResourceClassForReflection(entry, reflectiveClassBuildItemBuildProducer);
                             }
                         }

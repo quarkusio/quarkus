@@ -134,7 +134,8 @@ public class KnownPathResourceManager implements ResourceManager {
             SortedSet<String> dirSet = directories.tailSet(slashPath);
 
             for (var s : List.of(fileSet, dirSet)) {
-                for (String i : s) {
+                for (String file : s) {
+                    var i = file;
                     if (i.equals(slashPath)) {
                         continue;
                     }
@@ -143,6 +144,9 @@ public class KnownPathResourceManager implements ResourceManager {
                         if (!i.substring(slashPath.length()).contains("/")) {
                             try {
                                 Resource resource = underlying.getResource(i);
+                                if (resource == null && directories.contains(file)) {
+                                    resource = new DirectoryResource(file);
+                                }
                                 if (resource == null) {
                                     throw new RuntimeException("Unable to get listed resource " + i + " from directory " + path
                                             + " for path " + slashPath + " from underlying manager " + underlying);

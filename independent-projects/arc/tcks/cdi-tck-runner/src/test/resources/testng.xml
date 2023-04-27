@@ -62,11 +62,6 @@
                     <exclude name="testGetTargetMethod"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamConstructorTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.lookup.circular.CircularDependencyTest">
                 <methods>
                     <exclude name="testCircularInjectionOnTwoNormalBeans"/>
@@ -76,21 +71,6 @@
                     <exclude name="testNormalAndDependentCircularConstructors"/>
                     <exclude name="testNormalProducerMethodDeclaredOnDependentBeanWhichInjectsProducedBean"/>
                     <exclude name="testNormalCircularConstructors"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptedBeanTypeParamFieldTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamConstructorTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamDisposerTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContextTest">
@@ -103,11 +83,6 @@
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptedBeanTypeParamInitializerTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.definition.scope.ScopeDefinitionTest">
                 <methods>
                     <exclude name="testScopeTypeHasCorrectTarget"/>
@@ -116,29 +91,9 @@
                     <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamInitializerTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptedBeanTypeParamConstructorTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.definition.qualifier.builtin.BuiltInQualifierDefinitionTest">
                 <methods>
                     <exclude name="testDefaultQualifierForInjectionPoint"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamProducerTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.BeanTypeParamFieldTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.definition.SimpleBeanDefinitionTest">
@@ -188,11 +143,6 @@
                     <exclude name="testNonDependentGenericManagedBeanNotOk"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.injection.intercepted.InterceptedBeanConstructorInjectionTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.unproxyable.UnproxyableManagedBeanTest">
                 <methods>
                     <exclude name="testNormalScopedUnproxyableBeanWithPublicFinalMethodResolution"/>
@@ -200,16 +150,6 @@
                     <exclude name="testNormalScopedUnproxyableBeanWithFinalClassResolution"/>
                     <exclude name="testNormalScopedUnproxyableBeanWithPackagePrivateFinalMethodResolution"/>
                     <exclude name="testNormalScopedUnproxyableBeanWithProtectedFinalMethodResolution"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamFieldTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.injection.intercepted.InterceptedBeanInitializerInjectionTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.event.fires.FireEventTest">
@@ -244,25 +184,10 @@
                     <exclude name="testCustomScopeInOtherBDAisBeanDefiningAnnotation"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.injection.intercepted.InterceptedBeanFieldInjectionTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.injection.BuiltinInterceptorInjectionTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.lookup.dynamic.handle.InstanceHandleTest">
                 <methods>
                     <exclude name="testGetHandle"/>
                     <exclude name="testHandles"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.builtin.metadata.broken.typeparam.interceptor.InterceptorTypeParamInitializerTest">
-                <methods>
-                    <exclude name="testDeploymentFails"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">

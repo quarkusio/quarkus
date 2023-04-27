@@ -1154,7 +1154,7 @@ public class BeanDeployment {
             BeanInfo declaringBean = beanClassToBean.get(disposerMethod.declaringClass());
             if (declaringBean != null) {
                 Injection injection = Injection.forDisposer(disposerMethod, declaringBean.getImplClazz(), this,
-                        injectionPointTransformer, declaringBean);
+                        injectionPointTransformer);
                 injection.init(declaringBean);
                 disposers.add(new DisposerInfo(declaringBean, disposerMethod, injection));
                 injectionPoints.addAll(injection.injectionPoints);

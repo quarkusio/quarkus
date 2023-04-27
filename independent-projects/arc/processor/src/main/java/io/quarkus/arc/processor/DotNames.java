@@ -87,6 +87,7 @@ public final class DotNames {
     public static final DotName PROVIDER = create(Provider.class);
     public static final DotName INJECTION_POINT = create(InjectionPoint.class);
     public static final DotName INTERCEPTOR = create(Interceptor.class);
+    public static final DotName INTERCEPTOR_BEAN = create(jakarta.enterprise.inject.spi.Interceptor.class);
     public static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);
     public static final DotName INTERCEPTED = create(Intercepted.class);
     public static final DotName AROUND_INVOKE = create(AroundInvoke.class);

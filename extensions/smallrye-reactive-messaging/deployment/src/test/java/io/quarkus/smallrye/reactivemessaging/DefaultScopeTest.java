@@ -55,9 +55,9 @@ public class DefaultScopeTest {
     public static class NoScopeButResource {
 
         @Inject
-        Bean<NoScope> bean;
+        Bean<NoScopeButResource> bean;
 
-        public Bean<NoScope> getBean() {
+        public Bean<NoScopeButResource> getBean() {
             return bean;
         }
 

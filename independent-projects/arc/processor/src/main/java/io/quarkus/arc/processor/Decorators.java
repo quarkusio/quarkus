@@ -31,7 +31,8 @@ final class Decorators {
 
         // Find the delegate injection point
         List<InjectionPointInfo> delegateInjectionPoints = new LinkedList<>();
-        List<Injection> injections = Injection.forBean(decoratorClass, null, beanDeployment, transformer);
+        List<Injection> injections = Injection.forBean(decoratorClass, null, beanDeployment, transformer,
+                Injection.BeanType.DECORATOR);
         for (Injection injection : injections) {
             for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
                 if (injectionPoint.isDelegate()) {

@@ -52,6 +52,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterceptor;
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
@@ -108,6 +109,7 @@ class RestClientReactiveProcessor {
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
 
     private static final String DISABLE_SMART_PRODUCES_QUARKUS = "quarkus.rest-client.disable-smart-produces";
+    private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
 
     private static final Set<DotName> SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS = Set.of(
@@ -350,6 +352,19 @@ class RestClientReactiveProcessor {
             }
         }
         return builder.build();
+    }
+
+    @BuildStep
+    void registerCompressionInterceptors(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        Boolean enableCompression = ConfigProvider.getConfig()
+                .getOptionalValue(ENABLE_COMPRESSION, Boolean.class)
+                .orElse(false);
+        if (enableCompression) {
+            reflectiveClasses.produce(ReflectiveClassBuildItem
+                    .builder(ClientGZIPDecodingInterceptor.class)
+                    .serialization(false)
+                    .build());
+        }
     }
 
     @BuildStep

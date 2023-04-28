@@ -154,7 +154,8 @@ public class TestSupport implements TestController {
 
     public void init() {
         if (moduleRunners.isEmpty()) {
-            TestWatchedFiles.setWatchedFilesListener((s) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(s, true));
+            TestWatchedFiles.setWatchedFilesListener(
+                    (paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(paths, predicates, true));
             final Pattern includeModulePattern = getCompiledPatternOrNull(config.includeModulePattern);
             final Pattern excludeModulePattern = getCompiledPatternOrNull(config.excludeModulePattern);
             for (var module : context.getAllModules()) {

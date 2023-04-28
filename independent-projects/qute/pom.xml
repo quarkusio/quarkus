@@ -43,7 +43,7 @@
         <version.junit>5.9.2</version.junit>
         <version.assertj>3.24.2</version.assertj>
         <version.jandex>3.1.1</version.jandex>
-        <version.gizmo>1.6.0.Final</version.gizmo>
+        <version.gizmo>1.6.1.Final</version.gizmo>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.compiler.plugin>3.11.0</version.compiler.plugin>
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>

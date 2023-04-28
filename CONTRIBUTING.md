@@ -503,6 +503,21 @@ CI is using a slightly different GIB config than locally:
 
 For more details see the `Get GIB arguments` step in `.github/workflows/ci-actions-incremental.yml`.
 
+##### Gradle Enterprise build cache
+
+Quarkus has a Gradle Enterprise setup at https://ge.quarkus.io that can be used to analyze the build performance of the Quarkus project.
+
+Locally you can use `-Dgradle.cache.local.enabled=true` to enable the local Gradle Enterprise cache. This can speed up the build significantly. It is still considered experimental but can be used for local development.
+
+If you have a need or interest to report build times, you will need to get an API key for the GE instance. It is mainly relevant for those working on optimizing the Quarkus build. Ping on quarkus-dev mailing list or on Zulip if you need one.
+
+When you have the account setup you run `mvn gradle-enterprise:provision-access-key` and login - from then on build time info will be sent to the GE instance.
+You can alternatively also generate an API key from the GE UI and then use an environment variable like this:
+
+```
+export GRADLE_ENTERPRISE_ACCESS_KEY=ge.quarkus.io=a_secret_key
+```
+
 ## Release your own version
 
 You might want to release your own patched version of Quarkus to an internal repository.

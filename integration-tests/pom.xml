@@ -82,6 +82,32 @@
                         </systemPropertyVariables>
                     </configuration>
                 </plugin>
+
+                <plugin>
+                <!-- config to avoid unbind-executions confuses gradle enterprise caching-->
+                <groupId>com.gradle</groupId>
+                <artifactId>gradle-enterprise-maven-extension</artifactId>
+                <configuration>
+                    <gradleEnterprise>
+                    <plugins>
+                        <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <inputs>
+                            <fileSets>
+                            <fileSet>
+                                <name>specs</name>
+                                <paths>
+                                <path>${project.basedir}/disable-unbind-executions</path>
+                                </paths>
+                                <normalization>RELATIVE_PATH</normalization>
+                            </fileSet>
+                            </fileSets>
+                        </inputs>
+                        </plugin>
+                    </plugins>
+                    </gradleEnterprise>
+                </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

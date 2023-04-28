@@ -916,7 +916,7 @@ Jump over to xref:datasource.adoc[Quarkus - Datasources] for all details.
 
 "The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{orm-doc-url-prefix}#multitenacy[Hibernate User Guide]).
 
-Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database], the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach and the link:{orm-doc-url-prefix}#multitenacy-discriminator[discriminator] approach.
+Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database] approach, the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach and the link:{orm-doc-url-prefix}#multitenacy-discriminator[discriminator] approach.
 
 To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 

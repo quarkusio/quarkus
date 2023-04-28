@@ -54,7 +54,7 @@ public class ConfigurationImpl implements Configuration {
     private final MultivaluedMap<Class<?>, ResourceWriter> resourceWriters;
     private final MultivaluedMap<Class<?>, ResourceReader> resourceReaders;
     private final MultivaluedMap<Class<?>, RxInvokerProvider<?>> rxInvokerProviders;
-    private final MultivaluedMap<Class<?>, ContextResolver<?>> contextResolvers;
+    private final Map<Class<?>, MultivaluedMap<Integer, ContextResolver<?>>> contextResolvers;
 
     public ConfigurationImpl(RuntimeType runtimeType) {
         this.runtimeType = runtimeType;
@@ -69,7 +69,7 @@ public class ConfigurationImpl implements Configuration {
         this.resourceReaders = new QuarkusMultivaluedHashMap<>();
         this.resourceWriters = new QuarkusMultivaluedHashMap<>();
         this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
-        this.contextResolvers = new QuarkusMultivaluedHashMap<>();
+        this.contextResolvers = new HashMap<>();
     }
 
     public ConfigurationImpl(Configuration configuration) {
@@ -96,7 +96,7 @@ public class ConfigurationImpl implements Configuration {
             this.resourceWriters.putAll(configurationImpl.resourceWriters);
             this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
             this.rxInvokerProviders.putAll(configurationImpl.rxInvokerProviders);
-            this.contextResolvers = new QuarkusMultivaluedHashMap<>();
+            this.contextResolvers = new HashMap<>();
             this.contextResolvers.putAll(configurationImpl.contextResolvers);
         } else {
             this.allInstances = new HashMap<>();
@@ -111,7 +111,7 @@ public class ConfigurationImpl implements Configuration {
             this.resourceReaders = new QuarkusMultivaluedHashMap<>();
             this.resourceWriters = new QuarkusMultivaluedHashMap<>();
             this.rxInvokerProviders = new QuarkusMultivaluedHashMap<>();
-            this.contextResolvers = new QuarkusMultivaluedHashMap<>();
+            this.contextResolvers = new HashMap<>();
             // this is the best we can do - we don't have any of the metadata associated with the registration
             for (Object i : configuration.getInstances()) {
                 register(i);
@@ -314,8 +314,10 @@ public class ConfigurationImpl implements Configuration {
             added = true;
             Class<?> componentClass = component.getClass();
             Type[] args = Types.findParameterizedTypes(componentClass, ContextResolver.class);
-            contextResolvers.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                    (ContextResolver<?>) component);
+            Class<?> key = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            contextResolvers.computeIfAbsent(key, k -> new MultivaluedTreeMap<>())
+                    .add(effectivePriority, (ContextResolver<?>) component);
         }
         if (added) {
             allInstances.put(component.getClass(), component);
@@ -419,8 +421,10 @@ public class ConfigurationImpl implements Configuration {
         if (component instanceof ContextResolver) {
             added = true;
             Type[] args = Types.findParameterizedTypes(componentClass, ContextResolver.class);
-            contextResolvers.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
-                    (ContextResolver<?>) component);
+            Class<?> key = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
+            int effectivePriority = priority != null ? priority : determinePriority(component);
+            contextResolvers.computeIfAbsent(key, k -> new MultivaluedTreeMap<>())
+                    .add(effectivePriority, (ContextResolver<?>) component);
         }
         if (added) {
             allInstances.put(componentClass, component);
@@ -525,14 +529,16 @@ public class ConfigurationImpl implements Configuration {
     }
 
     public <T> T getFromContext(Class<T> wantedClass) {
-        List<ContextResolver<?>> candidates = contextResolvers.get(wantedClass);
+        MultivaluedMap<Integer, ContextResolver<?>> candidates = contextResolvers.get(wantedClass);
         if (candidates == null) {
             return null;
         }
-        for (ContextResolver<?> contextResolver : candidates) {
-            Object instance = contextResolver.getContext(wantedClass);
-            if (instance != null) {
-                return (T) instance;
+        for (List<ContextResolver<?>> contextResolvers : candidates.values()) {
+            for (ContextResolver<?> contextResolver : contextResolvers) {
+                Object instance = contextResolver.getContext(wantedClass);
+                if (instance != null) {
+                    return (T) instance;
+                }
             }
         }
 

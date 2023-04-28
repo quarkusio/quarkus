@@ -18,7 +18,10 @@ public class KubernetesClientProducer {
     @Singleton
     @Produces
     public KubernetesClient kubernetesClient(Config config) {
-        client = new KubernetesClientBuilder().withConfig(config).build();
+        client = new KubernetesClientBuilder()
+                .withHttpClientFactory(new QuarkusHttpClientFactory())
+                .withConfig(config)
+                .build();
         return client;
     }
 

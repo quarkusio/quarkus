@@ -32,7 +32,7 @@ final class Interceptors {
      *
      * @param interceptorClass
      * @param beanDeployment
-     * @return a new interceptor info
+     * @return a new interceptor info, or (only in strict mode) {@code null} if the interceptor is disabled
      */
     static InterceptorInfo createInterceptor(ClassInfo interceptorClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
@@ -60,6 +60,11 @@ final class Interceptors {
         }
 
         if (priority == null) {
+            if (beanDeployment.strictCompatibility) {
+                // interceptor without `@Priority` is disabled per the specification
+                return null;
+            }
+
             LOGGER.info("The interceptor " + interceptorClass + " does not declare any @Priority. " +
                     "It will be assigned a default priority value of 0.");
             priority = 0;

@@ -1422,7 +1422,10 @@ public class BeanDeployment {
                 // Skip vetoed interceptors
                 continue;
             }
-            interceptors.add(Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer));
+            InterceptorInfo interceptor = Interceptors.createInterceptor(interceptorClass, this, injectionPointTransformer);
+            if (interceptor != null) {
+                interceptors.add(interceptor);
+            }
         }
         if (LOGGER.isTraceEnabled()) {
             for (InterceptorInfo interceptor : interceptors) {
@@ -1448,7 +1451,10 @@ public class BeanDeployment {
                 // Skip vetoed decorators
                 continue;
             }
-            decorators.add(Decorators.createDecorator(decoratorClass, this, injectionPointTransformer));
+            DecoratorInfo decorator = Decorators.createDecorator(decoratorClass, this, injectionPointTransformer);
+            if (decorator != null) {
+                decorators.add(decorator);
+            }
         }
         if (LOGGER.isTraceEnabled()) {
             for (DecoratorInfo decorator : decorators) {

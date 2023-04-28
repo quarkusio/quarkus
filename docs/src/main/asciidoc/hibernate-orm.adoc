@@ -1159,7 +1159,7 @@ The default data source will be used for all tenants. All entities defining a fi
 # Disable generation
 quarkus.hibernate-orm.database.generation=none
 
-# Enable DISCRIMINATOR approach and use default datasource
+# Enable DISCRIMINATOR approach
 quarkus.hibernate-orm.multitenant=DISCRIMINATOR
 
 # The default data source used for all tenant schemas

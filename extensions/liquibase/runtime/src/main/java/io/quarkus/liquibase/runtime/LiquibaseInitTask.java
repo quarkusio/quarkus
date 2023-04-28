@@ -8,12 +8,12 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.liquibase.LiquibaseFactory;
-import io.quarkus.runtime.annotations.Initialization;
+import io.quarkus.runtime.annotations.PreStart;
 import liquibase.Liquibase;
 import liquibase.lockservice.LockServiceFactory;
 
 @ApplicationScoped
-@Initialization("liquibase-init-task")
+@PreStart("liquibase-init-task")
 public class LiquibaseInitTask implements Runnable {
 
     @Inject

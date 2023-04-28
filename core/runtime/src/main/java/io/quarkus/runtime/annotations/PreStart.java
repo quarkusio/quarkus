@@ -27,15 +27,16 @@ import jakarta.inject.Qualifier;
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
-public @interface Initialization {
+public @interface PreStart {
 
     /*
      * Task name
+     *
      * @return the name of the initialization task.
      */
     String value() default "";
 
-    public static final class Literal extends AnnotationLiteral<Initialization> implements Initialization, Qualifier {
+    public static final class Literal extends AnnotationLiteral<PreStart> implements PreStart, Qualifier {
 
         public static Literal forName(String name) {
             return new Literal(name);

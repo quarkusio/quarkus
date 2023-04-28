@@ -8,12 +8,12 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
-import io.quarkus.runtime.annotations.Initialization;
+import io.quarkus.runtime.annotations.PreStart;
 import liquibase.Liquibase;
 import liquibase.lockservice.LockServiceFactory;
 
 @ApplicationScoped
-@Initialization("liquibase-mongo-init-task")
+@PreStart("liquibase-mongo-init-task")
 public class LiquibaseMongodbInitTask implements Runnable {
 
     @Inject

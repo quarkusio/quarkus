@@ -54,15 +54,15 @@ public class InitTaskProcessor {
 
     private static final Logger LOG = Logger.getLogger(InitTaskProcessor.class);
 
-    private static final DotName INITIALIZATION_ANNOTATION = DotName
-            .createSimple("io.quarkus.runtime.annotations.Initialization");
+    private static final DotName PRE_START_ANNOTATION = DotName
+            .createSimple("io.quarkus.runtime.annotations.PreStart");
 
     @BuildStep
     QualifierRegistrarBuildItem registerInitialization() {
         return new QualifierRegistrarBuildItem(new QualifierRegistrar() {
             @Override
             public Map<DotName, Set<String>> getAdditionalQualifiers() {
-                return Map.of(INITIALIZATION_ANNOTATION, Collections.emptySet());
+                return Map.of(PRE_START_ANNOTATION, Collections.emptySet());
             }
         });
     }
@@ -76,7 +76,7 @@ public class InitTaskProcessor {
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         Set<String> generatedBeanNames = new HashSet<>();
 
-        for (AnnotationInstance instance : index.getAnnotations(INITIALIZATION_ANNOTATION)) {
+        for (AnnotationInstance instance : index.getAnnotations(PRE_START_ANNOTATION)) {
             AnnotationTarget annotationTarget = instance.target();
             if (annotationTarget instanceof ClassInfo) {
                 ClassInfo classInfo = (ClassInfo) annotationTarget;
@@ -100,13 +100,13 @@ public class InitTaskProcessor {
                         .collect(Collectors.joining(",", "(", ")"));
 
                 if (methodInfo.parameters().size() != 0) {
-                    LOG.warn("Using @Initialization on methods with arguments is not supported. Ignoring method "
+                    LOG.warn("Using PreStart on methods with arguments is not supported. Ignoring method "
                             + methodInfo.declaringClass().name().toString() + "." + methodSignature);
                     continue;
                 }
 
                 if (generatedBeanNames.contains(runnableFqcn)) {
-                    LOG.warn("A class can only have a single method annotated with @Initialization. Ignoring: "
+                    LOG.warn("A class can only have a single method annotated with PreStart. Ignoring: "
                             + methodInfo.declaringClass().name().toString() + "." + methodSignature);
                     continue;
                 }
@@ -117,7 +117,7 @@ public class InitTaskProcessor {
                         .interfaces(Runnable.class)
                         .build();
 
-                runnableClass.addAnnotation(AnnotationInstance.create(INITIALIZATION_ANNOTATION, annotationTarget,
+                runnableClass.addAnnotation(AnnotationInstance.create(PRE_START_ANNOTATION, annotationTarget,
                         Optional.ofNullable(instance.value()).map(List::of).orElse(List.of())));
 
                 runnableClass.addAnnotation(ApplicationScoped.class);
@@ -165,12 +165,12 @@ public class InitTaskProcessor {
     }
 
     void registerInitTask(String taskName, BuildProducer<InitTaskBuildItem> initTasks) {
-                        initTasks.produce(InitTaskBuildItem.create()
-                        .withName(taskName)
-                        .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_INIT_TASK_FILTER", taskName))
-                        .withAppEnvVars(Map.of("QUARKUS_INIT_DISABLED", "true"))
-                        .withSharedEnvironment(true)
-                        .withSharedFilesystem(true));
+        initTasks.produce(InitTaskBuildItem.create()
+                .withName(taskName)
+                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_INIT_TASK_FILTER", taskName))
+                .withAppEnvVars(Map.of("QUARKUS_INIT_DISABLED", "true"))
+                .withSharedEnvironment(true)
+                .withSharedFilesystem(true));
 
     }
 }

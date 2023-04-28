@@ -7,10 +7,10 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.flywaydb.core.Flyway;
 
-import io.quarkus.runtime.annotations.Initialization;
+import io.quarkus.runtime.annotations.PreStart;
 
 @ApplicationScoped
-@Initialization("flyway-init-task")
+@PreStart("flyway-init-task")
 public class FlywayInitTask implements Runnable {
 
     @Inject

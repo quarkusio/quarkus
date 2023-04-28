@@ -16,14 +16,14 @@ import io.quarkus.arc.Arc;
 import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Initialization;
+import io.quarkus.runtime.annotations.PreStart;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.init.InitRuntimeConfig;
 import io.quarkus.runtime.util.PatternUtil;
 
 /**
  * A {@link Recorder} that deals with initialization tasks.
- * It's responsible for executing user provided {@link Initialization} tasks.
+ * It's responsible for executing user provided {@link PreStart} tasks.
  * It's also used to check if the application should exit once all initialization tasks are completed.
  */
 @Recorder
@@ -46,7 +46,7 @@ public class InitTaskRecorder {
         }
 
         BeanManager beanManager = Arc.container().beanManager();
-        Set<Bean<?>> beans = beanManager.getBeans(Runnable.class, Initialization.Literal.forName(taskName));
+        Set<Bean<?>> beans = beanManager.getBeans(Runnable.class, PreStart.Literal.forName(taskName));
         for (Bean<?> bean : beans) {
             Bean<Runnable> runnableBean = (Bean<Runnable>) bean;
             CreationalContext<Runnable> ctx = beanManager.createCreationalContext(runnableBean);

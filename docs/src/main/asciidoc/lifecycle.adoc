@@ -244,16 +244,16 @@ where users need provide custom initialization tasks.
 
 === User provided Initialization Tasks
 
-User provided initialization tasks are `Runnable` annotated with the `@Initialization` annotation that indicates that
+User provided initialization tasks are `Runnable` annotated with the `@PreStart` annotation that indicates that
 the run method should be executed as part of the application initialization. An example:
 
 [source,java]
 ----
 package com.acme;
 
-import io.quarkus.runtime.annotations.Initialization;
+import io.quarkus.runtime.annotations.PreStart;
 
-@Initialization  <1>
+@PreStart  <1>
 public class UserInitTask implements Runnable { <2>
 
     public void run() {
@@ -261,7 +261,7 @@ public class UserInitTask implements Runnable { <2>
     }
 }
 ----
-<1> The task is annotated with `@Initialization`
+<1> The task is annotated with `@PreStart`
 <2> The task implements Runnable
 
 
@@ -273,17 +273,17 @@ behind the scenes and the run method will delegate to the method annotated.
 ----
 package com.acme;
 
-import io.quarkus.runtime.annotations.Initialization;
+import io.quarkus.runtime.annotations.PreStart;
 
 public class UserInitTask {
 
-    @Initialization  <1>
+    @PreStart  <1>
     public void initialize() {
        //User initialization code
     }
 }
 ----
-<1> The method is annotated with `@Initialization`
+<1> The method is annotated with `@PreStart`
 Method with arguments or additional methods under a single class are ignored.
 
 Both styles allow using dependency injection and therefore the user initialization code is able to use CDI beans provided by the user or extensions.

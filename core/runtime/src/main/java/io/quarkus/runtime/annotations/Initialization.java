@@ -26,7 +26,7 @@ import jakarta.inject.Qualifier;
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
+@Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface Initialization {
 
     /*

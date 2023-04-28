@@ -54,7 +54,7 @@
         <assertj.version>3.24.2</assertj.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
-        <gizmo.version>1.6.0.Final</gizmo.version>
+        <gizmo.version>1.6.1.Final</gizmo.version>
         <jakarta.persistence-api.version>3.0.0</jakarta.persistence-api.version>
 
         <version.compiler.plugin>3.11.0</version.compiler.plugin>

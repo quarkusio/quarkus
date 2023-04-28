@@ -166,7 +166,7 @@ public class BeanManagerImpl implements BeanManager {
     @Override
     public boolean isInterceptorBinding(Class<? extends Annotation> annotationType) {
         return annotationType.isAnnotationPresent(InterceptorBinding.class)
-                || ArcContainerImpl.instance().getTransitiveInterceptorBindings().containsKey(annotationType);
+                || ArcContainerImpl.instance().registeredInterceptorBindings.isRegistered(annotationType);
     }
 
     @Override

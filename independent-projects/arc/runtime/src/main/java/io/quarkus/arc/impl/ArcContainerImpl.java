@@ -84,7 +84,6 @@ public class ArcContainerImpl implements ArcContainer {
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
-    private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Contexts contexts;
     private final ComputingCache<Resolvable, Set<InjectableBean<?>>> resolved;
     private final ComputingCache<String, InjectableBean<?>> beansById;
@@ -94,6 +93,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     final InstanceImpl<Object> instance;
     final Qualifiers registeredQualifiers;
+    final InterceptorBindings registeredInterceptorBindings;
 
     private volatile ExecutorService executorService;
 
@@ -110,6 +110,7 @@ public class ArcContainerImpl implements ArcContainer {
         List<InjectableInterceptor<?>> interceptors = new ArrayList<>();
         List<InjectableDecorator<?>> decorators = new ArrayList<>();
         List<InjectableObserverMethod<?>> observers = new ArrayList<>();
+        Set<String> interceptorBindings = new HashSet<>();
         Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
         Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Set<String> qualifiers = new HashSet<>();
@@ -133,6 +134,7 @@ public class ArcContainerImpl implements ArcContainer {
             }
             removedBeans.add(c.getRemovedBeans());
             observers.addAll(c.getObservers());
+            interceptorBindings.addAll(c.getInterceptorBindings());
             transitiveInterceptorBindings.putAll(c.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             qualifiers.addAll(c.getQualifiers());
@@ -170,8 +172,8 @@ public class ArcContainerImpl implements ArcContainer {
                 return List.copyOf(removed);
             }
         });
-        this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
+        this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings, transitiveInterceptorBindings);
 
         Contexts.Builder contextsBuilder = new Contexts.Builder(
                 new RequestContext(this.currentContextFactory.create(RequestScoped.class),
@@ -543,10 +545,6 @@ public class ArcContainerImpl implements ArcContainer {
         return new HashSet<>(getMatchingBeans(name));
     }
 
-    Map<Class<? extends Annotation>, Set<Annotation>> getTransitiveInterceptorBindings() {
-        return transitiveInterceptorBindings;
-    }
-
     boolean isScope(Class<? extends Annotation> annotationType) {
         if (annotationType.isAnnotationPresent(Scope.class) || annotationType.isAnnotationPresent(NormalScope.class)) {
             return true;
@@ -802,11 +800,12 @@ public class ArcContainerImpl implements ArcContainer {
         if (interceptorBindings.length == 0) {
             throw new IllegalArgumentException("No interceptor bindings");
         }
+        registeredInterceptorBindings.verify(interceptorBindings);
         List<Interceptor<?>> interceptors = new ArrayList<>();
         List<Annotation> bindings = new ArrayList<>();
         for (Annotation binding : interceptorBindings) {
             bindings.add(binding);
-            Set<Annotation> transitive = transitiveInterceptorBindings.get(binding.annotationType());
+            Set<Annotation> transitive = registeredInterceptorBindings.getTransitive(binding.annotationType());
             if (transitive != null) {
                 bindings.addAll(transitive);
             }

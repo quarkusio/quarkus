@@ -167,8 +167,6 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">
                 <methods>
-                    <exclude name="testNonBindingTypeToResolveInterceptorsFails"/>
-                    <exclude name="testSameBindingTypesToResolveInterceptorsFails"/>
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
                 </methods>
             </class>

@@ -63,6 +63,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
 
@@ -71,7 +72,7 @@ public class BeanManagerTest {
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer.Builder()
             .beanClasses(Legacy.class, AlternativeLegacy.class, Fool.class, LowFool.class, DummyInterceptor.class,
-                    DummyBinding.class,
+                    DummyBinding.class, UselessBinding.class, CustomBinding.class,
                     LowPriorityInterceptor.class, WithInjectionPointMetadata.class, High.class, Low.class, Observers.class,
                     BeanWithCustomQualifier.class,
                     ToUpperCaseConverter.class, TrimConverterDecorator.class, RepeatDecorator.class)
@@ -79,6 +80,12 @@ public class BeanManagerTest {
                 @Override
                 public Map<DotName, Set<String>> getAdditionalQualifiers() {
                     return Map.of(DotName.createSimple(Low.class.getName()), Set.of());
+                }
+            })
+            .interceptorBindingRegistrars(new InterceptorBindingRegistrar() {
+                @Override
+                public List<InterceptorBinding> getAdditionalBindings() {
+                    return List.of(InterceptorBinding.of(CustomBinding.class));
                 }
             })
             .build();
@@ -196,6 +203,16 @@ public class BeanManagerTest {
         assertEquals(2, interceptors.size());
         assertEquals(LowPriorityInterceptor.class, interceptors.get(0).getBeanClass());
         assertEquals(DummyInterceptor.class, interceptors.get(1).getBeanClass());
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            // not an interceptor binding
+            beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE, new Default.Literal());
+        });
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE, new DummyBinding.Literal(true, true),
+                    new DummyBinding.Literal(false, false));
+        });
     }
 
     @Test
@@ -228,6 +245,7 @@ public class BeanManagerTest {
     public void testIsInterceptorBinding() {
         BeanManager beanManager = Arc.container().beanManager();
         assertTrue(beanManager.isInterceptorBinding(DummyBinding.class));
+        assertTrue(beanManager.isInterceptorBinding(CustomBinding.class));
         assertFalse(beanManager.isInterceptorBinding(Default.class));
     }
 
@@ -383,6 +401,12 @@ public class BeanManagerTest {
     public @interface UselessBinding {
         class Literal extends AnnotationLiteral<UselessBinding> implements UselessBinding {
         }
+    }
+
+    @Target({ TYPE, METHOD })
+    @Retention(RUNTIME)
+    @Documented
+    public @interface CustomBinding {
     }
 
     @DummyBinding(alpha = true, bravo = true)

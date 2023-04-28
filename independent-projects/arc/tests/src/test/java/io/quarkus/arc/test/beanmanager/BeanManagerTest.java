@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
+import jakarta.decorator.Decorator;
+import jakarta.decorator.Delegate;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.RequestScoped;
@@ -46,6 +48,7 @@ import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.enterprise.util.Nonbinding;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 import jakarta.inject.Qualifier;
 import jakarta.inject.Singleton;
@@ -70,7 +73,8 @@ public class BeanManagerTest {
             .beanClasses(Legacy.class, AlternativeLegacy.class, Fool.class, LowFool.class, DummyInterceptor.class,
                     DummyBinding.class,
                     LowPriorityInterceptor.class, WithInjectionPointMetadata.class, High.class, Low.class, Observers.class,
-                    BeanWithCustomQualifier.class)
+                    BeanWithCustomQualifier.class,
+                    ToUpperCaseConverter.class, TrimConverterDecorator.class, RepeatDecorator.class)
             .qualifierRegistrars(new QualifierRegistrar() {
                 @Override
                 public Map<DotName, Set<String>> getAdditionalQualifiers() {
@@ -190,8 +194,25 @@ public class BeanManagerTest {
         interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE, new DummyBinding.Literal(false, true),
                 new UselessBinding.Literal());
         assertEquals(2, interceptors.size());
-        assertEquals(DummyInterceptor.class, interceptors.get(0).getBeanClass());
-        assertEquals(LowPriorityInterceptor.class, interceptors.get(1).getBeanClass());
+        assertEquals(LowPriorityInterceptor.class, interceptors.get(0).getBeanClass());
+        assertEquals(DummyInterceptor.class, interceptors.get(1).getBeanClass());
+    }
+
+    @Test
+    public void testResolveDecorator() {
+        Set<Type> converterStringTypes = Set.of(new TypeLiteral<Converter<String>>() {
+        }.getType());
+
+        BeanManager beanManager = Arc.container().beanManager();
+        List<jakarta.enterprise.inject.spi.Decorator<?>> decorators;
+        decorators = beanManager.resolveDecorators(converterStringTypes);
+        assertEquals(2, decorators.size());
+        assertEquals(RepeatDecorator.class, decorators.get(0).getBeanClass());
+        assertEquals(TrimConverterDecorator.class, decorators.get(1).getBeanClass());
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            beanManager.resolveDecorators(converterStringTypes, new Default.Literal(), new Default.Literal());
+        });
     }
 
     @Test
@@ -394,4 +415,41 @@ public class BeanManagerTest {
 
     }
 
+    interface Converter<T> {
+        T convert(T value);
+    }
+
+    @Singleton
+    static class ToUpperCaseConverter implements Converter<String> {
+        @Override
+        public String convert(String value) {
+            return value.toUpperCase();
+        }
+    }
+
+    @Decorator
+    @Priority(10)
+    static class TrimConverterDecorator implements Converter<String> {
+        @Inject
+        @Delegate
+        Converter<String> delegate;
+
+        @Override
+        public String convert(String value) {
+            return delegate.convert(value.trim());
+        }
+    }
+
+    @Decorator
+    @Priority(1)
+    static class RepeatDecorator implements Converter<String> {
+        @Inject
+        @Delegate
+        Converter<String> delegate;
+
+        @Override
+        public String convert(String value) {
+            return delegate.convert(value).repeat(2);
+        }
+    }
 }

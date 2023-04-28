@@ -169,7 +169,6 @@
                 <methods>
                     <exclude name="testNonBindingTypeToResolveInterceptorsFails"/>
                     <exclude name="testSameBindingTypesToResolveInterceptorsFails"/>
-                    <exclude name="testResolveInterceptorsReturnsOrderedList"/>
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
                 </methods>
             </class>

@@ -1151,7 +1151,7 @@ INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
 
 ==== DISCRIMINATOR approach
 
-The default data source will be used for all tenants. All entities defining a field annotated with `@TenandId` will be handle automatically.
+The default data source will be used for all tenants. All entities defining a field annotated with `@TenandId` will have that field populated automatically, and will get filtered automatically in queries.
 
 
 [source,properties]

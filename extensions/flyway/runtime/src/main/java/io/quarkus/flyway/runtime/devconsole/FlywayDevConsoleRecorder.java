@@ -76,7 +76,7 @@ public class FlywayDevConsoleRecorder {
                     return;
                 }
                 FlywayDataSourceBuildTimeConfig config = buildTimeConfig.getConfigForDataSourceName(name);
-                if (config.locations.isEmpty()) {
+                if (config.locations().isEmpty()) {
                     flashMessage(event, "Datasource has no locations configured");
                     return;
                 }
@@ -90,7 +90,7 @@ public class FlywayDevConsoleRecorder {
                 // In the current project only
                 Path path = resourcesDir.get(0);
 
-                Path migrationDir = path.resolve(config.locations.get(0));
+                Path migrationDir = path.resolve(config.locations().get(0));
                 Files.createDirectories(migrationDir);
                 Path file = migrationDir.resolve(
                         "V1.0.0__" + artifactId + ".sql");

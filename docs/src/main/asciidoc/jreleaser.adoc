@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Packaging And Releasing With JReleaser
 
 include::_attributes.adoc[]
-:jreleaser-version: 0.9.1
+:jreleaser-version: 1.6.0
 
 :numbered:
 :sectnums:
@@ -121,7 +121,7 @@ to the `<build>` section of the file:
       <extension>
         <groupId>kr.motd.maven</groupId>
         <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.0</version>
+        <version>1.7.1</version>
       </extension>
     </extensions>
     <!-- ... -->
@@ -337,7 +337,7 @@ configuration section, like so:
                 </release>
                 <distributions>
                   <app>
-                    <type>NATIVE_IMAGE</type>
+                    <type>BINARY</type>
                     <artifacts>
                       <artifact>
                         <path>${distribution.directory}/{{distributionName}}-{{projectVersion}}-linux-x86_64.tar.gz</path>
@@ -367,8 +367,8 @@ that there's a configured distribution the plugin expects more metadata to be pr
 
 [source]
 ----
-[WARNING]   [validation] project.copyright must not be blank since 0.4.0. This warning will become an error in a future release.
 [ERROR] == JReleaser ==
+[ERROR] project.copyright must not be blank
 [ERROR] project.description must not be blank
 [ERROR] project.website must not be blank
 [ERROR] project.docsUrl must not be blank
@@ -384,9 +384,11 @@ POM elements. If you choose the former option then the plugin's configuration ma
             <configuration>
               <jreleaser>
                 <project>
-                 <description>app -- Sample Quarkus CLI application</description>
-                 <website>pass:[https://github.com/aalmiray/app]</website>
-                 <docsUrl>pass:[https://github.com/aalmiray/app]</docsUrl>
+                 <description>app - Sample Quarkus CLI application</description>
+                 <links>
+                   <homepage>https://github.com/aalmiray/app</homepage>
+                   <documentation>https://github.com/aalmiray/app</documentation>
+                 </links>
                  <license>APACHE-2.0</license>
                  <authors>Andres Almiray</authors>
                  <copyright>2021 Kordamp</copyright>
@@ -451,7 +453,7 @@ For this to work we simply have to enable Homebrew in the JReleaser plugin confi
 ----
                 <distributions>
                   <app>
-                    <type>NATIVE_IMAGE</type>
+                    <type>BINARY</type>
                     <brew>
                       <active>ALWAYS</active>
                     </brew>
@@ -489,28 +491,37 @@ remote resources such as Git repositories. This is how it would look like:
 ----
 # because we changed the project's version
 ./mvnw -Pnative,dist package
-./mvnw -Prelease jreleaser:full-release -Djreleaser.select.current.platform -Djreleaser.dryrun
+./mvnw -Prelease jreleaser:full-release -Djreleaser.select.current.platform -Djreleaser.dry.run=true
 
 [INFO] --- jreleaser-maven-plugin:{jreleaser-version}:full-release (default-cli) @ app ---
 [INFO] JReleaser {jreleaser-version}
 [INFO]   - basedir set to /tmp/app
+[INFO]   - outputdir set to /tmp/app/target/jreleaser
 [WARNING] Platform selection is in effect
 [WARNING] Artifacts will be filtered by platform matching: [osx-x86_64]
+[INFO] git-root-search set to false
 [INFO] Loading variables from /Users/aalmiray/.jreleaser/config.toml
 [INFO] Validating configuration
+[INFO] Strict mode set to false
 [INFO] Project version set to 1.0.0.Alpha1
 [INFO] Release is not snapshot
-[INFO] Timestamp is 2021-12-16T13:31:12.163687+01:00
-[INFO] HEAD is at a21f3f2
+[INFO] Timestamp is 2023-04-27T15:06:34.289907+02:00
+[INFO] HEAD is at 73603ac
 [INFO] Platform is osx-x86_64
-[INFO] dryrun set to true
-[INFO] Generating changelog: target/jreleaser/release/CHANGELOG.md
-[INFO] Calculating checksums
+[INFO] dry-run set to true
+[INFO] Generating changelog
+[INFO] Storing changelog: target/jreleaser/release/CHANGELOG.md
+[INFO] Cataloging artifacts
+[INFO]   [sbom] Cataloging is not enabled. Skipping
+[INFO] Calculating checksums for distributions and files
 [INFO]   [checksum] target/distributions/app-1.0.0.Alpha1-osx-x86_64.zip.sha256
-[INFO] Signing files
-[INFO] Signing is not enabled. Skipping
-[INFO] Uploading is not enabled. Skipping
-[INFO] Releasing to https://github.com/aalmiray/app
+[INFO] Signing distributions and files
+[INFO]   [sign] Signing is not enabled. Skipping
+[INFO] Deploying Maven artifacts
+[INFO]   [maven] Deploying is not enabled. Skipping
+[INFO] Uploading distributions and files
+[INFO]   [upload] Uploading is not enabled. Skipping
+[INFO] Releasing to https://github.com/aalmiray/app@main
 [INFO]  - uploading app-1.0.0.Alpha1-osx-x86_64.zip
 [INFO]  - uploading checksums_sha256.txt
 [INFO] Preparing distributions
@@ -524,9 +535,10 @@ remote resources such as Git repositories. This is how it would look like:
 [INFO]     [brew] publishing app distribution
 [INFO]     [brew] setting up repository aalmiray/homebrew-tap
 [INFO] Announcing release
-[INFO] Announcing is not enabled. Skipping
+[INFO]   [announce] Announcing is not enabled. Skipping
 [INFO] Writing output properties to target/jreleaser/output.properties
-[INFO] JReleaser succeeded after 1.335 s
+[INFO] JReleaser succeeded after 0.620 s
+
 ----
 
 JReleaser will perform the following tasks for us:
@@ -539,25 +551,26 @@ JReleaser will perform the following tasks for us:
 * Upload all assets, including checksums.
 * Create a Homebrew formula, publishing to pass:[https://github.com/aalmiray/homebrew-tap].
 
-Of course no remote repository was affected as we can appreciate the `-Djreleaser.dryrun` property was in effect. If you're
+Of course no remote repository was affected as we can appreciate the `-Djreleaser.dry.run=true` property was in effect. If you're
 so inclined inspect the contents of `target/jreleaser/package/app/brew/Formula/app.rb` which defines the Homebrew formula
 to be published. It should look something like this:
 
-[source,ruby,subs=macros+]
+[source,ruby,subs=attributes,macros+]
 .app.rb
 ----
+# Generated with JReleaser {jreleaser-version} at 2023-04-27T15:06:34.289907+02:00
 class App < Formula
   desc "app -- Sample Quarkus CLI application"
   homepage "pass:[https://github.com/aalmiray/app]"
   url "pass:[https://github.com/aalmiray/app/releases/download/v1.0.0.Alpha1/app-1.0.0.Alpha1-osx-x86_64.zip]"
   version "1.0.0.Alpha1"
-  sha256 "a7e8df6eef3c4c5df7357e678b3c4bc6945b926cec4178a0239660de5dba0fc4"
+  sha256 "85c9918b23e3ac4ef64d5dd02714e241231d3f1358afdba09d3fd0b9a889e131"
   license "Apache-2.0"
 
 
   def install
     libexec.install Dir["*"]
-    bin.install_symlink "#{libexec}/bin/app"
+    bin.install_symlink "#{libexec}/bin/app" => "app"
   end
 
   test do
@@ -567,7 +580,7 @@ class App < Formula
 end
 ----
 
-When ready, create a release for real this time by simply removing the `-Djreleaser.dryrun` flag from the command line, then
+When ready, create a release for real this time by simply removing the `-Djreleaser.dry.run` flag from the command line, then
 browse to your repository and look at the freshly created release.
 
 == Further reading
@@ -649,7 +662,7 @@ As a reference, these are the full contents of the `pom.xml`:
       <extension>
         <groupId>kr.motd.maven</groupId>
         <artifactId>os-maven-plugin</artifactId>
-        <version>1.7.0</version>
+        <version>1.7.1</version>
       </extension>
     </extensions>
     <plugins>
@@ -695,30 +708,8 @@ As a reference, these are the full contents of the `pom.xml`:
           <name>native</name>
         </property>
       </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <version>${surefire-plugin.version}</version>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>integration-test</goal>
-                  <goal>verify</goal>
-                </goals>
-                <configuration>
-                  <systemPropertyVariables>
-                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                    <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    <maven.home>${maven.home}</maven.home>
-                  </systemPropertyVariables>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
       <properties>
+        <skipITs>false</skipITs>
         <quarkus.package.type>native</quarkus.package.type>
       </properties>
     </profile>
@@ -792,7 +783,7 @@ As a reference, these are the full contents of the `pom.xml`:
                 </release>
                 <distributions>
                   <app>
-                    <type>NATIVE_IMAGE</type>
+                    <type>BINARY</type>
                     <brew>
                       <active>ALWAYS</active>
                     </brew>

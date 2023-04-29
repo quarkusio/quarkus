@@ -198,9 +198,7 @@ public class FastBootMetadataBuilder {
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
 
-        final MultiTenancyStrategy strategy = puDefinition.getConfig().getMultiTenancyStrategy();
-        this.multiTenancyStrategy = strategy;
-
+        this.multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
     }
 
     private BuildTimeSettings createBuildTimeSettings(QuarkusPersistenceUnitDefinition puDefinition,

@@ -251,7 +251,6 @@ public class FastBootMetadataBuilder {
 
         cfg.put(PERSISTENCE_UNIT_NAME, persistenceUnit.getName());
 
-        MultiTenancyStrategy multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
         if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE
                 && multiTenancyStrategy != MultiTenancyStrategy.DISCRIMINATOR) {
             // We need to initialize the multi tenant connection provider

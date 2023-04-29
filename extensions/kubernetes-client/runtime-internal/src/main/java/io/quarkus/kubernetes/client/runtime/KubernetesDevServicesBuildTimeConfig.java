@@ -29,7 +29,7 @@ public class KubernetesDevServicesBuildTimeConfig {
     /**
      * The flavor to use (kind, k3s or api-only). Default to api-only.
      */
-    @ConfigItem(defaultValue = "API_ONLY")
+    @ConfigItem(defaultValue = "api-only")
     public Flavor flavor;
 
     /**
@@ -70,14 +70,14 @@ public class KubernetesDevServicesBuildTimeConfig {
         /**
          * kind (needs priviledge docker)
          */
-        KIND,
+        kind,
         /**
          * k3s (needs priviledge docker)
          */
-        K3S,
+        k3s,
         /**
          * api only
          */
-        API_ONLY;
+        api_only;
     }
 }

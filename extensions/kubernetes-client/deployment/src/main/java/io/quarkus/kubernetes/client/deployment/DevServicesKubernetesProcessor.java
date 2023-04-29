@@ -197,17 +197,17 @@ public class DevServicesKubernetesProcessor {
         final Supplier<RunningDevService> defaultKubernetesClusterSupplier = () -> {
             KubernetesContainer container;
             switch (config.flavor) {
-                case API_ONLY:
+                case api_only:
                     container = new ApiServerContainer(
                             config.apiVersion.map(version -> findOrElseThrow(version, ApiServerContainerVersion.class))
                                     .orElseGet(() -> latest(ApiServerContainerVersion.class)));
                     break;
-                case K3S:
+                case k3s:
                     container = new K3sContainer(
                             config.apiVersion.map(version -> findOrElseThrow(version, K3sContainerVersion.class))
                                     .orElseGet(() -> latest(K3sContainerVersion.class)));
                     break;
-                case KIND:
+                case kind:
                     container = new KindContainer(
                             config.apiVersion.map(version -> findOrElseThrow(version, KindContainerVersion.class))
                                     .orElseGet(() -> latest(KindContainerVersion.class)));

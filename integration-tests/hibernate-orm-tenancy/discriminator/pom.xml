@@ -12,7 +12,7 @@
 
     <artifactId>quarkus-integration-test-hibernate-orm-tenancy-discriminator</artifactId>
     <name>Quarkus - Integration Tests - Hibernate - Tenancy - Discriminator</name>
-    <description>Tests for Hibernate ORM Multitenancy using column Discriminator per tenant, running with the PostgreSQL database</description>
+    <description>Tests for Hibernate ORM Multitenancy using column discriminator, running with the PostgreSQL database</description>
 
     <dependencies>
         <dependency>

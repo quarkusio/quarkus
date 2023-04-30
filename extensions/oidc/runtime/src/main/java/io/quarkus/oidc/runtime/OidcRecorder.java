@@ -296,7 +296,7 @@ public class OidcRecorder {
                     List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
                     if (keys != null && keys.size() == 1 &&
                             (keys.get(0).getAlgorithm() == null
-                                    || keys.get(0).getAlgorithm() == KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm())
+                                    || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
                             && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
                         key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
                     }

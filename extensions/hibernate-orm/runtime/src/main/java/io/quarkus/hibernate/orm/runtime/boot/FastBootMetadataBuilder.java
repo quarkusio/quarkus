@@ -135,6 +135,8 @@ public class FastBootMetadataBuilder {
 
         final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory.createRecordableBootstrapBuilder(puDefinition);
 
+        // Should be set before calling mergeSettings()
+        this.multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
         final MergedSettings mergedSettings = mergeSettings(puDefinition);
         this.buildTimeSettings = createBuildTimeSettings(puDefinition, mergedSettings.getConfigurationValues());
 
@@ -198,7 +200,6 @@ public class FastBootMetadataBuilder {
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
 
-        this.multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
     }
 
     private BuildTimeSettings createBuildTimeSettings(QuarkusPersistenceUnitDefinition puDefinition,

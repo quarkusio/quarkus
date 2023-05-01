@@ -5,6 +5,8 @@ import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
+import 'qui-badge';
+
 
 /**
  * This component create cards of all the extensions
@@ -40,7 +42,10 @@ export class QwcExtensions extends observeState(LitElement) {
             flex-flow: column wrap;
             padding-top: 5px;
         }
-    `;
+         .float-right {
+            align-self: flex-end;
+        }
+       `;
 
     render() {
         return html`<div class="grid">
@@ -48,15 +53,15 @@ export class QwcExtensions extends observeState(LitElement) {
             ${devuiState.cards.inactive.map(extension => this._renderInactive(extension))}
           </div>`;
     }
-    
+
     _renderActive(extension){
-        extension.cardPages.forEach(page => {   
+        extension.cardPages.forEach(page => {
             if(page.embed){ // we need to register with the router
                 import(page.componentRef);
                 this.routerController.addRouteForExtension(page);
             }
         });
-        
+
         return html`
                 <qwc-extension 
                     clazz="active"
@@ -101,21 +106,24 @@ export class QwcExtensions extends observeState(LitElement) {
                                 namespace="${extension.namespace}">
 
                              </${extension.card.componentName}>`;
-        
+
         return html`${unsafeHTML(customCardCode)}`;
-        
+
     }
 
     _renderDefaultCardContent(extension){
-        
-        return html`<div class="card-content" slot="content">
-                        <span class="description">${extension.description}</span>
-                            ${this._renderCardLinks(extension)}
-                    </div>`;
+        return html`
+            <div class="card-content" slot="content">
+                <span class="description">
+                    ${this._renderExperimentalBadge(extension)}
+                    ${extension.description}
+                </span>
+                ${this._renderCardLinks(extension)}
+            </div>`;
     }
 
     _renderCardLinks(extension){
-        
+
         return html`${extension.cardPages.map(page => html`
                             <qwc-extension-link slot="link"
                                 namespace="${extension.namespace}"
@@ -135,28 +143,33 @@ export class QwcExtensions extends observeState(LitElement) {
 
     _renderInactive(extension){
         if(extension.unlisted === "false"){
-            return html`
-                <qwc-extension
-                    clazz="inactive"
-                    name="${extension.name}" 
-                    description="${extension.description}" 
-                    guide="${extension.guide}"
-                    namespace="${extension.namespace}"
-                    artifact="${extension.artifact}"
-                    shortName="${extension.shortName}"
-                    keywords="${extension.keywords}"
-                    status="${extension.status}"
-                    configFilter="${extension.configFilter}"
-                    categories="${extension.categories}"
-                    unlisted="${extension.unlisted}"
-                    builtWith="${extension.builtWith}"
-                    providesCapabilities="${extension.providesCapabilities}"
-                    extensionDependencies="${extension.extensionDependencies}">
-                    <div class="card-content" slot="content">
-                        ${extension.description}
-                    </div>    
-                </qwc-extension>        
-            `;
+            return html`<qwc-extension
+                clazz="inactive"
+                name="${extension.name}" 
+                description="${extension.description}" 
+                guide="${extension.guide}"
+                namespace="${extension.namespace}"
+                artifact="${extension.artifact}"
+                shortName="${extension.shortName}"
+                keywords="${extension.keywords}"
+                status="${extension.status}"
+                configFilter="${extension.configFilter}"
+                categories="${extension.categories}"
+                unlisted="${extension.unlisted}"
+                builtWith="${extension.builtWith}"
+                providesCapabilities="${extension.providesCapabilities}"
+                extensionDependencies="${extension.extensionDependencies}">
+                <div class="card-content" slot="content">
+                    ${this._renderExperimentalBadge(extension)}
+                    ${extension.description}
+                </div>    
+            </qwc-extension>`;
+        }
+    }
+
+    _renderExperimentalBadge(extension){
+        if(extension.status === "experimental") {
+            return html`<qui-badge level="warning" class="float-right" small><span>EXPERIMENTAL</span></qui-badge>`;
         }
     }
 

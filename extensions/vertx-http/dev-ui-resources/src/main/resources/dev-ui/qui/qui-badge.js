@@ -95,7 +95,6 @@ export class QuiBadge extends LitElement {
         this.background = null;
         this.color = null;
         this.small = false;
-        this.small = false;
         this.primary = false;
         this.pill = false;
         this.clickable = false;

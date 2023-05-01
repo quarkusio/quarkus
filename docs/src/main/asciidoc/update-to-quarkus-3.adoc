@@ -16,6 +16,7 @@ You can update your projects from Quarkus 2.x to Quarkus 3.x by running an updat
 The update command primarily uses OpenRewrite recipes to automate updating most of your project's dependencies, source code, and documentation. These recipes cover many but not all of the items described in the link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0[Migration Guide 3.0].
 
 After updating the project, if you do not find all the updates you expect, there are two possible reasons:
+
 - The recipe might not cover an item in your project.
 - Your project might use an extension that does not support Quarkus 3 yet.
 

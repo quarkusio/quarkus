@@ -138,11 +138,6 @@
                     <exclude name="testGetBean"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.definition.bean.genericbroken.GenericManagedBeanTest">
-                <methods>
-                    <exclude name="testNonDependentGenericManagedBeanNotOk"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.unproxyable.UnproxyableManagedBeanTest">
                 <methods>
                     <exclude name="testNormalScopedUnproxyableBeanWithPublicFinalMethodResolution"/>

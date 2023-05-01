@@ -2,7 +2,7 @@ package io.quarkus.arc.test.discovery;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,7 +22,7 @@ public class ParameterizedBeanTypeWithVariableTest {
 
     }
 
-    @ApplicationScoped
+    @Dependent
     static class Foo<T> {
 
         protected String ping() {

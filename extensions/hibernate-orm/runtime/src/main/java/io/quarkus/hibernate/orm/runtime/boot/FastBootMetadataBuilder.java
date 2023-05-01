@@ -112,7 +112,7 @@ public class FastBootMetadataBuilder {
     private final Collection<Class<? extends Integrator>> additionalIntegrators;
     private final Collection<ProvidedService<?>> providedServices;
     private final PreGeneratedProxies preGeneratedProxies;
-    private final Optional<String> dataSource;
+    private final MultiTenancyStrategy multiTenancyStrategy;
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
@@ -121,7 +121,6 @@ public class FastBootMetadataBuilder {
     public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getActualHibernateDescriptor();
-        this.dataSource = puDefinition.getConfig().getDataSource();
         this.isReactive = puDefinition.isReactive();
         this.fromPersistenceXml = puDefinition.isFromPersistenceXml();
         this.additionalIntegrators = additionalIntegrators;
@@ -136,6 +135,8 @@ public class FastBootMetadataBuilder {
 
         final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory.createRecordableBootstrapBuilder(puDefinition);
 
+        // Should be set before calling mergeSettings()
+        this.multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
         final MergedSettings mergedSettings = mergeSettings(puDefinition);
         this.buildTimeSettings = createBuildTimeSettings(puDefinition, mergedSettings.getConfigurationValues());
 
@@ -198,6 +199,7 @@ public class FastBootMetadataBuilder {
         // for the time being we want to revoke access to the temp ClassLoader if one
         // was passed
         metamodelBuilder.applyTempClassLoader(null);
+
     }
 
     private BuildTimeSettings createBuildTimeSettings(QuarkusPersistenceUnitDefinition puDefinition,
@@ -248,8 +250,8 @@ public class FastBootMetadataBuilder {
 
         cfg.put(PERSISTENCE_UNIT_NAME, persistenceUnit.getName());
 
-        MultiTenancyStrategy multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
-        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE) {
+        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE
+                && multiTenancyStrategy != MultiTenancyStrategy.DISCRIMINATOR) {
             // We need to initialize the multi tenant connection provider
             // on static init as it is used in MetadataBuildingOptionsImpl
             // to determine if multi-tenancy is enabled.
@@ -423,7 +425,7 @@ public class FastBootMetadataBuilder {
         destroyServiceRegistry();
         ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
         return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions,
+                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy,
                 isReactive, fromPersistenceXml);
     }
 

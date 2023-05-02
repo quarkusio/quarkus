@@ -3,8 +3,6 @@ package io.quarkus.test.common;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -53,10 +51,10 @@ public final class LauncherUtil {
      * Launches a process using the supplied arguments and makes sure the process's output is drained to standard out
      */
     static Process launchProcess(List<String> args) throws IOException {
-        Process process = Runtime.getRuntime().exec(args.toArray(new String[0]));
-        new Thread(new ProcessReader(process.getInputStream())).start();
-        new Thread(new ProcessReader(process.getErrorStream())).start();
-        return process;
+        return new ProcessBuilder(args)
+                .redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+                .start();
     }
 
     /**
@@ -306,31 +304,6 @@ public final class LauncherUtil {
             System.err.println(errorMessage);
             this.resultReference.set(null);
             signal.countDown();
-        }
-    }
-
-    /**
-     * Used to drain the input of a launched process
-     */
-    private static class ProcessReader implements Runnable {
-
-        private final InputStream inputStream;
-
-        private ProcessReader(InputStream inputStream) {
-            this.inputStream = inputStream;
-        }
-
-        @Override
-        public void run() {
-            byte[] b = new byte[100];
-            int i;
-            try {
-                while ((i = inputStream.read(b)) > 0) {
-                    System.out.print(new String(b, 0, i, StandardCharsets.UTF_8));
-                }
-            } catch (IOException e) {
-                //ignore
-            }
         }
     }
 

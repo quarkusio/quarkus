@@ -32,7 +32,7 @@ import io.smallrye.config.SmallRyeConfig;
 
 public final class LauncherUtil {
 
-    public static final int LOG_CHECK_INTERVAL = 500;
+    public static final int LOG_CHECK_INTERVAL = 50;
 
     private LauncherUtil() {
     }

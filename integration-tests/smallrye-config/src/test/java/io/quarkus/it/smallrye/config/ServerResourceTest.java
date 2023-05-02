@@ -102,6 +102,6 @@ class ServerResourceTest {
                 .body("errors", hasItem("cloud.info.admins.root[1].username size must be between 0 and 4"))
                 .body("errors", hasItem("cloud.info.firewall.accepted[1] size must be between 8 and 15"))
                 .body("errors", hasItem("cloud.proxy.timeout must be less than or equal to 10"))
-                .body("errors", hasItem("server is not prod"));
+                .body("errors", hasItem("cloud server is not prod"));
     }
 }

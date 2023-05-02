@@ -192,7 +192,7 @@
         <jib-core.version>0.23.0</jib-core.version>
         <google-http-client.version>1.43.1</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
-        <picocli.version>4.7.1</picocli.version>
+        <picocli.version>4.7.3</picocli.version>
         <google-cloud-functions.version>1.0.4</google-cloud-functions.version>
         <commons-compress.version>1.23.0</commons-compress.version>
         <commons-text.version>1.10.0</commons-text.version>

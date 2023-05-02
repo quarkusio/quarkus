@@ -40,7 +40,7 @@
         <opentelemetry-alpha.version>1.23.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>5.0.2.Final</quarkus-http.version>
-        <micrometer.version>1.10.5</micrometer.version><!-- keep in sync with hdrhistogram -->
+        <micrometer.version>1.10.6</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>20.1</graphql-java.version> <!-- keep in sync with smallrye-graphql -->

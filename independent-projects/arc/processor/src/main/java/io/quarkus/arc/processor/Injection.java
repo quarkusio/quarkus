@@ -20,6 +20,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -45,13 +46,115 @@ public class Injection {
     static Injection forSyntheticBean(Iterable<TypeAndQualifiers> injectionPoints) {
         List<InjectionPointInfo> ips = new ArrayList<>();
         for (TypeAndQualifiers injectionPoint : injectionPoints) {
-            ips.add(InjectionPointInfo.fromSyntheticInjectionPoint(injectionPoint));
+            InjectionPointInfo injectionPointInfo = InjectionPointInfo.fromSyntheticInjectionPoint(injectionPoint);
+            validateInjections(injectionPointInfo, BeanType.SYNTHETIC_BEAN);
+            ips.add(injectionPointInfo);
         }
         return new Injection(null, ips);
     }
 
+    private static void validateInjections(InjectionPointInfo injectionPointInfo, BeanType beanType) {
+        // Mostly validation related to Bean metadata injection restrictions
+        // see https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#bean_metadata
+        if (beanType == BeanType.MANAGED_BEAN || beanType == BeanType.SYNTHETIC_BEAN || beanType == BeanType.PRODUCER_METHOD) {
+            // If an Interceptor<T> instance is injected into a bean instance other than an interceptor instance,
+            // the container automatically detects the problem and treats it as a definition error.
+            if (injectionPointInfo.getType().name().equals(DotNames.INTERCEPTOR_BEAN)) {
+                throw new DefinitionException("Invalid injection of Interceptor<T> bean, can only be used in interceptors " +
+                        "but was detected in: " + injectionPointInfo.getTargetInfo());
+            }
+
+            // If a Bean instance with qualifier @Intercepted is injected into a bean instance other than an interceptor
+            // instance, the container automatically detects the problem and treats it as a definition error.
+            if (injectionPointInfo.getType().name().equals(DotNames.BEAN)
+                    && injectionPointInfo.getRequiredQualifier(DotNames.INTERCEPTED) != null) {
+                throw new DefinitionException(
+                        "Invalid injection of @Intercepted Bean<T>, can only be injected into interceptors " +
+                                "but was detected in: " + injectionPointInfo.getTargetInfo());
+            }
+
+            // the injection point is a field, an initializer method parameter or a bean constructor, with qualifier
+            // @Default, then the type parameter of the injected Bean, or Interceptor must be the same as the type
+            // declaring the injection point
+            if (injectionPointInfo.getRequiredType().name().equals(DotNames.BEAN)
+                    && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE
+                    && injectionPointInfo.getRequiredType().asParameterizedType().arguments().size() == 1) {
+                Type actualType = injectionPointInfo.getRequiredType().asParameterizedType().arguments().get(0);
+                AnnotationTarget ipTarget = injectionPointInfo.getTarget();
+                DotName expectedType = null;
+                if (ipTarget.kind() == Kind.FIELD) {
+                    // field injection derives this from the class
+                    expectedType = ipTarget.asField().declaringClass().name();
+                } else if (ipTarget.kind() == Kind.METHOD) {
+                    // the injection point is a producer method parameter then the type parameter of the injected Bean
+                    // must be the same as the producer method return type
+                    if (beanType == BeanType.PRODUCER_METHOD) {
+                        expectedType = ipTarget.asMethod().returnType().name();
+                    } else {
+                        expectedType = ipTarget.asMethod().declaringClass().name();
+                    }
+                }
+                if (expectedType != null
+                        // This is very rudimentary check, might need to be expanded?
+                        && !expectedType.equals(actualType.name())) {
+                    throw new DefinitionException(
+                            "Type of injected Bean<T> does not match the type of the bean declaring the " +
+                                    "injection point. Problematic injection point: " + injectionPointInfo.getTargetInfo());
+                }
+            }
+        }
+        if (beanType == BeanType.INTERCEPTOR) {
+            // the injection point is a field, an initializer method parameter or a bean constructor of an interceptor,
+            // with qualifier @Intercepted, then the type parameter of the injected Bean must be an unbounded wildcard
+            if (injectionPointInfo.getRequiredType().name().equals(DotNames.BEAN)
+                    && injectionPointInfo.getRequiredQualifier(DotNames.INTERCEPTED) != null
+                    && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                ParameterizedType parameterizedType = injectionPointInfo.getRequiredType().asParameterizedType();
+                // there should be exactly one param - wildcard - and it has to be unbound; all else is DefinitionException
+                if (parameterizedType.arguments().size() != 1
+                        || !(parameterizedType.arguments().get(0).kind() == Type.Kind.WILDCARD_TYPE)
+                        || !(parameterizedType.arguments().get(0).asWildcardType().extendsBound().name().equals(DotNames.OBJECT)
+                                && parameterizedType.arguments().get(0).asWildcardType().superBound() == null)) {
+                    throw new DefinitionException(
+                            "Injected @Intercepted Bean<?> has to use unbound wildcard as its type parameter. " +
+                                    "Problematic injection point: " + injectionPointInfo.getTargetInfo());
+                }
+            }
+            // the injection point is a field, an initializer method parameter or a bean constructor, with qualifier
+            // @Default, then the type parameter of the injected Bean, or Interceptor must be the same as the type
+            // declaring the injection point
+            if (injectionPointInfo.getRequiredType().name().equals(DotNames.INTERCEPTOR_BEAN)
+                    && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE
+                    && injectionPointInfo.getRequiredType().asParameterizedType().arguments().size() == 1) {
+                Type actualType = injectionPointInfo.getRequiredType().asParameterizedType().arguments().get(0);
+                AnnotationTarget ipTarget = injectionPointInfo.getTarget();
+                DotName expectedType = null;
+                if (ipTarget.kind() == Kind.FIELD) {
+                    expectedType = ipTarget.asField().declaringClass().name();
+                } else if (ipTarget.kind() == Kind.METHOD) {
+                    expectedType = ipTarget.asMethod().declaringClass().name();
+                }
+                if (expectedType != null
+                        // This is very rudimentary check, might need to be expanded?
+                        && !expectedType.equals(actualType.name())) {
+                    throw new DefinitionException(
+                            "Type of injected Interceptor<T> does not match the type of the bean declaring the " +
+                                    "injection point. Problematic injection point: " + injectionPointInfo.getTargetInfo());
+                }
+            }
+        }
+    }
+
+    private static void validateInjections(List<Injection> injections, BeanType beanType) {
+        for (Injection injection : injections) {
+            for (InjectionPointInfo ipi : injection.injectionPoints) {
+                validateInjections(ipi, beanType);
+            }
+        }
+    }
+
     static List<Injection> forBean(AnnotationTarget beanTarget, BeanInfo declaringBean, BeanDeployment beanDeployment,
-            InjectionPointModifier transformer) {
+            InjectionPointModifier transformer, BeanType beanType) {
         if (Kind.CLASS.equals(beanTarget.kind())) {
             List<Injection> injections = forClassBean(beanTarget.asClass(), beanTarget.asClass(), beanDeployment,
                     transformer, false, new HashSet<>());
@@ -109,7 +212,7 @@ public class Injection {
                             + beanTarget.asClass() + "." + initializerMethod.name());
                 }
             }
-
+            validateInjections(injections, beanType);
             return injections;
         } else if (Kind.METHOD.equals(beanTarget.kind())) {
             MethodInfo producerMethod = beanTarget.asMethod();
@@ -139,10 +242,20 @@ public class Injection {
                 return Collections.emptyList();
             }
             // All parameters are injection points
-            return Collections.singletonList(new Injection(producerMethod,
+            List<Injection> injections = Collections.singletonList(new Injection(producerMethod,
                     InjectionPointInfo.fromMethod(producerMethod, declaringBean.getImplClazz(), beanDeployment, transformer)));
+            validateInjections(injections, beanType);
+            return injections;
         }
         throw new IllegalArgumentException("Unsupported annotation target");
+    }
+
+    static enum BeanType {
+        MANAGED_BEAN,
+        PRODUCER_METHOD,
+        SYNTHETIC_BEAN,
+        INTERCEPTOR,
+        DECORATOR
     }
 
     // returns injections in the order they should be performed
@@ -229,7 +342,7 @@ public class Injection {
     }
 
     static Injection forDisposer(MethodInfo disposerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,
-            InjectionPointModifier transformer, BeanInfo declaringBean) {
+            InjectionPointModifier transformer) {
         if (beanDeployment.hasAnnotation(disposerMethod, DotNames.INJECT)) {
             throw new DefinitionException("Disposer method must not be annotated @Inject "
                     + "(alternatively, initializer method must not have a @Disposes parameter): "
@@ -258,8 +371,11 @@ public class Injection {
                     + disposerMethod);
         }
 
-        return new Injection(disposerMethod, InjectionPointInfo.fromMethod(disposerMethod, beanClass, beanDeployment,
-                annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES)), transformer));
+        Injection injection = new Injection(disposerMethod,
+                InjectionPointInfo.fromMethod(disposerMethod, beanClass, beanDeployment,
+                        annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES)), transformer));
+        injection.injectionPoints.forEach(ipi -> validateInjections(ipi, BeanType.MANAGED_BEAN));
+        return injection;
     }
 
     static Injection forObserver(MethodInfo observerMethod, ClassInfo beanClass, BeanDeployment beanDeployment,

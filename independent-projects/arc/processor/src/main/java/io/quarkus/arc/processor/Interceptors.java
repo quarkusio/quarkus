@@ -71,7 +71,8 @@ final class Interceptors {
         return new InterceptorInfo(interceptorClass, beanDeployment,
                 bindings.size() == 1 ? Collections.singleton(bindings.iterator().next())
                         : Collections.unmodifiableSet(bindings),
-                Injection.forBean(interceptorClass, null, beanDeployment, transformer), priority);
+                Injection.forBean(interceptorClass, null, beanDeployment, transformer, Injection.BeanType.INTERCEPTOR),
+                priority);
     }
 
     private static void addBindings(BeanDeployment beanDeployment, ClassInfo classInfo, Collection<AnnotationInstance> bindings,

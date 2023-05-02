@@ -38,7 +38,7 @@ public class InterceptedBeanInjectionTest {
     static class InterceptedBean {
 
         @Inject
-        Bean<?> bean;
+        Bean<InterceptedBean> bean;
 
         @Inject
         InterceptedDependent dependent;

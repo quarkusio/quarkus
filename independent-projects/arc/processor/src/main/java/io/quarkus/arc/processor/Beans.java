@@ -189,7 +189,8 @@ public final class Beans {
                     + "its scope must be @Dependent: " + producerMethod);
         }
 
-        List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer);
+        List<Injection> injections = Injection.forBean(producerMethod, declaringBean, beanDeployment, transformer,
+                Injection.BeanType.PRODUCER_METHOD);
         BeanInfo bean = new BeanInfo(producerMethod, beanDeployment, scope, beanTypes, qualifiers, injections, declaringBean,
                 disposer, isAlternative, stereotypes, name, isDefaultBean, null, priority);
         for (Injection injection : injections) {
@@ -1293,7 +1294,8 @@ public final class Beans {
                 }
             }
 
-            List<Injection> injections = Injection.forBean(beanClass, null, beanDeployment, transformer);
+            List<Injection> injections = Injection.forBean(beanClass, null, beanDeployment, transformer,
+                    Injection.BeanType.MANAGED_BEAN);
             BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers,
                     injections, null, null, isAlternative, stereotypes, name, isDefaultBean, null, priority);
             for (Injection injection : injections) {

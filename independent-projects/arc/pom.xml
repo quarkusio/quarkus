@@ -46,7 +46,7 @@
         <version.jpa>3.0.0</version.jpa>
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
-        <version.gizmo>1.6.0.Final</version.gizmo>
+        <version.gizmo>1.6.1.Final</version.gizmo>
         <version.jandex>3.1.1</version.jandex>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
         <version.mutiny>2.1.0</version.mutiny>

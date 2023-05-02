@@ -80,6 +80,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContext2Test">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/issues/457 -->
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
                 </methods>
             </class>
@@ -162,6 +163,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/issues/455 -->
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
                 </methods>
             </class>
@@ -185,7 +187,7 @@
                 <methods>
                     <exclude name="testContextIsActiveDuringInjection"/>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/454 -->
-                    <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"></exclude>
+                    <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.GetFromContextualTest">

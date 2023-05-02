@@ -76,7 +76,7 @@ public class FlywayRecorder {
     }
 
     public void doStartActions() {
-        if (!config.getValue().enabled()) {
+        if (!config.getValue().enabled) {
             return;
         }
         for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {

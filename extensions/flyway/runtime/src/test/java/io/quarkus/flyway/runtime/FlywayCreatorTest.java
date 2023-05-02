@@ -18,40 +18,22 @@ import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.pattern.ValidatePattern;
 import org.flywaydb.core.internal.util.ValidatePatternUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
-
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 
 class FlywayCreatorTest {
 
-    private FlywayDataSourceRuntimeConfig runtimeConfig;
-    private FlywayDataSourceBuildTimeConfig buildConfig;
-    private final Configuration defaultConfig = Flyway.configure().load().getConfiguration();
+    private FlywayDataSourceRuntimeConfig runtimeConfig = FlywayDataSourceRuntimeConfig.defaultConfig();
+    private FlywayDataSourceBuildTimeConfig buildConfig = FlywayDataSourceBuildTimeConfig.defaultConfig();
+    private Configuration defaultConfig = Flyway.configure().load().getConfiguration();
 
     /**
      * class under test.
      */
     private FlywayCreator creator;
-
-    @BeforeEach
-    void mockConfig() {
-        SmallRyeConfig config = new SmallRyeConfigBuilder().addDiscoveredSources().addDefaultSources().addDiscoveredConverters()
-                .withMapping(FlywayRuntimeConfig.class, "quarkus.flyway")
-                .withMapping(FlywayBuildTimeConfig.class, "quarkus.flyway")
-                .build();
-
-        FlywayRuntimeConfig flywayRuntimeConfig = config.getConfigMapping(FlywayRuntimeConfig.class);
-        FlywayBuildTimeConfig flywayBuildTimeConfig = config.getConfigMapping(FlywayBuildTimeConfig.class);
-        this.runtimeConfig = Mockito.spy(flywayRuntimeConfig.defaultDataSource());
-        this.buildConfig = Mockito.spy(flywayBuildTimeConfig.defaultDataSource());
-    }
 
     @Test
     @DisplayName("locations default matches flyway default")
@@ -63,9 +45,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("locations carried over from configuration")
     void testLocationsOverridden() {
-        Mockito.when(buildConfig.locations()).thenReturn(Arrays.asList("db/migrations", "db/something"));
+        buildConfig.locations = Arrays.asList("db/migrations", "db/something");
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(buildConfig.locations(), pathList(createdFlywayConfig().getLocations()));
+        assertEquals(buildConfig.locations, pathList(createdFlywayConfig().getLocations()));
     }
 
     @Test
@@ -85,9 +67,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("baseline description carried over from configuration")
     void testBaselineDescriptionOverridden() {
-        Mockito.when(runtimeConfig.baselineDescription()).thenReturn(Optional.of("baselineDescription"));
+        runtimeConfig.baselineDescription = Optional.of("baselineDescription");
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.baselineDescription().get(), createdFlywayConfig().getBaselineDescription());
+        assertEquals(runtimeConfig.baselineDescription.get(), createdFlywayConfig().getBaselineDescription());
     }
 
     @Test
@@ -100,9 +82,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("baseline version carried over from configuration")
     void testBaselineVersionOverridden() {
-        Mockito.when(runtimeConfig.baselineVersion()).thenReturn(Optional.of("0.1.2"));
+        runtimeConfig.baselineVersion = Optional.of("0.1.2");
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.baselineVersion().get(), createdFlywayConfig().getBaselineVersion().getVersion());
+        assertEquals(runtimeConfig.baselineVersion.get(), createdFlywayConfig().getBaselineVersion().getVersion());
     }
 
     @Test
@@ -115,9 +97,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("connection retries carried over from configuration")
     void testConnectionRetriesOverridden() {
-        Mockito.when(runtimeConfig.connectRetries()).thenReturn(OptionalInt.of(12));
+        runtimeConfig.connectRetries = OptionalInt.of(12);
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.connectRetries().getAsInt(), createdFlywayConfig().getConnectRetries());
+        assertEquals(runtimeConfig.connectRetries.getAsInt(), createdFlywayConfig().getConnectRetries());
     }
 
     @Test
@@ -130,10 +112,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("repeatable SQL migration prefix carried over from configuration")
     void testRepeatableSqlMigrationPrefixOverridden() {
-        Mockito.when(runtimeConfig.repeatableSqlMigrationPrefix()).thenReturn(Optional.of("A"));
+        runtimeConfig.repeatableSqlMigrationPrefix = Optional.of("A");
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.repeatableSqlMigrationPrefix().get(),
-                createdFlywayConfig().getRepeatableSqlMigrationPrefix());
+        assertEquals(runtimeConfig.repeatableSqlMigrationPrefix.get(), createdFlywayConfig().getRepeatableSqlMigrationPrefix());
     }
 
     @Test
@@ -146,9 +127,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("schemas carried over from configuration")
     void testSchemasOverridden() {
-        Mockito.when(runtimeConfig.schemas()).thenReturn(Optional.of(asList("TEST_SCHEMA_1", "TEST_SCHEMA_2")));
+        runtimeConfig.schemas = Optional.of(Arrays.asList("TEST_SCHEMA_1", "TEST_SCHEMA_2"));
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.schemas().get(), asList(createdFlywayConfig().getSchemas()));
+        assertEquals(runtimeConfig.schemas.get(), asList(createdFlywayConfig().getSchemas()));
     }
 
     @Test
@@ -161,9 +142,9 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("SQL migration prefix carried over from configuration")
     void testSqlMigrationPrefixOverridden() {
-        Mockito.when(runtimeConfig.sqlMigrationPrefix()).thenReturn(Optional.of("A"));
+        runtimeConfig.sqlMigrationPrefix = Optional.of("M");
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.sqlMigrationPrefix().get(), createdFlywayConfig().getSqlMigrationPrefix());
+        assertEquals(runtimeConfig.sqlMigrationPrefix.get(), createdFlywayConfig().getSqlMigrationPrefix());
     }
 
     @Test
@@ -176,31 +157,31 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("table carried over from configuration")
     void testTableOverridden() {
-        Mockito.when(runtimeConfig.table()).thenReturn(Optional.of("flyway_history_test_table"));
+        runtimeConfig.table = Optional.of("flyway_history_test_table");
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.table().get(), createdFlywayConfig().getTable());
+        assertEquals(runtimeConfig.table.get(), createdFlywayConfig().getTable());
     }
 
     @Test
     @DisplayName("validate on migrate default matches to true")
     void testValidateOnMigrate() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.validateOnMigrate(), createdFlywayConfig().isValidateOnMigrate());
-        assertTrue(runtimeConfig.validateOnMigrate());
+        assertEquals(runtimeConfig.validateOnMigrate, createdFlywayConfig().isValidateOnMigrate());
+        assertTrue(runtimeConfig.validateOnMigrate);
     }
 
     @Test
     @DisplayName("clean disabled default matches to false")
     void testCleanDisabled() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.cleanDisabled(), createdFlywayConfig().isCleanDisabled());
-        assertFalse(runtimeConfig.cleanDisabled());
+        assertEquals(runtimeConfig.cleanDisabled, createdFlywayConfig().isCleanDisabled());
+        assertFalse(runtimeConfig.cleanDisabled);
 
-        Mockito.when(runtimeConfig.cleanDisabled()).thenReturn(false);
+        runtimeConfig.cleanDisabled = false;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertFalse(createdFlywayConfig().isCleanDisabled());
 
-        Mockito.when(runtimeConfig.cleanDisabled()).thenReturn(true);
+        runtimeConfig.cleanDisabled = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertTrue(createdFlywayConfig().isCleanDisabled());
     }
@@ -208,11 +189,11 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("outOfOrder is correctly set")
     void testOutOfOrder() {
-        Mockito.when(runtimeConfig.outOfOrder()).thenReturn(false);
+        runtimeConfig.outOfOrder = false;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertFalse(createdFlywayConfig().isOutOfOrder());
 
-        Mockito.when(runtimeConfig.outOfOrder()).thenReturn(true);
+        runtimeConfig.outOfOrder = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertTrue(createdFlywayConfig().isOutOfOrder());
     }
@@ -220,11 +201,11 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("ignoreMissingMigrations is correctly set")
     void testIgnoreMissingMigrations() {
-        Mockito.when(runtimeConfig.ignoreMissingMigrations()).thenReturn(false);
+        runtimeConfig.ignoreMissingMigrations = false;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertFalse(ValidatePatternUtils.isMissingIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
 
-        Mockito.when(runtimeConfig.ignoreMissingMigrations()).thenReturn(true);
+        runtimeConfig.ignoreMissingMigrations = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertTrue(ValidatePatternUtils.isMissingIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
     }
@@ -232,11 +213,11 @@ class FlywayCreatorTest {
     @Test
     @DisplayName("ignoreFutureMigrations is correctly set")
     void testIgnoreFutureMigrations() {
-        Mockito.when(runtimeConfig.ignoreFutureMigrations()).thenReturn(false);
+        runtimeConfig.ignoreFutureMigrations = false;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertFalse(ValidatePatternUtils.isFutureIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
 
-        Mockito.when(runtimeConfig.ignoreFutureMigrations()).thenReturn(true);
+        runtimeConfig.ignoreFutureMigrations = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertTrue(ValidatePatternUtils.isFutureIgnored(createdFlywayConfig().getIgnoreMigrationPatterns()));
     }
@@ -245,14 +226,14 @@ class FlywayCreatorTest {
     @DisplayName("cleanOnValidationError defaults to false and is correctly set")
     void testCleanOnValidationError() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.cleanOnValidationError(), createdFlywayConfig().isCleanOnValidationError());
-        assertFalse(runtimeConfig.cleanOnValidationError());
+        assertEquals(runtimeConfig.cleanOnValidationError, createdFlywayConfig().isCleanOnValidationError());
+        assertFalse(runtimeConfig.cleanOnValidationError);
 
-        Mockito.when(runtimeConfig.cleanOnValidationError()).thenReturn(false);
+        runtimeConfig.cleanOnValidationError = false;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertFalse(createdFlywayConfig().isCleanOnValidationError());
 
-        Mockito.when(runtimeConfig.cleanOnValidationError()).thenReturn(true);
+        runtimeConfig.cleanOnValidationError = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertTrue(createdFlywayConfig().isCleanOnValidationError());
     }
@@ -261,20 +242,20 @@ class FlywayCreatorTest {
     @MethodSource("validateOnMigrateOverwritten")
     @DisplayName("validate on migrate overwritten in configuration")
     void testValidateOnMigrateOverwritten(final boolean input, final boolean expected) {
-        Mockito.when(runtimeConfig.validateOnMigrate()).thenReturn(input);
+        runtimeConfig.validateOnMigrate = input;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertEquals(createdFlywayConfig().isValidateOnMigrate(), expected);
-        assertEquals(runtimeConfig.validateOnMigrate(), expected);
+        assertEquals(runtimeConfig.validateOnMigrate, expected);
     }
 
     @Test
     @DisplayName("validateMigrationNaming defaults to false and it is correctly set")
     void testValidateMigrationNaming() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
-        assertEquals(runtimeConfig.validateMigrationNaming(), createdFlywayConfig().isValidateMigrationNaming());
-        assertFalse(runtimeConfig.validateMigrationNaming());
+        assertEquals(runtimeConfig.validateMigrationNaming, createdFlywayConfig().isValidateMigrationNaming());
+        assertFalse(runtimeConfig.validateMigrationNaming);
 
-        Mockito.when(runtimeConfig.validateMigrationNaming()).thenReturn(true);
+        runtimeConfig.validateMigrationNaming = true;
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertTrue(createdFlywayConfig().isValidateMigrationNaming());
     }
@@ -284,13 +265,13 @@ class FlywayCreatorTest {
     void testIgnoreMigrationPatterns() {
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         assertEquals(0, createdFlywayConfig().getIgnoreMigrationPatterns().length);
-        assertFalse(runtimeConfig.ignoreMigrationPatterns().isPresent());
+        assertFalse(runtimeConfig.ignoreMigrationPatterns.isPresent());
 
-        Mockito.when(runtimeConfig.ignoreMigrationPatterns()).thenReturn(Optional.of(new String[] { "*:missing" }));
+        runtimeConfig.ignoreMigrationPatterns = Optional.of(new String[] { "*:missing" });
         creator = new FlywayCreator(runtimeConfig, buildConfig);
         final ValidatePattern[] existingIgnoreMigrationPatterns = createdFlywayConfig().getIgnoreMigrationPatterns();
         assertEquals(1, existingIgnoreMigrationPatterns.length);
-        final String[] ignoreMigrationPatterns = runtimeConfig.ignoreMigrationPatterns().get();
+        final String[] ignoreMigrationPatterns = runtimeConfig.ignoreMigrationPatterns.get();
         final ValidatePattern[] validatePatterns = Arrays.stream(ignoreMigrationPatterns)
                 .map(ValidatePattern::fromPattern).toArray(ValidatePattern[]::new);
         assertArrayEquals(validatePatterns, existingIgnoreMigrationPatterns);

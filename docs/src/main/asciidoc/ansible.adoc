@@ -1,0 +1,253 @@
+= Automate Quarkus deployment with Ansible
+include::_attributes.adoc[]
+:categories: command-line
+:summary: Build and deploy your Quarkus App using Ansible
+
+
+Let’s see how to build and deploy a Quarkus app using https://docs.ansible.com/ansible/latest/index.html[Ansible]. We’ll see how we can automate the entire process, from the code checkout to the application compilation using Maven and then its deployment and start of the service, as a https://systemd.io/[systemd service], on the target system using Ansible and its collection for Quarkus.
+
+The first part, the application code checkout, compilation and packaging on the Ansible (where Ansible runs). We’ll use the getting-started sample application provided in its {quickstarts-tree-url}/getting-started[Quarkus QuickStarts directory] as a base for this tutorial. We’ll also leverage the https://galaxy.ansible.com/middleware_automation/quarkus[Quarkus collection] for Ansible, an extension for Ansible that alleviates the boilerplate required and to quickly build and deploy a Quarkus using Ansible.
+
+== Prerequisites
+
+:prerequisites-time: 10 minutes
+:prerequisites-no-maven:
+:prerequisites-no-cli:
+include::{includes}/prerequisites.adoc[]
+
+You'll need to https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html[install Ansible] on your workstation. Once this is done, you can install this extension for Ansible dedicated to Quarkus with the following command:
+
+[source,bash]
+----
+$ ansible-galaxy collection install middleware_automation.quarkus
+----
+
+=== Inventory file
+
+If you are not familiar with Ansible, please note that the inventory needs to be provided for the command above to run properly. This is a simple text file providing the information Ansible requires on the target system it manages. Please refer to the Ansible documentation for more information on https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html[Ansible inventory].
+
+[source,bash]
+----
+[all]
+
+10.0.0.1
+10.0.0.2
+----
+
+To follow the tutorial, you may want to use only one machine (localhost) and skip the ssh authentication setup. This can be easily achieved by using the following inventory file:
+
+[source,bash]
+----
+[all]
+localhost ansible_connection=local
+----
+
+=== Root access on target system
+
+A few tasks performed by the Ansible collection for Quarkus will require administrative privileges on the target (create a group and user account, install packages). If Ansible does run as root, you'll need to add the following options to the `ansible-playbook` command line:
+
+[source,bash]
+----
+$ ansible-playbook -i inventory  --ask-become-pass  ...
+----
+
+== Tutorial
+
+With the Ansible collection installed on the controller, you can already directly use a playbook provided with it to build and deploy your Quarkus application:
+
+[source,bash]
+----
+ansible-playbook -i inventory \
+  middleware_automation.quarkus.playbook \
+  -e app_name=getting-started \
+  -e quarkus_app_repo_url='https://github.com/quarkusio/quarkus-quickstarts.git' \
+  -e quarkus_app_source_folder='getting-started' \
+  -e quarkus_path_to_folder_to_deploy=/opt/quarkus_deploy
+----
+
+The four parameters provided to the playbook are pretty self-explanatory. The first one, `app_name`, is the name of the application, in our case, it's just `getting-started`. The second one, `quarkus_app_repo_url`, is the URL to the Git repository to checkout. The third one is optional, `quarkus_app_source_folder` specifies, if needed, which subfolder from the repo the source code is located. Finally, the fourth one indicates where to install the application on the target.
+
+=== Playbook run
+
+Once the command above has successfully run, you should have an output similar to the one below:
+
+[source,bash]
+----
+…
+
+PLAY [Build and deploy a Quarkus app using Ansible] ****************************
+
+TASK [Build the Quarkus from https://github.com/quarkusio/quarkus-quickstarts.git.] ***
+
+TASK [middleware_automation.quarkus.quarkus : Ensure required parameters are provided.] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Define path to mvnw script.] *****
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure that builder host localhost has appropriate JDK installed: java-17-openjdk] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Delete previous workdir (if requested).] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure app workdir exists: /tmp/workdir] ***
+changed: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Checkout the application source code.] ***
+changed: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Build the App using Maven] *******
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Display build application log] ***
+skipping: [localhost]
+
+TASK [Deploy webapp on target.] ************************************************
+
+TASK [middleware_automation.quarkus.quarkus : Ensure required parameters are provided.] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure required OpenJDK is installed on target.] ***
+skipping: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure Quarkus system group exists on target system] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure Quarkus user exists on target system.] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure deployement directory exits: /opt/quarkus_deploy.] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Set Quarkus app source dir (if not defined).] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Deploy application from  to target system] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Deploy Systemd configuration for Quarkus app] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Perform daemon-reload to ensure the changes are picked up] ***
+skipping: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure Quarkus app service is running.] ***
+ok: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Ensure firewalld is available.] ***
+skipping: [localhost]
+
+TASK [middleware_automation.quarkus.quarkus : Configure firewall for 8080 ports] ***
+skipping: [localhost]
+
+PLAY RECAP *********************************************************************
+localhost              	: ok=15   changed=2	unreachable=0	failed=0	skipped=5	rescued=0	ignored=0
+…
+----
+
+The Ansible collection for Quarkus does all the `heavy lifting` here. First, it checks out the code from Github and builds the application from its sources. It also ensures the system used for this step does have the required OpenJDK installed. By default, the application is built on the localhost (the Ansible controller), but it can be performed on a remote system if needed. Once the application is built, the collection will take care of the deployment.
+
+Here again, it checks that the appropriate OpenJDK is available on the target system. Then we ensure that the required user and group exist on the target. This is recommended mostly to be able to run the Quarkus app with a regular user, rather than with the root account.
+
+With those requirements in place, the jar can be deployed on the target, along with the required configuration for the app integration into systemd as a service. Any change to the systemd configuration requires reloading its daemon, which the collection ensures will happen whenever it is needed. With all of that in place, the only thing that remains is to start the service itself, which Ansible will also take care of.
+
+=== Validate that deployment was successful
+
+For the purpose of this tutorial, you may want to check manually, that the playbook did indeed deployed the app properly. Here is the few ways to do so.
+
+First, because the collection integrated, we can check the status of the service on one of the targets:
+
+[source,bash]
+----
+# systemctl status getting-started.service
+● getting-started.service - A Quarkus service named getting-started
+   Loaded: loaded (/usr/lib/systemd/system/getting-started.service; enabled; vendor preset: disabled)
+   Active: active (running) since Thu 2023-04-13 12:48:18 UTC; 2min 40s ago
+ Main PID: 853 (java)
+	Tasks: 43 (limit: 1638)
+   Memory: 73.3M
+   CGroup: /system.slice/getting-started.service
+       	└─853 /usr/bin/java -jar /opt/quarkus_deploy/quarkus-run.jar
+
+Apr 13 12:48:18 bd71f39642c8 systemd[1]: Started A Quarkus service named getting-started.
+Apr 13 12:48:19 bd71f39642c8 java[853]: __  ____  __  _____   ___  __ ____  ______
+Apr 13 12:48:19 bd71f39642c8 java[853]:  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+Apr 13 12:48:19 bd71f39642c8 java[853]:  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+Apr 13 12:48:19 bd71f39642c8 java[853]: --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,284 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT on JVM (powered by Quarkus 2.16.6.Final) started in 0.607s. Listening on: http://0.0.0.0:8080
+Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,309 INFO  [io.quarkus] (main) Profile prod activated.
+Apr 13 12:48:19 bd71f39642c8 java[853]: 2023-04-13 12:48:19,310 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+----
+
+Manually, you can also test if the app is reachable:
+
+[source,bash]
+----
+# curl -I http://localhost:8080/
+HTTP/1.1 200 OK
+accept-ranges: bytes
+content-length: 3918
+cache-control: public, immutable, max-age=86400
+last-modified: Thu, 2 Mar 2023 11:03:18 GMT
+date: Thu, 2 Mar 2023 11:03:18 GMT
+----
+
+We'll see how to automate those validation in the next and last part of this tutorial.
+
+=== Writing a playbook
+
+Of course, you’ll most likely need to build on this, so you may want to write up your own playbook, rather than just using the one provided by the collection. Below is an example of such playbook:
+
+[source,yml]
+----
+- name: "Build and deploy a Quarkus app using Ansible"
+  hosts: all
+  gather_facts: true
+  vars:
+    quarkus_app_repo_url: 'https://github.com/quarkusio/quarkus-quickstarts.git'
+    app_name: getting-started
+    quarkus_app_source_folder: getting-started
+    quarkus_path_to_folder_to_deploy: /opt/quarkus_deploy
+
+  pre_tasks:
+    - name: "Build the Quarkus from {{ quarkus_app_repo_url }}."
+      ansible.builtin.include_role:
+        name: quarkus
+        tasks_from: build.yml
+  tasks:
+    - name: "Deploy Quarkus app on target."
+      ansible.builtin.include_role:
+        name: quarkus
+        tasks_from: deploy.yml
+----
+
+To run this playbook, you use again the ansible-playbook command, but providing now the path to the playbook:
+
+[source,bash]
+----
+$ ansible-playbook -i inventory playbook.yml
+----
+
+You also can automate the validation part we mentioned in the previous section. You can use the https://docs.ansible.com/ansible/latest/collections/ansible/builtin/assert_module.html[ansible.builtin.assert] module and populate the https://docs.ansible.com/ansible/latest/collections/ansible/builtin/service_facts_module.html#examples[service facts] to ensure the systemd service of the Quarkus app is running, along with https://docs.ansible.com/ansible/latest/collections/ansible/builtin/uri_module.html[ansible.builtin.uri] to check that the Quarkus app is accessible.
+
+```
+ post_tasks:
+    - name: Populate service facts
+      ansible.builtin.service_facts:
+
+    - name: "Check that systemd service {{ app_name }} is running."
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services is defined
+          - ansible_facts.services["{{ app_name }}.service"] is defined
+          - ansible_facts.services["{{ app_name }}.service"]['state'] == 'running'
+          - ansible_facts.services["{{ app_name }}.service"]['status'] == 'enabled'
+        quiet: true
+
+    - name: "Check that Quarkus app is accessible"
+      ansible.builtin.uri:
+        url: 'http://localhost:8080/'
+```
+
+And that’s all, folks!

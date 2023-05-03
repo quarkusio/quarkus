@@ -79,8 +79,10 @@ public class KubernetesWithFlywayInitTest {
 
         assertThat(job.get()).satisfies(j -> {
             assertThat(j.getSpec()).satisfies(jobSpec -> {
+                assertThat(jobSpec.getCompletionMode()).isEqualTo("NonIndexed");
                 assertThat(jobSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
+                        assertThat(podSpec.getRestartPolicy()).isEqualTo("OnFailure");
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getName()).isEqualTo("flyway-init");
                             assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))

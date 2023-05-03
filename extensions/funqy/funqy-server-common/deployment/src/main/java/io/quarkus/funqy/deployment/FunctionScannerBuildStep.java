@@ -76,7 +76,7 @@ public class FunctionScannerBuildStep {
             }
             if (functionName != null && functionName.isEmpty())
                 functionName = null;
-            functions.produce(new FunctionBuildItem(className, methodName, functionName));
+            functions.produce(new FunctionBuildItem(className, methodName, method.descriptor(), functionName));
 
             String source = FunctionScannerBuildStep.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
                     + "]";
@@ -167,10 +167,11 @@ public class FunctionScannerBuildStep {
         recorder.init();
         for (FunctionBuildItem function : functions) {
             if (function.getFunctionName() == null) {
-                recorder.register(context.classProxy(function.getClassName()), function.getMethodName());
+                recorder.register(context.classProxy(function.getClassName()), function.getMethodName(),
+                        function.getDescriptor());
             } else {
                 recorder.register(context.classProxy(function.getClassName()), function.getMethodName(),
-                        function.getFunctionName());
+                        function.getDescriptor(), function.getFunctionName());
             }
         }
         return FunctionInitializedBuildItem.SINGLETON;

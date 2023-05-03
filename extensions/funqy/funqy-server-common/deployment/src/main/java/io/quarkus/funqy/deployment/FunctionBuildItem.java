@@ -5,11 +5,13 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class FunctionBuildItem extends MultiBuildItem {
     protected String className;
     protected String methodName;
+    protected String descriptor;
     protected String functionName;
 
-    public FunctionBuildItem(String className, String methodName, String functionName) {
+    public FunctionBuildItem(String className, String methodName, String descriptor, String functionName) {
         this.className = className;
         this.methodName = methodName;
+        this.descriptor = descriptor;
         this.functionName = functionName;
     }
 
@@ -19,6 +21,10 @@ public final class FunctionBuildItem extends MultiBuildItem {
 
     public String getMethodName() {
         return methodName;
+    }
+
+    public String getDescriptor() {
+        return descriptor;
     }
 
     public String getFunctionName() {

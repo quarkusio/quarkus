@@ -1,21 +1,32 @@
 package io.quarkus.flyway.runtime;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.smallrye.config.WithDefault;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
-public interface FlywayDataSourceRuntimeConfig {
+public final class FlywayDataSourceRuntimeConfig {
+
+    /**
+     * Creates a {@link FlywayDataSourceRuntimeConfig} with default settings.
+     *
+     * @return {@link FlywayDataSourceRuntimeConfig}
+     */
+    public static FlywayDataSourceRuntimeConfig defaultConfig() {
+        return new FlywayDataSourceRuntimeConfig();
+    }
 
     /**
      * The maximum number of retries when attempting to connect to the database. After each failed attempt, Flyway will wait 1
      * second before attempting to connect again, up to the maximum number of times specified by connectRetries.
      */
-    OptionalInt connectRetries();
+    @ConfigItem
+    public OptionalInt connectRetries = OptionalInt.empty();
 
     /**
      * Sets the default schema managed by Flyway. This schema name is case-sensitive. If not specified, but <i>schemas</i>
@@ -29,32 +40,37 @@ public interface FlywayDataSourceRuntimeConfig {
      * <li>This schema will be the default for the database connection (provided the database supports this concept).</li>
      * </ul>
      */
-    Optional<String> defaultSchema();
+    @ConfigItem
+    public Optional<String> defaultSchema = Optional.empty();
 
     /**
      * The JDBC URL that Flyway uses to connect to the database.
      * Falls back to the datasource URL if not specified.
      */
-    Optional<String> jdbcUrl();
+    @ConfigItem
+    public Optional<String> jdbcUrl = Optional.empty();
 
     /**
      * The username that Flyway uses to connect to the database.
      * If no specific JDBC URL is configured, falls back to the datasource username if not specified.
      */
-    Optional<String> username();
+    @ConfigItem
+    public Optional<String> username = Optional.empty();
 
     /**
      * The password that Flyway uses to connect to the database.
      * If no specific JDBC URL is configured, falls back to the datasource password if not specified.
      */
-    Optional<String> password();
+    @ConfigItem
+    public Optional<String> password = Optional.empty();
 
     /**
      * Comma-separated case-sensitive list of schemas managed by Flyway.
      * The first schema in the list will be automatically set as the default one during the migration.
      * It will also be the one containing the schema history table.
      */
-    Optional<List<String>> schemas();
+    @ConfigItem
+    public Optional<List<String>> schemas = Optional.empty();
 
     /**
      * The name of Flyway's schema history table.
@@ -63,136 +79,149 @@ public interface FlywayDataSourceRuntimeConfig {
      * When the flyway.schemas property is set (multi-schema mode), the schema history table is placed in the first schema of
      * the list.
      */
-    Optional<String> table();
+    @ConfigItem
+    public Optional<String> table = Optional.empty();
 
     /**
      * The file name prefix for versioned SQL migrations.
-     * <p>
+     *
      * Versioned SQL migrations have the following file name structure: prefixVERSIONseparatorDESCRIPTIONsuffix , which using
      * the defaults translates to V1.1__My_description.sql
      */
-    Optional<String> sqlMigrationPrefix();
+    @ConfigItem
+    public Optional<String> sqlMigrationPrefix = Optional.empty();
 
     /**
      * The file name prefix for repeatable SQL migrations.
-     * <p>
+     *
      * Repeatable SQL migrations have the following file name structure: prefixSeparatorDESCRIPTIONsuffix , which using the
      * defaults translates to R__My_description.sql
      */
-    Optional<String> repeatableSqlMigrationPrefix();
+    @ConfigItem
+    public Optional<String> repeatableSqlMigrationPrefix = Optional.empty();
 
     /**
      * true to execute Flyway clean command automatically when the application starts, false otherwise.
+     *
      */
-    @WithDefault("false")
-    boolean cleanAtStart();
+    @ConfigItem
+    public boolean cleanAtStart;
 
     /**
      * true to prevent Flyway clean operations, false otherwise.
      */
-    @WithDefault("false")
-    boolean cleanDisabled();
+    @ConfigItem
+    public boolean cleanDisabled;
 
     /**
      * true to automatically call clean when a validation error occurs, false otherwise.
      */
-    @WithDefault("false")
-    boolean cleanOnValidationError();
+    @ConfigItem
+    public boolean cleanOnValidationError;
 
     /**
      * true to execute Flyway automatically when the application starts, false otherwise.
+     *
      */
-    @WithDefault("false")
-    boolean migrateAtStart();
+    @ConfigItem
+    public boolean migrateAtStart;
 
     /**
      * true to execute a Flyway repair command when the application starts, false otherwise.
+     *
      */
-    @WithDefault("false")
-    boolean repairAtStart();
+    @ConfigItem
+    public boolean repairAtStart;
 
     /**
      * true to execute a Flyway validate command when the application starts, false otherwise.
+     *
      */
-    @WithDefault("false")
-    boolean validateAtStart();
+    @ConfigItem
+    public boolean validateAtStart;
 
     /**
      * Enable the creation of the history table if it does not exist already.
      */
-    @WithDefault("false")
-    boolean baselineOnMigrate();
+    @ConfigItem
+    public boolean baselineOnMigrate;
 
     /**
      * The initial baseline version.
      */
-    Optional<String> baselineVersion();
+    @ConfigItem
+    public Optional<String> baselineVersion = Optional.empty();
 
     /**
      * The description to tag an existing schema with when executing baseline.
      */
-    Optional<String> baselineDescription();
+    @ConfigItem
+    public Optional<String> baselineDescription = Optional.empty();
 
     /**
      * Whether to automatically call validate when performing a migration.
      */
-    @WithDefault("true")
-    boolean validateOnMigrate();
+    @ConfigItem(defaultValue = "true")
+    public boolean validateOnMigrate = true;
 
     /**
      * Allows migrations to be run "out of order".
      */
-    @WithDefault("false")
-    boolean outOfOrder();
+    @ConfigItem
+    public boolean outOfOrder;
 
     /**
      * Ignore missing migrations when reading the history table. When set to true migrations from older versions present in the
      * history table but absent in the configured locations will be ignored (and logged as a warning), when false (the default)
      * the validation step will fail.
      */
-    @WithDefault("false")
-    boolean ignoreMissingMigrations();
+    @ConfigItem
+    public boolean ignoreMissingMigrations;
 
     /**
      * Ignore future migrations when reading the history table. When set to true migrations from newer versions present in the
      * history table but absent in the configured locations will be ignored (and logged as a warning), when false (the default)
      * the validation step will fail.
      */
-    @WithDefault("false")
-    boolean ignoreFutureMigrations();
+    @ConfigItem
+    public boolean ignoreFutureMigrations;
 
     /**
      * Sets the placeholders to replace in SQL migration scripts.
      */
-    Map<String, String> placeholders();
+    @ConfigItem
+    public Map<String, String> placeholders = Collections.emptyMap();
 
     /**
      * Whether Flyway should attempt to create the schemas specified in the schemas property
      */
-    @WithDefault("true")
-    boolean createSchemas();
+    @ConfigItem(defaultValue = "true")
+    public boolean createSchemas;
 
     /**
      * Prefix of every placeholder (default: ${ )
      */
-    Optional<String> placeholderPrefix();
+    @ConfigItem
+    public Optional<String> placeholderPrefix = Optional.empty();
 
     /**
      * Suffix of every placeholder (default: } )
      */
-    Optional<String> placeholderSuffix();
+    @ConfigItem
+    public Optional<String> placeholderSuffix = Optional.empty();
 
     /**
      * The SQL statements to run to initialize a new database connection immediately after opening it.
      */
-    Optional<String> initSql();
+    @ConfigItem
+    public Optional<String> initSql = Optional.empty();
 
     /**
      * Whether to validate migrations and callbacks whose scripts do not obey the correct naming convention. A failure can be
      * useful to check that errors such as case sensitivity in migration prefixes have been corrected.
      */
-    @WithDefault("false")
-    boolean validateMigrationNaming();
+    @ConfigItem
+    public boolean validateMigrationNaming;
 
     /**
      * Ignore migrations during validate and repair according to a given list of patterns (see
@@ -200,5 +229,6 @@ public interface FlywayDataSourceRuntimeConfig {
      * When this configuration is set, the ignoreFutureMigrations and ignoreMissingMigrations settings are ignored. Patterns are
      * comma separated.
      */
-    Optional<String[]> ignoreMigrationPatterns();
+    @ConfigItem
+    public Optional<String[]> ignoreMigrationPatterns = Optional.empty();
 }

@@ -247,7 +247,15 @@ public interface NativeConfig {
     boolean enableVmInspection();
 
     /**
-     * Enable monitoring options that allow the VM to be inspected at run time.
+     * Enable monitoring various monitoring options. The value should be comma separated.
+     * <ul>
+     * <li><code>jfr</code> for JDK flight recorder support</li>
+     * <li><code>jvmstat</code> for JVMStat support</li>
+     * <li><code>heapdump</code> for heampdump support</li>
+     * <li><code>jmxclient</code> for JMX client support (experimental)</li>
+     * <li><code>jmxserver</code> for JMX server support (experimental)</li>
+     * <li><code>all</code> for all monitoring features</li>
+     * </ul>
      */
     Optional<List<MonitoringOption>> monitoring();
 
@@ -454,6 +462,8 @@ public interface NativeConfig {
         HEAPDUMP,
         JVMSTAT,
         JFR,
+        JMXSERVER,
+        JMXCLIENT,
         ALL
     }
 }

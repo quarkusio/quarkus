@@ -52,7 +52,7 @@
         <version.mutiny>2.1.0</version.mutiny>
         <!-- test versions -->
         <version.assertj>3.24.2</version.assertj>
-        <version.junit5>5.9.2</version.junit5>
+        <version.junit5>5.9.3</version.junit5>
         <version.kotlin>1.8.10</version.kotlin>
         <version.kotlin-coroutines>1.6.4</version.kotlin-coroutines>
         <version.mockito>5.3.1</version.mockito>

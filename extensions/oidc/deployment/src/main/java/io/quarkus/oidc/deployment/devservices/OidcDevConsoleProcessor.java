@@ -1,5 +1,6 @@
 package io.quarkus.oidc.deployment.devservices;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -16,8 +17,12 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
+import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
@@ -34,13 +39,14 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
     private static final String DISCOVERY_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "discovery-enabled";
     private static final String AUTH_SERVER_URL_CONFIG_KEY = CONFIG_PREFIX + "auth-server-url";
     private static final String APP_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
+    private static final String OIDC_PROVIDER_CONFIG_KEY = "quarkus.oidc.provider";
     private static final String SERVICE_APP_TYPE = "service";
 
     // Well-known providers
 
     private static final String KEYCLOAK = "Keycloak";
     private static final String AZURE = "Azure";
-    private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google");
+    private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google", "Github");
 
     OidcBuildTimeConfig oidcConfig;
 
@@ -51,7 +57,12 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             CuratedApplicationShutdownBuildItem closeBuildItem,
             BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
             Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        if (isOidcTenantEnabled() && isAuthServerUrlSet() && isClientIdSet()) {
+        if (!isOidcTenantEnabled() || !isClientIdSet()) {
+            return;
+        }
+        final OidcTenantConfig providerConfig = getProviderConfig();
+        final String authServerUrl = getAuthServerUrl(providerConfig);
+        if (authServerUrl != null) {
 
             if (vertxInstance == null) {
                 vertxInstance = Vertx.vertx();
@@ -72,15 +83,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                 closeBuildItem.addCloseTask(closeTask, true);
             }
 
-            String authServerUrl = null;
-            try {
-                authServerUrl = getConfigProperty(AUTH_SERVER_URL_CONFIG_KEY);
-            } catch (Exception ex) {
-                // It is not possible to initialize OIDC Dev Console UI without being able to access this property at the build time
-                return;
-            }
             JsonObject metadata = null;
-            if (isDiscoveryEnabled()) {
+            if (isDiscoveryEnabled(providerConfig)) {
                 metadata = discoverMetadata(authServerUrl);
                 if (metadata == null) {
                     return;
@@ -96,13 +100,14 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     devConsoleRuntimeInfo,
                     curateOutcomeBuildItem,
                     providerName,
-                    getApplicationType(),
+                    getApplicationType(providerConfig),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
                     metadata != null ? metadata.getString("authorization_endpoint") : null,
                     metadata != null ? metadata.getString("token_endpoint") : null,
                     metadata != null ? metadata.getString("end_session_endpoint") : null,
-                    metadata != null ? metadata.containsKey("introspection_endpoint")
-                            || metadata.containsKey("userinfo_endpoint") : false);
+                    metadata != null
+                            ? (metadata.containsKey("introspection_endpoint") || metadata.containsKey("userinfo_endpoint"))
+                            : checkProviderUserInfoRequired(providerConfig));
 
             produceDevConsoleRouteItems(devConsoleRoute,
                     new OidcTestServiceHandler(vertxInstance, oidcConfig.devui.webClientTimeout),
@@ -111,6 +116,13 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     new OidcPasswordClientCredHandler(vertxInstance, oidcConfig.devui.webClientTimeout,
                             oidcConfig.devui.grantOptions));
         }
+    }
+
+    private boolean checkProviderUserInfoRequired(OidcTenantConfig providerConfig) {
+        if (providerConfig != null) {
+            return providerConfig.authentication.userInfoRequired.orElse(false);
+        }
+        return false;
     }
 
     private String tryToGetProviderName(String authServerUrl) {
@@ -150,7 +162,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
         }
     }
 
-    private String getConfigProperty(String name) {
+    private static String getConfigProperty(String name) {
         return ConfigProvider.getConfig().getValue(name, String.class);
     }
 
@@ -158,8 +170,9 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
         return getBooleanProperty(TENANT_ENABLED_CONFIG_KEY);
     }
 
-    private static boolean isDiscoveryEnabled() {
-        return getBooleanProperty(DISCOVERY_ENABLED_CONFIG_KEY);
+    private static boolean isDiscoveryEnabled(OidcTenantConfig providerConfig) {
+        return ConfigProvider.getConfig().getOptionalValue(DISCOVERY_ENABLED_CONFIG_KEY, Boolean.class)
+                .orElse((providerConfig != null ? providerConfig.discoveryEnabled.orElse(true) : true));
     }
 
     private static boolean getBooleanProperty(String name) {
@@ -170,12 +183,31 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
         return ConfigUtils.isPropertyPresent(CLIENT_ID_CONFIG_KEY);
     }
 
-    private static boolean isAuthServerUrlSet() {
-        return ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY);
+    private static String getAuthServerUrl(OidcTenantConfig providerConfig) {
+        try {
+            return getConfigProperty(AUTH_SERVER_URL_CONFIG_KEY);
+        } catch (Exception ex) {
+            return providerConfig != null ? providerConfig.authServerUrl.get() : null;
+        }
     }
 
-    private static String getApplicationType() {
-        return ConfigProvider.getConfig().getOptionalValue(APP_TYPE_CONFIG_KEY, String.class).orElse(SERVICE_APP_TYPE);
+    private static String getApplicationType(OidcTenantConfig providerConfig) {
+        Optional<ApplicationType> appType = ConfigProvider.getConfig().getOptionalValue(APP_TYPE_CONFIG_KEY,
+                ApplicationType.class);
+        if (appType.isEmpty() && providerConfig != null) {
+            appType = providerConfig.applicationType;
+        }
+        return appType.isPresent() ? appType.get().name().toLowerCase() : SERVICE_APP_TYPE;
+    }
+
+    private static OidcTenantConfig getProviderConfig() {
+        try {
+            Provider p = ConfigProvider.getConfig().getValue(OIDC_PROVIDER_CONFIG_KEY, Provider.class);
+            return KnownOidcProviders.provider(p);
+        } catch (Exception ex) {
+            return null;
+        }
+
     }
 
 }

@@ -8,6 +8,7 @@ import org.hibernate.service.internal.ProvidedService;
 
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
 
 public final class RecordedState {
@@ -19,13 +20,15 @@ public final class RecordedState {
     private final Collection<ProvidedService<?>> providedServices;
     private final IntegrationSettings integrationSettings;
     private final ProxyDefinitions proxyClassDefinitions;
+    private final MultiTenancyStrategy multiTenancyStrategy;
+
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
 
     public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata,
             BuildTimeSettings settings, Collection<Integrator> integrators,
             Collection<ProvidedService<?>> providedServices, IntegrationSettings integrationSettings,
-            ProxyDefinitions classDefinitions,
+            ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy,
             boolean isReactive, boolean fromPersistenceXml) {
         this.dialect = dialect;
         this.metadata = metadata;
@@ -34,6 +37,7 @@ public final class RecordedState {
         this.providedServices = providedServices;
         this.integrationSettings = integrationSettings;
         this.proxyClassDefinitions = classDefinitions;
+        this.multiTenancyStrategy = strategy;
         this.isReactive = isReactive;
         this.fromPersistenceXml = fromPersistenceXml;
     }
@@ -64,6 +68,10 @@ public final class RecordedState {
 
     public ProxyDefinitions getProxyClassDefinitions() {
         return proxyClassDefinitions;
+    }
+
+    public MultiTenancyStrategy getMultiTenancyStrategy() {
+        return multiTenancyStrategy;
     }
 
     public boolean isReactive() {

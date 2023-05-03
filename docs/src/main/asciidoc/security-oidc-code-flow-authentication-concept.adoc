@@ -371,7 +371,7 @@ Note that some endpoints do not require the access token. An access token is onl
 If the ID, access and refresh tokens are JWT tokens then combining all of them (if the strategy is the default `keep-all-tokens`) or only ID and refresh tokens (if the strategy is `id-refresh-token`) may produce a session cookie value larger than 4KB and the browsers may not be able to keep this cookie.
 In such cases, you can use `quarkus.oidc.token-state-manager.split-tokens=true` to have a unique session token per each of these tokens.
 
-You can also configure the default `TokenStateManager` to encrypt the tokens before storing them as cookie values which may be necessary if the tokens contain sensitive claim values.
+Note that `TokenStateManager` will encrypt the tokens before storing them in the session cookie.
 For example, here is how you configure it to split the tokens and encrypt them:
 
 [source, properties]
@@ -381,12 +381,14 @@ quarkus.oidc.client-id=quarkus-app
 quarkus.oidc.credentials.secret=secret
 quarkus.oidc.application-type=web-app
 quarkus.oidc.token-state-manager.split-tokens=true
-quarkus.oidc.token-state-manager.encryption-required=true
 quarkus.oidc.token-state-manager.encryption-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 
-The token encryption secret must be 32 characters long. Note that you only have to set `quarkus.oidc.token-state-manager.encryption-secret` if you prefer not to use
-`quarkus.oidc.credentials.secret` for encrypting the tokens or if `quarkus.oidc.credentials.secret` length is less than 32 characters.
+The token encryption secret must be at least 32 characters long. If this key is not configured then either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.jwt.secret` will be hashed to create an encryption key.
+
+`quarkus.oidc.token-state-manager.encryption-secret` should be configured if Quarkus authenticates to OpenId Connect Provider using either mTLS or `private_key_jwt` (where a private RSA or EC key is used to sign a JWT token) authentication methods, otherwise a random key will be generated which will be problematic if the Quarkus application is running in the cloud with multiple pods managing the requests.
+
+If you need you can disable encrypting the tokens in the session cookie with `quarkus.oidc.token-state-manager.encryption-required=false`.
 
 Register your own `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean if you need to customize the way the tokens are associated with the session cookie. For example, you may want to keep the tokens in a database and have only a database pointer stored in a session cookie. Note though that it may present some challenges in making the tokens available across multiple microservices nodes.
 

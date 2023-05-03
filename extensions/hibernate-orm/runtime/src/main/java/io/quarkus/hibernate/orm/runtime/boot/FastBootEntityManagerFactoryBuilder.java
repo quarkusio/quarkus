@@ -34,6 +34,7 @@ import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.observers.QuarkusSessionFactoryObserverForDbVersionCheck;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForNamedQueryValidation;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForSchemaExport;
@@ -49,16 +50,19 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     private final Object validatorFactory;
     private final Object cdiBeanManager;
 
+    protected final MultiTenancyStrategy multiTenancyStrategy;
+
     public FastBootEntityManagerFactoryBuilder(
             PrevalidatedQuarkusMetadata metadata, String persistenceUnitName,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager) {
+            Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy) {
         this.metadata = metadata;
         this.persistenceUnitName = persistenceUnitName;
         this.standardServiceRegistry = standardServiceRegistry;
         this.runtimeSettings = runtimeSettings;
         this.validatorFactory = validatorFactory;
         this.cdiBeanManager = cdiBeanManager;
+        this.multiTenancyStrategy = multiTenancyStrategy;
     }
 
     @Override
@@ -76,7 +80,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         try {
             final SessionFactoryOptionsBuilder optionsBuilder = metadata.buildSessionFactoryOptionsBuilder();
             populate(persistenceUnitName, optionsBuilder, standardServiceRegistry);
-            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions());
+            return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(),
+                    metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
         } catch (Exception e) {
             throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
@@ -189,7 +194,9 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         BytecodeProvider bytecodeProvider = ssr.getService(BytecodeProvider.class);
         options.addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
 
-        if (options.isMultiTenancyEnabled()) {
+        // Should be added in case of discriminator strategy too, that is not handled by options.isMultiTenancyEnabled()
+        if (options.isMultiTenancyEnabled()
+                || (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE)) {
             options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 

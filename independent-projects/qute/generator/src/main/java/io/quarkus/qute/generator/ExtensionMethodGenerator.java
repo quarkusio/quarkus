@@ -103,7 +103,16 @@ public class ExtensionMethodGenerator {
         }
     }
 
-    public void generate(MethodInfo method, String matchName, List<String> matchNames, String matchRegex, Integer priority) {
+    /**
+     *
+     * @param method
+     * @param matchName
+     * @param matchNames
+     * @param matchRegex
+     * @param priority
+     * @return the fully qualified name of the generated class
+     */
+    public String generate(MethodInfo method, String matchName, List<String> matchNames, String matchRegex, Integer priority) {
 
         AnnotationInstance extensionAnnotation = method.annotation(TEMPLATE_EXTENSION);
         List<Type> parameters = method.parameterTypes();
@@ -199,6 +208,7 @@ public class ExtensionMethodGenerator {
         implementResolve(valueResolver, declaringClass, method, matchName, matchNames, patternField, params);
 
         valueResolver.close();
+        return generatedName.replace('/', '.');
     }
 
     public NamespaceResolverCreator createNamespaceResolver(ClassInfo declaringClass, String namespace, int priority) {
@@ -447,6 +457,10 @@ public class ExtensionMethodGenerator {
 
             implementGetNamespace(namespaceResolver, namespace);
             implementGetPriority(namespaceResolver, priority);
+        }
+
+        public String getClassName() {
+            return namespaceResolver.getClassName().replace('/', '.');
         }
 
         public ResolveCreator implementResolve() {

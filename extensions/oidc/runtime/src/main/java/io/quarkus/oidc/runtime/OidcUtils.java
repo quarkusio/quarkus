@@ -432,6 +432,9 @@ public final class OidcUtils {
         if (tenant.token.principalClaim.isEmpty()) {
             tenant.token.principalClaim = provider.token.principalClaim;
         }
+        if (tenant.token.verifyAccessTokenWithUserInfo.isEmpty()) {
+            tenant.token.verifyAccessTokenWithUserInfo = provider.token.verifyAccessTokenWithUserInfo;
+        }
 
         return tenant;
     }
@@ -458,7 +461,7 @@ public final class OidcUtils {
 
     public static String encryptString(String jweString, SecretKey key) throws Exception {
         JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setAlgorithmHeaderValue(KeyEncryptionAlgorithm.A256KW.getAlgorithm());
+        jwe.setAlgorithmHeaderValue(KeyEncryptionAlgorithm.A256GCMKW.getAlgorithm());
         jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithm.A256GCM.getAlgorithm());
         jwe.setKey(key);
         jwe.setPlaintext(jweString);
@@ -470,7 +473,7 @@ public final class OidcUtils {
     }
 
     public static String decryptString(String jweString, Key key) throws Exception {
-        return decryptString(jweString, key, KeyEncryptionAlgorithm.A256KW);
+        return decryptString(jweString, key, KeyEncryptionAlgorithm.A256GCMKW);
     }
 
     public static String decryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm) throws JoseException {

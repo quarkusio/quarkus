@@ -374,8 +374,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * Requires that the tokens are encrypted before being stored in the cookies.
          */
-        @ConfigItem(defaultValueDocumentation = "false")
-        public Optional<Boolean> encryptionRequired = Optional.empty();
+        @ConfigItem(defaultValue = "true")
+        public boolean encryptionRequired = true;
 
         /**
          * Secret which will be used to encrypt the tokens.
@@ -385,12 +385,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<String> encryptionSecret = Optional.empty();
 
-        public Optional<Boolean> isEncryptionRequired() {
+        public boolean isEncryptionRequired() {
             return encryptionRequired;
         }
 
         public void setEncryptionRequired(boolean encryptionRequired) {
-            this.encryptionRequired = Optional.of(encryptionRequired);
+            this.encryptionRequired = encryptionRequired;
         }
 
         public Optional<String> getEncryptionSecret() {
@@ -1256,8 +1256,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * provider does not have a token introspection endpoint.
          * This property will have no effect when JWT tokens have to be verified.
          */
-        @ConfigItem(defaultValue = "false")
-        public boolean verifyAccessTokenWithUserInfo;
+        @ConfigItem(defaultValueDocumentation = "false")
+        public Optional<Boolean> verifyAccessTokenWithUserInfo = Optional.empty();
+
+        public Optional<Boolean> isVerifyAccessTokenWithUserInfo() {
+            return verifyAccessTokenWithUserInfo;
+        }
+
+        public void setVerifyAccessTokenWithUserInfo(boolean verify) {
+            this.verifyAccessTokenWithUserInfo = Optional.of(verify);
+        }
 
         public Optional<String> getIssuer() {
             return issuer;

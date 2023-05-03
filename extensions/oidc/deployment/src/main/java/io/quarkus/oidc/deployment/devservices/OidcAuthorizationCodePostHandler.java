@@ -18,6 +18,7 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcAuthorizationCodePostHandler extends DevConsolePostHandler {
     private static final Logger LOG = Logger.getLogger(OidcAuthorizationCodePostHandler.class);
+    private static final String APPLICATION_JSON = "application/json";
 
     Vertx vertxInstance;
     Duration timeout;
@@ -41,6 +42,7 @@ public class OidcAuthorizationCodePostHandler extends DevConsolePostHandler {
 
             HttpRequest<Buffer> request = client.postAbs(tokenUrl);
             request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
+            request.putHeader(HttpHeaders.ACCEPT.toString(), APPLICATION_JSON);
 
             io.vertx.mutiny.core.MultiMap props = new io.vertx.mutiny.core.MultiMap(MultiMap.caseInsensitiveMultiMap());
             props.add("client_id", form.get("client"));

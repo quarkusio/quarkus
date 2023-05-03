@@ -13,7 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -154,7 +158,7 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
-    public void testCodeFlowFormPostAndFrontChannelLogout() throws IOException {
+    public void testCodeFlowFormPostAndFrontChannelLogout() throws Exception {
         defineCodeFlowLogoutStub();
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
@@ -174,9 +178,7 @@ public class CodeFlowAuthorizationTest {
             assertEquals("alice", page.getBody().asNormalizedText());
 
             // Session is still active
-            Cookie sessionCookie = getSessionCookie(webClient, "code-flow-form-post");
-            assertNotNull(sessionCookie);
-            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-form-post");
 
             webClient.getOptions().setRedirectEnabled(false);
 
@@ -238,7 +240,7 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
-    private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime) throws IOException {
+    private void doTestCodeFlowUserInfo(String tenantId, long internalIdTokenLifetime) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/" + tenantId);
@@ -251,9 +253,7 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
 
-            Cookie sessionCookie = getSessionCookie(webClient, tenantId);
-            assertNotNull(sessionCookie);
-            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            JsonObject idTokenClaims = decryptIdToken(webClient, tenantId);
             assertNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
             long issuedAt = idTokenClaims.getLong("iat");
             long expiresAt = idTokenClaims.getLong("exp");
@@ -261,6 +261,22 @@ public class CodeFlowAuthorizationTest {
 
             webClient.getCookieManager().clearCookies();
         }
+    }
+
+    private JsonObject decryptIdToken(WebClient webClient, String tenantId) throws Exception {
+        Cookie sessionCookie = getSessionCookie(webClient, tenantId);
+        assertNotNull(sessionCookie);
+
+        SecretKey key = new SecretKeySpec(OidcUtils
+                .getSha256Digest("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+                        .getBytes(StandardCharsets.UTF_8)),
+                "AES");
+
+        String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+        String encodedIdToken = decryptedSessionCookie.split("\\|")[0];
+
+        return OidcUtils.decodeJwtContent(encodedIdToken);
     }
 
     private void doTestCodeFlowUserInfoCashedInIdToken() throws Exception {
@@ -276,9 +292,7 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice:alice, cache size: 0", page.getBody().asNormalizedText());
 
-            Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
-            assertNotNull(sessionCookie);
-            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
 
             // refresh

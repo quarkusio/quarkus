@@ -100,7 +100,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
 
-        if (resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo
+        if (resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)
                 && isOpaqueAccessToken(vertxContext, request, resolvedContext)) {
             // UserInfo has to be acquired first as a precondition for verifying opaque access tokens.
             // Typically it will be done for bearer access tokens therefore even if the access token has expired
@@ -269,7 +269,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             final String userName;
                             if (result.introspectionResult == null) {
                                 if (resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection &&
-                                        resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo) {
+                                        resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)) {
                                     userName = "";
                                 } else {
                                     // we don't expect this to ever happen
@@ -386,7 +386,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 throw new AuthenticationFailedException();
             }
             // verify opaque access token with UserInfo if enabled and introspection URI is absent
-            if (resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo
+            if (resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)
                     && resolvedContext.provider.getMetadata().getIntrospectionUri() == null) {
                 if (userInfo == null) {
                     return Uni.createFrom().failure(

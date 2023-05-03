@@ -91,7 +91,7 @@
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <graal-sdk.version>22.3.0</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
-        <gizmo.version>1.6.0.Final</gizmo.version>
+        <gizmo.version>1.6.1.Final</gizmo.version>
         <jackson-bom.version>2.14.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
@@ -103,7 +103,7 @@
         <hibernate-reactive.version>2.0.0.CR1</hibernate-reactive.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
-        <narayana.version>6.0.0.Final</narayana.version>
+        <narayana.version>6.0.1.Final</narayana.version>
         <agroal.version>2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.7.0</elasticsearch-opensource-components.version>

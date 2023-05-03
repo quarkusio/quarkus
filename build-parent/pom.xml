@@ -60,7 +60,7 @@
         <!--
         Supported Maven versions, interpreted as a version range (Also defined in quarkus-enforcer-rules)
          -->
-        <supported-maven-versions>[3.6.3,)</supported-maven-versions>
+        <supported-maven-versions>[3.8.2,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.8.8</proposed-maven-version>
@@ -639,6 +639,7 @@
                             <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
                             <nonFilteredFileExtension>svg</nonFilteredFileExtension>
                             <nonFilteredFileExtension>ico</nonFilteredFileExtension>
+                            <nonFilteredFileExtension>js</nonFilteredFileExtension>
                         </nonFilteredFileExtensions>
                     </configuration>
                 </plugin>

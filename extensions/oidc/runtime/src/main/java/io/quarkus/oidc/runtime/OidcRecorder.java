@@ -176,7 +176,8 @@ public class OidcRecorder {
             throw new ConfigurationException(
                     "UserInfo is not required but UserInfo is expected to be the source of authorization roles");
         }
-        if (oidcConfig.token.verifyAccessTokenWithUserInfo && !enableUserInfo(oidcConfig)) {
+        if (oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false) && !isWebApp(oidcConfig)
+                && !enableUserInfo(oidcConfig)) {
             throw new ConfigurationException(
                     "UserInfo is not required but 'verifyAccessTokenWithUserInfo' is enabled");
         }
@@ -238,7 +239,7 @@ public class OidcRecorder {
             }
         }
 
-        if (oidcConfig.token.verifyAccessTokenWithUserInfo) {
+        if (oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)) {
             if (!oidcConfig.isDiscoveryEnabled().orElse(true)) {
                 if (oidcConfig.userInfoPath.isEmpty()) {
                     throw new ConfigurationException(
@@ -333,7 +334,7 @@ public class OidcRecorder {
                     List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
                     if (keys != null && keys.size() == 1 &&
                             (keys.get(0).getAlgorithm() == null
-                                    || keys.get(0).getAlgorithm() == KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm())
+                                    || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
                             && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
                         key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
                     }
@@ -441,6 +442,10 @@ public class OidcRecorder {
 
     private static boolean isServiceApp(OidcTenantConfig oidcConfig) {
         return ApplicationType.SERVICE.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
+    }
+
+    private static boolean isWebApp(OidcTenantConfig oidcConfig) {
+        return ApplicationType.WEB_APP.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
     }
 
     private static void verifyAuthServerUrl(OidcCommonConfig oidcConfig) {

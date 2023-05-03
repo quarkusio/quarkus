@@ -315,6 +315,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
         implementGetBeanClass(bean, beanCreator);
+        implementGetImplementationClass(bean, beanCreator);
         implementGetName(bean, beanCreator);
         if (bean.isDefaultBean()) {
             implementIsDefaultBean(bean, beanCreator);
@@ -487,6 +488,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
         implementGetBeanClass(bean, beanCreator);
+        implementGetImplementationClass(bean, beanCreator);
         implementGetName(bean, beanCreator);
         if (bean.isDefaultBean()) {
             implementIsDefaultBean(bean, beanCreator);
@@ -567,6 +569,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
         implementGetBeanClass(bean, beanCreator);
+        implementGetImplementationClass(bean, beanCreator);
         implementGetName(bean, beanCreator);
         if (bean.isDefaultBean()) {
             implementIsDefaultBean(bean, beanCreator);
@@ -1987,6 +1990,13 @@ public class BeanGenerator extends AbstractGenerator {
     protected void implementGetBeanClass(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator getBeanClass = beanCreator.getMethodCreator("getBeanClass", Class.class).setModifiers(ACC_PUBLIC);
         getBeanClass.returnValue(getBeanClass.loadClass(bean.getBeanClass().toString()));
+    }
+
+    protected void implementGetImplementationClass(BeanInfo bean, ClassCreator beanCreator) {
+        MethodCreator getImplementationClass = beanCreator.getMethodCreator("getImplementationClass", Class.class)
+                .setModifiers(ACC_PUBLIC);
+        getImplementationClass.returnValue(bean.getImplClazz() != null ? getImplementationClass.loadClass(bean.getImplClazz())
+                : getImplementationClass.loadNull());
     }
 
     protected void implementGetName(BeanInfo bean, ClassCreator beanCreator) {

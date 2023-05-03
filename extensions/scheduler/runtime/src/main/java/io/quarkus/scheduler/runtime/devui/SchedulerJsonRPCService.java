@@ -235,12 +235,15 @@ public class SchedulerJsonRPCService {
         JsonObject log = new JsonObject()
                 .put("timestamp", LocalDateTime.now().toString())
                 .put("success", success);
-        if (userDefinedIdentity) {
-            log.put("triggerIdentity", trigger.getId());
-        }
         String description = trigger.getMethodDescription();
         if (description != null) {
             log.put("triggerMethodDescription", description);
+            if (userDefinedIdentity) {
+                log.put("triggerIdentity", trigger.getId());
+            }
+        } else {
+            // Always add identity if no method description is available
+            log.put("triggerIdentity", trigger.getId());
         }
         if (message != null) {
             log.put("message", message);

@@ -92,11 +92,6 @@
                     <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.definition.qualifier.builtin.BuiltInQualifierDefinitionTest">
-                <methods>
-                    <exclude name="testDefaultQualifierForInjectionPoint"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.definition.SimpleBeanDefinitionTest">
                 <methods>
                     <exclude name="testInitializerAnnotatedConstructor"/>
@@ -148,28 +143,10 @@
                     <exclude name="testNormalScopedUnproxyableBeanWithProtectedFinalMethodResolution"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.event.fires.FireEventTest">
-                <methods>
-                    <exclude name="testFireContainerLifecycleEvent"/>
-                    <exclude name="testInjectedEventCanSpecifyBindingsDynamically"/>
-                    <exclude name="testInjectedEventCanHaveBindings"/>
-                    <exclude name="testInjectedEventAcceptsEventObject"/>
-                    <exclude name="testInjectedAnyEventCanFireEvent"/>
-                    <exclude name="testBeanManagerFireEvent"/>
-                    <exclude name="testEventProvidesMethodForFiringEventsWithCombinationOfTypeAndBindings"/>
-                    <exclude name="testEventSelectedFiresAndObserversNotified"/>
-                    <exclude name="testEventFireThrowsExceptionIfEventObjectTypeContainsUnresovableTypeVariable"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">
                 <methods>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/455 -->
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.inheritance.generics.MemberLevelInheritanceTest">
-                <methods>
-                    <exclude name="testInjectionPointDefinition"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.definition.scope.inOtherBda.ScopeDefinedInOtherBDATest">

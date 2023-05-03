@@ -3,7 +3,6 @@ package io.quarkus.arc.processor;
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
 import java.lang.reflect.Member;
-import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -190,17 +189,15 @@ enum BuiltinBean {
     }
 
     private static void generateInstanceBytecode(GeneratorContext ctx) {
-        ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(ctx.classOutput, ctx.clazzCreator,
+        ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
         ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
-        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(ctx.classOutput, ctx.clazzCreator,
+        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
-        boolean isTransient = ctx.injectionPoint.isField()
-                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
         ResultHandle beanHandle;
         switch (ctx.targetInfo.kind()) {
             case OBSERVER:
@@ -219,7 +216,7 @@ enum BuiltinBean {
                         InjectableBean.class, Set.class, Member.class, int.class, boolean.class),
                 parameterizedType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
                 ctx.constructor.load(ctx.injectionPoint.getPosition()),
-                ctx.constructor.load(isTransient));
+                ctx.constructor.load(ctx.injectionPoint.isTransient()));
         ResultHandle instanceProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, instanceProvider);
         ctx.constructor.writeInstanceField(
@@ -248,13 +245,11 @@ enum BuiltinBean {
             }
         }
         ResultHandle parameterizedType = Types.getTypeHandle(ctx.constructor, ctx.injectionPoint.getType());
-        ResultHandle annotations = BeanGenerator.collectInjectionPointAnnotations(ctx.classOutput, ctx.clazzCreator,
+        ResultHandle annotations = BeanGenerator.collectInjectionPointAnnotations(
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMember = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
-        boolean isTransient = ctx.injectionPoint.isField()
-                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
         ResultHandle bean;
         switch (ctx.targetInfo.kind()) {
             case OBSERVER:
@@ -272,7 +267,7 @@ enum BuiltinBean {
         ResultHandle injectionPoint = ctx.constructor.newInstance(MethodDescriptors.INJECTION_POINT_IMPL_CONSTRUCTOR,
                 parameterizedType, parameterizedType, qualifiers, bean, annotations, javaMember,
                 ctx.constructor.load(ctx.injectionPoint.getPosition()),
-                ctx.constructor.load(isTransient));
+                ctx.constructor.load(ctx.injectionPoint.isTransient()));
 
         ResultHandle eventProvider = ctx.constructor.newInstance(
                 MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class,
@@ -395,16 +390,14 @@ enum BuiltinBean {
             usesInstanceHandle = mc.load(false);
         }
 
-        ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(ctx.classOutput, ctx.clazzCreator,
+        ResultHandle qualifiers = BeanGenerator.collectInjectionPointQualifiers(
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals);
-        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(ctx.classOutput, ctx.clazzCreator,
+        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
                 ctx.beanDeployment,
                 ctx.constructor, ctx.injectionPoint, ctx.annotationLiterals, ctx.injectionPointAnnotationsPredicate);
         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(ctx.constructor, ctx.injectionPoint,
                 ctx.reflectionRegistration);
-        boolean isTransient = ctx.injectionPoint.isField()
-                && Modifier.isTransient(ctx.injectionPoint.getTarget().asField().flags());
         ResultHandle beanHandle;
         switch (ctx.targetInfo.kind()) {
             case OBSERVER:
@@ -424,7 +417,7 @@ enum BuiltinBean {
                         InjectableBean.class, Set.class, Member.class, int.class, boolean.class, boolean.class),
                 requiredType, injectionPointType, qualifiers, beanHandle, annotationsHandle, javaMemberHandle,
                 ctx.constructor.load(ctx.injectionPoint.getPosition()),
-                ctx.constructor.load(isTransient), usesInstanceHandle);
+                ctx.constructor.load(ctx.injectionPoint.isTransient()), usesInstanceHandle);
         ResultHandle listProviderSupplier = ctx.constructor.newInstance(
                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, listProvider);
         ctx.constructor.writeInstanceField(

@@ -72,6 +72,7 @@ import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.DefaultsConfigSource;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
+import io.quarkus.runtime.configuration.MappingsConfigBuilder;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
@@ -87,10 +88,6 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(
             SmallRyeConfigBuilder.class, "withSources",
             SmallRyeConfigBuilder.class, ConfigSource[].class);
-
-    private static final MethodDescriptor WITH_MAPPING = MethodDescriptor.ofMethod(
-            SmallRyeConfigBuilder.class, "withMapping",
-            SmallRyeConfigBuilder.class, Class.class, String.class);
 
     @BuildStep
     void staticInitSources(
@@ -513,15 +510,18 @@ public class ConfigGenerationBuildStep {
                 .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
                 .className(className)
                 .interfaces(ConfigBuilder.class)
+                .superClass(MappingsConfigBuilder.class)
                 .setFinal(true)
                 .build()) {
 
             MethodCreator method = classCreator.getMethodCreator(CONFIG_BUILDER);
             ResultHandle configBuilder = method.getMethodParam(0);
 
+            MethodDescriptor addMapping = MethodDescriptor.ofMethod(MappingsConfigBuilder.class, "addMapping", void.class,
+                    SmallRyeConfigBuilder.class, String.class, String.class);
+
             for (ConfigClassWithPrefix mapping : mappings) {
-                method.invokeVirtualMethod(WITH_MAPPING, configBuilder,
-                        method.loadClass(mapping.getKlass()),
+                method.invokeStaticMethod(addMapping, configBuilder, method.load(mapping.getKlass().getName()),
                         method.load(mapping.getPrefix()));
             }
 

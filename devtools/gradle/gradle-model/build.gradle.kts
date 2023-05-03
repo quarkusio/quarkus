@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.kotlin.gradle.plugin.api)
+    compileOnly(libs.kotlin.gradle.plugin.api)
 }
 
 group = "io.quarkus"

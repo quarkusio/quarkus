@@ -5,15 +5,34 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jboss.logging.Logger;
+
 public class FunctionRegistry {
     protected Map<String, FunctionInvoker> functions = new HashMap<>();
 
+    private static final Logger log = Logger.getLogger(FunctionRegistry.class);
+
     public void register(Class clz, String methodName, String descriptor, String functionName) {
+        String methodDescription = clz.getName() + "/" + methodName + descriptor;
+
+        FunctionInvoker fi = functions.get(functionName);
+        if (fi != null) {
+            String otherMethodDescription = fi.targetClass.getName() + "/" + fi.method.getName()
+                    + getMethodDescriptor(fi.method);
+            String msg = String.format("Name conflict: the name \"%s\" is shared by \"%s\" and \"%s\"." +
+                    " Consider using @Func(\"name-here\") annotation parameter to distinguish them.",
+                    functionName, methodDescription, otherMethodDescription);
+            log.warn(msg);
+        }
+
         for (Method m : clz.getMethods()) {
             if (m.getName().equals(methodName) && descriptor.equals(getMethodDescriptor(m))) {
                 functions.put(functionName, new FunctionInvoker(functionName, clz, m));
+                return;
             }
         }
+
+        throw new RuntimeException("Method \"" + methodDescription + "\" not found.");
     }
 
     public FunctionInvoker matchInvoker(String name) {

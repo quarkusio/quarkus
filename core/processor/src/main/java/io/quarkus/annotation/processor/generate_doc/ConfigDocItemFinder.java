@@ -141,8 +141,6 @@ class ConfigDocItemFinder {
         }
 
         for (Element enclosedElement : element.getEnclosedElements()) {
-            shouldProcessElement(enclosedElement);
-
             if (!shouldProcessElement(enclosedElement)) {
                 continue;
             }

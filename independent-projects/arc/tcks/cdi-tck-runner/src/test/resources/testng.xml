@@ -22,12 +22,13 @@
         <classes>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.SimpleBeanLifecycleTest">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
                     <exclude name="testBeanCreateInjectsDependenciesAndInvokesInitializerToInstantiateInstance"/>
                 </methods>
             </class>
-            <!-- must be excluded due to a TCK bug that shall be fixed in CDI TCK 4.0.10 -->
             <class name="org.jboss.cdi.tck.interceptors.tests.contract.lifecycleCallback.LifecycleCallbackInterceptorTest">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/issues/448 -->
                     <exclude name="testPostConstructInterceptor"/>
                     <exclude name="testProtectedLifecycleInterceptorMethod"/>
                     <exclude name="testLifeCycleCallbackInterceptorNotInvokedForMethodLevelInterceptor"/>
@@ -46,6 +47,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContextTest">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
                 </methods>
             </class>
@@ -106,6 +108,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
                     <exclude name="testContextIsActiveDuringInjection"/>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/454 -->
                     <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"/>
@@ -113,6 +116,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.context.GetFromContextualTest">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
                     <exclude name="testGetMayNotCreateNewInstanceUnlessCreationalContextGiven"/>
                 </methods>
             </class>

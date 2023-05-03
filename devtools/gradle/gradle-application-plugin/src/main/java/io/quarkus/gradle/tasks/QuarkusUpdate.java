@@ -139,7 +139,7 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
         }
 
         final UpdateProject invoker = new UpdateProject(quarkusProject);
-        invoker.latestCatalog(targetCatalog);
+        invoker.targetCatalog(targetCatalog);
         if (rewriteUpdateRecipesVersion != null) {
             invoker.rewriteUpdateRecipesVersion(rewriteUpdateRecipesVersion);
         }

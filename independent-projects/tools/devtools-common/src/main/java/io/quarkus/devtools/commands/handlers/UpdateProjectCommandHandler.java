@@ -51,7 +51,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
         final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
-        final ExtensionCatalog latestCatalog = invocation.getValue(UpdateProject.LATEST_CATALOG);
+        final ExtensionCatalog targetCatalog = invocation.getValue(UpdateProject.TARGET_CATALOG);
         final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
 
         final boolean perModule = invocation.getValue(UpdateProject.PER_MODULE, false);
@@ -68,14 +68,18 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             invocation.log().info("Instructions to update this project from '%s' to '%s':",
                     projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
             final QuarkusProject quarkusProject = invocation.getQuarkusProject();
-            logUpdates(currentState, latestCatalog, false, perModule, quarkusProject.log());
+            logUpdates(currentState, targetCatalog, false, perModule, quarkusProject.log());
             final boolean noRewrite = invocation.getValue(UpdateProject.NO_REWRITE, false);
 
             if (!noRewrite) {
                 final BuildTool buildTool = quarkusProject.getExtensionManager().getBuildTool();
+                String kotlinVersion = getMetadata(targetCatalog, "project", "properties", "kotlin-version");
+
                 QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
                         buildTool,
-                        projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
+                        projectQuarkusPlatformBom.getVersion(),
+                        targetPlatformVersion,
+                        kotlinVersion);
                 Path recipe = null;
                 try {
                     recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
@@ -533,5 +537,19 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         boolean isEmpty() {
             return extensionInfo.isEmpty();
         }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private <T> T getMetadata(ExtensionCatalog catalog, String... path) {
+        Object currentValue = catalog.getMetadata();
+        for (String pathElement : path) {
+            if (!(currentValue instanceof Map)) {
+                return null;
+            }
+
+            currentValue = ((Map) currentValue).get(pathElement);
+        }
+
+        return (T) currentValue;
     }
 }

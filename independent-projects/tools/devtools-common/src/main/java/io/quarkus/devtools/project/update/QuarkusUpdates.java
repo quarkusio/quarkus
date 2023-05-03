@@ -8,6 +8,7 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.update.QuarkusUpdatesRepository.FetchResult;
 import io.quarkus.devtools.project.update.operations.UpdatePropertyOperation;
+import io.quarkus.devtools.project.update.operations.UpgradeGradlePluginOperation;
 
 public final class QuarkusUpdates {
 
@@ -28,11 +29,17 @@ public final class QuarkusUpdates {
             case MAVEN:
                 recipe.addOperation(new UpdatePropertyOperation("quarkus.platform.version", request.targetVersion))
                         .addOperation(new UpdatePropertyOperation("quarkus.version", request.targetVersion));
+                if (request.kotlinVersion != null) {
+                    recipe.addOperation(new UpdatePropertyOperation("kotlin.version", request.kotlinVersion));
+                }
                 break;
             case GRADLE:
             case GRADLE_KOTLIN_DSL:
                 recipe.addOperation(new UpdatePropertyOperation("quarkusPlatformVersion", request.targetVersion))
                         .addOperation(new UpdatePropertyOperation("quarkusPluginVersion", request.targetVersion));
+                if (request.kotlinVersion != null) {
+                    recipe.addOperation(new UpgradeGradlePluginOperation("org.jetbrains.kotlin.*", request.kotlinVersion));
+                }
                 break;
         }
 
@@ -48,15 +55,17 @@ public final class QuarkusUpdates {
         public BuildTool buildTool;
         public String currentVersion;
         public String targetVersion;
+        public String kotlinVersion;
 
-        public ProjectUpdateRequest(String currentVersion, String targetVersion) {
-            this(BuildTool.MAVEN, currentVersion, targetVersion);
+        public ProjectUpdateRequest(String currentVersion, String targetVersion, String kotlinVersion) {
+            this(BuildTool.MAVEN, currentVersion, targetVersion, kotlinVersion);
         }
 
-        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion) {
+        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion, String kotlinVersion) {
             this.buildTool = buildTool;
             this.currentVersion = currentVersion;
             this.targetVersion = targetVersion;
+            this.kotlinVersion = kotlinVersion;
         }
     }
 }

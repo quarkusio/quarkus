@@ -112,7 +112,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
                     "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries", e);
         }
         final UpdateProject invoker = new UpdateProject(quarkusProject);
-        invoker.latestCatalog(targetCatalog);
+        invoker.targetCatalog(targetCatalog);
         invoker.targetPlatformVersion(platformVersion);
         invoker.perModule(perModule);
         invoker.appModel(resolveApplicationModel());

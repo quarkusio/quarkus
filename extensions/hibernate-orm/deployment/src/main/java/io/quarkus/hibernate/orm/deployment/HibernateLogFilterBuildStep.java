@@ -30,5 +30,7 @@ public final class HibernateLogFilterBuildStep {
         // Silence incubating settings warnings as we will use some for compatibility
         filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.incubating",
                 "HHH90006001"));
+        // https://hibernate.atlassian.net/browse/HHH-16546
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.tuple.entity.EntityMetamodel", "HHH000157"));
     }
 }

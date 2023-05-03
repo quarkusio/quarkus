@@ -16,6 +16,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.ListCrudRepository;
+import org.springframework.data.repository.ListPagingAndSortingRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -46,14 +48,21 @@ class SpringDataRestProcessor {
 
     private static final DotName CRUD_REPOSITORY_INTERFACE = DotName.createSimple(CrudRepository.class.getName());
 
+    private static final DotName LIST_CRUD_REPOSITORY_INTERFACE = DotName.createSimple(ListCrudRepository.class.getName());
+
     private static final DotName PAGING_AND_SORTING_REPOSITORY_INTERFACE = DotName
             .createSimple(PagingAndSortingRepository.class.getName());
+
+    private static final DotName LIST_PAGING_AND_SORTING_REPOSITORY_INTERFACE = DotName
+            .createSimple(ListPagingAndSortingRepository.class.getName());
 
     private static final DotName JPA_REPOSITORY_INTERFACE = DotName.createSimple(JpaRepository.class.getName());
 
     private static final List<DotName> EXCLUDED_INTERFACES = Arrays.asList(
             CRUD_REPOSITORY_INTERFACE,
+            LIST_CRUD_REPOSITORY_INTERFACE,
             PAGING_AND_SORTING_REPOSITORY_INTERFACE,
+            LIST_PAGING_AND_SORTING_REPOSITORY_INTERFACE,
             JPA_REPOSITORY_INTERFACE);
 
     @BuildStep

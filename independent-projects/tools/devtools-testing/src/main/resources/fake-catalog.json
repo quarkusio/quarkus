@@ -88,7 +88,7 @@
           "core"
         ],
         "status": "stable",
-        "guide": "https://quarkus.io/guides/config#yaml",
+        "guide": "https://quarkus.io/guides/config-yaml",
         "codestart": {
           "name": "config-yaml",
           "kind": "core",

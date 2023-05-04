@@ -21,7 +21,7 @@ import io.quarkus.kubernetes.spi.PolicyRule;
 public class InitTaskProcessor {
 
     private static final String INIT_CONTAINER_WAITER_NAME = "init";
-    private static final String INIT_CONTAINER_WAITER_DEFAULT_IMAGE = "groundnuty/k8s-wait-for:1.3";
+    private static final String INIT_CONTAINER_WAITER_DEFAULT_IMAGE = "groundnuty/k8s-wait-for:no-root-v1.7";
 
     static void process(
             String target, // kubernetes, openshift, etc.

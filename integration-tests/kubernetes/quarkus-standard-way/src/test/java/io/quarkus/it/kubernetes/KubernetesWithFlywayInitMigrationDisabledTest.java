@@ -1,6 +1,7 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -24,9 +25,9 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithFlywayInitTest {
+public class KubernetesWithFlywayInitMigrationDisabledTest {
 
-    private static final String NAME = "kubernetes-with-flyway-init";
+    private static final String NAME = "kubernetes-with-flyway-init-migration-disabled";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -34,7 +35,7 @@ public class KubernetesWithFlywayInitTest {
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogFileName("k8s.log")
-            .overrideConfigKey("quarkus.flyway.migrate-at-start", "true")
+            .overrideConfigKey("quarkus.flyway.migrate-at-start", "false")
             .setForcedDependencies(Arrays.asList(
                     new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
                     new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
@@ -66,7 +67,7 @@ public class KubernetesWithFlywayInitTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
+                        assertThat(podSpec.getInitContainers()).noneSatisfy(container -> {
                             assertThat(container.getName()).isEqualTo("init");
                         });
 
@@ -78,32 +79,11 @@ public class KubernetesWithFlywayInitTest {
         Optional<Job> job = kubernetesList.stream()
                 .filter(j -> "Job".equals(j.getKind()) && "flyway-init".equals(j.getMetadata().getName())).map(j -> (Job) j)
                 .findAny();
-        assertTrue(job.isPresent());
-
-        assertThat(job.get()).satisfies(j -> {
-            assertThat(j.getSpec()).satisfies(jobSpec -> {
-                assertThat(jobSpec.getTemplate()).satisfies(t -> {
-                    assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo("flyway-init");
-                            assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))
-                                    .singleElement().satisfies(env -> {
-                                        assertThat(env.getValue()).isEqualTo("true");
-                                    });
-                            assertThat(container.getEnv())
-                                    .filteredOn(env -> "QUARKUS_INIT_AND_EXIT".equals(env.getName())).singleElement()
-                                    .satisfies(env -> {
-                                        assertThat(env.getValue()).isEqualTo("true");
-                                    });
-                        });
-                    });
-                });
-            });
-        });
+        assertFalse(job.isPresent());
 
         Optional<RoleBinding> roleBinding = kubernetesList.stream().filter(
                 r -> r instanceof RoleBinding && (NAME + "-view-jobs").equals(r.getMetadata().getName()))
                 .map(r -> (RoleBinding) r).findFirst();
-        assertTrue(roleBinding.isPresent());
+        assertFalse(roleBinding.isPresent());
     }
 }

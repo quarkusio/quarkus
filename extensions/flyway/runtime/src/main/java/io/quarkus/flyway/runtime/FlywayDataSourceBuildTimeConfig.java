@@ -37,6 +37,15 @@ public final class FlywayDataSourceBuildTimeConfig {
     public Optional<List<String>> callbacks = Optional.empty();
 
     /**
+     * Flag to enable / disable the migration using the generated init task Kubernetes resources.
+     * This property is only relevant if the Quarkus Kubernetes/OpenShift extensions are present.
+     *
+     * The default value is `quarkus.flyway.migrate-at-start`.
+     */
+    @ConfigItem(defaultValue = "${quarkus.flyway.migrate-at-start:false}")
+    public boolean migrateWithInitTask;
+
+    /**
      * Creates a {@link FlywayDataSourceBuildTimeConfig} with default settings.
      *
      * @return {@link FlywayDataSourceBuildTimeConfig}

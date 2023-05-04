@@ -32,6 +32,15 @@ public final class LiquibaseBuildTimeConfig {
     }
 
     /**
+     * Flag to enable / disable the generation of the init task Kubernetes resources.
+     * This property is only relevant if the Quarkus Kubernetes/OpenShift extensions are present.
+     *
+     * The default value is `quarkus.liquibase.enabled`.
+     */
+    @ConfigItem(defaultValue = "${quarkus.liquibase.enabled:true}")
+    public boolean generateInitTask;
+
+    /**
      * Liquibase configuration for the default datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT)

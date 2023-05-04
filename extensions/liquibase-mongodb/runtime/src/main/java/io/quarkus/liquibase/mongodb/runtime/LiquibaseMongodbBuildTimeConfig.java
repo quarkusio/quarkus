@@ -15,4 +15,22 @@ public class LiquibaseMongodbBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "db/changeLog.xml")
     public String changeLog;
+
+    /**
+     * Flag to enable / disable the generation of the init task Kubernetes resources.
+     * This property is only relevant if the Quarkus Kubernetes/OpenShift extensions are present.
+     *
+     * The default value is `quarkus.liquibase-mongodb.enabled`.
+     */
+    @ConfigItem(defaultValue = "${quarkus.liquibase-mongodb.enabled:true}")
+    public boolean generateInitTask;
+
+    /**
+     * Flag to enable / disable the migration using the generated init task Kubernetes resources.
+     * This property is only relevant if the Quarkus Kubernetes/OpenShift extensions are present.
+     *
+     * The default value is `quarkus.liquibase-mongodb.migrate-at-start`.
+     */
+    @ConfigItem(defaultValue = "${quarkus.liquibase-mongodb.migrate-at-start:false}")
+    public boolean migrateWithInitTask;
 }

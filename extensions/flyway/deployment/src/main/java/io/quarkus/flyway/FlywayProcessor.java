@@ -221,13 +221,15 @@ class FlywayProcessor {
     }
 
     @BuildStep
-    public InitTaskBuildItem configureInitTask() {
-        return InitTaskBuildItem.create()
-                .withName("flyway-init")
-                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
-                .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
-                .withSharedEnvironment(true)
-                .withSharedFilesystem(true);
+    public void configureInitTask(FlywayBuildTimeConfig config, BuildProducer<InitTaskBuildItem> initTasks) {
+        if (config.generateInitTask && config.defaultDataSource.migrateWithInitTask) {
+            initTasks.produce(InitTaskBuildItem.create()
+                    .withName("flyway-init")
+                    .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
+                    .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
+                    .withSharedEnvironment(true)
+                    .withSharedFilesystem(true));
+        }
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

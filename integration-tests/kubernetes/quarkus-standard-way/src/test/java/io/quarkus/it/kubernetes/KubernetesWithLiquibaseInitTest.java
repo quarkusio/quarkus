@@ -24,9 +24,9 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithFlywayInitTest {
+public class KubernetesWithLiquibaseInitTest {
 
-    private static final String NAME = "kubernetes-with-flyway-init";
+    private static final String NAME = "kubernetes-with-liquibase-init";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -34,10 +34,10 @@ public class KubernetesWithFlywayInitTest {
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogFileName("k8s.log")
-            .overrideConfigKey("quarkus.flyway.migrate-at-start", "true")
+            .overrideConfigKey("quarkus.liquibase.migrate-at-start", "true")
             .setForcedDependencies(Arrays.asList(
                     new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
-                    new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
+                    new AppArtifact("io.quarkus", "quarkus-liquibase", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -76,7 +76,7 @@ public class KubernetesWithFlywayInitTest {
         });
 
         Optional<Job> job = kubernetesList.stream()
-                .filter(j -> "Job".equals(j.getKind()) && "flyway-init".equals(j.getMetadata().getName())).map(j -> (Job) j)
+                .filter(j -> "Job".equals(j.getKind()) && "liquibase-init".equals(j.getMetadata().getName())).map(j -> (Job) j)
                 .findAny();
         assertTrue(job.isPresent());
 
@@ -85,8 +85,8 @@ public class KubernetesWithFlywayInitTest {
                 assertThat(jobSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo("flyway-init");
-                            assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))
+                            assertThat(container.getName()).isEqualTo("liquibase-init");
+                            assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_LIQUIBASE_ENABLED".equals(env.getName()))
                                     .singleElement().satisfies(env -> {
                                         assertThat(env.getValue()).isEqualTo("true");
                                     });

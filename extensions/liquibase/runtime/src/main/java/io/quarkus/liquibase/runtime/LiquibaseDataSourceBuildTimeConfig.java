@@ -28,4 +28,13 @@ public final class LiquibaseDataSourceBuildTimeConfig {
     @ConfigItem(defaultValue = DEFAULT_CHANGE_LOG)
     public String changeLog;
 
+    /**
+     * Flag to enable / disable the migration using the generated init task Kubernetes resources.
+     * This property is only relevant if the Quarkus Kubernetes/OpenShift extensions are present.
+     *
+     * The default value is `quarkus.liquibase.migrate-at-start`.
+     */
+    @ConfigItem(defaultValue = "${quarkus.liquibase.migrate-at-start:false}")
+    public boolean migrateWithInitTask;
+
 }

@@ -22,6 +22,15 @@ public final class FlywayBuildTimeConfig {
     }
 
     /**
+     * Flag to enable / disable the generation of the init task Kubernetes resources.
+     * This property is only relevant if the Quarkus Kubernetes/OpenShift extensions are present.
+     *
+     * The default value is `quarkus.flyway.enabled`.
+     */
+    @ConfigItem(defaultValue = "${quarkus.flyway.enabled:true}")
+    public boolean generateInitTask;
+
+    /**
      * Flyway configuration for the default datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT)

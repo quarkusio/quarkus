@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.spi.Contextual;
@@ -39,6 +40,7 @@ import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
+import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.deployment.InterceptorResolverBuildItem;
 import io.quarkus.arc.deployment.TransformedAnnotationsBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -146,6 +148,7 @@ public class InterceptedStaticMethodsProcessor {
     void processInterceptedStaticMethods(BeanArchiveIndexBuildItem beanArchiveIndex,
             BeanRegistrationPhaseBuildItem phase,
             List<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
+            CompletedApplicationClassPredicateBuildItem applicationClassPredicate,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
@@ -154,7 +157,27 @@ public class InterceptedStaticMethodsProcessor {
             return;
         }
 
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
+        // org.acme.Foo -> org.acme.Foo_InterceptorInitializer
+        Map<DotName, String> baseToGeneratedInitializer = new HashMap<>();
+        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Predicate<String>() {
+
+            @Override
+            public boolean test(String name) {
+                // For example, for base org.acme.Foo we generate org.acme.Foo_InterceptorInitializer
+                // and possibly anonymous classes like org.acme.Foo_InterceptorInitializer$$function$$1
+                name = name.replace('/', '.');
+                DotName base = null;
+                for (Entry<DotName, String> e : baseToGeneratedInitializer.entrySet()) {
+                    if (e.getValue().equals(name) || name.startsWith(e.getValue())) {
+                        base = e.getKey();
+                    }
+                }
+                if (base == null) {
+                    throw new IllegalStateException("Unable to find the base class for the generated: " + name);
+                }
+                return applicationClassPredicate.test(base);
+            }
+        });
 
         // declaring class -> intercepted static methods
         Map<DotName, List<InterceptedStaticMethodBuildItem>> interceptedStaticMethodsMap = new HashMap<>();
@@ -172,14 +195,14 @@ public class InterceptedStaticMethodsProcessor {
         // 1. registers all interceptor chains inside an "init_static_intercepted_methods" method
         // 2. adds static methods to invoke the interceptor chain and delegate to the copy of the original static method
         // declaring class -> initializer class
-        Map<DotName, String> initializers = new HashMap<>();
+
         String initAllMethodName = "init_static_intercepted_methods";
         for (Entry<DotName, List<InterceptedStaticMethodBuildItem>> entry : interceptedStaticMethodsMap.entrySet()) {
 
             String packageName = DotNames.internalPackageNameWithTrailingSlash(entry.getKey());
             String initializerName = packageName.replace("/", ".") + entry.getKey().withoutPackagePrefix()
                     + INITIALIZER_CLASS_SUFFIX;
-            initializers.put(entry.getKey(), initializerName);
+            baseToGeneratedInitializer.put(entry.getKey(), initializerName);
 
             ClassCreator initializer = ClassCreator.builder().classOutput(classOutput)
                     .className(initializerName).setFinal(true).build();
@@ -206,16 +229,17 @@ public class InterceptedStaticMethodsProcessor {
         // For each intercepted static methods create a copy and modify the original method to delegate to the relevant initializer
         for (Entry<DotName, List<InterceptedStaticMethodBuildItem>> entry : interceptedStaticMethodsMap.entrySet()) {
             transformers.produce(new BytecodeTransformerBuildItem(entry.getKey().toString(),
-                    new InterceptedStaticMethodsEnhancer(initializers.get(entry.getKey()), entry.getValue())));
+                    new InterceptedStaticMethodsEnhancer(baseToGeneratedInitializer.get(entry.getKey()), entry.getValue())));
         }
 
-        // Generate a global initializer that calls all other initializers
-        ClassCreator globalInitializer = ClassCreator.builder().classOutput(classOutput)
+        // Generate a global initializer that calls all other initializers; this initializer must be loaded by the runtime ClassLoader
+        ClassCreator globalInitializer = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClasses, true))
                 .className(InterceptedStaticMethodsRecorder.INITIALIZER_CLASS_NAME.replace('.', '/')).setFinal(true).build();
 
         MethodCreator staticInit = globalInitializer.getMethodCreator("<clinit>", void.class)
                 .setModifiers(ACC_STATIC);
-        for (String initializerClass : initializers.values()) {
+        for (String initializerClass : baseToGeneratedInitializer.values()) {
             staticInit.invokeStaticMethod(
                     MethodDescriptor.ofMethod(initializerClass, initAllMethodName, void.class));
         }
@@ -242,7 +266,8 @@ public class InterceptedStaticMethodsProcessor {
             paramTypes[i] = DescriptorUtils.typeToString(params.get(i));
         }
         MethodCreator forward = initializer
-                .getMethodCreator(interceptedStaticMethod.getHash(), DescriptorUtils.typeToString(method.returnType()),
+                .getMethodCreator(interceptedStaticMethod.getForwardingMethodName(),
+                        DescriptorUtils.typeToString(method.returnType()),
                         paramTypes)
                 .setModifiers(ACC_PUBLIC | ACC_FINAL | ACC_STATIC);
         ResultHandle argArray = forward.newArray(Object.class, params.size());
@@ -491,7 +516,7 @@ public class InterceptedStaticMethodsProcessor {
                 paramSlot += AsmUtil.getParameterSize(paramType);
             }
             superVisitor.visitMethodInsn(Opcodes.INVOKESTATIC,
-                    initializerClassName.replace('.', '/'), interceptedStaticMethod.getHash(),
+                    initializerClassName.replace('.', '/'), interceptedStaticMethod.getForwardingMethodName(),
                     descriptor.getDescriptor().toString(),
                     false);
             superVisitor.visitInsn(AsmUtil.getReturnInstruction(interceptedStaticMethod.getMethod().returnType()));

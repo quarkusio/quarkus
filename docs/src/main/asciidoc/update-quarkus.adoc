@@ -3,22 +3,22 @@ This document is maintained in the main Quarkus repository, and pull requests sh
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="update-projects-to-quarkus-3-automatically-howto"]
-= Update projects to Quarkus 3.x automatically
+= Update projects to the latest version of Quarkus
 include::_attributes.adoc[]
 :categories: core
 :extension-status: "experimental"
-:summary: Update projects from Quarkus 2.x to Quarkus 3.x.
+:summary: Update your projects to the latest version of Quarkus
 
 include::{includes}/extension-status.adoc[]
 
-You can update your projects from Quarkus 2.x to Quarkus 3.x by running an update command.
+You can update your Quarkus projects to the latest version by running an update command.
 
-The update command primarily uses OpenRewrite recipes to automate updating most of your project's dependencies, source code, and documentation. These recipes cover many but not all of the items described in the link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0[Migration Guide 3.0].
+The update command primarily uses OpenRewrite recipes to automate updating most of your project's dependencies, source code, and documentation. These recipes cover many but not all of the items described in the link:https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides].
 
-After updating the project, if you do not find all the updates you expect, there are two possible reasons:
+After updating a project, if you do not find all the updates you expect, there are two possible reasons:
 
 - The recipe might not cover an item in your project.
-- Your project might use an extension that does not support Quarkus 3 yet.
+- Your project might use an extension that does not support the latest version of Quarkus yet.
 
 In either case, https://github.com/quarkusio/quarkus/issues[let us know by filing an issue] so we can improve the update command.
 
@@ -30,27 +30,36 @@ The following update command only covers a few items in this quick reference.
 
 == Prerequisites
 
+* A project based on Quarkus version 2.13 or later.
 :prerequisites-time: 30 minutes
 include::{includes}/prerequisites.adoc[]
 
 == Procedure
 
 . Use your version control system to create a working branch for your project or projects.
-. Optional: To use the Quarkus CLI in the next step, link:https://quarkus.io/guides/cli-tooling#installing-the-cli[install version 3 of the Quarkus CLI]. Use `quarkus -v` to verify the version number.
-. Update the project:
+
+. Optional: To use the Quarkus CLI in the next step, link:https://quarkus.io/guides/cli-tooling#installing-the-cli[install the latest version of the Quarkus CLI]. Use `quarkus -v` to verify the version number.
+
+. Change to the project directory and update the project:
 +
 [source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
 .CLI
 ----
-quarkus update --stream=3.0
+quarkus update <1>
 ----
+<1> Updates to the latest stream by default. To specify a stream, use the `stream` option; for example, `--stream=3.0`.
 +
 [source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
 .Maven
 ----
-./mvnw io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:update -N -Dstream=3.0
+./mvnw io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:update -N <1>
 ----
+<1> Updates to the latest stream by default. To specify a stream, use the `Dstream` option; for example, `-Dstream=3.0`.
+
 . Review the output from the update command for potential instructions and, if needed, perform the indicated tasks.
+
 . Review all the changes using a diff tool.
-. Review link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0[the migration guide] for any items not covered by the upgrade command and perform additional steps, if needed.
+
+. Review the https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides] for any items not covered by the upgrade command and perform additional steps, if needed.
+
 . Verify that the project builds without errors and that the application passes all tests and works as expected before releasing it to production.

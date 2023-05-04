@@ -199,7 +199,7 @@
                                         <log>
                                             <prefix>Logstash:</prefix>
                                             <date>default</date>
-                                            <color>cyan</color>
+                                            <color>magenta</color>
                                         </log>
                                         <volumes>
                                             <bind>
@@ -213,7 +213,7 @@
                                                 <status>200</status>
                                             </http>
                                             <!-- Starting the pipeline can be long as it needs to communicate with Elasticsearch -->
-                                            <time>45000</time>
+                                            <time>90000</time>
                                         </wait>
                                         <dependsOn>
                                             <container>elasticsearch</container>

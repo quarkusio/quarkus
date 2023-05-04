@@ -5,7 +5,6 @@ import java.util.List;
 
 import io.dekorate.ConfigReference;
 import io.dekorate.WithConfigReferences;
-import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImageDecorator;

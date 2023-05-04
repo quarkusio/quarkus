@@ -17,7 +17,6 @@ import io.dekorate.kubernetes.config.KubernetesConfig;
 import io.dekorate.kubernetes.config.KubernetesConfigBuilder;
 import io.dekorate.kubernetes.configurator.ApplyDeployToApplicationConfiguration;
 import io.dekorate.kubernetes.decorator.AddIngressDecorator;
-import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddServiceResourceDecorator;
 import io.dekorate.kubernetes.decorator.ApplyHeadlessDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImageDecorator;
@@ -108,7 +107,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
         super.addDecorators(group, config);
 
         for (Container container : config.getInitContainers()) {
-            resourceRegistry.decorate(group, new AddInitContainerDecorator(config.getName(), container));
+            resourceRegistry.decorate(group, new AddInitContainerFromUserConfigDecorator(config.getName(), container));
         }
 
         if (config.getPorts().length > 0) {

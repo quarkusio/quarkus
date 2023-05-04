@@ -40,7 +40,6 @@ import io.dekorate.kubernetes.decorator.AddEmptyDirVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddHostAliasesDecorator;
 import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
-import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddLabelDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddMetadataToTemplateDecorator;
@@ -602,7 +601,7 @@ public class KubernetesCommonHelper {
             }
 
             result.add(new DecoratorBuildItem(target,
-                    new AddInitContainerDecorator(name, containerBuilder
+                    new AddInitContainerFromExtensionsDecorator(name, containerBuilder
                             .addAllToEnvVars(item.getEnvVars().entrySet().stream().map(e -> new EnvBuilder()
                                     .withName(e.getKey())
                                     .withValue(e.getValue())
@@ -750,7 +749,8 @@ public class KubernetesCommonHelper {
         });
 
         config.getInitContainers().entrySet().forEach(e -> {
-            result.add(new DecoratorBuildItem(target, new AddInitContainerDecorator(name, ContainerConverter.convert(e))));
+            result.add(new DecoratorBuildItem(target,
+                    new AddInitContainerFromUserConfigDecorator(name, ContainerConverter.convert(e))));
         });
 
         config.getSidecars().entrySet().forEach(e -> {

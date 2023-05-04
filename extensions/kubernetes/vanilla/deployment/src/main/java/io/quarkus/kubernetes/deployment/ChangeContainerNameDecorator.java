@@ -1,7 +1,6 @@
 package io.quarkus.kubernetes.deployment;
 
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
-import io.dekorate.kubernetes.decorator.AddInitContainerDecorator;
 import io.dekorate.kubernetes.decorator.AddLivenessProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddMountDecorator;
 import io.dekorate.kubernetes.decorator.AddPortDecorator;

@@ -24,8 +24,8 @@ public final class KubernetesInitContainerBuildItem extends MultiBuildItem {
     private final boolean sharedEnvironment;
     private final boolean sharedFilesystem;
 
-    public static KubernetesInitContainerBuildItem create(String image) {
-        return new KubernetesInitContainerBuildItem("init", null, image, Collections.emptyList(), Collections.emptyList(),
+    public static KubernetesInitContainerBuildItem create(String name, String image) {
+        return new KubernetesInitContainerBuildItem(name, null, image, Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyMap(), false, false);
     }
 

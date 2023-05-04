@@ -24,9 +24,10 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithFlywayInitTest {
+public class KubernetesWithFlywayInitOverrideWaiterImageTest {
 
-    private static final String NAME = "kubernetes-with-flyway-init";
+    private static final String NAME = "kubernetes-with-flyway-init-override-waiter-image";
+    private static final String OVERRIDDEN_WAITER_IMAGE = "overridden:latest";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -35,6 +36,7 @@ public class KubernetesWithFlywayInitTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogFileName("k8s.log")
             .overrideConfigKey("quarkus.flyway.migrate-at-start", "true")
+            .overrideConfigKey("quarkus.kubernetes.init-containers.\"init\".image", OVERRIDDEN_WAITER_IMAGE)
             .setForcedDependencies(Arrays.asList(
                     new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
                     new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
@@ -68,7 +70,7 @@ public class KubernetesWithFlywayInitTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getName()).isEqualTo("init");
-                            assertThat(container.getImage()).isEqualTo("groundnuty/k8s-wait-for:1.3");
+                            assertThat(container.getImage()).isEqualTo(OVERRIDDEN_WAITER_IMAGE);
                         });
 
                     });

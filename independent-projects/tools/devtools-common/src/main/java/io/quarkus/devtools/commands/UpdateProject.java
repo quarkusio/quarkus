@@ -19,7 +19,7 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 public class UpdateProject {
 
     public static final String APP_MODEL = "quarkus.update-project.app-model";
-    public static final String LATEST_CATALOG = "quarkus.update-project.latest-catalog";
+    public static final String TARGET_CATALOG = "quarkus.update-project.target-catalog";
     public static final String PER_MODULE = "quarkus.update-project.per-module";
     public static final String NO_REWRITE = "quarkus.update-project.rewrite.disabled";
     public static final String TARGET_PLATFORM_VERSION = "quarkus.update-project.target-platform-version";
@@ -38,8 +38,8 @@ public class UpdateProject {
         this.invocation = new QuarkusCommandInvocation(quarkusProject, new HashMap<>(), messageWriter);
     }
 
-    public UpdateProject latestCatalog(ExtensionCatalog latestCatalog) {
-        invocation.setValue(LATEST_CATALOG, requireNonNull(latestCatalog, "latestCatalog is required"));
+    public UpdateProject targetCatalog(ExtensionCatalog latestCatalog) {
+        invocation.setValue(TARGET_CATALOG, requireNonNull(latestCatalog, "targetCatalog is required"));
         return this;
     }
 

@@ -31,7 +31,7 @@ public class InstanceBean extends BuiltInBean<Instance<?>> {
     public Instance<?> get(CreationalContext<Instance<?>> creationalContext) {
         // Obtain current IP to get the required type and qualifiers
         InjectionPoint ip = InjectionPointProvider.get();
-        InstanceImpl<Instance<?>> instance = new InstanceImpl<Instance<?>>((InjectableBean<?>) ip.getBean(), ip.getType(),
+        InstanceImpl<Instance<?>> instance = InstanceImpl.forInjection((InjectableBean<?>) ip.getBean(), ip.getType(),
                 ip.getQualifiers(), (CreationalContextImpl<?>) creationalContext, Collections.EMPTY_SET, ip.getMember(),
                 0, ip.isTransient());
         CreationalContextImpl.addDependencyToParent((InjectableBean<Instance<?>>) ip.getBean(), instance, creationalContext);

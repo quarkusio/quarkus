@@ -119,6 +119,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.lookup.injectionpoint.InjectionPointTest">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/issues/459 -->
                     <exclude name="testApiTypeInjectionPoint"/>
                     <exclude name="testGetBindingTypes"/>
                     <exclude name="testGetMemberField"/>

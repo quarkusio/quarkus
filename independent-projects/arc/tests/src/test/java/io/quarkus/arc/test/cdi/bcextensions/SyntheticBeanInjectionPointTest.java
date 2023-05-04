@@ -1,5 +1,6 @@
 package io.quarkus.arc.test.cdi.bcextensions;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -13,6 +14,7 @@ import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanDisposer;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents;
 import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import org.junit.jupiter.api.Test;
@@ -25,11 +27,12 @@ import io.quarkus.arc.test.ArcTestContainer;
 public class SyntheticBeanInjectionPointTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(MyBean.class)
             .buildCompatibleExtensions(new MyExtension())
             .build();
 
     @Test
-    public void test() {
+    public void testLookupDependentSynthBean() {
         InstanceHandle<MyDependentBean> handle = Arc.container().select(MyDependentBean.class).getHandle();
         try {
             handle.get();
@@ -37,18 +40,48 @@ public class SyntheticBeanInjectionPointTest {
             fail();
         }
         assertNotNull(MyDependentBeanCreator.lookedUp);
+        assertNull(MyDependentBeanCreator.lookedUp.getMember());
 
         try {
             handle.destroy();
         } catch (Exception ignored) {
         }
         assertNull(MyDependentBeanDisposer.lookedUp);
+    }
 
+    @Test
+    public void testInjectDependentSynthBean() {
+        InstanceHandle<MyBean> handle = Arc.container().select(MyBean.class).getHandle();
+        try {
+            handle.get();
+        } catch (Exception e) {
+            fail();
+        }
+        assertNotNull(MyDependentBeanCreator.lookedUp);
+        assertNotNull(MyDependentBeanCreator.lookedUp.getMember());
+        assertEquals(MyBean.class, MyDependentBeanCreator.lookedUp.getMember().getDeclaringClass());
+        assertEquals("dependency", MyDependentBeanCreator.lookedUp.getMember().getName());
+
+        try {
+            handle.destroy();
+        } catch (Exception ignored) {
+        }
+        assertNull(MyDependentBeanDisposer.lookedUp);
+    }
+
+    @Test
+    public void testLookupSingletonSynthBean() {
         try {
             Arc.container().select(MySingletonBean.class).get();
         } catch (Exception ignored) {
         }
         assertNull(MySingletonBeanCreator.lookedUp);
+    }
+
+    @Dependent
+    public static class MyBean {
+        @Inject
+        MyDependentBean dependency;
     }
 
     public static class MyExtension implements BuildCompatibleExtension {

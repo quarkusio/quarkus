@@ -49,7 +49,7 @@
         <version.gizmo>1.6.1.Final</version.gizmo>
         <version.jandex>3.1.1</version.jandex>
         <version.jboss-logging>3.5.0.Final</version.jboss-logging>
-        <version.mutiny>2.1.0</version.mutiny>
+        <version.mutiny>2.2.0</version.mutiny>
         <!-- test versions -->
         <version.assertj>3.24.2</version.assertj>
         <version.junit5>5.9.3</version.junit5>

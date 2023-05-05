@@ -287,7 +287,7 @@ There are a few interesting parts in this listing:
 
 <1> The Kubernetes Service resource, `color-service`, that Stork will discover.
 <2> The Red and Blue service instances behind the `color-service` Kubernetes service.
-<3> A Kubernetes Ingress resource making the `color-service` accessible from the outside of the cluster at the `color-service.127.0.0.1.nip.io` url. Not that the Ingress is not needed for Stork however, it helps to check that the architecture is in place.
+<3> A Kubernetes Ingress resource making the `color-service` accessible from the outside of the cluster at the `color-service.127.0.0.1.nip.io` url. Note that the Ingress is not needed for Stork however, it helps to check that the architecture is in place.
 
 Create a file named `kubernetes-setup.yml` with the content above at the root of the project and run the following commands to deploy all the resources in the Kubernetes cluster. Don't forget to create a dedicated namespace:
 

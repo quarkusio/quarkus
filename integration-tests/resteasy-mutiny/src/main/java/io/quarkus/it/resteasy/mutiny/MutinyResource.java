@@ -1,6 +1,7 @@
 package io.quarkus.it.resteasy.mutiny;
 
 import java.io.IOException;
+import java.util.concurrent.Flow;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -63,6 +64,14 @@ public class MutinyResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Pet> sse() {
+        return service.getMorePets();
+    }
+
+    @GET
+    @Path("/pets/flow")
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    @RestStreamElementType(MediaType.APPLICATION_JSON)
+    public Flow.Publisher<Pet> sseFlow() {
         return service.getMorePets();
     }
 

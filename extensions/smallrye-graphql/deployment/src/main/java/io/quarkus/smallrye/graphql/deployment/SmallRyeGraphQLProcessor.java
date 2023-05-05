@@ -88,7 +88,6 @@ import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.cdi.tracing.TracingService;
-import io.smallrye.graphql.cdi.validation.ValidationService;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -206,8 +205,6 @@ public class SmallRyeGraphQLProcessor {
 
         // Add a condition for the optional eventing services
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(TracingService.class, "io.opentracing.Tracer"));
-        reflectiveClassCondition
-                .produce(new ReflectiveClassConditionBuildItem(ValidationService.class, "jakarta.validation.ValidatorFactory"));
 
         // Use MicroProfile Config (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(MicroProfileConfig.class.getName()));
@@ -625,24 +622,6 @@ public class SmallRyeGraphQLProcessor {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, TRUE));
         } else {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, FALSE));
-        }
-    }
-
-    @BuildStep
-    void activateValidation(Capabilities capabilities,
-            SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
-
-        boolean activate = shouldActivateService(graphQLConfig.validationEnabled,
-                capabilities.isPresent(Capability.HIBERNATE_VALIDATOR),
-                "quarkus-hibernate-validator",
-                Capability.HIBERNATE_VALIDATOR,
-                "quarkus.smallrye-graphql.validation.enabled",
-                true);
-        if (activate) {
-            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, TRUE));
-        } else {
-            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, FALSE));
         }
     }
 

@@ -3,6 +3,8 @@ package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import jakarta.validation.ConstraintViolationException;
+
 import org.eclipse.microprofile.graphql.GraphQLException;
 
 import graphql.execution.DataFetcherResult;
@@ -16,6 +18,7 @@ import io.smallrye.graphql.execution.datafetcher.AbstractDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.transformation.AbstractDataFetcherException;
+import io.smallrye.graphql.validation.BeanValidationUtil;
 import io.smallrye.mutiny.Uni;
 
 public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher<K, T> {
@@ -43,12 +46,15 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
                         emitter.onTermination(() -> {
                             deactivate(requestContext);
                         });
-
                         if (throwable != null) {
                             eventEmitter.fireOnDataFetchError(c, throwable);
                             if (throwable instanceof GraphQLException) {
                                 GraphQLException graphQLException = (GraphQLException) throwable;
                                 errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
+                            } else if (throwable instanceof ConstraintViolationException) {
+                                BeanValidationUtil.addConstraintViolationsToDataFetcherResult(
+                                        ((ConstraintViolationException) throwable).getConstraintViolations(),
+                                        operationInvoker.getMethod(), resultBuilder, dfe);
                             } else if (throwable instanceof Exception) {
                                 emitter.fail(SmallRyeGraphQLServerMessages.msg.dataFetcherException(operation, throwable));
                                 return;

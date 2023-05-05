@@ -3,18 +3,17 @@ package io.quarkus.datasource.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
+import io.smallrye.config.WithConverter;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class DataSourceBuildTimeConfig {
+public interface DataSourceBuildTimeConfig {
 
     /**
      * The kind of database we will connect to (e.g. h2, postgresql...).
      */
-    @ConfigItem
-    @ConvertWith(DatabaseKindConverter.class)
-    public Optional<String> dbKind = Optional.empty();
+    @WithConverter(DatabaseKindConverter.class)
+    Optional<String> dbKind();
 
     /**
      * The version of the database we will connect to (e.g. '10.0').
@@ -45,14 +44,12 @@ public class DataSourceBuildTimeConfig {
      *
      * @asciidoclet
      */
-    @ConfigItem
-    public Optional<String> dbVersion = Optional.empty();
+    Optional<String> dbVersion();
 
     /**
      * Configuration for DevServices. DevServices allows Quarkus to automatically start a database in dev and test mode.
      */
-    @ConfigItem
-    public DevServicesBuildTimeConfig devservices;
+    DevServicesBuildTimeConfig devservices();
 
     /**
      * Whether this particular data source should be excluded from the health check if
@@ -60,7 +57,7 @@ public class DataSourceBuildTimeConfig {
      * <p>
      * By default, the health check includes all configured data sources (if it is enabled).
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean healthExclude;
+    @WithDefault("false")
+    boolean healthExclude();
 
 }

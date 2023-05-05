@@ -89,7 +89,7 @@ class AgroalProcessor {
             BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
-        if (dataSourcesBuildTimeConfig.driver.isPresent() || dataSourcesBuildTimeConfig.url.isPresent()) {
+        if (dataSourcesBuildTimeConfig.driver().isPresent() || dataSourcesBuildTimeConfig.url().isPresent()) {
             throw new ConfigurationException(
                     "quarkus.datasource.url and quarkus.datasource.driver have been deprecated in Quarkus 1.3 and removed in 1.9. "
                             + "Please use the new datasource configuration as explained in https://quarkus.io/guides/datasource.");
@@ -109,13 +109,13 @@ class AgroalProcessor {
         for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
             validateBuildTimeConfig(aggregatedDataSourceBuildTimeConfig);
 
-            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().tracing) {
+            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().tracing()) {
                 reflectiveClass
                         .produce(ReflectiveClassBuildItem.builder(DataSources.TRACING_DRIVER_CLASSNAME).methods()
                                 .build());
             }
 
-            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().telemetry) {
+            if (aggregatedDataSourceBuildTimeConfig.getJdbcConfig().telemetry()) {
                 otelJdbcInstrumentationActive = true;
             }
 
@@ -159,7 +159,7 @@ class AgroalProcessor {
         String fullDataSourceName = aggregatedConfig.isDefault() ? "default datasource"
                 : "datasource named '" + aggregatedConfig.getName() + "'";
 
-        if (jdbcBuildTimeConfig.tracing) {
+        if (jdbcBuildTimeConfig.tracing()) {
             if (!QuarkusClassLoader.isClassPresentAtRuntime(DataSources.TRACING_DRIVER_CLASSNAME)) {
                 throw new ConfigurationException(
                         "Unable to load the tracing driver " + DataSources.TRACING_DRIVER_CLASSNAME + " for the "
@@ -175,7 +175,7 @@ class AgroalProcessor {
             throw new ConfigurationException(
                     "Unable to load the datasource driver " + driverName + " for the " + fullDataSourceName, e);
         }
-        if (jdbcBuildTimeConfig.transactions == TransactionIntegration.XA) {
+        if (jdbcBuildTimeConfig.transactions() == TransactionIntegration.XA) {
             if (!XADataSource.class.isAssignableFrom(driver)) {
                 throw new ConfigurationException(
                         "Driver is not an XA dataSource, while XA has been enabled in the configuration of the "
@@ -207,7 +207,7 @@ class AgroalProcessor {
             String dataSourceName = aggregatedDataSourceBuildTimeConfig.getName();
             dataSourceSupportEntries.put(dataSourceName,
                     new DataSourceSupport.Entry(dataSourceName, aggregatedDataSourceBuildTimeConfig.getDbKind(),
-                            aggregatedDataSourceBuildTimeConfig.getDataSourceConfig().dbVersion,
+                            aggregatedDataSourceBuildTimeConfig.getDataSourceConfig().dbVersion(),
                             aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass(),
                             aggregatedDataSourceBuildTimeConfig.isDefault()));
         }
@@ -311,30 +311,29 @@ class AgroalProcessor {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
         Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
-                .resolve(dataSourcesBuildTimeConfig.defaultDataSource.dbKind, defaultDbKinds,
-                        dataSourcesBuildTimeConfig.defaultDataSource.devservices.enabled
-                                .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                .resolve(dataSourcesBuildTimeConfig.defaultDataSource().dbKind(), defaultDbKinds,
+                        dataSourcesBuildTimeConfig.defaultDataSource().devservices().enabled()
+                                .orElse(dataSourcesBuildTimeConfig.namedDataSources().isEmpty()),
                         curateOutcomeBuildItem);
 
         if (effectiveDbKind.isPresent()) {
-            if (dataSourcesJdbcBuildTimeConfig.jdbc.enabled) {
+            if (dataSourcesJdbcBuildTimeConfig.jdbc().enabled()) {
                 dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                        dataSourcesBuildTimeConfig.defaultDataSource,
-                        dataSourcesJdbcBuildTimeConfig.jdbc,
+                        dataSourcesBuildTimeConfig.defaultDataSource(),
+                        dataSourcesJdbcBuildTimeConfig.jdbc(),
                         effectiveDbKind.get(),
                         resolveDriver(DataSourceUtil.DEFAULT_DATASOURCE_NAME, effectiveDbKind.get(),
-                                dataSourcesJdbcBuildTimeConfig.jdbc, jdbcDriverBuildItems)));
+                                dataSourcesJdbcBuildTimeConfig.jdbc(), jdbcDriverBuildItems)));
             }
         }
-        for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.namedDataSources.entrySet()) {
-            DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
-                    .containsKey(entry.getKey()) ? dataSourcesJdbcBuildTimeConfig.namedDataSources.get(entry.getKey()).jdbc
-                            : new DataSourceJdbcBuildTimeConfig();
-            if (!jdbcBuildTimeConfig.enabled) {
+        for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.namedDataSources().entrySet()) {
+            DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
+                    .getDataSourceJdbcBuildTimeConfig(entry.getKey());
+            if (!jdbcBuildTimeConfig.enabled()) {
                 continue;
             }
             Optional<String> dbKind = DefaultDataSourceDbKindBuildItem
-                    .resolve(entry.getValue().dbKind, defaultDbKinds,
+                    .resolve(entry.getValue().dbKind(), defaultDbKinds,
                             true,
                             curateOutcomeBuildItem);
             if (!dbKind.isPresent()) {
@@ -352,8 +351,8 @@ class AgroalProcessor {
 
     private String resolveDriver(String dataSourceName, String dbKind,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
-        if (dataSourceJdbcBuildTimeConfig.driver.isPresent()) {
-            return dataSourceJdbcBuildTimeConfig.driver.get();
+        if (dataSourceJdbcBuildTimeConfig.driver().isPresent()) {
+            return dataSourceJdbcBuildTimeConfig.driver().get();
         }
 
         Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
@@ -361,7 +360,7 @@ class AgroalProcessor {
                 .findFirst();
 
         if (matchingJdbcDriver.isPresent()) {
-            if (io.quarkus.agroal.runtime.TransactionIntegration.XA == dataSourceJdbcBuildTimeConfig.transactions) {
+            if (io.quarkus.agroal.runtime.TransactionIntegration.XA == dataSourceJdbcBuildTimeConfig.transactions()) {
                 if (matchingJdbcDriver.get().getDriverXAClass().isPresent()) {
                     return matchingJdbcDriver.get().getDriverXAClass().get();
                 }
@@ -383,7 +382,7 @@ class AgroalProcessor {
     HealthBuildItem addHealthCheck(Capabilities capabilities, DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
             return new HealthBuildItem("io.quarkus.agroal.runtime.health.DataSourceHealthCheck",
-                    dataSourcesBuildTimeConfig.healthEnabled);
+                    dataSourcesBuildTimeConfig.healthEnabled());
         } else {
             return null;
         }

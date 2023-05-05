@@ -2,28 +2,29 @@ package io.quarkus.agroal.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 @ConfigGroup
-public class DataSourceJdbcTracingRuntimeConfig {
+public interface DataSourceJdbcTracingRuntimeConfig {
 
     /**
      * Enable JDBC tracing.
      */
-    @ConfigItem(defaultValueDocumentation = "false if quarkus.datasource.jdbc.tracing=false and true if quarkus.datasource.jdbc.tracing=true")
-    public Optional<Boolean> enabled = Optional.empty();
+    @ConfigDocDefault("false if quarkus.datasource.jdbc.tracing=false and true if quarkus.datasource.jdbc.tracing=true")
+    Optional<Boolean> enabled();
 
     /**
      * Trace calls with active Spans only
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean traceWithActiveSpanOnly = false;
+    @WithDefault("false")
+    boolean traceWithActiveSpanOnly();
 
     /**
      * Ignore specific queries from being traced
      */
-    @ConfigItem(defaultValueDocumentation = "Ignore specific queries from being traced, multiple queries can be specified separated by semicolon, double quotes should be escaped with \\")
-    public Optional<String> ignoreForTracing = Optional.empty();
+    @ConfigDocDefault("Ignore specific queries from being traced, multiple queries can be specified separated by semicolon, double quotes should be escaped with \\")
+    Optional<String> ignoreForTracing();
 
 }

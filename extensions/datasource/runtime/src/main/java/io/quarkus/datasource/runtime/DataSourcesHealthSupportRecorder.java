@@ -17,15 +17,15 @@ public class DataSourcesHealthSupportRecorder {
             DataSourcesBuildTimeConfig config) {
         Stream.Builder<String> configured = Stream.builder();
         Stream.Builder<String> excluded = Stream.builder();
-        if (config.defaultDataSource.dbKind.isPresent()) {
+        if (config.defaultDataSource().dbKind().isPresent()) {
             configured.add(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
         }
-        if (config.defaultDataSource.healthExclude) {
+        if (config.defaultDataSource().healthExclude()) {
             excluded.add(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
         }
-        for (Map.Entry<String, DataSourceBuildTimeConfig> dataSource : config.namedDataSources.entrySet()) {
+        for (Map.Entry<String, DataSourceBuildTimeConfig> dataSource : config.namedDataSources().entrySet()) {
             configured.add(dataSource.getKey());
-            if (dataSource.getValue().healthExclude) {
+            if (dataSource.getValue().healthExclude()) {
                 excluded.add(dataSource.getKey());
             }
         }

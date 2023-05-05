@@ -347,7 +347,7 @@ public class SmallRyeOpenApiProcessor {
             addToOpenAPIDefinitionProducer
                     .produce(new AddToOpenAPIDefinitionBuildItem(
                             new SecurityConfigFilter(config)));
-        } else {
+        } else if (config.autoAddSecurity) {
             OASFilter autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, config);
 
             if (autoSecurityFilter != null) {

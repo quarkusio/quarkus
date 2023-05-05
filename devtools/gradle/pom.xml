@@ -50,34 +50,6 @@
             </properties>
         </profile>
         <profile>
-            <id>run-gradle-clean</id>
-            <activation>
-                <file>
-                    <missing>${basedir}/src</missing> <!-- only for this pom, so the clean's only run once for all -->
-                </file>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-clean-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>gradle</id>
-                                <phase>clean</phase>
-                                <configuration>
-                                    <executable>${gradle.executable}</executable>
-                                    <arguments>
-                                        <argument>clean</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
             <id>run-gradle</id>
             <activation>
                 <file>

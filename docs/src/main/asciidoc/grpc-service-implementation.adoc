@@ -203,6 +203,8 @@ This service allows tools like https://github.com/fullstorydev/grpcurl[grpcurl] 
 The reflection service is enabled by default in _dev_ mode.
 In test or production mode, you need to enable it explicitly by setting `quarkus.grpc.server.enable-reflection-service` to `true`.
 
+NOTE: Quarkus exposes both the reflection service `v1` and `v1alpha`.
+
 == Scaling
 By default, quarkus-grpc starts a single gRPC server running on a single event loop.
 

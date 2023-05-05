@@ -47,7 +47,8 @@ import io.quarkus.grpc.runtime.devmode.DevModeInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcHotReplacementInterceptor;
 import io.quarkus.grpc.runtime.devmode.GrpcServerReloader;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
-import io.quarkus.grpc.runtime.reflection.ReflectionService;
+import io.quarkus.grpc.runtime.reflection.ReflectionServiceV1;
+import io.quarkus.grpc.runtime.reflection.ReflectionServiceV1alpha;
 import io.quarkus.grpc.runtime.supports.CompressionInterceptor;
 import io.quarkus.grpc.runtime.supports.blocking.BlockingServerInterceptor;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
@@ -162,10 +163,15 @@ public class GrpcServerRecorder {
 
         if (reflectionServiceEnabled) {
             LOGGER.info("Registering gRPC reflection service");
-            ReflectionService reflectionService = new ReflectionService(definitions);
-            ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(reflectionService, globalInterceptors);
+            ReflectionServiceV1 reflectionServiceV1 = new ReflectionServiceV1(definitions);
+            ReflectionServiceV1alpha reflectionServiceV1alpha = new ReflectionServiceV1alpha(definitions);
+            ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(reflectionServiceV1, globalInterceptors);
             GrpcServiceBridge bridge = GrpcServiceBridge.bridge(serviceDefinition);
             bridge.bind(server);
+            ServerServiceDefinition serviceDefinitionAlpha = ServerInterceptors.intercept(reflectionServiceV1alpha,
+                    globalInterceptors);
+            GrpcServiceBridge bridgeAlpha = GrpcServiceBridge.bridge(serviceDefinitionAlpha);
+            bridgeAlpha.bind(server);
         }
 
         initHealthStorage();
@@ -386,7 +392,7 @@ public class GrpcServerRecorder {
             definitions.add(service.definition);
         }
 
-        ServerServiceDefinition reflectionService = new ReflectionService(definitions).bindService();
+        ServerServiceDefinition reflectionService = new ReflectionServiceV1(definitions).bindService();
 
         for (ServerMethodDefinition<?, ?> method : reflectionService.getMethods()) {
             methods.put(method.getMethodDescriptor().getFullMethodName(), method);
@@ -491,7 +497,8 @@ public class GrpcServerRecorder {
 
         if (reflectionServiceEnabled) {
             LOGGER.info("Registering gRPC reflection service");
-            builder.addService(new ReflectionService(definitions));
+            builder.addService(new ReflectionServiceV1(definitions));
+            builder.addService(new ReflectionServiceV1alpha(definitions));
         }
 
         for (ServerInterceptor serverInterceptor : grpcContainer.getSortedGlobalInterceptors()) {

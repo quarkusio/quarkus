@@ -112,6 +112,38 @@ public class MutinyTest {
     }
 
     @Test
+    public void testSSEWithFlowPublisher() {
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client.target("http://localhost:" + RestAssured.port + "/mutiny/pets/flow");
+        try (SseEventSource eventSource = SseEventSource.target(target).build()) {
+            Uni<List<Pet>> petList = Uni.createFrom().emitter(new Consumer<UniEmitter<? super List<Pet>>>() {
+                @Override
+                public void accept(UniEmitter<? super List<Pet>> uniEmitter) {
+                    List<Pet> pets = new CopyOnWriteArrayList<>();
+                    eventSource.register(event -> {
+                        Pet pet = event.readData(Pet.class, MediaType.APPLICATION_JSON_TYPE);
+                        pets.add(pet);
+                        if (pets.size() == 5) {
+                            uniEmitter.complete(pets);
+                        }
+                    }, ex -> {
+                        uniEmitter.fail(new IllegalStateException("SSE failure", ex));
+                    });
+                    eventSource.open();
+
+                }
+            });
+            List<Pet> pets = petList.await().atMost(Duration.ofMinutes(1));
+            Assertions.assertEquals(5, pets.size());
+            Assertions.assertEquals("neo", pets.get(0).getName());
+            Assertions.assertEquals("indy", pets.get(1).getName());
+            Assertions.assertEquals("plume", pets.get(2).getName());
+            Assertions.assertEquals("titi", pets.get(3).getName());
+            Assertions.assertEquals("rex", pets.get(4).getName());
+        }
+    }
+
+    @Test
     public void testClientReturningUni() {
         get("/mutiny/client")
                 .then()

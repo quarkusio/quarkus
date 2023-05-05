@@ -93,6 +93,18 @@ public final class SmallRyeOpenApiConfig {
     public boolean autoAddSecurity;
 
     /**
+     * Required when using `apiKey` security. The location of the API key. Valid values are "query", "header" or "cookie".
+     */
+    @ConfigItem
+    public Optional<String> apiKeyParameterIn;
+
+    /**
+     * Required when using `apiKey` security. The name of the header, query or cookie parameter to be used.
+     */
+    @ConfigItem
+    public Optional<String> apiKeyParameterName;
+
+    /**
      * Add a scheme value to the Basic HTTP Security Scheme
      */
     @ConfigItem(defaultValue = "basic")
@@ -213,6 +225,7 @@ public final class SmallRyeOpenApiConfig {
     public Optional<OperationIdStrategy> operationIdStrategy;
 
     public enum SecurityScheme {
+        apiKey,
         basic,
         jwt,
         oauth2,

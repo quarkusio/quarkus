@@ -16,39 +16,6 @@ This guide covers:
 
 This guide takes as input the application developed in the xref:getting-started.adoc[Getting Started Guide].
 
-== GraalVM
-
-Building a native executable requires using a distribution of GraalVM.
-There are three distributions:
-Oracle GraalVM Community Edition (CE), Oracle GraalVM Enterprise Edition (EE) and Mandrel.
-The differences between the Oracle and Mandrel distributions are as follows:
-
-* Mandrel is a downstream distribution of the Oracle GraalVM CE.
-Mandrel's main goal is to provide a way to build native executables specifically designed to support Quarkus.
-
-* Mandrel releases are built from a code base derived from the upstream Oracle GraalVM CE code base,
-with only minor changes but some significant exclusions that are not necessary for Quarkus native apps.
-They support the same capabilities to build native executables as Oracle GraalVM CE,
-with no significant changes to functionality.
-Notably, they do not include support for polyglot programming.
-The reason for these exclusions is to provide a better level of support for the majority of Quarkus users.
-These exclusions also mean Mandrel offers a considerable reduction in its distribution size
-when compared with Oracle GraalVM CE/EE.
-
-* Mandrel is built slightly differently to Oracle GraalVM CE, using the standard OpenJDK project.
-This means that it does not profit from a few small enhancements that Oracle have added to the version of OpenJDK used to build their own GraalVM downloads.
-These enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
-This is particularly important when it comes to conformance and security.
-
-* Mandrel is recommended for building native executables that target Linux containerized environments.
-This means that Mandrel users are encouraged to use containers to build their native executables.
-If you are building native executables for macOS,
-you should consider using Oracle GraalVM instead,
-because Mandrel does not currently target this platform.
-Building native executables directly on bare metal Linux or Windows is possible,
-with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
-and https://github.com/graalvm/mandrel/releases[Mandrel releases].
-
 == Prerequisites
 
 :prerequisites-docker:
@@ -81,15 +48,56 @@ xcode-select --install
 * On Windows, you will need to install the https://aka.ms/vs/15/release/vs_buildtools.exe[Visual Studio 2017 Visual C++ Build Tools]
 ====
 
+=== Background
+
+Building a native executable requires using a distribution of GraalVM.
+There are three distributions:
+Oracle GraalVM Community Edition (CE), Oracle GraalVM Enterprise Edition (EE) and Mandrel.
+The differences between the Oracle and Mandrel distributions are as follows:
+
+* Mandrel is a downstream distribution of the Oracle GraalVM CE.
+Mandrel's main goal is to provide a way to build native executables specifically designed to support Quarkus.
+
+* Mandrel releases are built from a code base derived from the upstream Oracle GraalVM CE code base,
+with only minor changes but some significant exclusions that are not necessary for Quarkus native apps.
+They support the same capabilities to build native executables as Oracle GraalVM CE,
+with no significant changes to functionality.
+Notably, they do not include support for polyglot programming.
+The reason for these exclusions is to provide a better level of support for the majority of Quarkus users.
+These exclusions also mean Mandrel offers a considerable reduction in its distribution size
+when compared with Oracle GraalVM CE/EE.
+
+* Mandrel is built slightly differently to Oracle GraalVM CE, using the standard OpenJDK project.
+This means that it does not profit from a few small enhancements that Oracle have added to the version of OpenJDK used to build their own GraalVM downloads.
+These enhancements are omitted because upstream OpenJDK does not manage them, and cannot vouch for.
+This is particularly important when it comes to conformance and security.
+
+* Mandrel is recommended for building native executables that target Linux containerized environments.
+This means that Mandrel users are encouraged to use containers to build their native executables.
+If you are building native executables for macOS,
+you should consider using Oracle GraalVM instead,
+because Mandrel does not currently target this platform.
+Building native executables directly on bare metal Linux or Windows is possible,
+with details available in the https://github.com/graalvm/mandrel/blob/default/README.md[Mandrel README]
+and https://github.com/graalvm/mandrel/releases[Mandrel releases].
+
+
 [[configuring-graalvm]]
 === Configuring GraalVM
 
 [TIP]
 ====
-If you cannot install GraalVM, you can use a multi-stage Docker build to run Maven inside a Docker container that embeds GraalVM. There is an explanation of how to do this at the end of this guide.
+This step is only required for generating native executables targeting non-Linux operating systems.
+For generating native executables targeting Linux, you can optionally skip this section and <<#container-runtime,use a builder image>> instead.
 ====
 
-Version {graalvm-version} is required. Using the community edition is enough.
+[TIP]
+====
+If you cannot install GraalVM, you can use a multi-stage Docker build to run Maven inside a Docker container that embeds GraalVM.
+There is an explanation of how to do this at <<#multistage-docker,the end of this guide>>.
+====
+
+Version {graalvm-version} is required.
 
 1. Install GraalVM if you haven't already. You have a few options for this:
 ** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
@@ -98,7 +106,7 @@ Version {graalvm-version} is required. Using the community edition is enough.
 +
 [source,bash]
 ----
-export GRAALVM_HOME=$HOME/Development/graalvm/
+export GRAALVM_HOME=$HOME/Development/mandrel/
 ----
 +
 On macOS (not supported by Mandrel), point the variable to the `Home` sub-directory:
@@ -114,7 +122,7 @@ On Windows, you will have to go through the Control Panel to set your environmen
 ====
 Installing via scoop will do this for you.
 ====
-3. (Only for Oracle GraalVM CE/EE) Install the `native-image` tool using `gu install`:
+3. (Only for GraalVM CE/EE) Install the `native-image` tool using `gu install`:
 +
 [source,bash]
 ----
@@ -242,29 +250,30 @@ Compiling fully static binaries is done by statically linking https://musl.libc.
 Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file. The reasoning is explained in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
 
 To see the `GreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
-[source,shell]
+[source,shell,subs=attributes+]
 ----
 $ ./mvnw verify -Pnative
 ...
-[getting-started-1.0.0-SNAPSHOT-runner:18820]     universe:     587.26 ms
-[getting-started-1.0.0-SNAPSHOT-runner:18820]      (parse):   2,247.59 ms
-[getting-started-1.0.0-SNAPSHOT-runner:18820]     (inline):   1,985.70 ms
-[getting-started-1.0.0-SNAPSHOT-runner:18820]    (compile):  14,922.77 ms
-[getting-started-1.0.0-SNAPSHOT-runner:18820]      compile:  20,361.28 ms
-[getting-started-1.0.0-SNAPSHOT-runner:18820]        image:   2,228.30 ms
-[getting-started-1.0.0-SNAPSHOT-runner:18820]        write:     364.35 ms
-[getting-started-1.0.0-SNAPSHOT-runner:18820]      [total]:  52,777.76 ms
+Finished generating 'getting-started-1.0.0-SNAPSHOT-runner' in 22.0s.
+[INFO] [io.quarkus.deployment.pkg.steps.NativeImageBuildRunner] docker run --env LANG=C --rm --user 1000:1000 -v /home/zakkak/code/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-native-image-source-jar:/project:z --entrypoint /bin/bash quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} -c objcopy --strip-debug getting-started-1.0.0-SNAPSHOT-runner
+[INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 70686ms
 [INFO]
-[INFO] --- maven-failsafe-plugin:2.22.1:integration-test (default) @ getting-started ---
+[INFO] --- maven-failsafe-plugin:3.0.0-M7:integration-test (default) @ getting-started ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
 [INFO]
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
-[INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing [/data/home/gsmet/git/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=build/quarkus.log]
-2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.002s. Listening on: http://[::]:8081
-2019-04-15 11:33:20,348 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive]
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.387 s - in org.acme.quickstart.GreetingResourceIT
+[INFO] Running org.acme.getting.started.GreetingResourceIT
+Executing "/home/zakkak/code/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-runner -Dquarkus.http.port=8081 -Dquarkus.http.ssl-port=8444 -Dtest.url=http://localhost:8081 -Dquarkus.log.file.path=/home/zakkak/code/quarkus-quickstarts/getting-started/target/quarkus.log -Dquarkus.log.file.enable=true -Dquarkus.log.category."io.quarkus".level=INFO"
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2023-05-05 10:55:52,068 INFO  [io.quarkus] (main) getting-started 1.0.0-SNAPSHOT native (powered by Quarkus 3.0.2.Final) started in 0.009s. Listening on: http://0.0.0.0:8081
+2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Profile prod activated.
+2023-05-05 10:55:52,069 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy-reactive, smallrye-context-propagation, vertx]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.99 s - in org.acme.getting.started.GreetingResourceIT
 ...
 ----
 
@@ -406,7 +415,7 @@ For podman:
 include::{includes}/devtools/build-native-container-parameters.adoc[]
 :!build-additional-parameters:
 
-These are normal Quarkus config properties, so if you always want to build in a container
+These are regular Quarkus config properties, so if you always want to build in a container
 it is recommended you add these to your `application.properties` in order to avoid specifying them every time.
 ====
 
@@ -425,9 +434,9 @@ The reason for this is that the local build driver invoked through `-Dquarkus.na
 
 [TIP]
 ====
-Building with Mandrel requires a custom builder image parameter to be passed additionally:
+Building with GraalVM instead of Mandrel requires a custom builder image parameter to be passed additionally:
 
-:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
+:build-additional-parameters: -Dquarkus.native.builder-image=graalvm
 include::{includes}/devtools/build-native-container-parameters.adoc[]
 :!build-additional-parameters:
 
@@ -562,7 +571,7 @@ Sample Dockerfile for building with Maven:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
+FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
 COPY --chown=quarkus:quarkus .mvn /code/.mvn
 COPY --chown=quarkus:quarkus pom.xml /code/
@@ -600,7 +609,7 @@ Sample Dockerfile for building with Gradle:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
+FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
 USER root
 RUN microdnf install findutils
 COPY --chown=quarkus:quarkus gradlew /code/gradlew
@@ -645,12 +654,7 @@ Please see xref:native-and-ssl.adoc#working-with-containers[our Using SSL With N
 
 [NOTE,subs=attributes+]
 ====
-To use Mandrel instead of GraalVM CE, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build`.
-====
-
-[NOTE]
-====
-Starting with 22.3, Mandrel does not provide a `-java11` variant anymore. Use the `-java17` image instead.
+To use GraalVM CE instead of Mandrel, update the `FROM` clause to: `FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build`.
 ====
 
 === Using a Distroless base image
@@ -691,7 +695,7 @@ Sample multistage Dockerfile for building an image from `scratch`:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
+FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
 USER root
 RUN microdnf install make gcc
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
@@ -813,10 +817,12 @@ Depending on what the final desired output of the CI/CD pipeline is, the generat
 
 == Debugging native executable
 
-Starting with Oracle GraalVM 20.2 or Mandrel 20.1,
-debug symbols for native executables can be generated for Linux environments
-(Windows support is still under development, macOS is not supported).
-These symbols can be used to debug native executables with tools such as `gdb`.
+Native executables can be debugged using tools such as `gdb`.
+For this to be possible native executables need to be generated with debug symbols.
+
+[NOTE]
+Debug symbol generation is only supported on Linux.
+Windows support is still under development, while macOS is not supported.
 
 To generate debug symbols,
 add `-Dquarkus.native.debug.enabled=true` flag when generating the native executable.
@@ -825,7 +831,7 @@ You will find the debug symbols for the native executable in a `.debug` file nex
 [NOTE]
 ====
 The generation of the `.debug` file depends on `objcopy`.
-On common Linux distributions you will need to install the `binutils` package:
+As a result, when using a local GraalVM installation on common Linux distributions you will need to install the `binutils` package:
 
 [source,bash]
 ----

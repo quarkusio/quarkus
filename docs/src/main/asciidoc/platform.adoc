@@ -128,7 +128,7 @@ A platform properties file for the example above would contain:
 
 [source,text,subs=attributes+]
 ----
-platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor}
+platform.quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor}
 ----
 
 There is also a Maven plugin goal that validates the platform properties content and its artifact coordinates and also checks whether the platform properties artifact is present in the platform's BOM. Here is a sample plugin configuration:

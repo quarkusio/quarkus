@@ -11,9 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
-import java.util.LinkedHashMap;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -74,8 +74,8 @@ public class GraphQLOpenTelemetryTest {
     @Test
     void singleResultQueryTraceTest() {
         String request = getPayload("query hello {\n" +
-                        "  hello\n" +
-                        "}",
+                "  hello\n" +
+                "}",
                 null);
 
         assertSuccessfulRequestContainingMessages(request, "hello xyz");
@@ -98,8 +98,8 @@ public class GraphQLOpenTelemetryTest {
     @Test
     void multipleResultQueryTraceTest() {
         String request = getPayload("query {\n" +
-                        "  hellos\n" +
-                        "}",
+                "  hellos\n" +
+                "}",
                 null);
 
         assertSuccessfulRequestContainingMessages(request, "[\"hello, hi, hey\"]");
@@ -122,8 +122,8 @@ public class GraphQLOpenTelemetryTest {
     @Test
     void nestedCdiBeanInsideQueryTraceTest() throws ExecutionException, InterruptedException {
         String request = getPayload("query {\n" +
-                        "  helloAfterSecond\n" +
-                        "}",
+                "  helloAfterSecond\n" +
+                "}",
                 null);
         int iterations = 500;
         ExecutorService executor = Executors.newFixedThreadPool(50);
@@ -131,7 +131,8 @@ public class GraphQLOpenTelemetryTest {
         try {
             CompletableFuture<Void>[] futures = new CompletableFuture[iterations];
             for (int i = 0; i < iterations; i++) {
-                futures[i] = CompletableFuture.supplyAsync(() -> assertSuccessfulRequestContainingMessages(request, "hello"), executor);
+                futures[i] = CompletableFuture.supplyAsync(() -> assertSuccessfulRequestContainingMessages(request, "hello"),
+                        executor);
             }
             getNestedCdiBeanTestResult(futures, iterations);
         } finally {
@@ -139,19 +140,19 @@ public class GraphQLOpenTelemetryTest {
         }
     }
 
-    private void getNestedCdiBeanTestResult(CompletableFuture<Void>[] futures , int iterations)
+    private void getNestedCdiBeanTestResult(CompletableFuture<Void>[] futures, int iterations)
             throws InterruptedException, ExecutionException {
         CompletableFuture.allOf(futures).get();
         int numberOfSpansPerGroup = 4;
         spanExporter.assertSpanCount(iterations * numberOfSpansPerGroup);
-        final List<SpanData> spans = Collections.unmodifiableList(spanExporter.getFinishedSpanItems(iterations * numberOfSpansPerGroup));
+        final List<SpanData> spans = Collections
+                .unmodifiableList(spanExporter.getFinishedSpanItems(iterations * numberOfSpansPerGroup));
 
         List<List<SpanData>> spanCollections = spans.stream()
                 .collect(Collectors.groupingBy(
                         SpanData::getTraceId,
                         LinkedHashMap::new, // use a LinkedHashMap to preserve insertion order
-                        Collectors.toList()
-                ))
+                        Collectors.toList()))
                 .values().stream()
                 .collect(Collectors.toList());
 

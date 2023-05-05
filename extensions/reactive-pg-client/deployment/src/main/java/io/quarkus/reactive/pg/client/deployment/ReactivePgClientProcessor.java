@@ -97,7 +97,7 @@ class ReactivePgClientProcessor {
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactivePostgreSQLConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
             createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, pgPool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactivePostgreSQLConfig, defaultDataSourceDbKindBuildItems,
@@ -133,7 +133,7 @@ class ReactivePgClientProcessor {
 
         healthChecks
                 .produce(new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourcesHealthCheck",
-                        dataSourcesBuildTimeConfig.healthEnabled));
+                        dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
     @BuildStep
@@ -235,14 +235,14 @@ class ReactivePgClientProcessor {
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .getDataSourceRuntimeConfig(dataSourceName);
+                .getDataSourceBuildTimeConfig(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
-        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind,
+        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
-                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices.enabled
-                        .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
+                        .orElse(dataSourcesBuildTimeConfig.namedDataSources().isEmpty()),
                 curateOutcomeBuildItem);
 
         if (!dbKind.isPresent()) {
@@ -250,7 +250,7 @@ class ReactivePgClientProcessor {
         }
 
         if (!DatabaseKind.isPostgreSQL(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled) {
+                || !dataSourceReactiveBuildTimeConfig.enabled()) {
             return false;
         }
 
@@ -266,7 +266,7 @@ class ReactivePgClientProcessor {
             return true;
         }
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
             if (isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 return true;

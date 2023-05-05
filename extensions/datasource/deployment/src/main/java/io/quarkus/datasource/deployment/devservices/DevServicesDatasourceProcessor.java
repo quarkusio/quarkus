@@ -138,9 +138,9 @@ public class DevServicesDatasourceProcessor {
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
         RunningDevService defaultDevService = startDevDb(null, capabilities, curateOutcomeBuildItem, installedDrivers,
-                !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
+                !dataSourceBuildTimeConfig.namedDataSources().isEmpty(),
                 devDBProviderMap,
-                dataSourceBuildTimeConfig.defaultDataSource,
+                dataSourceBuildTimeConfig.defaultDataSource(),
                 configHandlersByDbType, propertiesMap,
                 dockerStatusBuildItem, launchMode.getLaunchMode(), consoleInstalledBuildItem,
                 loggingSetupBuildItem, globalDevServicesConfig);
@@ -148,7 +148,7 @@ public class DevServicesDatasourceProcessor {
             runningDevServices.add(defaultDevService);
         }
         defaultResult = toDbResult(defaultDevService);
-        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
+        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources().entrySet()) {
             RunningDevService namedDevService = startDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
                     installedDrivers, true,
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap,
@@ -208,7 +208,7 @@ public class DevServicesDatasourceProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig globalDevServicesConfig) {
-        boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled.orElse(true));
+        boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices().enabled().orElse(true));
         if (explicitlyDisabled) {
             //explicitly disabled
             log.debug("Not starting Dev Services for " + (dbName == null ? "default datasource" : dbName)
@@ -216,10 +216,10 @@ public class DevServicesDatasourceProcessor {
             return null;
         }
 
-        Boolean enabled = dataSourceBuildTimeConfig.devservices.enabled.orElse(!hasNamedDatasources);
+        Boolean enabled = dataSourceBuildTimeConfig.devservices().enabled().orElse(!hasNamedDatasources);
 
         Optional<String> defaultDbKind = DefaultDataSourceDbKindBuildItem.resolve(
-                dataSourceBuildTimeConfig.dbKind,
+                dataSourceBuildTimeConfig.dbKind(),
                 installedDrivers,
                 dbName != null || enabled,
                 curateOutcomeBuildItem);
@@ -238,7 +238,7 @@ public class DevServicesDatasourceProcessor {
             return null;
         }
 
-        if (dataSourceBuildTimeConfig.devservices.enabled.isEmpty()) {
+        if (dataSourceBuildTimeConfig.devservices().enabled().isEmpty()) {
             for (DevServicesDatasourceConfigurationHandlerBuildItem i : configHandlers) {
                 if (i.getCheckConfiguredFunction().test(dbName)) {
                     //this database has explicit configuration
@@ -275,17 +275,17 @@ public class DevServicesDatasourceProcessor {
 
         try {
             DevServicesDatasourceContainerConfig containerConfig = new DevServicesDatasourceContainerConfig(
-                    dataSourceBuildTimeConfig.devservices.imageName,
-                    dataSourceBuildTimeConfig.devservices.containerEnv,
-                    dataSourceBuildTimeConfig.devservices.containerProperties,
-                    dataSourceBuildTimeConfig.devservices.properties,
-                    dataSourceBuildTimeConfig.devservices.port,
-                    dataSourceBuildTimeConfig.devservices.command,
-                    dataSourceBuildTimeConfig.devservices.dbName,
-                    dataSourceBuildTimeConfig.devservices.username,
-                    dataSourceBuildTimeConfig.devservices.password,
-                    dataSourceBuildTimeConfig.devservices.initScriptPath,
-                    dataSourceBuildTimeConfig.devservices.volumes);
+                    dataSourceBuildTimeConfig.devservices().imageName(),
+                    dataSourceBuildTimeConfig.devservices().containerEnv(),
+                    dataSourceBuildTimeConfig.devservices().containerProperties(),
+                    dataSourceBuildTimeConfig.devservices().properties(),
+                    dataSourceBuildTimeConfig.devservices().port(),
+                    dataSourceBuildTimeConfig.devservices().command(),
+                    dataSourceBuildTimeConfig.devservices().dbName(),
+                    dataSourceBuildTimeConfig.devservices().username(),
+                    dataSourceBuildTimeConfig.devservices().password(),
+                    dataSourceBuildTimeConfig.devservices().initScriptPath(),
+                    dataSourceBuildTimeConfig.devservices().volumes());
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(
@@ -297,23 +297,23 @@ public class DevServicesDatasourceProcessor {
                             launchMode, globalDevServicesConfig.timeout);
 
             for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, "db-kind")) {
-                propertiesMap.put(key, dataSourceBuildTimeConfig.dbKind.orElse(null));
+                propertiesMap.put(key, dataSourceBuildTimeConfig.dbKind().orElse(null));
             }
             String devServicesPrefix = "devservices.";
-            if (dataSourceBuildTimeConfig.devservices.command.isPresent()) {
+            if (dataSourceBuildTimeConfig.devservices().command().isPresent()) {
                 setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "command",
-                        dataSourceBuildTimeConfig.devservices.command.get());
+                        dataSourceBuildTimeConfig.devservices().command().get());
             }
-            if (dataSourceBuildTimeConfig.devservices.imageName.isPresent()) {
+            if (dataSourceBuildTimeConfig.devservices().imageName().isPresent()) {
                 setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "image-name",
-                        dataSourceBuildTimeConfig.devservices.imageName.get());
+                        dataSourceBuildTimeConfig.devservices().imageName().get());
             }
-            if (dataSourceBuildTimeConfig.devservices.port.isPresent()) {
+            if (dataSourceBuildTimeConfig.devservices().port().isPresent()) {
                 setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "port",
-                        Integer.toString(dataSourceBuildTimeConfig.devservices.port.getAsInt()));
+                        Integer.toString(dataSourceBuildTimeConfig.devservices().port().getAsInt()));
             }
-            if (!dataSourceBuildTimeConfig.devservices.properties.isEmpty()) {
-                for (var e : dataSourceBuildTimeConfig.devservices.properties.entrySet()) {
+            if (!dataSourceBuildTimeConfig.devservices().properties().isEmpty()) {
+                for (var e : dataSourceBuildTimeConfig.devservices().properties().entrySet()) {
                     setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "properties." + e.getKey(),
                             e.getValue());
                 }

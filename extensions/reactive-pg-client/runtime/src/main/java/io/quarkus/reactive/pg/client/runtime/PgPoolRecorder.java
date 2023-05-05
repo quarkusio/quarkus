@@ -17,8 +17,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
@@ -43,10 +41,7 @@ import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.impl.Utils;
 
 @Recorder
-@SuppressWarnings("deprecation")
 public class PgPoolRecorder {
-
-    private static final Logger log = Logger.getLogger(PgPoolRecorder.class);
 
     public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
             Supplier<Integer> eventLoopCount,
@@ -89,10 +84,10 @@ public class PgPoolRecorder {
     private Supplier<Future<PgConnectOptions>> toDatabasesSupplier(Vertx vertx, List<PgConnectOptions> pgConnectOptionsList,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<PgConnectOptions>> supplier;
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, pgConnectOptionsList,
                     PgConnectOptions::new);
         } else {
@@ -108,22 +103,22 @@ public class PgPoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize());
 
-        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
-            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
+        if (dataSourceReactiveRuntimeConfig.idleTimeout().isPresent()) {
+            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout().get().toMillis());
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
-        if (dataSourceReactiveRuntimeConfig.shared) {
+        if (dataSourceReactiveRuntimeConfig.shared()) {
             poolOptions.setShared(true);
-            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
-                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            if (dataSourceReactiveRuntimeConfig.name().isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name().get());
             }
         }
 
-        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
-            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize().isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize().getAsInt()));
         } else if (eventLoopCount != null) {
             poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
@@ -136,8 +131,8 @@ public class PgPoolRecorder {
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
         List<PgConnectOptions> pgConnectOptionsList = new ArrayList<>();
 
-        if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
+        if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
+            List<String> urls = dataSourceReactiveRuntimeConfig.url().get();
             urls.forEach(url -> {
                 // clean up the URL to make migrations easier
                 if (url.matches("^vertx-reactive:postgre(?:s|sql)://.*$")) {
@@ -150,15 +145,15 @@ public class PgPoolRecorder {
         }
 
         pgConnectOptionsList.forEach(pgConnectOptions -> {
-            dataSourceRuntimeConfig.username.ifPresent(pgConnectOptions::setUser);
+            dataSourceRuntimeConfig.username().ifPresent(pgConnectOptions::setUser);
 
-            dataSourceRuntimeConfig.password.ifPresent(pgConnectOptions::setPassword);
+            dataSourceRuntimeConfig.password().ifPresent(pgConnectOptions::setPassword);
 
             // credentials provider
-            if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-                String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+                String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
                 CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-                String name = dataSourceRuntimeConfig.credentialsProvider.get();
+                String name = dataSourceRuntimeConfig.credentialsProvider().get();
                 Map<String, String> credentials = credentialsProvider.getCredentials(name);
                 String user = credentials.get(USER_PROPERTY_NAME);
                 String password = credentials.get(PASSWORD_PROPERTY_NAME);
@@ -170,7 +165,7 @@ public class PgPoolRecorder {
                 }
             }
 
-            pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
+            pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
 
             if (dataSourceReactivePostgreSQLConfig.pipeliningLimit.isPresent()) {
                 pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit.getAsInt());
@@ -182,31 +177,31 @@ public class PgPoolRecorder {
 
                 // If sslMode is verify-full, we also need a hostname verification algorithm
                 if (sslMode == SslMode.VERIFY_FULL
-                        && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()
-                                || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get()))) {
+                        && (!dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()
+                                || "".equals(dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get()))) {
                     throw new IllegalArgumentException(
                             "quarkus.datasource.reactive.hostname-verification-algorithm must be specified under verify-full sslmode");
                 }
             }
 
-            pgConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
+            pgConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll());
 
-            configurePemTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
-            configureJksTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
-            configurePfxTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
+            configurePemTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem());
+            configureJksTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks());
+            configurePfxTrustOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx());
 
-            configurePemKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
-            configureJksKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
-            configurePfxKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
+            configurePemKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem());
+            configureJksKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks());
+            configurePfxKeyCertOptions(pgConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx());
 
-            pgConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
+            pgConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts());
 
-            pgConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
+            pgConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-            dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.ifPresent(
+            dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().ifPresent(
                     pgConnectOptions::setHostnameVerificationAlgorithm);
 
-            dataSourceReactiveRuntimeConfig.additionalProperties.forEach(pgConnectOptions::addProperty);
+            dataSourceReactiveRuntimeConfig.additionalProperties().forEach(pgConnectOptions::addProperty);
 
             // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with postgresql.
             // and the client_name as tag.

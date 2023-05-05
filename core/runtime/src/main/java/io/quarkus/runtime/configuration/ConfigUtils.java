@@ -27,6 +27,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.config.ConfigMappingContext;
+import io.smallrye.config.ConfigMappingContextCreator;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorContext;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
@@ -309,6 +311,16 @@ public final class ConfigUtils {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Get a config group initialized with default values as specified in the config.
+     */
+    public static <T> T getInitializedConfigGroup(Class<T> configGroup, String mapPath) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        ConfigMappingContext context = ConfigMappingContextCreator.createConfigMappingContext(config);
+        context.getStringBuilder().replace(0, context.getStringBuilder().length(), mapPath);
+        return context.constructGroup(configGroup);
     }
 
     private static class ConfigBuilderComparator implements Comparator<ConfigBuilder> {

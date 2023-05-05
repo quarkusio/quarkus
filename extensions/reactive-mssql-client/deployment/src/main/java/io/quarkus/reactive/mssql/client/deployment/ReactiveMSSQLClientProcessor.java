@@ -85,7 +85,7 @@ class ReactiveMSSQLClientProcessor {
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveMSSQLConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
             createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, msSQLPool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMSSQLConfig, defaultDataSourceDbKindBuildItems,
@@ -165,7 +165,7 @@ class ReactiveMSSQLClientProcessor {
 
         healthChecks.produce(
                 new HealthBuildItem("io.quarkus.reactive.mssql.client.runtime.health.ReactiveMSSQLDataSourcesHealthCheck",
-                        dataSourcesBuildTimeConfig.healthEnabled));
+                        dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
     private void createPoolIfDefined(MSSQLPoolRecorder recorder,
@@ -229,21 +229,21 @@ class ReactiveMSSQLClientProcessor {
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .getDataSourceRuntimeConfig(dataSourceName);
+                .getDataSourceBuildTimeConfig(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
-        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind,
+        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
-                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices.enabled
-                        .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
+                        .orElse(dataSourcesBuildTimeConfig.namedDataSources().isEmpty()),
                 curateOutcomeBuildItem);
         if (!dbKind.isPresent()) {
             return false;
         }
 
         if (!DatabaseKind.isMsSQL(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled) {
+                || !dataSourceReactiveBuildTimeConfig.enabled()) {
             return false;
         }
 
@@ -259,7 +259,7 @@ class ReactiveMSSQLClientProcessor {
             return true;
         }
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
             if (isReactiveMSSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 return true;

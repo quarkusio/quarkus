@@ -86,10 +86,10 @@ public class DB2PoolRecorder {
     private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(Vertx vertx, List<DB2ConnectOptions> db2ConnectOptionsList,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<DB2ConnectOptions>> supplier;
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, db2ConnectOptionsList,
                     DB2ConnectOptions::new);
         } else {
@@ -105,22 +105,22 @@ public class DB2PoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize());
 
-        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
-            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
+        if (dataSourceReactiveRuntimeConfig.idleTimeout().isPresent()) {
+            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout().get().toMillis());
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
-        if (dataSourceReactiveRuntimeConfig.shared) {
+        if (dataSourceReactiveRuntimeConfig.shared()) {
             poolOptions.setShared(true);
-            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
-                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            if (dataSourceReactiveRuntimeConfig.name().isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name().get());
             }
         }
 
-        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
-            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize().isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize().getAsInt()));
         } else if (eventLoopCount != null) {
             poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
@@ -133,8 +133,8 @@ public class DB2PoolRecorder {
             DataSourceReactiveDB2Config dataSourceReactiveDB2Config) {
         DB2ConnectOptions connectOptions;
 
-        if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
+        if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
+            List<String> urls = dataSourceReactiveRuntimeConfig.url().get();
             if (urls.size() > 1) {
                 log.warn("The Reactive DB2 client does not support multiple URLs. The first one will be used, and " +
                         "others will be ignored.");
@@ -149,19 +149,19 @@ public class DB2PoolRecorder {
             connectOptions = new DB2ConnectOptions();
         }
 
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            connectOptions.setUser(dataSourceRuntimeConfig.username.get());
+        if (dataSourceRuntimeConfig.username().isPresent()) {
+            connectOptions.setUser(dataSourceRuntimeConfig.username().get());
         }
 
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            connectOptions.setPassword(dataSourceRuntimeConfig.password.get());
+        if (dataSourceRuntimeConfig.password().isPresent()) {
+            connectOptions.setPassword(dataSourceRuntimeConfig.password().get());
         }
 
         // credentials provider
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             Map<String, String> credentials = credentialsProvider.getCredentials(name);
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
@@ -173,30 +173,30 @@ public class DB2PoolRecorder {
             }
         }
 
-        connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements);
+        connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
 
         connectOptions.setSsl(dataSourceReactiveDB2Config.ssl);
 
-        connectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
+        connectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll());
 
-        configurePemTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
-        configureJksTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
-        configurePfxTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
+        configurePemTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem());
+        configureJksTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks());
+        configurePfxTrustOptions(connectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx());
 
-        configurePemKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
-        configureJksKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
-        configurePfxKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
+        configurePemKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem());
+        configureJksKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks());
+        configurePfxKeyCertOptions(connectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx());
 
-        connectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
+        connectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts());
 
-        connectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
+        connectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
+        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()) {
             connectOptions.setHostnameVerificationAlgorithm(
-                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
+                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get());
         }
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(connectOptions::addProperty);
+        dataSourceReactiveRuntimeConfig.additionalProperties().forEach(connectOptions::addProperty);
 
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with db2.
         // and the client_name as tag.

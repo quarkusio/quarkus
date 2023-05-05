@@ -17,7 +17,7 @@ public class SecurityTestUtils {
     public static <T> void assertSuccess(Supplier<T> action, T expectedResult, AuthData... auth) {
         for (AuthData authData : auth) {
             setUpAuth(authData);
-            Assertions.assertEquals(action.get(), expectedResult);
+            Assertions.assertEquals(expectedResult, action.get());
         }
 
     }

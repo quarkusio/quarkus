@@ -19,6 +19,7 @@
         <gradle.executable>./gradlew</gradle.executable>
         <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
+        <gradle.daemon.arg>--daemon</gradle.daemon.arg>
     </properties>
 
     <modules>
@@ -47,6 +48,17 @@
             </activation>
             <properties>
                 <gradle.executable>gradlew.bat</gradle.executable>
+            </properties>
+        </profile>
+        <profile>
+            <id>gradle-ci</id>
+            <activation>
+                <property>
+                    <name>env.CI</name>
+                </property>
+            </activation>
+            <properties>
+                <gradle.daemon.arg>--no-daemon</gradle.daemon.arg>
             </properties>
         </profile>
         <profile>
@@ -85,6 +97,7 @@
                                         <argument>-Pdescription=${project.description}</argument>
                                         <argument>-Dmaven.repo.local=${settings.localRepository}</argument>
                                         <argument>--stacktrace</argument>
+                                        <argument>${gradle.daemon.arg}</argument>
                                     </arguments>
                                     <environmentVariables>
                                         <MAVEN_REPO_LOCAL>${settings.localRepository}</MAVEN_REPO_LOCAL>

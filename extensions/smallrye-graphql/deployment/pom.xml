@@ -55,8 +55,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator-deployment</artifactId>
-            <optional>true</optional>
-            <scope>provided</scope>
         </dependency>
         
         <!--  Test dependencies -->

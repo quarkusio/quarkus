@@ -5,6 +5,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+import jakarta.validation.ConstraintViolationException;
+
 import org.eclipse.microprofile.graphql.GraphQLException;
 
 import graphql.execution.AbortExecutionException;
@@ -18,6 +20,7 @@ import io.smallrye.graphql.execution.datafetcher.DefaultDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.transformation.AbstractDataFetcherException;
+import io.smallrye.graphql.validation.BeanValidationUtil;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
@@ -89,6 +92,10 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
                 return (T) resultBuilder.build();
             } catch (Error e) {
                 resultBuilder.clearErrors().data(null).error(new AbortExecutionException(e));
+                return (T) resultBuilder.build();
+            } catch (ConstraintViolationException cve) {
+                BeanValidationUtil.addConstraintViolationsToDataFetcherResult(cve.getConstraintViolations(),
+                        operationInvoker.getMethod(), resultBuilder, dfe);
                 return (T) resultBuilder.build();
             } catch (Throwable ex) {
                 throw ex;

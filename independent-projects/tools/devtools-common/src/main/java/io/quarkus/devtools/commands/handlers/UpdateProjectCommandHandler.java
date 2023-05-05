@@ -59,7 +59,10 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 invocation.getQuarkusProject().getExtensionsCatalog());
         final ArtifactCoords projectQuarkusPlatformBom = getProjectQuarkusPlatformBOM(currentState);
         if (projectQuarkusPlatformBom == null) {
-            invocation.log().error("The project does not import any Quarkus platform BOM");
+            invocation.log().error(
+                    "The project does not include the Quarkus platform BOM (io.quarkus.platform:quarkus-bom) in its dependencies. Common issues are:\n"
+                            + "- the project is not a Quarkus one\n"
+                            + "- the project is using an outdated bom. Ensure to update the bom group id and artifact id and then retry the migration.");
             return QuarkusCommandOutcome.failure();
         }
         if (Objects.equals(projectQuarkusPlatformBom.getVersion(), targetPlatformVersion)) {
@@ -131,7 +134,10 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
     private static void logUpdates(ProjectState currentState, ExtensionCatalog recommendedCatalog, boolean recommendState,
             boolean perModule, MessageWriter log) {
         if (currentState.getPlatformBoms().isEmpty()) {
-            log.info("The project does not import any Quarkus platform BOM");
+            log.info(
+                    "The project does not include the Quarkus platform BOM (io.quarkus.platform:quarkus-bom) in its dependencies. Common issues are:\n"
+                            + "- the project is not a Quarkus one\n"
+                            + "- the project is using an outdated bom. Ensure to update the bom group id and artifact id and then retry the migration.");
             return;
         }
         if (currentState.getExtensions().isEmpty()) {

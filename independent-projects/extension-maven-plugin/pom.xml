@@ -43,7 +43,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
         <jackson-bom.version>2.15.0</jackson-bom.version>
-        <junit.jupiter.version>5.9.2</junit.jupiter.version>
+        <junit.jupiter.version>5.9.3</junit.jupiter.version>
     </properties>
     <build>
         <testResources>

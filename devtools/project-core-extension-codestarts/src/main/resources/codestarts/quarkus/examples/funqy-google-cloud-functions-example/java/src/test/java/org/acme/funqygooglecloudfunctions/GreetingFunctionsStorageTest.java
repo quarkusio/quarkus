@@ -11,7 +11,7 @@ import static io.restassured.RestAssured.given;
 @WithFunction(value = FunctionType.FUNQY_BACKGROUND, functionName = "helloGCSWorld")
 class GreetingFunctionsStorageTest {
     @Test
-    public void testHelloGCSWorld() {
+    void testHelloGCSWorld() {
         given()
                 .body("{\"data\":{\"name\":\"hello.txt\"}}")
                 .when()

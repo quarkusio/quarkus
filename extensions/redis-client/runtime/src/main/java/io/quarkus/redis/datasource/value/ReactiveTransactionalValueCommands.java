@@ -273,7 +273,7 @@ public interface ReactiveTransactionalValueCommands<K, V> extends ReactiveTransa
      * @param key the key
      * @param value the value
      * @param setArgs the set command extra-arguments
-     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *@return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
      *         otherwise. In the case of failure, the transaction is discarded.
      */
     Uni<Void> setGet(K key, V value, SetArgs setArgs);
@@ -286,6 +286,8 @@ public interface ReactiveTransactionalValueCommands<K, V> extends ReactiveTransa
      *
      * @param key the key
      * @param value the value
+     *@return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
+     *        otherwise. In the case of failure, the transaction is discarded.
      */
     Uni<Void> setex(K key, long seconds, V value);
 

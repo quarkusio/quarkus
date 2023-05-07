@@ -7,6 +7,8 @@ import java.util.Map;
 import jakarta.enterprise.lang.model.AnnotationInfo;
 import jakarta.enterprise.lang.model.declarations.ClassInfo;
 
+import io.quarkus.arc.processor.Annotations;
+
 abstract class SyntheticComponentBuilderBase<THIS extends SyntheticComponentBuilderBase<THIS>> {
     Map<String, Object> params = new HashMap<>();
 
@@ -102,7 +104,7 @@ abstract class SyntheticComponentBuilderBase<THIS extends SyntheticComponentBuil
     }
 
     public THIS withParam(String key, Annotation value) {
-        params.put(key, AnnotationsReflection.jandexAnnotation(value));
+        params.put(key, Annotations.jandexAnnotation(value));
         return self();
     }
 
@@ -118,7 +120,7 @@ abstract class SyntheticComponentBuilderBase<THIS extends SyntheticComponentBuil
     public THIS withParam(String key, Annotation[] value) {
         org.jboss.jandex.AnnotationInstance[] jandexValues = new org.jboss.jandex.AnnotationInstance[value.length];
         for (int i = 0; i < value.length; i++) {
-            jandexValues[i] = AnnotationsReflection.jandexAnnotation(value[i]);
+            jandexValues[i] = Annotations.jandexAnnotation(value[i]);
         }
         params.put(key, jandexValues);
         return self();

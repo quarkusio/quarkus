@@ -1,5 +1,6 @@
 package io.quarkus.arc.processor;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
@@ -75,5 +76,13 @@ public interface BeanResolver {
      * @return Returns true if given bean matches required type, false otherwise
      */
     boolean matchesType(BeanInfo bean, Type requiredType);
+
+    /**
+     *
+     * @param qualifiers
+     * @param requiredQualifier
+     * @return {@code true} if any qualifier from the collection matches the required qualifiers, {@code false} otherwise
+     */
+    boolean hasQualifier(Collection<AnnotationInstance> qualifiers, AnnotationInstance requiredQualifier);
 
 }

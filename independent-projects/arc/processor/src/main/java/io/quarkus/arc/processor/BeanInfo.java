@@ -99,7 +99,7 @@ public class BeanInfo implements InjectionTargetInfo {
             Integer priority) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
                 alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
-                targetPackageName, priority);
+                targetPackageName, priority, null);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
@@ -107,7 +107,7 @@ public class BeanInfo implements InjectionTargetInfo {
             DisposerInfo disposer, boolean alternative,
             List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, Consumer<MethodCreator> creatorConsumer,
             Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params, boolean isRemovable,
-            boolean forceApplicationClass, String targetPackageName, Integer priority) {
+            boolean forceApplicationClass, String targetPackageName, Integer priority, String identifier) {
 
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -140,7 +140,7 @@ public class BeanInfo implements InjectionTargetInfo {
         this.removable = isRemovable;
         this.params = params;
         // Identifier must be unique for a specific deployment
-        this.identifier = Hashes.sha1(toString() + beanDeployment.toString());
+        this.identifier = Hashes.sha1((identifier != null ? identifier : "") + toString() + beanDeployment.toString());
         this.interceptedMethods = Collections.emptyMap();
         this.decoratedMethods = Collections.emptyMap();
         this.lifecycleInterceptors = Collections.emptyMap();
@@ -956,6 +956,8 @@ public class BeanInfo implements InjectionTargetInfo {
 
     static class Builder {
 
+        private String identifier;
+
         private ClassInfo implClazz;
 
         private Type providerType;
@@ -1001,6 +1003,11 @@ public class BeanInfo implements InjectionTargetInfo {
         Builder() {
             injections = Collections.emptyList();
             stereotypes = Collections.emptyList();
+        }
+
+        Builder identifier(String identifier) {
+            this.identifier = identifier;
+            return this;
         }
 
         Builder implClazz(ClassInfo implClazz) {
@@ -1115,7 +1122,7 @@ public class BeanInfo implements InjectionTargetInfo {
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
                     declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
-                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority);
+                    destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority, identifier);
         }
 
         public Builder forceApplicationClass(boolean forceApplicationClass) {

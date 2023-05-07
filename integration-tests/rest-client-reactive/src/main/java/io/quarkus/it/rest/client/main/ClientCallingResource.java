@@ -22,6 +22,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.quarkus.it.rest.client.main.MyResponseExceptionMapper.MyException;
 import io.quarkus.it.rest.client.main.selfsigned.ExternalSelfSignedClient;
 import io.quarkus.it.rest.client.main.wronghost.WrongHostClient;
+import io.quarkus.it.rest.client.main.wronghost.WrongHostRejectedClient;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
@@ -51,6 +52,9 @@ public class ClientCallingResource {
 
     @RestClient
     WrongHostClient wrongHostClient;
+
+    @RestClient
+    WrongHostRejectedClient wrongHostRejectedClient;
 
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
@@ -198,6 +202,15 @@ public class ClientCallingResource {
 
         router.get("/wrong-host").blockingHandler(
                 rc -> rc.response().setStatusCode(200).end(String.valueOf(wrongHostClient.invoke().getStatus())));
+
+        router.get("/wrong-host-rejected").blockingHandler(rc -> {
+            try {
+                int result = wrongHostRejectedClient.invoke().getStatus();
+                rc.response().setStatusCode(200).end(String.valueOf(result));
+            } catch (Exception e) {
+                rc.response().setStatusCode(500).end(e.getCause().getClass().getSimpleName());
+            }
+        });
     }
 
     private Future<Void> success(RoutingContext rc, String body) {

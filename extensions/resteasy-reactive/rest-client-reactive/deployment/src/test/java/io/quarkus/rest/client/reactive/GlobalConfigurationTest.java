@@ -64,8 +64,6 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.readTimeout).isEqualTo(2001);
         assertThat(configRoot.userAgent.get()).isEqualTo("agent");
         assertThat(configRoot.headers).isEqualTo(Collections.singletonMap("foo", "bar"));
-        assertThat(configRoot.hostnameVerifier.get())
-                .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyHostnameVerifier");
         assertThat(configRoot.connectionTTL.get()).isEqualTo(20000); // value in ms, will be converted to seconds
         assertThat(configRoot.connectionPoolSize.get()).isEqualTo(2);
         assertThat(configRoot.keepAliveEnabled.get()).isTrue();

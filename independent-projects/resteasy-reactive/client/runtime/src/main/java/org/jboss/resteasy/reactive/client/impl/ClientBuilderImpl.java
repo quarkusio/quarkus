@@ -67,7 +67,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private boolean followRedirects;
     private boolean trustAll;
-    private boolean verifyHost;
+    private boolean verifyHost = true;
 
     private LoggingScope loggingScope;
     private Integer loggingBodySize = 100;
@@ -91,7 +91,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     @Override
     public ClientBuilder sslContext(SSLContext sslContext) {
         // TODO
-        throw new RuntimeException("Specifying SSLContext is not supported at the moment");
+        throw new UnsupportedOperationException("Specifying SSLContext is not supported at the moment");
     }
 
     @Override
@@ -114,8 +114,8 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     @Override
     public ClientBuilder hostnameVerifier(HostnameVerifier verifier) {
-        this.hostnameVerifier = verifier;
-        return this;
+        // TODO
+        throw new UnsupportedOperationException("Specifying HostnameVerifier is not supported at the moment");
     }
 
     @Override

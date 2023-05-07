@@ -252,7 +252,7 @@ The `create` method allows adding a new fruit to the database:
 @POST
 public Uni<Response> create(Fruit fruit) {
     return Panache.<Fruit>withTransaction(fruit::persist)
-            .onItem().transform(inserted -> Response.created(URI.create("/fruits/" + inserted.id)).build());
+            .replaceWith(inserted -> Response.created(URI.create("/fruits/" + inserted.id)).build());
 }
 ----
 
@@ -264,8 +264,7 @@ This `Uni` emits the result of the insertion of the fruit in the database.
 Once the insertion completes (and that's our continuation), we create a `201 CREATED` response.
 RESTEasy Reactive automatically reads the request body as JSON and creates the `Fruit` instance.
 
-NOTE: The `.onItem().transform(...)` can be replaced with `.map(...)`.
-`map` is a shortcut.
+NOTE: The `.onItem().transform(...)` can be replaced with `.replaceWith(...)`, as `replaceWith` is a shortcut version.
 
 If you have https://curl.se/[curl] on your machine, you can try the endpoint using:
 

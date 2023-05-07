@@ -41,7 +41,7 @@ import io.quarkus.gizmo.ResultHandle;
  *
  * @author Martin Kouba
  */
-enum BuiltinBean {
+public enum BuiltinBean {
 
     INSTANCE(BuiltinBean::generateInstanceBytecode, BuiltinBean::cdiAndRawTypeMatches,
             BuiltinBean::validateInstance, DotNames.INSTANCE, DotNames.PROVIDER, DotNames.INJECTABLE_INSTANCE),
@@ -88,7 +88,7 @@ enum BuiltinBean {
         this.validator = validator;
     }
 
-    boolean matches(InjectionPointInfo injectionPoint) {
+    public boolean matches(InjectionPointInfo injectionPoint) {
         return matcher.test(injectionPoint, rawTypeDotNames);
     }
 
@@ -113,11 +113,11 @@ enum BuiltinBean {
         return generator;
     }
 
-    static boolean resolvesTo(InjectionPointInfo injectionPoint) {
+    public static boolean resolvesTo(InjectionPointInfo injectionPoint) {
         return resolve(injectionPoint) != null;
     }
 
-    static BuiltinBean resolve(InjectionPointInfo injectionPoint) {
+    public static BuiltinBean resolve(InjectionPointInfo injectionPoint) {
         for (BuiltinBean bean : values()) {
             if (bean.matches(injectionPoint)) {
                 return bean;

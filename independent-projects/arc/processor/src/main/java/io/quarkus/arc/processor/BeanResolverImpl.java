@@ -94,6 +94,11 @@ class BeanResolverImpl implements BeanResolver {
         return false;
     }
 
+    @Override
+    public boolean hasQualifier(Collection<AnnotationInstance> qualifiers, AnnotationInstance requiredQualifier) {
+        return Beans.hasQualifier(beanDeployment, requiredQualifier, qualifiers);
+    }
+
     protected BeanResolver getBeanResolver(BeanInfo bean) {
         return bean.getDeployment().beanResolver;
     }

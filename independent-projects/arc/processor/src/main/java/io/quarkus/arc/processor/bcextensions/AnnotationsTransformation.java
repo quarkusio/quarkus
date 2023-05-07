@@ -13,6 +13,8 @@ import jakarta.enterprise.lang.model.AnnotationInfo;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.processor.Annotations;
+
 // this must be symmetric with AnnotationsOverlay
 abstract class AnnotationsTransformation<JandexDeclaration extends org.jboss.jandex.AnnotationTarget>
         implements io.quarkus.arc.processor.AnnotationsTransformer {
@@ -62,7 +64,7 @@ abstract class AnnotationsTransformation<JandexDeclaration extends org.jboss.jan
     }
 
     void addAnnotation(JandexDeclaration jandexDeclaration, Annotation annotation) {
-        addAnnotation(jandexDeclaration, AnnotationsReflection.jandexAnnotation(annotation));
+        addAnnotation(jandexDeclaration, Annotations.jandexAnnotation(annotation));
     }
 
     private void removeMatchingAnnotations(JandexDeclaration declaration,

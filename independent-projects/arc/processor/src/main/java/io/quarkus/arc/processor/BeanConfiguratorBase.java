@@ -22,6 +22,7 @@ import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
@@ -36,6 +37,7 @@ import io.quarkus.gizmo.ResultHandle;
 public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THIS, T>, T> extends ConfiguratorBase<THIS>
         implements Consumer<AnnotationInstance> {
 
+    protected String identifier;
     protected final DotName implClazz;
     protected final Set<Type> types;
     protected final Set<AnnotationInstance> qualifiers;
@@ -308,6 +310,21 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public THIS destroyer(Consumer<MethodCreator> methodCreatorConsumer) {
         this.destroyerConsumer = methodCreatorConsumer;
+        return cast(this);
+    }
+
+    /**
+     * The identifier becomes part of the {@link BeanInfo#getIdentifier()} and {@link InjectableBean#getIdentifier()}.
+     * <p>
+     * An identifier can be used to register multiple synthetic beans with the same set of types and qualifiers.
+     *
+     * @param identifier
+     * @return self
+     * @see #defaultBean()
+     * @see #alternative(boolean)
+     */
+    public THIS identifier(String identifier) {
+        this.identifier = identifier;
         return cast(this);
     }
 

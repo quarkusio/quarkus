@@ -71,6 +71,7 @@ public final class BeanConfigurator<T> extends BeanConfiguratorBase<BeanConfigur
 
             BeanInfo.Builder builder = new BeanInfo.Builder()
                     .implClazz(implClass)
+                    .identifier(identifier)
                     .providerType(providerType)
                     .beanDeployment(beanDeployment)
                     .scope(scope)

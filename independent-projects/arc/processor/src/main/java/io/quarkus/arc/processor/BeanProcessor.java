@@ -110,15 +110,15 @@ public class BeanProcessor {
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
-        buildContext.putInternal(Key.INDEX.asString(),
-                builder.beanArchiveComputingIndex != null ? builder.beanArchiveComputingIndex
-                        : builder.beanArchiveImmutableIndex);
+        buildContext.putInternal(Key.INDEX, builder.beanArchiveComputingIndex != null ? builder.beanArchiveComputingIndex
+                : builder.beanArchiveImmutableIndex);
 
         this.beanRegistrars = initAndSort(builder.beanRegistrars, buildContext);
         this.observerRegistrars = initAndSort(builder.observerRegistrars, buildContext);
         this.contextRegistrars = initAndSort(builder.contextRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(builder.beanDeploymentValidators, buildContext);
         this.beanDeployment = new BeanDeployment(name, buildContext, builder);
+        buildContext.putInternal(Key.DEPLOYMENT, this.beanDeployment);
 
         // Make it configurable if we find that the set of annotations needs to grow
         this.injectionPointAnnotationsPredicate = Predicate.not(DotNames.DEPRECATED::equals);
@@ -860,6 +860,11 @@ public class BeanProcessor {
                 throw new IllegalArgumentException("Key may not start wit " + Key.BUILT_IN_PREFIX + ": " + keyStr);
             }
             return putInternal(keyStr, value);
+        }
+
+        @SuppressWarnings("unchecked")
+        <V> V putInternal(Key<V> key, V value) {
+            return (V) data.put(key.asString(), value);
         }
 
         @SuppressWarnings("unchecked")

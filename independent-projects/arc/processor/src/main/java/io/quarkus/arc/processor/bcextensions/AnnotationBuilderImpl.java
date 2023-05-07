@@ -14,6 +14,9 @@ import jakarta.enterprise.lang.model.types.Type;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.Types;
+
 class AnnotationBuilderImpl implements AnnotationBuilder {
     private final org.jboss.jandex.IndexView jandexIndex;
     private final AllAnnotationOverlays annotationOverlays;
@@ -327,7 +330,7 @@ class AnnotationBuilderImpl implements AnnotationBuilder {
 
     @Override
     public AnnotationBuilder member(String name, Class<?> value) {
-        jandexAnnotationMembers.add(org.jboss.jandex.AnnotationValue.createClassValue(name, TypesReflection.jandexType(value)));
+        jandexAnnotationMembers.add(org.jboss.jandex.AnnotationValue.createClassValue(name, Types.jandexType(value)));
         return this;
     }
 
@@ -335,7 +338,7 @@ class AnnotationBuilderImpl implements AnnotationBuilder {
     public AnnotationBuilder member(String name, Class<?>[] values) {
         org.jboss.jandex.AnnotationValue[] array = new org.jboss.jandex.AnnotationValue[values.length];
         for (int i = 0; i < values.length; i++) {
-            array[i] = org.jboss.jandex.AnnotationValue.createClassValue(name, TypesReflection.jandexType(values[i]));
+            array[i] = org.jboss.jandex.AnnotationValue.createClassValue(name, Types.jandexType(values[i]));
         }
         jandexAnnotationMembers.add(org.jboss.jandex.AnnotationValue.createArrayValue(name, array));
         return this;
@@ -424,7 +427,7 @@ class AnnotationBuilderImpl implements AnnotationBuilder {
 
     @Override
     public AnnotationBuilder member(String name, Annotation value) {
-        org.jboss.jandex.AnnotationInstance jandexAnnotation = AnnotationsReflection.jandexAnnotation(value);
+        org.jboss.jandex.AnnotationInstance jandexAnnotation = Annotations.jandexAnnotation(value);
         jandexAnnotationMembers.add(org.jboss.jandex.AnnotationValue.createNestedAnnotationValue(name, jandexAnnotation));
         return this;
     }
@@ -433,7 +436,7 @@ class AnnotationBuilderImpl implements AnnotationBuilder {
     public AnnotationBuilder member(String name, Annotation[] values) {
         org.jboss.jandex.AnnotationValue[] array = new org.jboss.jandex.AnnotationValue[values.length];
         for (int i = 0; i < values.length; i++) {
-            org.jboss.jandex.AnnotationInstance jandexAnnotation = AnnotationsReflection.jandexAnnotation(values[i]);
+            org.jboss.jandex.AnnotationInstance jandexAnnotation = Annotations.jandexAnnotation(values[i]);
             array[i] = org.jboss.jandex.AnnotationValue.createNestedAnnotationValue(name, jandexAnnotation);
         }
         jandexAnnotationMembers.add(org.jboss.jandex.AnnotationValue.createArrayValue(name, array));

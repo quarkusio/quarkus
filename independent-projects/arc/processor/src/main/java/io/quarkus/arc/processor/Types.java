@@ -28,6 +28,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
@@ -98,6 +99,60 @@ public final class Types {
         getTypeHandle(result, creator, type, tccl, null, typeVariables);
         typeVariables.patchReferences(creator);
         return result;
+    }
+
+    public static Type jandexType(Class<?> clazz) {
+        if (clazz.isArray()) {
+            int dimensions = 1;
+            Class<?> componentType = clazz.getComponentType();
+            while (componentType.isArray()) {
+                dimensions++;
+                componentType = componentType.getComponentType();
+            }
+            return org.jboss.jandex.ArrayType.create(jandexType(componentType), dimensions);
+        }
+
+        if (clazz.isPrimitive()) {
+            if (clazz == Void.TYPE) {
+                return Type.create(DotName.createSimple("void"), org.jboss.jandex.Type.Kind.VOID);
+            } else if (clazz == Boolean.TYPE) {
+                return PrimitiveType.BOOLEAN;
+            } else if (clazz == Byte.TYPE) {
+                return PrimitiveType.BYTE;
+            } else if (clazz == Short.TYPE) {
+                return PrimitiveType.SHORT;
+            } else if (clazz == Integer.TYPE) {
+                return PrimitiveType.INT;
+            } else if (clazz == Long.TYPE) {
+                return PrimitiveType.LONG;
+            } else if (clazz == Float.TYPE) {
+                return PrimitiveType.FLOAT;
+            } else if (clazz == Double.TYPE) {
+                return PrimitiveType.DOUBLE;
+            } else if (clazz == Character.TYPE) {
+                return PrimitiveType.CHAR;
+            } else {
+                throw new IllegalArgumentException("Unknown primitive type " + clazz);
+            }
+        }
+
+        return org.jboss.jandex.Type.create(DotName.createSimple(clazz.getName()), org.jboss.jandex.Type.Kind.CLASS);
+    }
+
+    public static Type jandexType(java.lang.reflect.Type type) {
+        if (type instanceof java.lang.Class) {
+            return jandexType((Class<?>) type);
+        } else if (type instanceof java.lang.reflect.ParameterizedType) {
+            java.lang.reflect.ParameterizedType p = (java.lang.reflect.ParameterizedType) type;
+            org.jboss.jandex.ParameterizedType.Builder builder = org.jboss.jandex.ParameterizedType
+                    .builder((Class<?>) p.getRawType());
+            for (java.lang.reflect.Type typeArgument : p.getActualTypeArguments()) {
+                builder.addArgument(jandexType(typeArgument));
+            }
+            return builder.build();
+        } else {
+            throw new IllegalArgumentException("Unsupported type: " + type);
+        }
     }
 
     private static class TypeVariables {

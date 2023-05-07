@@ -142,23 +142,17 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (isConfiguredWithWildcard(corsConfig.methods)) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethodsValue);
         } else {
-            String[] allowedMethodsParts = COMMA_SEPARATED_SPLIT_REGEX.split(allowMethodsValue);
-            List<String> requestedMethods = new ArrayList<>(allowedMethodsParts.length);
-            for (String requestedMethod : allowedMethodsParts) {
-                requestedMethods.add(requestedMethod.toLowerCase());
-            }
 
             StringBuilder allowMethods = new StringBuilder();
             boolean isFirst = true;
             for (HttpMethod configMethod : configuredHttpMethods) {
-                if (requestedMethods.contains(configMethod.name().toLowerCase())) {
-                    if (isFirst) {
-                        isFirst = false;
-                    } else {
-                        allowMethods.append(',');
-                    }
-                    allowMethods.append(configMethod.name());
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    allowMethods.append(',');
                 }
+                allowMethods.append(configMethod.name());
+
             }
 
             if (allowMethods.length() != 0) {
@@ -178,8 +172,12 @@ public class CORSFilter implements Handler<RoutingContext> {
         } else {
             final String requestedMethods = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD);
 
+            boolean allowsMethod = true;
             if (requestedMethods != null) {
                 processMethods(response, requestedMethods);
+                if (!corsConfig.methods.isEmpty()) {
+                    allowsMethod = corsConfig.methods.get().contains(requestedMethods);
+                }
             }
 
             final String requestedHeaders = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
@@ -216,10 +214,10 @@ public class CORSFilter implements Handler<RoutingContext> {
                         String.join(",", exposedHeaders.orElse(Collections.emptyList())));
             }
 
-            if (!allowsOrigin) {
-                LOG.debug("Origin is not allowed");
+            if (!allowsOrigin || !allowsMethod) {
+                LOG.debug("Origin or method is not allowed");
                 response.setStatusCode(403);
-                response.setStatusMessage("CORS Rejected - Invalid origin");
+                response.setStatusMessage("CORS Rejected - Invalid origin or method");
                 response.end();
             } else if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
                 LOG.debug("Preflight request has completed");

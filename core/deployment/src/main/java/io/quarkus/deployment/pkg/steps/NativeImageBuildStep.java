@@ -754,6 +754,8 @@ public class NativeImageBuildStep {
                      * See https://github.com/quarkusio/quarkus/issues/30772 for more details.
                      */
                     nativeImageArgs.add("-H:+TrackNodeSourcePosition");
+                    /* See https://github.com/Karm/mandrel-integration-tests/issues/154 for more details. */
+                    nativeImageArgs.add("-H:+DebugCodeInfoUseSourceMappings");
                 }
 
                 /**

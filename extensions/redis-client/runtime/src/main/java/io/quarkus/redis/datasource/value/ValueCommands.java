@@ -195,7 +195,6 @@ public interface ValueCommands<K, V> extends RedisCommands {
      * Requires Redis 1.0.1
      *
      * @param map the key/value map containing the items to store
-     * @return a Uni producing a {@code null} item on success, a failure otherwise
      **/
     void mset(Map<K, V> map);
 
@@ -219,7 +218,6 @@ public interface ValueCommands<K, V> extends RedisCommands {
      * @param key the key
      * @param milliseconds the duration in ms
      * @param value the value
-     * @return a Uni producing a {@code null} item on success, a failure otherwise
      **/
     void psetex(K key, long milliseconds, V value);
 
@@ -231,7 +229,6 @@ public interface ValueCommands<K, V> extends RedisCommands {
      *
      * @param key the key
      * @param value the value
-     * @return a Uni producing a {@code null} item on success, a failure otherwise
      **/
     void set(K key, V value);
 
@@ -244,7 +241,6 @@ public interface ValueCommands<K, V> extends RedisCommands {
      * @param key the key
      * @param value the value
      * @param setArgs the set command extra-arguments
-     * @return a Uni producing a {@code null} item on success, a failure otherwise
      **/
     void set(K key, V value, SetArgs setArgs);
 

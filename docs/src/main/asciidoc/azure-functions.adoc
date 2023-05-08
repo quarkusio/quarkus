@@ -3,19 +3,43 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Azure Functions
+// Propose that the diataxis file name is azure-deploy-functions-tutorial.adoc and ID:
+// [id="azure-deploy-functions-tutorial"]
+= Integrate and deploy a Quarkus HTTP function to Azure Functions
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
-:summary: Integrate Quarkus with the Microsoft Azure functions that you have written.
 
-The `quarkus-azure-functions` extension is a simple integration point between Azure Functions
-and Quarkus.  It interacts with Azure Functions runtime to bootstrap quarkus and turns any
-Azure Functions class you write into a CDI/Arc bean.
+Integrate your Quarkus functions with link:https://learn.microsoft.com/en-us/azure/azure-functions/[Microsoft Azure Functions] by adding the `quarkus-azure-functions` extension to your Maven code project.
+You can write HTTP functions in your Quarkus applications that integrate with, deploy, and run on Azure Functions by using the extension and link:https://quarkus.io/blog/quarkus-dependency-injection/[Quarkus ArC].
+This tutorial shows an example of how a Quarkus application that includes a HTTP Trigger function can be deployed to the Azure Functions runtime.
 
-This allows you to inject any service or component initialized by quarkus directly into your function
-classes.  You can also change the lifecycle of your function class from request scoped (the default)
-to application scope too if you want your function class to be a singleton.
+// Diataxis: If this section grows, I propose that the following section == is moved into a concept topic and linked from here.
+
+== About the`quarkus-azure-functions` extension
+
+include::{includes}/extension-status.adoc[]
+
+The `quarkus-azure-functions` extension is one of the integration points between Azure Functions and Quarkus.
+
+`quarkus-azure-functions` provides the following capabilities for integrating your Quarkus code projects with Azure Functions.
+
+* Interacts with the Azure Functions runtime to bootstrap Quarkus
+* Registers a callback to set up link:https://quarkus.io/blog/quarkus-dependency-injection/[Quarkus ArC] as the function factory for function classes
+* Turns any Azure Functions class you write into a Quarkus ArC CDI bean
+* Injects any service or component initialized by Quarkus directly into your function classes
+
+[IMPORTANT]
+====
+Quarkus integration with Azure Functions does not currently apply to xref:dev-mode-differences.adoc[Quarkus dev mode].
+====
+
+// Diataxis: The following section could be a step in the main procedure or later on in this topic as an advanced/option step. Doesn't make sense to be here at the beginning.
+== Lifecycle of your function classes
+
+If you want your function class to be a singleton, you can change the lifecycle of your function class from the default request-scoped to application-scoped.
+
+.Example
 
 [source, java]
 ----
@@ -57,35 +81,42 @@ public class Function {
 }
 ----
 
-include::{includes}/extension-status.adoc[]
-
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
-* https://azure.microsoft.com[An Azure Account].  Free accounts work.
-* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools] version 4.x
-* https://docs.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI Installed]
+* https://azure.microsoft.com[A Microsoft Azure account]
+** [TIP]
+====
+If you don't have an existing Azure subscription, you can create a free Azure account.
+====
+* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools version 4.x] installed
+* https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI] installed
 
 == Solution
 
-This guide walks you through running a maven project that can deploy an Http Trigger Azure Function class.
-This function class injects a CDI bean service that generates a greeting message that is passed back
-to the client.
+By completing this tutorial, you will learn how to build and run a Maven project that can deploy an HTTP Trigger class on Azure Functions.
+The HTTP Trigger function class provided in the example injects a CDI bean service that generates a greeting message that is passed back to the client.
 
-== Creating the Maven Deployment Project
+:sectnums:
+:sectnumlevels: 3
 
-You can download the example code from Quarkus's application generator at https://code.quarkus.io/d?e=azure-functions&cn=code.quarkus.io[this link].
+== Create the Maven deployment project
 
-You can also generate this example with the Quarkus CLI:
+Download the `code-with-quarkus` project with the `quarkus-azure-functions-http` extension from the link:https://code.quarkus.io/d?e=azure-functions&cn=code.quarkus.io[Start coding with Quarkus] starter application generator web page.
+
+Alternatively, you can use the xref:https://quarkus.io/guides/cli-tooling[Quarkus CLI] to generate the `code-with-quarkus` project that's needed for this tutorial:
 
 [source,bash,subs=attributes+]
 ----
 quarkus create app --extension=quarkus-azure-functions
 ----
 
+[IMPORTANT]
+====
+When creating the Maven project, you must include the `quarkus-azure-functions` extension because this is the integration point between Quarkus and Azure Functions.
+====
 
-
-== Login to Azure
+== Log in to Microsoft Azure
 
 If you don't log in to Azure you won't be able to deploy.
 
@@ -94,56 +125,64 @@ If you don't log in to Azure you won't be able to deploy.
 az login
 ----
 
-== Quarkus dev mode
-
-Quarkus dev mode does not work currently with Azure Functions.
-
 == Run locally in Azure Functions simulated environment
 
-If you want to try your app with a simulated local Azure Functions environment, you can
-use this command
+If you want to try your application in a simulated local Azure Functions environment, use the following command:
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw clean package azure-functions:run
 ----
 
-Note that you must have the https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
-installed for this to work!
+[IMPORTANT]
+====
+https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools] must be installed for this command to work.
+====
 
-== Deploy to Azure
+== Deploy the Quarkus package to Azure Functions
 
-The `pom.xml` you generated in the previous step pulls in the `azure-functions-maven-plugin`.  Running maven package
-generates config files and a staging directory required by the `azure-functions-maven-plugin`.  Here's
-how to execute it.
+The `pom.xml` file that was generated in the previous step pulls in the `azure-functions-maven-plugin` extension.
+Running the Maven package generates the required configuration files and a staging directory, which is needed by the `azure-functions-maven-plugin`.
+
+Use the following command to execute your function:
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw clean package azure-functions:deploy
 ----
 
-If deployment is a success, the azure maven plugin will tell you the base URL to access your function.
+== Access your function
 
-i.e.
+When the deployment completes, the Azure Maven plugin returns the base URL to access your function.
+
+.Example
 [source]
 ----
 [INFO] HTTP Trigger Urls:
 [INFO] 	 HttpExample : https://{appName}.azurewebsites.net/api/httpexample
 ----
 
-The URL to access the service would be
+In the example provided, the URL to access the service is:
 
-https://{appName}.azurewebsites.net/api/HttpExample
+\https://{appName}.azurewebsites.net/api/HttpExample
 
-== Extension maven dependencies
+:sectnums!:
 
-You must include the `quarkus-azure-functions` extension as this is the integration point between
-Quarkus and Azure Functions.  It registers callback with the Azure Functions runtime to bootstrap
-Quarkus and to set up Quarkus/Arc as the function factory for your function classes.
+== Summary
 
-== Azure Deployment Descriptors
+Congratulations!
+You have learned how to create, build, and deploy a sample Quarkus application that includes an HTTP Trigger function to Microsoft Azure Functions by using Quarkus.
 
-Templates for Azure Functions deployment descriptors (`host.json`, `function.json`) are within
-base directory of the project.  Edit them as you need to.  Rerun the build when you are ready.
+// Should this step be positioned earlier in this guide before the deploy command is run? It seems a bit late here...
+== Azure deployment descriptors
 
+You can find the templates for the Azure Functions deployment descriptors in the base directory of the project, for example, `host.json` and `function.json`.
+You can optionally edit the deployment descriptors as needed, and then rerun the build when you are ready.
 
+== References
+
+* xref:deploying-to-azure-cloud.adoc[Deploying to Microsoft Azure Cloud]
+* xref:azure-functions-http.adoc[Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes]
+* xref:funqy-azure-functions-http.adoc[Funqy HTTP Binding with Azure Functions]
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/[Azure Functions]
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/functions-create-first-quarkus[Deploy serverless Java apps with Quarkus on Azure Functions]

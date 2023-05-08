@@ -3,45 +3,65 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes
+// Propose that the diataxis type is tutorial.
+// [id="azure-functions-??-tutorial"]
+= Integrate and deploy a RESTEasy Reactive endpoint to Azure Functions
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
-:summary: Deploy Vert.x Web, Servlet, or RESTEasy microservices as a Microsoft Azure Function.
 
-The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy Reactive (our Jakarta REST implementation),
-Undertow (servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] and make these microservices deployable to the Azure Functions runtime.
+Integrate and deploy your Quarkus RESTEasy Reactive microservice with link:https://learn.microsoft.com/en-us/azure/azure-functions/[Microsoft Azure Functions] by adding the `quarkus-azure-functions-http` extension to your Maven code project.
+You can also deploy other HTTP microservices as an Azure Function, including Vert.x Web, Undertow Servlet, Reactive Routes, or Funqy HTTP.
 
-One azure function deployment can represent any number of Jakarta REST, servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
+// Diataxis: If this section grows, I propose that the following section == is moved into a concept topic and linked from here.
+
+== About the`quarkus-azure-functions-http` extension
 
 include::{includes}/extension-status.adoc[]
 
-NOTE: Only text based media types are supported at the moment as Azure Functions HTTP Trigger for Java does not support a binary format
+The `quarkus-azure-functions-http` extension is an integration point that provides a generic bridge between the Azure Functions runtime and the most commonly used HTTP frameworks for writing microservices in Quarkus.
+
+When you add the `quarkus-azure-functions-http` extension to your Quarkus project, you can write and deploy RESTEasy Reactive, Vert.x Web, Undertow Servlet, Reactive Routes, or Funqy HTTP microservices to the Azure Functions runtime.
+
+One deployment of a function to Azure Functions can represent any number of Jakarta REST, Undertow Servlets, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
+
+[IMPORTANT]
+====
+* The Azure Functions HTTP Trigger for Java does not support a binary format, therefore only text-based media types are supported.
+* Quarkus integration with Azure Functions does not currently apply to xref:dev-mode-differences.adoc[Quarkus dev mode].
+====
 
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
-* https://azure.microsoft.com[An Azure Account].  Free accounts work.
-* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools] version 4.x
-* https://docs.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI Installed]
+* https://azure.microsoft.com[A Microsoft Azure account]
+** [TIP]
+====
+If you don't have an existing Microsoft Azure subscription, you can create a free Azure account.
+====
+* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools version 4.x] installed
+* https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI] installed
 
 == Solution
 
-This guide walks you through running a maven project that can deploy a Resteasy Reactive endpoint to Azure Functions.
-While only Jakarta REST is provided as an example, you can easily replace it with the HTTP framework of your choice.
+By completing this tutorial, you will learn how to build and run a Maven project that can deploy a RESTEasy Reactive endpoint to Azure Functions.
+While only the Jakarta REST implementation is provided as an example here, you can easily replace it with the HTTP framework of your choice.
 
-== Creating the Maven Deployment Project
+:sectnums:
+:sectnumlevels: 3
 
-You can download the example code from Quarkus's application generator at https://code.quarkus.io/d?e=azure-functions-http&cn=code.quarkus.io[this link].
+== Create the Maven deployment project
 
-You can also generate this example with the Quarkus CLI:
+Download the `code-with-quarkus` project with the `quarkus-azure-functions-http` extension from the link:https://code.quarkus.io/d?e=azure-functions-http&cn=code.quarkus.io[Start coding with Quarkus] starter application generator web page.
+
+Alternatively, you can use the xref:https://quarkus.io/guides/cli-tooling[Quarkus CLI] to generate the `code-with-quarkus` project and extension required for this tutorial:
 
 [source,bash,subs=attributes+]
 ----
 quarkus create app --extension=quarkus-azure-functions-http
 ----
 
-== Login to Azure
+== Log in to Microsoft Azure
 
 If you don't log in to Azure you won't be able to deploy.
 
@@ -50,68 +70,90 @@ If you don't log in to Azure you won't be able to deploy.
 az login
 ----
 
-== Quarkus dev mode
+== Run your Quarkus application in dev mode
 
-Quarkus dev mode works by just running your application as a HTTP endpoint.
+In Quarkus dev mode, your application just runs as an HTTP endpoint without integration with Azure Functions.
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw clean package quarkus:dev
 ----
 
+== Run the application locally in an Azure Functions simulated environment
 
-
-== Run locally in Azure Functions simulated environment
-
-If you want to try your app with a simulated local Azure Functions environment, you can
-use this command
+If you want to try your app with a simulated local Azure Functions environment, use the following command:
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw clean package azure-functions:run
 ----
 
-Note that you must have the https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
-installed for this to work!
+[IMPORTANT]
+====
+You must have the https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
+installed for this to work.
+====
 
-== Deploy to Azure
+== Deploy to Azure Functions
 
-The `pom.xml` you generated in the previous step pulls in the `azure-functions-maven-plugin`.  Running maven package
-generates config files and a staging directory required by the `azure-functions-maven-plugin`.  Here's
-how to execute it.
+The `pom.xml` that you generated in the previous step pulls in the Azure Functions Maven Plugin (`azure-functions-maven-plugin`).
+Running the Maven package generates the required configuration files and staging directory.
+
+Use the following Quarkus CLI command to deploy the package to Azure Functions:
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw clean package azure-functions:deploy
 ----
 
-If deployment is a success, the azure plugin will tell you the base URL to access your function.
+== Access your function
 
-i.e.
+When the deployment completes, the Azure Functions Maven plugin returns the base URL to access your function.
+
+.Example
+
 [source]
 ----
 [INFO] HTTP Trigger Urls:
 [INFO] 	 QuarkusHttp : https://{appName}.azurewebsites.net/api/{*path}
 ----
 
-The URL to access the service would be
+In the example provided, the URL to access the service is:
 
-https://{appName}.azurewebsites.net/api/hello
+\https://{appName}.azurewebsites.net/api/hello
 
-== Extension maven dependencies
 
-You must include the `quarkus-azure-functions-http` extension as this is a generic bridge between the Azure Functions
-runtime and the HTTP framework you are writing your microservices in.
+:sectnums!:
 
-== Azure Deployment Descriptors
+== Summary
 
-Templates for Azure Functions deployment descriptors (`host.json`, `function.json`) are within
-base Edit them as you need to.  Rerun the build when you are ready.
+Congratulations!
+You have learned how to create, build, and deploy a sample Quarkus RESTEasy microservice to Azure Functions.
 
+// Should this step be positioned earlier in this guide? It seems a bit late here...
 [#config-azure-paths]
-== Configuring Root Paths
+== Configure the root path
 
-The default route prefix for an Azure Function is `/api`.  All of your Jakarta REST, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must
-explicitly take this into account.  In the generated project this is handled by the
-`quarkus.http.root-path` switch in `application.properties`
+The default root prefix for an Azure Function is `/api`.
+All of your Jakarta REST, Undertow Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must explicitly use this prefix.
 
+In the generated `code-with-quarkus` example project, the root path is configured in the `application.properties` file as follows:
+
+[source,properties]
+----
+quarkus.http.root-path=/api
+----
+
+// Should this step be positioned earlier in this guide before the deploy command is run? It seems a bit late here...
+== Azure deployment descriptors
+
+You can find the templates for the Azure Functions deployment descriptors in the base directory of the project, for example, `host.json` and `function.json`.
+You can optionally edit the deployment descriptors as needed, and then rerun the build when you are ready.
+
+== References
+
+* xref:deploying-to-azure-cloud.adoc[Deploying to Microsoft Azure Cloud]
+* xref:azure-functions.adoc[Integrate and deploy a Quarkus HTTP function to Azure Functions]
+* xref:funqy-azure-functions-http.adoc[Funqy HTTP Binding with Azure Functions]
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/[Azure Functions]
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/functions-create-first-quarkus[Deploy serverless Java apps with Quarkus on Azure Functions]

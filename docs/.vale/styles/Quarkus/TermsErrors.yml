@@ -9,6 +9,5 @@ action:
   name: replace
 # swap maps tokens in form of bad: good
 swap:
- "I(?!/O)": you
+  "I(?!/O)": you
   he|she: you
- 

@@ -13,7 +13,6 @@ swap:
   '(?<!\.)yaml|Yaml': YAML
   '(?<!Business )Resource Planner|(?<!Business Resource )Planner': Business Resource Planner
   '(?<!JBoss )EAP|(?<!Red Hat )JBoss(?!\sCommunity|\sBroker|\sClients|\sConsole|\sAMQ|\sData\sGrid|\sBRMS|\sBPMS|\sEnterprise\sApplication\sPlatform|\.org|\sInterconnect|\sEAP|\sBPM\sSuite)': JBoss EAP
-  '(?<!Microsoft )Azure': Microsoft Azure
   '(?<!Microsoft Azure )On-Demand Marketplace': Microsoft Azure On-Demand Marketplace
   '(?<!Realtime )Decision\sServer': Realtime Decision Server
   '(?<!Red Hat )Customer Portal': Red Hat Customer Portal

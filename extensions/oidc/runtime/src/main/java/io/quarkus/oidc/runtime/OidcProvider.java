@@ -41,6 +41,7 @@ public class OidcProvider implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
     private static final String ANY_ISSUER = "any";
+    private static final String ANY_AUDIENCE = "any";
     private static final String[] ASYMMETRIC_SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
             SignatureAlgorithm.RS384.getAlgorithm(),
             SignatureAlgorithm.RS512.getAlgorithm(),
@@ -103,16 +104,19 @@ public class OidcProvider implements Closeable {
     }
 
     public TokenVerificationResult verifySelfSignedJwtToken(String token) throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver(), true);
+        return verifyJwtTokenInternal(token, true, SYMMETRIC_ALGORITHM_CONSTRAINTS, new SymmetricKeyResolver(), true);
     }
 
-    public TokenVerificationResult verifyJwtToken(String token) throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, ASYMMETRIC_ALGORITHM_CONSTRAINTS, asymmetricKeyResolver, true);
+    public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification)
+            throws InvalidJwtException {
+        return verifyJwtTokenInternal(token, enforceAudienceVerification, ASYMMETRIC_ALGORITHM_CONSTRAINTS,
+                asymmetricKeyResolver, true);
     }
 
     public TokenVerificationResult verifyLogoutJwtToken(String token) throws InvalidJwtException {
         final boolean enforceExpReq = !oidcConfig.token.age.isPresent();
-        TokenVerificationResult result = verifyJwtTokenInternal(token, ASYMMETRIC_ALGORITHM_CONSTRAINTS, asymmetricKeyResolver,
+        TokenVerificationResult result = verifyJwtTokenInternal(token, true, ASYMMETRIC_ALGORITHM_CONSTRAINTS,
+                asymmetricKeyResolver,
                 enforceExpReq);
         if (!enforceExpReq) {
             // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
@@ -126,7 +130,8 @@ public class OidcProvider implements Closeable {
         return result;
     }
 
-    private TokenVerificationResult verifyJwtTokenInternal(String token, AlgorithmConstraints algConstraints,
+    private TokenVerificationResult verifyJwtTokenInternal(String token, boolean enforceAudienceVerification,
+            AlgorithmConstraints algConstraints,
             VerificationKeyResolver verificationKeyResolver, boolean enforceExpReq) throws InvalidJwtException {
         JwtConsumerBuilder builder = new JwtConsumerBuilder();
 
@@ -143,11 +148,17 @@ public class OidcProvider implements Closeable {
             builder.setExpectedIssuer(issuer);
         }
         if (audience != null) {
-            builder.setExpectedAudience(audience);
+            if (audience.length == 1 && audience[0].equals(ANY_AUDIENCE)) {
+                builder.setSkipDefaultAudienceValidation();
+            } else {
+                builder.setExpectedAudience(audience);
+            }
+        } else if (enforceAudienceVerification) {
+            builder.setExpectedAudience(oidcConfig.clientId.get());
         } else {
             builder.setSkipDefaultAudienceValidation();
         }
-        if (requiredClaims != null) {
+        if (requiredClaims != null && !requiredClaims.isEmpty()) {
             builder.registerValidator(new CustomClaimsValidator(requiredClaims));
         }
 
@@ -193,14 +204,14 @@ public class OidcProvider implements Closeable {
         }
     }
 
-    public Uni<TokenVerificationResult> refreshJwksAndVerifyJwtToken(String token) {
+    public Uni<TokenVerificationResult> refreshJwksAndVerifyJwtToken(String token, boolean enforceAudienceVerification) {
         return asymmetricKeyResolver.refresh().onItem()
                 .transformToUni(new Function<Void, Uni<? extends TokenVerificationResult>>() {
 
                     @Override
                     public Uni<? extends TokenVerificationResult> apply(Void v) {
                         try {
-                            return Uni.createFrom().item(verifyJwtToken(token));
+                            return Uni.createFrom().item(verifyJwtToken(token, enforceAudienceVerification));
                         } catch (Throwable t) {
                             return Uni.createFrom().failure(t);
                         }

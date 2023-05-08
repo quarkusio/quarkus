@@ -13,6 +13,7 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials;
+import io.quarkus.oidc.common.runtime.OidcCommonConfig.Credentials.Secret.Method;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -126,10 +127,12 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setTenantId("tenant-web-app-refresh");
                     config.setApplicationType(ApplicationType.WEB_APP);
                     config.getToken().setRefreshExpired(true);
+                    config.getToken().setRefreshTokenTimeSkew(Duration.ofSeconds(3));
                     config.setAuthServerUrl(getIssuerUrl() + "/realms/quarkus-webapp");
                     config.setClientId("quarkus-app-webapp");
-                    config.getCredentials().setSecret(
+                    config.getCredentials().getClientSecret().setValue(
                             "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
+                    config.getCredentials().getClientSecret().setMethod(Method.POST);
 
                     // Let Keycloak issue a login challenge but use the test token endpoint
                     String uri = context.request().absoluteURI();

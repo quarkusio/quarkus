@@ -85,8 +85,12 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
-    public void testCodeFlowEncryptedIdToken() throws IOException {
+    public void testCodeFlowEncryptedIdTokenJwk() throws IOException {
         doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-jwk");
+    }
+
+    @Test
+    public void testCodeFlowEncryptedIdTokenPem() throws IOException {
         doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-pem");
     }
 

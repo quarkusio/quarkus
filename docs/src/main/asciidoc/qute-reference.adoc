@@ -1215,16 +1215,16 @@ An interesting use case would be a fragment that can be used multiple-times insi
 
 <h1>My page</h1>
 <p>This document 
-{#include [strong] val='contains' /} <2>
+{#include $strong val='contains' /} <2>
 a lot of 
-{#include [strong] val='information' /} <3>
+{#include $strong val='information' /} <3>
 !</p>
 ----
 <1> Defines a hidden fragment with identifier `strong`.
 In this particular case, we use the `false` boolean literal as the value of the `rendered` parameter.
 However, it's possible to use any expression there.
 <2> Include the fragment `strong` and pass the value.
-Note the syntax `[strong]` which is translated to include the fragment `strong` from the current template.
+Note the syntax `$strong` which is translated to include the fragment `strong` from the current template.
 <3> Include the fragment `strong` and pass the value.
 
 The snippet above renders something like:

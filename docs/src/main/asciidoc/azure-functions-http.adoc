@@ -3,191 +3,216 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes
+[id="azure-functions-resteasy"]
+= Integrate and deploy a RESTEasy Reactive endpoint to Azure Functions
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
-:summary: Deploy Vert.x Web, Servlet, or RESTEasy microservices as a Microsoft Azure Function.
+:diataxis-type: howto
+:categories: cloud,integration
 
-The `quarkus-azure-functions-http` extension allows you to write microservices with RESTEasy Reactive (our Jakarta REST implementation),
-Undertow (servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] and make these microservices deployable to the Azure Functions runtime.
-In other words, this extension is a bridge from the Azure Functions HttpTrigger and the Quarkus family
-of HTTP APIs.
-One azure function deployment can represent any number of Jakarta REST, servlet, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
+Integrate and deploy your Quarkus RESTEasy Reactive microservice with link:https://learn.microsoft.com/en-us/azure/azure-functions/[Microsoft Azure Functions] by adding the `quarkus-azure-functions-http` extension to your code project.
+You can also deploy other HTTP microservices as an Azure Function, including Vert.x Web, Undertow Servlet, Reactive Routes, or Funqy HTTP.
+
+== About the `quarkus-azure-functions-http` extension
 
 include::{includes}/extension-status.adoc[]
 
-NOTE: Only text based media types are supported at the moment as Azure Functions HTTP Trigger for Java does not support a binary format
+The `quarkus-azure-functions-http` extension is an integration point between the Azure Functions runtime and the most commonly used HTTP frameworks for writing microservices in Quarkus.
+This extension is a bridge that connects the Azure Functions `HTTPTrigger` and the Quarkus family of HTTP APIs.
+
+When you add the `quarkus-azure-functions-http` extension to your Quarkus project, you can write and deploy RESTEasy Reactive, Vert.x Web, Undertow Servlet, Reactive Routes, or Funqy HTTP microservices to the Azure Functions runtime.
+
+One Azure Functions deployment can represent any number of Jakarta REST, Undertow Servlets, Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP] endpoints.
+
+[IMPORTANT]
+====
+* The Azure Functions HTTP trigger for Java does not support a binary format, therefore only text-based media types are supported.
+* Quarkus integration with Azure Functions does not currently apply to xref:dev-mode-differences.adoc[Quarkus dev mode].
+====
 
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
-* https://azure.microsoft.com[An Azure Account].  Free accounts work.
-* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools] version 4.x
-* https://docs.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI Installed]
+* https://azure.microsoft.com[A Microsoft Azure account]
++
+[TIP]
+====
+If you don't have an existing Microsoft Azure subscription, you can create a free link:https://azure.microsoft.com/en-us/free/[Azure account].
+====
++
+* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools version 4.x] installed
+* https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI] installed
 
 == Solution
 
-This guide walks you through running a maven project that can deploy a Resteasy Reactive endpoint to Azure Functions.
-While only Jakarta REST is provided as an example, you can easily replace it with the HTTP framework of your choice.
+By completing this tutorial, you will learn how to build and run a project that can deploy a RESTEasy Reactive endpoint to Azure Functions.
+While only the Jakarta REST implementation is provided as an example here, you can easily replace it with the HTTP framework of your choice.
 
-== Creating the Maven/Gradle Project
+:sectnums:
+:sectnumlevels: 3
 
-You can generate the example code from Quarkus's online application generator at https://code.quarkus.io/d?e=azure-functions-http&cn=code.quarkus.io[this link].
+== Create the code deployment project
 
-You can also generate this example with the Quarkus CLI:
+You can generate the example `code-with-quarkus` project with the `quarkus-azure-functions-http` extension from the link:https://code.quarkus.io/d?e=azure-functions-http&cn=code.quarkus.io[Start coding with Quarkus] application generator web page.
 
-[source,bash,subs=attributes+]
-----
-quarkus create app --extension=quarkus-azure-functions-http
-----
+Alternatively, you can use the xref:cli-tooling.adoc[Quarkus CLI] to generate the `code-with-quarkus` project and extension required for this tutorial:
 
-Add the `--gradle` switch if you want to generate a gradle project.
+:create-app-extensions: azure-functions-http
+include::{includes}/devtools/create-app.adoc[]
 
-== Login to Azure
+== Log in to Microsoft Azure
 
 If you don't log in to Azure you won't be able to deploy.
 
 [source,bash,subs=attributes+]
 ----
 az login
-----
-
-== Quarkus dev mode
-
-Quarkus dev mode works by just running your application as a HTTP endpoint.  In dev mode
-there is no special interaction with the Azure Functions local runtime.
-
-[source,bash,subs=attributes+]
-----
-./mvnw clean package quarkus:dev
 ----
 
 == Examining the project
 
-If you open the `pom.xml` or `build.gradle` build file of the generated project you'll see that
-the project is similar to any other Quarkus project.
-The `quarkus-azure-functions-http` extension is the integration point between
-Quarkus and Azure Functions.
+If you open the build file of the generated project, for example, `pom.xml`, you'll see that the project is similar to any other Quarkus project.
+The `quarkus-azure-functions-http` extension is the integration point between Quarkus and Azure Functions.
 
-The current implementation of the `quarkus-azure-functions-http` extension no longer requires the
-`azure-functions-maven-plugin` or gradle equivalent.  Local development and Azure Functions packaging and
-deployment is now all done by Quarkus.
+[IMPORTANT]
+====
+From version 3.0, the `quarkus-azure-functions-http` extension no longer requires `azure-functions-maven-plugin` or equivalent plugins.
+Local development and Azure Functions packaging and deployment are now all done by Quarkus.
+====
 
-Build configuration is now all within `application.properties`.  The only required configuration switch
-is `quarkus.azure-functions.app-name`.
+You can configure how your application builds in the Quarkus `application.properties` file.
+The only required configuration switch is `quarkus.azure-functions.app-name`.
 
-== Azure Deployment Descriptors
+== Azure deployment descriptors
 
-The Azure Functions `host.json` deployment descriptor is automatically
-generated, but if you need to override it, declare it in the root directory of the project and
-rerun the build when you are ready.
+The Azure Functions `host.json` deployment descriptor gets automatically generated, but if you need to override it, declare it in the root directory of the project and rerun the build when you are ready.
+
+You can find the templates for the Azure Functions deployment descriptors in the base directory of the project, for example, `host.json` and `function.json`.
 
 [#config-azure-paths]
-== Configuring Root Paths
+== Configure the root path
 
-The default route prefix for an Azure Function is `/api`.  All of your Jakarta REST, Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must
-explicitly take this into account.  In the generated project this is handled by the
-`quarkus.http.root-path` switch in `application.properties`
+The default root prefix for an Azure Function is `/api`.
+All of your Jakarta REST, Undertow Servlet, Reactive Routes, and xref:funqy-http.adoc[Funqy HTTP] endpoints must explicitly use this prefix.
 
-== Login to Azure
+In the generated `code-with-quarkus` example project, the root path is configured by the `quarkus.http.root-path` switch in the `application.properties` file as outlined in the following example:
 
-If you don't log in to Azure you won't be able to deploy.
-
-[source,bash,subs=attributes+]
+[source,properties]
 ----
-az login
+quarkus.http.root-path=/api
 ----
 
-== Quarkus dev mode
+== Run the application within the Azure Functions local environment
 
-Quarkus dev mode does not work currently with Azure Functions.
+[IMPORTANT]
+====
+You must have the link://https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
+installed.
+====
 
-== Run locally in Azure Functions local environment
-
-If you want to try this example within the local Azure Functions environment, you can
-use this command
+If you want to try this example within the local Azure Functions environment, use following Maven command:
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw quarkus:run
 ----
 
-or
+//Hiding until Gradle is supported * Gradle
+//[source,bash,subs=attributes+]
+//----
+//./gradlew --info --no-daemon quarkusRun
+//----
 
-[source,bash,subs=attributes+]
-----
-./gradlew --info --no-daemon quarkusRun
-----
-
-Gradle is a bit quirky with process management, so you need the `--no-daemon` switch or control-c will not
-destroy the process cleanly and you'll have open ports.
-
-Note that you must have the https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
-installed for this to work!
+//Hiding this note until Gradle is supported  [NOTE]
+====
+Gradle can be a bit quirky with process management, so you need the `--no-daemon` switch, otherwise when you press *Ctrl* + *C* the process does not end cleanly, resulting in open ports.
+====
+//
+.Result
 
 The URL to access the example would be:
 
-http://localhost:8081/api/hello
+/http://localhost:8081/api/hello
 
 == Quarkus Integration Testing
 
-You can implement integration tests using `@QuarkusIntegrationTest` functionality.  When these
-integration tests run, the local Azure Functions environment will be spun up for the duration of integration testing.
+You can implement integration tests by using `@QuarkusIntegrationTest` functionality.
+When these integration tests run, the local Azure Functions environment is spun up for the duration of integration testing.
 
+* For maven:
 
-For maven:
 [source,bash,subs=attributes+]
 ----
 ./mvnw -DskipITs=false verify
 ----
 
-Make sure any integration tests you execute with maven use the `*IT.java` file pattern so that regular builds do not execute
-the test.
+To ensure that regular builds do not execute the test, always use the `*IT.java` file pattern.
 
-For Gradle:
-[source,bash,subs=attributes+]
-----
-./gradlew --info quarkusIntTest
-----
-
-Make sure any integration tests you execute with Gradle are located within `src/integrationTest/java`.  Integration
-tests that exist in `src/test` will run with normal build and fail.
+//* For Gradle:
+//[source,bash,subs=attributes+]
+//----
+//./gradlew --info quarkusIntTest
+//----
+//
+//Make sure any integration tests you execute with Gradle are located within the `src integrationTest/java` directory.
+//Integration tests that exist in `src/test` will run with the regular build and fail.
 
 == Deploy to Azure
 
-The `quarkus-azure-functions-http` extension handles all the work to deploy to Azure.  By default,
-Quarkus will use the Azure CLI in the background to authenticate and deploy to Azure.  If you have
-multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id`
-property in your `application.properties` file to the subscription you want to use.
-For other authentication mechanisms and deployment options see our config properties https://quarkus.io/guides/all-config[here].
+The `quarkus-azure-functions-http` extension handles all of the work to deploy to Azure.
+By default, Quarkus uses the Azure CLI in the background to authenticate and deploy to Azure.
+If you have multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id` property in your `application.properties` file to the subscription you want to use.
+For other authentication mechanisms and deployment options, see the link:https://quarkus.io/guides/all-config[Quarkus configuration properties] guide.
 
-To run the deploy, after you build your project execute:
+To run the deploy command, after you build your project, use the following command:
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw quarkus:deploy
 ----
 
-or
+//hiding until Gradle is supported * For Gradle:
+//
+//[source,bash,subs=attributes+]
+//----
+//./gradlew --info deploy
+//----
 
-[source,bash,subs=attributes+]
-----
-./gradlew --info deploy
-----
+== Access your function
 
-If deployment is a success, Quarkus will output the endpoint URL of the example function to the console
-For Gradle, you must use the `--info` switch to see this output!
+When the deployment completes, Quarkus returns the endpoint of the example function to the console.
 
-i.e.
+.Example
+
 [source]
 ----
 [INFO] HTTP Trigger Urls:
 [INFO] 	 HttpExample : https://{appName}.azurewebsites.net/api/{*path}
 ----
 
-The URL to access the service would be something like
+//Hiding until Gradle is supported [NOTE]
+====
+For Gradle, you must use the `--info` switch to see this output.
+====
 
-https://{appName}.azurewebsites.net/api/hello
+In the example provided, the URL to access the service is:
 
+\https://{appName}.azurewebsites.net/api/hello
 
+:sectnums!:
+
+== Summary
+
+Congratulations!
+You have learned how to create, build, and deploy a sample Quarkus RESTEasy microservice to Azure Functions.
+
+== References
+
+* link:https://www.infoq.com/articles/azure-functions-quarkus/[Azure Functions in Quarkus 3]
+* xref:azure-integration-built-in.adoc[Quarkus integration with Microsoft Azure]
+* xref:azure-extensions-reference.adoc[Quarkus extensions for Azure integration]
+* xref:deploying-to-azure-cloud.adoc[Deploy a Quarkus native executable to Microsoft Azure]
+* xref:azure-functions.adoc[Integrate and deploy a Quarkus HTTP function to Azure Functions]
+* xref:funqy-azure-functions-http.adoc[Funqy HTTP Binding with Azure Functions]
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/[Azure Functions]
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/functions-create-first-quarkus[Deploy serverless Java apps with Quarkus on Azure Functions]

@@ -1,0 +1,58 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="azure-extensions"]
+= Quarkus extensions for Azure integration
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: cloud,integration
+
+Quarkus provides extensions to help you to integrate and deploy your code with some of the Microsoft Azure cloud-managed services and functions.
+Use the information provided here to determine which Quarkus Azure extensions to use when writing, building, and deploying your Quarkus native or JVM applications.
+
+You can find and download the available extensions for deploying and integrating with Azure on the link:https://code.quarkus.io/[Code with Quarkus] starter page in the main Quarkus portal.
+
+.Quarkus extensions for integrating with Azure
+[cols="15%a,55%a,10%,20%"]
+|===
+|Quarkus extension |Use to ... |Status |Learn more
+
+|link:https://quarkus.io/extensions/io.quarkus/quarkus-azure-functions[Azure Functions]
+
+`quarkus-azure-functions`
+|Build cloud-native Java applications by using Quarkus and Azure Functions.
+For example, you can write microservices with RESTEasy Reactive (our Jakarta REST implementation), Undertow (servlet), Reactive Routes, or Funqy HTTP and to make these microservices deployable to the link:https://learn.microsoft.com/en-us/azure/azure-functions/[Azure Functions] runtime.
+
+The `quarkus-azure-functions` extension also provides support for Azure Functions triggers and bindings, making it easy to integrate your Java code with other Azure services.
+Use when you want your function to be triggered by multiple sources, for example, `HttpTrigger`, `BlobTrigger``, and `CosmosDBTrigger`.
+|Preview
+|xref:azure-functions.adoc[Integrate and deploy an HTTP Trigger function to Azure Functions]
+
+|link:https://quarkus.io/extensions/io.quarkus/quarkus-azure-functions-http[Azure Functions HTTP]
+
+`quarkus-azure-functions-http`
+|Write functions in your Quarkus applications that are developed with and run on the Azure Functions cloud service.
+Use when you want your function to be triggered by HTTP requests only.
+Otherwise, use the `quarkus-azure-functions` extension.
+|Preview
+|xref:azure-functions-http.adoc[Integrate and deploy a RESTEasy Reactive endpoint to Azure Functions]
+
+|link:https://quarkus.io/extensions/io.quarkus/quarkus-funqy-http[Funqy HTTP Binding]
+
+`quarkus-funqy-http`
+|Write and deploy serverless Quarkus applications that use link:https://quarkus.io/guides/funqy[Quarkus Funqy HTTP binding] with Azure functions.
+
+link:https://quarkus.io/guides/funqy[Quarkus Funqy] provides a portable Java API to write functions, mapped to the HTTP binding model.
+This makes them deployable to various Function-as-a-Service (FaaS) environments such as link:https://learn.microsoft.com/en-us/azure/azure-functions/[Azure Functions].
+|Preview
+|xref:funqy-azure-functions-http.adoc[Funqy HTTP binding with Azure Functions]
+// What other Quarkus Azure extensions should we document here.
+
+|===
+
+== References
+
+* xref:azure-integration-built-in.adoc[Quarkus integration with Microsoft Azure]
+* link:https://www.infoq.com/articles/azure-functions-quarkus/[Azure Functions in Quarkus 3]

@@ -1,0 +1,103 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="azure-integration-built-in"]
+= Quarkus integration with Microsoft Azure
+include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: cloud,integration
+
+Quarkus provides built-in extensions for integrating your containerized Java applications with Microsoft Azure.
+You can use the cloud-hosting capabilities of Azure to run and scale your Quarkus applications in a Java runtime on the Azure App Service.
+You can also integrate your Quarkus application with Azure developer services, for example, Azure Database and Web services, and you can also write complex functions with Quarkus on Azure Functions.
+
+== Quarkus on Microsoft Azure
+
+Quarkus can be integrated with developer tools and managed services that are available on the Microsoft Azure cloud platform.
+
+You can deploy and host your containerized Quarkus applications to Microsoft Azure by using link:https://learn.microsoft.com/en-us/azure/container-apps/[Azure Container Apps] and then push them to the link:https://azure.microsoft.com/en-us/products/app-service/[Azure App Service] where they can run in a scalable Java runtime.
+
+You can also integrate your Quarkus IDE with Azure Developer services and create functions with link:https://learn.microsoft.com/en-us/azure/azure-functions/[Azure Functions].
+
+== Application deployment to Azure overview
+
+There are multiple paths for deploying a Quarkus application to the link:https://learn.microsoft.com/en-us/azure/?product=popular[Microsoft Azure] cloud platform.
+You can also use several different tools during that deployment to achieve the same goal, including the following items:
+
+* xref:cli-tooling.adoc[Quarkus CLI]
+* link:https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI]
+* link:https://azure.microsoft.com/en-us/get-started/azure-portal[Microsoft Azure Portal]
+
+The specific steps involved in deploying a Quarkus application on Azure depend on the deployment approach you prefer and the specific Azure services and tools you want to integrate with Quarkus.
+
+[NOTE]
+====
+The information in the Quarkus doc portal primarily focuses on the Quarkus built-in methods and support.
+For some steps in the process, you can also use the Azure CLI and portal tools to deploy your applications instead.
+For more information, see the link:https://learn.microsoft.com/en-us/azure/?product=popular[Microsoft Azure] documentation.
+====
+
+// TO DO: Create an overview diagram here of the key steps supported from the Quarkus perspective.
+
+One way to deploy a locally-developed Quarkus application is by using the built-in Quarkus extensions and deploying a Linux container image of your Quarkus application to a preconfigured link:https://learn.microsoft.com/en-us/azure/container-apps/[Azure Container Apps] instance.
+
+You then push your application to the link:https://azure.microsoft.com/en-us/products/app-service/[Azure Apps Service], which provides multiple cloud-hosting capabilities to run your applications, gain insights, and automatically scale resources according to needs.
+
+== Get runtime metrics and insights into your Quarkus applications
+
+Use and integrate the Quarkus open telemetry features to collect and analyze data to better understand how your Quarkus applications are running and performing on the Azure cloud platform.
+//Is a tutorial that shows you how to get Quarkus in-built metrics from apps specifically running on Azure needed here? Or do we have a link to a cloud-platform agnostic Quarkus tutorial about this topic?
+
+You can also use a combination of Azure cloud platform management tools to get insights, for example, link:https://learn.microsoft.com/en-us/azure/azure-monitor/overview[Azure Monitor] and link:https://azure.microsoft.com/en-us/products/devops[Azure DevOps].
+See also link:https://learn.microsoft.com/en-us/azure/azure-functions/monitor-functions?tabs=portal[Monitoring Azure Functions].
+
+== Application development with Azure overview
+
+To write code that integrates with Azure and can be deployed to the Azure Container registry or Azure Apps Service, Quarkus provides extensions, which you must add to your Quarkus code projects.
+For more details, see also xref:azure-extensions-reference.adoc[Quarkus extensions for Azure integration].
+
+You can also explore all of the available extensions for coding with Quarkus at link:https://quarkus.io/extensions/[Quarkus Extensions].
+
+=== Integration with Azure Functions
+
+Quarkus supports link:https://learn.microsoft.com/en-us/azure/azure-functions/[Azure Functions] by providing extensions, for example, `quarkus-azure-functions` and `quarkus-azure-functions-http`, which are specifically for building Azure Functions with Quarkus and integrating with Azure Developer services.
+See also, * link:https://www.infoq.com/articles/azure-functions-quarkus/[Azure Functions in Quarkus 3].
+
+In Microsoft Azure, every function must have a trigger, which defines how a function gets invoked and makes it run.
+Bindings make it possible to connect another resource to a function as input, output, or both.
+For more information see link:https://learn.microsoft.com/en-us/azure/azure-functions/functions-triggers-bindings?tabs=csharp#supported-bindings[Supported triggers and bindings] in the Microsoft Azure Functions product documentation.
+
+== Get started with Quarkus and Azure integration
+
+To help you get started with writing functions, integrating, or simply deploying your locally-developed Quarkus applications to Azure, see the following tutorials and supporting information.
+
+* xref:deploying-to-azure-cloud.adoc[Deploy a Quarkus native executable to Microsoft Azured]
+* xref:azure-functions.adoc[Integrate and deploy an HTTP Trigger function to Azure Functions]
+* xref:azure-functions-http.adoc[Integrate and deploy a RESTEasy Reactive endpoint to Azure Functions]
+* xref:funqy-azure-functions-http.adoc[Funqy HTTP Binding with Azure Functions]
+
+// What tutorials to describe and step through common Azure integration use cases/needs are missing from the Quarkus docs?  Please contact michelle-purcell.
+
+=== Other resources for getting started with Azure integration
+
+Explore the link:[Quarkus community documentation portal] and the link:[Microsoft website] for the most up-to-date learning resources and information.
+
+You can also find a wealth of information about writing and deploying Quarkus applications on the Microsoft Azure documentation and learning sites, including the following Quarkus tutorials:
+
+* link:https://quarkus.io/quarkus-workshops/super-heroes/index-azure.html[Deploy to Azure Container Apps Workshop]
+
+* link:https://learn.microsoft.com/en-us/events/jdconf-2022/zero-to-hero-in-azure-functions-with-java-americas-1[Zero to hero in Azure Functions with Java]
+
+* link:https://learn.microsoft.com/en-us/training/modules/deploy-java-quarkus-azure-container-app-postgres/[Deploy a Quarkus application connected to Azure for PostgreSQL database to Azure Container Apps]
+
+* link:https://learn.microsoft.com/en-us/azure/developer/java/eclipse-microprofile/deploy-microprofile-quarkus-java-app-with-maven-plugin[Deploy a Quarkus Web App to Azure App Service with Maven]
+
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/functions-create-first-quarkus[Deploy serverless Java apps with Quarkus on Azure Functions]
+
+
+== References
+
+* link:https://learn.microsoft.com/en-us/azure/?product=popular[Microsoft Azure documentation]
+* link:https://learn.microsoft.com/en-us/azure/container-instances/[Azure Container Instances (ACI)]

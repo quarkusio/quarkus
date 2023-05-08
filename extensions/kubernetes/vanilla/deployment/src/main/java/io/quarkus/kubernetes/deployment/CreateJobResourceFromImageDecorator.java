@@ -6,6 +6,8 @@ import static io.quarkus.kubernetes.deployment.Constants.JOB_API_VERSION;
 
 import java.util.List;
 
+import io.dekorate.kubernetes.annotation.JobCompletionMode;
+import io.dekorate.kubernetes.annotation.JobRestartPolicy;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
 import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
@@ -15,8 +17,8 @@ import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
  **/
 public class CreateJobResourceFromImageDecorator extends ResourceProvidingDecorator<KubernetesListBuilder> {
 
-    private static final String DEFAULT_RESTART_POLICY = "OnFailure";
-    private static final String DEFAULT_COMPLETION_MODE = "OnFailure";
+    private static final String DEFAULT_RESTART_POLICY = JobRestartPolicy.OnFailure.name();
+    private static final String DEFAULT_COMPLETION_MODE = JobCompletionMode.NonIndexed.name();
 
     private final String name;
     private final String image;

@@ -129,6 +129,18 @@ public class StreamTestCase {
     }
 
     @Test
+    public void testNdJsonMultiFromMulti2() {
+        when().get(uri.toString() + "streams/ndjson/multi2")
+                .then().statusCode(222)
+                // @formatter:off
+                .body(is("{\"name\":\"hello\"}\n"
+                        + "{\"name\":\"stef\"}\n"))
+                // @formatter:on
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_NDJSON))
+                .header("foo", "bar");
+    }
+
+    @Test
     public void testStreamJsonMultiFromMulti() {
         when().get(uri.toString() + "streams/stream-json/multi")
                 .then().statusCode(HttpStatus.SC_OK)
@@ -141,7 +153,7 @@ public class StreamTestCase {
 
     private void testJsonMulti(String path) {
         Client client = ClientBuilder.newBuilder().register(new JacksonBasicMessageBodyReader(new ObjectMapper())).build();
-        ;
+
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
         List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));

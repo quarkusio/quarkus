@@ -1,8 +1,10 @@
 package io.quarkus.resteasy.reactive.server.test.headers;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -10,6 +12,7 @@ import java.util.concurrent.CompletionStage;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.ResponseStatus;
@@ -155,6 +158,27 @@ public class ResponseHeaderTest {
                         "Keep-Alive", "dummy"));
     }
 
+    @Test
+    public void testReturnRestMulti3() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi3")
+                .then()
+                .statusCode(200)
+                .headers(Map.of(
+                        "header1", "foo",
+                        "header2", "bar"));
+
+        RestAssured
+                .given()
+                .get("/test/rest-multi3?h1=h1&h2=h2")
+                .then()
+                .statusCode(200)
+                .headers(Map.of(
+                        "header1", "h1",
+                        "header2", "h2"));
+    }
+
     @Path("/test")
     public static class TestResource {
 
@@ -232,21 +256,53 @@ public class ResponseHeaderTest {
         @GET
         @Path("/rest-multi")
         public RestMulti<String> getTestRestMulti() {
-            return RestMulti.from(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
+            return RestMulti.fromMultiData(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
                     .header("Keep-Alive", "bar").build();
         }
 
         @GET
         @Path("/rest-multi2")
         public RestMulti<String> getTestRestMulti2(@DefaultValue("bar") @RestQuery String keepAlive) {
-            return RestMulti.from(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
+            return RestMulti.fromMultiData(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
                     .header("Keep-Alive", keepAlive).build();
+        }
+
+        @GET
+        @Path("/rest-multi3")
+        @Produces("application/octet-stream")
+        public RestMulti<byte[]> getTestRestMulti3(@DefaultValue("foo") @RestQuery("h1") String header1,
+                @DefaultValue("bar") @RestQuery("h2") String header2) {
+            return RestMulti.fromUniResponse(getWrapper(header1, header2), Wrapper::getData, Wrapper::getHeaders);
         }
 
         private IllegalArgumentException createException() {
             IllegalArgumentException result = new IllegalArgumentException();
             result.setStackTrace(EMPTY_STACK_TRACE);
             return result;
+        }
+
+        private Uni<Wrapper> getWrapper(String header1, String header2) {
+            return Uni.createFrom().item(
+                    () -> new Wrapper(Multi.createFrom().item("test".getBytes(StandardCharsets.UTF_8)), header1, header2));
+        }
+
+        private static final class Wrapper {
+            public final Multi<byte[]> data;
+
+            public final Map<String, List<String>> headers;
+
+            public Wrapper(Multi<byte[]> data, String header1, String header2) {
+                this.data = data;
+                this.headers = Map.of("header1", List.of(header1), "header2", List.of(header2));
+            }
+
+            public Multi<byte[]> getData() {
+                return data;
+            }
+
+            public Map<String, List<String>> getHeaders() {
+                return headers;
+            }
         }
     }
 }

@@ -48,8 +48,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
     private static class SseMultiSubscriber extends AbstractMultiSubscriber {
 
-        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> customizers) {
-            super(requestContext, customizers);
+        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> staticCustomizers) {
+            super(requestContext, staticCustomizers);
         }
 
         @Override
@@ -60,7 +60,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
             } else {
                 event = new OutboundSseEventImpl.BuilderImpl().data(item).build();
             }
-            SseUtil.send(requestContext, event, customizers).whenComplete(new BiConsumer<Object, Throwable>() {
+            SseUtil.send(requestContext, event, staticCustomizers).whenComplete(new BiConsumer<Object, Throwable>() {
                 @Override
                 public void accept(Object v, Throwable t) {
                     if (t != null) {
@@ -83,8 +83,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
         private boolean isFirstItem = true;
 
         ChunkedStreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext,
-                List<StreamingResponseCustomizer> customizers, boolean json) {
-            super(requestContext, customizers, json);
+                List<StreamingResponseCustomizer> staticCustomizers, Publisher publisher, boolean json) {
+            super(requestContext, staticCustomizers, publisher, json);
         }
 
         @Override
@@ -112,9 +112,13 @@ public class PublisherResponseHandler implements ServerRestHandler {
         private String nextJsonPrefix;
         private boolean hadItem;
 
-        StreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> customizers,
+        private final Publisher publisher;
+
+        StreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext,
+                List<StreamingResponseCustomizer> staticCustomizers, Publisher publisher,
                 boolean json) {
-            super(requestContext, customizers);
+            super(requestContext, staticCustomizers);
+            this.publisher = publisher;
             this.json = json;
             this.nextJsonPrefix = "[";
             this.hadItem = false;
@@ -122,6 +126,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
         @Override
         public void onNext(Object item) {
+            List<StreamingResponseCustomizer> customizers = determineCustomizers(!hadItem);
             hadItem = true;
             StreamingUtil.send(requestContext, customizers, item, messagePrefix())
                     .handle(new BiFunction<Object, Throwable, Object>() {
@@ -146,10 +151,34 @@ public class PublisherResponseHandler implements ServerRestHandler {
                     });
         }
 
+        private List<StreamingResponseCustomizer> determineCustomizers(boolean isFirst) {
+            // we only need to obtain the customizers from the Publisher if it's the first time we are sending data and the Publisher has customizable data
+            // at this point no matter the type of RestMulti we can safely obtain the headers and status
+            if (isFirst && (publisher instanceof RestMulti)) {
+                RestMulti<?> restMulti = (RestMulti<?>) publisher;
+                Map<String, List<String>> headers = restMulti.getHeaders();
+                Integer status = restMulti.getStatus();
+                if (headers.isEmpty() && (status == null)) {
+                    return staticCustomizers;
+                }
+                List<StreamingResponseCustomizer> result = new ArrayList<>(staticCustomizers.size() + 2);
+                result.addAll(staticCustomizers); // these are added first so that the result specific values will take precedence if there are conflicts
+                if (!headers.isEmpty()) {
+                    result.add(new StreamingResponseCustomizer.AddHeadersCustomizer(headers));
+                }
+                if (status != null) {
+                    result.add(new StreamingResponseCustomizer.StatusCustomizer(status));
+                }
+                return result;
+            }
+
+            return staticCustomizers;
+        }
+
         @Override
         public void onComplete() {
             if (!hadItem) {
-                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), customizers);
+                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), staticCustomizers);
             }
             if (json) {
                 String postfix = onCompleteText();
@@ -161,6 +190,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
             } else {
                 super.onComplete();
             }
+
         }
 
         protected String onCompleteText() {
@@ -184,12 +214,13 @@ public class PublisherResponseHandler implements ServerRestHandler {
     static abstract class AbstractMultiSubscriber implements Subscriber<Object> {
         protected Subscription subscription;
         protected ResteasyReactiveRequestContext requestContext;
-        protected List<StreamingResponseCustomizer> customizers;
+        protected List<StreamingResponseCustomizer> staticCustomizers;
         private boolean weClosed = false;
 
-        AbstractMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> customizers) {
+        AbstractMultiSubscriber(ResteasyReactiveRequestContext requestContext,
+                List<StreamingResponseCustomizer> staticCustomizers) {
             this.requestContext = requestContext;
-            this.customizers = customizers;
+            this.staticCustomizers = staticCustomizers;
             // let's make sure we never restart by accident, also make sure we're not marked as completed
             requestContext.restart(AWOL, true);
             requestContext.serverResponse().addCloseHandler(() -> {
@@ -296,37 +327,14 @@ public class PublisherResponseHandler implements ServerRestHandler {
     }
 
     private void handleChunkedStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
-        result.subscribe(new ChunkedStreamingMultiSubscriber(requestContext, determineCustomizers(result), json));
-    }
-
-    private List<StreamingResponseCustomizer> determineCustomizers(Publisher<?> publisher) {
-        if (publisher instanceof RestMulti) {
-            RestMulti<?> restMulti = (RestMulti<?>) publisher;
-            Map<String, List<String>> headers = restMulti.getHeaders();
-            Integer status = restMulti.getStatus();
-            if (headers.isEmpty() && (status == null)) {
-                return streamingResponseCustomizers;
-            }
-            List<StreamingResponseCustomizer> result = new ArrayList<>(streamingResponseCustomizers.size() + 2);
-            result.addAll(streamingResponseCustomizers); // these are added first so that the result specific values will take precedence if there are conflicts
-            if (!headers.isEmpty()) {
-                result.add(new StreamingResponseCustomizer.AddHeadersCustomizer(headers));
-            }
-            if (status != null) {
-                result.add(new StreamingResponseCustomizer.StatusCustomizer(status));
-            }
-            return result;
-        }
-
-        return streamingResponseCustomizers;
+        result.subscribe(new ChunkedStreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json));
     }
 
     private void handleStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
-        result.subscribe(new StreamingMultiSubscriber(requestContext, determineCustomizers(result), json));
+        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json));
     }
 
     private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {
-        List<StreamingResponseCustomizer> streamingResponseCustomizers = determineCustomizers(result);
         SseUtil.setHeaders(requestContext, requestContext.serverResponse(), streamingResponseCustomizers);
         requestContext.suspend();
         requestContext.serverResponse().write(EMPTY_BUFFER, new Consumer<Throwable>() {

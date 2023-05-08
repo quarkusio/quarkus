@@ -1,8 +1,10 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test.streams;
 
 import java.io.IOException;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import jakarta.ws.rs.GET;
@@ -19,6 +21,7 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Path("streams")
 public class StreamResource {
@@ -98,7 +101,7 @@ public class StreamResource {
     @GET
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiJson() {
-        return RestMulti.from(Multi.createFrom().items(new Message("hello"), new Message("stef")))
+        return RestMulti.fromMultiData(Multi.createFrom().items(new Message("hello"), new Message("stef")))
                 .header("foo", "bar").build();
     }
 
@@ -112,9 +115,22 @@ public class StreamResource {
     @Path("ndjson/multi")
     @GET
     @Produces(RestMediaType.APPLICATION_NDJSON)
-    @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiNdJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
+    }
+
+    @Path("ndjson/multi2")
+    @GET
+    @Produces(RestMediaType.APPLICATION_NDJSON)
+    public Multi<Message> multiNdJson2() {
+
+        return RestMulti.fromUniResponse(
+                Uni.createFrom().item(
+                        () -> new Wrapper(Multi.createFrom().items(new Message("hello"), new Message("stef")),
+                                new AbstractMap.SimpleEntry<>("foo", "bar"), 222)),
+                Wrapper::getData,
+                Wrapper::getHeaders,
+                Wrapper::getStatus);
     }
 
     @Path("stream-json/multi")
@@ -137,9 +153,34 @@ public class StreamResource {
         for (int i = 0; i < 5000; i++) {
             ids.add(UUID.randomUUID());
         }
-        return RestMulti.from(Multi.createFrom().items(ids::stream)
+        return RestMulti.fromMultiData(Multi.createFrom().items(ids::stream)
                 .onItem().transform(id -> new Message(id.toString()))
                 .onOverflow().buffer(81920)).header("foo", "bar").build();
+    }
+
+    private static final class Wrapper {
+        public final Multi<Message> data;
+
+        public final Map<String, List<String>> headers;
+        private final Integer status;
+
+        public Wrapper(Multi<Message> data, Map.Entry<String, String> header, Integer status) {
+            this.data = data;
+            this.status = status;
+            this.headers = Map.of(header.getKey(), List.of(header.getValue()));
+        }
+
+        public Multi<Message> getData() {
+            return data;
+        }
+
+        public Map<String, List<String>> getHeaders() {
+            return headers;
+        }
+
+        public Integer getStatus() {
+            return status;
+        }
     }
 
 }

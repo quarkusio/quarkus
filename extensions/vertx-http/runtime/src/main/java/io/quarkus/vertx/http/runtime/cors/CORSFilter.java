@@ -29,12 +29,14 @@ public class CORSFilter implements Handler<RoutingContext> {
     final CORSConfig corsConfig;
 
     private final boolean wildcardOrigin;
+    private final boolean wildcardMethod;
     private final List<Pattern> allowedOriginsRegex;
     private final List<HttpMethod> configuredHttpMethods;
 
     public CORSFilter(CORSConfig corsConfig) {
         this.corsConfig = corsConfig;
         this.wildcardOrigin = isOriginConfiguredWithWildcard(this.corsConfig.origins);
+        this.wildcardMethod = isConfiguredWithWildcard(corsConfig.methods);
         this.allowedOriginsRegex = this.wildcardOrigin ? List.of() : parseAllowedOriginsRegex(this.corsConfig.origins);
         this.configuredHttpMethods = createConfiguredHttpMethods(this.corsConfig.methods);
     }
@@ -139,7 +141,7 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     private void processMethods(HttpServerResponse response, String allowMethodsValue) {
-        if (isConfiguredWithWildcard(corsConfig.methods)) {
+        if (wildcardMethod) {
             response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethodsValue);
         } else {
 
@@ -175,7 +177,7 @@ public class CORSFilter implements Handler<RoutingContext> {
             boolean allowsMethod = true;
             if (requestedMethods != null) {
                 processMethods(response, requestedMethods);
-                if (!corsConfig.methods.isEmpty()) {
+                if (!wildcardMethod && !corsConfig.methods.isEmpty()) {
                     allowsMethod = corsConfig.methods.get().contains(requestedMethods);
                 }
             }
@@ -214,10 +216,15 @@ public class CORSFilter implements Handler<RoutingContext> {
                         String.join(",", exposedHeaders.orElse(Collections.emptyList())));
             }
 
-            if (!allowsOrigin || !allowsMethod) {
-                LOG.debug("Origin or method is not allowed");
+            if (!allowsOrigin) {
+                LOG.debug("Origin is not allowed");
                 response.setStatusCode(403);
-                response.setStatusMessage("CORS Rejected - Invalid origin or method");
+                response.setStatusMessage("CORS Rejected - Invalid origin");
+                response.end();
+            } else if (!allowsMethod) {
+                LOG.debug("Method is not allowed");
+                response.setStatusCode(403);
+                response.setStatusMessage("CORS Rejected - Invalid method");
                 response.end();
             } else if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
                 LOG.debug("Preflight request has completed");

@@ -8,10 +8,15 @@ import jakarta.ws.rs.core.Context
 import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.core.UriInfo
+import java.util.concurrent.atomic.AtomicReference
 import org.jboss.resteasy.reactive.RestHeader
 
 @Path("/greeting")
 class GreetingResource(val headers: HttpHeaders) {
+
+    companion object {
+        val MY_PROPERTY = AtomicReference("unset")
+    }
 
     @GET
     suspend fun testSuspend(@RestHeader("firstName") firstName: String): Greeting {
@@ -28,6 +33,12 @@ class GreetingResource(val headers: HttpHeaders) {
         greeting: Greeting,
         @Context uriInfo: UriInfo
     ) = Response.ok(greeting).build()
+
+    @GET
+    @Path("prop")
+    fun testProp(): String? {
+        return MY_PROPERTY.get()
+    }
 }
 
 data class Greeting(val message: String)

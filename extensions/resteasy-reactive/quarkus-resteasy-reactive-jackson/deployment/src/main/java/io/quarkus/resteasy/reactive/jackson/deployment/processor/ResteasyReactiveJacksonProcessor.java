@@ -66,6 +66,7 @@ import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
+import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -98,6 +99,11 @@ public class ResteasyReactiveJacksonProcessor {
     @BuildStep
     ResteasyReactiveJacksonProviderDefinedBuildItem jacksonRegistered() {
         return new ResteasyReactiveJacksonProviderDefinedBuildItem();
+    }
+
+    @BuildStep
+    ReinitializeVertxJsonBuildItem vertxJson() {
+        return new ReinitializeVertxJsonBuildItem();
     }
 
     @BuildStep

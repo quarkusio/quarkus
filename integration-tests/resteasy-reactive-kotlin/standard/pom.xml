@@ -275,12 +275,18 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <environmentVariables>
+                                <TEST_PROP>prod</TEST_PROP>
+                            </environmentVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <environmentVariables>
+                                <TEST_PROP>prod</TEST_PROP>
+                            </environmentVariables>
                         </configuration>
                     </plugin>
                 </plugins>

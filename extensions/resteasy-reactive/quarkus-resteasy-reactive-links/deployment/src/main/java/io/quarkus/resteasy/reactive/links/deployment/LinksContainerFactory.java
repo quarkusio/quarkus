@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.links.deployment;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETABLE_FUTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 
@@ -161,6 +162,7 @@ final class LinksContainerFactory {
                         || COMPLETABLE_FUTURE.equals(parameterizedType.name())
                         || UNI.equals(parameterizedType.name())
                         || MULTI.equals(parameterizedType.name())
+                        || REST_MULTI.equals(parameterizedType.name())
                         || REST_RESPONSE.equals(parameterizedType.name())) {
                     return parameterizedType.arguments().get(0);
                 }

@@ -165,8 +165,6 @@ public class SseUtil extends CommonSseUtil {
             for (int i = 0; i < customizers.size(); i++) {
                 customizers.get(i).customize(response);
             }
-            // FIXME: other headers?
-
         }
     }
 }

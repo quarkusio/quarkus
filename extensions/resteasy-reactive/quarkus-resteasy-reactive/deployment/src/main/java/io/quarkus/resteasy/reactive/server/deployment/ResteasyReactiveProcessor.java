@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUBLISHER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
 
 import java.io.File;
 import java.io.IOException;
@@ -553,6 +554,7 @@ public class ResteasyReactiveProcessor {
 
                             if (paramsRequireReflection ||
                                     MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
+                                    REST_MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     PUBLISHER.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     filtersAccessResourceMethod(resourceInterceptorsBuildItem.getResourceInterceptors()) ||
                                     entry.additionalRegisterClassForReflectionCheck()) {

@@ -7,6 +7,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
+import org.jboss.resteasy.reactive.RestMulti;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -93,6 +94,24 @@ public class ResponseStatusTest {
                 .statusCode(500);
     }
 
+    @Test
+    public void testReturnRestMulti() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi")
+                .then()
+                .statusCode(210);
+    }
+
+    @Test
+    public void testReturnRestMulti2() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi2")
+                .then()
+                .statusCode(211);
+    }
+
     @Path("/test")
     public static class TestResource {
 
@@ -152,6 +171,19 @@ public class ResponseStatusTest {
         @Path("/exception_plain")
         public String throwExceptionPlain() {
             throw createException();
+        }
+
+        @ResponseStatus(202)
+        @GET
+        @Path("/rest-multi")
+        public RestMulti<String> getTestRestMulti() {
+            return RestMulti.from(Multi.createFrom().item("test")).status(210).build();
+        }
+
+        @GET
+        @Path("/rest-multi2")
+        public RestMulti<String> getTestRestMulti2() {
+            return RestMulti.from(Multi.createFrom().item("test")).status(211).build();
         }
 
         private IllegalArgumentException createException() {

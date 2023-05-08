@@ -14,6 +14,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 
 import java.io.Closeable;
@@ -204,7 +205,7 @@ public class JaxrsClientReactiveProcessor {
 
     private static final DotName NOT_BODY = DotName.createSimple("io.quarkus.rest.client.reactive.NotBody");
 
-    private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI);
+    private static final Set<DotName> ASYNC_RETURN_TYPES = Set.of(COMPLETION_STAGE, UNI, MULTI, REST_MULTI);
     public static final DotName BYTE = DotName.createSimple(Byte.class.getName());
     public static final MethodDescriptor MULTIPART_RESPONSE_DATA_ADD_FILLER = MethodDescriptor
             .ofMethod(MultipartResponseDataBase.class, "addFiller", void.class, FieldFiller.class);
@@ -1937,7 +1938,7 @@ public class JaxrsClientReactiveProcessor {
             if (ASYNC_RETURN_TYPES.contains(paramType.name())) {
                 returnCategory = paramType.name().equals(COMPLETION_STAGE)
                         ? ReturnCategory.COMPLETION_STAGE
-                        : paramType.name().equals(MULTI)
+                        : paramType.name().equals(MULTI) || paramType.name().equals(REST_MULTI)
                                 ? ReturnCategory.MULTI
                                 : ReturnCategory.UNI;
 
@@ -2738,6 +2739,7 @@ public class JaxrsClientReactiveProcessor {
         COMPLETION_STAGE,
         UNI,
         MULTI,
+        REST_MULTI,
         COROUTINE
     }
 

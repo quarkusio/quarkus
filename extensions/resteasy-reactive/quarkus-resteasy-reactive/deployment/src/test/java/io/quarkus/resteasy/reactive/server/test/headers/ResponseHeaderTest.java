@@ -7,11 +7,14 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.ResponseStatus;
+import org.jboss.resteasy.reactive.RestMulti;
+import org.jboss.resteasy.reactive.RestQuery;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -118,6 +121,40 @@ public class ResponseHeaderTest {
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
 
+    @Test
+    public void testReturnRestMulti() {
+        Map<String, String> expectedHeaders = Map.of(
+                "Access-Control-Allow-Origin", "foo",
+                "Keep-Alive", "bar");
+        RestAssured
+                .given()
+                .get("/test/rest-multi")
+                .then()
+                .statusCode(200)
+                .headers(expectedHeaders);
+    }
+
+    @Test
+    public void testReturnRestMulti2() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi2")
+                .then()
+                .statusCode(200)
+                .headers(Map.of(
+                        "Access-Control-Allow-Origin", "foo",
+                        "Keep-Alive", "bar"));
+
+        RestAssured
+                .given()
+                .get("/test/rest-multi2?keepAlive=dummy")
+                .then()
+                .statusCode(200)
+                .headers(Map.of(
+                        "Access-Control-Allow-Origin", "foo",
+                        "Keep-Alive", "dummy"));
+    }
+
     @Path("/test")
     public static class TestResource {
 
@@ -188,6 +225,22 @@ public class ResponseHeaderTest {
         @Path("/exception_plain")
         public String throwExceptionPlain() {
             throw createException();
+        }
+
+        @ResponseHeader(name = "Access-Control-Allow-Origin", value = "*")
+        @ResponseHeader(name = "Keep-Alive", value = "timeout=5, max=997")
+        @GET
+        @Path("/rest-multi")
+        public RestMulti<String> getTestRestMulti() {
+            return RestMulti.from(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
+                    .header("Keep-Alive", "bar").build();
+        }
+
+        @GET
+        @Path("/rest-multi2")
+        public RestMulti<String> getTestRestMulti2(@DefaultValue("bar") @RestQuery String keepAlive) {
+            return RestMulti.from(Multi.createFrom().item("test")).header("Access-Control-Allow-Origin", "foo")
+                    .header("Keep-Alive", keepAlive).build();
         }
 
         private IllegalArgumentException createException() {

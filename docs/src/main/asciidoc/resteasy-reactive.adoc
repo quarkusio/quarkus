@@ -933,6 +933,38 @@ impression that you can set headers or HTTP status codes, which is not true afte
 response.
 Exception mappers are also not invoked because part of the response may already have been written.
 
+[TIP]
+====
+If you need to set custom HTTP headers and / or the HTTP response, then you can return `org.jboss.resteasy.reactive.RestMulti` instead, like this:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Multi;
+import org.jboss.resteasy.reactive.RestMulti;
+
+@Path("logs")
+public class Endpoint {
+
+    @Inject
+    @Channel("log-out")
+    Multi<String> logs;
+
+    @GET
+    public Multi<String> streamLogs() {
+        return RestMulti.from(logs).status(222).header("foo", "bar").build();
+    }
+}
+----
+====
+
 === Server-Sent Event (SSE) support
 
 If you want to stream JSON objects in your response, you can use

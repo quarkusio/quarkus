@@ -13,6 +13,7 @@ import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseBroadcaster;
 import jakarta.ws.rs.sse.SseEventSink;
 
+import org.jboss.resteasy.reactive.RestMulti;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
@@ -97,7 +98,8 @@ public class StreamResource {
     @GET
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<Message> multiJson() {
-        return Multi.createFrom().items(new Message("hello"), new Message("stef"));
+        return RestMulti.from(Multi.createFrom().items(new Message("hello"), new Message("stef")))
+                .header("foo", "bar").build();
     }
 
     @Path("json/multi2")
@@ -135,9 +137,9 @@ public class StreamResource {
         for (int i = 0; i < 5000; i++) {
             ids.add(UUID.randomUUID());
         }
-        return Multi.createFrom().items(ids::stream)
+        return RestMulti.from(Multi.createFrom().items(ids::stream)
                 .onItem().transform(id -> new Message(id.toString()))
-                .onOverflow().buffer(81920);
+                .onOverflow().buffer(81920)).header("foo", "bar").build();
     }
 
 }

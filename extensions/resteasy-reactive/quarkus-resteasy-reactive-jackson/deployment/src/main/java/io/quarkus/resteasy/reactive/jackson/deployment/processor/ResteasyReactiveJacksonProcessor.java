@@ -308,6 +308,7 @@ public class ResteasyReactiveJacksonProcessor {
                     effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
                     effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
                     effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
+                    effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
                     effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI)) {
                 if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                     continue;

@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.server.handlers;
 import static org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl.EMPTY_BUFFER;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.sse.OutboundSseEvent;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestMulti;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -294,14 +296,37 @@ public class PublisherResponseHandler implements ServerRestHandler {
     }
 
     private void handleChunkedStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
-        result.subscribe(new ChunkedStreamingMultiSubscriber(requestContext, streamingResponseCustomizers, json));
+        result.subscribe(new ChunkedStreamingMultiSubscriber(requestContext, determineCustomizers(result), json));
+    }
+
+    private List<StreamingResponseCustomizer> determineCustomizers(Publisher<?> publisher) {
+        if (publisher instanceof RestMulti) {
+            RestMulti<?> restMulti = (RestMulti<?>) publisher;
+            Map<String, List<String>> headers = restMulti.getHeaders();
+            Integer status = restMulti.getStatus();
+            if (headers.isEmpty() && (status == null)) {
+                return streamingResponseCustomizers;
+            }
+            List<StreamingResponseCustomizer> result = new ArrayList<>(streamingResponseCustomizers.size() + 2);
+            result.addAll(streamingResponseCustomizers); // these are added first so that the result specific values will take precedence if there are conflicts
+            if (!headers.isEmpty()) {
+                result.add(new StreamingResponseCustomizer.AddHeadersCustomizer(headers));
+            }
+            if (status != null) {
+                result.add(new StreamingResponseCustomizer.StatusCustomizer(status));
+            }
+            return result;
+        }
+
+        return streamingResponseCustomizers;
     }
 
     private void handleStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
-        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, json));
+        result.subscribe(new StreamingMultiSubscriber(requestContext, determineCustomizers(result), json));
     }
 
     private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {
+        List<StreamingResponseCustomizer> streamingResponseCustomizers = determineCustomizers(result);
         SseUtil.setHeaders(requestContext, requestContext.serverResponse(), streamingResponseCustomizers);
         requestContext.suspend();
         requestContext.serverResponse().write(EMPTY_BUFFER, new Consumer<Throwable>() {

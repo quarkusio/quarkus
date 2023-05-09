@@ -309,10 +309,10 @@ public class AppCDSBuildStep {
             command.addAll(javaArgs);
             if (isFastJar) {
                 command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR).toAbsolutePath()
-                                .toString());
+                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                                .getFileName().toString());
             } else {
-                command.add(jarResult.getPath().toAbsolutePath().toString());
+                command.add(jarResult.getPath().getFileName().toString());
             }
         }
 

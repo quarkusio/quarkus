@@ -14,9 +14,21 @@ public class OsInfoContributor implements InfoContributor {
     @Override
     public Map<String, Object> data() {
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("name", System.getProperty("os.name"));
-        result.put("version", System.getProperty("os.version"));
-        result.put("arch", System.getProperty("os.arch"));
+        result.put("name", getName());
+        result.put("version", getVersion());
+        result.put("arch", getArchitecture());
         return result;
+    }
+
+    static String getName() {
+        return System.getProperty("os.name");
+    }
+
+    static String getVersion() {
+        return System.getProperty("os.version");
+    }
+
+    static String getArchitecture() {
+        return System.getProperty("os.arch");
     }
 }

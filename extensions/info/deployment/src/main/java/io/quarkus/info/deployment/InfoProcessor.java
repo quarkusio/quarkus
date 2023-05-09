@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import jakarta.inject.Singleton;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
@@ -23,13 +25,19 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.info.BuildInfo;
+import io.quarkus.info.GitInfo;
+import io.quarkus.info.JavaInfo;
+import io.quarkus.info.OsInfo;
 import io.quarkus.info.deployment.spi.InfoBuildTimeContributorBuildItem;
 import io.quarkus.info.deployment.spi.InfoBuildTimeValuesBuildItem;
 import io.quarkus.info.runtime.InfoRecorder;
@@ -43,18 +51,22 @@ public class InfoProcessor {
     private static final Logger log = Logger.getLogger(InfoProcessor.class);
 
     @BuildStep(onlyIf = GitInInfoEndpointEnabled.class)
-    InfoBuildTimeValuesBuildItem gitInfo(InfoBuildTimeConfig config,
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void gitInfo(InfoBuildTimeConfig config,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem) {
+            OutputTargetBuildItem outputTargetBuildItem,
+            BuildProducer<InfoBuildTimeValuesBuildItem> valuesProducer,
+            BuildProducer<SyntheticBeanBuildItem> beanProducer,
+            InfoRecorder recorder) {
         File projectRoot = highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem);
         if (projectRoot == null) {
             log.debug("Unable to determine project directory");
-            return null;
+            return;
         }
         RepositoryBuilder repositoryBuilder = new RepositoryBuilder().findGitDir(projectRoot);
         if (repositoryBuilder.getGitDir() == null) {
             log.debug("Project is not checked in to git");
-            return null;
+            return;
         }
         try (Repository repository = repositoryBuilder.build()) {
 
@@ -65,11 +77,14 @@ public class InfoProcessor {
             boolean addFullInfo = config.git().mode() == InfoBuildTimeConfig.Git.Mode.FULL;
 
             Map<String, Object> data = new LinkedHashMap<>();
-            data.put("branch", repository.getBranch());
+            String branch = repository.getBranch();
+            data.put("branch", branch);
 
             Map<String, Object> commit = new LinkedHashMap<>();
-            commit.put("id", latestCommit.getName());
-            commit.put("time", formatDate(commitDate, commitTimeZone));
+            String latestCommitId = latestCommit.getName();
+            commit.put("id", latestCommitId);
+            String latestCommitTime = formatDate(commitDate, commitTimeZone);
+            commit.put("time", latestCommitTime);
 
             if (addFullInfo) {
 
@@ -85,7 +100,7 @@ public class InfoProcessor {
                 commit.put("user", user);
 
                 Map<String, Object> id = new LinkedHashMap<>();
-                id.put("full", latestCommit.getName());
+                id.put("full", latestCommitId);
                 id.put("abbrev", latestCommit.abbreviate(13).name());
                 Map<String, String> message = new LinkedHashMap<>();
                 message.put("full", latestCommit.getFullMessage().trim());
@@ -102,10 +117,14 @@ public class InfoProcessor {
                 data.put("build", obtainBuildInfo(curateOutcomeBuildItem, repository));
             }
 
-            return new InfoBuildTimeValuesBuildItem("git", data);
+            valuesProducer.produce(new InfoBuildTimeValuesBuildItem("git", data));
+            beanProducer.produce(SyntheticBeanBuildItem.configure(GitInfo.class)
+                    .supplier(recorder.gitInfoSupplier(branch, latestCommitId, latestCommitTime))
+                    .scope(Singleton.class)
+                    .setRuntimeInit()
+                    .done());
         } catch (Exception e) {
             log.debug("Unable to determine git information", e);
-            return null;
         }
     }
 
@@ -185,15 +204,30 @@ public class InfoProcessor {
     }
 
     @BuildStep(onlyIf = BuildInInfoEndpointEnabled.class)
-    InfoBuildTimeValuesBuildItem buildInfo(CurateOutcomeBuildItem curateOutcomeBuildItem, InfoBuildTimeConfig config) {
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void buildInfo(CurateOutcomeBuildItem curateOutcomeBuildItem,
+            InfoBuildTimeConfig config,
+            BuildProducer<InfoBuildTimeValuesBuildItem> valuesProducer,
+            BuildProducer<SyntheticBeanBuildItem> beanProducer,
+            InfoRecorder recorder) {
         ApplicationModel applicationModel = curateOutcomeBuildItem.getApplicationModel();
         ResolvedDependency appArtifact = applicationModel.getAppArtifact();
         Map<String, Object> buildData = new LinkedHashMap<>();
-        buildData.put("group", appArtifact.getGroupId());
-        buildData.put("artifact", appArtifact.getArtifactId());
-        buildData.put("version", appArtifact.getVersion());
-        buildData.put("time", ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now())); // TODO: what is the proper notion of build time?
-        return new InfoBuildTimeValuesBuildItem("build", finalBuildData(buildData, config.build()));
+        String group = appArtifact.getGroupId();
+        buildData.put("group", group);
+        String artifact = appArtifact.getArtifactId();
+        buildData.put("artifact", artifact);
+        String version = appArtifact.getVersion();
+        buildData.put("version", version);
+        String time = ISO_OFFSET_DATE_TIME.format(OffsetDateTime.now());
+        buildData.put("time", time); // TODO: what is the proper notion of build time?
+        Map<String, Object> data = finalBuildData(buildData, config.build());
+        valuesProducer.produce(new InfoBuildTimeValuesBuildItem("build", data));
+        beanProducer.produce(SyntheticBeanBuildItem.configure(BuildInfo.class)
+                .supplier(recorder.buildInfoSupplier(group, artifact, version, time))
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .done());
     }
 
     private Map<String, Object> finalBuildData(Map<String, Object> buildData, InfoBuildTimeConfig.Build buildConfig) {
@@ -207,14 +241,28 @@ public class InfoProcessor {
 
     @BuildStep(onlyIf = OsInInfoEndpointEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    InfoBuildTimeContributorBuildItem osInfo(InfoRecorder recorder) {
-        return new InfoBuildTimeContributorBuildItem(recorder.osInfoContributor());
+    void osInfo(InfoRecorder recorder,
+            BuildProducer<InfoBuildTimeContributorBuildItem> valuesProducer,
+            BuildProducer<SyntheticBeanBuildItem> beanProducer) {
+        valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.osInfoContributor()));
+        beanProducer.produce(SyntheticBeanBuildItem.configure(OsInfo.class)
+                .supplier(recorder.osInfoSupplier())
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .done());
     }
 
     @BuildStep(onlyIf = JavaInInfoEndpointEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    InfoBuildTimeContributorBuildItem javaInfo(InfoRecorder recorder) {
-        return new InfoBuildTimeContributorBuildItem(recorder.javaInfoContributor());
+    void javaInfo(InfoRecorder recorder,
+            BuildProducer<InfoBuildTimeContributorBuildItem> valuesProducer,
+            BuildProducer<SyntheticBeanBuildItem> beanProducer) {
+        valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.javaInfoContributor()));
+        beanProducer.produce(SyntheticBeanBuildItem.configure(JavaInfo.class)
+                .supplier(recorder.javaInfoSupplier())
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .done());
     }
 
     @BuildStep(onlyIf = InfoEndpointEnabled.class)

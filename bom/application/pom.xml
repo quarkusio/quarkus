@@ -59,7 +59,7 @@
         <smallrye-config.version>3.2.1</smallrye-config.version>
         <smallrye-health.version>4.0.1</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>3.3.2</smallrye-open-api.version>
+        <smallrye-open-api.version>3.3.4</smallrye-open-api.version>
         <smallrye-graphql.version>2.1.3</smallrye-graphql.version> <!-- keep in sync with graphql-java -->
         <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>6.2.2</smallrye-fault-tolerance.version>
@@ -3713,7 +3713,7 @@
                 <version>${es-module-shims.version}</version>
                 <scope>runtime</scope>
             </dependency>
-            
+
             <!-- Additional dependencies, keep in alphabetical order -->
             <dependency>
                 <groupId>biz.paluch.logging</groupId>

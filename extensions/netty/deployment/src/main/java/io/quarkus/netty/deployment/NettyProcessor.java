@@ -180,9 +180,10 @@ class NettyProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerEventLoopBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
-            NettyRecorder recorder) {
-        Supplier<Object> boss;
-        Supplier<Object> main;
+            NettyRecorder recorder,
+            BuildProducer<EventLoopGroupBuildItem> eventLoopGroups) {
+        Supplier<EventLoopGroup> boss;
+        Supplier<EventLoopGroup> main;
         if (loopSupplierBuildItem.isPresent()) {
             boss = (Supplier) loopSupplierBuildItem.get().getBossSupplier();
             main = (Supplier) loopSupplierBuildItem.get().getMainSupplier();
@@ -209,6 +210,8 @@ class NettyProcessor {
                 .unremovable()
                 .setRuntimeInit()
                 .done());
+
+        eventLoopGroups.produce(new EventLoopGroupBuildItem(boss, main));
     }
 
     @BuildStep

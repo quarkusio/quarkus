@@ -4,6 +4,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -33,8 +34,14 @@ class ElasticsearchJavaClientProcessor {
     }
 
     @BuildStep
-    ReflectiveClassBuildItem reflectiveClass() {
+    ReflectiveClassBuildItem jsonProvider() {
         return ReflectiveClassBuildItem.builder("org.eclipse.parsson.JsonProviderImpl").build();
+    }
+
+    @BuildStep
+    NativeImageFeatureBuildItem enableElasticsearchJavaClientFeature() {
+        return new NativeImageFeatureBuildItem(
+                "io.quarkus.elasticsearch.javaclient.runtime.graalvm.ElasticsearchJavaClientFeature");
     }
 
 }

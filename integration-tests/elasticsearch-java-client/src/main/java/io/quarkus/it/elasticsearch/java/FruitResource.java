@@ -46,4 +46,12 @@ public class FruitResource {
         }
     }
 
+    // This is just for tests, as it's bad practice to allow REST API callers
+    // to just inject whatever JSON they like into your Elasticsearch requests.
+    @GET
+    @Path("/search/unsafe")
+    public List<Fruit> searchUnsafe(@QueryParam("json") String json) throws IOException {
+        return fruitService.searchWithJson(json);
+    }
+
 }

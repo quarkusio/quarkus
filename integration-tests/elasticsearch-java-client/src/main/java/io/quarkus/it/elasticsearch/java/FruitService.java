@@ -1,6 +1,7 @@
 package io.quarkus.it.elasticsearch.java;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,6 +51,16 @@ public class FruitService {
                 b -> b.index("fruits")
                         .query(QueryBuilders.match().field(term).query(FieldValue.of(match)).build()._toQuery()));
 
+        SearchResponse<Fruit> searchResponse = client.search(searchRequest, Fruit.class);
+        HitsMetadata<Fruit> hits = searchResponse.hits();
+        return hits.hits().stream().map(hit -> hit.source()).collect(Collectors.toList());
+    }
+
+    public List<Fruit> searchWithJson(String json) throws IOException {
+        SearchRequest searchRequest;
+        try (var jsonReader = new StringReader(json)) {
+            searchRequest = SearchRequest.of(b -> b.index("fruits").withJson(jsonReader));
+        }
         SearchResponse<Fruit> searchResponse = client.search(searchRequest, Fruit.class);
         HitsMetadata<Fruit> hits = searchResponse.hits();
         return hits.hits().stream().map(hit -> hit.source()).collect(Collectors.toList());

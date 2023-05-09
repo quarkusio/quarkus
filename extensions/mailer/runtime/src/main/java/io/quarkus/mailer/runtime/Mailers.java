@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.inject.Singleton;
@@ -65,7 +66,10 @@ public class Mailers {
                     new MutinyMailerImpl(mutinyVertx, mutinyMailClient, mockMailbox,
                             mailersRuntimeConfig.defaultMailer.from.orElse(null),
                             mailersRuntimeConfig.defaultMailer.bounceAddress.orElse(null),
-                            mailersRuntimeConfig.defaultMailer.mock.orElse(launchMode.isDevOrTest())));
+                            mailersRuntimeConfig.defaultMailer.mock.orElse(launchMode.isDevOrTest()),
+                            mailersRuntimeConfig.defaultMailer.approvedRecipients.orElse(List.of()).stream()
+                                    .filter(p -> p != null).collect(Collectors.toList()),
+                            mailersRuntimeConfig.defaultMailer.logRejectedRecipients));
         }
 
         for (String name : mailerSupport.namedMailers) {
@@ -83,7 +87,10 @@ public class Mailers {
                     new MutinyMailerImpl(mutinyVertx, namedMutinyMailClient, namedMockMailbox,
                             namedMailerRuntimeConfig.from.orElse(null),
                             namedMailerRuntimeConfig.bounceAddress.orElse(null),
-                            namedMailerRuntimeConfig.mock.orElse(false)));
+                            namedMailerRuntimeConfig.mock.orElse(false),
+                            namedMailerRuntimeConfig.approvedRecipients.orElse(List.of()).stream()
+                                    .filter(p -> p != null).collect(Collectors.toList()),
+                            namedMailerRuntimeConfig.logRejectedRecipients));
         }
 
         this.clients = Collections.unmodifiableMap(localClients);

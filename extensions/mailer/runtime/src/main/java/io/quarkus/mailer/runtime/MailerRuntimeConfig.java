@@ -1,11 +1,14 @@
 package io.quarkus.mailer.runtime;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.regex.Pattern;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
 
 @ConfigGroup
 public class MailerRuntimeConfig {
@@ -210,4 +213,26 @@ public class MailerRuntimeConfig {
     @ConfigItem
     public NtlmConfig ntlm = new NtlmConfig();
 
+    /**
+     * Allows sending emails to these recipients only.
+     * <p>
+     * Approved recipients are compiled to a {@code Pattern} and must be a valid regular expression.
+     * The created {@code Pattern} is case-insensitive as emails are case insensitive.
+     * Provided patterns are trimmed before being compiled.
+     *
+     * @see {@link #logRejectedRecipients}
+     */
+    @ConfigItem
+    @ConvertWith(TrimmedPatternConverter.class)
+    public Optional<List<Pattern>> approvedRecipients = Optional.empty();
+
+    /**
+     * Log rejected recipients as warnings.
+     * <p>
+     * If false, the rejected recipients will be logged at the DEBUG level.
+     *
+     * @see {@link #approvedRecipients}
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean logRejectedRecipients = false;
 }

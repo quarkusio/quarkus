@@ -19,10 +19,12 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.IncludedBuild;
@@ -479,54 +481,10 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         // see https://github.com/quarkusio/quarkus/issues/20755
 
         final List<SourceDir> sourceDirs = new ArrayList<>(1);
-        project.getTasks().withType(AbstractCompile.class, t -> {
-            if (!t.getEnabled()) {
-                return;
-            }
-            final FileTree source = t.getSource();
-            if (source.isEmpty()) {
-                return;
-            }
-            final File destDir = t.getDestinationDirectory().getAsFile().get();
-            if (!allClassesDirs.contains(destDir)) {
-                return;
-            }
-            source.visit(a -> {
-                // we are looking for the root dirs containing sources
-                if (a.getRelativePath().getSegments().length == 1) {
-                    final File srcDir = a.getFile().getParentFile();
-                    sourceDirs.add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), Map.of("compiler", t.getName())));
-                }
-            });
-        });
+        project.getTasks().withType(AbstractCompile.class,
+                t -> configureCompileTask(t.getSource(), t.getDestinationDirectory(), allClassesDirs, sourceDirs, t));
 
-        // This "try/catch" is needed because of the way the "quarkus-cli" Gradle tests work. Without it, the tests fail.
-        try {
-            Class.forName("org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile");
-            project.getTasks().withType(KotlinJvmCompile.class, t -> {
-                if (!t.getEnabled()) {
-                    return;
-                }
-                final FileTree source = t.getSources().getAsFileTree();
-                if (source.isEmpty()) {
-                    return;
-                }
-                final File destDir = t.getDestinationDirectory().getAsFile().get();
-                if (!allClassesDirs.contains(destDir)) {
-                    return;
-                }
-                source.visit(a -> {
-                    // we are looking for the root dirs containing sources
-                    if (a.getRelativePath().getSegments().length == 1) {
-                        final File srcDir = a.getFile().getParentFile();
-                        sourceDirs
-                                .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), Map.of("compiler", t.getName())));
-                    }
-                });
-            });
-        } catch (ClassNotFoundException e) {
-            // ignore
-        }
+        maybeConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs);
 
         final LinkedHashMap<File, Path> resourceDirs = new LinkedHashMap<>(1);
         final File resourcesOutputDir = sourceSet.getOutput().getResourcesDir();
@@ -560,6 +518,47 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             resources.add(new DefaultSourceDir(e.getKey().toPath(), e.getValue()));
         }
         module.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resources));
+    }
+
+    private static void maybeConfigureKotlinJvmCompile(Project project, FileCollection allClassesDirs,
+            List<SourceDir> sourceDirs) {
+        // This "try/catch" is needed because of the way the "quarkus-cli" Gradle tests work. Without it, the tests fail.
+        try {
+            Class.forName("org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile");
+            doConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs);
+        } catch (ClassNotFoundException e) {
+            // ignore
+        }
+    }
+
+    private static void doConfigureKotlinJvmCompile(Project project, FileCollection allClassesDirs,
+            List<SourceDir> sourceDirs) {
+        // Use KotlinJvmCompile.class in a separate method to prevent that maybeConfigureKotlinJvmCompile() runs into
+        // a ClassNotFoundException due to actually using KotlinJvmCompile.class.
+        project.getTasks().withType(KotlinJvmCompile.class, t -> configureCompileTask(t.getSources().getAsFileTree(),
+                t.getDestinationDirectory(), allClassesDirs, sourceDirs, t));
+    }
+
+    private static void configureCompileTask(FileTree sources, DirectoryProperty destinationDirectory,
+            FileCollection allClassesDirs, List<SourceDir> sourceDirs, Task task) {
+        if (!task.getEnabled()) {
+            return;
+        }
+        if (sources.isEmpty()) {
+            return;
+        }
+        final File destDir = destinationDirectory.getAsFile().get();
+        if (!allClassesDirs.contains(destDir)) {
+            return;
+        }
+        sources.visit(a -> {
+            // we are looking for the root dirs containing sources
+            if (a.getRelativePath().getSegments().length == 1) {
+                final File srcDir = a.getFile().getParentFile();
+                sourceDirs
+                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(), Map.of("compiler", task.getName())));
+            }
+        });
     }
 
     private void addSubstitutedProject(PathList.Builder paths, File projectFile) {

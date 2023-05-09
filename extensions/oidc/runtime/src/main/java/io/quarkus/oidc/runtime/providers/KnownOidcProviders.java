@@ -118,10 +118,12 @@ public class KnownOidcProviders {
 
         OidcTenantConfig.Authentication authentication = ret.getAuthentication();
         authentication.setAddOpenidScope(false);
-        authentication.setScopes(List.of("user-read-email"));
-        authentication.setUserInfoRequired(true);
+        authentication.setScopes(List.of("user-read-private", "user-read-email"));
         authentication.setIdTokenRequired(false);
         authentication.setPkceRequired(true);
+
+        ret.getToken().setVerifyAccessTokenWithUserInfo(true);
+        ret.getToken().setPrincipalClaim("display_name");
 
         return ret;
     }

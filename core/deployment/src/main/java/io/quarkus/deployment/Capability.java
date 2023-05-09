@@ -115,6 +115,8 @@ public interface Capability {
     /**
      * Presence of SmallRye OpenTracing.
      */
+    String SCHEDULER = QUARKUS_PREFIX + ".scheduler";
+
     String SMALLRYE_OPENTRACING = QUARKUS_PREFIX + ".smallrye.opentracing";
     String SMALLRYE_HEALTH = QUARKUS_PREFIX + ".smallrye.health";
     String SMALLRYE_OPENAPI = QUARKUS_PREFIX + ".smallrye.openapi";

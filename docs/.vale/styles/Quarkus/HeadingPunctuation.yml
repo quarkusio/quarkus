@@ -5,7 +5,7 @@ link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-
 message: "Do not use end punctuation in headings."
 nonword: true
 scope: heading
-source: "Quarkus style guide on titles and headings"
+# source: "Quarkus style guide on titles and headings"
 action:
   name: edit
   params:

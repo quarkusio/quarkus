@@ -2,12 +2,11 @@ package io.quarkus.vertx.http.runtime.cors;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
@@ -31,7 +30,13 @@ public class CORSFilter implements Handler<RoutingContext> {
     private final boolean wildcardOrigin;
     private final boolean wildcardMethod;
     private final List<Pattern> allowedOriginsRegex;
-    private final List<HttpMethod> configuredHttpMethods;
+    private final Set<HttpMethod> configuredHttpMethods;
+
+    private final String exposedHeaders;
+
+    private final String allowedHeaders;
+
+    private final String allowedMethods;
 
     public CORSFilter(CORSConfig corsConfig) {
         this.corsConfig = corsConfig;
@@ -39,14 +44,30 @@ public class CORSFilter implements Handler<RoutingContext> {
         this.wildcardMethod = isConfiguredWithWildcard(corsConfig.methods);
         this.allowedOriginsRegex = this.wildcardOrigin ? List.of() : parseAllowedOriginsRegex(this.corsConfig.origins);
         this.configuredHttpMethods = createConfiguredHttpMethods(this.corsConfig.methods);
+        this.exposedHeaders = createHeaderString(this.corsConfig.exposedHeaders);
+        this.allowedHeaders = createHeaderString(this.corsConfig.headers);
+        this.allowedMethods = createHeaderString(this.corsConfig.methods);
     }
 
-    private List<HttpMethod> createConfiguredHttpMethods(Optional<List<String>> methods) {
+    private String createHeaderString(Optional<List<String>> headers) {
+        if (headers.isEmpty()) {
+            return null;
+        }
+        if (headers.get().isEmpty()) {
+            return null;
+        }
+        if (headers.get().size() == 1 && headers.get().get(0).equals("*")) {
+            return null;
+        }
+        return String.join(",", headers.get());
+    }
+
+    private Set<HttpMethod> createConfiguredHttpMethods(Optional<List<String>> methods) {
         if (methods.isEmpty()) {
-            return List.of();
+            return Set.of();
         }
         List<String> corsConfigMethods = methods.get();
-        List<HttpMethod> result = new ArrayList<>(corsConfigMethods.size());
+        LinkedHashSet<HttpMethod> result = new LinkedHashSet<>(corsConfigMethods.size());
         for (String value : corsConfigMethods) {
             result.add(HttpMethod.valueOf(value));
         }
@@ -108,61 +129,6 @@ public class CORSFilter implements Handler<RoutingContext> {
         return false;
     }
 
-    private void processRequestedHeaders(HttpServerResponse response, String allowHeadersValue) {
-        if (isConfiguredWithWildcard(corsConfig.headers)) {
-            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
-        } else {
-            Map<String, String> requestedHeaders;
-            String[] allowedParts = COMMA_SEPARATED_SPLIT_REGEX.split(allowHeadersValue);
-            requestedHeaders = new HashMap<>();
-            for (String requestedHeader : allowedParts) {
-                requestedHeaders.put(requestedHeader.toLowerCase(), requestedHeader);
-            }
-
-            List<String> corsConfigHeaders = corsConfig.headers.get();
-            StringBuilder allowedHeaders = new StringBuilder();
-            boolean isFirst = true;
-            for (String configHeader : corsConfigHeaders) {
-                String configHeaderLowerCase = configHeader.toLowerCase();
-                if (requestedHeaders.containsKey(configHeaderLowerCase)) {
-                    if (isFirst) {
-                        isFirst = false;
-                    } else {
-                        allowedHeaders.append(',');
-                    }
-                    allowedHeaders.append(requestedHeaders.get(configHeaderLowerCase));
-                }
-            }
-
-            if (allowedHeaders.length() != 0) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowedHeaders.toString());
-            }
-        }
-    }
-
-    private void processMethods(HttpServerResponse response, String allowMethodsValue) {
-        if (wildcardMethod) {
-            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethodsValue);
-        } else {
-
-            StringBuilder allowMethods = new StringBuilder();
-            boolean isFirst = true;
-            for (HttpMethod configMethod : configuredHttpMethods) {
-                if (isFirst) {
-                    isFirst = false;
-                } else {
-                    allowMethods.append(',');
-                }
-                allowMethods.append(configMethod.name());
-
-            }
-
-            if (allowMethods.length() != 0) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethods.toString());
-            }
-        }
-    }
-
     @Override
     public void handle(RoutingContext event) {
         Objects.requireNonNull(corsConfig, "CORS config is not set");
@@ -172,25 +138,11 @@ public class CORSFilter implements Handler<RoutingContext> {
         if (origin == null) {
             event.next();
         } else {
-            final String requestedMethods = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD);
 
-            boolean allowsMethod = true;
-            if (requestedMethods != null) {
-                processMethods(response, requestedMethods);
-                if (!wildcardMethod && !corsConfig.methods.isEmpty()) {
-                    allowsMethod = corsConfig.methods.get().contains(requestedMethods);
-                }
-            }
-
-            final String requestedHeaders = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
-
-            if (requestedHeaders != null) {
-                processRequestedHeaders(response, requestedHeaders);
-            }
-
+            //for both normal and preflight requests we need to check the origin
             boolean allowsOrigin = wildcardOrigin;
             if (!allowsOrigin) {
-                if (!corsConfig.origins.isEmpty()) {
+                if (corsConfig.origins.isPresent()) {
                     allowsOrigin = corsConfig.origins.get().contains(origin)
                             || isOriginAllowedByRegex(allowedOriginsRegex, origin)
                             || isSameOrigin(request, origin);
@@ -198,45 +150,76 @@ public class CORSFilter implements Handler<RoutingContext> {
                     allowsOrigin = isSameOrigin(request, origin);
                 }
             }
-
-            if (allowsOrigin) {
+            if (!allowsOrigin) {
+                response.setStatusCode(403);
+                response.setStatusMessage("CORS Rejected - Invalid origin");
+            } else {
+                boolean allowCredentials = corsConfig.accessControlAllowCredentials
+                        .orElse(corsConfig.origins.isPresent() && corsConfig.origins.get().contains(origin));
+                response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, String.valueOf(allowCredentials));
                 response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin);
             }
 
-            boolean allowCredentials = corsConfig.accessControlAllowCredentials
-                    .orElseGet(() -> corsConfig.origins.isPresent() && corsConfig.origins.get().contains(origin)
-                            && !origin.equals("*"));
-
-            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, String.valueOf(allowCredentials));
-
-            final Optional<List<String>> exposedHeaders = corsConfig.exposedHeaders;
-
-            if (!isConfiguredWithWildcard(exposedHeaders)) {
-                response.headers().set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
-                        String.join(",", exposedHeaders.orElse(Collections.emptyList())));
+            if (request.method().equals(HttpMethod.OPTIONS)) {
+                final String requestedMethods = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD);
+                final String requestedHeaders = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
+                //preflight request, handle it specially
+                if (requestedHeaders != null || requestedMethods != null) {
+                    handlePreflightRequest(event, requestedHeaders, requestedMethods, origin, allowsOrigin);
+                    response.end();
+                    return;
+                }
             }
-
-            if (!allowsOrigin) {
-                LOG.debug("Origin is not allowed");
-                response.setStatusCode(403);
-                response.setStatusMessage("CORS Rejected - Invalid origin");
-                response.end();
-            } else if (!allowsMethod) {
+            if (allowedHeaders != null) {
+                response.headers().add(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowedHeaders);
+            }
+            if (allowedMethods != null) {
+                response.headers().add(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowedMethods);
+            }
+            //we check that the actual request matches the allowed methods and headers
+            if (!isMethodAllowed(request.method())) {
                 LOG.debug("Method is not allowed");
                 response.setStatusCode(403);
                 response.setStatusMessage("CORS Rejected - Invalid method");
                 response.end();
-            } else if (request.method().equals(HttpMethod.OPTIONS) && (requestedHeaders != null || requestedMethods != null)) {
-                LOG.debug("Preflight request has completed");
-                if (corsConfig.accessControlMaxAge.isPresent()) {
-                    response.putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
-                            String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
-                }
-                response.end();
-            } else {
-                event.next();
+                return;
             }
+            if (!allowsOrigin) {
+                response.end();
+                return;
+            }
+
+            //all good, it can proceed
+            event.next();
         }
+    }
+
+    private void handlePreflightRequest(RoutingContext event, String requestedHeaders, String requestedMethods, String origin,
+            boolean allowsOrigin) {
+        //see https://fetch.spec.whatwg.org/#http-cors-protocol
+
+        if (corsConfig.accessControlMaxAge.isPresent()) {
+            event.response().putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
+                    String.valueOf(corsConfig.accessControlMaxAge.get().getSeconds()));
+        }
+        var response = event.response();
+        if (requestedMethods != null) {
+            processPreFlightMethods(response, requestedMethods);
+        }
+
+        if (requestedHeaders != null) {
+            processPreFlightRequestedHeaders(response, requestedHeaders);
+        }
+
+        //always set expose headers if present
+        if (exposedHeaders != null) {
+            response.headers().add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, exposedHeaders);
+        }
+
+        if (!isConfiguredWithWildcard(corsConfig.exposedHeaders)) {
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, this.exposedHeaders);
+        }
+
     }
 
     static boolean isSameOrigin(HttpServerRequest request, String origin) {
@@ -321,6 +304,41 @@ public class CORSFilter implements Handler<RoutingContext> {
             }
             strPos++;
             subPos++;
+        }
+    }
+
+    private void processPreFlightRequestedHeaders(HttpServerResponse response, String allowHeadersValue) {
+        if (isConfiguredWithWildcard(corsConfig.headers)) {
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowHeadersValue);
+        } else {
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, allowedHeaders);
+        }
+    }
+
+    private void processPreFlightMethods(HttpServerResponse response, String allowMethodsValue) {
+        if (wildcardMethod) {
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethodsValue);
+        } else {
+            StringBuilder allowMethods = new StringBuilder();
+            boolean isFirst = true;
+            for (HttpMethod configMethod : configuredHttpMethods) {
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    allowMethods.append(",");
+                }
+                allowMethods.append(configMethod.name());
+
+            }
+            response.headers().set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowMethods.toString());
+        }
+    }
+
+    private boolean isMethodAllowed(HttpMethod method) {
+        if (wildcardMethod) {
+            return true;
+        } else {
+            return configuredHttpMethods.contains(method);
         }
     }
 }

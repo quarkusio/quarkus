@@ -39,18 +39,13 @@ public class CORSHandlerTestCase {
     @DisplayName("Handles a direct CORS request correctly")
     public void corsNoPreflightTestServlet() {
         String origin = "http://custom.origin.quarkus";
-        String methods = "POST";
-        String headers = "X-Custom";
         given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
                 .when()
                 .log().headers()
                 .get("/test").then()
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", "GET,OPTIONS,POST")
-                .header("Access-Control-Allow-Headers", headers)
                 .body(is("test route"));
     }
 

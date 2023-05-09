@@ -48,10 +48,10 @@ public class CORSFullConfigHandlerTestCase {
     public void corsPartialMethodsTestServlet() {
         given().header("Origin", "http://custom.origin.quarkus")
                 .header("Access-Control-Request-Method", "DELETE")
-                .header("Access-Control-Request-Headers", "X-Custom,X-Custom2")
+                .header("Access-Control-Request-Headers", "X-Custom, X-Custom2")
                 .when()
                 .options("/test").then()
-                .statusCode(403)
+                .statusCode(200)
                 .header("Access-Control-Allow-Origin", "http://custom.origin.quarkus")
                 .header("Access-Control-Allow-Methods", "GET,PUT,POST") // Should not return DELETE
                 .header("Access-Control-Expose-Headers", "Content-Disposition")

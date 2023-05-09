@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.cors;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +32,7 @@ public class CORSHandlerTestCase {
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", "GET,OPTIONS,POST")
                 .header("Access-Control-Allow-Credentials", "true")
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Headers", "x-custom,CONTENT-TYPE");
     }
 
     @Test
@@ -50,7 +49,7 @@ public class CORSHandlerTestCase {
                 .header("Access-Control-Allow-Origin", origin)
                 .header("Access-Control-Allow-Methods", "GET,OPTIONS,POST")
                 .header("Access-Control-Allow-Credentials", "true")
-                .header("Access-Control-Allow-Headers", nullValue());
+                .header("Access-Control-Allow-Headers", "x-custom,CONTENT-TYPE");
     }
 
     @Test
@@ -60,8 +59,6 @@ public class CORSHandlerTestCase {
         String methods = "POST";
         String headers = "x-custom,CONTENT-TYPE";
         given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
                 .when()
                 .get("/test").then()
                 .statusCode(200)

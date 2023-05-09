@@ -50,7 +50,7 @@ public class CORSFullConfigHandlerTestCase {
                 .header("Access-Control-Request-Headers", "X-Custom,X-Custom2")
                 .when()
                 .options("/test").then()
-                .statusCode(403)
+                .statusCode(200)
                 .log().headers()
                 .header("Access-Control-Allow-Origin", "http://custom.origin.quarkus")
                 .header("Access-Control-Allow-Methods", "GET,PUT,POST") // Should not return DELETE

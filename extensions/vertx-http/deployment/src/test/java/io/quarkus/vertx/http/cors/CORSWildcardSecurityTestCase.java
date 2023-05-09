@@ -97,50 +97,34 @@ public class CORSWildcardSecurityTestCase {
     @DisplayName("Handles a direct CORS request correctly")
     public void corsNoPreflightTest() {
         String origin = "http://custom.origin.quarkus";
-        String methods = "GET,POST";
+        String methods = "GET, POST";
         String headers = "X-Custom";
         given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
                 .when()
                 .get("/test").then()
                 .statusCode(401)
-                .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Origin", origin);
 
         given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
                 .when()
                 .auth().basic("test", "test")
                 .get("/test").then()
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers)
                 .body(Matchers.equalTo("test:/test"));
 
         given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
                 .when()
                 .auth().basic("test", "wrongpassword")
                 .get("/test").then()
                 .statusCode(401)
-                .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Origin", origin);
 
         given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
                 .when()
                 .auth().basic("user", "user")
                 .get("/test").then()
                 .statusCode(403)
-                .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers);
+                .header("Access-Control-Allow-Origin", origin);
     }
 }

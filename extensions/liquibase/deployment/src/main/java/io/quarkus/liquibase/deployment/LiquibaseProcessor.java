@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -151,6 +152,9 @@ class LiquibaseProcessor {
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.ConstraintsConfig.class.getName())
                 .fields().build());
+
+        // liquibase seems to instantiate these types reflectively...
+        reflective.produce(ReflectiveClassBuildItem.builder(ConcurrentHashMap.class, ArrayList.class).build());
 
         // register classes marked with @DatabaseChangeProperty for reflection
         Set<String> classesMarkedWithDatabaseChangeProperty = new HashSet<>();

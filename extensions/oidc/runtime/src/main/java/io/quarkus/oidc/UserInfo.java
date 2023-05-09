@@ -12,6 +12,7 @@ public class UserInfo extends AbstractJsonObjectResponse {
     private static final String NAME = "name";
     private static final String FIRST_NAME = "first_name";
     private static final String FAMILY_NAME = "family_name";
+    private static final String DISPLAY_NAME = "display_name";
 
     public UserInfo() {
     }
@@ -38,6 +39,10 @@ public class UserInfo extends AbstractJsonObjectResponse {
 
     public String getFamilyName() {
         return getString(FAMILY_NAME);
+    }
+
+    public String getDisplayName() {
+        return getString(DISPLAY_NAME);
     }
 
     public String getPreferredUserName() {

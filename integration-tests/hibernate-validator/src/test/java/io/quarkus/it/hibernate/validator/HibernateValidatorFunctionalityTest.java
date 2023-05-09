@@ -368,6 +368,16 @@ public class HibernateValidatorFunctionalityTest {
     }
 
     @Test
+    public void testValidationMessageInvalidAcceptLanguageHeaderLeadsToDefaultLocaleBeingUsed() {
+        RestAssured.given()
+                .header("Accept-Language", "invalid string")
+                .when()
+                .get("/hibernate-validator/test/test-validation-message-locale/1")
+                .then()
+                .body(containsString("Value is not in line with the pattern"));
+    }
+
+    @Test
     public void testValidationMessageDefaultLocale() {
         RestAssured.given()
                 .when()

@@ -9,6 +9,7 @@ import jakarta.inject.Singleton;
 
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolverContext;
+import org.jboss.logging.Logger;
 
 import graphql.schema.DataFetchingEnvironment;
 import io.smallrye.graphql.execution.context.SmallRyeContext;
@@ -20,12 +21,13 @@ import io.smallrye.graphql.execution.context.SmallRyeContextManager;
 @Singleton
 public class SmallRyeGraphQLLocaleResolver implements LocaleResolver {
 
+    private static final Logger log = Logger.getLogger(SmallRyeGraphQLLocaleResolver.class);
     private static final String ACCEPT_HEADER = "Accept-Language";
 
     @Override
     public Locale resolve(LocaleResolverContext context) {
         Optional<List<Locale.LanguageRange>> localePriorities = getAcceptableLanguages();
-        if (!localePriorities.isPresent()) {
+        if (localePriorities.isEmpty()) {
             return null;
         }
         List<Locale> resolvedLocales = Locale.filter(localePriorities.get(), context.getSupportedLocales());
@@ -41,7 +43,15 @@ public class SmallRyeGraphQLLocaleResolver implements LocaleResolver {
         if (httpHeaders != null) {
             List<String> acceptLanguageList = httpHeaders.get(ACCEPT_HEADER);
             if (acceptLanguageList != null && !acceptLanguageList.isEmpty()) {
-                return Optional.of(Locale.LanguageRange.parse(acceptLanguageList.get(0)));
+                try {
+                    return Optional.of(Locale.LanguageRange.parse(acceptLanguageList.get(0)));
+                } catch (IllegalArgumentException e) {
+                    // this can happen when parsing malformed locale range string
+                    if (log.isDebugEnabled()) {
+                        log.debug("Unable to parse the \"Accept-Language\" header. \"" + acceptLanguageList.get(0)
+                                + "\" is not a valid language range string.", e);
+                    }
+                }
             }
         }
         return Optional.empty();

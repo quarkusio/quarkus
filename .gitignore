@@ -40,3 +40,4 @@ nb-configuration.xml
 /lsp/
 .envrc
 .jekyll-cache
+.mvn/.gradle-enterprise/

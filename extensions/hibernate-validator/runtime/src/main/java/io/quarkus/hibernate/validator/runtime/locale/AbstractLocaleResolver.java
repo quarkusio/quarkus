@@ -7,20 +7,23 @@ import java.util.Optional;
 
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolverContext;
+import org.jboss.logging.Logger;
 
 abstract class AbstractLocaleResolver implements LocaleResolver {
+
+    private static final Logger log = Logger.getLogger(AbstractLocaleResolver.class);
+    private static final String ACCEPT_HEADER = "Accept-Language";
 
     protected abstract Map<String, List<String>> getHeaders();
 
     @Override
     public Locale resolve(LocaleResolverContext context) {
         Optional<List<Locale.LanguageRange>> localePriorities = getAcceptableLanguages();
-        if (!localePriorities.isPresent()) {
+        if (localePriorities.isEmpty()) {
             return null;
         }
-
         List<Locale> resolvedLocales = Locale.filter(localePriorities.get(), context.getSupportedLocales());
-        if (resolvedLocales.size() > 0) {
+        if (!resolvedLocales.isEmpty()) {
             return resolvedLocales.get(0);
         }
 
@@ -30,9 +33,17 @@ abstract class AbstractLocaleResolver implements LocaleResolver {
     private Optional<List<Locale.LanguageRange>> getAcceptableLanguages() {
         Map<String, List<String>> httpHeaders = getHeaders();
         if (httpHeaders != null) {
-            List<String> acceptLanguageList = httpHeaders.get("Accept-Language");
+            List<String> acceptLanguageList = httpHeaders.get(ACCEPT_HEADER);
             if (acceptLanguageList != null && !acceptLanguageList.isEmpty()) {
-                return Optional.of(Locale.LanguageRange.parse(acceptLanguageList.get(0)));
+                try {
+                    return Optional.of(Locale.LanguageRange.parse(acceptLanguageList.get(0)));
+                } catch (IllegalArgumentException e) {
+                    // this can happen when parsing malformed locale range string
+                    if (log.isDebugEnabled()) {
+                        log.debug("Unable to parse the \"Accept-Language\" header. \"" + acceptLanguageList.get(0)
+                                + "\" is not a valid language range string.", e);
+                    }
+                }
             }
         }
 

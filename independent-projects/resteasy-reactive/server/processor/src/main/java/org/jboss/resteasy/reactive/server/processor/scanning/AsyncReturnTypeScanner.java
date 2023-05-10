@@ -5,6 +5,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LEGACY_PUBLISHER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUBLISHER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 
 import java.util.Collections;
@@ -33,7 +34,8 @@ public class AsyncReturnTypeScanner implements MethodScanner {
             return Collections.singletonList(new FixedHandlerChainCustomizer(new UniResponseHandler(),
                     HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
         }
-        if (returnTypeName.equals(MULTI) || returnTypeName.equals(PUBLISHER) || returnTypeName.equals(LEGACY_PUBLISHER)) {
+        if (returnTypeName.equals(MULTI) || returnTypeName.equals(REST_MULTI) || returnTypeName.equals(PUBLISHER)
+                || returnTypeName.equals(LEGACY_PUBLISHER)) {
             return Collections.singletonList(new FixedHandlerChainCustomizer(new PublisherResponseHandler(),
                     HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
         }
@@ -44,7 +46,7 @@ public class AsyncReturnTypeScanner implements MethodScanner {
     public boolean isMethodSignatureAsync(MethodInfo method) {
         DotName returnTypeName = method.returnType().name();
         return returnTypeName.equals(COMPLETION_STAGE) || returnTypeName.equals(COMPLETABLE_FUTURE) ||
-                returnTypeName.equals(UNI) || returnTypeName.equals(MULTI) || returnTypeName.equals(PUBLISHER) ||
-                returnTypeName.equals(LEGACY_PUBLISHER);
+                returnTypeName.equals(UNI) || returnTypeName.equals(MULTI) || returnTypeName.equals(REST_MULTI) ||
+                returnTypeName.equals(PUBLISHER) || returnTypeName.equals(LEGACY_PUBLISHER);
     }
 }

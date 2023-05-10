@@ -158,6 +158,7 @@ public class ResteasyReactiveJaxbProcessor {
                 effectiveType.name().equals(ResteasyReactiveDotNames.UNI) ||
                 effectiveType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
                 effectiveType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
+                effectiveType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
                 effectiveType.name().equals(ResteasyReactiveDotNames.MULTI)) {
             if (effectiveType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                 return null;

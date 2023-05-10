@@ -3,10 +3,13 @@ package io.quarkus.resteasy.reactive.server.test.status;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.jboss.resteasy.reactive.ResponseStatus;
+import org.jboss.resteasy.reactive.RestMulti;
+import org.jboss.resteasy.reactive.RestQuery;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -93,6 +96,54 @@ public class ResponseStatusTest {
                 .statusCode(500);
     }
 
+    @Test
+    public void testReturnRestMulti() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi")
+                .then()
+                .statusCode(210);
+    }
+
+    @Test
+    public void testReturnRestMulti2() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi2")
+                .then()
+                .statusCode(211);
+    }
+
+    @Test
+    public void testReturnRestMulti3() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi3")
+                .then()
+                .statusCode(200);
+
+        RestAssured
+                .given()
+                .get("/test/rest-multi3?status=212")
+                .then()
+                .statusCode(212);
+    }
+
+    @Test
+    public void testReturnRestMulti4() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi4")
+                .then()
+                .statusCode(200);
+
+        RestAssured
+                .given()
+                .get("/test/rest-multi4")
+                .then()
+                .statusCode(200);
+    }
+
     @Path("/test")
     public static class TestResource {
 
@@ -152,6 +203,32 @@ public class ResponseStatusTest {
         @Path("/exception_plain")
         public String throwExceptionPlain() {
             throw createException();
+        }
+
+        @ResponseStatus(202)
+        @GET
+        @Path("/rest-multi")
+        public RestMulti<String> getTestRestMulti() {
+            return RestMulti.fromMultiData(Multi.createFrom().item("test")).status(210).build();
+        }
+
+        @GET
+        @Path("/rest-multi2")
+        public RestMulti<String> getTestRestMulti2() {
+            return RestMulti.fromMultiData(Multi.createFrom().item("test")).status(211).build();
+        }
+
+        @GET
+        @Path("/rest-multi3")
+        public RestMulti<String> getTestRestMulti3(@DefaultValue("200") @RestQuery Integer status) {
+            return RestMulti.fromUniResponse(Uni.createFrom().item("unused"), s -> Multi.createFrom().item("test"), null,
+                    s -> status);
+        }
+
+        @GET
+        @Path("/rest-multi4")
+        public RestMulti<String> getTestRestMulti4() {
+            return RestMulti.fromUniResponse(Uni.createFrom().item("unused"), s -> Multi.createFrom().item("test"));
         }
 
         private IllegalArgumentException createException() {

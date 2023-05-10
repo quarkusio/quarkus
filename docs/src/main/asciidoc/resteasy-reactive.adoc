@@ -933,6 +933,78 @@ impression that you can set headers or HTTP status codes, which is not true afte
 response.
 Exception mappers are also not invoked because part of the response may already have been written.
 
+==== Customizing headers and status
+If you need to set custom HTTP headers and / or the HTTP response, then you can return `org.jboss.resteasy.reactive.RestMulti` instead, like this:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Multi;
+import org.jboss.resteasy.reactive.RestMulti;
+
+@Path("logs")
+public class Endpoint {
+
+    @Inject
+    @Channel("log-out")
+    Multi<String> logs;
+
+    @GET
+    public Multi<String> streamLogs() {
+        return RestMulti.fromMultiData(logs).status(222).header("foo", "bar").build();
+    }
+}
+----
+
+In more advanced cases where the headers and / or status can only be obtained from the results of an async call, the `RestMulti.fromUniResponse` needs to be used.
+Here is an example of such a use case:
+
+[source,java]
+----
+package org.acme.rest;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import java.util.List;import java.util.Map;import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Multi;
+import org.jboss.resteasy.reactive.RestMulti;
+
+@Path("logs")
+public class Endpoint {
+
+    interface SomeService {
+        Uni<SomeResponse> get();
+    }
+
+    interface SomeResponse {
+        Multi<byte[]> data;
+
+        String myHeader();
+    }
+
+    private final SomeService someService;
+
+    public Endpoint(SomeService someService) {
+        this.someService = someService;
+    }
+
+    @GET
+    public Multi<String> streamLogs() {
+        return RestMulti.fromUniResponse(someService.get(), SomeResponse::data, (r -> Map.of("MyHeader", List.of(r.myHeader()))));
+    }
+}
+----
+
 === Server-Sent Event (SSE) support
 
 If you want to stream JSON objects in your response, you can use
@@ -1021,6 +1093,11 @@ public class Endpoint {
 <2> Create a new outbound event builder.
 <3> Set the event name, i.e. the value of the `event` field of a SSE message.
 <4> Set the data, i.e. the value of the `data` field of a SSE message.
+
+[WARNING]
+====
+Manipulation of the returned HTTP headers and status code is not possible via `RestMulti.fromUniResponse` because when returning SSE responses the headers and status code cannot be delayed until the response becomes available.
+====
 
 === Controlling HTTP Caching features
 

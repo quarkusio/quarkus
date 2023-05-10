@@ -616,7 +616,7 @@ public class BeanGenerator extends AbstractGenerator {
             Map<InterceptorInfo, String> interceptorToProviderSupplier,
             Map<DecoratorInfo, String> decoratorToProviderSupplier) {
         // Declaring bean provider
-        if (bean.isProducerMethod() || bean.isProducerField()) {
+        if (bean.isProducer()) {
             beanCreator.getFieldCreator(FIELD_NAME_DECLARING_PROVIDER_SUPPLIER, Supplier.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
@@ -655,7 +655,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // First collect all param types
         List<String> parameterTypes = new ArrayList<>();
-        if (bean.isProducerMethod() || bean.isProducerField()) {
+        if (bean.isProducer()) {
             parameterTypes.add(Supplier.class.getName());
         }
         for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
@@ -688,7 +688,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         // Declaring bean provider
         int paramIdx = 0;
-        if (bean.isProducerMethod() || bean.isProducerField()) {
+        if (bean.isProducer()) {
             constructor.writeInstanceField(
                     FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
                             Supplier.class.getName()),

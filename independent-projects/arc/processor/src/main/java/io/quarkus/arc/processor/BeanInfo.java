@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -188,6 +189,20 @@ public class BeanInfo implements InjectionTargetInfo {
 
     public boolean isProducerField() {
         return target.isPresent() && Kind.FIELD.equals(target.get().kind());
+    }
+
+    public boolean isProducer() {
+        return isProducerMethod() || isProducerField();
+    }
+
+    public boolean isStaticProducer() {
+        if (isProducerField()) {
+            return Modifier.isStatic(target.get().asField().flags());
+        } else if (isProducerMethod()) {
+            return Modifier.isStatic(target.get().asMethod().flags());
+        } else {
+            return false;
+        }
     }
 
     public boolean isSynthetic() {
@@ -532,7 +547,7 @@ public class BeanInfo implements InjectionTargetInfo {
             return targetPackageName;
         }
         DotName providerTypeName;
-        if (isProducerMethod() || isProducerField()) {
+        if (isProducer()) {
             providerTypeName = declaringBean.getProviderType().name();
         } else {
             if (providerType.kind() == org.jboss.jandex.Type.Kind.ARRAY
@@ -551,7 +566,7 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     public String getClientProxyPackageName() {
-        if (isProducerField() || isProducerMethod()) {
+        if (isProducer()) {
             AnnotationTarget target = getTarget().get();
             DotName typeName = target.kind() == Kind.FIELD ? target.asField().type().name()
                     : target.asMethod().returnType().name();

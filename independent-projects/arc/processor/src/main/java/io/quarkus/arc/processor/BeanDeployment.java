@@ -1197,7 +1197,7 @@ public class BeanDeployment {
             Type disposedParamType = unusedDisposer.getDisposedParameterType();
             boolean matchingProducerBeanExists = false;
             scan: for (BeanInfo bean : beans) {
-                if (bean.isProducerMethod() || bean.isProducerField()) {
+                if (bean.isProducer()) {
                     if (!bean.getDeclaringBean().equals(unusedDisposer.getDeclaringBean())) {
                         continue;
                     }

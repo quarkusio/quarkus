@@ -22,24 +22,7 @@
         <classes>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.SimpleBeanLifecycleTest">
                 <methods>
-                    <exclude name="testInjectionOfParametersIntoBeanConstructor"/>
-                    <exclude name="testCreationExceptionWrapsCheckedExceptionThrownFromCreate"/>
-                    <exclude name="testSubClassInheritsPreDestroyOnSuperclass"/>
-                    <exclude name="testPostConstructPreDestroy"/>
-                    <exclude name="testDependentsDestroyedAfterPreDestroy"/>
-                    <exclude name="testUncheckedExceptionThrownFromCreateNotWrapped"/>
-                    <exclude name="testContextualDestroyDisposesWhenNecessary"/>
-                    <exclude name="testCreateInjectsFieldsDeclaredInJava"/>
-                    <exclude name="testSubClassInheritsPostConstructOnSuperclass"/>
-                    <exclude name="testCreateReturnsSameBeanPushed"/>
-                    <exclude name="testSubClassDoesNotInheritPostConstructOnSuperclassBlockedByIntermediateClass"/>
                     <exclude name="testBeanCreateInjectsDependenciesAndInvokesInitializerToInstantiateInstance"/>
-                    <exclude name="testQualifierTypeAnnotatedConstructor"/>
-                    <exclude name="testIndirectSubClassInheritsPreDestroyOnSuperclass"/>
-                    <exclude name="testContextCreatesNewInstanceForInjection"/>
-                    <exclude name="testIndirectSubClassInheritsPostConstructOnSuperclass"/>
-                    <exclude name="testSubClassDoesNotInheritPreDestroyConstructOnSuperclassBlockedByIntermediateClass"/>
-                    <exclude name="testManagedBean"/>
                     <exclude name="testContextualDestroyCatchesException"/>
                 </methods>
             </class>
@@ -62,17 +45,6 @@
                     <exclude name="testGetTargetMethod"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.circular.CircularDependencyTest">
-                <methods>
-                    <exclude name="testCircularInjectionOnTwoNormalBeans"/>
-                    <exclude name="testCircularInjectionOnOneNormalAndOneDependentBean"/>
-                    <exclude name="testNormalProducerMethodDeclaredOnNormalBeanWhichInjectsProducedBean"/>
-                    <exclude name="testSelfConsumingConstructorsOnNormalBean"/>
-                    <exclude name="testNormalAndDependentCircularConstructors"/>
-                    <exclude name="testNormalProducerMethodDeclaredOnDependentBeanWhichInjectsProducedBean"/>
-                    <exclude name="testNormalCircularConstructors"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContextTest">
                 <methods>
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
@@ -90,21 +62,6 @@
                     <exclude name="testScopeTypeDeclaresScopeTypeAnnotation"/>
                     <exclude name="testScopeTypesAreExtensible"/>
                     <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.simple.definition.SimpleBeanDefinitionTest">
-                <methods>
-                    <exclude name="testInitializerAnnotatedConstructor"/>
-                    <exclude name="testInterfaceNotDiscoveredAsSimpleBean"/>
-                    <exclude name="testNonStaticInnerClassDeclaredInJavaNotDiscovered"/>
-                    <exclude name="testEmptyConstructorUsed"/>
-                    <exclude name="testStaticInnerClassDeclaredInJavaAllowed"/>
-                    <exclude name="testInitializerAnnotatedConstructorUsedOverEmptyConstuctor"/>
-                    <exclude name="testDependentScopedBeanCanHaveNonStaticPublicField"/>
-                    <exclude name="testSimpleBeanOnlyIfConstructorParameterless"/>
-                    <exclude name="testExtensionNotDiscoveredAsSimpleBean"/>
-                    <exclude name="testSimpleBeanOnlyIfConstructorIsInitializer"/>
-                    <exclude name="testAbstractClassDeclaredInJavaNotDiscovered"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.inheritance.InterceptorBindingInheritanceTest">

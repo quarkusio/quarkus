@@ -26,7 +26,7 @@ final class UnusedBeans {
 
         Set<BeanInfo> unusedProducers = new HashSet<>();
         Set<BeanInfo> unusedButDeclaresProducer = new HashSet<>();
-        List<BeanInfo> producers = beans.stream().filter(b -> b.isProducerMethod() || b.isProducerField())
+        List<BeanInfo> producers = beans.stream().filter(BeanInfo::isProducer)
                 .collect(Collectors.toList());
         List<InjectionPointInfo> instanceInjectionPoints = injectionPoints.stream()
                 .filter(InjectionPointInfo::isProgrammaticLookup)
@@ -81,7 +81,7 @@ final class UnusedBeans {
                 unusedButDeclaresProducer.add(bean);
                 continue test;
             }
-            if (bean.isProducerField() || bean.isProducerMethod()) {
+            if (bean.isProducer()) {
                 // This bean is very likely an unused producer
                 unusedProducers.add(bean);
             }

@@ -787,7 +787,7 @@ public final class Beans {
                 }
             }
 
-        } else if (bean.isProducerField() || bean.isProducerMethod()) {
+        } else if (bean.isProducer()) {
             String methodOrField = bean.isProducerMethod() ? "method" : "field";
             String classifier = "Producer " + methodOrField + " for a normal scoped bean";
 

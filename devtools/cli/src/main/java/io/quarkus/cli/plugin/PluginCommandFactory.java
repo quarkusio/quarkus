@@ -81,7 +81,9 @@ public class PluginCommandFactory {
         plugins.entrySet().stream()
                 .map(Map.Entry::getValue).forEach(plugin -> {
                     CommandLine current = cmd;
-                    String name = plugin.getName();
+                    // The plugin is stripped from its prefix when added to the catalog.
+                    // Let's added back to ensure it matches the CLI root command.
+                    String name = cmd.getCommandName() + "-" + plugin.getName();
                     while (current != null && current.getCommandName() != null
                             && name.startsWith(current.getCommandName() + "-")) {
                         String remaining = name.substring(current.getCommandName().length() + 1);

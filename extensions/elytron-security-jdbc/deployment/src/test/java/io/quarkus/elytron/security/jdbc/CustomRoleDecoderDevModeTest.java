@@ -1,5 +1,7 @@
 package io.quarkus.elytron.security.jdbc;
 
+import static io.quarkus.elytron.security.jdbc.JdbcSecurityRealmTest.testClasses;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -19,7 +21,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
 //see https://github.com/quarkusio/quarkus/issues/9296
-public class CustomRoleDecoderDevModeTest extends JdbcSecurityRealmTest {
+public class CustomRoleDecoderDevModeTest {
 
     static Class[] testClassesWithCustomRoleDecoder = Stream.concat(
             Arrays.stream(testClasses),

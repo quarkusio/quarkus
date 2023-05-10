@@ -23,6 +23,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonO
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonObjectBasicMessageBodyWriter;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
+import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -35,6 +36,11 @@ public class RestClientReactiveJacksonProcessor {
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {
         features.produce(new FeatureBuildItem(REST_CLIENT_REACTIVE_JACKSON));
+    }
+
+    @BuildStep
+    ReinitializeVertxJsonBuildItem vertxJson() {
+        return new ReinitializeVertxJsonBuildItem();
     }
 
     @BuildStep

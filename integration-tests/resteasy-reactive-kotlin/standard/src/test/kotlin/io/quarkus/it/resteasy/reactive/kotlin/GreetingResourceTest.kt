@@ -39,4 +39,13 @@ class GreetingResourceTest {
     fun testNoopCoroutine() {
         When { get("/greeting/noop") } Then { statusCode(204) }
     }
+
+    @Test
+    fun testProp() {
+        When { get("/greeting/prop") } Then
+            {
+                statusCode(200)
+                body(CoreMatchers.`is`("prod"))
+            }
+    }
 }

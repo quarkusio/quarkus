@@ -3,11 +3,11 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-parent</artifactId>
-        <version>39</version>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
-    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-extension-maven-plugin</artifactId>
     <version>999-SNAPSHOT</version>
     <name>Quarkus - Extension Maven plugin</name>

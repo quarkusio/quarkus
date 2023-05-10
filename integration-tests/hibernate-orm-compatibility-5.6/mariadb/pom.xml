@@ -208,7 +208,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mariadb.image}</name>
+                                    <name>healthcheck-${mariadb.image}</name>
                                     <alias>quarkus-test-mariadb</alias>
                                     <build>
                                         <from>${mariadb.image}</from>

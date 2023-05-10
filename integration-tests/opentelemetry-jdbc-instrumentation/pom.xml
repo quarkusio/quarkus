@@ -358,7 +358,10 @@
                                             <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <!-- Unfortunately booting this is slow, needs to set a generous timeout: -->
                                             <time>60000</time>
-                                            <log>DATABASE IS READY TO USE!</log>
+                                            <!-- leverage the healthcheck in the image we use -->
+                                            <healthy>yes</healthy>
+                                            <!-- In case of any issues with the built-in healthcheck we can revert back to the original log check:-->
+                                            <!--<log>DATABASE IS READY TO USE!</log>-->
                                         </wait>
                                     </run>
                                 </image>

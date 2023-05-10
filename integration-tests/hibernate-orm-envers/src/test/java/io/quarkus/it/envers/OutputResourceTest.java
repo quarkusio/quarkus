@@ -38,7 +38,7 @@ class OutputResourceTest {
     void test() {
         given().accept(ContentType.JSON)
                 .when()
-                .get(RESOURCE_PATH)
+                .get(RESOURCE_PATH + "2")
                 .then()
                 .statusCode(200)
                 .body("data", equalTo("out"));

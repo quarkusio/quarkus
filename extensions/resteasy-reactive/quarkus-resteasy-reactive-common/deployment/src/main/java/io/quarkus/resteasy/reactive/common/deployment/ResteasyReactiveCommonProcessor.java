@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.ext.Providers;
 import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import org.jboss.jandex.AnnotationTarget;
@@ -45,8 +46,11 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -69,6 +73,19 @@ public class ResteasyReactiveCommonProcessor {
 
     private static final int LEGACY_READER_PRIORITY = Priorities.USER * 2; // readers are compared by decreased priority
     private static final int LEGACY_WRITER_PRIORITY = Priorities.USER / 2; // writers are compared by increased priority
+
+    private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
+
+    @BuildStep
+    void searchForProviders(Capabilities capabilities,
+            BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> producer) {
+        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.REST_CLIENT)) {
+            // in this weird case we don't want the providers to be registered automatically as this would lead to multiple bean definitions
+            return;
+        }
+        // TODO: should we also be looking for the specific provider files?
+        producer.produce(new AdditionalApplicationArchiveMarkerBuildItem(PROVIDERS_SERVICE_FILE));
+    }
 
     @BuildStep
     void setUpDenyAllJaxRs(

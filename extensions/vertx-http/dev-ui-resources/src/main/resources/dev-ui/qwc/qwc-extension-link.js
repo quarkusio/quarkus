@@ -1,4 +1,5 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import 'qui-badge';
@@ -9,16 +10,28 @@ import 'qui-badge';
 export class QwcExtensionLink extends QwcHotReloadElement {
 
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--lumo-contrast-80pct);
+            font-size: small;
+            padding: 2px 5px;
+            text-decoration: none;
+            gap: 5px;
+        }
         .extensionLink {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            color: var(--lumo-contrast);
+            color: var(--lumo-contrast-80pct);
             font-size: small;
             padding: 2px 5px;
             cursor: pointer;
             text-decoration: none;
+            gap: 5px;
         }
         .extensionLink:hover {
             filter: brightness(80%);
@@ -200,8 +213,14 @@ export class QwcExtensionLink extends QwcHotReloadElement {
 
     _renderBadge() {
         if (this._effectiveLabel) {
-            return html`<qui-badge tiny pill><span>${this._effectiveLabel}</span></qui-badge>`;
+            if(this.isHTML(this._effectiveLabel)){
+                return html`${unsafeHTML(this._effectiveLabel)}`;
+            }else{
+                return html`<qui-badge tiny pill><span>${this._effectiveLabel}</span></qui-badge>`;
+            }
         }
     }
+
+    isHTML = RegExp.prototype.test.bind(/(<([^>]+)>)/i);
 }
 customElements.define('qwc-extension-link', QwcExtensionLink);

@@ -146,7 +146,7 @@ It interacts with the database without blocking the thread.
 In addition, this reactive `PanacheEntity` proposes a reactive API.
 We will use this API to implement the REST endpoint.
 
-Before going further, open the `src/main/resource/application.properties` file and add:
+Before going further, open the `src/main/resources/application.properties` file and add:
 
 [source, properties]
 ----

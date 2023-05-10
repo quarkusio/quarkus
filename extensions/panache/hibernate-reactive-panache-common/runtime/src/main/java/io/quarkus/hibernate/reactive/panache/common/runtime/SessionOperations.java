@@ -205,4 +205,8 @@ public final class SessionOperations {
         return SESSION_FACTORY.get();
     }
 
+    static void clear() {
+        SESSION_FACTORY.clear();
+        SESSION_KEY.clear();
+    }
 }

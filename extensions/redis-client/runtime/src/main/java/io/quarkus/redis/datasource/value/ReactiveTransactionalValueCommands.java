@@ -286,6 +286,7 @@ public interface ReactiveTransactionalValueCommands<K, V> extends ReactiveTransa
      *
      * @param key the key
      * @param value the value
+     * @return A {@code Uni} emitting {@code null} when the command has been enqueued successfully in the transaction, a failure
      */
     Uni<Void> setex(K key, long seconds, V value);
 

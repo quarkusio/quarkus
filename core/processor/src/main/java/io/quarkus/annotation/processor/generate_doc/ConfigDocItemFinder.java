@@ -141,8 +141,6 @@ class ConfigDocItemFinder {
         }
 
         for (Element enclosedElement : element.getEnclosedElements()) {
-            shouldProcessElement(enclosedElement);
-
             if (!shouldProcessElement(enclosedElement)) {
                 continue;
             }
@@ -332,6 +330,10 @@ class ConfigDocItemFinder {
                                 acceptedValues = extractEnumValues(realTypeMirror, useHyphenateEnumValue,
                                         clazz.getQualifiedName().toString());
                                 configDocKey.setEnum(true);
+                            } else {
+                                if (!defaultValueDoc.isBlank()) {
+                                    defaultValue = defaultValueDoc;
+                                }
                             }
                         }
                     } else {

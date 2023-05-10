@@ -60,4 +60,12 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
         return hash;
     }
 
+    /**
+     *
+     * @return the name of the generated forwarding method
+     */
+    public String getForwardingMethodName() {
+        return "_" + hash;
+    }
+
 }

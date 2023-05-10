@@ -74,11 +74,16 @@ import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
+import io.smallrye.graphql.api.federation.ComposeDirective;
 import io.smallrye.graphql.api.federation.Extends;
 import io.smallrye.graphql.api.federation.External;
+import io.smallrye.graphql.api.federation.Inaccessible;
+import io.smallrye.graphql.api.federation.InterfaceObject;
 import io.smallrye.graphql.api.federation.Key;
 import io.smallrye.graphql.api.federation.Provides;
 import io.smallrye.graphql.api.federation.Requires;
+import io.smallrye.graphql.api.federation.Shareable;
+import io.smallrye.graphql.api.federation.Tag;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
@@ -267,6 +272,12 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(Provides.class);
             indexer.indexClass(Requires.class);
             indexer.indexClass(Deprecated.class);
+            indexer.indexClass(Shareable.class);
+            indexer.indexClass(ComposeDirective.class);
+            indexer.indexClass(InterfaceObject.class);
+            indexer.indexClass(Inaccessible.class);
+            indexer.indexClass(io.smallrye.graphql.api.federation.Override.class);
+            indexer.indexClass(Tag.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }

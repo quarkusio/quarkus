@@ -148,7 +148,7 @@ public class DevServicesKubernetesProcessor {
     }
 
     private void shutdownCluster() {
-        if (devService != null) {
+        if (devService != null && devService.isOwner()) {
             try {
                 devService.close();
             } catch (Throwable e) {

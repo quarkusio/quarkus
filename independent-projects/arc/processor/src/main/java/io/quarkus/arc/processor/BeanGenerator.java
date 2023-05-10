@@ -42,6 +42,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableDecorator;
@@ -54,12 +55,14 @@ import io.quarkus.arc.impl.DecoratorDelegateProvider;
 import io.quarkus.arc.impl.InitializedInterceptor;
 import io.quarkus.arc.impl.SyntheticCreationalContextImpl;
 import io.quarkus.arc.impl.SyntheticCreationalContextImpl.TypeAndQualifiers;
+import io.quarkus.arc.impl.UncaughtExceptions;
 import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -818,25 +821,25 @@ public class BeanGenerator extends AbstractGenerator {
             Map<InjectionPointInfo, String> injectionPointToProviderField, boolean isApplicationClass, String baseName,
             String targetPackage) {
 
-        MethodCreator destroy = beanCreator
-                .getMethodCreator("destroy", void.class, providerType.descriptorName(), CreationalContext.class)
-                .setModifiers(ACC_PUBLIC);
+        MethodCreator doDestroy = beanCreator
+                .getMethodCreator("doDestroy", void.class, providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PRIVATE);
 
         if (bean.isClassBean()) {
             if (!bean.isInterceptor()) {
                 // in case someone calls `Bean.destroy()` directly (i.e., they use the low-level CDI API),
                 // they may pass us a client proxy
-                ResultHandle instance = destroy.invokeStaticInterfaceMethod(MethodDescriptors.CLIENT_PROXY_UNWRAP,
-                        destroy.getMethodParam(0));
+                ResultHandle instance = doDestroy.invokeStaticInterfaceMethod(MethodDescriptors.CLIENT_PROXY_UNWRAP,
+                        doDestroy.getMethodParam(0));
 
                 // if there's no `@PreDestroy` interceptor, we'll generate code to invoke `@PreDestroy` callbacks
-                // directly into the `destroy` method:
+                // directly into the `doDestroy` method:
                 //
-                // public void destroy(MyBean var1, CreationalContext var2) {
+                // private void doDestroy(MyBean var1, CreationalContext var2) {
                 //     var1.myPreDestroyCallback();
                 //     var2.release();
                 // }
-                BytecodeCreator preDestroyBytecode = destroy;
+                BytecodeCreator preDestroyBytecode = doDestroy;
 
                 // PreDestroy interceptors
                 if (!bean.getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()) {
@@ -844,16 +847,16 @@ public class BeanGenerator extends AbstractGenerator {
                     // callbacks into a `Runnable` that we pass into the interceptor chain to be called
                     // by the last `proceed()` call:
                     //
-                    // public void destroy(MyBean var1, CreationalContext var2) {
+                    // private void doDestroy(MyBean var1, CreationalContext var2) {
                     //     // this is a `Runnable` that calls `MyBean.myPreDestroyCallback()`
                     //     MyBean_Bean$$function$$2 var3 = new MyBean_Bean$$function$$2(var1);
                     //     ((MyBean_Subclass)var1).arc$destroy((Runnable)var3);
                     //     var2.release();
                     // }
-                    FunctionCreator preDestroyForwarder = destroy.createFunction(Runnable.class);
+                    FunctionCreator preDestroyForwarder = doDestroy.createFunction(Runnable.class);
                     preDestroyBytecode = preDestroyForwarder.getBytecode();
 
-                    destroy.invokeVirtualMethod(
+                    doDestroy.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(SubclassGenerator.generatedName(bean.getProviderType().name(), baseName),
                                     SubclassGenerator.DESTROY_METHOD_NAME, void.class, Runnable.class),
                             instance, preDestroyForwarder.getInstance());
@@ -882,15 +885,15 @@ public class BeanGenerator extends AbstractGenerator {
                         preDestroyBytecode.invokeVirtualMethod(MethodDescriptor.of(callback), instance);
                     }
                 }
-                if (preDestroyBytecode != destroy) {
+                if (preDestroyBytecode != doDestroy) {
                     // only if we're generating a `Runnable`, see above
                     preDestroyBytecode.returnVoid();
                 }
             }
 
             // ctx.release()
-            destroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, destroy.getMethodParam(1));
-            destroy.returnValue(null);
+            doDestroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, doDestroy.getMethodParam(1));
+            doDestroy.returnValue(null);
 
         } else if (bean.getDisposer() != null) {
             // Invoke the disposer method
@@ -898,26 +901,26 @@ public class BeanGenerator extends AbstractGenerator {
             MethodInfo disposerMethod = bean.getDisposer().getDisposerMethod();
             boolean isStatic = Modifier.isStatic(disposerMethod.flags());
 
-            ResultHandle declaringProviderSupplierHandle = destroy.readInstanceField(
+            ResultHandle declaringProviderSupplierHandle = doDestroy.readInstanceField(
                     FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_DECLARING_PROVIDER_SUPPLIER,
                             Supplier.class.getName()),
-                    destroy.getThis());
-            ResultHandle declaringProviderHandle = destroy.invokeInterfaceMethod(
+                    doDestroy.getThis());
+            ResultHandle declaringProviderHandle = doDestroy.invokeInterfaceMethod(
                     MethodDescriptors.SUPPLIER_GET, declaringProviderSupplierHandle);
-            ResultHandle ctxHandle = destroy.newInstance(
-                    MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), destroy.loadNull());
+            ResultHandle ctxHandle = doDestroy.newInstance(
+                    MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), doDestroy.loadNull());
             ResultHandle declaringProviderInstanceHandle;
             if (isStatic) {
                 // for static disposers, we don't need to resolve this handle
                 // the `null` will only be used for reflective invocation in case the disposer is private, which is OK
-                declaringProviderInstanceHandle = destroy.loadNull();
+                declaringProviderInstanceHandle = doDestroy.loadNull();
             } else {
-                declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(
+                declaringProviderInstanceHandle = doDestroy.invokeInterfaceMethod(
                         MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
                         ctxHandle);
                 if (bean.getDeclaringBean().getScope().isNormal()) {
                     // We need to unwrap the client proxy
-                    declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(
+                    declaringProviderInstanceHandle = doDestroy.invokeInterfaceMethod(
                             MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
                             declaringProviderInstanceHandle);
                 }
@@ -928,21 +931,23 @@ public class BeanGenerator extends AbstractGenerator {
             Iterator<InjectionPointInfo> injectionPointsIterator = bean.getDisposer().getInjection().injectionPoints.iterator();
             for (int i = 0; i < disposerMethod.parametersCount(); i++) {
                 if (i == disposedParamPosition) {
-                    referenceHandles[i] = destroy.getMethodParam(0);
+                    referenceHandles[i] = doDestroy.getMethodParam(0);
                 } else {
                     InjectionPointInfo injectionPoint = injectionPointsIterator.next();
-                    ResultHandle childCtxHandle = destroy.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
+                    ResultHandle childCtxHandle = doDestroy.invokeStaticMethod(
+                            MethodDescriptors.CREATIONAL_CTX_CHILD_CONTEXTUAL,
                             declaringProviderHandle, ctxHandle);
-                    ResultHandle providerSupplierHandle = destroy
+                    ResultHandle providerSupplierHandle = doDestroy
                             .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
                                     injectionPointToProviderField.get(injectionPoint),
-                                    Supplier.class.getName()), destroy.getThis());
-                    ResultHandle providerHandle = destroy.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
+                                    Supplier.class.getName()), doDestroy.getThis());
+                    ResultHandle providerHandle = doDestroy.invokeInterfaceMethod(MethodDescriptors.SUPPLIER_GET,
                             providerSupplierHandle);
-                    AssignableResultHandle referenceHandle = destroy.createVariable(Object.class);
-                    destroy.assign(referenceHandle, destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
-                            providerHandle, childCtxHandle));
-                    checkPrimitiveInjection(destroy, injectionPoint, referenceHandle);
+                    AssignableResultHandle referenceHandle = doDestroy.createVariable(Object.class);
+                    doDestroy.assign(referenceHandle,
+                            doDestroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                                    providerHandle, childCtxHandle));
+                    checkPrimitiveInjection(doDestroy, injectionPoint, referenceHandle);
                     referenceHandles[i] = referenceHandle;
                 }
             }
@@ -950,39 +955,67 @@ public class BeanGenerator extends AbstractGenerator {
             if (Modifier.isPrivate(disposerMethod.flags())) {
                 privateMembers.add(isApplicationClass, String.format("Disposer %s#%s", disposerMethod.declaringClass().name(),
                         disposerMethod.name()));
-                ResultHandle paramTypesArray = destroy.newArray(Class.class, destroy.load(referenceHandles.length));
-                ResultHandle argsArray = destroy.newArray(Object.class, destroy.load(referenceHandles.length));
+                ResultHandle paramTypesArray = doDestroy.newArray(Class.class, doDestroy.load(referenceHandles.length));
+                ResultHandle argsArray = doDestroy.newArray(Object.class, doDestroy.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
-                    destroy.writeArrayValue(paramTypesArray, i,
-                            destroy.loadClass(disposerMethod.parameterType(i).name().toString()));
-                    destroy.writeArrayValue(argsArray, i, referenceHandles[i]);
+                    doDestroy.writeArrayValue(paramTypesArray, i,
+                            doDestroy.loadClass(disposerMethod.parameterType(i).name().toString()));
+                    doDestroy.writeArrayValue(argsArray, i, referenceHandles[i]);
                 }
                 reflectionRegistration.registerMethod(disposerMethod);
-                destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
-                        destroy.loadClass(disposerMethod.declaringClass().name().toString()),
-                        destroy.load(disposerMethod.name()), paramTypesArray, declaringProviderInstanceHandle, argsArray);
+                doDestroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
+                        doDestroy.loadClass(disposerMethod.declaringClass().name().toString()),
+                        doDestroy.load(disposerMethod.name()), paramTypesArray, declaringProviderInstanceHandle, argsArray);
             } else if (isStatic) {
-                destroy.invokeStaticMethod(MethodDescriptor.of(disposerMethod), referenceHandles);
+                doDestroy.invokeStaticMethod(MethodDescriptor.of(disposerMethod), referenceHandles);
             } else {
-                destroy.invokeVirtualMethod(MethodDescriptor.of(disposerMethod), declaringProviderInstanceHandle,
+                doDestroy.invokeVirtualMethod(MethodDescriptor.of(disposerMethod), declaringProviderInstanceHandle,
                         referenceHandles);
             }
 
             // Destroy @Dependent instances injected into method parameters of a disposer method
-            destroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
+            doDestroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
 
             // If the declaring bean is @Dependent and the disposer is not static, we must destroy the instance afterwards
             if (BuiltinScope.DEPENDENT.is(bean.getDisposer().getDeclaringBean().getScope()) && !isStatic) {
-                destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
+                doDestroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle,
                         declaringProviderInstanceHandle, ctxHandle);
             }
             // ctx.release()
-            destroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, destroy.getMethodParam(1));
-            destroy.returnValue(null);
+            doDestroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, doDestroy.getMethodParam(1));
+            doDestroy.returnValue(null);
 
         } else if (bean.isSynthetic()) {
-            bean.getDestroyerConsumer().accept(destroy);
+            bean.getDestroyerConsumer().accept(doDestroy);
         }
+
+        MethodCreator destroy = beanCreator
+                .getMethodCreator("destroy", void.class, providerType.descriptorName(), CreationalContext.class)
+                .setModifiers(ACC_PUBLIC);
+
+        TryBlock tryBlock = destroy.tryBlock();
+        tryBlock.invokeSpecialMethod(doDestroy.getMethodDescriptor(), tryBlock.getThis(),
+                tryBlock.getMethodParam(0), tryBlock.getMethodParam(1));
+
+        CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
+        ResultHandle error = catchBlock.load("Error occurred while destroying instance of " + bean);
+        ResultHandle logger = catchBlock.readStaticField(FieldDescriptor.of(UncaughtExceptions.class, "LOGGER", Logger.class));
+        ResultHandle isDebugEnabled = catchBlock
+                .invokeVirtualMethod(MethodDescriptor.ofMethod(Logger.class, "isDebugEnabled", boolean.class), logger);
+        BranchResult branch = catchBlock.ifFalse(isDebugEnabled);
+        branch.falseBranch().invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Logger.class, "error", void.class, Object.class, Throwable.class),
+                logger, error, catchBlock.getCaughtException());
+        ResultHandle fullError = Gizmo.newStringBuilder(branch.trueBranch())
+                .append(error)
+                .append(": ")
+                .append(catchBlock.getCaughtException())
+                .callToString();
+        branch.trueBranch().invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Logger.class, "error", void.class, Object.class),
+                logger, fullError);
+
+        destroy.returnVoid();
 
         // Bridge method needed
         MethodCreator bridgeDestroy = beanCreator.getMethodCreator("destroy", void.class, Object.class, CreationalContext.class)

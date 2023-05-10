@@ -79,16 +79,7 @@ abstract class AbstractInstanceHandle<T> implements InstanceHandle<T> {
         if (parentCreationalContext != null) {
             parentCreationalContext.release();
         } else {
-            try {
-                bean.destroy(instanceInternal(), creationalContext);
-            } catch (Throwable t) {
-                String msg = "Error occurred while destroying instance of bean [%s]";
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.errorf(t, msg, bean.getClass().getName());
-                } else {
-                    LOGGER.errorf(msg + ": %s", bean.getClass().getName(), t);
-                }
-            }
+            bean.destroy(instanceInternal(), creationalContext);
         }
     }
 

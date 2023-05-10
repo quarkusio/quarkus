@@ -23,7 +23,6 @@
             <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.SimpleBeanLifecycleTest">
                 <methods>
                     <exclude name="testBeanCreateInjectsDependenciesAndInvokesInitializerToInstantiateInstance"/>
-                    <exclude name="testContextualDestroyCatchesException"/>
                 </methods>
             </class>
             <!-- must be excluded due to a TCK bug that shall be fixed in CDI TCK 4.0.10 -->

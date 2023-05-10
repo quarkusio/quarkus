@@ -156,29 +156,50 @@ export class RouterController {
         }
         
         var currentSelection = window.location.pathname;
-        var currentQueryString = window.location.search;
+        const search = this.getQueryParamsWithoutFrom();
 
         var relocationRequest = this.getQueryParameter("from");
         if (relocationRequest) {
             // We know and already loaded the requested location
             if (relocationRequest === path) {
-                Router.go({pathname: path});
+                Router.go({pathname: path, search});
             }
         } else {
             // We know and already loaded the requested location
             if (currentSelection === path) {
-                Router.go({pathname: path});
+                Router.go({pathname: path, search});
                 // The default naked route  
             } else if (!RouterController.router.location.route && defaultRoute && currentSelection.endsWith('/dev-ui/')) {
-                Router.go({pathname: path});
+                Router.go({pathname: path, search});
                 // We do not know and have not yet loaded the requested location
             } else if (!RouterController.router.location.route && defaultRoute) {
+
+                // pass original query param
+                const currentQueryString = window.location.search;
+                const origSearch = currentQueryString?.length > 0 ? '&' + currentQueryString : '';
+
                 Router.go({
                     pathname: path,
-                    search: '?from=' + currentSelection,
+                    search: '?from=' + currentSelection + origSearch,
                 });
             }
         }
+    }
+
+    getQueryParamsWithoutFrom() {
+        const params = new URLSearchParams(window.location.search);
+        if (params) {
+            const paramsWithoutFrom = [];
+            params.forEach((value, key) => {
+                if (key !== 'from') {
+                    paramsWithoutFrom.push(key + '=' + value)
+                }
+            });
+            if (paramsWithoutFrom.length > 0) {
+                return paramsWithoutFrom.join('&');
+            }
+        }
+        return '';
     }
 
     getQueryParameters() {

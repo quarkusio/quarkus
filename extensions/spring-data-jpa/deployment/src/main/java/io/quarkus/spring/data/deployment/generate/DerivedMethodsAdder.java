@@ -340,7 +340,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     throw new IllegalArgumentException("Method " + method.name() + " of interface " + interfaceName
                             + " is not a getter method since it returns void");
                 }
-                DotName fieldTypeName = getPrimitiveTypeName(returnType.name());
+                DotName fieldTypeName = returnType.name();
 
                 FieldDescriptor field = implClassCreator.getFieldCreator(propertyName, fieldTypeName.toString())
                         .getFieldDescriptor();
@@ -363,7 +363,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     ResultHandle newObject = convert.newInstance(MethodDescriptor.ofConstructor(implName.toString()));
 
                     ResultHandle entity = convert.getMethodParam(0);
-                    final List<MethodInfo> availableMethods = entityClassInfo.methods();
+                    final List<MethodInfo> availableMethods = availableMethods(entityClassInfo, index);
                     for (Map.Entry<String, FieldDescriptor> field : fields.entrySet()) {
                         if (!getterExists(availableMethods, field.getKey())) {
                             throw new IllegalArgumentException(field.getKey() + " method does not exists in "
@@ -379,6 +379,21 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                 }
             }
         }
+    }
+
+    private static List<MethodInfo> availableMethods(ClassInfo entityClassInfo, IndexView index) {
+        List<MethodInfo> result = new ArrayList<>(entityClassInfo.methods().size());
+        while (true) {
+            result.addAll(entityClassInfo.methods());
+            if (entityClassInfo.superName() == null) {
+                break;
+            }
+            entityClassInfo = index.getClassByName(entityClassInfo.superName());
+            if ((entityClassInfo == null) || DotNames.OBJECT.equals(entityClassInfo.name())) {
+                break;
+            }
+        }
+        return result;
     }
 
     private boolean getterExists(List<MethodInfo> methods, String getterName) {

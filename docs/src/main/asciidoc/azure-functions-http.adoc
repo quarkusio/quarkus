@@ -96,7 +96,7 @@ installed for this to work.
 
 == Deploy to Azure Functions
 
-The `pom.xml` that you generated in the previous step pulls in the Azure Functions Maven Plugin (`azure-functions-maven-plugin`).
+The `pom.xml` that you generated in the previous step pulls in the Azure Functions Maven plugin (`azure-functions-maven-plugin`).
 Running the Maven package generates the required configuration files and staging directory.
 
 Use the following Quarkus CLI command to deploy the package to Azure Functions:

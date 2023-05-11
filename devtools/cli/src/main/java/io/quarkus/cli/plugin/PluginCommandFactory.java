@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
@@ -14,12 +15,16 @@ import io.quarkus.runtime.util.StringUtil;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.ISetter;
-import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 
 public class PluginCommandFactory {
 
     private final OutputOptionMixin output;
+
+    //Testing
+    protected PluginCommandFactory() {
+        this(null);
+    }
 
     public PluginCommandFactory(OutputOptionMixin output) {
         this.output = output;
@@ -44,14 +49,17 @@ public class PluginCommandFactory {
      * Create a command for the specified plugin
      */
     public Optional<CommandSpec> createCommand(Plugin plugin) {
-        return createPluginCommand(plugin).map(command -> {
+        return createPluginCommand(plugin).map(createCommandSpec(plugin.getDescription().orElse("")));
+    }
+
+    public Function<PluginCommand, CommandSpec> createCommandSpec(String description) {
+        return command -> {
             CommandSpec spec = CommandSpec.wrapWithoutInspection(command);
-            String description = plugin.getDescription().orElse("");
             if (!StringUtil.isNullOrEmpty(description)) {
                 spec.usageMessage().description(description);
             }
             spec.parser().unmatchedArgumentsAllowed(true);
-            spec.addOption(OptionSpec.builder("options").type(Map.class).description("options").build()); //This is needed or options are ignored.
+            spec.parser().unmatchedOptionsArePositionalParams(true);
             spec.add(PositionalParamSpec.builder().type(String[].class).arity("0..*").description("Positional arguments")
                     .setter(new ISetter() {
                         @Override
@@ -67,7 +75,7 @@ public class PluginCommandFactory {
                         }
                     }).build());
             return spec;
-        });
+        };
     }
 
     /**

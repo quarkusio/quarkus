@@ -55,11 +55,6 @@
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.definition.scope.ScopeDefinitionTest">
-                <methods>
-                    <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.inheritance.InterceptorBindingInheritanceTest">
                 <methods>
                     <exclude name="testInterceptorBindingDirectlyInheritedFromManagedBean"/>

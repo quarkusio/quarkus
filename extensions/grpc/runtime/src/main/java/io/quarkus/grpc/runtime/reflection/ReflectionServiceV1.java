@@ -24,11 +24,11 @@ import io.grpc.reflection.v1.ServerReflectionResponse;
 import io.grpc.reflection.v1.ServiceResponse;
 import io.smallrye.mutiny.Multi;
 
-public class ReflectionService extends MutinyServerReflectionGrpc.ServerReflectionImplBase {
+public class ReflectionServiceV1 extends MutinyServerReflectionGrpc.ServerReflectionImplBase {
 
     private final GrpcServerIndex index;
 
-    public ReflectionService(List<ServerServiceDefinition> definitions) {
+    public ReflectionServiceV1(List<ServerServiceDefinition> definitions) {
         index = new GrpcServerIndex(definitions);
     }
 
@@ -40,17 +40,17 @@ public class ReflectionService extends MutinyServerReflectionGrpc.ServerReflecti
                     public ServerReflectionResponse apply(ServerReflectionRequest req) {
                         switch (req.getMessageRequestCase()) {
                             case LIST_SERVICES:
-                                return ReflectionService.this.getServiceList(req);
+                                return ReflectionServiceV1.this.getServiceList(req);
                             case FILE_BY_FILENAME:
-                                return ReflectionService.this.getFileByName(req);
+                                return ReflectionServiceV1.this.getFileByName(req);
                             case FILE_CONTAINING_SYMBOL:
-                                return ReflectionService.this.getFileContainingSymbol(req);
+                                return ReflectionServiceV1.this.getFileContainingSymbol(req);
                             case FILE_CONTAINING_EXTENSION:
-                                return ReflectionService.this.getFileByExtension(req);
+                                return ReflectionServiceV1.this.getFileByExtension(req);
                             case ALL_EXTENSION_NUMBERS_OF_TYPE:
-                                return ReflectionService.this.getAllExtensions(req);
+                                return ReflectionServiceV1.this.getAllExtensions(req);
                             default:
-                                return ReflectionService.this.getErrorResponse(req, Status.Code.UNIMPLEMENTED,
+                                return ReflectionServiceV1.this.getErrorResponse(req, Status.Code.UNIMPLEMENTED,
                                         "not implemented " + req.getMessageRequestCase());
 
                         }

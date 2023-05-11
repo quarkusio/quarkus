@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.oidc.runtime.OidcUtils.validateAndCreateIdentity;
 
 import java.security.Principal;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -282,20 +283,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 }
                             } else {
                                 OidcUtils.setSecurityIdentityIntrospection(builder, result.introspectionResult);
-                                String principalMember = "";
-                                if (result.introspectionResult.contains(OidcConstants.INTROSPECTION_TOKEN_USERNAME)) {
-                                    principalMember = OidcConstants.INTROSPECTION_TOKEN_USERNAME;
-                                } else if (result.introspectionResult.contains(OidcConstants.INTROSPECTION_TOKEN_SUB)) {
-                                    // fallback to "sub", if "username" is not present
-                                    principalMember = OidcConstants.INTROSPECTION_TOKEN_SUB;
+                                String principalName = result.introspectionResult.getUsername();
+                                if (principalName == null) {
+                                    principalName = result.introspectionResult.getSubject();
                                 }
-                                userName = principalMember.isEmpty() ? ""
-                                        : result.introspectionResult.getString(principalMember);
-                                if (result.introspectionResult.contains(OidcConstants.TOKEN_SCOPE)) {
-                                    for (String role : result.introspectionResult.getString(OidcConstants.TOKEN_SCOPE)
-                                            .split(" ")) {
-                                        builder.addRole(role.trim());
-                                    }
+                                userName = principalName != null ? principalName : "";
+
+                                Set<String> scopes = result.introspectionResult.getScopes();
+                                if (scopes != null) {
+                                    builder.addRoles(scopes);
                                 }
                             }
                             builder.setPrincipal(new Principal() {

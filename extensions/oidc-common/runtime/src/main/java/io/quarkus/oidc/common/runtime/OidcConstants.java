@@ -23,10 +23,13 @@ public final class OidcConstants {
     public static final String INTROSPECTION_TOKEN_TYPE_HINT = "token_type_hint";
     public static final String INTROSPECTION_TOKEN = "token";
     public static final String INTROSPECTION_TOKEN_ACTIVE = "active";
+    public static final String INTROSPECTION_TOKEN_CLIENT_ID = "client_id";
     public static final String INTROSPECTION_TOKEN_EXP = "exp";
     public static final String INTROSPECTION_TOKEN_IAT = "iat";
     public static final String INTROSPECTION_TOKEN_USERNAME = "username";
     public static final String INTROSPECTION_TOKEN_SUB = "sub";
+    public static final String INTROSPECTION_TOKEN_AUD = "aud";
+    public static final String INTROSPECTION_TOKEN_ISS = "iss";
 
     public static final String REVOCATION_TOKEN = "token";
 

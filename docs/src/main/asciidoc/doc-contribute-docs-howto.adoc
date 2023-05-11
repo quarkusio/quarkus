@@ -1,6 +1,5 @@
 ////
-This document is maintained in the main Quarkus repository
-and pull requests should be submitted there:
+To maintain this document, submit issues and pull requests in the main Quarkus repository:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="doc-contribute-howto"]
@@ -33,14 +32,15 @@ We suggest you have the following materials nearby:
 
 To ensure that your content shows up correctly on the link:https://quarkus.io/guides/[Quarkus documentation home page], use the following steps:
 
-. Decide on a content type that best fits the content that you are contributing.
+. Decide on a xref:doc-concept.adoc[Diataxis] content type that best fits the content that you are contributing.
 +
 TIP: To help you decide, see the content type descriptions in xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "About Quarkus documentation" page.
-+
+
 . Go to the `src/main/asciidoc/_templates` directory, and make a copy of the relevant template for the content type you have chosen. Be sure to:
 ** Use the filename syntax of`<category>-<titlekeyword>-<titlekeyword>-<content-type>.adoc`. For example, `security-basic-authentication-tutorial.adoc`.
 ** Save the file to the `docs/src/main/asciidoc` folder in the `quarkus` repository.
-. Set the minimum required header information as outlined in the following example:
+
+. Set the minimum required header information to ensure that the content renders correctly in the website portal and on the documentation home page, as outlined in the following example:
 +
 [source,asciidoc]
 ----
@@ -48,36 +48,83 @@ TIP: To help you decide, see the content type descriptions in xref:{doc-guides}/
 = Secure a Quarkus application with basic authentication <2>
 include::_attributes.adoc[] <3>
 :categories: security,web <4>
+<5>
 ----
-+
 <1> Set the `id` value to be the same as the file name but without the extension. You can shorten this if the file name is too long.
 <2> For information about how to create a good title for each content type, see xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
-<3> The `_attributes.adoc` include is required to ensure that attributes get resolved, the table of contents is generated, and content renders in the website portal. 
+<3> The `_attributes.adoc` include is required to ensure that attributes get resolved and the table of contents is generated.
 <4> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:{doc-guides}/doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
+<5> Insert a blank line before the abstract.
 +
 [IMPORTANT]
 ====
 Ensure there are no line breaks in the header section until after `:categories:` line.
 ====
+
+. Add an abstract that describes the purpose of the guide.
 +
-. Add an abstract to describe the purpose of the guide.
 [IMPORTANT]
 ====
-The first sentence of the abstract must explain the value and some benefit of the content in less than 27 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage]. 
+The first sentence of the abstract must explain the value and some benefit of the content in less than 27 words because this automatically displays on the link:https://quarkus.io/guides/[Quarkus guides homepage].
 There must also be a line break before and after the abstract.
 ====
 
 For more information about the minimum header requirements, see xref:{doc-guides}/doc-reference.adoc#document-structure[Document structure] on the "Quarkus style and content guidelines" page.
 
+[id="add-prerequisites"]
+== Add a prerequisites section
+
+For how-to and tutorial topics, include a prerequisites section just after the abstract.
+Declaring prerequisites clarifies the starting place for both how-to and tutorial content.
+Include them even though they might seem obvious to knowledgeable users.
+
+.An example prerequisite with callout explanations
+
+[source,asciidoc]
+----
+.Prerequisites <1>
+
+:prerequisites-time: 30 minutes <2>
+include::{includes}/prerequisites.adoc[] <3>
+* <an additional prerequisite> <4>
+----
+<1> Section heading for the prerequisites
+<2> Optional: An attribute that modifies the prerequisites
+<3> An include statement for the `prerequisites.adoc` file
+<4> Optional: An additional prerequisite not covered by the attributes
+
+.The default prerequisites
+
+By default, `include::{includes}/prerequisites.adoc[]` inserts the following asciidoc:
+
+[quote,subs="none"]
+----
+include::{includes}/prerequisites.adoc[]
+----
+
+.Using attributes to modify the prerequisites
+
+Optionally, you can add, remove, or modify the default prerequisites by inserting the following attributes on the line before the `include::{includes}/prerequisites.adoc[]` macro.
+
+* `{prerequisites-time}: <number of minutes>` overrides the default value of 15 minutes. For example, `{prerequisites-time}: 30` adds `* Roughly 30 minutes`.
+* `{prerequisites-no-maven}` removes `* Apache Maven <maven version>`.
+* `{prerequisites-docker}` adds `* A working container runtime (Docker or xref:podman.adoc[Podman])`.
+* `{prerequisites-docker-compose}` adds `Docker and Docker Compose or xref:podman.adoc[Podman], and Docker Compose`.
+* `{prerequisites-no-cli}` removes `* Optionally the xref:cli-tooling.adoc[Quarkus CLI] if you want to use it`.
+* `{prerequisites-no-graalvm}` or `{prerequisites-graalvm-mandatory}` remove `* Optionally Mandrel or GraalVM installed and xref:building-native-image.adoc#configuring-graalvm[configured appropriately] if you want to build a native executable (or Docker if you use a native container build)`.
+* `{prerequisites-graalvm-mandatory}` adds `* Mandrel or GraalVM installed and xref:building-native-image.adoc#configuring-graalvm[configured appropriately]`.
+
+For more information about these attributes, inspect the content of the `docs/src/main/asciidoc/_includes/prerequisites.adoc` file.
+
 == Retire and redirect an existing Quarkus AsciiDoc source file
 
 As content evolves, you might want to restructure an existing piece of Quarkus content into one or more content types and retire the existing AsciiDoc source file.
 
-If you are retiring or renaming a published Quarkus AsciiDoc source file, ensure that the restructure does not break existing bookmarks and links to original content. 
+If you are retiring or renaming a published Quarkus AsciiDoc source file, ensure that the restructure does not break existing bookmarks and links to the original content.
 Configure a URL redirect in the link:https://github.com/quarkusio/quarkusio.github.io/[Quarkus.io Website] GitHub repository by using the following steps:
 
-. Switch to the link:https://github.com/quarkusio/quarkusio.github.io/tree/develop/_redirects/guides[quarkusio/quarkusio.github.io] repository, and open the `_redirects/guides` folder.
-. Create a redirection file in Markdown format with a filename that matches the original AsciiDoc source filename that you want to retire. 
+. Switch to the link:https://github.com/quarkusio/quarkusio.github.io/tree/develop/_redirects/guides[`quarkusio/quarkusio.github.io`] repository, and open the `_redirects/guides` folder.
+. Create a redirection file in Markdown format with a filename that matches the original AsciiDoc source filename that you want to retire.
 . Add the following contents to the Markdown redirection file:
 +
 [source,markdown]
@@ -87,8 +134,8 @@ newUrl: /guides/<new_asciidoc_filename> // <2>
 ---
 +
 Where:
-<1> Is the name of the original AsciiDoc source file that you are retiring, without the `.adoc` file extension.
-<2> Is the name of the AsciiDoc source file that you want to redirect to, without the `.adoc` file extension.
+<1> The name of the original AsciiDoc source file that you are retiring, without the `.adoc` file extension.
+<2> The name of the AsciiDoc source file that you want to redirect to, without the `.adoc` file extension.
 
 .Example
 
@@ -117,7 +164,7 @@ Running `-DquicklyDocs` produces:
 
 - Generated AsciiDoc (`adoc` files) describing configuration properties in the `target/asciidoc/generated/config/` directory.
 - AsciiDoc output (`html` files) in the `docs/target/generated-docs/` directory.
-- YAML files containing metadata for all documents individually (`docs/target/indexByFile.yaml`) and grouped by document type (`target/indexByType.yaml`). 
+- YAML files containing metadata for all documents individually (`docs/target/indexByFile.yaml`) and grouped by document type (`target/indexByType.yaml`).
 - YAML files that list metadata errors by file (`docs/target/errorsByFile.yaml`) and by error type (`docs/target/errorsByType.yaml`)
 
 Review the resulting output and fix any issues before you submit your changes in a PR for review.
@@ -150,10 +197,10 @@ Our builds use https://vale.sh[Vale] to check grammar, style, and word usage in 
 
 === Containerized Vale
 
-This approach requires a working container runtime (Docker or xref:podman.adoc[Podman]). 
+This approach requires a working container runtime (Docker or xref:podman.adoc[Podman]).
 
-The `docs` module has a JUnit 5 test that will run the Vale linter in a container (using https://www.testcontainers.org/[Testcontainers]). 
-It verifies both Quarkus document metadata and Vale style rules. 
+The `docs` module has a JUnit 5 test that will run the Vale linter in a container (using https://www.testcontainers.org/[Testcontainers]).
+It verifies both Quarkus document metadata and Vale style rules.
 
 Run the test in one of the following ways:
 
@@ -190,7 +237,7 @@ For more information, see the https://vale.sh/manual/[Vale CLI Manual].
 
 https://vale.sh/docs/integrations/guide/[Vale IDE integrations] require the Vale CLI to be installed.
 
-Each IDE integration has its own configuration requirements. The Visual Studio Code IDE extension, for example, requires definition of the Vale CLI path:
+Each IDE integration has its own configuration requirements. The Visual Studio Code IDE extension, for example, requires a definition of the Vale CLI path:
 
 [source,json]
 ----
@@ -205,16 +252,17 @@ Each IDE integration has its own configuration requirements. The Visual Studio C
 Submit your proposed changes to the core Quarkus docs by {gh-pull-requests-fork}[creating a pull request] against the `main` branch of the Quarkus repository from your own {gh-about-forks}[repository fork].
 
 Reviews for code and documentation have different (but overlapping) participants.
-To simplify collaborative review, either isolate changes to docs in their own PRs,
-or ensure that the PR has a single, focused purpose. For example:
+To simplify collaborative review, either isolate changes to docs in separate PRs or ensure that a PR has a single focused purpose. For example:
 
 - Create a single PR that adds a configuration option for an extension and updates related materials (how-to, reference) to explain the change.
-- Create a single PR for related changes to a group of documents, some examples:
-correcting the usage of a term, correcting a recurring error, or moving common content into a shared file.
+- Create a single PR for related changes to a group of documents; some examples:
+Correcting the usage of a term, correcting a recurring error, or moving common content into a shared file.
 - If there are extensive code changes and documentation changes,
 create a separate PR for the documentation changes and include the relationship in the issue description.
 
-Pull requests that contain changes to documentation will have the `area/documentation` label added automatically.
+GitHub automatically adds the `area/documentation` label to pull requests that contain changes to documentation files.
+
+For more information about managing pull requests, see link:https://github.com/quarkusio/quarkus/blob/main/COMMITTERS.adoc[Information for Quarkus Committers].
 
 === Automatic style checking on the PR diff
 
@@ -224,7 +272,7 @@ To ensure that your content gets approved, fix the linter errors, warnings, and 
 
 We welcome your feedback on the Quarkus documentation style guidelines.
 
-If you disagree with the Vale results, be sure to add the yellow PR label `needs-vale-rule-tweak`.
+If you disagree with the Vale results, add the yellow PR label `needs-vale-rule-tweak`.
 
 == Previewing doc changes on the Quarkus website
 
@@ -232,7 +280,5 @@ After your PR is merged to `main` and the branch is synchronized with the link:h
 
 [IMPORTANT]
 ====
-The `main` branch of the `quarkus` repository is synchronized daily at 1AM GMT so you will not be able to preview your changes on link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] until after the next site refresh occurs.
+The `main` branch of the `quarkus` repository is synchronized daily at 1 AM GMT, so you cannot preview your changes on the link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] until after the next site refresh occurs.
 ====
-
-

@@ -158,6 +158,11 @@ public final class OidcUtils {
         return decodeAsJsonObject(tokens.nextToken());
     }
 
+    public static String decodeJwtHeadersAsString(String jwt) {
+        StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        return base64UrlDecode(tokens.nextToken());
+    }
+
     public static List<String> findRoles(String clientId, OidcTenantConfig.Roles rolesConfig, JsonObject json) {
         // If the user configured specific paths - check and enforce the claims at these paths exist
         if (rolesConfig.getRoleClaimPath().isPresent()) {
@@ -443,6 +448,9 @@ public final class OidcUtils {
         }
         if (tenant.token.verifyAccessTokenWithUserInfo.isEmpty()) {
             tenant.token.verifyAccessTokenWithUserInfo = provider.token.verifyAccessTokenWithUserInfo;
+        }
+        if (tenant.token.customizerName.isEmpty()) {
+            tenant.token.customizerName = provider.token.customizerName;
         }
 
         return tenant;

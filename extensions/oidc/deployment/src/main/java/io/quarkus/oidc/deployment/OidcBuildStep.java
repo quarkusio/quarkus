@@ -38,6 +38,7 @@ import io.quarkus.oidc.runtime.OidcRecorder;
 import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
@@ -85,7 +86,8 @@ public class OidcBuildStep {
                 .addBeanClass(DefaultTenantConfigResolver.class)
                 .addBeanClass(DefaultTokenStateManager.class)
                 .addBeanClass(OidcSessionImpl.class)
-                .addBeanClass(BackChannelLogoutHandler.class);
+                .addBeanClass(BackChannelLogoutHandler.class)
+                .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
     }
 

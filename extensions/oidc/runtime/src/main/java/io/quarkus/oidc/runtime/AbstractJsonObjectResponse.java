@@ -73,8 +73,8 @@ public class AbstractJsonObjectResponse {
         return jsonString == null ? json.toString() : jsonString;
     }
 
-    private static JsonObject toJsonObject(String userInfoJson) {
-        try (JsonReader jsonReader = Json.createReader(new StringReader(userInfoJson))) {
+    static JsonObject toJsonObject(String json) {
+        try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
             return jsonReader.readObject();
         }
     }

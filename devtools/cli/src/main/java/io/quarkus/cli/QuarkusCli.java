@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
@@ -264,7 +263,6 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     private PluginManager pluginManager(OutputOptionMixin output, Optional<String> testDir, boolean interactiveMode) {
         PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
-                .withCatalogs(Set.<String> of("quarkusio"))
                 .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
         return PluginManager.create(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
                 getProjectRoot(testDir), quarkusProject(testDir));

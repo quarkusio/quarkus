@@ -29,6 +29,7 @@ class PluginMangerState {
         //Inferred
         this.projectRoot = projectRoot.filter(p -> !p.equals(userHome.orElse(null)));
         this.jbangCatalogService = new JBangCatalogService(settings.isInteractiveMode(), output, settings.getPluginPrefix(),
+                settings.getFallbackJBangCatalog(),
                 settings.getRemoteJBangCatalogs());
         this.pluginCatalogService = new PluginCatalogService(settings.getToRelativePath());
         this.util = PluginManagerUtil.getUtil(settings);

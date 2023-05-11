@@ -3,24 +3,31 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Funqy HTTP Binding with Azure Functions
+//Propose that this file is restructured into a diataxis concept explainer type topic: azure-functions-funqy-http.adoc
+= Funqy HTTP binding with Azure Functions
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
-:summary: Use Funqy HTTP binding with Microsoft Azure Functions to deploy your serverless Quarkus applications.
 
-You can use xref:funqy-http.adoc[Funqy HTTP] on Azure Functions.  This allows you to invoke on multiple Funqy functions
-using HTTP deployed as one Azure Function.
-
-WARNING: The Funqy HTTP + Azure Functions binding is not a replacement for REST over HTTP.  Because Funqy
-needs to be portable cross a lot of different protocols and function providers its HTTP binding
-is very minimalistic and you will lose REST features like linking and the ability to leverage
-HTTP features like cache-control and conditional GETs.  You may want to consider using Quarkus's
-Jakarta REST, Spring MVC, or Vert.x Web Reactive Route xref:azure-functions-http.adoc[support] instead.  They also work with Quarkus and Azure Functions.
-
+Use xref:funqy-http.adoc[Quarkus Funqy HTTP] binding with Microsoft Azure Functions to deploy your serverless Quarkus applications.
+By integrating your Quarkus applications with Azure Functions, you can invoke multiple Funqy HTTP functions as one Azure function.
 
 include::{includes}/extension-status.adoc[]
 
-Follow the xref:azure-functions-http.adoc[Azure Functions HTTP Guide].  It walks through using a variety of HTTP
-frameworks on Azure Functions.  Including Funqy.
+To build RESTful Quarkus applications, consider using the Quarkus implementation of Jakarta REST, Spring MVC, or Vert.x Web Reactive Route support instead, as described in xref:azure-functions-http.adoc[Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes]. All of which can be easily integrated with Quarkus and Azure Functions.
+
+[IMPORTANT]
+====
+The Quarkus Funqy HTTP with Azure Functions binding is not a replacement for REST over HTTP.
+This is because Funqy needs to be portable across many different protocols and function providers and its HTTP binding is very basic.
+With Funqy, you can lose REST features such as linking and the ability to use some HTTP features, for example, cache-control and conditional GETs.
+====
+
+== Get started
+
+For more information about the HTTP frameworks in Quarkus that you can integrate with Azure Functions, including Funqy, see the following tutorial:
+
+xref:azure-functions-http.adoc[Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes].
+
+== References
 

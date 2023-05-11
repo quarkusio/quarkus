@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.client.spi;
 
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.ext.Providers;
 
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
@@ -22,6 +23,11 @@ public interface ResteasyReactiveClientRequestContext extends ClientRequestConte
     void resume();
 
     void resume(Throwable t);
+
+    /**
+     * @return the context where to lookup all the provider instances of the current client.
+     */
+    Providers getProviders();
 
     /**
      * @return the captured or created duplicated context. See {@link #VERTX_CONTEXT_PROPERTY} for details.

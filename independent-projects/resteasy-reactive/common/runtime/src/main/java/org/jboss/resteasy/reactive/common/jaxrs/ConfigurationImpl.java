@@ -528,6 +528,20 @@ public class ConfigurationImpl implements Configuration {
         return null;
     }
 
+    public <T> ContextResolver<T> getContextResolver(Class<T> wantedClass) {
+        MultivaluedMap<Integer, ContextResolver<?>> candidates = contextResolvers.get(wantedClass);
+        if (candidates == null) {
+            return null;
+        }
+        for (List<ContextResolver<?>> contextResolvers : candidates.values()) {
+            if (!contextResolvers.isEmpty()) {
+                return (ContextResolver<T>) contextResolvers.get(0);
+            }
+        }
+
+        return null;
+    }
+
     public <T> T getFromContext(Class<T> wantedClass) {
         MultivaluedMap<Integer, ContextResolver<?>> candidates = contextResolvers.get(wantedClass);
         if (candidates == null) {

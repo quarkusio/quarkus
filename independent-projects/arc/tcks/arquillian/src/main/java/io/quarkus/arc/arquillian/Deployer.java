@@ -3,7 +3,6 @@ package io.quarkus.arc.arquillian;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -18,10 +17,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import jakarta.enterprise.inject.Stereotype;
-import jakarta.inject.Qualifier;
-import jakarta.interceptor.InterceptorBinding;
 
 import org.jboss.arquillian.container.spi.client.container.DeploymentException;
 import org.jboss.jandex.AnnotationInstance;
@@ -44,6 +39,7 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanProcessor;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 
 final class Deployer {
@@ -133,8 +129,8 @@ final class Deployer {
                     .setTransformUnproxyableClasses(false)
                     .setRemoveUnusedBeans(false)
                     .setBuildCompatibleExtensions(buildCompatibleExtensions)
-                    .setAdditionalBeanDefiningAnnotations(Set.of(new BeanDefiningAnnotation(
-                            DotName.createSimple(ExtraBean.class.getName()), null)))
+                    .setAdditionalBeanDefiningAnnotations(Set.of(
+                            new BeanDefiningAnnotation(DotName.createSimple(ExtraBean.class))))
                     .addAnnotationTransformer(new AnnotationsTransformer() {
                         @Override
                         public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -231,12 +227,12 @@ final class Deployer {
             }
         }
 
-        // 4. CDI-related annotations (qualifiers, interceptor bindings, stereotypes)
+        // 4. CDI-related annotations (scopes, qualifiers, interceptor bindings, stereotypes)
         // CDI recognizes them even if they come from an archive that is not a bean archive
-        Set<Class<? extends Annotation>> metaAnnotations = Set.of(Qualifier.class, InterceptorBinding.class, Stereotype.class);
-        for (Class<? extends Annotation> metaAnnotation : metaAnnotations) {
-            DotName metaAnnotationName = DotName.createSimple(metaAnnotation.getName());
-            for (AnnotationInstance annotation : applicationIndex.getAnnotations(metaAnnotationName)) {
+        Set<DotName> metaAnnotations = Set.of(DotNames.SCOPE, DotNames.NORMAL_SCOPE, DotNames.QUALIFIER,
+                DotNames.INTERCEPTOR_BINDING, DotNames.STEREOTYPE);
+        for (DotName metaAnnotation : metaAnnotations) {
+            for (AnnotationInstance annotation : applicationIndex.getAnnotations(metaAnnotation)) {
                 if (annotation.target().kind().equals(AnnotationTarget.Kind.CLASS)) {
                     String annotationClass = annotation.target().asClass().name().toString();
                     String classFile = annotationClass.replace('.', '/') + ".class";

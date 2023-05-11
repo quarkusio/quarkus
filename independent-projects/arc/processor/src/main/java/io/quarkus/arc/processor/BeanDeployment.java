@@ -153,6 +153,9 @@ public class BeanDeployment {
 
         this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
 
+        findScopeAnnotations(DotNames.SCOPE, beanDefiningAnnotations);
+        findScopeAnnotations(DotNames.NORMAL_SCOPE, beanDefiningAnnotations);
+
         qualifierNonbindingMembers = new HashMap<>();
         qualifiers = findQualifiers();
         for (QualifierRegistrar registrar : builder.qualifierRegistrars) {
@@ -721,8 +724,31 @@ public class BeanDeployment {
     }
 
     private boolean isRuntimeAnnotationType(ClassInfo annotationType) {
+        if (!annotationType.isAnnotation()) {
+            return false;
+        }
         AnnotationInstance retention = annotationType.declaredAnnotation(Retention.class);
         return retention != null && "RUNTIME".equals(retention.value().asEnum());
+    }
+
+    // this method finds and registers custom scope annotations prior to registering custom contexts;
+    // context registration will later overwrite the corresponding entries in the map, which leaves
+    // custom scope annotations without a context, and that makes no sense _except_ for the CDI TCK
+    private void findScopeAnnotations(DotName scopeMetaAnnotation,
+            Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations) {
+        for (AnnotationInstance scope : beanArchiveImmutableIndex.getAnnotations(scopeMetaAnnotation)) {
+            ClassInfo scopeClass = scope.target().asClass();
+            if (!isRuntimeAnnotationType(scopeClass)) {
+                continue;
+            }
+            if (isExcluded(scopeClass)) {
+                continue;
+            }
+            DotName scopeName = scopeClass.name();
+            if (BuiltinScope.from(scopeName) == null && !beanDefiningAnnotations.containsKey(scopeName)) {
+                beanDefiningAnnotations.put(scopeName, new BeanDefiningAnnotation(scopeName));
+            }
+        }
     }
 
     private Map<DotName, ClassInfo> findQualifiers() {
@@ -870,7 +896,7 @@ public class BeanDeployment {
         return stereotypes;
     }
 
-    private static ScopeInfo getScope(DotName scopeAnnotationName,
+    private ScopeInfo getScope(DotName scopeAnnotationName,
             Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts) {
         BuiltinScope builtin = BuiltinScope.from(scopeAnnotationName);
         if (builtin != null) {
@@ -879,6 +905,19 @@ public class BeanDeployment {
         for (ScopeInfo customScope : customContexts.keySet()) {
             if (customScope.getDotName().equals(scopeAnnotationName)) {
                 return customScope;
+            }
+        }
+        if (beanDefiningAnnotations.containsKey(scopeAnnotationName)) {
+            // custom scope annotations without a registered context make no sense,
+            // but the CDI TCK uses them
+            ClassInfo clazz = beanArchiveImmutableIndex.getClassByName(scopeAnnotationName);
+            if (clazz != null) {
+                boolean inherited = clazz.hasDeclaredAnnotation(DotNames.INHERITED);
+                if (clazz.hasDeclaredAnnotation(DotNames.SCOPE)) {
+                    return new ScopeInfo(scopeAnnotationName, false, inherited);
+                } else if (clazz.hasDeclaredAnnotation(DotNames.NORMAL_SCOPE)) {
+                    return new ScopeInfo(scopeAnnotationName, true, inherited);
+                }
             }
         }
         return null;

@@ -57,9 +57,6 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.definition.scope.ScopeDefinitionTest">
                 <methods>
-                    <exclude name="testScopeTypeHasCorrectTarget"/>
-                    <exclude name="testScopeTypeDeclaresScopeTypeAnnotation"/>
-                    <exclude name="testScopeTypesAreExtensible"/>
                     <exclude name="testScopeTypeDeclaredInheritedIsBlockedByIntermediateScopeTypeNotMarkedInherited"/>
                 </methods>
             </class>
@@ -104,11 +101,6 @@
                 <methods>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/455 -->
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.definition.scope.inOtherBda.ScopeDefinedInOtherBDATest">
-                <methods>
-                    <exclude name="testCustomScopeInOtherBDAisBeanDefiningAnnotation"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.lookup.dynamic.handle.InstanceHandleTest">

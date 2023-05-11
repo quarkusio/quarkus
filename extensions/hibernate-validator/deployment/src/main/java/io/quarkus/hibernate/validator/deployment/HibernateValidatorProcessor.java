@@ -101,11 +101,13 @@ import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationExceptionMapper;
+import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ViolationReport;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.configuration.ConfigBuilder;
@@ -331,6 +333,7 @@ class HibernateValidatorProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBean,
             BuildProducer<AutoAddScopeBuildItem> autoScopes,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItems,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProvider,
             Capabilities capabilities) {
         // The bean encapsulating the Validator and ValidatorFactory
         additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
@@ -353,6 +356,8 @@ class HibernateValidatorProcessor {
                     .supplier(hibernateValidatorRecorder.resteasyConfigSupportSupplier(
                             resteasyConfigBuildItem.isPresent() ? resteasyConfigBuildItem.get().isJsonDefault() : false))
                     .done());
+            resteasyJaxrsProvider.produce(new ResteasyJaxrsProviderBuildItem(ResteasyViolationExceptionMapper.class.getName()));
+
         } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
             additionalBeans.produce(new AdditionalBeanBuildItem(

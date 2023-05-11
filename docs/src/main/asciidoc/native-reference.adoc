@@ -2142,7 +2142,7 @@ The following table outlines Native Image JFR support and limitations by version
 |===
 |GraalVM Version |Supports |Limitations
 
-|GraalVM CE 21.3
+|GraalVM CE 21.3 and Mandrel 21.3
 |* Minimal VM Level events
 * Custom events API
 * Start recordings upon executabe run or JFR Recording API
@@ -2151,14 +2151,14 @@ The following table outlines Native Image JFR support and limitations by version
 * No stacktrace tracing
 * No event streaming
 
-|GraalVM CE 22.3
+|GraalVM CE 22.3 and Mandrel 22.3
 |* Everything from GraalVM CE 21.3
 * Additional monitor and thread events
 |* No old object sampling
 * No stacktrace tracing
 * No event streaming
 
-|GraalVM CE for JDK 17/20
+|GraalVM CE for JDK 17/20 and Mandrel 23.0
 |* Everything from GraalVM CE 22.3
 * Additional monitor, thread, container, and allocation events
 * Stacktraces

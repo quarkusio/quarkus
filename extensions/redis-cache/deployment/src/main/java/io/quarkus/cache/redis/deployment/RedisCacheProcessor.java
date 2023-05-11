@@ -20,7 +20,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.cache.CompositeCacheKey;
@@ -103,7 +102,6 @@ public class RedisCacheProcessor {
         recorder.setCacheValueTypes(valueTypes);
     }
 
-    @NotNull
     private static Map<String, String> valueTypesFromCacheResultAnnotation(CombinedIndexBuildItem combinedIndex) {
         Map<String, Set<Type>> valueTypesFromAnnotations = new HashMap<>();
 

@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.reactive.kotlin.serialization.common;
 
-import org.jetbrains.annotations.NotNull;
-
 import kotlinx.serialization.json.JsonBuilder;
 
 /**
@@ -25,7 +23,7 @@ public interface JsonBuilderCustomizer extends Comparable<JsonBuilderCustomizer>
         return DEFAULT_PRIORITY;
     }
 
-    default int compareTo(@NotNull JsonBuilderCustomizer o) {
+    default int compareTo(JsonBuilderCustomizer o) {
         return Integer.compare(o.priority(), priority());
     }
 }

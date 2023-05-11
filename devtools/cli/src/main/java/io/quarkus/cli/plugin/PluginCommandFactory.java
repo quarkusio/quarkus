@@ -14,7 +14,6 @@ import io.quarkus.runtime.util.StringUtil;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Model.ISetter;
-import picocli.CommandLine.Model.OptionSpec;
 import picocli.CommandLine.Model.PositionalParamSpec;
 
 public class PluginCommandFactory {
@@ -51,7 +50,7 @@ public class PluginCommandFactory {
                 spec.usageMessage().description(description);
             }
             spec.parser().unmatchedArgumentsAllowed(true);
-            spec.addOption(OptionSpec.builder("options").type(Map.class).description("options").build()); //This is needed or options are ignored.
+            spec.parser().unmatchedOptionsArePositionalParams(true);
             spec.add(PositionalParamSpec.builder().type(String[].class).arity("0..*").description("Positional arguments")
                     .setter(new ISetter() {
                         @Override

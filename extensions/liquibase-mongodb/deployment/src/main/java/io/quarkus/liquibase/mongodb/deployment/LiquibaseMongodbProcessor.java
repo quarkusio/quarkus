@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
@@ -254,9 +255,9 @@ class LiquibaseMongodbProcessor {
     }
 
     @BuildStep
-    public InitTaskBuildItem configureInitTask() {
+    public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
         return InitTaskBuildItem.create()
-                .withName("liquibase-mongodb-init")
+                .withName(app.getName() + "-liquibase-mongodb-init")
                 .withTaskEnvVars(
                         Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_LIQUIBASE_MONGODB_ENABLED", "true"))
                 .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_MONGODB_ENABLED", "false"))

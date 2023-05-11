@@ -46,6 +46,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -221,9 +222,9 @@ class FlywayProcessor {
     }
 
     @BuildStep
-    public InitTaskBuildItem configureInitTask() {
+    public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
         return InitTaskBuildItem.create()
-                .withName("flyway-init")
+                .withName(app.getName() + "-flyway-init")
                 .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
                 .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
                 .withSharedEnvironment(true)

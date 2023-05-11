@@ -2,6 +2,7 @@ package io.quarkus.it.jpa.postgresql;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -135,6 +136,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         person.setName(name);
         person.setStatus(Status.LIVING);
         person.setAddress(new SequencedAddress("Street " + randomName()));
+        person.setLatestLunchBreakDuration(Duration.ofMinutes(30));
         entityManager.persist(person);
     }
 

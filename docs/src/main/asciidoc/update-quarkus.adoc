@@ -31,6 +31,7 @@ The following update command only covers a few items in this quick reference.
 == Prerequisites
 
 * A project based on Quarkus version 2.13 or later.
+
 :prerequisites-time: 30 minutes
 include::{includes}/prerequisites.adoc[]
 

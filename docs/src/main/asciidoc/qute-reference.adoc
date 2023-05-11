@@ -150,6 +150,7 @@ Sections::
 A <<sections,section>> may contain static text, expressions and nested sections: `{#if foo.active}{foo.name}{/if}`.
 The name in the closing tag is optional: `{#if active}ACTIVE!{/}`.
 A section can be empty: `{#myTag image=true /}`.
+Some sections support optional end tags, i.e. if the end tag is missing then the section ends where the parent section ends.
 A section may also declare nested section blocks: `{#if item.valid} Valid. {#else} Invalid. {/if}` and decide which block to render.
 
 Unparsed Character Data::
@@ -585,6 +586,54 @@ A section has a start tag that starts with `#`, followed by the name of the sect
 It may be empty, i.e. the start tag ends with `/`: `{#myEmptySection /}`.
 Sections usually contain nested expressions and other sections.
 The end tag starts with `/` and contains the name of the section (optional): `{#if foo}Foo!{/if}` or `{#if foo}Foo!{/}`.
+Some sections support optional end tags, i.e. if the end tag is missing then the section ends where the parent section ends.
+
+.`#let` Optional End Tag Example
+[source,html]
+----
+{#if item.isActive}
+  {#let price = item.price} <1>
+  {price}
+  // synthetic {/let} added here automatically
+{/if}
+// {price} cannot be used here!
+----
+<1> Defines the local variable that can be used inside the parent `{#if}` section.
+
+|===
+|Built-in section |Supports Optional End Tag
+
+|`{#for}`
+|❌
+
+|`{#if}`
+|❌
+
+|`{#when}`
+|❌
+
+|`{#let}`
+|✅
+
+|`{#with}`
+|❌
+
+|`{#include}`
+|✅
+
+|User-defined Tags
+|❌
+
+|`{#fragment}`
+|❌
+
+|`{#cached}`
+|❌
+
+|===
+
+[[sections_params]]
+==== Parameters
 
 A start tag can define parameters with optional names, e.g. `{#if item.isActive}` and `{#let foo=1 bar=false}`.
 Parameters are separated by one or more spaces.

@@ -28,6 +28,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.SectionHelperFactory.BlockInfo;
+import io.quarkus.qute.SectionHelperFactory.MissingEndTagStrategy;
 import io.quarkus.qute.SectionHelperFactory.ParametersInfo;
 import io.quarkus.qute.SectionHelperFactory.ParserDelegate;
 import io.quarkus.qute.TemplateNode.Origin;
@@ -78,9 +79,6 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private AtomicInteger expressionIdGenerator;
     private final List<Function<String, String>> contentFilters;
     private boolean hasLineSeparator;
-
-    // The number of param declarations with default values for which a synthetic {#let} section was added
-    private int paramDeclarationDefaults;
 
     private TemplateImpl template;
 
@@ -155,33 +153,40 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                     // Flush the last text segment
                     flushText();
                 } else {
-                    String reason;
-                    ErrorCode code;
+                    String reason = null;
+                    ErrorCode code = null;
                     if (state == State.TAG_INSIDE_STRING_LITERAL) {
                         reason = "unterminated string literal";
                         code = ParserError.UNTERMINATED_STRING_LITERAL;
                     } else if (state == State.TAG_INSIDE) {
-                        reason = "unterminated section";
-                        code = ParserError.UNTERMINATED_SECTION;
+                        // First handle the optional end tags and if an unterminated section is found the then throw an exception
+                        SectionNode.Builder section = sectionStack.peek();
+                        if (!section.helperName.equals(ROOT_HELPER_NAME)) {
+                            SectionNode.Builder unterminated = handleOptionalEngTags(section, ROOT_HELPER_NAME);
+                            if (unterminated != null) {
+                                reason = "unterminated section";
+                                code = ParserError.UNTERMINATED_SECTION;
+                            }
+                        } else {
+                            reason = "unterminated expression";
+                            code = ParserError.UNTERMINATED_EXPRESSION;
+                        }
                     } else {
                         reason = "unexpected state [" + state + "]";
                         code = ParserError.GENERAL_ERROR;
                     }
-                    throw error(code,
-                            "unexpected non-text buffer at the end of the template - {reason}: {buffer}")
-                            .argument("reason", reason)
-                            .argument("buffer", buffer)
-                            .build();
+                    if (code != null) {
+                        throw error(code,
+                                "unexpected non-text buffer at the end of the template - {reason}: {buffer}")
+                                .argument("reason", reason)
+                                .argument("buffer", buffer)
+                                .build();
+                    }
                 }
             }
 
-            // Param declarations with default values - a synthetic {#let} section has no end tag, i.e. {/let} so we need to handle this specially
-            for (int i = 0; i < paramDeclarationDefaults; i++) {
-                SectionNode.Builder section = sectionStack.pop();
-                sectionStack.peek().currentBlock().addNode(section.build(this::currentTemplate));
-                // Remove the last type info map from the stack
-                scopeStack.pop();
-            }
+            // Note that this also handles the param declarations with default values, i.e. synthetic {#let} sections
+            handleOptionalEngTags(sectionStack.peek(), ROOT_HELPER_NAME);
 
             SectionNode.Builder root = sectionStack.peek();
             if (root == null) {
@@ -506,7 +511,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         SectionNode.Builder section = sectionStack.peek();
         SectionBlock.Builder block = section.currentBlock();
         String name = content.substring(1, content.length());
-        if (block != null && !block.getLabel().equals(SectionHelperFactory.MAIN_BLOCK_NAME)
+        if (block != null
+                && !block.getLabel().equals(SectionHelperFactory.MAIN_BLOCK_NAME)
                 && !section.helperName.equals(name)) {
             // Non-main block end, e.g. {/else}
             if (!name.isEmpty() && !block.getLabel().equals(name)) {
@@ -517,18 +523,23 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             }
             section.endBlock();
         } else {
-            // Section end, e.g. {/if}
+            // Section end, e.g. {/if} or {/}
             if (section.helperName.equals(ROOT_HELPER_NAME)) {
                 throw error(ParserError.SECTION_START_NOT_FOUND, "section start tag found for {tag}")
                         .argument("tag", tag)
                         .build();
             }
             if (!name.isEmpty() && !section.helperName.equals(name)) {
-                throw error(ParserError.SECTION_END_DOES_NOT_MATCH_START,
-                        "section end tag [{name}] does not match the start tag [{tag}]")
-                        .argument("name", name)
-                        .argument("tag", section.helperName)
-                        .build();
+                // The tag name is not empty but does not match the current section
+                // First handle the optional end tags and if an unterminated section is found the then throw an exception
+                SectionNode.Builder unterminated = handleOptionalEngTags(section, name);
+                if (unterminated != null) {
+                    throw error(ParserError.SECTION_END_DOES_NOT_MATCH_START,
+                            "section end tag [{name}] does not match the start tag [{tag}]")
+                            .argument("name", name)
+                            .argument("tag", unterminated.helperName)
+                            .build();
+                }
             }
             // Pop the section and its main block
             section = sectionStack.pop();
@@ -537,6 +548,25 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
 
         // Remove the last type info map from the stack
         scopeStack.pop();
+    }
+
+    /**
+     *
+     * @param section
+     * @return an unterminated section or {@code null} if no unterminated section was detected
+     */
+    private SectionNode.Builder handleOptionalEngTags(SectionNode.Builder section, String name) {
+        while (section != null && !section.helperName.equals(name)) {
+            if (section.factory.missingEndTagStrategy() == MissingEndTagStrategy.BIND_TO_PARENT) {
+                section = sectionStack.pop();
+                sectionStack.peek().currentBlock().addNode(section.build(this::currentTemplate));
+                scopeStack.pop();
+                section = sectionStack.peek();
+            } else {
+                return section;
+            }
+        }
+        return null;
     }
 
     private void parameterDeclaration(String content, String tag) {
@@ -614,14 +644,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                     List.of(key + "?=" + defaultValue).iterator(),
                     sectionNode.currentBlock());
 
-            // Init section block
+            // Init a synthetic section block
             currentScope = scopeStack.peek();
             Scope newScope = factory.initializeBlock(currentScope, sectionNode.currentBlock());
             scopeStack.addFirst(newScope);
             sectionStack.addFirst(sectionNode);
-
-            // A synthetic {#let} section has no end tag, i.e. {/let} so we need to handle this specially
-            paramDeclarationDefaults++;
         }
     }
 

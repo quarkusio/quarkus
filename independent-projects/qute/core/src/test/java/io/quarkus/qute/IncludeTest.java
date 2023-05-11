@@ -222,7 +222,19 @@ public class IncludeTest {
         assertEquals(
                 "Rendering error in template [bum.html] line 1: invalid fragment identifier [foo-and_bar]",
                 expected.getMessage());
+    }
 
+    @Test
+    public void testOptionalEndTag() {
+        Engine engine = Engine.builder().addDefaults().build();
+
+        engine.putTemplate("super", engine.parse("{#insert header}default header{/insert}::{#insert}{/}"));
+        assertEquals("super header:: body",
+                engine.parse("{#include super}{#header}super header{/header} body").render());
+        assertEquals("super header:: 1",
+                engine.parse("{#let foo = 1}{#include super}{#header}super header{/header} {foo}").render());
+        assertEquals("default header:: 1",
+                engine.parse("{#include super}{#let foo=1} {foo}").render());
     }
 
 }

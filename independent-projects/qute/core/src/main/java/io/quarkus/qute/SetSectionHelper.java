@@ -116,6 +116,11 @@ public class SetSectionHelper implements SectionHelper {
         }
 
         @Override
+        public MissingEndTagStrategy missingEndTagStrategy() {
+            return MissingEndTagStrategy.BIND_TO_PARENT;
+        }
+
+        @Override
         public SetSectionHelper initialize(SectionInitContext context) {
             Map<String, Expression> params = new HashMap<>();
             Map<String, Expression> keys = null;

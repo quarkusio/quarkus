@@ -74,4 +74,19 @@ public class SetSectionTest {
                         .render());
     }
 
+    @Test
+    public void testOptionalEndTag() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertEquals("true",
+                engine.parse("{#let foo=true}{foo}").render());
+        assertEquals("true  ?",
+                engine.parse("{#let foo=true}{foo}  ?").render());
+        assertEquals("true::1",
+                engine.parse("{#let foo=true}{#let bar = 1}{foo}::{bar}").render());
+        assertEquals("true",
+                engine.parse("{#let foo=true}{#if baz}{foo}{/}").data("baz", true).render());
+        assertEquals("true::null",
+                engine.parse("{#if baz}{#let foo=true}{foo}{/if}::{foo ?: 'null'}").data("baz", true).render());
+    }
+
 }

@@ -118,6 +118,31 @@ public interface SectionHelperFactory<T extends SectionHelper> {
         return outerScope;
     }
 
+    /**
+     * A section end tag may be mandatory or optional.
+     *
+     * @return the strategy
+     */
+    default MissingEndTagStrategy missingEndTagStrategy() {
+        return MissingEndTagStrategy.ERROR;
+    }
+
+    /**
+     * This strategy is used when an unterminated section is detected during parsing.
+     */
+    public enum MissingEndTagStrategy {
+
+        /**
+         * The end tag is mandatory. A missing end tag results in a parser error.
+         */
+        ERROR,
+
+        /**
+         * The end tag is optional. The section ends where the parent section ends.
+         */
+        BIND_TO_PARENT;
+    }
+
     interface ParserDelegate extends ErrorInitializer {
 
         default TemplateException createParserError(String message) {

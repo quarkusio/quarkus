@@ -14,7 +14,11 @@ By integrating your Quarkus applications with Azure Functions, you can invoke mu
 
 include::{includes}/extension-status.adoc[]
 
-To build RESTful Quarkus applications, consider using the Quarkus implementation of Jakarta REST, Spring MVC, or Vert.x Web Reactive Route support instead, as described in xref:azure-functions-http.adoc[Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes]. All of which can be easily integrated with Quarkus and Azure Functions.
+== Overview
+
+// MOre overview information about Funqy and Quarkus and the integration with Azure is needed here.
+
+
 
 [IMPORTANT]
 ====
@@ -22,6 +26,10 @@ The Quarkus Funqy HTTP with Azure Functions binding is not a replacement for RES
 This is because Funqy needs to be portable across many different protocols and function providers and its HTTP binding is very basic.
 With Funqy, you can lose REST features such as linking and the ability to use some HTTP features, for example, cache-control and conditional GETs.
 ====
+
+To build RESTful Quarkus applications, consider using the Quarkus implementation of Jakarta REST, Spring MVC, or Vert.x Web Reactive Route support instead, as described in xref:azure-functions-http.adoc[Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes].
+All of which can be easily integrated with Quarkus and Azure Functions.
+
 
 == Get started
 
@@ -31,3 +39,5 @@ xref:azure-functions-http.adoc[Azure Functions with RESTEasy Reactive, Undertow,
 
 == References
 
+* xref:azure-integration-built-in-concept.adoc[Quarkus integration with Microsoft Azure]
+* xref:funqy-http.adoc[Quarkus Funqy HTTP]

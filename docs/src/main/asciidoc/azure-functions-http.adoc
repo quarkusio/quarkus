@@ -152,6 +152,7 @@ You can optionally edit the deployment descriptors as needed, and then rerun the
 
 == References
 
+* xref:azure-integration-built-in-concept.adoc[Quarkus integration with Microsoft Azure]
 * xref:deploying-to-azure-cloud.adoc[Deploying to Microsoft Azure Cloud]
 * xref:azure-functions.adoc[Integrate and deploy a Quarkus HTTP function to Azure Functions]
 * xref:funqy-azure-functions-http.adoc[Funqy HTTP Binding with Azure Functions]

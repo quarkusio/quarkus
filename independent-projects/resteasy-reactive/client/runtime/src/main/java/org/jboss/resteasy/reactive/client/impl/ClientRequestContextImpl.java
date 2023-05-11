@@ -32,6 +32,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
 import org.jboss.resteasy.reactive.common.NotImplementedYet;
@@ -52,6 +53,7 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
     private final RestClientRequestContext restClientRequestContext;
     private final ClientRequestHeadersMap headersMap;
     private final Context context;
+    private final Providers providers;
 
     public ClientRequestContextImpl(RestClientRequestContext restClientRequestContext, ClientImpl client,
             ConfigurationImpl configuration) {
@@ -59,6 +61,7 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.client = client;
         this.configuration = configuration;
         this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
+        this.providers = new ProvidersImpl(restClientRequestContext);
 
         // TODO This needs to be challenged:
         // Always create a duplicated context because each REST Client invocation must have its own context
@@ -71,6 +74,11 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
             this.context = VertxContext.createNewDuplicatedContext(current);
         }
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
+    }
+
+    @Override
+    public Providers getProviders() {
+        return providers;
     }
 
     @Override

@@ -953,6 +953,79 @@ public interface ExtensionsService {
 org.eclipse.microprofile.rest.client.propagateHeaders=Authorization,Proxy-Authorization
 ----
 
+== Customizing the request
+
+The REST Client Reactive supports further customization of the final request to be sent to the server via filters. The filters must implement either the interface `ClientRequestFilter` or `ResteasyReactiveClientRequestFilter`.
+
+A simple example of customizing the request would be to add a custom header:
+
+[source, java]
+----
+@Provider
+public class TestClientRequestFilter implements ClientRequestFilter {
+
+    @Override
+    public void filter(ClientRequestContext requestContext) {
+        requestContext.getHeaders().add("my_header", "value");
+    }
+}
+----
+
+Next, you can register your filter using the `@RegisterProvider` annotation:
+
+[source, java]
+----
+@Path("/extensions")
+@RegisterProvider(TestClientRequestFilter.class)
+public interface ExtensionsService {
+
+    // ...
+}
+----
+
+Or programmatically using the `.register()` method:
+
+[source, java]
+----
+QuarkusRestClientBuilder.newBuilder()
+    .register(TestClientRequestFilter.class)
+    .build(ExtensionsService.class)
+----
+
+=== Injecting the `jakarta.ws.rs.ext.Providers` instance in filters
+
+The `jakarta.ws.rs.ext.Providers` is useful when we need to lookup the provider instances of the current client. 
+
+We can get the `Providers` instance in our filters from the request context as follows:
+
+[source, java]
+----
+@Provider
+public class TestClientRequestFilter implements ClientRequestFilter {
+
+    @Override
+    public void filter(ClientRequestContext requestContext) {
+        Providers providers = ((ResteasyReactiveClientRequestContext) requestContext).getProviders();
+        // ...
+    }
+}
+----
+
+Alternatively, you can implement the `ResteasyReactiveClientRequestFilter` interface instead of the `ClientRequestFilter` interface that will directly provide the `ResteasyReactiveClientRequestContext` context:
+
+[source, java]
+----
+@Provider
+public class TestClientRequestFilter implements ResteasyReactiveClientRequestFilter {
+
+    @Override
+    public void filter(ResteasyReactiveClientRequestFilter requestContext) {
+        Providers providers = requestContext.getProviders();
+        // ...
+    }
+}
+----
+
 == Exception handling
 
 The MicroProfile REST Client specification introduces the `org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper` whose purpose is to convert an HTTP response to an exception.

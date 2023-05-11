@@ -71,7 +71,7 @@ public class CORSConfig {
      * the request’s credentials mode Request.credentials is “include”.
      *
      * The value of this header will default to `true` if `quarkus.http.cors.origins` property is set and
-     * there is a match with the precise `Origin` header and that header is not '*'.
+     * there is a match with the precise `Origin` header.
      */
     @ConfigItem
     public Optional<Boolean> accessControlAllowCredentials = Optional.empty();

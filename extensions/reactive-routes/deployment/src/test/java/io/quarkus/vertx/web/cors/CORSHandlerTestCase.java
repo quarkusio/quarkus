@@ -22,7 +22,7 @@ public class CORSHandlerTestCase {
     @DisplayName("Handles a preflight CORS request correctly")
     public void corsPreflightTestServlet() {
         String origin = "http://custom.origin.quarkus";
-        String methods = "GET,POST";
+        String methods = "GET";
         String headers = "X-Custom";
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
@@ -31,7 +31,7 @@ public class CORSHandlerTestCase {
                 .options("/test").then()
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
+                .header("Access-Control-Allow-Methods", "GET,OPTIONS,POST")
                 .header("Access-Control-Allow-Headers", headers);
     }
 
@@ -39,18 +39,13 @@ public class CORSHandlerTestCase {
     @DisplayName("Handles a direct CORS request correctly")
     public void corsNoPreflightTestServlet() {
         String origin = "http://custom.origin.quarkus";
-        String methods = "GET,POST";
-        String headers = "X-Custom";
         given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
                 .when()
                 .log().headers()
                 .get("/test").then()
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers)
+                .header("Access-Control-Allow-Methods", "GET,OPTIONS,POST")
                 .body(is("test route"));
     }
 

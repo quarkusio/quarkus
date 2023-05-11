@@ -21,7 +21,7 @@ class CORSHandlerTestWildcardOriginCase {
     @DisplayName("Returns true 'Access-Control-Allow-Credentials' header on matching origin")
     void corsMatchingOrigin() {
         String origin = "http://custom.origin.quarkus";
-        String methods = "GET,POST";
+        String methods = "GET";
         String headers = "X-Custom";
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
@@ -30,14 +30,15 @@ class CORSHandlerTestWildcardOriginCase {
                 .options("/test").then()
                 .statusCode(200)
                 .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Credentials", "true");
+                .header("Access-Control-Allow-Credentials", "true")
+                .header("Access-Control-Allow-Methods", "GET,OPTIONS,POST");
     }
 
     @Test
     @DisplayName("Returns false 'Access-Control-Allow-Credentials' header on matching origin")
     void corsNotMatchingOrigin() {
         String origin = "http://non.matching.origin.quarkus";
-        String methods = "GET,POST";
+        String methods = "POST";
         String headers = "X-Custom";
         given().header("Origin", origin)
                 .header("Access-Control-Request-Method", methods)
@@ -45,8 +46,7 @@ class CORSHandlerTestWildcardOriginCase {
                 .when()
                 .options("/test").then()
                 .statusCode(403)
-                .header("Access-Control-Allow-Origin", nullValue())
-                .header("Access-Control-Allow-Credentials", "false");
+                .header("Access-Control-Allow-Origin", nullValue());
     }
 
     @Test
@@ -103,19 +103,4 @@ class CORSHandlerTestWildcardOriginCase {
                 .header("Access-Control-Allow-Origin", nullValue());
     }
 
-    @Test
-    @DisplayName("Returns false 'Access-Control-Allow-Credentials' header on matching origin '*'")
-    void corsMatchingOriginWithWildcard() {
-        String origin = "*";
-        String methods = "GET,POST";
-        String headers = "X-Custom";
-        given().header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
-                .when()
-                .options("/test").then()
-                .statusCode(200)
-                .header("Access-Control-Allow-Origin", "*")
-                .header("Access-Control-Allow-Credentials", "false");
-    }
 }

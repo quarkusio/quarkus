@@ -332,6 +332,11 @@ public final class EngineBuilder {
             return delegate.initializeBlock(outerScope, block);
         }
 
+        @Override
+        public MissingEndTagStrategy missingEndTagStrategy() {
+            return delegate.missingEndTagStrategy();
+        }
+
     }
 
 }

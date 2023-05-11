@@ -108,6 +108,11 @@ public class IncludeSectionHelper implements SectionHelper {
         }
 
         @Override
+        public MissingEndTagStrategy missingEndTagStrategy() {
+            return MissingEndTagStrategy.BIND_TO_PARENT;
+        }
+
+        @Override
         protected boolean ignoreParameterInit(String key, String value) {
             return key.equals(TEMPLATE)
                     // {#include foo _isolated=true /}

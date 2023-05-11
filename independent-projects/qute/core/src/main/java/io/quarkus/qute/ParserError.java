@@ -60,6 +60,11 @@ public enum ParserError implements ErrorCode {
     UNTERMINATED_SECTION,
 
     /**
+     * <code>{name</code>
+     */
+    UNTERMINATED_EXPRESSION,
+
+    /**
      * <code>{#if (foo || bar}{/}</code>
      */
     UNTERMINATED_STRING_LITERAL_OR_COMPOSITE_PARAMETER,

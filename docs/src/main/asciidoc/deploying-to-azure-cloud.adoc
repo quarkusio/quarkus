@@ -3,38 +3,68 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Deploying to Microsoft Azure Cloud
+= Deploy a Quarkus native executable to Microsoft Azure
 include::_attributes.adoc[]
 :categories: cloud
-:summary: Deploy a Quarkus application to the Microsoft Azure cloud platform.
 
-This guide covers:
+You can run a Quarkus native executable in a scalable Java runtime on the Microsoft Azure cloud platform.
+Deploy your locally-built containerized native applications by using the built-in deployment features of Quarkus.
+Learn how to use the Quarkus CLI to build, package, and deploy a native executable to link:https://learn.microsoft.com/en-us/azure/container-apps/[Azure Container Apps] and then push to link:https://azure.microsoft.com/en-us/products/app-service/[Azure App Service].
 
-* Update Quarkus HTTP Port
-* Install the Azure CLI
-* Create an Azure Registry Service instance and upload the Docker image
-* Deploy the Docker image to Azure Container Instances
-* Deploy the Docker image to Azure Kubernetes Service
-* Deploy the Docker image to Azure App Service for Linux Containers
+== Azure deployment overview
+
+There are multiple paths for deploying a Quarkus application to the link:https://learn.microsoft.com/en-us/azure/?product=popular[Microsoft Azure] cloud platform.
+You can also use several different tools during that deployment to achieve the same goal, including the following items:
+
+* xref:https://quarkus.io/guides/cli-tooling[Quarkus CLI]
+* link:https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI]
+* link:https://azure.microsoft.com/en-us/get-started/azure-portal[Microsoft Azure Portal]
+
+The specific steps involved in deploying a Quarkus application on Azure depend on the type of applications you are writing and the specific Azure services and tools you want to integrate with Quarkus.
+
+[NOTE]
+====
+The information in this tutorial primarily focuses on the built-in Quarkus methods and support.
+====
+
+// I removed the steps summary because this is already in the TOC on the page. This can be described in a linked concept topic, which is also under development.
 
 == Prerequisites
 
 :prerequisites-time: 2 hours for all modalities
 :prerequisites-no-graalvm:
 include::{includes}/prerequisites.adoc[]
-* Having access to an Azure subscription. https://azure.microsoft.com/free/?WT.mc_id=opensource-quarkus-brborges[Get a free one here]
+* https://azure.microsoft.com[A Microsoft Azure account]
+** [TIP]
+====
+If you don't have an existing Microsoft Azure subscription, you can create a free link:https://azure.microsoft.com/en-us/free/[Azure account].
+====
+* link:https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI] installed
+* Have created a native application by following the steps in Quarkus xref:building-native-image.adoc[Building a Native Executable] guide
 
-This guide will take as input a native application developed in the xref:building-native-image.adoc[building native image guide].
+== Solution
 
-Make sure you have the getting-started application at hand, or clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive]. The solution is located in the `getting-started` directory.
+By completing this tutorial, you will learn how to:
 
-== Change Quarkus HTTP Port
+* Prepare your native executable container image of the Quarkus `getting-started`` application you created earlier
+* Change the default Quarkus HTTP port (`8080`) to the required Azure  port (`80`)
+* Upload upload, deploy, and
+* Upload your container image to an Azure Registry Service instance
+* Deploy the Docker image to Azure Container Instances
+* Deploy the Docker image to Azure Kubernetes Service
+* Run your Quarkus application on the Azure App Service for Linux Containers.
 
-If you correctly followed the xref:building-native-image.adoc[building native image guide], you should have a local container image named `quarkus-quickstart/getting-started`.
+:sectnums:
+:sectnumlevels: 3
 
-While Quarkus by default runs on port 8080, most Azure services expect web applications to be running on port 80. Before we continue, go back to your quickstart code and open the file `src/main/docker/Dockerfile.native`.
+== Configure the Quarkus HTTP port
 
-Change the last two commands in the `Dockerfile.native` file and make it read like this:
+If you created a native application by following the prerequisite steps in the Quarkus xref:building-native-image.adoc[Building a Native Executable] guide, you should have a local container image named `quarkus-quickstart/getting-started`.
+
+While Quarkus by default runs on port 8080, most Azure services expect web applications to be running on port 80.
+Before you begin the deployment to Azure, you need to back to your quickstart code project and open the file `src/main/docker/Dockerfile.native`.
+
+Change the last two commands in the `Dockerfile.native` file, as follows:
 
 [source,docker]
 ----
@@ -42,29 +72,33 @@ EXPOSE 80
 CMD ["./application", "-Dquarkus.http.host=0.0.0.0", "-Dquarkus.http.port=80"]
 ----
 
-Now you can rebuild the docker image:
+== Rebuild and test the docker image
+
+After changing the HTTP port, rebuild your Docker image by using the following command:
 
 [source,shell]
 ----
 $ docker build -f src/main/docker/Dockerfile.native -t quarkus-quickstart/getting-started .
 ----
 
-To test, run it by exposing port 80 into port 8080 in your host:
+Test the `getting-started` docker application to ensure that it runs before continuing further.
+You can run it by exposing port 80 to port 8080 in the host part of the command.
 
 [source,shell]
 ----
 $ docker run -i --rm -p 8080:80 quarkus-quickstart/getting-started
 ----
 
-Your container image is now ready to run on Azure. Remember, the Quarkus application is mapped to run on port 80.
+Your container image is now ready to run on Azure.
 
-== Install the Azure CLI
+[NOTE]
+====
+Remember, the Quarkus application is mapped to run on port 80.
+====
 
-To ease the user experience throughout this guide, it is better to have the Azure CLI installed and authenticated.
+== Log in to Azure
 
-Visit the https://docs.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest?WT.mc_id=opensource-quarkus-brborges[Azure CLI] installation page for instructions specific to your operating system.
-
-Once installed, ensure you are authenticated:
+To complete the deployment, you must be logged in to the Azure cloud platform.
 
 [source,shell]
 ----
@@ -73,32 +107,30 @@ $ az login
 
 == Create an Azure Container Registry instance
 
-It is possible to deploy images hosted on Docker Hub, but this location by default leaves images accessible to anyone. To better protect your container images, this guide shows how to host your images on a private instance of the Azure Container Registry service.
+It is possible to deploy images hosted on Docker Hub, however, this location is open by default and your images will be publicly accessible.
+To secure your container images, complete the following steps to host your Quarkus image on a private instance of the Azure Container Registry service.
 
-First, create an Azure Resource Group:
-
+. Create an Azure resource group:
 [source,shell]
 ----
 $ az group create --name <resource-group-name> --location eastus
 ----
-
-Then you can create the ACR:
+. Create the Azure container registry (ACR) instance:
 
 [source,shell]
 ----
 $ az acr create --resource-group <resource-group-name> --name <registry-name> --sku Basic --admin-enabled true
 ----
-
-Finally, authenticate your local Docker installation with this container registry by running:
+. Authenticate your local Docker installation with the ACR instance by running:
 
 [source,shell]
 ----
 $ az acr login --name <registry-name>
 ----
 
-== Upload Container Image on Azure
+== Upload your container image to Azure
 
-If you've followed the build native image guide, you should have a local container image named `quarkus-quickstart/getting-started`.
+If you completed the prerequisite step to build a native image according to the Quarkus guide, you will have a local container image named `quarkus-quickstart/getting-started`.
 
 To upload this image to your ACR, you must tag and push the image under the ACR login server. To find the login server of the Azure Container Registry, run this command:
 
@@ -107,7 +139,7 @@ To upload this image to your ACR, you must tag and push the image under the ACR 
 $ az acr show -n <registry-name> --query loginServer -o tsv
 ----
 
-To upload, now do:
+To upload, run the following commands:
 
 [source,shell]
 ----
@@ -115,28 +147,32 @@ $ docker tag quarkus-quickstart/getting-started <acr-login-server>/quarkus-quick
 $ docker push <acr-login-server>/quarkus-quickstart/getting-started
 ----
 
-At this point, you should have your Quarkus container image on your Azure Container Registry. To verify, run the following command:
+At this point, you should have your Quarkus container image on your Azure Container Registry.
+To verify, run the following command:
 
 [source,shell]
 ----
 $ az acr repository list -n <registry-name>
 ----
 
-== Deploy to Azure Container Instances
+== Deploy to Azure Container Instances (ACI)
 
-The simplest way to start this container in the cloud is with the Azure Container Instances service. It simply creates a container on Azure infrastructure.
+The simplest way to start this container in the cloud is with the Azure Container Instances (ACI) service.
+ACI simply creates a container on the Azure infrastructure.
 
-There are different approaches for using ACI. Check the documentation for details. The quickest way to get a container up and running goes as it follows.
+There are different approaches for using ACI.
+For more details, see the link:http:[ACI] documentation.
 
-First step is to find the username and password for the admin, so that ACI can authenticate into ACR and pull the Docker image:
+To quickly get your container up and running, complete the following steps:
 
+. Find the username and password for the administrator so that ACI can authenticate into ACR and pull the Docker image:
++
 [source,shell]
 ----
 $ az acr credential show --name <registry-name>
 ----
-
-Now create the Docker instance on ACI pointing to your image on ACR:
-
++
+. Create the Docker instance on ACI pointing to your image on ACR:
 [source,shell]
 ----
 $ az container create \
@@ -150,27 +186,49 @@ $ az container create \
     --query ipAddress.fqdn
 ----
 
-The command above, if run successfully, will give you the address of your container in the Cloud. Access your Quarkus application in the address displayed as output.
+.Result
+If the command runs successfully, the address of your container in the Cloud is returned.
 
-For more information and details on ACR authentication and the use of service principals, follow this guide below and remember the Azure Container Registry `loginServer` and the image name of your Quarkus application now hosted on the ACR.
+You can access your Quarkus application by using the address displayed in the output of the CLI.
 
-https://docs.microsoft.com/en-us/azure/container-instances/container-instances-using-azure-container-registry?WT.mc_id=opensource-quarkus-brborges[Deploy to Azure Container Instances from Azure Container Registry]
+For more information and details on ACR authentication and the use of service principals, see the following guide:
 
-Keep in mind that this service does not provide scalability. A container instance is unique and does not scale.
+link:https://docs.microsoft.com/en-us/azure/container-instances/container-instances-using-azure-container-registry?WT.mc_id=opensource-quarkus-brborges[Deploy to Azure Container Instances from Azure Container Registry]
+
+[NOTE]
+====
+* Make a note of the Azure Container Registry `loginServer` and the image name of your Quarkus application that is now hosted on the ACR.
+* This service does not provide scalability.
+A container instance is unique and does not scale.
+You can use Azure App Service to automatically scale your web applications as outlined later in this guide.
+====
 
 == Deploy to Azure Kubernetes Service
 
-You can also deploy the container image as a microservice in a Kubernetes cluster on Azure. To do that, follow this tutorial:
+You can also deploy the container image as a microservice in a Kubernetes cluster on Azure.
+To do that, follow the steps in this tutorial:
 
 https://docs.microsoft.com/en-us/azure/aks/tutorial-kubernetes-deploy-cluster?WT.mc_id=opensource-quarkus-brborges[Tutorial: Deploy an Azure Kubernetes Service (AKS) cluster]
 
-Once deployed, the application will be running on whatever port is used to expose the service. By default, Quarkus apps run on port 8080 internally.
+Once deployed, the application will be running on whatever port is used to expose the service.
+By default, Quarkus apps run on port 8080 internally.
 
 == Deploy to Azure App Service on Linux Containers
 
-This service provides scalability out of the box for web applications. If more instances are required, it will provide a load-balancing automatically, plus monitoring, metrics, logging and so on.
+Azure App Service automatically scales web applications.
+If more instances are required, the service automatically provides load-balancing, monitoring, metrics, logging and other cloud-hosting features to help you to manage your applications.
 
-To deploy your Quarkus Native container image to this service, follow this tutorial:
+To deploy your Quarkus native container image to Azure App Service, see the following tutorial:
 
-https://docs.microsoft.com/en-us/azure/app-service/containers/tutorial-custom-docker-image?WT.mc_id=opensource-quarkus-brborges[Tutorial: Build a custom image and run in App Service from a private registry]
+* https://docs.microsoft.com/en-us/azure/app-service/containers/tutorial-custom-docker-image?WT.mc_id=opensource-quarkus-brborges*[Tutorial: Build a custom image and run in App Service from a private registry]
 
+== References
+
+* xref:azure-integration-built-in-concept.adoc[Quarkus integration with Microsoft Azure]
+* xref:azure-functions-http.adoc[Integrate and deploy a RESTEasy Reactive endpoint to Azure Functions]
+* xref:azure-functions.adoc[Integrate and deploy a Quarkus HTTP function to Azure Functions]
+* xref:funqy-azure-functions-http.adoc[Funqy HTTP Binding with Azure Functions]
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/functions-create-first-quarkus[Deploy serverless Java apps with Quarkus on Azure Functions]
+
+[id="azure-integration-built-in-concept"]
+= Quarkus integration with Microsoft Azure

@@ -84,13 +84,13 @@ public class Function {
 == Prerequisites
 
 include::{includes}/prerequisites.adoc[]
-* https://azure.microsoft.com[A Microsoft Azure account]
+* link:https://azure.microsoft.com[A Microsoft Azure account]
 ** [TIP]
 ====
-If you don't have an existing Azure subscription, you can create a free Azure account.
+If you don't have an existing Microsoft Azure subscription, you can create a free link:https://azure.microsoft.com/en-us/free/[Azure account].
 ====
-* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools version 4.x] installed
-* https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI] installed
+* link:https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools version 4.x] installed
+* link:https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI] installed
 
 == Solution
 
@@ -181,6 +181,7 @@ You can optionally edit the deployment descriptors as needed, and then rerun the
 
 == References
 
+* xref:azure-integration-built-in-concept.adoc[Quarkus integration with Microsoft Azure]
 * xref:deploying-to-azure-cloud.adoc[Deploying to Microsoft Azure Cloud]
 * xref:azure-functions-http.adoc[Azure Functions with RESTEasy Reactive, Undertow, or Reactive Routes]
 * xref:funqy-azure-functions-http.adoc[Funqy HTTP Binding with Azure Functions]

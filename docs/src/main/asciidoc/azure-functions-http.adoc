@@ -37,7 +37,7 @@ include::{includes}/prerequisites.adoc[]
 * https://azure.microsoft.com[A Microsoft Azure account]
 ** [TIP]
 ====
-If you don't have an existing Microsoft Azure subscription, you can create a free Azure account.
+If you don't have an existing Microsoft Azure subscription, you can create a free link:https://azure.microsoft.com/en-us/free/[Azure account].
 ====
 * https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools version 4.x] installed
 * https://learn.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI] installed

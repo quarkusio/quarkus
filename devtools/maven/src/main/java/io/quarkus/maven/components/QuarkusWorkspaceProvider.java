@@ -7,6 +7,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import org.apache.maven.model.building.ModelBuilder;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.impl.ArtifactResolver;
 import org.eclipse.aether.impl.Deployer;
@@ -41,6 +42,8 @@ public class QuarkusWorkspaceProvider {
 
     private final RemoteRepositoryManager remoteRepoManager;
 
+    private final SettingsDecrypter settingsDecrypter;
+
     private volatile BootstrapMavenContext ctx;
 
     @Inject
@@ -49,13 +52,15 @@ public class QuarkusWorkspaceProvider {
             ArtifactResolver artifactResolver,
             MetadataResolver metadataResolver,
             Deployer deployer,
-            RemoteRepositoryManager remoteRepoManager) {
+            RemoteRepositoryManager remoteRepoManager,
+            SettingsDecrypter settingsDecrypter) {
         this.versionResolver = versionResolver;
         this.versionRangeResolver = versionRangeResolver;
         this.artifactResolver = artifactResolver;
         this.metadataResolver = metadataResolver;
         this.deployer = deployer;
         this.remoteRepoManager = remoteRepoManager;
+        this.settingsDecrypter = settingsDecrypter;
     }
 
     public BootstrapMavenContext getMavenContext() {
@@ -89,6 +94,7 @@ public class QuarkusWorkspaceProvider {
                                     .addBeanInstance(metadataResolver)
                                     .addBeanInstance(deployer)
                                     .addBeanInstance(remoteRepoManager)
+                                    .addBeanInstance(settingsDecrypter)
                                     .addBean(ModelBuilder.class)
                                     .setSupplier(new BeanSupplier<ModelBuilder>() {
                                         @Override

@@ -1,14 +1,11 @@
 import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
-import { observeState } from 'lit-element-state';
-import { themeState } from 'theme-state';
-import '@vanillawc/wc-codemirror';
-import '@vanillawc/wc-codemirror/mode/javascript/javascript.js';
+import 'qui-code-block';
 
 /**
  * This component renders build time data in raw json format
  */
-export class QwcDataRawPage extends observeState(LitElement) {
+export class QwcDataRawPage extends LitElement {
     routerController = new RouterController(this);
     
     static styles = css`
@@ -57,15 +54,10 @@ export class QwcDataRawPage extends observeState(LitElement) {
         var json = JSON.stringify(this._buildTimeData, null, '\t');
 
         return html`<div class="codeBlock">
-                <wc-codemirror class="jsondata" 
-                    mode='javascript'
-                    theme='base16-${themeState.theme.name}'
-                    readonly>
-                    <link rel="stylesheet" href="/_static/wc-codemirror/theme/base16-${themeState.theme.name}.css">
-                    <script type="wc-content">
-                        ${json}
-                    </script>
-                </wc-codemirror>
+                        <qui-code-block 
+                            mode='javascript'
+                            content='${json}'>
+                        </qui-code-block>
             </div>`;
     }
 

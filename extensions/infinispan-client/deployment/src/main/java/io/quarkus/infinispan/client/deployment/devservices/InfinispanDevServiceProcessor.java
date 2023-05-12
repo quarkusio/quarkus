@@ -18,7 +18,6 @@ import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.commons.util.Version;
 import org.infinispan.server.test.core.InfinispanContainer;
 import org.jboss.logging.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
@@ -224,7 +223,6 @@ public class InfinispanDevServiceProcessor {
                 .orElseGet(infinispanServerSupplier);
     }
 
-    @NotNull
     private RunningDevService getRunningDevService(String clientName, String containerId, Closeable closeable, String hosts,
             String username, String password, Map<String, String> config) {
         config.put(getConfigPrefix(clientName) + "hosts", hosts);

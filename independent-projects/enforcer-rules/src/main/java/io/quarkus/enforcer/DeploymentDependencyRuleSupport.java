@@ -112,6 +112,9 @@ public abstract class DeploymentDependencyRuleSupport implements EnforcerRule2 {
         Properties extProperties = new Properties();
         if (artifactFile.isDirectory()) {
             Path extPropertiesPath = artifactFile.toPath().resolve(EXT_PROPERTIES_PATH);
+            if (!Files.exists(extPropertiesPath)) {
+                return Optional.empty();
+            }
             try (InputStreamReader isr = new InputStreamReader(Files.newInputStream(extPropertiesPath),
                     StandardCharsets.UTF_8)) {
                 extProperties.load(isr);

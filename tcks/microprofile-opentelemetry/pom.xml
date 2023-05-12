@@ -52,6 +52,12 @@
             <groupId>org.eclipse.microprofile.telemetry.tracing</groupId>
             <artifactId>microprofile-telemetry-tracing-tck</artifactId>
             <version>${microprofile-opentelemetry-tck.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.sonatype.plexus</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->

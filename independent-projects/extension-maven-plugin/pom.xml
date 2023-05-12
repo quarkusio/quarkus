@@ -43,6 +43,7 @@
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
         <jackson-bom.version>2.15.2</jackson-bom.version>
+        <smallrye-beanbag.version>1.3.2</smallrye-beanbag.version>
         <junit.jupiter.version>5.9.3</junit.jupiter.version>
     </properties>
     <build>
@@ -228,7 +229,14 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-
+            <!-- BeanBag dependencies, imported as a BOM -->
+            <dependency>
+                <groupId>io.smallrye.beanbag</groupId>
+                <artifactId>smallrye-beanbag-bom</artifactId>
+                <version>${smallrye-beanbag.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -331,6 +339,38 @@
             <groupId>jakarta.inject</groupId>
             <artifactId>jakarta.inject-api</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.smallrye.beanbag</groupId>
+            <artifactId>smallrye-beanbag</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.beanbag</groupId>
+            <artifactId>smallrye-beanbag-maven</artifactId>
+            <exclusions>
+                <!--
+                It is important to exclude all of these dependencies because Maven provides them already!
+                The other BeanBag dependencies are explicitly specified so that this exclusion doesn't drop them.
+                The remaining dependencies for this module that are not provided by Maven are provided by the other two
+                BeanBag dependencies.
+                -->
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.beanbag</groupId>
+            <artifactId>smallrye-beanbag-sisu</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.inject</groupId>
+                    <artifactId>javax.inject</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

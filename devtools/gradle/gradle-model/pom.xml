@@ -17,6 +17,7 @@
 
     <properties>
         <artifactFilePrefix>gradle-model</artifactFilePrefix>
+        <gradle.project.name>:gradle-model</gradle.project.name>
     </properties>
 
     <dependencies>

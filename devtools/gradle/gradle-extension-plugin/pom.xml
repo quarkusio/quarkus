@@ -18,6 +18,7 @@
 
     <properties>
         <artifactFilePrefix>gradle-extension-plugin</artifactFilePrefix>
+        <gradle.project.name>:gradle-extension-plugin</gradle.project.name>
     </properties>
 
     <dependencies>

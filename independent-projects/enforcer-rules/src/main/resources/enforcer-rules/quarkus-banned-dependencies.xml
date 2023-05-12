@@ -107,6 +107,9 @@
                 <exclude>org.jboss:jandex</exclude>
                 <!-- Ensure Fabric8 Kubernetes Client won't propagate its OkHttp implementation -->
                 <exclude>io.fabric8:kubernetes-httpclient-okhttp</exclude>
+                <!-- These defunct artifacts cause conflicts with their modern counterparts -->
+                <!-- replaced with: org.codehaus.plexus:* -->
+                <exclude>org.sonatype.plexus:*</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

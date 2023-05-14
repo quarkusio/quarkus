@@ -1,5 +1,4 @@
 import { LitElement, html, css} from 'lit';
-import { until } from 'lit/directives/until.js';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
@@ -54,12 +53,15 @@ export class QwcArcFiredEvents extends LitElement {
     }
         
     render() {
-        return html`${until(this._renderFiredEvents(), html`<span>Loading ArC fired event...</span>`)}`;
+        if(this._firedEvents){
+            return this._renderFiredEvents();
+        } else {
+            return html`<span>Loading ArC fired event...</span>`;
+        }
     }
 
     _renderFiredEvents(){
-        if(this._firedEvents){
-            return html`<div class="menubar">
+        return html`<div class="menubar">
                     <vaadin-button theme="small" @click=${() => this._refresh()} class="button">
                         <vaadin-icon icon="font-awesome-solid:rotate"></vaadin-icon> Refresh
                     </vaadin-button> 

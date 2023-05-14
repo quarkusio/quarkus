@@ -2,7 +2,6 @@ import {LitElement, html, css, render} from 'lit';
 import {JsonRpc} from 'jsonrpc';
 import '@vaadin/icon';
 import '@vaadin/button';
-import {until} from 'lit/directives/until.js';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import {builderTypes} from 'build-time-data';
@@ -68,10 +67,6 @@ export class QwcOpenshiftDeployment extends LitElement {
      * @returns {*}
      */
     render() {
-        return html`${until(this._renderForm(), html`<span>Loading...</span>`)}`;
-    }
-
-    _renderForm() {
         const _builders = [];
         let _defaultBuilder = "";
         if (this.builders) {

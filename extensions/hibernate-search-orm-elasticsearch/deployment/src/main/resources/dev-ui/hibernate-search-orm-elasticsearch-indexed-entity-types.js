@@ -2,7 +2,6 @@ import { LitElement, html, css} from 'lit';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@vaadin/button';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-selection-column.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
@@ -35,14 +34,17 @@ export class HibernateSearchOrmElasticsearchIndexedEntitiesComponent extends Lit
     }
 
     render() {
-        return html`${until(this._renderAllPUs(), html`<span>Loading...</span>`)}`;
+        if (this._persistenceUnits) {
+            return this._renderAllPUs();
+        } else {
+            return html`<span>Loading...</span>`;
+        }
     }
 
     _renderAllPUs() {
-        if (this._persistenceUnits) {
-            return this._persistenceUnits.length == 0
-                ? html`<p>No persistence units were found.</p>`
-                : html`
+        return this._persistenceUnits.length == 0
+            ? html`<p>No persistence units were found.</p>`
+            : html`
                     <vaadin-tabsheet class="full-height">
                         <span slot="prefix">Persistence Unit</span>
                         <vaadin-tabs slot="tabs">
@@ -60,7 +62,6 @@ export class HibernateSearchOrmElasticsearchIndexedEntitiesComponent extends Lit
                             </div>
                             `)}
                     </vaadin-tabsheet>`;
-        }
     }
 
     _renderEntityTypesTable(pu) {

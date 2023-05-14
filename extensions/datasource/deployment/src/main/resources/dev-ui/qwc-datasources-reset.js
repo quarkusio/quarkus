@@ -7,7 +7,6 @@ import '@vaadin/text-area';
 import '@vaadin/form-layout';
 import '@vaadin/progress-bar';
 import '@vaadin/checkbox';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import 'qui-alert';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
@@ -49,12 +48,15 @@ export class QwcDatasourcesReset extends LitElement {
     }
 
     render() {
-        return html`${until(this._renderDataSourceTable(), html`<span>Loading datasources...</span>`)}`;
+        if (this._ds) {
+            return this._renderDataSourceTable();
+        } else {
+            return html`<span>Loading datasources...</span>`;
+        }
     }
 
     _renderDataSourceTable() {
-        if (this._ds) {
-            return html`
+        return html`
                 ${this._message}
                 <vaadin-grid .items="${this._ds}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
@@ -67,7 +69,6 @@ export class QwcDatasourcesReset extends LitElement {
                                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
-        }
     }
 
     _actionRenderer(ds) {

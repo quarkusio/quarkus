@@ -7,7 +7,6 @@ import '@vaadin/text-area';
 import '@vaadin/form-layout';
 import '@vaadin/progress-bar';
 import '@vaadin/checkbox';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
@@ -52,15 +51,18 @@ export class QwcCacheCaches extends LitElement {
      * @returns {*}
      */
     render() {
-        return html`${until(this._renderCacheTable(), html`<span>Loading caches...</span>`)}`;
+        if (this._caches) {
+            return this._renderCacheTable();
+        } else {
+            return html`<span>Loading caches...</span>`;
+        }
     }
 
     // View / Templates
 
     _renderCacheTable() {
-        if (this._caches) {
-            let caches = [...this._caches.values()];
-            return html`
+        let caches = [...this._caches.values()];
+        return html`
                 <vaadin-grid .items="${caches}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
                                         header="Name"
@@ -78,7 +80,6 @@ export class QwcCacheCaches extends LitElement {
                                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
-        }
     }
 
     _actionRenderer(cache) {

@@ -1,6 +1,5 @@
 import { LitElement, html, css} from 'lit';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
-import { until } from 'lit/directives/until.js';
 import { notifier } from 'notifier';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/grid';
@@ -89,35 +88,38 @@ export class QwcSchedulerScheduledMethods extends LitElement {
     }
 
     render() {
-        return html`${until(this._renderScheduledMethods(), html`<span>Loading scheduled methods...</span>`)}`;
+        if (this._scheduledMethods){
+            return this._renderScheduledMethods();
+        } else {
+            return html`<span>Loading scheduled methods...</span>`;
+        }
     }
 
     _renderScheduledMethods(){
-        if (this._scheduledMethods){
-            let schedulerButton;
-            if (this._schedulerRunning) {
-                schedulerButton = html`<vaadin-button class="scheduler" theme="tertiary" @click=${() => this._pauseScheduler()}>
+        let schedulerButton;
+        if (this._schedulerRunning) {
+            schedulerButton = html`<vaadin-button class="scheduler" theme="tertiary" @click=${() => this._pauseScheduler()}>
                 <vaadin-icon icon="font-awesome-solid:circle-pause"></vaadin-icon>
                 Pause scheduler</vaadin-button>`;
-            } else {
-                schedulerButton = html`<vaadin-button class="scheduler" theme="tertiary" @click=${() => this._resumeScheduler()}>
+        } else {
+            schedulerButton = html`<vaadin-button class="scheduler" theme="tertiary" @click=${() => this._resumeScheduler()}>
                 <vaadin-icon icon="font-awesome-solid:circle-play"></vaadin-icon>
                 Resume scheduler</vaadin-button>`;
-            }
-            
-            const searchBox = html`
+        }
+
+        const searchBox = html`
             <vaadin-text-field class="searchField"
                 placeholder="Search"
                 @value-changed="${e => {
-                    const searchTerm = (e.detail.value || '').trim().toLowerCase();
-                    this._filteredScheduledMethods = this._scheduledMethods.filter(method => this._matchesTerm(method, searchTerm));
-                }}"
+            const searchTerm = (e.detail.value || '').trim().toLowerCase();
+            this._filteredScheduledMethods = this._scheduledMethods.filter(method => this._matchesTerm(method, searchTerm));
+        }}"
             >
                 <vaadin-icon slot="prefix" icon="font-awesome-solid:magnifying-glass"></vaadin-icon>
             </vaadin-text-field>
             `
-            
-            return html`
+
+        return html`
                 <div class="topBar">
                     ${searchBox}
                     ${schedulerButton}
@@ -135,7 +137,6 @@ export class QwcSchedulerScheduledMethods extends LitElement {
                     </vaadin-grid-column>
                 </vaadin-grid>
                 `;
-        }
     }
     
     _scheduleRenderer(scheduledMethod) {

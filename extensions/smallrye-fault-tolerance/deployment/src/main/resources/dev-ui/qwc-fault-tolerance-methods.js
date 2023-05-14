@@ -1,5 +1,4 @@
 import {css, html, LitElement} from 'lit';
-import {until} from 'lit/directives/until.js';
 import {JsonRpc} from 'jsonrpc';
 import '@vaadin/grid';
 import {columnBodyRenderer} from '@vaadin/grid/lit.js';
@@ -29,12 +28,15 @@ export class QwcFaultToleranceMethods extends LitElement {
     }
 
     render() {
-        return html`${until(this._renderGuardedMethods(), html`<span>Loading guarded methods...</span>`)}`;
+        if (this._guardedMethods) {
+            return this._renderGuardedMethods();
+        } else {
+            return html`<span>Loading guarded methods...</span>`;
+        }
     }
 
     _renderGuardedMethods() {
-        if (this._guardedMethods) {
-            return html`
+        return html`
                 <vaadin-grid .items="${this._guardedMethods}" theme="no-border">
                     <vaadin-grid-column header="Bean Class" auto-width flex-grow="0"
                                         ${columnBodyRenderer(this._renderBeanClass, [])}
@@ -52,7 +54,6 @@ export class QwcFaultToleranceMethods extends LitElement {
                     </vaadin-grid-column>
                 </vaadin-grid>
             `;
-        }
     }
 
     _renderBeanClass(guardedMethod) {

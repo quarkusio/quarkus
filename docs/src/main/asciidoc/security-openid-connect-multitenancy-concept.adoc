@@ -35,7 +35,7 @@ With every call, the multi-tenant application can translate the `tenant identifi
 
 Quarkus multi-tenant applications need to perform several tasks with each call from a client to provide a simple and consistent development experience. Understanding the sequence of those steps helps designing multi-tenant applications correctly; the conceptual models described in the OIDC and OAuth2 specifications is huge and illustrating the steps required by development teams helps to clarify multi-tenant application development.
 
-In this example, our multi-tenant application is designed to serve RESTful resources to already logged-in users. This mode of operation is called `Bearer authentication` in OIDC and indicates that an HTTP header called `"authorization:"` with the value `"Bearer *encoded JWT token*"` must be present in each request from the client to the application.
+In this example, our multi-tenant application is designed to serve RESTful resources to already logged-in users. This mode of operation is called `Bearer authentication` in OIDC and indicates that an HTTP `Authorization` header with the value `Bearer *access_token*` must be present in each request from the client to the application.
 
 .Partial steps of a multi-tenant application
 [caption="Figure 2: "]

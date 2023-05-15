@@ -3,11 +3,10 @@
 ****
 [source,bash,subs=attributes+]
 ----
-ifdef::create-app-group-id[]
-ifdef::create-app-extensions[]
+ifdef::create-app-extensions,create-app-stream[]
 quarkus create app {create-app-group-id}:{create-app-artifact-id} \
 endif::[]
-ifndef::create-app-extensions[]
+ifndef::create-app-extensions,create-app-stream[]
 ifndef::create-app-code[]
 quarkus create app {create-app-group-id}:{create-app-artifact-id} \
 endif::[]
@@ -15,17 +14,16 @@ ifdef::create-app-code[]
 quarkus create app {create-app-group-id}:{create-app-artifact-id}
 endif::[]
 endif::[]
-endif::[]
-ifndef::create-app-group-id[]
+ifdef::create-app-stream[]
 ifdef::create-app-extensions[]
-quarkus create app org.acme:{create-app-artifact-id} \
+    --stream={create-app-stream} \
 endif::[]
 ifndef::create-app-extensions[]
 ifndef::create-app-code[]
-quarkus create app org.acme:{create-app-artifact-id} \
+    --stream={create-app-stream} \
 endif::[]
 ifdef::create-app-code[]
-quarkus create app org.acme:{create-app-artifact-id}
+    --stream={create-app-stream}
 endif::[]
 endif::[]
 endif::[]
@@ -63,12 +61,10 @@ _For more information about how to install the Quarkus CLI and use it, please re
 [source,bash,subs=attributes+]
 ----
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-ifdef::create-app-group-id[]
+ifdef::create-app-stream[]
+    -DplatformVersion={create-app-stream} \
+endif::[]
     -DprojectGroupId={create-app-group-id} \
-endif::[]
-ifndef::create-app-group-id[]
-    -DprojectGroupId=org.acme \
-endif::[]
 ifdef::create-app-extensions[]
     -DprojectArtifactId={create-app-artifact-id} \
 endif::[]

@@ -1,5 +1,6 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -20,6 +21,9 @@ import org.apache.maven.model.building.ModelCache;
 import org.apache.maven.model.resolution.ModelResolver;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
+import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.repository.WorkspaceReader;
+import org.eclipse.aether.repository.WorkspaceRepository;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
@@ -28,7 +32,7 @@ import io.quarkus.bootstrap.resolver.maven.BootstrapModelBuilderFactory;
 import io.quarkus.bootstrap.resolver.maven.BootstrapModelResolver;
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 
-public class WorkspaceLoader implements WorkspaceModelResolver {
+public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader {
 
     private static final Logger log = Logger.getLogger(WorkspaceLoader.class);
 
@@ -84,7 +88,7 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
         this.modelProvider = modelProvider;
         if (ctx != null && ctx.isEffectiveModelBuilder()) {
             modelBuilder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
-            modelResolver = BootstrapModelResolver.newInstance(ctx, workspace);
+            modelResolver = BootstrapModelResolver.newInstance(ctx, this);
             modelCache = new BootstrapModelCache(ctx.getRepositorySystemSession());
 
             profiles = ctx.getActiveSettingsProfiles();
@@ -119,8 +123,10 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
     }
 
     private LocalProject loadAndCacheProject(Path pomFile) throws BootstrapMavenException {
-        Model cachedRawModel = rawModelCache.getOrDefault(pomFile.getParent(),
-                modelProvider == null ? null : modelProvider.apply(pomFile.getParent()));
+        final Model rawModel = rawModel(pomFile);
+        if (rawModel == null) {
+            return null;
+        }
         final LocalProject project;
         if (modelBuilder != null) {
             ModelBuildingRequest req = new DefaultModelBuildingRequest();
@@ -132,33 +138,31 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
             req.setActiveProfileIds(activeProfileIds);
             req.setInactiveProfileIds(inactiveProfileIds);
             req.setProfiles(profiles);
-            req.setRawModel(cachedRawModel);
+            req.setRawModel(rawModel);
             req.setWorkspaceModelResolver(this);
             try {
                 project = new LocalProject(modelBuilder.build(req), workspace);
             } catch (Exception e) {
                 throw new BootstrapMavenException("Failed to resolve the effective model for " + pomFile, e);
             }
-        } else if (cachedRawModel != null) {
-            project = new LocalProject(cachedRawModel, workspace);
         } else {
-            Model model = readModel(pomFile);
-            if (model == null) {
-                return null;
-            }
-            project = new LocalProject(model, workspace);
+            project = new LocalProject(rawModel, workspace);
         }
         projectCache.put(pomFile.getParent(), project);
         return project;
     }
 
     private Model rawModel(Path pomFile) throws BootstrapMavenException {
-        Model rawModel = rawModelCache.getOrDefault(pomFile.getParent(),
-                modelProvider == null ? null : modelProvider.apply(pomFile.getParent()));
+        final Path moduleDir = pomFile.getParent();
+        Model rawModel = rawModelCache.get(moduleDir);
+        if (rawModel != null) {
+            return rawModel;
+        }
+        rawModel = modelProvider == null ? null : modelProvider.apply(moduleDir);
         if (rawModel == null) {
             rawModel = readModel(pomFile);
         }
-        rawModelCache.put(pomFile.getParent(), rawModel);
+        rawModelCache.put(moduleDir, rawModel);
         return rawModel;
     }
 
@@ -166,13 +170,9 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
         this.workspaceRootPom = rootPom;
     }
 
-    private LocalProject loadProject(final Path projectPom, String skipModule) throws BootstrapMavenException {
+    private LocalProject loadProject(Path projectPom, String skipModule) throws BootstrapMavenException {
         final Model rawModel = rawModel(projectPom);
-
-        final Path parentPom = getParentPom(projectPom, rawModel);
-        final LocalProject parentProject = parentPom == null || rawModelCache.containsKey(parentPom.getParent()) ? null
-                : loadProject(parentPom, parentPom.getParent().relativize(projectPom.getParent()).toString());
-
+        final LocalProject parentProject = loadParentProject(projectPom, rawModel);
         final LocalProject project = project(projectPom);
         if (project == null) {
             return null;
@@ -182,6 +182,12 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
         }
         loadProjectModules(project, skipModule);
         return project;
+    }
+
+    private LocalProject loadParentProject(Path projectPom, final Model rawModel) throws BootstrapMavenException {
+        final Path parentPom = getParentPom(projectPom, rawModel);
+        return parentPom == null || rawModelCache.containsKey(parentPom.getParent()) ? null
+                : loadProject(parentPom, parentPom.getParent().relativize(projectPom.getParent()).toString());
     }
 
     private Path getParentPom(Path projectPom, Model rawModel) {
@@ -210,7 +216,11 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
                 if (module.equals(skipModule)) {
                     continue;
                 }
-                final LocalProject childProject = project(project.getDir().resolve(module).resolve(POM_XML));
+                final Path modulePom = project.getDir().resolve(module).resolve(POM_XML);
+                // some modules use different parent POMs than those that referred to them as their modules
+                // so make sure the parent project has been loaded, before resolving the effective model of the module
+                loadParentProject(modulePom, rawModel(modulePom));
+                final LocalProject childProject = project(modulePom);
                 if (childProject != null) {
                     project.modules.add(loadProjectModules(childProject, null));
                 }
@@ -250,5 +260,20 @@ public class WorkspaceLoader implements WorkspaceModelResolver {
         return project != null && project.getVersion().equals(versionConstraint)
                 ? project.getModelBuildingResult().getEffectiveModel()
                 : null;
+    }
+
+    @Override
+    public WorkspaceRepository getRepository() {
+        return workspace.getRepository();
+    }
+
+    @Override
+    public File findArtifact(Artifact artifact) {
+        return workspace.findArtifact(artifact);
+    }
+
+    @Override
+    public List<String> findVersions(Artifact artifact) {
+        return workspace.findVersions(artifact);
     }
 }

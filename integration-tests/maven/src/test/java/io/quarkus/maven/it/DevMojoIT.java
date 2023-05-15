@@ -311,6 +311,12 @@ public class DevMojoIT extends RunAndCheckMojoTestBase {
     }
 
     @Test
+    public void testCustomOutputDirSetInProfile() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-custom-output-dir");
+        runAndCheck("-PcustomOutputDir");
+    }
+
+    @Test
     public void testThatNonExistentSrcDirCanBeAdded() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
 

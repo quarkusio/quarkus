@@ -126,12 +126,14 @@ public class QuarkusProdModeTest
     private Path logfilePath;
     private Optional<Field> logfileField = Optional.empty();
     private List<Dependency> forcedDependencies = Collections.emptyList();
-    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
+    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler(r -> false);
     private boolean expectExit;
     private String startupConsoleOutput;
     private Integer exitCode;
     private Consumer<Throwable> assertBuildException;
     private String[] commandLineParameters = new String[0];
+
+    private boolean clearRestAssuredURL;
 
     public QuarkusProdModeTest() {
         InputStream appPropsIs = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties");
@@ -620,7 +622,10 @@ public class QuarkusProdModeTest
                     .directory(builtResultArtifactParent.toFile())
                     .start();
             ensureApplicationStartupOrFailure();
-            setupRestAssured();
+            if (!expectExit) { // no point in setting an URL for an app that exits right away
+                setupRestAssured();
+                clearRestAssuredURL = true;
+            }
         } catch (IOException ex) {
             throw new RuntimeException("The produced jar could not be launched. ", ex);
         }
@@ -638,6 +643,10 @@ public class QuarkusProdModeTest
             }
         } catch (InterruptedException ignored) {
 
+        }
+        if (clearRestAssuredURL) {
+            RestAssuredURLManager.clearURL();
+            clearRestAssuredURL = false;
         }
     }
 
@@ -725,10 +734,6 @@ public class QuarkusProdModeTest
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
 
-        if (run) {
-            RestAssuredURLManager.clearURL();
-        }
-
         stop();
 
         try {
@@ -753,7 +758,8 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeEach(ExtensionContext context) {
-        if (run && (process == null || !process.isAlive())) {
+        // restart the app in case it was stopped manually via stop() by the previous test method
+        if (run && !expectExit && (process == null || !process.isAlive())) {
             start();
         }
 

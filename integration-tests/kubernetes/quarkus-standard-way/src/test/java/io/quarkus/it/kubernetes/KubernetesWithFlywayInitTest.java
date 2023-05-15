@@ -26,10 +26,12 @@ import io.quarkus.test.QuarkusProdModeTest;
 
 public class KubernetesWithFlywayInitTest {
 
+    private static final String NAME = "kubernetes-with-flyway";
+
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
-            .setApplicationName("kubernetes-with-flyway-init")
+            .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogFileName("k8s.log")
             .setForcedDependencies(Arrays.asList(
@@ -50,14 +52,14 @@ public class KubernetesWithFlywayInitTest {
 
         Optional<Deployment> deployment = kubernetesList.stream()
                 .filter(d -> "Deployment".equals(d.getKind())
-                        && "kubernetes-with-flyway-init".equals(d.getMetadata().getName()))
+                        && NAME.equals(d.getMetadata().getName()))
                 .map(d -> (Deployment) d).findAny();
 
         assertTrue(deployment.isPresent());
         assertThat(deployment).satisfies(j -> j.isPresent());
         assertThat(deployment.get()).satisfies(d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("kubernetes-with-flyway-init");
+                assertThat(m.getName()).isEqualTo(NAME);
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
@@ -73,7 +75,8 @@ public class KubernetesWithFlywayInitTest {
         });
 
         Optional<Job> job = kubernetesList.stream()
-                .filter(j -> "Job".equals(j.getKind()) && "flyway-init".equals(j.getMetadata().getName())).map(j -> (Job) j)
+                .filter(j -> "Job".equals(j.getKind()) && (NAME + "-flyway-init").equals(j.getMetadata().getName()))
+                .map(j -> (Job) j)
                 .findAny();
         assertTrue(job.isPresent());
 
@@ -84,7 +87,7 @@ public class KubernetesWithFlywayInitTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getRestartPolicy()).isEqualTo("OnFailure");
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo("flyway-init");
+                            assertThat(container.getName()).isEqualTo(NAME + "-flyway-init");
                             assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))
                                     .singleElement().satisfies(env -> {
                                         assertThat(env.getValue()).isEqualTo("true");
@@ -101,7 +104,7 @@ public class KubernetesWithFlywayInitTest {
         });
 
         Optional<RoleBinding> roleBinding = kubernetesList.stream().filter(
-                r -> r instanceof RoleBinding && "kubernetes-with-flyway-init-view-jobs".equals(r.getMetadata().getName()))
+                r -> r instanceof RoleBinding && (NAME + "-view-jobs").equals(r.getMetadata().getName()))
                 .map(r -> (RoleBinding) r).findFirst();
         assertTrue(roleBinding.isPresent());
     }

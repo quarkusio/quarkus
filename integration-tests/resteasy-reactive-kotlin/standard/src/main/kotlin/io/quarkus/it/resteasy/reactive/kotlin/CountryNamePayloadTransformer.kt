@@ -10,8 +10,8 @@ class CountryNamePayloadTransformer {
 
     @Incoming("countries-in")
     @Outgoing("countries-t1-out")
-    suspend fun transform(countryName: String): String {
+    suspend fun transform(country: Country): Country {
         delay(100)
-        return countryName.toUpperCase()
+        return Country(country.name.toUpperCase(), country.capital)
     }
 }

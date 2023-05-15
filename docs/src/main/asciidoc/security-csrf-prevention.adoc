@@ -115,7 +115,7 @@ public class UserNameResource {
 
 The form POST request will fail with HTTP status `400` if the filter finds the hidden CSRF form field is missing, the CSRF cookie is missing, or if the CSRF form field and CSRF cookie values do not match.
 
-At this stage no additional configuration is needed - by default the CSRF form field and cookie name will be set to `csrf_token`, and the filter will verify the token. But let's change these names:
+At this stage no additional configuration is needed - by default the CSRF form field and cookie name will be set to `csrf-token`, and the filter will verify the token. But let's change these names:
 
 [source,properties]
 ----
@@ -138,6 +138,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 
 import io.quarkus.qute.Template;
@@ -160,7 +161,7 @@ public class UserNameResource {
     @Path("/csrfTokenForm")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public String postCsrfTokenForm(@CookieParam("csrf-token") csrfCookie, @FormParam("csrf-token") String formCsrfToken, @FormParam("name") String userName) {
+    public String postCsrfTokenForm(@CookieParam("csrf-token") Cookie csrfCookie, @FormParam("csrf-token") String formCsrfToken, @FormParam("name") String userName) {
         if (!csrfCookie.getValue().equals(formCsrfToken)) { <1>
             throw new BadRequestException();
         }

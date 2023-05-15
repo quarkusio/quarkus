@@ -13,7 +13,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient
 class CountriesEndpoint(
     @RestClient private val countriesGateway: CountriesGateway,
     private val countryNameConsumer: CountryNameConsumer,
-    @Channel("countries-emitter") private val countryEmitter: Emitter<String>
+    @Channel("countries-emitter") private val countryEmitter: Emitter<Country>
 ) {
 
     @GET
@@ -26,10 +26,11 @@ class CountriesEndpoint(
 
     @POST
     @Path("/kafka/{name}")
-    suspend fun sendCountryNameToKafka(name: String): String {
+    suspend fun sendCountryNameToKafka(name: String): Country {
         delay(50)
-        countryEmitter.sendSuspending(name)
-        return name
+        val country = Country(name, "capital-$name")
+        countryEmitter.sendSuspending(country)
+        return country
     }
 
     @GET

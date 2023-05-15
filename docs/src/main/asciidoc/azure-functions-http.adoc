@@ -106,7 +106,7 @@ runtime and the HTTP framework you are writing your microservices in.
 == Azure Deployment Descriptors
 
 Templates for Azure Functions deployment descriptors (`host.json`, `function.json`) are within
-base Edit them as you need to.  Rerun the build when you are ready.
+the base directory of the project. Edit them as you need to.  Rerun the build when you are ready.
 
 [#config-azure-paths]
 == Configuring Root Paths

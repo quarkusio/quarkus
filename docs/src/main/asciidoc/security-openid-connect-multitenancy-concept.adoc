@@ -51,7 +51,7 @@ The 3 required steps are detailed below, along with descriptions of concepts and
 
 === 1. Resolve the `tenant identifier` and `OidcTenantConfig`
 
-Before being able to execute the actual business logic of a multi-tenant application, Quarkus needs to enforce security requirements for authentication and authorization. To do that, Quarkus must verify that received `JsonWebTokens` are valid, and that the information within them permits the active user to read or update the current resource. In order to do so, Quarkus must read the active `tenant id` of the current request and use it to resolve the active tenant's OIDC configuration (defined by an instance of `OidcTenantConfig`). Finding the tenant id from the current request can be done in one of 2 ways:
+Before being able to execute the actual business logic of a multi-tenant application, Quarkus needs to enforce security requirements for authentication and authorization. To do that, Quarkus must verify that received ID and/or access tokens are valid, and that the information within them permits the active user to read or update the current resource. In order to do so, Quarkus must read the active `tenant id` of the current request and use it to resolve the active tenant's OIDC configuration (defined by an instance of `OidcTenantConfig`). Finding the tenant id from the current request can be done in one of 2 ways:
 
 . Provide static configuration for all known tenants and the corresponding OIDC configuration for each of them within the `application.properties` file, or
 . Implement a `@Singleton` CDI bean which implements the `io.quarkus.oidc.TenantConfigResolver` interface. The resolver will be invoked for each inbound call to fetch the OIDC configuration for the active tenant id.

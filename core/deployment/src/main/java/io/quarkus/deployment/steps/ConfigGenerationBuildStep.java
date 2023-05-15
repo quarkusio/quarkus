@@ -265,6 +265,11 @@ public class ConfigGenerationBuildStep {
         runtimeMappings.addAll(configItem.getReadResult().getBuildTimeRunTimeMappings());
         runtimeMappings.addAll(configItem.getReadResult().getRunTimeMappings());
 
+        Set<String> runtimeConfigBuilderClassNames = runTimeConfigBuilders.stream()
+                .map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet());
+        reflectiveClass
+                .produce(new ReflectiveClassBuildItem(false, false, runtimeConfigBuilderClassNames.toArray(new String[0])));
+
         RunTimeConfigurationGenerator.GenerateOperation
                 .builder()
                 .setBuildTimeReadResult(configItem.getReadResult())
@@ -285,8 +290,7 @@ public class ConfigGenerationBuildStep {
                 .setRuntimeConfigSourceProviders(discoveredConfigSourceProviders)
                 .setRuntimeConfigSourceFactories(discoveredConfigSourceFactories)
                 .setRuntimeConfigMappings(runtimeMappings)
-                .setRuntimeConfigBuilders(
-                        runTimeConfigBuilders.stream().map(RunTimeConfigBuilderBuildItem::getBuilderClassName).collect(toSet()))
+                .setRuntimeConfigBuilders(runtimeConfigBuilderClassNames)
                 .build()
                 .run();
     }

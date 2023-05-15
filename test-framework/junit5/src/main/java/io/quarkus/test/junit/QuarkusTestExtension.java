@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -313,19 +314,33 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 activateLogging();
             }
 
+            Throwable effectiveException = determineEffectiveException(e);
+
             try {
                 if (testResourceManager != null) {
                     testResourceManager.close();
                 }
             } catch (Exception ex) {
-                e.addSuppressed(ex);
+                effectiveException.addSuppressed(determineEffectiveException(ex));
             }
-            throw e;
+
+            throw effectiveException;
         } finally {
             if (originalCl != null) {
                 Thread.currentThread().setContextClassLoader(originalCl);
             }
         }
+    }
+
+    private Throwable determineEffectiveException(Throwable e) {
+        Throwable effectiveException = e;
+        if ((e instanceof InvocationTargetException) && (e.getCause() != null)) { // QuarkusTestResourceLifecycleManager.start is called reflectively
+            effectiveException = e.getCause();
+            if ((effectiveException instanceof CompletionException) && (effectiveException.getCause() != null)) { // can happen because instances of QuarkusTestResourceLifecycleManager are started asynchronously
+                effectiveException = effectiveException.getCause();
+            }
+        }
+        return effectiveException;
     }
 
     private void shutdownHangDetection() {

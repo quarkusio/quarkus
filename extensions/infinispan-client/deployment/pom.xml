@@ -85,6 +85,10 @@
                     <artifactId>log4j-core</artifactId>
                 </exclusion>
                 <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>jcl-over-slf4j</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.glassfish</groupId>
                     <artifactId>javax.json</artifactId>
                 </exclusion>

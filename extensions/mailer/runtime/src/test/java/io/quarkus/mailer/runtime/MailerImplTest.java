@@ -55,7 +55,7 @@ class MailerImplTest {
         mailer = new MutinyMailerImpl(vertx,
                 MailClient.createShared(vertx,
                         new MailConfig().setPort(wiser.getServer().getPort())),
-                null, FROM, null, false);
+                null, FROM, null, false, List.of(), false);
 
         wiser.getMessages().clear();
     }

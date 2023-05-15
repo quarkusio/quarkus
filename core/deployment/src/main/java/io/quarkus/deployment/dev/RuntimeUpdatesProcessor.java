@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -331,11 +332,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             }
             Set<String> filesChanges = new HashSet<>(checkForFileChange(s -> s.getTest().orElse(null), test));
             filesChanges.addAll(checkForFileChange(DevModeContext.ModuleInfo::getMain, test));
-            boolean configFileRestartNeeded = filesChanges.stream().map(test.watchedFilePaths::get)
-                    .anyMatch(Boolean.TRUE::equals);
+            boolean fileRestartNeeded = filesChanges.stream().anyMatch(test::isWatchedFileRestartNeeded);
 
             ClassScanResult merged = ClassScanResult.merge(changedTestClassResult, changedApp);
-            if (configFileRestartNeeded) {
+            if (fileRestartNeeded) {
                 if (testCompileProblem == null) {
                     testSupport.runTests(null);
                 }
@@ -462,21 +462,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     main, false);
             Set<String> filesChanged = checkForFileChange(DevModeContext.ModuleInfo::getMain, main);
 
-            boolean configFileRestartNeeded = forceRestart || filesChanged.stream().map(main.watchedFilePaths::get)
-                    .anyMatch(Boolean.TRUE::equals);
+            boolean fileRestartNeeded = forceRestart || filesChanged.stream().anyMatch(main::isWatchedFileRestartNeeded);
             boolean instrumentationChange = false;
 
             List<Path> changedFilesForRestart = new ArrayList<>();
-            if (configFileRestartNeeded) {
-                changedFilesForRestart
-                        .addAll(filesChanged.stream().filter(fn -> Boolean.TRUE.equals(main.watchedFilePaths.get(fn)))
-                                .map(Paths::get).collect(Collectors.toList()));
+            if (fileRestartNeeded) {
+                filesChanged.stream().filter(main::isWatchedFileRestartNeeded).map(Paths::get)
+                        .forEach(changedFilesForRestart::add);
             }
             changedFilesForRestart.addAll(changedClassResults.getChangedClasses());
             changedFilesForRestart.addAll(changedClassResults.getAddedClasses());
             changedFilesForRestart.addAll(changedClassResults.getDeletedClasses());
 
-            if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !configFileRestartNeeded
+            if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !fileRestartNeeded
                     && devModeType != DevModeType.REMOTE_LOCAL_SIDE && instrumentationEnabled()) {
                 //attempt to do an instrumentation based reload
                 //if only code has changed and not the class structure, then we can do a reload
@@ -530,7 +528,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             //all broken we just assume the reason that they have refreshed is because they have fixed something
             //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
             boolean restartNeeded = !instrumentationChange && (changedClassResults.isChanged()
-                    || (IsolatedDevModeMain.deploymentProblem != null && userInitiated) || configFileRestartNeeded);
+                    || (IsolatedDevModeMain.deploymentProblem != null && userInitiated) || fileRestartNeeded);
             if (restartNeeded) {
                 String changeString = changedFilesForRestart.stream().map(Path::getFileName).map(Object::toString)
                         .collect(Collectors.joining(", "));
@@ -1083,12 +1081,14 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         return this;
     }
 
-    public RuntimeUpdatesProcessor setWatchedFilePaths(Map<String, Boolean> watchedFilePaths, boolean isTest) {
+    public RuntimeUpdatesProcessor setWatchedFilePaths(Map<String, Boolean> watchedFilePaths,
+            List<Entry<Predicate<String>, Boolean>> watchedFilePredicates, boolean isTest) {
         if (isTest) {
             setWatchedFilePathsInternal(watchedFilePaths, test,
                     s -> s.getTest().isPresent() ? asList(s.getTest().get(), s.getMain()) : singletonList(s.getMain()));
         } else {
             main.watchedFileTimestamps.clear();
+            main.watchedFilePredicates = watchedFilePredicates;
             setWatchedFilePathsInternal(watchedFilePaths, main, s -> singletonList(s.getMain()));
         }
         return this;
@@ -1225,6 +1225,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         final Map<Path, Path> classFilePathToSourceFilePath = new ConcurrentHashMap<>();
         // file path -> isRestartNeeded
         private volatile Map<String, Boolean> watchedFilePaths = Collections.emptyMap();
+        volatile List<Entry<Predicate<String>, Boolean>> watchedFilePredicates = Collections.emptyList();
 
         public void merge(TimestampSet other) {
             watchedFileTimestamps.putAll(other.watchedFileTimestamps);
@@ -1233,7 +1234,21 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             Map<String, Boolean> newVal = new HashMap<>(watchedFilePaths);
             newVal.putAll(other.watchedFilePaths);
             watchedFilePaths = newVal;
+            // The list of predicates should be effectively immutable
+            watchedFilePredicates = other.watchedFilePredicates;
+        }
 
+        boolean isWatchedFileRestartNeeded(String changedFile) {
+            Boolean ret = watchedFilePaths.get(changedFile);
+            if (ret == null) {
+                ret = false;
+                for (Entry<Predicate<String>, Boolean> e : watchedFilePredicates) {
+                    if (e.getKey().test(changedFile)) {
+                        ret = ret || e.getValue();
+                    }
+                }
+            }
+            return ret;
         }
     }
 

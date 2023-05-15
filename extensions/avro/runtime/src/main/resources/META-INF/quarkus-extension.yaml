@@ -4,7 +4,7 @@ name: "Apache Avro"
 metadata:
   keywords:
   - "avro"
-  guide: "https://quarkus.io/guides/kafka"
+  guide: "https://quarkus.io/guides/kafka-schema-registry-avro"
   categories:
   - "serialization"
-  status: "experimental"
+  status: "stable"

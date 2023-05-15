@@ -2133,23 +2133,50 @@ $ ./mvnw package -DskipTests -Dnative \
 https://docs.oracle.com/javacomponents/jmc-5-4/jfr-runtime-guide/about.htm#JFRUH170[Java Flight Recorder (JFR)] and
 https://www.oracle.com/java/technologies/jdk-mission-control.html[JDK Mission Control (JMC)]
 can be used to profile native binaries since GraalVM CE 21.2.0.
-However, JFR in GraalVM is currently significantly limited in capabilities compared to HotSpot.
-The custom event API is fully supported, but many VM level features are unavailable.
-They will be added in future releases. Current limitations are:
+However, JFR in GraalVM is currently limited in capabilities compared to HotSpot.
+The custom event API is fully supported, but some VM level features are unavailable.
+More events and JFR features will continue to be added in later releases.
+The following table outlines Native Image JFR support and limitations by version.
 
-* Minimal VM level events
+[cols="2,5a,5a"]
+|===
+|GraalVM Version |Supports |Limitations
+
+|GraalVM CE 21.3 and Mandrel 21.3
+|* Minimal VM Level events
+* Custom events API
+* Start recordings upon executabe run or JFR Recording API
+|
 * No old object sampling
 * No stacktrace tracing
-* No Streaming API for JDK 17
+* No event streaming
 
-To use JFR add the application property: `-Dquarkus.native.enable-vm-inspection=true`.
+|GraalVM CE 22.3 and Mandrel 22.3
+|* Everything from GraalVM CE 21.3
+* Additional monitor and thread events
+|* No old object sampling
+* No stacktrace tracing
+* No event streaming
+
+|GraalVM CE for JDK 17/20 and Mandrel 23.0
+|* Everything from GraalVM CE 22.3
+* Additional monitor, thread, container, and allocation events
+* Stacktraces
+* Sampling based method profiling
+* Event streaming
+|* No old object sampling
+
+|===
+
+
+To add JFR support to your Quarkus executable, add the application property: `-Dquarkus.native.monitoring=jfr`.
 E.g.
 
 [source,bash,subs=attributes+]
 ----
 ./mvnw package -DskipTests -Dnative -Dquarkus.native.container-build=true \
     -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} \
-    -Dquarkus.native.enable-vm-inspection=true
+    -Dquarkus.native.monitoring=jfr
 ----
 
 Once the image is compiled, enable and start JFR via runtime flags: `-XX:+FlightRecorder` and `-XX:StartFlightRecording`. For example:

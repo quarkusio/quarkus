@@ -886,6 +886,46 @@ gdb -ex 'directory ./target' ./target/getting-started-1.0.0-SNAPSHOT-runner
 
 For a more detailed guide about debugging native images please refer to the xref:native-reference.adoc[Native Reference Guide].
 
+== Using Monitoring Options
+
+Monitoring options such as JDK flight recorder, jvmstat, heap dumps, and remote JMX (experimental in Mandrel 23)
+can be added to the native executable build. Simply supply a comma separated list of the monitoring options you wish to
+include at build time.
+[source,bash]
+----
+-Dquarkus.native.monitoring=<comma separated list of options>
+----
+
+|===
+|Monitoring Option |Description |Availability As Of
+
+|jfr
+|Include JDK Flight Recorder support
+|GraalVM CE 21.3 Mandrel 21.3
+
+|jvmstat
+|Adds jvmstat support
+|GraalVM 22.3 Mandrel 22.3
+
+|heapdump
+|Adds support for generating heap dumps
+|GraalVM 22.3 Mandrel 22.3
+
+|jmxclient
+|Adds support for connections to JMX servers.
+|GraalVM for JDK 17/20 Mandrel 23.0
+
+|jmxserver
+|Adds support for accepting connections from JMX clients.
+|GraalVM for JDK 17/20 Mandrel 23.0
+
+|all
+|Adds all monitoring options.
+|GraalVM 22.3 Mandrel 22.3
+|===
+
+Please see the Quarkus Native Reference Guide for more detailed information on these monitoring options.
+
 [[configuration-reference]]
 == Configuring the Native Executable
 

@@ -26,6 +26,13 @@ final class Decorators {
     private Decorators() {
     }
 
+    /**
+     *
+     * @param decoratorClass
+     * @param beanDeployment
+     * @param transformer
+     * @return a new decorator info, or (only in strict mode) {@code null} if the decorator is disabled
+     */
     static DecoratorInfo createDecorator(ClassInfo decoratorClass, BeanDeployment beanDeployment,
             InjectionPointModifier transformer) {
 
@@ -100,6 +107,11 @@ final class Decorators {
         }
 
         if (priority == null) {
+            if (beanDeployment.strictCompatibility) {
+                // decorator without `@Priority` is disabled per the specification
+                return null;
+            }
+
             LOGGER.info("The decorator " + decoratorClass + " does not declare any @Priority. " +
                     "It will be assigned a default priority value of 0.");
             priority = 0;

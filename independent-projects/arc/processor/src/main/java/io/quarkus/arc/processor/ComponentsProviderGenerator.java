@@ -108,6 +108,14 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
         }
 
+        // All interceptor bindings
+        ResultHandle interceptorBindings = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        for (ClassInfo binding : beanDeployment.getInterceptorBindings()) {
+            getComponents.invokeInterfaceMethod(MethodDescriptors.SET_ADD, interceptorBindings,
+                    getComponents.load(binding.name().toString()));
+        }
+
+        // Transitive interceptor bindings
         ResultHandle transitiveBindingsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
         for (Entry<DotName, Set<AnnotationInstance>> entry : beanDeployment.getTransitiveInterceptorBindings().entrySet()) {
             ResultHandle bindingsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
@@ -160,9 +168,9 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         ResultHandle componentsHandle = getComponents.newInstance(
                 MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class,
-                        Map.class, Supplier.class, Map.class, Set.class),
-                beansHandle, observersHandle, contextsHandle, transitiveBindingsHandle, removedBeansSupplier.getInstance(),
-                qualifiersNonbindingMembers, qualifiers);
+                        Set.class, Map.class, Supplier.class, Map.class, Set.class),
+                beansHandle, observersHandle, contextsHandle, interceptorBindings, transitiveBindingsHandle,
+                removedBeansSupplier.getInstance(), qualifiersNonbindingMembers, qualifiers);
         getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode

@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.Dependent;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.WebApplicationException;
@@ -137,6 +138,7 @@ public class CustomNonBlockingReturnTypeTest {
     }
 
     @Provider
+    @Dependent
     public static class HasMessageMessageBodyWriter<T extends HasMessage> implements ServerMessageBodyWriter<T> {
 
         @Override

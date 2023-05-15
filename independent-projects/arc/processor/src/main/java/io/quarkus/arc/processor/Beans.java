@@ -1276,6 +1276,12 @@ public final class Beans {
             } else {
                 scope = scopes.get(0);
             }
+            if (scope != null // `null` is just like `@Dependent`
+                    && !BuiltinScope.DEPENDENT.is(scope)
+                    && !beanClass.typeParameters().isEmpty()) {
+                throw new DefinitionException(
+                        "Declaring class of a managed bean is generic, its scope must be @Dependent: " + beanClass);
+            }
             if (!isAlternative) {
                 isAlternative = initStereotypeAlternative(stereotypes, beanDeployment);
             }

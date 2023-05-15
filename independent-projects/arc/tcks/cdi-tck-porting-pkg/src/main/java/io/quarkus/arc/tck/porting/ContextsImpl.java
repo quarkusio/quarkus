@@ -1,13 +1,10 @@
 package io.quarkus.arc.tck.porting;
 
-import java.lang.annotation.Annotation;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.spi.Context;
-import jakarta.enterprise.context.spi.Contextual;
-import jakarta.enterprise.context.spi.CreationalContext;
 
 import org.jboss.cdi.tck.spi.Contexts;
 
@@ -40,30 +37,7 @@ public class ContextsImpl implements Contexts<Context> {
 
     @Override
     public Context getDependentContext() {
-        // ArC doesn't have a context object for the dependent context, let's fake it here for now
-        // TODO we'll likely have to implement this in ArC properly
-
-        return new Context() {
-            @Override
-            public Class<? extends Annotation> getScope() {
-                return Dependent.class;
-            }
-
-            @Override
-            public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public <T> T get(Contextual<T> contextual) {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean isActive() {
-                return true;
-            }
-        };
+        return Arc.container().getActiveContext(Dependent.class);
     }
 
     @Override

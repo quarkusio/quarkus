@@ -12,18 +12,21 @@ public final class Components {
     private final Supplier<Collection<RemovedBean>> removedBeans;
     private final Collection<InjectableObserverMethod<?>> observers;
     private final Collection<InjectableContext> contexts;
+    private final Set<String> interceptorBindings;
     private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Map<String, Set<String>> qualifierNonbindingMembers;
     private final Set<String> qualifiers;
 
     public Components(Collection<InjectableBean<?>> beans, Collection<InjectableObserverMethod<?>> observers,
             Collection<InjectableContext> contexts,
+            Set<String> interceptorBindings,
             Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings,
             Supplier<Collection<RemovedBean>> removedBeans, Map<String, Set<String>> qualifierNonbindingMembers,
             Set<String> qualifiers) {
         this.beans = beans;
         this.observers = observers;
         this.contexts = contexts;
+        this.interceptorBindings = interceptorBindings;
         this.transitiveInterceptorBindings = transitiveInterceptorBindings;
         this.removedBeans = removedBeans;
         this.qualifierNonbindingMembers = qualifierNonbindingMembers;
@@ -40,6 +43,10 @@ public final class Components {
 
     public Collection<InjectableContext> getContexts() {
         return contexts;
+    }
+
+    public Set<String> getInterceptorBindings() {
+        return interceptorBindings;
     }
 
     public Map<Class<? extends Annotation>, Set<Annotation>> getTransitiveInterceptorBindings() {

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -83,7 +84,6 @@ public class ArcContainerImpl implements ArcContainer {
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
-    private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
     private final Contexts contexts;
     private final ComputingCache<Resolvable, Set<InjectableBean<?>>> resolved;
     private final ComputingCache<String, InjectableBean<?>> beansById;
@@ -93,6 +93,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     final InstanceImpl<Object> instance;
     final Qualifiers registeredQualifiers;
+    final InterceptorBindings registeredInterceptorBindings;
 
     private volatile ExecutorService executorService;
 
@@ -109,6 +110,7 @@ public class ArcContainerImpl implements ArcContainer {
         List<InjectableInterceptor<?>> interceptors = new ArrayList<>();
         List<InjectableDecorator<?>> decorators = new ArrayList<>();
         List<InjectableObserverMethod<?>> observers = new ArrayList<>();
+        Set<String> interceptorBindings = new HashSet<>();
         Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
         Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Set<String> qualifiers = new HashSet<>();
@@ -132,6 +134,7 @@ public class ArcContainerImpl implements ArcContainer {
             }
             removedBeans.add(c.getRemovedBeans());
             observers.addAll(c.getObservers());
+            interceptorBindings.addAll(c.getInterceptorBindings());
             transitiveInterceptorBindings.putAll(c.getTransitiveInterceptorBindings());
             qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             qualifiers.addAll(c.getQualifiers());
@@ -140,7 +143,8 @@ public class ArcContainerImpl implements ArcContainer {
         // register built-in beans
         addBuiltInBeans(beans);
 
-        interceptors.sort((i1, i2) -> Integer.compare(i2.getPriority(), i1.getPriority()));
+        interceptors.sort(Comparator.comparingInt(InjectableInterceptor::getPriority));
+        decorators.sort(Comparator.comparingInt(InjectableDecorator::getPriority));
 
         resolved = new ComputingCache<>(this::resolve);
         beansById = new ComputingCache<>(this::findById);
@@ -168,8 +172,8 @@ public class ArcContainerImpl implements ArcContainer {
                 return List.copyOf(removed);
             }
         });
-        this.transitiveInterceptorBindings = Map.copyOf(transitiveInterceptorBindings);
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
+        this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings, transitiveInterceptorBindings);
 
         Contexts.Builder contextsBuilder = new Contexts.Builder(
                 new RequestContext(this.currentContextFactory.create(RequestScoped.class),
@@ -177,7 +181,8 @@ public class ArcContainerImpl implements ArcContainer {
                         notifierOrNull(Set.of(BeforeDestroyed.Literal.REQUEST, Any.Literal.INSTANCE)),
                         notifierOrNull(Set.of(Destroyed.Literal.REQUEST, Any.Literal.INSTANCE))),
                 new ApplicationContext(),
-                new SingletonContext());
+                new SingletonContext(),
+                new DependentContext());
 
         // Add custom contexts
         for (Components c : components) {
@@ -540,10 +545,6 @@ public class ArcContainerImpl implements ArcContainer {
         return new HashSet<>(getMatchingBeans(name));
     }
 
-    Map<Class<? extends Annotation>, Set<Annotation>> getTransitiveInterceptorBindings() {
-        return transitiveInterceptorBindings;
-    }
-
     boolean isScope(Class<? extends Annotation> annotationType) {
         if (annotationType.isAnnotationPresent(Scope.class) || annotationType.isAnnotationPresent(NormalScope.class)) {
             return true;
@@ -586,6 +587,11 @@ public class ArcContainerImpl implements ArcContainer {
         for (InjectableInterceptor<?> interceptorBean : interceptors) {
             if (interceptorBean.getIdentifier().equals(identifier)) {
                 return interceptorBean;
+            }
+        }
+        for (InjectableDecorator<?> decoratorBean : decorators) {
+            if (decoratorBean.getIdentifier().equals(identifier)) {
+                return decoratorBean;
             }
         }
         return null;
@@ -794,11 +800,12 @@ public class ArcContainerImpl implements ArcContainer {
         if (interceptorBindings.length == 0) {
             throw new IllegalArgumentException("No interceptor bindings");
         }
+        registeredInterceptorBindings.verify(interceptorBindings);
         List<Interceptor<?>> interceptors = new ArrayList<>();
         List<Annotation> bindings = new ArrayList<>();
         for (Annotation binding : interceptorBindings) {
             bindings.add(binding);
-            Set<Annotation> transitive = transitiveInterceptorBindings.get(binding.annotationType());
+            Set<Annotation> transitive = registeredInterceptorBindings.getTransitive(binding.annotationType());
             if (transitive != null) {
                 bindings.addAll(transitive);
             }
@@ -818,10 +825,14 @@ public class ArcContainerImpl implements ArcContainer {
         if (Objects.requireNonNull(types).isEmpty()) {
             throw new IllegalArgumentException("The set of bean types must not be empty");
         }
+        if (qualifiers == null || qualifiers.length == 0) {
+            qualifiers = new Annotation[] { Default.Literal.INSTANCE };
+        } else {
+            registeredQualifiers.verify(qualifiers);
+        }
         List<Decorator<?>> decorators = new ArrayList<>();
         for (InjectableDecorator<?> decorator : this.decorators) {
-            if (decoratorMatches(types, Set.of(qualifiers), decorator.getDelegateType(),
-                    decorator.getDelegateQualifiers().toArray(new Annotation[] {}))) {
+            if (decoratorMatches(decorator.getDelegateType(), decorator.getDelegateQualifiers(), types, Set.of(qualifiers))) {
                 decorators.add(decorator);
             }
         }
@@ -866,12 +877,12 @@ public class ArcContainerImpl implements ArcContainer {
         return registeredQualifiers.hasQualifiers(beanQualifiers, qualifiers);
     }
 
-    private boolean decoratorMatches(Set<Type> beanTypes, Set<Annotation> beanQualifiers, Type delegateType,
-            Annotation... delegateQualifiers) {
-        if (!DelegateInjectionPointAssignabilityRules.instance().matches(delegateType, beanTypes)) {
+    private boolean decoratorMatches(Type delegateType, Set<Annotation> delegateQualifiers, Set<Type> requiredTypes,
+            Set<Annotation> requiredQualifiers) {
+        if (!DelegateInjectionPointAssignabilityRules.instance().matches(delegateType, requiredTypes)) {
             return false;
         }
-        return registeredQualifiers.hasQualifiers(beanQualifiers, delegateQualifiers);
+        return registeredQualifiers.hasQualifiers(delegateQualifiers, requiredQualifiers.toArray(new Annotation[0]));
     }
 
     static ArcContainerImpl unwrap(ArcContainer container) {

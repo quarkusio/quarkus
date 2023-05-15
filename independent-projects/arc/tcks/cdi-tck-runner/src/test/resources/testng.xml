@@ -80,6 +80,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContext2Test">
                 <methods>
+                    <!-- https://github.com/jakartaee/cdi-tck/issues/457 -->
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
                 </methods>
             </class>
@@ -138,11 +139,6 @@
                     <exclude name="testGetBean"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.definition.bean.genericbroken.GenericManagedBeanTest">
-                <methods>
-                    <exclude name="testNonDependentGenericManagedBeanNotOk"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.unproxyable.UnproxyableManagedBeanTest">
                 <methods>
                     <exclude name="testNormalScopedUnproxyableBeanWithPublicFinalMethodResolution"/>
@@ -167,10 +163,7 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">
                 <methods>
-                    <exclude name="testInstanceOfInterceptorForEveryEnabledInterceptor"/>
-                    <exclude name="testNonBindingTypeToResolveInterceptorsFails"/>
-                    <exclude name="testSameBindingTypesToResolveInterceptorsFails"/>
-                    <exclude name="testResolveInterceptorsReturnsOrderedList"/>
+                    <!-- https://github.com/jakartaee/cdi-tck/issues/455 -->
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
                 </methods>
             </class>
@@ -192,36 +185,14 @@
             </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">
                 <methods>
-                    <exclude name="testContextGetWithCreationalContextReturnsNewInstance"/>
-                    <exclude name="testContextIsActiveWhenInvokingProducerMethod"/>
-                    <exclude name="testDependentsDestroyedWhenProducerMethodCompletes"/>
                     <exclude name="testContextIsActiveDuringInjection"/>
-                    <exclude name="testInstanceUsedForProducerFieldNotShared"/>
-                    <exclude name="testDependentsDestroyedWhenProducerFieldCompletes"/>
-                    <exclude name="testInstanceUsedForObserverMethodNotShared"/>
-                    <exclude name="testContextGetWithCreateFalseReturnsNull"/>
-                    <exclude name="testContextIsActiveDuringBeanCreation"/>
-                    <exclude name="testDependentsDestroyedWhenObserverMethodEvaluationCompletes"/>
-                    <exclude name="testContextIsActiveWhenInvokingProducerField"/>
-                    <exclude name="testContextIsActiveWhenCreatingObserverMethodInstance"/>
-                    <exclude name="testContextIsActiveWhenInvokingDisposalMethod"/>
-                    <exclude name="testDependentsDestroyedWhenDisposerMethodCompletes"/>
-                    <exclude name="testInstanceUsedForDisposalMethodNotShared"/>
-                    <exclude name="testInstanceUsedForProducerMethodNotShared"/>
-                    <exclude name="testContextIsActive"/>
-                    <exclude name="testContextScopeType"/>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/454 -->
-                    <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"></exclude>
+                    <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.GetFromContextualTest">
                 <methods>
                     <exclude name="testGetMayNotCreateNewInstanceUnlessCreationalContextGiven"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.definition.bean.BeanDefinitionTest">
-                <methods>
-                    <exclude name="testBeanClientCanCastBeanInstanceToAnyBeanType"/>
                 </methods>
             </class>
         </classes>

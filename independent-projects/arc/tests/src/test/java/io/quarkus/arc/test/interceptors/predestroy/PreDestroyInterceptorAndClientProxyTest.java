@@ -25,18 +25,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
-import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.test.ArcTestContainer;
 
 public class PreDestroyInterceptorAndClientProxyTest {
     @RegisterExtension
     ArcTestContainer container = new ArcTestContainer(MyBean.class, MyInterceptorBinding.class, MyInterceptor.class);
-
-    @Test
-    public void bagr() {
-        InstanceHandle<MyBean> handle = Arc.container().instance(MyBean.class);
-        handle.destroy();
-    }
 
     @Test
     public void test() {

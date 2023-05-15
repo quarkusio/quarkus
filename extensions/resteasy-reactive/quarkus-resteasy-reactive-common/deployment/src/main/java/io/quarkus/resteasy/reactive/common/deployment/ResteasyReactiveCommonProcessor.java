@@ -46,6 +46,7 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -79,7 +80,9 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     void searchForProviders(Capabilities capabilities,
             BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> producer) {
-        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.REST_CLIENT)) {
+        if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.REST_CLIENT)
+                || QuarkusClassLoader.isClassPresentAtRuntime(
+                        "org.jboss.resteasy.reactive.server.injection.JaxrsServerFormUrlEncodedProvider")) { // RESTEasy Classic could be imported via non-Quarkus dependencies
             // in this weird case we don't want the providers to be registered automatically as this would lead to multiple bean definitions
             return;
         }

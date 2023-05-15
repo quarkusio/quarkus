@@ -317,7 +317,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             .hasErrorCode(ErrorCodes.EXPIRED);
 
                                             if (!expired) {
-                                                LOG.errorf("ID token verification failure: %s", t.getCause());
+                                                LOG.errorf("ID token verification failure: %s", errorMessage(t));
                                                 return removeSessionCookie(context, configContext.oidcConfig)
                                                         .replaceWith(Uni.createFrom()
                                                                 .failure(t
@@ -667,14 +667,17 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             return Uni.createFrom().failure(new AuthenticationCompletionException(tOuter));
                         }
 
-                        boolean internalIdToken = !isIdTokenRequired(configContext);
+                        final boolean internalIdToken;
                         if (tokens.getIdToken() == null) {
-                            if (!internalIdToken) {
+                            if (isIdTokenRequired(configContext)) {
                                 LOG.errorf("ID token is not available in the authorization code grant response");
                                 return Uni.createFrom().failure(new AuthenticationCompletionException());
                             } else {
                                 tokens.setIdToken(generateInternalIdToken(configContext.oidcConfig, null, null));
+                                internalIdToken = true;
                             }
+                        } else {
+                            internalIdToken = false;
                         }
 
                         context.put(NEW_AUTHENTICATION, Boolean.TRUE);
@@ -739,16 +742,18 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debugf("Starting the final redirect");
                                             return tInner;
                                         }
-                                        String message = tInner.getCause() != null ? tInner.getCause().getMessage()
-                                                : tInner.getMessage();
-                                        LOG.errorf("ID token verification has failed: %s", message);
+
+                                        LOG.errorf("ID token verification has failed: %s", errorMessage(tInner));
                                         return new AuthenticationCompletionException(tInner);
                                     }
                                 });
                     }
 
                 });
+    }
 
+    private static Object errorMessage(Throwable t) {
+        return t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
     }
 
     private CodeAuthenticationStateBean getCodeAuthenticationBean(String[] parsedStateCookieValue,
@@ -794,6 +799,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (oidcConfig.authentication.internalIdTokenLifespan.isPresent()) {
             builder.expiresIn(oidcConfig.authentication.internalIdTokenLifespan.get().getSeconds());
         }
+        builder.audience(oidcConfig.getClientId().get());
         return builder.jws().header(INTERNAL_IDTOKEN_HEADER, true)
                 .sign(KeyUtils.createSecretKeyFromSecret(OidcCommonUtils.clientSecret(oidcConfig.credentials)));
     }
@@ -1025,7 +1031,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable t) {
                         if (t != null) {
-                            LOG.debugf("ID token refresh has failed: %s", t.getMessage());
+                            LOG.debugf("ID token refresh has failed: %s", errorMessage(t));
                             if (autoRefresh && fallback != null) {
                                 LOG.debug("Using the current SecurityIdentity since the ID token is still valid");
                                 return Uni.createFrom().item(fallback);
@@ -1064,7 +1070,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }).onFailure().transform(new Function<Throwable, Throwable>() {
                                         @Override
                                         public Throwable apply(Throwable tInner) {
-                                            LOG.debugf("Verifying the refreshed ID token failed %s", tInner.getMessage());
+                                            LOG.debugf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
                                             return new AuthenticationFailedException(tInner);
                                         }
                                     });
@@ -1085,7 +1091,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         }
 
                         if (tokens.getIdToken() == null) {
-                            if (isIdTokenRequired(configContext)) {
+                            if (isIdTokenRequired(configContext) || !isInternalIdToken(currentIdToken, configContext)) {
                                 if (!autoRefresh) {
                                     LOG.debugf(
                                             "ID token is not returned in the refresh token grant response, re-authentication is required");

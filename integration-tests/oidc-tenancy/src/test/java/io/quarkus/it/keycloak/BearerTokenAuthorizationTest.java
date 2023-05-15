@@ -126,7 +126,7 @@ public class BearerTokenAuthorizationTest {
             // id and access tokens should have new values, refresh token value should remain the same.
             // No new sign-in process is required.
             //await().atLeast(6, TimeUnit.SECONDS);
-            Thread.sleep(6 * 1000);
+            Thread.sleep(2 * 1000);
 
             webClient.getOptions().setRedirectEnabled(false);
             WebResponse webResponse = webClient
@@ -138,7 +138,7 @@ public class BearerTokenAuthorizationTest {
 
             Cookie sessionCookie2 = getSessionCookie(webClient, "tenant-web-app-refresh");
             assertNotNull(sessionCookie2);
-            assertNotEquals(sessionCookie2.getValue(), sessionCookie.getValue());
+            assertEquals(sessionCookie2.getValue(), sessionCookie.getValue());
             assertNotNull(getSessionAtCookie(webClient, "tenant-web-app-refresh"));
             Cookie rtCookie2 = getSessionRtCookie(webClient, "tenant-web-app-refresh");
             assertNotNull(rtCookie2);

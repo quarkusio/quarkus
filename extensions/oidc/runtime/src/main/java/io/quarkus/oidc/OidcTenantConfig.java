@@ -1112,6 +1112,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Expected audience 'aud' claim value which may be a string or an array of strings.
+         *
+         * Note the audience claim will be verified for ID tokens by default.
+         * ID token audience must be equal to the value of `quarkus.oidc.client-id` property.
+         * Use this property to override the expected value if your OpenID Connect provider
+         * sets a different audience claim value in ID tokens. Set it to `any` if your provider
+         * does not set ID token audience` claim.
+         *
+         * Audience verification for access tokens will only be done if this property is configured.
          */
         @ConfigItem
         public Optional<List<String>> audience = Optional.empty();

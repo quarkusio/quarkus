@@ -3,36 +3,43 @@ package io.quarkus.kubernetes.deployment;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class TLSConfig {
     /**
-     * @return the cert authority certificate contents.
+     * The cert authority certificate contents.
      */
+    @ConfigItem
     Optional<String> caCertificate;
 
     /**
-     * @return the certificate contents.
+     * The certificate contents.
      */
+    @ConfigItem
     Optional<String> certificate;
 
     /**
-     * @return the contents of the ca certificate of the final destination.
+     * The contents of the ca certificate of the final destination.
      */
+    @ConfigItem
     Optional<String> destinationCACertificate;
 
     /**
-     * @return the desired behavior for insecure connections to a route. Options are: `allow`, `disable`, and `redirect`.
+     * The desired behavior for insecure connections to a route.
      */
+    @ConfigItem
     Optional<String> insecureEdgeTerminationPolicy;
 
     /**
-     * @return the key file contents.
+     * The key file contents.
      */
+    @ConfigItem
     Optional<String> key;
 
     /**
-     * @return the termination type.
+     * The termination type.
      */
+    @ConfigItem
     Optional<String> termination;
 }

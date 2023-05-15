@@ -35,7 +35,7 @@ public class RouteConfig {
     Map<String, String> annotations;
 
     /**
-     * @return the TLS configuration.
+     * The TLS configuration for the route.
      */
     TLSConfig tls;
 }

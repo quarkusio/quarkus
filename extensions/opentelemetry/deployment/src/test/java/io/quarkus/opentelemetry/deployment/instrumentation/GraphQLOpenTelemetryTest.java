@@ -22,7 +22,6 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -84,14 +83,13 @@ public class GraphQLOpenTelemetryTest {
 
         final List<SpanData> spans = Collections.unmodifiableList(spanExporter.getFinishedSpanItems(3));
         assertTimeForSpans(spans);
-        assertHttpSpan(spans);
 
-        final SpanData operationSpan = spans.get(1);
-        assertEquals(spans.get(2).getSpanId(), operationSpan.getParentSpanId());
+        final SpanData httpSpan = assertHttpSpan(spans);
+
+        final SpanData operationSpan = getSpanByKindAndParentId(spans, SpanKind.INTERNAL, httpSpan.getSpanId());
         assertGraphQLSpan(operationSpan, "GraphQL:hello", "QUERY", "hello");
 
-        final SpanData querySpan = spans.get(0);
-        assertEquals(operationSpan.getSpanId(), querySpan.getParentSpanId());
+        final SpanData querySpan = getSpanByKindAndParentId(spans, SpanKind.INTERNAL, operationSpan.getSpanId());
         assertEquals("HelloResource.hello", querySpan.getName());
     }
 
@@ -108,14 +106,12 @@ public class GraphQLOpenTelemetryTest {
 
         final List<SpanData> spans = Collections.unmodifiableList(spanExporter.getFinishedSpanItems(3));
         assertTimeForSpans(spans);
-        assertHttpSpan(spans);
+        final SpanData httpSpan = assertHttpSpan(spans);
 
-        final SpanData operationSpan = spans.get(1);
-        assertEquals(spans.get(2).getSpanId(), operationSpan.getParentSpanId());
+        final SpanData operationSpan = getSpanByKindAndParentId(spans, SpanKind.INTERNAL, httpSpan.getSpanId());
         assertGraphQLSpan(operationSpan, "GraphQL", "QUERY", "");
 
-        final SpanData querySpan = spans.get(0);
-        assertEquals(operationSpan.getSpanId(), querySpan.getParentSpanId());
+        final SpanData querySpan = getSpanByKindAndParentId(spans, SpanKind.INTERNAL, operationSpan.getSpanId());
         assertEquals("HelloResource.hellos", querySpan.getName());
     }
 
@@ -159,17 +155,16 @@ public class GraphQLOpenTelemetryTest {
         assertEquals(spanCollections.size(), iterations);
         for (List<SpanData> spanGroup : spanCollections) {
             assertTimeForSpans(spanGroup);
-            assertHttpSpan(spanGroup);
+            final SpanData httpSpan = assertHttpSpan(spanGroup);
 
-            final SpanData operationSpan = spanGroup.get(2);
-            assertEquals(spanGroup.get(3).getSpanId(), operationSpan.getParentSpanId());
+            final SpanData operationSpan = getSpanByKindAndParentId(spanGroup, SpanKind.INTERNAL, httpSpan.getSpanId());
             assertGraphQLSpan(operationSpan, "GraphQL", "QUERY", "");
 
-            final SpanData querySpan = spanGroup.get(1);
+            final SpanData querySpan = getSpanByKindAndParentId(spanGroup, SpanKind.INTERNAL, operationSpan.getSpanId());
             assertEquals(operationSpan.getSpanId(), querySpan.getParentSpanId());
             assertEquals("HelloResource.helloAfterSecond", querySpan.getName());
 
-            final SpanData cdiBeanSpan = spanGroup.get(0);
+            final SpanData cdiBeanSpan = getSpanByKindAndParentId(spanGroup, SpanKind.INTERNAL, querySpan.getSpanId());
             assertEquals(querySpan.getSpanId(), cdiBeanSpan.getParentSpanId());
             assertEquals("CustomCDIBean.waitForSomeTime", cdiBeanSpan.getName());
         }
@@ -185,14 +180,12 @@ public class GraphQLOpenTelemetryTest {
 
         final List<SpanData> spans = Collections.unmodifiableList(spanExporter.getFinishedSpanItems(3));
         assertTimeForSpans(spans);
-        assertHttpSpan(spans);
+        final SpanData httpSpan = assertHttpSpan(spans);
 
-        final SpanData operationSpan = spans.get(1);
-        assertEquals(spans.get(2).getSpanId(), operationSpan.getParentSpanId());
+        final SpanData operationSpan = getSpanByKindAndParentId(spans, SpanKind.INTERNAL, httpSpan.getSpanId());
         assertGraphQLSpan(operationSpan, "GraphQL:addHello", "MUTATION", "addHello");
 
-        final SpanData mutationSpan = spans.get(0);
-        assertEquals(operationSpan.getSpanId(), mutationSpan.getParentSpanId());
+        final SpanData mutationSpan = getSpanByKindAndParentId(spans, SpanKind.INTERNAL, operationSpan.getSpanId());
         assertEquals("HelloResource.createHello", mutationSpan.getName());
     }
 
@@ -267,24 +260,28 @@ public class GraphQLOpenTelemetryTest {
     }
 
     private void assertTimeForSpans(List<SpanData> spans) {
+        // Method expects for each span to have at least one child span
         if (spans.size() <= 1) {
             return;
         }
 
-        IntStream.range(0, spans.size() - 1).forEach(i -> {
-            SpanData current = spans.get(i);
-            SpanData successor = spans.get(i + 1);
-            assertTrue(current.getStartEpochNanos() >= successor.getStartEpochNanos());
-            assertTrue(current.getEndEpochNanos() <= successor.getEndEpochNanos());
-        });
+        SpanData current = getSpanByKindAndParentId(spans, SpanKind.SERVER, "0000000000000000");
+        for (int i = 0; i < spans.size() - 1; i++) {
+            SpanData successor = getSpanByKindAndParentId(spans, SpanKind.INTERNAL, current.getSpanId());
+            assertTrue(current.getStartEpochNanos() <= successor.getStartEpochNanos());
+            assertTrue(current.getEndEpochNanos() >= successor.getEndEpochNanos());
+            current = successor;
+        }
     }
 
-    private void assertHttpSpan(List<SpanData> spans) {
+    private SpanData assertHttpSpan(List<SpanData> spans) {
         final SpanData server = getSpanByKindAndParentId(spans, SpanKind.SERVER, "0000000000000000");
         assertEquals("POST /graphql", server.getName());
         assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
         assertEquals("POST", server.getAttributes().get(HTTP_METHOD));
         assertEquals("/graphql", server.getAttributes().get(HTTP_ROUTE));
+
+        return server;
     }
 
     private void assertGraphQLSpan(SpanData span, String name, String OperationType, String OperationName) {

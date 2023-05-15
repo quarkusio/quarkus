@@ -53,6 +53,17 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-deployment</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
 

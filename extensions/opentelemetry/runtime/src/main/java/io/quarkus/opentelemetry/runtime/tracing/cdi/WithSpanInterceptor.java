@@ -70,6 +70,11 @@ public class WithSpanInterceptor {
             }
 
             return result;
+        } catch (Throwable t) {
+            if (shouldStart) {
+                instrumenter.end(spanContext, methodRequest, null, t);
+            }
+            throw t;
         } finally {
             if (scope != null) {
                 scope.close();

@@ -308,7 +308,7 @@ public class NativeImageBuildStep {
     /**
      * Resolves the runner factory. Happens quite early, *before* the build.
      */
-    @BuildStep
+    @BuildStep(onlyIf = NativeBuild.class)
     public NativeImageRunnerBuildItem resolveNativeImageBuildRunner(NativeConfig nativeConfig) {
         boolean isExplicitContainerBuild = nativeConfig.containerBuild
                 .orElse(nativeConfig.containerRuntime.isPresent() || nativeConfig.remoteContainerBuild);
@@ -330,6 +330,16 @@ public class NativeImageBuildStep {
             return new NativeImageRunnerBuildItem(new NativeImageBuildRemoteContainerRunner(nativeConfig));
         }
         return new NativeImageRunnerBuildItem(new NativeImageBuildLocalContainerRunner(nativeConfig));
+    }
+
+    /**
+     * Creates a dummy runner for native-sources builds. This allows the creation of native-source jars without
+     * requiring podman/docker or a local native-image installation.
+     */
+    @BuildStep(onlyIf = NativeSourcesBuild.class)
+    public NativeImageRunnerBuildItem dummyNativeImageBuildRunner(NativeConfig nativeConfig) {
+        boolean explicitContainerBuild = nativeConfig.isExplicitContainerBuild();
+        return new NativeImageRunnerBuildItem(new NoopNativeImageBuildRunner(explicitContainerBuild));
     }
 
     private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,

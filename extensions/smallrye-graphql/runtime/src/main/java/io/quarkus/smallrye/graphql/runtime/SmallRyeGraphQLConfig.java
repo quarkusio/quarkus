@@ -40,12 +40,6 @@ public class SmallRyeGraphQLConfig {
     public Optional<Boolean> tracingEnabled;
 
     /**
-     * Enable validation. By default, this will be enabled if the Hibernate Validator extension is added.
-     */
-    @ConfigItem(name = "validation.enabled")
-    public Optional<Boolean> validationEnabled;
-
-    /**
      * Enable eventing. Allow you to receive events on bootstrap and execution.
      */
     @ConfigItem(name = "events.enabled", defaultValue = "false")

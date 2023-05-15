@@ -5,6 +5,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
+import jakarta.validation.ConstraintViolationException;
+
 import org.eclipse.microprofile.graphql.GraphQLException;
 
 import graphql.execution.AbortExecutionException;
@@ -18,6 +20,8 @@ import io.smallrye.graphql.execution.datafetcher.DefaultDataFetcher;
 import io.smallrye.graphql.schema.model.Operation;
 import io.smallrye.graphql.schema.model.Type;
 import io.smallrye.graphql.transformation.AbstractDataFetcherException;
+import io.smallrye.graphql.validation.BeanValidationUtil;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -89,15 +93,26 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
             } catch (Error e) {
                 resultBuilder.clearErrors().data(null).error(new AbortExecutionException(e));
                 return (T) resultBuilder.build();
+            } catch (ConstraintViolationException cve) {
+                BeanValidationUtil.addConstraintViolationsToDataFetcherResult(cve.getConstraintViolations(),
+                        operationInvoker.getMethod(), resultBuilder, dfe);
+                return (T) resultBuilder.build();
             } catch (Throwable ex) {
-                eventEmitter.fireOnDataFetchError(c, ex);
                 throw ex;
             }
         });
 
         // Here call blocking with context
         BlockingHelper.runBlocking(vc, contextualCallable, result);
-        return (T) result.future().toCompletionStage();
+
+        return (T) Uni.createFrom().completionStage(result.future().toCompletionStage()).onItemOrFailure()
+                .invoke((item, error) -> {
+                    if (item != null) {
+                        eventEmitter.fireAfterDataFetch(c);
+                    } else {
+                        eventEmitter.fireOnDataFetchError(c, error);
+                    }
+                }).subscribeAsCompletionStage();
     }
 
     @SuppressWarnings("unchecked")

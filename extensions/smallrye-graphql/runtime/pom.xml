@@ -50,8 +50,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-validator</artifactId>
-            <optional>true</optional>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 

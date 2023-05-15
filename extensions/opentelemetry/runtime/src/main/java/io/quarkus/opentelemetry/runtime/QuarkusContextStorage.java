@@ -63,7 +63,6 @@ public enum QuarkusContextStorage implements ContextStorage {
         if (toAttach == beforeAttach) {
             return Scope.noop();
         }
-
         vertxContext.putLocal(OTEL_CONTEXT, toAttach);
         OpenTelemetryUtil.setMDCData(toAttach, vertxContext);
 

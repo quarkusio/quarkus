@@ -74,16 +74,20 @@ import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
 import io.smallrye.graphql.api.ErrorExtensionProvider;
+import io.smallrye.graphql.api.federation.ComposeDirective;
 import io.smallrye.graphql.api.federation.Extends;
 import io.smallrye.graphql.api.federation.External;
+import io.smallrye.graphql.api.federation.Inaccessible;
+import io.smallrye.graphql.api.federation.InterfaceObject;
 import io.smallrye.graphql.api.federation.Key;
 import io.smallrye.graphql.api.federation.Provides;
 import io.smallrye.graphql.api.federation.Requires;
+import io.smallrye.graphql.api.federation.Shareable;
+import io.smallrye.graphql.api.federation.Tag;
 import io.smallrye.graphql.cdi.config.ConfigKey;
 import io.smallrye.graphql.cdi.config.MicroProfileConfig;
 import io.smallrye.graphql.cdi.producer.GraphQLProducer;
 import io.smallrye.graphql.cdi.tracing.TracingService;
-import io.smallrye.graphql.cdi.validation.ValidationService;
 import io.smallrye.graphql.schema.Annotations;
 import io.smallrye.graphql.schema.SchemaBuilder;
 import io.smallrye.graphql.schema.model.Argument;
@@ -201,8 +205,6 @@ public class SmallRyeGraphQLProcessor {
 
         // Add a condition for the optional eventing services
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(TracingService.class, "io.opentracing.Tracer"));
-        reflectiveClassCondition
-                .produce(new ReflectiveClassConditionBuildItem(ValidationService.class, "jakarta.validation.ValidatorFactory"));
 
         // Use MicroProfile Config (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(MicroProfileConfig.class.getName()));
@@ -267,6 +269,12 @@ public class SmallRyeGraphQLProcessor {
             indexer.indexClass(Provides.class);
             indexer.indexClass(Requires.class);
             indexer.indexClass(Deprecated.class);
+            indexer.indexClass(Shareable.class);
+            indexer.indexClass(ComposeDirective.class);
+            indexer.indexClass(InterfaceObject.class);
+            indexer.indexClass(Inaccessible.class);
+            indexer.indexClass(io.smallrye.graphql.api.federation.Override.class);
+            indexer.indexClass(Tag.class);
         } catch (IOException ex) {
             LOG.warn("Failure while creating index", ex);
         }
@@ -605,33 +613,15 @@ public class SmallRyeGraphQLProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
         boolean activate = shouldActivateService(graphQLConfig.tracingEnabled,
-                capabilities.isPresent(Capability.OPENTRACING),
-                "quarkus-smallrye-opentracing",
-                Capability.OPENTRACING,
+                capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
+                "quarkus-opentelemetry",
+                Capability.OPENTELEMETRY_TRACER,
                 "quarkus.smallrye-graphql.tracing.enabled",
                 true);
         if (activate) {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, TRUE));
         } else {
             systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_TRACING, FALSE));
-        }
-    }
-
-    @BuildStep
-    void activateValidation(Capabilities capabilities,
-            SmallRyeGraphQLConfig graphQLConfig,
-            BuildProducer<SystemPropertyBuildItem> systemProperties) {
-
-        boolean activate = shouldActivateService(graphQLConfig.validationEnabled,
-                capabilities.isPresent(Capability.HIBERNATE_VALIDATOR),
-                "quarkus-hibernate-validator",
-                Capability.HIBERNATE_VALIDATOR,
-                "quarkus.smallrye-graphql.validation.enabled",
-                true);
-        if (activate) {
-            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, TRUE));
-        } else {
-            systemProperties.produce(new SystemPropertyBuildItem(ConfigKey.ENABLE_VALIDATION, FALSE));
         }
     }
 

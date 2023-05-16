@@ -254,8 +254,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.path = path;
         }
 
-        public String getPath() {
-            return path.get();
+        public Optional<String> getPath() {
+            return path;
         }
 
         public void setPostLogoutPath(Optional<String> postLogoutPath) {
@@ -311,8 +311,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.path = path;
         }
 
-        public String getPath() {
-            return path.get();
+        public Optional<String> getPath() {
+            return path;
         }
     }
 
@@ -328,8 +328,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.path = path;
         }
 
-        public String getPath() {
-            return path.get();
+        public Optional<String> getPath() {
+            return path;
         }
     }
 

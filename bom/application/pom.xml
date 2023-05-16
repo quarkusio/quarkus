@@ -220,11 +220,11 @@
         <mutiny-zero.version>1.0.0</mutiny-zero.version>
         <!-- Dev UI -->
         <importmap.version>1.0.8</importmap.version>
-        <vaadin.version>24.0.2</vaadin.version>
-        <lit.version>2.7.2</lit.version>
-        <lit-element.version>3.3.1</lit-element.version>
-        <lit-html.version>2.7.2</lit-html.version>
-        <ssr-dom-shim.version>1.1.0</ssr-dom-shim.version>
+        <vaadin.version>24.0.5</vaadin.version>
+        <lit.version>2.7.4</lit.version>
+        <lit-element.version>3.3.2</lit-element.version>
+        <lit-html.version>2.7.4</lit-html.version>
+        <ssr-dom-shim.version>1.1.1</ssr-dom-shim.version>
         <trusted-types.version>2.0.3</trusted-types.version>
         <reactive-element.version>1.6.1</reactive-element.version>
         <vaadin-usage-statistics.version>2.1.2</vaadin-usage-statistics.version>
@@ -236,7 +236,7 @@
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>5.4.2</echarts.version>
         <wc-codemirror.version>2.1.0</wc-codemirror.version>
-        <es-module-shims.version>1.7.1</es-module-shims.version>
+        <es-module-shims.version>1.7.2</es-module-shims.version>
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
     </properties>
 

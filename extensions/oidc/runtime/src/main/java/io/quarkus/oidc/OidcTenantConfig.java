@@ -788,6 +788,10 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
+         * This property will be enabled if `quarkus.oidc.roles.source` is `userinfo`
+         * or `quarkus.oidc.token.verify-access-token-with-user-info` is `true`
+         * or `quarkus.oidc.authentication.id-token-required` is set to `false`,
+         * you do not have to enable this property manually in these cases.
          */
         @ConfigItem(defaultValueDocumentation = "false")
         public Optional<Boolean> userInfoRequired = Optional.empty();
@@ -1187,6 +1191,9 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * value since the refresh token is currently kept in the user session.
          *
          * This option is valid only when the application is of type {@link ApplicationType#WEB_APP}}.
+         *
+         * This property will be enabled if `quarkus.oidc.token.refresh-token-time-skew` is configured,
+         * you do not have to enable this property manually in this case.
          */
         @ConfigItem
         public boolean refreshExpired;
@@ -1197,8 +1204,6 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * when checking if the authorization code ID or access token should be refreshed.
          * If the sum is greater than the authorization code ID or access token's expiration time then a refresh is going to
          * happen.
-         *
-         * This property will be ignored if the 'refresh-expired' property is not enabled.
          */
         @ConfigItem
         public Optional<Duration> refreshTokenTimeSkew = Optional.empty();

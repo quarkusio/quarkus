@@ -136,7 +136,7 @@ Note if you use Keycloak then you should set a Microprofile JWT client scope for
 
 If only the access token contains the roles and this access token is not meant to be propagated to the downstream endpoints then set `quarkus.oidc.roles.source=accesstoken`.
 
-If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
+If UserInfo is the source of the roles then set `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles. For more information, see xref:security-customization.adoc#security-identity-customization[SecurityIdentity customization].
 

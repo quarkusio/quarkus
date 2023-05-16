@@ -107,9 +107,6 @@
                     <capabilities>
                         <provides>io.quarkus.hibernate.validator</provides>
                     </capabilities>
-                    <excludedArtifacts>
-                        <excludedArtifact>javax.validation:validation-api</excludedArtifact>
-                    </excludedArtifacts>
                 </configuration>
             </plugin>
             <plugin>

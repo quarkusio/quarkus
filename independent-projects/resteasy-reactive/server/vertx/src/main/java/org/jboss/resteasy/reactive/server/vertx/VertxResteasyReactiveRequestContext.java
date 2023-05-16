@@ -240,7 +240,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             context.getBody().getBytes(data);
             return new ByteArrayInputStream(data);
         }
-        return new VertxInputStream(context, 10000, this);
+        return new VertxInputStream(context, getDeployment().getRuntimeConfiguration().readTimeout().toMillis(), this);
     }
 
     @Override

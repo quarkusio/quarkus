@@ -26,7 +26,9 @@ public class SmallRyeGraphQLDevUIProcessor {
         String uiPath = nonApplicationRootPathBuildItem.resolvePath(graphQLConfig.ui.rootPath);
         PageBuilder uiPage = Page.externalPageBuilder("GraphQL UI")
                 .icon("font-awesome-solid:table-columns")
-                .url(uiPath);
+                .staticLabel("<a style='color: var(--lumo-contrast-80pct);' href='" + uiPath
+                        + "' target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></a>")
+                .url(uiPath + "/index.html?embed=true");
 
         // Learn
         PageBuilder learnLink = Page.externalPageBuilder("Learn more about GraphQL")

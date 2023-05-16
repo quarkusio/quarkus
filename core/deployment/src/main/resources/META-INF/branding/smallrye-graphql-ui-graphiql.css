@@ -26,14 +26,6 @@ body {
     color: #9a9da0;
 }
 
-#graphiql .topBar::after {
-    content: "{applicationHeader}";
-    position: absolute;
-    padding-top: 6px;
-    right: 100px;
-    color: #9a9da0;
-}
-
 #graphiql .docExplorerShow {
     background: #4695eb;
     color: white;

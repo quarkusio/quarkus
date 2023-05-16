@@ -36,16 +36,6 @@ html{
     min-width: 30px;
 }
 
-#swagger-ui .topbar-wrapper .download-url-wrapper::after {
-    content: "{applicationHeader}";
-    color: #9a9da0;
-    padding-top: 12px;
-    position: absolute;
-    right: 15px;
-    font-size: 0.83em;
-    z-index: 0;
-}
-
 @media (max-width: 1200px) {
     #swagger-ui .topbar-wrapper .download-url-wrapper::after {
         display: none;

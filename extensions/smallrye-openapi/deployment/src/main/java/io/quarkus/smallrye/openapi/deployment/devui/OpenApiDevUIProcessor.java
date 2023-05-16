@@ -11,6 +11,8 @@ public class OpenApiDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
+        String uiPath = nonApplicationRootPathBuildItem.resolvePath("swagger-ui");
+
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
@@ -24,7 +26,9 @@ public class OpenApiDevUIProcessor {
                 .icon("font-awesome-solid:file-code"));
 
         cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
-                .url(nonApplicationRootPathBuildItem.resolvePath("swagger-ui"))
+                .url(uiPath + "/index.html?embed=true")
+                .staticLabel("<a style='color: var(--lumo-contrast-80pct);' href='" + uiPath
+                        + "' target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></a>")
                 .isHtmlContent()
                 .icon("font-awesome-solid:signs-post"));
 

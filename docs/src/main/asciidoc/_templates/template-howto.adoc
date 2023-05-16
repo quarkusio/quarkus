@@ -5,7 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
 TODO: See xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines] for details
-- Title should have an implied "How to..." in front. 
+- Title should have an implied "How to..." in front.
 - ID should end with '-howto' (using the filename works)
 - choose appropriate categories
 ////
@@ -15,7 +15,7 @@ include::_attributes.adoc[]
 :categories: ...
 ////
 :extension-status: preview
-TODO: uncomment the above for experimental or tech-preview content. 
+TODO: uncomment the above for experimental or tech-preview content.
 The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
@@ -25,6 +25,18 @@ How-to guides are goal-oriented and should help the reader accomplish a task (wh
 TODO: If this is a reference for an experimental or tech-preview extension, uncomment the following (otherwise delete)
 include::{includes}/extension-status.adoc[]
 ////
+
+== Prerequisites
+
+////
+TODO: If this tutorial will use dev tools, use the following common include:
+include::{includes}/devtools/prerequisites.adoc[]
+This file offers a few different variables that can be used to tweak what is shown.
+////
+
+- Materials, software, ...
+- Whatever they should already have in hand to complete this set of steps
+- See the link:https://quarkus.io/version/main/guides/doc-contribute-docs-howto#add-prerequisites[Add a prerequisites section] in the "Contribute to Quarkus Documentation" guide.
 
 == Define the problem
 
@@ -49,6 +61,8 @@ To create anchors for in-file and cross-file navigation, see the following detai
 - Don’t explain concepts; link to a related concept/explainer.
 - Be flexible; a how-to guide needs to be adaptable to real-world use cases.
 - Omit the unnecessary; practical usability is more helpful than completeness.
+- A how-to guide can include multiple tasks, each with its own H2 heading.
+- For suggestions on how to write a good how-to guide, see https://diataxis.fr/how-to-guides/#writing-a-good-how-to-guide.
 
 == Examples
 

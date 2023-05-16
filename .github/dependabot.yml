@@ -19,7 +19,6 @@ updates:
       - dependency-name: org.liquibase:*
       - dependency-name: org.liquibase.ext:*
       - dependency-name: org.freemarker:freemarker
-      - dependency-name: io.fabric8:*
       - dependency-name: org.apache.httpcomponents:*
       - dependency-name: org.apache.james:apache-mime4j
       - dependency-name: org.quartz-scheduler:quartz

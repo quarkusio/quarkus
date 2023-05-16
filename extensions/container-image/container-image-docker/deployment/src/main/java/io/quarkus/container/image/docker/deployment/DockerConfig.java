@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -15,20 +16,22 @@ public class DockerConfig {
 
     /**
      * Path to the JVM Dockerfile.
-     * If not set ${project.root}/src/main/docker/Dockerfile.jvm will be used
      * If set to an absolute path then the absolute path will be used, otherwise the path
-     * will be considered relative to the project root
+     * will be considered relative to the project root.
+     * If not set src/main/docker/Dockerfile.jvm will be used.
      */
     @ConfigItem
+    @ConfigDocDefault("src/main/docker/Dockerfile.jvm")
     public Optional<String> dockerfileJvmPath;
 
     /**
-     * Path to the JVM Dockerfile.
-     * If not set ${project.root}/src/main/docker/Dockerfile.native will be used
+     * Path to the native Dockerfile.
      * If set to an absolute path then the absolute path will be used, otherwise the path
-     * will be considered relative to the project root
+     * will be considered relative to the project root.
+     * If not set src/main/docker/Dockerfile.native will be used.
      */
     @ConfigItem
+    @ConfigDocDefault("src/main/docker/Dockerfile.native")
     public Optional<String> dockerfileNativePath;
 
     /**

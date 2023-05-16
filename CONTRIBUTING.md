@@ -552,6 +552,8 @@ Quarkus repository and is synced to the [Quarkus.io website](https://quarkus.io/
 files can be found in
 the [`src/main/asciidoc` directory](https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc).
 
+For more information, see the [Contribute to Quarkus Documentation](https://quarkus.io/guides/doc-contribute-docs-howto) guide.
+
 ### Building the documentation
 
 When contributing a significant documentation change, it is highly recommended to run the build and check the output.

@@ -1385,11 +1385,6 @@ public class CustomResource implements QuarkusTestResourceLifecycleManager, DevS
 
 === Executing against a running application
 
-[WARNING]
-====
-This feature is considered experimental and is likely to change in future versions of Quarkus.
-====
-
 `@QuarkusIntegrationTest` supports executing tests against an already running instance of the application. This can be achieved by setting the
 `quarkus.http.test-host` system property when running the tests.
 

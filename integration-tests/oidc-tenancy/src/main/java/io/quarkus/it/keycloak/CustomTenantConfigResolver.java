@@ -136,6 +136,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setJwksPath(jwksUri);
                     config.getToken().setIssuer("any");
                     config.tokenStateManager.setSplitTokens(true);
+                    config.tokenStateManager.setEncryptionRequired(false);
                     config.getAuthentication().setSessionAgeExtension(Duration.ofMinutes(1));
                     return config;
                 } else if ("tenant-web-app-dynamic".equals(tenantId)) {

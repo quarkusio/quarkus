@@ -234,6 +234,11 @@ public class OidcRecorder {
                         "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
                                 + " application types");
             }
+            if (!oidcConfig.token.refreshTokenTimeSkew.isEmpty()) {
+                throw new ConfigurationException(
+                        "The 'token.refresh-token-time-skew' property can only be enabled for " + ApplicationType.WEB_APP
+                                + " application types");
+            }
             if (oidcConfig.logout.path.isPresent()) {
                 throw new ConfigurationException(
                         "The 'logout.path' property can only be enabled for " + ApplicationType.WEB_APP
@@ -243,6 +248,10 @@ public class OidcRecorder {
                 throw new ConfigurationException(
                         "The 'roles.source' property can only be set to 'idtoken' for " + ApplicationType.WEB_APP
                                 + " application types");
+            }
+        } else {
+            if (!oidcConfig.token.refreshTokenTimeSkew.isEmpty()) {
+                oidcConfig.token.setRefreshExpired(true);
             }
         }
 

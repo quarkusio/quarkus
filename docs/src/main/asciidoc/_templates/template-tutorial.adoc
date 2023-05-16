@@ -65,3 +65,11 @@ In closing, describe (and admire, in a mild way) what your learner has accomplis
 == References
 
 To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.
+
+=== Create cross-references
+
+To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
+
+* xref:{doc-guides}doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+
+* xref:{doc-guides}doc-reference.adoc#cross-references[Cross-references]

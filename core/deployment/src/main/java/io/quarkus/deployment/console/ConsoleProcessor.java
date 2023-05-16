@@ -74,7 +74,7 @@ public class ConsoleProcessor {
             ConsoleRuntimeConfig consoleRuntimeConfig = new ConsoleRuntimeConfig();
             consoleRuntimeConfig.color = ConfigProvider.getConfig().getOptionalValue("quarkus.console.color", Boolean.class);
             io.quarkus.runtime.logging.ConsoleConfig loggingConsoleConfig = new io.quarkus.runtime.logging.ConsoleConfig();
-            loggingConsoleConfig.color = ConfigProvider.getConfig().getOptionalValue("quarkus.log.console.color",
+            loggingConsoleConfig.color = ConfigProvider.getConfig().getOptionalValue("quarkus.console.color",
                     Boolean.class);
             ConsoleHelper.installConsole(config, consoleConfig, consoleRuntimeConfig, loggingConsoleConfig,
                     launchModeBuildItem.isTest());

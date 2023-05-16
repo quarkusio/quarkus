@@ -16,6 +16,7 @@ import static java.util.stream.Collectors.*;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BLOCKING;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST_SCOPED;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
 
 import java.lang.annotation.RetentionPolicy;
@@ -442,11 +443,12 @@ class RestClientReactiveProcessor {
                     ResultHandle baseUriHandle = constructor.load(baseUri != null ? baseUri.asString() : "");
                     constructor.invokeSpecialMethod(
                             MethodDescriptor.ofConstructor(RestClientReactiveCDIWrapperBase.class, Class.class, String.class,
-                                    String.class),
+                                    String.class, boolean.class),
                             constructor.getThis(),
                             constructor.loadClassFromTCCL(jaxrsInterface.toString()),
                             baseUriHandle,
-                            configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull());
+                            configKey.isPresent() ? constructor.load(configKey.get()) : constructor.loadNull(),
+                            constructor.load(scope.getDotName().equals(REQUEST_SCOPED)));
                     constructor.returnValue(null);
 
                     // METHODS:

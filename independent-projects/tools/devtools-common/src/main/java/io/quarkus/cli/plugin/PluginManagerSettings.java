@@ -13,43 +13,51 @@ import java.util.function.Function;
 public class PluginManagerSettings {
 
     public static String DEFAULT_PLUGIN_PREFIX = "quarkus";
-    public static String[] DEFAULT_REMOTE_JBANG_CATALOGS = new String[] { "quarkusio" };
+    public static String FALLBACK_REMOTE_JBANG_CATALOG = "quarkusio";
+    public static String[] DEFAULT_REMOTE_JBANG_CATALOGS = new String[0];
     public static Function<Path, Path> DEFAULT_RELATIVE_PATH_FUNC = p -> p.resolve(".quarkus").resolve("cli").resolve("plugins")
             .resolve("quarkus-cli-catalog.json");
 
     private final boolean interactiveMode;
     private final String pluginPrefix;
+    private final String fallbackJBangCatalog;
     private final String[] remoteJBangCatalogs;
     private final Function<Path, Path> toRelativePath;
 
-    public PluginManagerSettings(boolean interactiveMode, String pluginPrefix, String[] remoteJBangCatalogs,
+    public PluginManagerSettings(boolean interactiveMode, String pluginPrefix, String fallbackJBangCatalog,
+            String[] remoteJBangCatalogs,
             Function<Path, Path> toRelativePath) {
         this.interactiveMode = interactiveMode;
         this.pluginPrefix = pluginPrefix;
+        this.fallbackJBangCatalog = fallbackJBangCatalog;
         this.remoteJBangCatalogs = remoteJBangCatalogs;
         this.toRelativePath = toRelativePath;
     }
 
     public static PluginManagerSettings defaultSettings() {
-        return new PluginManagerSettings(false, DEFAULT_PLUGIN_PREFIX, DEFAULT_REMOTE_JBANG_CATALOGS,
+        return new PluginManagerSettings(false, DEFAULT_PLUGIN_PREFIX, FALLBACK_REMOTE_JBANG_CATALOG,
+                DEFAULT_REMOTE_JBANG_CATALOGS,
                 DEFAULT_RELATIVE_PATH_FUNC);
     }
 
     public PluginManagerSettings withPluignPrefix(String pluginPrefix) {
-        return new PluginManagerSettings(interactiveMode, pluginPrefix, remoteJBangCatalogs, toRelativePath);
+        return new PluginManagerSettings(interactiveMode, pluginPrefix, fallbackJBangCatalog, remoteJBangCatalogs,
+                toRelativePath);
     }
 
     public PluginManagerSettings withCatalogs(Set<String> remoteJBangCatalogs) {
-        return new PluginManagerSettings(interactiveMode, pluginPrefix,
-                remoteJBangCatalogs.toArray(new String[remoteJBangCatalogs.size()]), toRelativePath);
+        return new PluginManagerSettings(interactiveMode, pluginPrefix, fallbackJBangCatalog,
+                remoteJBangCatalogs.toArray(new String[0]), toRelativePath);
     }
 
     public PluginManagerSettings withCatalogs(String... remoteJBangCatalogs) {
-        return new PluginManagerSettings(interactiveMode, pluginPrefix, remoteJBangCatalogs, toRelativePath);
+        return new PluginManagerSettings(interactiveMode, pluginPrefix, fallbackJBangCatalog, remoteJBangCatalogs,
+                toRelativePath);
     }
 
     public PluginManagerSettings withInteractivetMode(boolean interactiveMode) {
-        return new PluginManagerSettings(interactiveMode, pluginPrefix, remoteJBangCatalogs, toRelativePath);
+        return new PluginManagerSettings(interactiveMode, pluginPrefix, fallbackJBangCatalog, remoteJBangCatalogs,
+                toRelativePath);
     }
 
     /**
@@ -61,6 +69,15 @@ public class PluginManagerSettings {
      */
     public String getPluginPrefix() {
         return pluginPrefix;
+    }
+
+    /**
+     * The name of the fallback JBang catalogs to get plugins from.
+     *
+     * @return the name of the catalog.
+     */
+    public String getFallbackJBangCatalog() {
+        return fallbackJBangCatalog;
     }
 
     /**

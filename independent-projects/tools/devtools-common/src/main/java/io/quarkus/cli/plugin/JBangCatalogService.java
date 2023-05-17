@@ -19,6 +19,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
     private static final Pattern PATH = Pattern.compile(PATH_REGEX);
 
     private final String pluginPrefix;
+    private final String fallbackCatalog;
     private final String[] remoteCatalogs;
     private final JBangSupport jbang;
 
@@ -26,13 +27,15 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
         this(output, "quarkus", "quarkusio");
     }
 
-    public JBangCatalogService(MessageWriter output, String pluginPrefix, String... remoteCatalogs) {
-        this(false, output, pluginPrefix, remoteCatalogs);
+    public JBangCatalogService(MessageWriter output, String pluginPrefix, String fallbackCatalog, String... remoteCatalogs) {
+        this(false, output, pluginPrefix, fallbackCatalog, remoteCatalogs);
     }
 
-    public JBangCatalogService(boolean interactiveMode, MessageWriter output, String pluginPrefix, String... remoteCatalogs) {
+    public JBangCatalogService(boolean interactiveMode, MessageWriter output, String pluginPrefix, String fallbackCatalog,
+            String... remoteCatalogs) {
         super(JBangCatalog.class, GIT_ROOT, RELATIVE_PLUGIN_CATALOG);
         this.pluginPrefix = pluginPrefix;
+        this.fallbackCatalog = fallbackCatalog;
         this.remoteCatalogs = remoteCatalogs;
         this.jbang = new JBangSupport(interactiveMode, output);
     }
@@ -90,14 +93,47 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
             });
         });
 
-        for (String remoteCatalog : remoteCatalogs) {
-            List<String> lines = jbang.execute("alias", "list", "--verbose", remoteCatalog);
-            aliases.putAll(readAliases(lines).entrySet()
+        //If not catalog have been specified use all available.
+        if (remoteCatalogs.length == 0) {
+            aliases.putAll(listAliasesOrFallback(jbang, fallbackCatalog).entrySet()
                     .stream()
                     .filter(e -> !aliases.containsKey(e.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        } else {
+            for (String remoteCatalog : remoteCatalogs) {
+                aliases.putAll(listAliases(jbang, remoteCatalog).entrySet()
+                        .stream()
+                        .filter(e -> !aliases.containsKey(e.getKey()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+            }
         }
         return new JBangCatalog(catalogs, aliases, Optional.empty(), Optional.empty());
+    }
+
+    private Map<String, JBangAlias> listAliases(JBangSupport jbang, String remoteCatalog) {
+        List<String> lines = jbang.execute("alias", "list", "--verbose", remoteCatalog);
+        return readAliases(lines);
+    }
+
+    private Map<String, JBangAlias> listAliasesOrFallback(JBangSupport jbang, String fallbackCatalog) {
+        List<String> localCatalogs = jbang.execute("catalog", "list").stream()
+                .map(l -> l.substring(0, l.indexOf(" ")))
+                .collect(Collectors.toList());
+
+        //If there are locally installed catalogs, then go through every single one of them
+        //and collect the aliases.
+        //Unfortunaltely jbang can't return all alias in one go.
+        //This is because it currently omits `@catalog` suffix in some cases.
+        if (!localCatalogs.isEmpty()) {
+            Map<String, JBangAlias> aliases = new HashMap<>();
+            for (String catalog : localCatalogs) {
+                aliases.putAll(listAliases(jbang, catalog));
+            }
+            return aliases;
+        }
+        //If no aliases found then there is not remote jbang catalog available
+        //In this case we need to fallback to the default.
+        return listAliases(jbang, fallbackCatalog);
     }
 
     private Map<String, JBangAlias> readAliases(List<String> lines) {

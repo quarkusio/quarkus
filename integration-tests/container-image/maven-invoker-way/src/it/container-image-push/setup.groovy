@@ -1,5 +1,6 @@
 import io.quarkus.deployment.util.ExecUtil
 
+ExecUtil.useSystemLogging() //prevents stack overflow issues
 try {
     ExecUtil.exec("docker", "version", "--format", "'{{.Server.Version}}'")
 } catch (Exception ignored) {

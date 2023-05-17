@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -32,10 +33,14 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.web.ReactiveRoutes;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
 public class StreamJsonTest {
+
+    private static final long TICK_EVERY_MS = 200;
+
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class));
@@ -109,6 +114,21 @@ public class StreamJsonTest {
         assertThat(collected).hasSize(4).containsAll(expected);
     }
 
+    /**
+     * Reproduce <a href="https://github.com/quarkusio/quarkus/issues/30690">#30690</a>.
+     */
+    @Test
+    public void shouldReadUpToThreeTicks() {
+        createClient(uri)
+                .ticks()
+                .onItem()
+                .invoke(Objects::nonNull)
+                .subscribe()
+                .withSubscriber(AssertSubscriber.create(3))
+                // wait for 3 ticks plus some half tick ms of extra time (this should not be necessary, but CI is slow)
+                .awaitItems(3, Duration.ofMillis((TICK_EVERY_MS * 3) + (TICK_EVERY_MS / 2)));
+    }
+
     private Client createClient(URI uri) {
         return RestClientBuilder.newBuilder().baseUri(uri).register(new TestJacksonBasicMessageBodyReader())
                 .build(Client.class);
@@ -133,6 +153,12 @@ public class StreamJsonTest {
         @Produces(RestMediaType.APPLICATION_STREAM_JSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
         Multi<Message> readPojoSingle();
+
+        @GET
+        @Path("/ticks")
+        @Produces(RestMediaType.APPLICATION_STREAM_JSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        Multi<String> ticks();
     }
 
     public static class ReactiveRoutesResource {
@@ -198,6 +224,19 @@ public class StreamJsonTest {
                 result.append("\n");
             }
             return result.toString();
+        }
+
+        @GET
+        @Path("/ticks")
+        @Produces(RestMediaType.APPLICATION_STREAM_JSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        public Multi<String> getTicks() {
+            return Multi.createFrom()
+                    .ticks()
+                    .every(Duration.ofMillis(TICK_EVERY_MS))
+                    .log()
+                    .onItem()
+                    .transform((Long tick) -> "tick " + tick);
         }
     }
 

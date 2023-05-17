@@ -90,18 +90,18 @@ public class PublisherResponseHandler implements ServerRestHandler {
         @Override
         protected String messagePrefix() {
             // When message is chunked, we don't need to add prefixes at first
-            if (isFirstItem) {
-                isFirstItem = false;
-                return null;
-            }
+            return null;
+        }
 
-            // If it's not the first message, we need to append the messages with end of line delimiter.
+        @Override
+        protected String messageSuffix() {
             return LINE_SEPARATOR;
         }
 
         @Override
         protected String onCompleteText() {
-            return LINE_SEPARATOR;
+            // When message is chunked, we don't need to add text at the end of the messages
+            return null;
         }
     }
 
@@ -128,7 +128,7 @@ public class PublisherResponseHandler implements ServerRestHandler {
         public void onNext(Object item) {
             List<StreamingResponseCustomizer> customizers = determineCustomizers(!hadItem);
             hadItem = true;
-            StreamingUtil.send(requestContext, customizers, item, messagePrefix())
+            StreamingUtil.send(requestContext, customizers, item, messagePrefix(), messageSuffix())
                     .handle(new BiFunction<Object, Throwable, Object>() {
                         @Override
                         public Object apply(Object v, Throwable t) {
@@ -182,11 +182,15 @@ public class PublisherResponseHandler implements ServerRestHandler {
             }
             if (json) {
                 String postfix = onCompleteText();
-                byte[] postfixBytes = postfix.getBytes(StandardCharsets.US_ASCII);
-                requestContext.serverResponse().write(postfixBytes).handle((v, t) -> {
+                if (postfix != null) {
+                    byte[] postfixBytes = postfix.getBytes(StandardCharsets.US_ASCII);
+                    requestContext.serverResponse().write(postfixBytes).handle((v, t) -> {
+                        super.onComplete();
+                        return null;
+                    });
+                } else {
                     super.onComplete();
-                    return null;
-                });
+                }
             } else {
                 super.onComplete();
             }
@@ -208,6 +212,10 @@ public class PublisherResponseHandler implements ServerRestHandler {
         protected String messagePrefix() {
             // if it's json, the message prefix starts with `[`.
             return json ? nextJsonPrefix : null;
+        }
+
+        protected String messageSuffix() {
+            return null;
         }
     }
 

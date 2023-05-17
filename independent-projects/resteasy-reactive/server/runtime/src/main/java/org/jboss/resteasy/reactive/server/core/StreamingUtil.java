@@ -24,7 +24,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 public class StreamingUtil {
 
     public static CompletionStage<?> send(ResteasyReactiveRequestContext context,
-            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers, Object entity, String prefix) {
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers, Object entity, String prefix,
+            String suffix) {
         ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
@@ -45,6 +46,13 @@ public class StreamingUtil {
             System.arraycopy(prefixBytes, 0, prefixedData, 0, prefixBytes.length);
             System.arraycopy(data, 0, prefixedData, prefixBytes.length, data.length);
             data = prefixedData;
+        }
+        if (suffix != null) {
+            byte[] suffixBytes = suffix.getBytes(StandardCharsets.US_ASCII);
+            byte[] suffixedData = new byte[data.length + suffixBytes.length];
+            System.arraycopy(data, 0, suffixedData, 0, data.length);
+            System.arraycopy(suffixBytes, 0, suffixedData, data.length, suffixBytes.length);
+            data = suffixedData;
         }
         return response.write(data);
     }

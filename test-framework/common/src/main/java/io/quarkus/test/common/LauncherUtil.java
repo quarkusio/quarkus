@@ -51,6 +51,9 @@ public final class LauncherUtil {
 
     /**
      * Launches a process using the supplied arguments and makes sure the process's output is drained to standard out
+     * <p>
+     * Implementation detail: Avoid using ProcessBuilder's redirect here because it causes problems with Maven Failsafe
+     * as can be seen in <a href="https://github.com/quarkusio/quarkus/issues/33229">here</a>
      */
     static Process launchProcess(List<String> args) throws IOException {
         Process process = Runtime.getRuntime().exec(args.toArray(new String[0]));

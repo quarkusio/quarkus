@@ -123,9 +123,15 @@ final class Methods {
                             .add(NameAndDescriptor.fromMethodInfo(method));
                     return false;
                 }
-
+                // in case we want to transform classes but are unable to, we log a WARN
                 LOGGER.warn(String.format(
                         "Final method %s.%s() is ignored during proxy generation and should never be invoked upon the proxy instance!",
+                        className, method.name()));
+            } else {
+                // JDK classes with final method are not proxyable and not transformable, we skip those methods and log a WARN
+                LOGGER.warn(String.format(
+                        "JDK class %s with final method %s() cannot be proxied and is not transformable. " +
+                                "This method will be ignored during proxy generation and should never be invoked upon the proxy instance!",
                         className, method.name()));
             }
             return true;

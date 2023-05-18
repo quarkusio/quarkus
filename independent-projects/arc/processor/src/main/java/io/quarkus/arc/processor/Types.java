@@ -507,7 +507,7 @@ public final class Types {
 
     /**
      * Detects wildcard for given type.
-     * In case this is related to a producer field or method, it either logs or throws a {@link DefinitionException}
+     * In case the annotation target is a producer and the boolean parameter is true, throws a {@link DefinitionException}
      * based on the boolean parameter.
      * Returns true if a wildcard is detected, false otherwise.
      */
@@ -525,16 +525,9 @@ public final class Types {
                         +
                         " contains a parameterized type with a wildcard. This type is not a legal bean type" +
                         " according to CDI specification.");
-            } else if (producerFieldOrMethod != null) {
-                // a producer method with wildcard in the type hierarchy of the return type
-                LOGGER.info("Producer " +
-                        (producerFieldOrMethod.kind().equals(AnnotationTarget.Kind.FIELD) ? "field " : "method ") +
-                        producerFieldOrMethod +
-                        " contains a parameterized typed with a wildcard. This type is not a legal bean type" +
-                        " according to CDI specification and will be ignored during bean resolution.");
-                return true;
             } else {
-                // wildcard detection for class-based beans, these still need to be skipped as they aren't valid bean types
+                // a producer method with wildcard in the type hierarchy of the return type
+                // OR wildcard detection for class-based beans, these still need to be skipped as they aren't valid bean types
                 return true;
             }
         } else if (type.kind().equals(Kind.PARAMETERIZED_TYPE)) {

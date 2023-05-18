@@ -15,6 +15,10 @@ public class JaxbContextConfigRecorder {
         this.classesToBeBound.addAll(classes);
     }
 
+    public void reset() {
+        classesToBeBound.clear();
+    }
+
     public static Set<Class<?>> getClassesToBeBound() {
         return Collections.unmodifiableSet(classesToBeBound);
     }

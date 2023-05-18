@@ -47,7 +47,11 @@ public class OidcProvider implements Closeable {
             SignatureAlgorithm.RS512.getAlgorithm(),
             SignatureAlgorithm.ES256.getAlgorithm(),
             SignatureAlgorithm.ES384.getAlgorithm(),
-            SignatureAlgorithm.ES512.getAlgorithm() };
+            SignatureAlgorithm.ES512.getAlgorithm(),
+            SignatureAlgorithm.PS256.getAlgorithm(),
+            SignatureAlgorithm.PS384.getAlgorithm(),
+            SignatureAlgorithm.PS512.getAlgorithm(),
+            SignatureAlgorithm.EDDSA.getAlgorithm() };
     private static final AlgorithmConstraints ASYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
             AlgorithmConstraints.ConstraintType.PERMIT, ASYMMETRIC_SUPPORTED_ALGORITHMS);
     private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(

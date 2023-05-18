@@ -47,8 +47,9 @@ public class TenantConfigContext {
         this.oidcConfig = config;
         this.ready = ready;
 
-        pkceSecretKey = provider != null && provider.client != null ? createPkceSecretKey(config) : null;
-        tokenEncSecretKey = provider != null && provider.client != null ? createTokenEncSecretKey(config) : null;
+        boolean isService = OidcUtils.isServiceApp(config);
+        pkceSecretKey = !isService && provider != null && provider.client != null ? createPkceSecretKey(config) : null;
+        tokenEncSecretKey = !isService && provider != null && provider.client != null ? createTokenEncSecretKey(config) : null;
     }
 
     private static SecretKey createPkceSecretKey(OidcTenantConfig config) {

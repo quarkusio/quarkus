@@ -15,8 +15,14 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 
 public class CatalogService<T extends Catalog<T>> {
 
-    private static final Predicate<Path> EXISTS_AND_WRITABLE = p -> p != null && p.toFile().exists() && p.toFile().canRead()
+    protected static final Path USER_HOME = Paths.get(System.getProperty("user.home"));
+
+    protected static final Predicate<Path> EXISTS_AND_WRITABLE = p -> p != null && p.toFile().exists() && p.toFile().canRead()
             && p.toFile().canWrite();
+    protected static final Predicate<Path> IS_USER_HOME = p -> USER_HOME.equals(p);
+    protected static final Predicate<Path> IS_ELIGIBLE_PROJECT_ROOT = EXISTS_AND_WRITABLE.and(Predicate.not(IS_USER_HOME));
+    protected static final Predicate<Path> HAS_POM_XML = p -> p != null && p.resolve("pom.xml").toFile().exists();
+    protected static final Predicate<Path> HAS_BUILD_GRADLE = p -> p != null && p.resolve("build.gradle").toFile().exists();
 
     protected static final Predicate<Path> GIT_ROOT = p -> p != null && p.resolve(".git").toFile().exists();
 
@@ -60,16 +66,7 @@ public class CatalogService<T extends Catalog<T>> {
      * @return the catalog path wrapped as {@link Optional} or empty if the catalog does not exist.
      */
     public Optional<Path> findProjectCatalogPath(Path dir) {
-        Optional<Path> catalogPath = Optional.of(dir).map(relativePath).filter(EXISTS_AND_WRITABLE);
-        if (catalogPath.isPresent()) {
-            return catalogPath;
-        }
-        if (projectRoot.test(dir)) {
-            return Optional.of(dir).map(relativePath);
-        }
-        return Optional.ofNullable(dir).map(Path::getParent)
-                .filter(EXISTS_AND_WRITABLE)
-                .flatMap(this::findProjectCatalogPath);
+        return findProjectRoot(dir).map(relativePath);
     }
 
     public Optional<Path> findProjectCatalogPath(Optional<Path> dir) {
@@ -132,7 +129,7 @@ public class CatalogService<T extends Catalog<T>> {
      * @return the catalog path wrapped as {@link Optional} or empty if the catalog does not exist.
      */
     public Path getUserCatalogPath(Optional<Path> userDir) {
-        return relativePath.apply(userDir.orElse(Paths.get(System.getProperty("user.home"))));
+        return relativePath.apply(userDir.orElse(USER_HOME));
     }
 
     /**
@@ -177,4 +174,31 @@ public class CatalogService<T extends Catalog<T>> {
         return getRelativeCatalogPath(projectDir).filter(EXISTS_AND_WRITABLE)
                 .or(() -> Optional.of(getUserCatalogPath(userDir)));
     }
+
+    /**
+     * Get the project root of the specified path.
+     * The method will traverse from the specified path up to upmost directory that the user can write and
+     * is under version control.
+     *
+     * @param dir the specified path
+     * @return the project path wrapped as {@link Optional} or empty if the catalog does not exist.
+     */
+    public static Optional<Path> findProjectRoot(Path dir) {
+        Optional<Path> lastKnownProjectDirectory = Optional.empty();
+        for (Path current = dir; IS_ELIGIBLE_PROJECT_ROOT.test(current); current = current.getParent()) {
+            if (GIT_ROOT.test(current)) {
+                return Optional.of(current);
+            }
+
+            if (HAS_POM_XML.test(current)) {
+                lastKnownProjectDirectory = Optional.of(current);
+            }
+
+            if (HAS_BUILD_GRADLE.test(current)) {
+                lastKnownProjectDirectory = Optional.of(current);
+            }
+        }
+        return lastKnownProjectDirectory;
+    }
+
 }

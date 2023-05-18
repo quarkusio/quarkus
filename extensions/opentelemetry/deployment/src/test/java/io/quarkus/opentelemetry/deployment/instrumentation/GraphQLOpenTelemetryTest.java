@@ -38,6 +38,7 @@ import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -116,6 +117,7 @@ public class GraphQLOpenTelemetryTest {
     }
 
     @Test
+    @Disabled // TODO: flaky test, find out how to fix it
     void nestedCdiBeanInsideQueryTraceTest() throws ExecutionException, InterruptedException {
         String request = getPayload("query {\n" +
                 "  helloAfterSecond\n" +

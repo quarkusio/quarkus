@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -16,41 +17,56 @@ public class ExecUtil {
 
     private static final Logger LOG = Logger.getLogger(ExecUtil.class);
 
-    private static final Function<InputStream, Runnable> PRINT_OUTPUT = i -> new HandleOutput(i);
-    private static final Function<InputStream, Runnable> SILENT = i -> new HandleOutput(i, Logger.Level.DEBUG);
+    private static final Function<InputStream, Runnable> INFO_LOGGING = i -> new HandleOutput(i);
+    private static final Function<InputStream, Runnable> DEBUG_LOGGING = i -> new HandleOutput(i, Logger.Level.DEBUG);
+    private static final Function<InputStream, Runnable> SYSTEM_LOGGING = i -> new HandleOutput(i);
+
+    private static Function<InputStream, Runnable> SELECTED_LOGGING = INFO_LOGGING;
 
     private static final int PROCESS_CHECK_INTERVAL = 500;
 
     private static class HandleOutput implements Runnable {
 
         private final InputStream is;
-        private final Logger.Level logLevel;
+        private final Optional<Logger.Level> logLevel;
 
         HandleOutput(InputStream is) {
-            this(is, Logger.Level.INFO);
+            this(is, null);
         }
 
         HandleOutput(InputStream is, Logger.Level logLevel) {
             this.is = is;
-            this.logLevel = LOG.isEnabled(logLevel) ? logLevel : null;
+            this.logLevel = Optional.ofNullable(logLevel);
         }
 
         @Override
         public void run() {
-            try (InputStreamReader isr = new InputStreamReader(is);
-                    BufferedReader reader = new BufferedReader(isr)) {
-
+            try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {
                 for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                    if (logLevel != null) {
-                        LOG.log(logLevel, line);
-                    }
+                    final String l = line;
+                    logLevel.ifPresentOrElse(level -> LOG.log(level, l), () -> System.out.println(l));
                 }
             } catch (IOException e) {
-                if (logLevel != null) {
-                    LOG.log(logLevel, "Failed to handle output", e);
-                }
+                logLevel.ifPresentOrElse(level -> LOG.log(level, "Failed to handle output", e), () -> e.printStackTrace());
             }
         }
+    }
+
+    public static void useInfoLogging() {
+        ExecUtil.SELECTED_LOGGING = INFO_LOGGING;
+    }
+
+    public static void useDebugLogging() {
+        ExecUtil.SELECTED_LOGGING = DEBUG_LOGGING;
+    }
+
+    /**
+     * There are cases where its preferable to just write to System.out.
+     * For example from maven-invoker verify scripts, logging can trigger Stack Overflow.
+     * For such cases its preferable to use this method.
+     */
+    public static void useSystemLogging() {
+        ExecUtil.SELECTED_LOGGING = SYSTEM_LOGGING;
     }
 
     /**
@@ -77,29 +93,6 @@ public class ExecUtil {
     }
 
     /**
-     * Execute the specified command from within the current directory and hide the output.
-     *
-     * @param command The command
-     * @param args The command arguments
-     * @return true if commands where executed successfully
-     */
-    public static boolean execSilent(String command, String... args) {
-        return execSilent(new File("."), command, args);
-    }
-
-    /**
-     * Execute the specified command until the given timeout from within the current directory and hide the output.
-     *
-     * @param timeout The timeout
-     * @param command The command
-     * @param args The command arguments
-     * @return true if commands where executed successfully
-     */
-    public static boolean execSilentWithTimeout(Duration timeout, String command, String... args) {
-        return execSilentWithTimeout(new File("."), timeout, command, args);
-    }
-
-    /**
      * Execute the specified command from within the specified directory.
      *
      * @param directory The directory
@@ -108,7 +101,7 @@ public class ExecUtil {
      * @return true if commands where executed successfully
      */
     public static boolean exec(File directory, String command, String... args) {
-        return exec(directory, PRINT_OUTPUT, command, args);
+        return exec(directory, SELECTED_LOGGING, command, args);
     }
 
     /**
@@ -121,32 +114,7 @@ public class ExecUtil {
      * @return true if commands where executed successfully
      */
     public static boolean execWithTimeout(File directory, Duration timeout, String command, String... args) {
-        return execWithTimeout(directory, PRINT_OUTPUT, timeout, command, args);
-    }
-
-    /**
-     * Execute the specified command from within the specified directory and hide the output.
-     *
-     * @param directory The directory
-     * @param command The command
-     * @param args The command arguments
-     * @return true if commands where executed successfully
-     */
-    public static boolean execSilent(File directory, String command, String... args) {
-        return exec(directory, SILENT, command, args);
-    }
-
-    /**
-     * Execute the specified command until the given timeout from within the specified directory and hide the output.
-     *
-     * @param directory The directory
-     * @param timeout The timeout
-     * @param command The command
-     * @param args The command arguments
-     * @return true if commands where executed successfully
-     */
-    public static boolean execSilentWithTimeout(File directory, Duration timeout, String command, String... args) {
-        return execWithTimeout(directory, SILENT, timeout, command, args);
+        return execWithTimeout(directory, SELECTED_LOGGING, timeout, command, args);
     }
 
     /**
@@ -162,9 +130,15 @@ public class ExecUtil {
     public static boolean exec(File directory, Function<InputStream, Runnable> outputFilterFunction, String command,
             String... args) {
         try {
+            Function<InputStream, Runnable> loggingFunction = outputFilterFunction != null ? outputFilterFunction
+                    : INFO_LOGGING;
             Process process = startProcess(directory, command, args);
-            outputFilterFunction.apply(process.getInputStream()).run();
+            Thread t = new Thread(loggingFunction.apply(process.getInputStream()));
+            t.setName("Process stdout");
+            t.setDaemon(true);
+            t.start();
             process.waitFor();
+            destroyProcess(process);
             return process.exitValue() == 0;
         } catch (InterruptedException e) {
             return false;
@@ -185,8 +159,10 @@ public class ExecUtil {
     public static boolean execWithTimeout(File directory, Function<InputStream, Runnable> outputFilterFunction,
             Duration timeout, String command, String... args) {
         try {
+            Function<InputStream, Runnable> loggingFunction = outputFilterFunction != null ? outputFilterFunction
+                    : INFO_LOGGING;
             Process process = startProcess(directory, command, args);
-            Thread t = new Thread(outputFilterFunction.apply(process.getInputStream()));
+            Thread t = new Thread(loggingFunction.apply(process.getInputStream()));
             t.setName("Process stdout");
             t.setDaemon(true);
             t.start();
@@ -196,6 +172,52 @@ public class ExecUtil {
         } catch (InterruptedException e) {
             return false;
         }
+    }
+
+    /**
+     * Execute the specified command from within the current directory using debug logging.
+     *
+     * @param command The command
+     * @param args The command arguments
+     * @return true if commands where executed successfully
+     */
+    public static boolean execWithDebugLogging(String command, String... args) {
+        return execWithDebugLogging(new File("."), command, args);
+    }
+
+    /**
+     * Execute the specified command from within the specified directory using debug logging.
+     *
+     * @param directory The directory
+     * @param command The command
+     * @param args The command arguments
+     * @return true if commands where executed successfully
+     */
+    public static boolean execWithDebugLogging(File directory, String command, String... args) {
+        return exec(directory, DEBUG_LOGGING, command, args);
+    }
+
+    /**
+     * Execute the specified command from within the current directory using system logging.
+     *
+     * @param command The command
+     * @param args The command arguments
+     * @return true if commands where executed successfully
+     */
+    public static boolean execWithSystemLogging(String command, String... args) {
+        return execWithSystemLogging(new File("."), command, args);
+    }
+
+    /**
+     * Execute the specified command from within the specified directory using system logging.
+     *
+     * @param directory The directory
+     * @param command The command
+     * @param args The command arguments
+     * @return true if commands where executed successfully
+     */
+    public static boolean execWithSystemLogging(File directory, String command, String... args) {
+        return exec(directory, SYSTEM_LOGGING, command, args);
     }
 
     /**
@@ -243,5 +265,4 @@ public class ExecUtil {
             process.destroyForcibly();
         }
     }
-
 }

@@ -2,6 +2,8 @@ import io.quarkus.deployment.util.ExecUtil
 
 import java.util.concurrent.ThreadLocalRandom
 
+ExecUtil.useSystemLogging() //prevents stack overflow issues
+
 try {
     ExecUtil.exec("docker", "version", "--format", "'{{.Server.Version}}'")
 } catch (Exception ignored) {

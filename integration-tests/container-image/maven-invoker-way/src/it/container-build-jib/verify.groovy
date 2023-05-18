@@ -4,6 +4,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
+ExecUtil.useSystemLogging() //prevents stack overflow issues
 try {
     ExecUtil.exec("docker", "version", "--format", "'{{.Server.Version}}'")
 } catch (Exception ignored) {

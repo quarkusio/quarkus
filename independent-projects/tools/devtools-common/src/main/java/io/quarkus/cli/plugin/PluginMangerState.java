@@ -19,7 +19,7 @@ import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 
 class PluginMangerState {
 
-    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome, Optional<Path> projectRoot,
+    PluginMangerState(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome, Optional<Path> currentDir,
             Supplier<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
@@ -27,10 +27,10 @@ class PluginMangerState {
         this.quarkusProject = quarkusProject;
 
         //Inferred
-        this.projectRoot = projectRoot.filter(p -> !p.equals(userHome.orElse(null)));
         this.jbangCatalogService = new JBangCatalogService(settings.isInteractiveMode(), output, settings.getPluginPrefix(),
                 settings.getRemoteJBangCatalogs());
         this.pluginCatalogService = new PluginCatalogService(settings.getToRelativePath());
+        this.projectRoot = currentDir.flatMap(CatalogService::findProjectRoot);
         this.util = PluginManagerUtil.getUtil(settings);
     }
 

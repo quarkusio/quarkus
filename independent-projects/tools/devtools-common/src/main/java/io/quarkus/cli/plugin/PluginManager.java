@@ -1,9 +1,11 @@
 package io.quarkus.cli.plugin;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -27,19 +29,19 @@ public class PluginManager {
     }
 
     public synchronized static PluginManager create(PluginManagerSettings settings, MessageWriter output,
-            Optional<Path> userHome, Optional<Path> projectRoot, Supplier<QuarkusProject> quarkusProject) {
+            Optional<Path> userHome, Optional<Path> currentDir, Supplier<QuarkusProject> quarkusProject) {
         if (INSTANCE == null) {
-            INSTANCE = new PluginManager(settings, output, userHome, projectRoot, quarkusProject);
+            INSTANCE = new PluginManager(settings, output, userHome, currentDir, quarkusProject);
         }
         return INSTANCE;
     }
 
     PluginManager(PluginManagerSettings settings, MessageWriter output, Optional<Path> userHome,
-            Optional<Path> projectRoot, Supplier<QuarkusProject> quarkusProject) {
+            Optional<Path> currentDir, Supplier<QuarkusProject> quarkusProject) {
         this.settings = settings;
         this.output = output;
         this.util = PluginManagerUtil.getUtil(settings);
-        this.state = new PluginMangerState(settings, output, userHome, projectRoot, quarkusProject);
+        this.state = new PluginMangerState(settings, output, userHome, currentDir, quarkusProject);
     }
 
     /**
@@ -303,6 +305,22 @@ public class PluginManager {
             //syncing may require user interaction, so just return false
             return false;
         }
+
+        // Check if there project catalog file is missing
+        boolean createdMissingProjectCatalog = state.getPluginCatalogService().findProjectCatalogPath(state.getProjectRoot())
+                .map(Path::toFile)
+                .filter(Predicate.not(File::exists))
+                .map(File::toPath)
+                .map(p -> {
+                    output.info("Project plugin catalog has not been initialized. Initializing!");
+                    state.getPluginCatalogService().writeCatalog(new PluginCatalog().withCatalogLocation(p));
+                    return true;
+                }).orElse(false);
+
+        if (createdMissingProjectCatalog) {
+            return sync();
+        }
+
         PluginCatalog catalog = state.getCombinedCatalog();
         if (PluginUtil.shouldSync(state.getProjectRoot(), catalog)) {
             output.info("Plugin catalog last updated on: " + catalog.getLastUpdate() + ". Syncing!");

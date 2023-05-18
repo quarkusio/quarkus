@@ -551,10 +551,7 @@ public class ObserverGenerator extends AbstractGenerator {
                                     injectionPointToProviderField.get(injectionPoint),
                                     annotationLiterals, observer, reflectionRegistration, injectionPointAnnotationsPredicate));
                 } else {
-                    if (injectionPoint.getResolvedBean().getAllInjectionPoints().stream()
-                            .anyMatch(ip -> BuiltinBean.INJECTION_POINT.hasRawTypeDotName(ip.getRequiredType().name()))) {
-                        // IMPL NOTE: Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
-                        // reference provider
+                    if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
                         ResultHandle requiredQualifiersHandle = BeanGenerator.collectInjectionPointQualifiers(classOutput,
                                 observerCreator,
                                 observer.getDeclaringBean().getDeployment(), constructor,

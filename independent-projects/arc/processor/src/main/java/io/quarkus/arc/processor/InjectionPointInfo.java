@@ -304,6 +304,20 @@ public class InjectionPointInfo {
         return target == null;
     }
 
+    /**
+     * If an injection point resolves to a dependent bean that (A) injects the InjectionPoint metadata or (2) is synthetic, then
+     * we need to wrap the injectable reference provider.
+     *
+     * @return {@code true} if a wrapper is needed, {@code false} otherwise
+     */
+    boolean isCurrentInjectionPointWrapperNeeded() {
+        BeanInfo bean = getResolvedBean();
+        if (bean != null && BuiltinScope.DEPENDENT.is(bean.getScope())) {
+            return bean.isSynthetic() || bean.requiresInjectionPointMetadata();
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
         return "InjectionPointInfo [requiredType=" + typeAndQualifiers.type + ", requiredQualifiers="

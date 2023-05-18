@@ -64,6 +64,7 @@ public class OidcProvider implements Closeable {
     final String[] audience;
     final Map<String, String> requiredClaims;
     final Key tokenDecryptionKey;
+    final AlgorithmConstraints requiredAlgorithmConstraints;
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks, Key tokenDecryptionKey) {
         this.client = client;
@@ -75,6 +76,7 @@ public class OidcProvider implements Closeable {
         this.audience = checkAudienceProp();
         this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
+        this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
     }
 
     public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
@@ -85,6 +87,16 @@ public class OidcProvider implements Closeable {
         this.audience = checkAudienceProp();
         this.requiredClaims = checkRequiredClaimsProp();
         this.tokenDecryptionKey = tokenDecryptionKey;
+        this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
+    }
+
+    private AlgorithmConstraints checkSignatureAlgorithm() {
+        if (oidcConfig != null && oidcConfig.token.signatureAlgorithm.isPresent()) {
+            String configuredAlg = oidcConfig.token.signatureAlgorithm.get().getAlgorithm();
+            return new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, configuredAlg);
+        } else {
+            return null;
+        }
     }
 
     private String checkIssuerProp() {
@@ -113,7 +125,8 @@ public class OidcProvider implements Closeable {
 
     public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification)
             throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, enforceAudienceVerification, ASYMMETRIC_ALGORITHM_CONSTRAINTS,
+        return verifyJwtTokenInternal(token, enforceAudienceVerification,
+                requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS,
                 asymmetricKeyResolver, true);
     }
 

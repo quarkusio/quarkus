@@ -44,6 +44,9 @@ public class CustomTenantResolver implements TenantResolver {
         if (path.endsWith("bearer")) {
             return "bearer";
         }
+        if (path.endsWith("bearer-required-algorithm")) {
+            return "bearer-required-algorithm";
+        }
         if (path.endsWith("bearer-no-introspection")) {
             return "bearer-no-introspection";
         }

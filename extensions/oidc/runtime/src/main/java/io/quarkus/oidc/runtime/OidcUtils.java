@@ -29,6 +29,7 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.RefreshToken;
 import io.quarkus.oidc.TokenIntrospection;
@@ -76,6 +77,14 @@ public final class OidcUtils {
 
     private OidcUtils() {
 
+    }
+
+    public static boolean isServiceApp(OidcTenantConfig oidcConfig) {
+        return ApplicationType.SERVICE.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
+    }
+
+    public static boolean isWebApp(OidcTenantConfig oidcConfig) {
+        return ApplicationType.WEB_APP.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
     }
 
     public static boolean isEncryptedToken(String token) {

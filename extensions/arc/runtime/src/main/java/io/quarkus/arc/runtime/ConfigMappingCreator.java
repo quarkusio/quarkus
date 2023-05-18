@@ -1,10 +1,8 @@
 package io.quarkus.arc.runtime;
 
 import java.lang.annotation.Annotation;
-import java.util.Map;
 import java.util.Optional;
 
-import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.Annotated;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 
@@ -12,20 +10,21 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 
 import io.quarkus.arc.BeanCreator;
-import io.quarkus.arc.impl.InjectionPointProvider;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.SmallRyeConfig;
 
 public class ConfigMappingCreator implements BeanCreator<Object> {
+
     @Override
-    public Object create(CreationalContext<Object> creationalContext, Map<String, Object> params) {
-        InjectionPoint injectionPoint = InjectionPointProvider.get();
+    public Object create(SyntheticCreationalContext<Object> context) {
+        InjectionPoint injectionPoint = context.getInjectedReference(InjectionPoint.class);
         if (injectionPoint == null) {
             throw new IllegalStateException("No current injection point found");
         }
 
-        Class<?> interfaceType = (Class<?>) params.get("type");
-        String prefix = (String) params.get("prefix");
+        Class<?> interfaceType = (Class<?>) context.getParams().get("type");
+        String prefix = (String) context.getParams().get("prefix");
 
         SmallRyeConfig config = (SmallRyeConfig) ConfigProvider.getConfig();
         return config.getConfigMapping(interfaceType, getPrefixFromInjectionPoint(injectionPoint).orElse(prefix));

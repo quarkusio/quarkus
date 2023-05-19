@@ -218,7 +218,7 @@ public final class BeanStream implements Iterable<BeanInfo> {
      * @return the new stream of producer beans
      */
     public BeanStream producers() {
-        stream = stream.filter(bean -> bean.isProducerField() || bean.isProducerMethod());
+        stream = stream.filter(BeanInfo::isProducer);
         return this;
     }
 

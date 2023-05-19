@@ -552,19 +552,15 @@ public class ObserverGenerator extends AbstractGenerator {
                                     annotationLiterals, observer, reflectionRegistration, injectionPointAnnotationsPredicate));
                 } else {
                     if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
-                        ResultHandle requiredQualifiersHandle = BeanGenerator.collectInjectionPointQualifiers(classOutput,
-                                observerCreator,
+                        ResultHandle requiredQualifiersHandle = BeanGenerator.collectInjectionPointQualifiers(
                                 observer.getDeclaringBean().getDeployment(), constructor,
                                 injectionPoint,
                                 annotationLiterals);
-                        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(classOutput,
-                                observerCreator,
+                        ResultHandle annotationsHandle = BeanGenerator.collectInjectionPointAnnotations(
                                 observer.getDeclaringBean().getDeployment(), constructor, injectionPoint, annotationLiterals,
                                 injectionPointAnnotationsPredicate);
                         ResultHandle javaMemberHandle = BeanGenerator.getJavaMemberHandle(constructor, injectionPoint,
                                 reflectionRegistration);
-                        boolean isTransient = injectionPoint.isField()
-                                && Modifier.isTransient(injectionPoint.getTarget().asField().flags());
 
                         // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider c'tor.
                         ResultHandle delegateSupplier = constructor.newInstance(
@@ -578,7 +574,7 @@ public class ObserverGenerator extends AbstractGenerator {
                                 Types.getTypeHandle(constructor, injectionPoint.getType()),
                                 requiredQualifiersHandle, annotationsHandle, javaMemberHandle,
                                 constructor.load(injectionPoint.getPosition()),
-                                constructor.load(isTransient));
+                                constructor.load(injectionPoint.isTransient()));
                         ResultHandle wrapSupplierHandle = constructor.newInstance(
                                 MethodDescriptors.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrapHandle);
 

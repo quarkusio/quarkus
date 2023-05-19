@@ -87,6 +87,14 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return Collections.emptySet();
     }
 
+    /**
+     * By default, this method always returns an empty set, because obtaining the set
+     * of injection points of a bean at application runtime is rarely useful.
+     * <p>
+     * In the {@linkplain ArcContainer#strictCompatibility() strict mode}, this method
+     * works as described by the CDI specification. Feedback on usefulness of this
+     * method is welcome!
+     */
     @Override
     default Set<InjectionPoint> getInjectionPoints() {
         return Collections.emptySet();

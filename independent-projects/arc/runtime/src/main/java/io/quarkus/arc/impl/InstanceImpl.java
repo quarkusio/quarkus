@@ -41,8 +41,8 @@ import io.quarkus.arc.WithCaching;
 public class InstanceImpl<T> implements InjectableInstance<T> {
 
     public static Instance<Object> forSynthesis(CreationalContextImpl<?> creationalContext, boolean allowInjectionPointLookup) {
-        InstanceImpl<Object> result = new InstanceImpl<>(null, null, Object.class, Collections.emptySet(),
-                creationalContext, Collections.emptySet(), null, -1, false, false);
+        InstanceImpl<Object> result = new InstanceImpl<>(creationalContext, Object.class, Collections.emptySet(),
+                null, null, Collections.emptySet(), null, -1, false, false);
         if (allowInjectionPointLookup) {
             return result;
         }
@@ -119,15 +119,21 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         return new Guard<>(result);
     }
 
-    static <T> InstanceImpl<T> of(Type requiredType, Set<Annotation> requiredQualifiers) {
-        return new InstanceImpl<>(null, null, requiredType, requiredQualifiers,
-                new CreationalContextImpl<>(null),
-                Collections.emptySet(), null, -1, false, true);
+    static <T> InstanceImpl<T> forGlobalEntrypoint(Type requiredType, Set<Annotation> requiredQualifiers) {
+        return new InstanceImpl<>(new CreationalContextImpl<>(null), requiredType, requiredQualifiers,
+                null, null, Collections.emptySet(), null, -1, false, true);
+    }
+
+    static <T> InstanceImpl<T> forInjection(InjectableBean<?> targetBean, Type type, Set<Annotation> qualifiers,
+            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
+            boolean isTransient) {
+        return new InstanceImpl<>(creationalContext, getRequiredType(type), qualifiers,
+                type, targetBean, annotations, javaMember, position, isTransient, true);
     }
 
     private static <T> InstanceImpl<T> child(InstanceImpl<?> parent, Type requiredType, Set<Annotation> requiredQualifiers) {
-        return new InstanceImpl<>(parent.targetBean, parent.injectionPointType, requiredType, requiredQualifiers,
-                parent.creationalContext, parent.annotations, parent.javaMember, parent.position, parent.isTransient,
+        return new InstanceImpl<>(parent.creationalContext, requiredType, requiredQualifiers, parent.injectionPointType,
+                parent.targetBean, parent.annotations, parent.javaMember, parent.position, parent.isTransient,
                 parent.resetCurrentInjectionPoint);
     }
 
@@ -149,32 +155,28 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
 
     private final LazyValue<T> cachedGetResult;
 
-    InstanceImpl(InjectableBean<?> targetBean, Type type, Set<Annotation> qualifiers,
-            CreationalContextImpl<?> creationalContext, Set<Annotation> annotations, Member javaMember, int position,
-            boolean isTransient) {
-        this(targetBean, type, getRequiredType(type), qualifiers, creationalContext, annotations, javaMember, position,
-                isTransient, true);
-    }
-
-    private InstanceImpl(InjectableBean<?> targetBean, Type injectionPointType, Type requiredType,
-            Set<Annotation> requiredQualifiers, CreationalContextImpl<?> creationalContext, Set<Annotation> annotations,
-            Member javaMember, int position, boolean isTransient, boolean resetCurrentInjectionPoint) {
-        this.injectionPointType = injectionPointType;
+    private InstanceImpl(CreationalContextImpl<?> creationalContext, Type requiredType, Set<Annotation> requiredQualifiers,
+            Type injectionPointType, InjectableBean<?> targetBean, Set<Annotation> annotations, Member javaMember,
+            int position, boolean isTransient, boolean resetCurrentInjectionPoint) {
+        this.creationalContext = creationalContext;
         this.requiredType = requiredType;
         this.requiredQualifiers = requiredQualifiers != null ? requiredQualifiers : Collections.emptySet();
-        this.creationalContext = creationalContext;
+
         if (this.requiredQualifiers.isEmpty() && Object.class.equals(requiredType)) {
             // Do not prefetch the beans for Instance<Object> with no qualifiers
             this.resolvedBeans = null;
         } else {
             this.resolvedBeans = resolve();
         }
+
+        this.injectionPointType = injectionPointType;
         this.targetBean = targetBean;
         this.annotations = annotations;
         this.javaMember = javaMember;
         this.position = position;
         this.isTransient = isTransient;
         this.resetCurrentInjectionPoint = resetCurrentInjectionPoint;
+
         this.cachedGetResult = isGetCached(annotations) ? new LazyValue<>(this::getInternal) : null;
     }
 

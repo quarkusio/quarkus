@@ -155,7 +155,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
         resourceProviders.trimToSize();
 
-        instance = InstanceImpl.of(Object.class, Collections.emptySet());
+        instance = InstanceImpl.forGlobalEntrypoint(Object.class, Collections.emptySet());
 
         this.beans = List.copyOf(beans);
         this.interceptors = List.copyOf(interceptors);

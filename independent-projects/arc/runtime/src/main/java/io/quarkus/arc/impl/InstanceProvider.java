@@ -39,7 +39,7 @@ public class InstanceProvider<T> implements InjectableReferenceProvider<Instance
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Instance<T> get(CreationalContext<Instance<T>> creationalContext) {
-        InstanceImpl<T> instance = new InstanceImpl<T>(targetBean, requiredType, qualifiers,
+        InstanceImpl<T> instance = InstanceImpl.forInjection(targetBean, requiredType, qualifiers,
                 CreationalContextImpl.unwrap(creationalContext),
                 annotations, javaMember, position, isTransient);
         CreationalContextImpl.addDependencyToParent(InstanceBean.INSTANCE, instance,

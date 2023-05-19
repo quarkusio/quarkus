@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.Annotations.contains;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -242,6 +243,10 @@ public class InjectionPointInfo {
 
     public boolean isParam() {
         return target != null && target.kind() == Kind.METHOD;
+    }
+
+    public boolean isTransient() {
+        return isField() && Modifier.isTransient(target.asField().flags());
     }
 
     /**

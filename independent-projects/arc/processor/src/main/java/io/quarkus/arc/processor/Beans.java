@@ -64,9 +64,11 @@ public final class Beans {
             }
             for (AnnotationInstance annotation : beanDeployment.getAnnotationStore().getAnnotations(classFromIndex)) {
                 ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
-                if (scopeAnnotation != null && scopeAnnotation.declaresInherited()) {
-                    // found some scope, return
-                    return scopeAnnotation;
+                if (scopeAnnotation != null) {
+                    // found some scope, return it if it's inherited
+                    // if it isn't inherited, it still prevents the bean class
+                    // from inheriting another scope from a further superclass
+                    return scopeAnnotation.declaresInherited() ? scopeAnnotation : null;
                 }
             }
             superClassName = classFromIndex.superName();
@@ -787,7 +789,7 @@ public final class Beans {
                 }
             }
 
-        } else if (bean.isProducerField() || bean.isProducerMethod()) {
+        } else if (bean.isProducer()) {
             String methodOrField = bean.isProducerMethod() ? "method" : "field";
             String classifier = "Producer " + methodOrField + " for a normal scoped bean";
 

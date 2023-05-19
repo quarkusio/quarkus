@@ -16,12 +16,15 @@ import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
+import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.TenantResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.ExecutorRecorder;
@@ -58,14 +61,14 @@ public class OidcRecorder {
         final Vertx vertxValue = vertx.get();
 
         String defaultTenantId = config.defaultTenant.getTenantId().orElse(OidcUtils.DEFAULT_TENANT_ID);
-        TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant, tlsConfig,
-                defaultTenantId);
+        TenantConfigContext defaultTenantContext = createStaticTenantContext(vertxValue, config.defaultTenant,
+                !config.namedTenants.isEmpty(), tlsConfig, defaultTenantId);
 
         Map<String, TenantConfigContext> staticTenantsConfig = new HashMap<>();
         for (Map.Entry<String, OidcTenantConfig> tenant : config.namedTenants.entrySet()) {
             OidcCommonUtils.verifyConfigurationId(defaultTenantId, tenant.getKey(), tenant.getValue().getTenantId());
             staticTenantsConfig.put(tenant.getKey(),
-                    createStaticTenantContext(vertxValue, tenant.getValue(), tlsConfig, tenant.getKey()));
+                    createStaticTenantContext(vertxValue, tenant.getValue(), false, tlsConfig, tenant.getKey()));
         }
 
         return new Supplier<TenantConfigBean>() {
@@ -91,7 +94,7 @@ public class OidcRecorder {
                     "BackChannel Logout is currently not supported for dynamic tenants");
         }
         if (!dynamicTenantsConfig.containsKey(tenantId)) {
-            Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, tlsConfig, tenantId);
+            Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, false, tlsConfig, tenantId);
             uniContext.onFailure().transform(new Function<Throwable, Throwable>() {
                 @Override
                 public Throwable apply(Throwable t) {
@@ -112,9 +115,9 @@ public class OidcRecorder {
     }
 
     private TenantConfigContext createStaticTenantContext(Vertx vertx,
-            OidcTenantConfig oidcConfig, TlsConfig tlsConfig, String tenantId) {
+            OidcTenantConfig oidcConfig, boolean checkTenantResolver, TlsConfig tlsConfig, String tenantId) {
 
-        Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, tlsConfig, tenantId);
+        Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, checkTenantResolver, tlsConfig, tenantId);
         return uniContext.onFailure()
                 .recoverWithItem(new Function<Throwable, TenantConfigContext>() {
                     @Override
@@ -148,8 +151,9 @@ public class OidcRecorder {
     }
 
     @SuppressWarnings("resource")
-    private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcTenantConfig, TlsConfig tlsConfig,
-            String tenantId) {
+    private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcTenantConfig,
+            boolean checkTenantResolver,
+            TlsConfig tlsConfig, String tenantId) {
         if (!oidcTenantConfig.tenantId.isPresent()) {
             oidcTenantConfig.tenantId = Optional.of(tenantId);
         }
@@ -166,7 +170,23 @@ public class OidcRecorder {
         }
 
         try {
-            verifyAuthServerUrl(oidcConfig);
+            if (!oidcConfig.getAuthServerUrl().isPresent()) {
+                if (OidcUtils.DEFAULT_TENANT_ID.equals(oidcConfig.tenantId.get())) {
+                    ArcContainer container = Arc.container();
+                    if (container != null
+                            && (container.instance(TenantConfigResolver.class).isAvailable()
+                                    || (checkTenantResolver && container.instance(TenantResolver.class).isAvailable()))) {
+                        LOG.debugf("Default tenant is not configured and will be disabled"
+                                + " because either 'TenantConfigResolver' or `TenantResolver`which will resolve"
+                                + " tenant configurations are registered");
+                        oidcConfig.setTenantEnabled(false);
+                        return Uni.createFrom()
+                                .item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
+                    }
+                }
+                throw new ConfigurationException("'quarkus.oidc.auth-server-url' property must be configured");
+            }
+            OidcCommonUtils.verifyEndpointUrl(oidcConfig.getAuthServerUrl().get());
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, isServiceApp(oidcConfig), true);
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
@@ -447,12 +467,4 @@ public class OidcRecorder {
     private static boolean isWebApp(OidcTenantConfig oidcConfig) {
         return ApplicationType.WEB_APP.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
     }
-
-    private static void verifyAuthServerUrl(OidcCommonConfig oidcConfig) {
-        if (!oidcConfig.getAuthServerUrl().isPresent()) {
-            throw new ConfigurationException("'quarkus.oidc.auth-server-url' property must be configured");
-        }
-        OidcCommonUtils.verifyEndpointUrl(oidcConfig.getAuthServerUrl().get());
-    }
-
 }

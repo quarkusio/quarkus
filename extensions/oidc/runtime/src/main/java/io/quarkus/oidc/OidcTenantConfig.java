@@ -30,6 +30,10 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     /**
      * If this tenant configuration is enabled.
+     *
+     * Note that the default tenant will be disabled if it is not configured
+     * but either {@link TenantResolver} or {@link TenantConfigResolver} are registered.
+     * You do not have to disable the default tenant in this case.
      */
     @ConfigItem(defaultValue = "true")
     public boolean tenantEnabled = true;

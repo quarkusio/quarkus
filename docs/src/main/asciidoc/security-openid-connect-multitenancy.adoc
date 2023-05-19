@@ -12,7 +12,7 @@ This guide demonstrates how your OpenID Connect (OIDC) application can support m
 
 When serving multiple customers from the same application (e.g.: SaaS), each customer is a tenant. By enabling multi-tenancy support to your applications you are allowed to also support distinct authentication policies for each tenant even though if that means authenticating against different OpenID Providers, such as Keycloak and Google.
 
-Please read the xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication] guide if you need to authorize a tenant using Bearer Token Authorization.
+Please read the xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication] guide if you need to authorize a tenant using Bearer Token Authorization.
 
 If you need to authenticate and authorize a tenant using OpenID Connect Authorization Code Flow, read the xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications] guide.
 

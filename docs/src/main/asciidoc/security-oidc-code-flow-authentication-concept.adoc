@@ -40,7 +40,7 @@ See also the xref:security-oidc-configuration-properties-reference.adoc[OIDC con
 
 To learn about how you can protect web applications by using the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 
-If you want to protect your applications by using Bearer Token authentication, see xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication].
+If you want to protect your applications by using Bearer Token authentication, see xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication].
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
 == Using the authorization code flow mechanism
@@ -130,7 +130,7 @@ The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is 
 [[token-claims-roles]]
 === Token claims and SecurityIdentity roles
 
-The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the xref:security-oidc-bearer-authentication-concept.adoc[Bearer tokens] with the only difference being that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
+The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the xref:security-oidc-bearer-token-authentication-concept.adoc[Bearer tokens] with the only difference being that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
 
 Note if you use Keycloak then you should set a Microprofile JWT client scope for ID token to contain a `groups` claim, please see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak Server Administration Guide] for more information.
 
@@ -143,7 +143,7 @@ Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the r
 [[token-verification-introspection]]
 === Token verification and introspection
 
-Please see xref:security-oidc-bearer-authentication-concept.adoc#token-verification-introspection[Token Verification And Introspection] for details about how the tokens are verified and introspected.
+Please see xref:security-oidc-bearer-token-authentication-concept.adoc#token-verification-introspection[Token Verification And Introspection] for details about how the tokens are verified and introspected.
 
 Note that in case of `web-app` applications only `IdToken` is verified by default since the access token is not used by default to access the current Quarkus `web-app` endpoint and instead meant to be propagated to the services expecting this access token, for example, to the OpenID Connect Provider's UserInfo endpoint, and so on. However, if you expect the access token to contain the roles required to access the current Quarkus endpoint (`quarkus.oidc.roles.source=accesstoken`) then it will also be verified.
 
@@ -152,12 +152,12 @@ Note that in case of `web-app` applications only `IdToken` is verified by defaul
 
 Code flow access tokens are not introspected unless they are expected to be the source of roles but will be used to get `UserInfo`. So there will be one or two remote calls with the code flow access token, if the token introspection and/or `UserInfo` are required.
 
-Please see xref:security-oidc-bearer-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more information about using a default token cache or registering a custom cache implementation.
+Please see xref:security-oidc-bearer-token-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more information about using a default token cache or registering a custom cache implementation.
 
 [[jwt-claim-verification]]
 === JSON web token claim verification
 
-Please see xref:security-oidc-bearer-authentication-concept.adoc#jwt-claim-verification[JSON Web Token Claim verification] section about the claim verification, including the `iss` (issuer) claim.
+Please see xref:security-oidc-bearer-token-authentication-concept.adoc#jwt-claim-verification[JSON Web Token Claim verification] section about the claim verification, including the `iss` (issuer) claim.
 It applies to ID tokens but also to access tokens in a JWT format if the `web-app` application has requested the access token verification.
 
 === Redirection
@@ -338,7 +338,7 @@ public class ServiceResource {
 [[session-management]]
 === Session management
 
-If you have a xref:security-oidc-bearer-authentication-concept.adoc#single-page-applications[Single Page Application for Service Applications] where your OpenID Connect Provider script such as `keycloak.js` is managing an authorization code flow then that script will also control the SPA authentication session lifespan.
+If you have a xref:security-oidc-bearer-token-authentication-concept.adoc#single-page-applications[Single Page Application for Service Applications] where your OpenID Connect Provider script such as `keycloak.js` is managing an authorization code flow then that script will also control the SPA authentication session lifespan.
 
 If you work with a Quarkus OIDC `web-app` application then it is Quarkus OIDC Code Authentication mechanism which is managing the user session lifespan.
 
@@ -492,7 +492,7 @@ public class SecurityEventListener {
 
 === Single-page applications
 
-Check if implementing SPAs the way it is suggested in the xref:security-oidc-bearer-authentication-concept.adoc#single-page-applications[Single-page Applications for Service Applications] section can meet your requirements.
+Check if implementing SPAs the way it is suggested in the xref:security-oidc-bearer-token-authentication-concept.adoc#single-page-applications[Single-page Applications for Service Applications] section can meet your requirements.
 
 If you prefer to use SPA and JavaScript API such as `Fetch` or `XMLHttpRequest`(XHR) with Quarkus web applications, be aware that OpenID Connect Providers may not support CORS for Authorization endpoints where the users are authenticated after a redirect from Quarkus. This will lead to authentication failures if the Quarkus application and the OpenID Connect Provider are hosted on the different HTTP domains/ports.
 
@@ -540,7 +540,7 @@ If the OAuth2 provider supports the introspection endpoint then you may be able 
 
 Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as GitHub.
 
-Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see xref:security-oidc-bearer-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more details.
+Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see xref:security-oidc-bearer-token-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more details.
 
 Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken` with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data. For more information, see <<token-state-manager,Encrypt tokens with TokenStateManager>>.
 
@@ -1155,7 +1155,7 @@ Default realm name is `quarkus` and client id - `quarkus-web-app` - set `keycloa
 [[integration-testing-security-annotation]]
 ==== TestSecurity annotation
 
-See xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` and `@OidcSecurity` annotations for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
+See xref:security-oidc-bearer-token-authentication-concept.adoc#integration-testing-security-annotation[Use TestingSecurity with injected JsonWebToken] section for more information about using `@TestSecurity` and `@OidcSecurity` annotations for testing the `web-app` application endpoint code which depends on the injected ID and access `JsonWebToken` as well as `UserInfo` and `OidcConfigurationMetadata`.
 
 === Checking errors in the logs
 

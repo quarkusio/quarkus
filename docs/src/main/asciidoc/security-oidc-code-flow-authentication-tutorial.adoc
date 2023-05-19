@@ -248,7 +248,7 @@ Congratulations!
 You have learned how to set up and use the OIDC authorization code flow mechanism to protect and test application HTTP endpoints.
 After you have completed this tutorial, explore some of the other security mechanisms in Quarkus.
 
-* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
+* xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication]
 * xref:security-overview-concept.adoc[Quarkus Security overview]
 
 

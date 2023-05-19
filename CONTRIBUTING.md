@@ -682,7 +682,7 @@ with `-f ...`).
 ### Descriptions
 
 Extensions descriptions (in the `runtime/pom.xml` description or in the YAML `quarkus-extension.yaml`)
-are used to describe the extension and are visible in https://code.quarkus.io. Try and pay attention to it. Here are a
+are used to describe the extension and are visible in https://code.quarkus.io and https://extensions.quarkus.io. Try and pay attention to it. Here are a
 few recommendation guidelines:
 
 - keep it relatively short so that no hover is required to read it

@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.security.Key;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
@@ -11,8 +12,13 @@ import org.jose4j.lang.JoseException;
 import io.quarkus.oidc.OIDCException;
 
 public class JsonWebKeySet {
+
     private static final String RSA_KEY_TYPE = "RSA";
-    private static final String EC_KEY_TYPE = "EC";
+    private static final String ELLIPTIC_CURVE_KEY_TYPE = "EC";
+    // This key type is used when EdDSA algorithm is used
+    private static final String OCTET_KEY_PAIR_TYPE = "OKP";
+    private static final Set<String> KEY_TYPES = Set.of(RSA_KEY_TYPE, ELLIPTIC_CURVE_KEY_TYPE, OCTET_KEY_PAIR_TYPE);
+
     private static final String SIGNATURE_USE = "sig";
 
     private Map<String, Key> keysWithKeyId = new HashMap<>();
@@ -49,8 +55,7 @@ public class JsonWebKeySet {
     }
 
     private static boolean isSupportedJwkKey(JsonWebKey jwkKey) {
-        return (RSA_KEY_TYPE.equals(jwkKey.getKeyType()) || EC_KEY_TYPE.equals(jwkKey.getKeyType())
-                || jwkKey.getKeyType() == null)
+        return (jwkKey.getKeyType() == null || KEY_TYPES.contains(jwkKey.getKeyType()))
                 && (SIGNATURE_USE.equals(jwkKey.getUse()) || jwkKey.getUse() == null);
     }
 

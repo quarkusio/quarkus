@@ -48,7 +48,7 @@ public class SchedulerRuntimeConfig {
          * Just like the {@link #FORCED} mode but the scheduler will not start triggering jobs until {@link Scheduler#resume()}
          * is called.
          * <p>
-         * This can be useful to run some intialization logic that needs to be performed before the scheduler starts.
+         * This can be useful to run some initialization logic that needs to be performed before the scheduler starts.
          */
         HALTED;
     }

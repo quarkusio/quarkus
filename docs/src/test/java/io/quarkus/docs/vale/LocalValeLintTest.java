@@ -2,7 +2,6 @@ package io.quarkus.docs.vale;
 
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import io.quarkus.docs.ChangedFiles;
 import io.quarkus.docs.LintException;
 import io.quarkus.docs.generation.YamlMetadataGenerator;
+import io.quarkus.docs.generation.YamlMetadataGenerator.FileMessages;
 import io.quarkus.docs.generation.YamlMetadataGenerator.Index;
 import io.quarkus.docs.vale.ValeAsciidocLint.ChecksBySeverity;
 
@@ -61,26 +61,28 @@ public class LocalValeLintTest {
 
         // Generate YAML: doc requirements
         Index index = metadataGenerator.generateIndex();
-        Map<String, Collection<String>> metadataErrors = index.errorsByFile();
+        Map<String, FileMessages> messages = index.messagesByFile();
 
         // Find Vale errors
         Map<String, ChecksBySeverity> lintResults = linter.lintFiles();
 
         // Write vale.yaml
-        linter.resultsToYaml(lintResults, metadataErrors);
+        linter.resultsToYaml(lintResults, messages);
 
+        boolean hasErrors = false;
         StringBuilder sb = new StringBuilder("\n");
         for (String fileName : lintResults.keySet()) {
             sb.append(fileName).append(": ").append("\n");
 
-            if (!metadataErrors.isEmpty()) {
+            FileMessages fm = messages.get(fileName);
+            if (fm != null) {
                 sb.append("\n  metadata\n");
-                Collection<String> mErrors = metadataErrors.getOrDefault(fileName, List.of());
-                mErrors.forEach(e -> sb.append("    ").append(e).append("\n"));
+                hasErrors |= fm.listAll(sb);
             }
 
             ChecksBySeverity lErrors = lintResults.get(fileName);
             if (lErrors != null) {
+                hasErrors = true; // always fail in this purposeful case
                 lErrors.checksBySeverity.entrySet().forEach(e -> {
                     sb.append("\n  ").append(e.getKey()).append("\n");
                     e.getValue().forEach(c -> sb.append("    ").append(c).append("\n"));
@@ -90,8 +92,8 @@ public class LocalValeLintTest {
         }
 
         String result = sb.toString().trim();
-        if (result.length() > 0) {
-            System.err.println(result);
+        System.err.println(result);
+        if (hasErrors) {
             throw new LintException("target/vale.yaml");
         } else {
             System.out.println("🥳 OK");

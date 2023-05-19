@@ -38,6 +38,8 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
+import io.quarkus.docs.generation.YamlMetadataGenerator.FileMessages;
+
 public class ValeAsciidocLint {
     public static TypeReference<Map<String, List<Check>>> typeRef = new TypeReference<Map<String, List<Check>>>() {
     };
@@ -125,7 +127,7 @@ public class ValeAsciidocLint {
         return this;
     }
 
-    public void resultsToYaml(Map<String, ChecksBySeverity> lintChecks, Map<String, Collection<String>> metadataErrors)
+    public void resultsToYaml(Map<String, ChecksBySeverity> lintChecks, Map<String, FileMessages> metadataErrors)
             throws StreamWriteException, DatabindException, IOException {
         ObjectMapper yaml = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
         Map<String, Map<String, Object>> results = lintChecks.entrySet().stream()
@@ -133,9 +135,9 @@ public class ValeAsciidocLint {
                     Map<String, Object> value = new TreeMap<>(); // sort by key for consistency
                     value.putAll(e.getValue().checksBySeverity);
                     if (metadataErrors != null) {
-                        Collection<String> me = metadataErrors.get(e.getKey());
-                        if (me != null) {
-                            value.put("metadata", me);
+                        FileMessages fm = metadataErrors.get(e.getKey());
+                        if (fm != null) {
+                            value.put("metadata", fm);
                         }
                     }
                     return value;

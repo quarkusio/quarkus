@@ -23,7 +23,6 @@ public class HttpHeadersImpl implements HttpHeaders {
 
     private final MultivaluedMap<String, String> requestHeaders;
     private final MultivaluedMap<String, String> unmodifiableRequestHeaders;
-    private Map<String, Cookie> cookies;
 
     public HttpHeadersImpl(Iterable<Map.Entry<String, String>> vertxHeaders) {
         requestHeaders = new CaseInsensitiveMap<>();
@@ -50,10 +49,7 @@ public class HttpHeadersImpl implements HttpHeaders {
 
     @Override
     public Map<String, Cookie> getCookies() {
-        if (cookies == null) {
-            cookies = Collections.unmodifiableMap(HeaderUtil.getCookies(requestHeaders));
-        }
-        return cookies;
+        return Collections.unmodifiableMap(HeaderUtil.getCookies(requestHeaders));
     }
 
     @Override

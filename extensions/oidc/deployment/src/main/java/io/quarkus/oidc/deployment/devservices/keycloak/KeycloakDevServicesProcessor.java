@@ -150,7 +150,8 @@ public class KeycloakDevServicesProcessor {
         // Figure out if we need to shut down and restart any existing Keycloak container
         // if not and the Keycloak container has already started we just return
         if (devService != null) {
-            boolean restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration);
+            boolean restartRequired = !currentDevServicesConfiguration.equals(capturedDevServicesConfiguration)
+                    || capturedDevServicesConfiguration != null && !canDevServicesForKeycloakBeStarted();
             if (!restartRequired) {
                 Set<FileTime> currentRealmFileLastModifiedDate = getRealmFileLastModifiedDate(
                         currentDevServicesConfiguration.realmPath);
@@ -324,21 +325,7 @@ public class KeycloakDevServicesProcessor {
             BuildProducer<KeycloakDevServicesConfigBuildItem> keycloakBuildItemBuildProducer,
             boolean useSharedNetwork, Optional<Duration> timeout,
             List<String> errors) {
-        if (!capturedDevServicesConfiguration.enabled) {
-            // explicitly disabled
-            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
-            return null;
-        }
-        if (!isOidcTenantEnabled()) {
-            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.tenant.enabled' is false");
-            return null;
-        }
-        if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
-            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
-            return null;
-        }
-        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
-            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
+        if (!canDevServicesForKeycloakBeStarted()) {
             return null;
         }
 
@@ -395,6 +382,27 @@ public class KeycloakDevServicesProcessor {
                     return new RunningDevService(KEYCLOAK_CONTAINER_NAME, containerAddress.getId(), null, configs);
                 })
                 .orElseGet(defaultKeycloakContainerSupplier);
+    }
+
+    private boolean canDevServicesForKeycloakBeStarted() {
+        if (!capturedDevServicesConfiguration.enabled) {
+            // explicitly disabled
+            LOG.debug("Not starting Dev Services for Keycloak as it has been disabled in the config");
+            return false;
+        }
+        if (!isOidcTenantEnabled()) {
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.tenant.enabled' is false");
+            return false;
+        }
+        if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.auth-server-url' has been provided");
+            return false;
+        }
+        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
+            LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
+            return false;
+        }
+        return true;
     }
 
     private static boolean isKeycloakX(DockerImageName dockerImageName) {

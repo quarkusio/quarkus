@@ -51,6 +51,11 @@ include::{includes}/devtools/dev.adoc[]
 ...
 ----
 
+[NOTE]
+====
+It is possible that the Keycloak container does not become ready before the default timeout of 60 seconds. A simple way to overcome the issue is to increase the time out - for example to 2 minutes - using `quarkus.devservices.timeout=2M`.
+====
+
 Note that you can disable sharing the containers with `quarkus.keycloak.devservices.shared=false`.
 
 Now open the main link:http://localhost:8080/q/dev-v1[Dev UI (v1) page], and you will see the `OpenID Connect Card` linking to a Keycloak page:

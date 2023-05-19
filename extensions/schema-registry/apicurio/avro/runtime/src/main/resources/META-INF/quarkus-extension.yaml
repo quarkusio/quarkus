@@ -8,6 +8,6 @@ metadata:
   guide: "https://quarkus.io/guides/kafka-schema-registry-avro"
   categories:
   - "serialization"
-  status: "experimental"
+  status: "stable"
   config:
   - "avro.codegen."

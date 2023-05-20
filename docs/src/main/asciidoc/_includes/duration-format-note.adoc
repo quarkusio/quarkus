@@ -5,5 +5,6 @@ You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/ap
 
 You can also provide duration values starting with a number.
 In this case, if the value consists only of a number, the converter treats the value as seconds.
-Otherwise, `PT` is implicitly prepended to the value to obtain a standard `java.time.Duration` format.
+Otherwise, `PT` for seconds, minute and hours or `P` for days are implicitly prepended to the value to obtain a standard `java.time.Duration` format.
+Milliseconds are also supported by implicitly using `Duration.ofMillis()`
 ====

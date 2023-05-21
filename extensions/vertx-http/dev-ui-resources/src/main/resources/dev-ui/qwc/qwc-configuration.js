@@ -1,7 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { JsonRpc } from 'jsonrpc';
 import { RouterController } from 'router-controller';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import 'qui/qui-alert.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
@@ -106,7 +105,11 @@ export class QwcConfiguration extends observeState(LitElement) {
     }
 
     render() {
-        return html`${until(this._render(), html`<span>Loading configuration properties...</span>`)}`;
+        if (this._filtered && this._values) {
+            return this._render();
+        } else {
+            return html`<span>Loading configuration properties...</span>`;
+        }
     }
 
     _match(value, term) {
@@ -138,8 +141,7 @@ export class QwcConfiguration extends observeState(LitElement) {
     }
 
     _render() {
-        if (this._filtered && this._values) {
-            return html`<div class="conf">
+        return html`<div class="conf">
                 <vaadin-text-field
                         placeholder="Filter"
                         value="${this._filteredValue}"
@@ -150,7 +152,6 @@ export class QwcConfiguration extends observeState(LitElement) {
                 </vaadin-text-field>
                 ${this._renderGrid()}
                 </div>`;
-        }
     }
 
     _renderGrid(){

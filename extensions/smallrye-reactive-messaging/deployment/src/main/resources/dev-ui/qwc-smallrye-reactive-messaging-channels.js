@@ -2,7 +2,6 @@ import { LitElement, html, css} from 'lit';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@vaadin/button';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
@@ -46,12 +45,15 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
      * @returns {*}
      */
     render() {
-        return html`${until(this._renderChannelTable(), html`<span>Loading channels...</span>`)}`;
+        if (this._channels) {
+            return this._renderChannelTable();
+        } else {
+            return html`<span>Loading channels...</span>`;
+        }
     }
 
     _renderChannelTable() {
-        if (this._channels) {
-            return html`
+        return html`
                 <vaadin-grid .items="${this._channels}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
                                         header="Channel"
@@ -69,7 +71,6 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
                                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
-        }
     }
 
     _channelNameRenderer(channel) {

@@ -1,5 +1,6 @@
 package io.quarkus.flyway.runtime;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -22,11 +23,21 @@ public final class FlywayDataSourceRuntimeConfig {
     }
 
     /**
-     * The maximum number of retries when attempting to connect to the database. After each failed attempt, Flyway will wait 1
-     * second before attempting to connect again, up to the maximum number of times specified by connectRetries.
+     * The maximum number of retries when attempting to connect to the database.
+     * <p>
+     * After each failed attempt, Flyway will wait up to the configured `connect-retries-interval` duration before
+     * attempting to connect again, up to the maximum number of times specified by connectRetries.
      */
     @ConfigItem
     public OptionalInt connectRetries = OptionalInt.empty();
+
+    /**
+     * The maximum time between retries when attempting to connect to the database.
+     * <p>
+     * This will cap the interval between connect retries to the value provided.
+     */
+    @ConfigItem(defaultValueDocumentation = "120 seconds")
+    public Optional<Duration> connectRetriesInterval = Optional.empty();
 
     /**
      * Sets the default schema managed by Flyway. This schema name is case-sensitive. If not specified, but <i>schemas</i>

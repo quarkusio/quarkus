@@ -1,5 +1,6 @@
 package io.quarkus.flyway.runtime;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,6 +20,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 class FlywayCreator {
 
     private static final String[] EMPTY_ARRAY = new String[0];
+    public static final Duration DEFAULT_CONNECT_RETRIES_INTERVAL = Duration.ofSeconds(120L);
 
     private final FlywayDataSourceRuntimeConfig flywayRuntimeConfig;
     private final FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig;
@@ -76,6 +78,8 @@ class FlywayCreator {
         if (flywayRuntimeConfig.connectRetries.isPresent()) {
             configure.connectRetries(flywayRuntimeConfig.connectRetries.getAsInt());
         }
+        configure.connectRetriesInterval(
+                (int) flywayRuntimeConfig.connectRetriesInterval.orElse(DEFAULT_CONNECT_RETRIES_INTERVAL).toSeconds());
         if (flywayRuntimeConfig.defaultSchema.isPresent()) {
             configure.defaultSchema(flywayRuntimeConfig.defaultSchema.get());
         }

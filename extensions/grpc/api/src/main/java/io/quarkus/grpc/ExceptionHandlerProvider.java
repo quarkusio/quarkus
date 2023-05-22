@@ -74,14 +74,14 @@ public interface ExceptionHandlerProvider {
         } else if (t instanceof StatusRuntimeException) {
             return ((StatusRuntimeException) t).getStatus();
         } else {
-            String desc = t.getClass().getName();
+            final StringBuilder desc = new StringBuilder(t.getClass().getName());
             if (t.getMessage() != null) {
-                desc += " - " + t.getMessage();
+                desc.append(" - ").append(t.getMessage());
             }
             if (t instanceof IllegalArgumentException) {
-                return Status.INVALID_ARGUMENT.withDescription(desc);
+                return Status.INVALID_ARGUMENT.withDescription(desc.toString());
             }
-            return Status.fromThrowable(t).withDescription(desc);
+            return Status.fromThrowable(t).withDescription(desc.toString());
         }
     }
 

@@ -5,7 +5,6 @@ import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
-import 'qui-badge';
 
 
 /**
@@ -115,7 +114,6 @@ export class QwcExtensions extends observeState(LitElement) {
         return html`
             <div class="card-content" slot="content">
                 <span class="description">
-                    ${this._renderExperimentalBadge(extension)}
                     ${extension.description}
                 </span>
                 ${this._renderCardLinks(extension)}
@@ -161,18 +159,10 @@ export class QwcExtensions extends observeState(LitElement) {
                 providesCapabilities="${extension.providesCapabilities}"
                 extensionDependencies="${extension.extensionDependencies}">
                 <div class="card-content" slot="content">
-                    ${this._renderExperimentalBadge(extension)}
                     ${extension.description}
                 </div>    
             </qwc-extension>`;
         }
     }
-
-    _renderExperimentalBadge(extension){
-        if(extension.status === "experimental") {
-            return html`<qui-badge level="warning" class="float-right" small><span>EXPERIMENTAL</span></qui-badge>`;
-        }
-    }
-
 }
 customElements.define('qwc-extensions', QwcExtensions);

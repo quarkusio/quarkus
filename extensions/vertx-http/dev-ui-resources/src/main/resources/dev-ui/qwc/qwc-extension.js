@@ -2,6 +2,7 @@ import { LitElement, html, css} from 'lit';
 import '@vaadin/icon';
 import '@vaadin/dialog';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
+import 'qui-badge';
 
 /**
  * This component represent one extension
@@ -41,7 +42,6 @@ export class QwcExtension extends LitElement {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
-            visibility:hidden;
         }
 
         .card-footer a {
@@ -60,15 +60,15 @@ export class QwcExtension extends LitElement {
             color: var(--lumo-contrast-70pct);
         }
         
-        .active:hover .card-footer, .active:hover .guide {
+        .active:hover .config, .active:hover .more, .active:hover .guide {
             visibility:visible;
         }
 
-        .inactive:hover .card-footer, .inactive:hover .guide {
+        .inactive:hover .config, .inactive:hover .more, .inactive:hover .guide {
             visibility:visible;
         }
     
-        .guide{
+        .guide, .more, .config {
             visibility:hidden;
         }
 
@@ -141,12 +141,37 @@ export class QwcExtension extends LitElement {
     _footerTemplate() {
         return html`
             <div class="card-footer">
-                <a href="configuration-form-editor?filter=${this.configFilter}">
+                <a href="configuration-form-editor?filter=${this.configFilter}" class="config">
                     <vaadin-icon class="icon" icon="font-awesome-solid:pen-to-square" title="Configuration for the ${this.name} extension"></vaadin-icon>
-                </a>  
-                <vaadin-icon class="icon" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="More about the ${this.name} extension"></vaadin-icon>
+                </a>
+                ${this._renderStatus()}
+                <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="More about the ${this.name} extension"></vaadin-icon>
             </div>
         `;
+    }
+
+    _renderStatus(){
+        var l = this._statusLevelOnCard();
+        
+        if(l) {
+            return html`<qui-badge level="${l}" small><span>${this.status.toUpperCase()}</span></qui-badge>`;
+        }
+    }
+
+    _statusLevelOnCard(){
+        if(this.status === "experimental") {
+            return "warning";
+        } else if(this.status === "preview") {
+            return "contrast";   
+        }
+        return null;
+    }
+
+    _statusLevel(){
+        if(this.status === "stable") {
+            return "success";
+        }
+        return this._statusLevelOnCard();
     }
 
     _renderDialog(){
@@ -181,7 +206,7 @@ export class QwcExtension extends LitElement {
                 </tr>        
                 <tr>
                     <td><b>Status</b></td>
-                    <td>${this.status}</td>
+                    <td><qui-badge level="${this._statusLevel()}" small><span>${this.status.toUpperCase()}</span></qui-badge></td>
                 </tr>        
                 <tr>
                     <td><b>Config Filter</b></td>

@@ -372,7 +372,7 @@ The default priority, used if the interceptor does not implement the `Prioritize
 
 === Enabling metrics collection
 
-gRPC client metrics are automatically enabled when the application also uses the xref:micrometer.adoc[`quarkus-micrometer`] extension.
+gRPC client metrics are automatically enabled when the application also uses the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension.
 Micrometer collects the metrics of all the gRPC clients used by the application.
 
 As an example, if you export the metrics to Prometheus, you will get:

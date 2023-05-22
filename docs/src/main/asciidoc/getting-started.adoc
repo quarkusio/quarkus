@@ -472,7 +472,7 @@ Furthermore, users can supply a custom banner by placing the banner file in `src
 == Non Application endpoints
 
 Various Quarkus extensions contribute non-application endpoints that provide different kinds of information about the application.
-Examples of such extensions are the xref:smallrye-health.adoc[health], xref:micrometer.adoc[metrics], xref:openapi-swaggerui.adoc[OpenAPI] and info extensions.
+Examples of such extensions are the xref:smallrye-health.adoc[health], xref:telemetry-micrometer.adoc[metrics], xref:openapi-swaggerui.adoc[OpenAPI] and info extensions.
 
 These non application endpoints are normally accessible under the `/q` prefix like so:
 

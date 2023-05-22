@@ -22,6 +22,8 @@ You'll need to https://docs.ansible.com/ansible/latest/installation_guide/intro_
 $ ansible-galaxy collection install middleware_automation.quarkus
 ----
 
+NOTE: the Ansible collection we just installed only supports RHEL, Fedora and other Linux distribution using RPMs. Ansible defines these as "RedHat family". Using the content on other platform (Windows, Debian, Ubuntu,...), while not impossible, will require a few adjustments.
+
 === Inventory file
 
 If you are not familiar with Ansible, please note that the inventory needs to be provided for the command above to run properly. This is a simple text file providing the information Ansible requires on the target system it manages. Please refer to the Ansible documentation for more information on https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html[Ansible inventory].
@@ -151,6 +153,13 @@ The Ansible collection for Quarkus does all the `heavy lifting` here. First, it 
 Here again, it checks that the appropriate OpenJDK is available on the target system. Then we ensure that the required user and group exist on the target. This is recommended mostly to be able to run the Quarkus app with a regular user, rather than with the root account.
 
 With those requirements in place, the jar can be deployed on the target, along with the required configuration for the app integration into systemd as a service. Any change to the systemd configuration requires reloading its daemon, which the collection ensures will happen whenever it is needed. With all of that in place, the only thing that remains is to start the service itself, which Ansible will also take care of.
+
+NOTE: by default, the Ansible collection for Quarkus will install and use the OpenJDK 17 available in the Yum repositories of the target host (or the controller). If you want to use a different version of OpenJDK, define the following variable:
+
+----
+$ ansible-playbook -i inventory ...
+    -e quarkus_java_package_version: java-11-openjdk
+----
 
 === Validate that deployment was successful
 

@@ -81,6 +81,7 @@ public interface ExceptionHandlerProvider {
             if (t instanceof IllegalArgumentException) {
                 return Status.INVALID_ARGUMENT.withDescription(desc.toString());
             }
+            
             return Status.fromThrowable(t).withDescription(desc.toString());
         }
     }

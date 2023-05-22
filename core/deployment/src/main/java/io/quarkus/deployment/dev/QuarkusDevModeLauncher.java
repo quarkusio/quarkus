@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -40,7 +41,7 @@ import io.quarkus.utilities.JavaBinFinder;
 
 public abstract class QuarkusDevModeLauncher {
     final Pattern validDebug = Pattern.compile("^(true|false|client|[0-9]+)$");
-    final Pattern validPort = Pattern.compile("^[0-9]+$");
+    final Pattern validPort = Pattern.compile("^-?[0-9]+$");
 
     public class Builder<R extends QuarkusDevModeLauncher, B extends Builder<R, B>> {
 
@@ -369,7 +370,7 @@ public abstract class QuarkusDevModeLauncher {
             }
         }
         if (port <= 0) {
-            throw new Exception("The specified debug port must be greater than 0");
+            port = getRandomPort();
         }
 
         if (debug != null && debug.equalsIgnoreCase("client")) {
@@ -476,6 +477,12 @@ public abstract class QuarkusDevModeLauncher {
         args.add(tempFile.getAbsolutePath());
         if (applicationArgs != null) {
             args.addAll(Arrays.asList(CommandLineUtil.translateCommandline(applicationArgs)));
+        }
+    }
+
+    private int getRandomPort() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
         }
     }
 

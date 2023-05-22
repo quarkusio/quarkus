@@ -807,6 +807,8 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
             Optional<TriggerBuilder<?>> triggerBuilder = createTrigger(identity, scheduled, cronType, runtimeConfig, jobDetail);
 
             if (triggerBuilder.isPresent()) {
+                invoker = SimpleScheduler.initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,
+                        failedExecutionEvent, concurrentExecution, skipPredicate);
                 org.quartz.Trigger trigger = triggerBuilder.get().build();
                 QuartzTrigger existing = scheduledTasks.putIfAbsent(identity, new QuartzTrigger(trigger.getKey(),
                         new Function<>() {
@@ -826,8 +828,6 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                     throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
                 }
 
-                invoker = SimpleScheduler.initInvoker(invoker, skippedExecutionEvent, successExecutionEvent,
-                        failedExecutionEvent, concurrentExecution, skipPredicate);
                 try {
                     scheduler.scheduleJob(jobDetail, trigger);
                 } catch (SchedulerException e) {

@@ -104,6 +104,8 @@ public class BeanDeployment {
 
     private final Set<BeanInfo> removedBeans;
 
+    private final Set<BeanInfo> beansWithRuntimeDeferredUnproxyableError;
+
     private final Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts;
 
     private final Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations;
@@ -149,6 +151,7 @@ public class BeanDeployment {
         this.removeUnusedBeans = builder.removeUnusedBeans;
         this.unusedExclusions = removeUnusedBeans ? new ArrayList<>(builder.removalExclusions) : null;
         this.removedBeans = removeUnusedBeans ? new CopyOnWriteArraySet<>() : Collections.emptySet();
+        this.beansWithRuntimeDeferredUnproxyableError = Collections.newSetFromMap(new ConcurrentHashMap<>());
         this.customContexts = new ConcurrentHashMap<>();
 
         this.excludeTypes = builder.excludeTypes != null ? new ArrayList<>(builder.excludeTypes) : Collections.emptyList();
@@ -504,6 +507,14 @@ public class BeanDeployment {
 
     public Collection<BeanInfo> getRemovedBeans() {
         return Collections.unmodifiableSet(removedBeans);
+    }
+
+    boolean hasRuntimeDeferredUnproxyableError(BeanInfo bean) {
+        return beansWithRuntimeDeferredUnproxyableError.contains(bean);
+    }
+
+    void deferUnproxyableErrorToRuntime(BeanInfo bean) {
+        beansWithRuntimeDeferredUnproxyableError.add(bean);
     }
 
     public Collection<ClassInfo> getQualifiers() {
@@ -1522,6 +1533,17 @@ public class BeanDeployment {
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
         Set<DotName> classesReceivingNoArgsCtor = new HashSet<>();
 
+        // this set is only used in strict compatible mode (see `Beans.validateBean()`),
+        // so no need to initialize it otherwise
+        Set<BeanInfo> injectedBeans = new HashSet<>();
+        if (strictCompatibility) {
+            for (InjectionPointInfo injectionPoint : this.injectionPoints) {
+                if (injectionPoint.hasResolvedBean()) {
+                    injectedBeans.add(injectionPoint.getResolvedBean());
+                }
+            }
+        }
+
         for (BeanInfo bean : beans) {
             if (bean.getName() != null) {
                 List<BeanInfo> named = namedBeans.get(bean.getName());
@@ -1532,7 +1554,7 @@ public class BeanDeployment {
                 named.add(bean);
                 findNamespaces(bean, namespaces);
             }
-            bean.validate(errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
+            bean.validate(errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor, injectedBeans);
         }
 
         if (!namedBeans.isEmpty()) {

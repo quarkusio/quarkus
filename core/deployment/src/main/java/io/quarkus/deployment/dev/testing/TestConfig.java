@@ -41,7 +41,9 @@ public class TestConfig {
     public boolean displayTestOutput;
 
     /**
-     * Tags that should be included for continuous testing.
+     * Tags that should be included for continuous testing. This supports JUnit Tag Expressions.
+     *
+     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
      */
     @ConfigItem
     public Optional<List<String>> includeTags;
@@ -51,7 +53,11 @@ public class TestConfig {
      *
      * This is ignored if include-tags has been set.
      *
-     * Defaults to 'slow'
+     * Defaults to 'slow'.
+     *
+     * This supports JUnit Tag Expressions.
+     *
+     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
      */
     @ConfigItem(defaultValue = "slow")
     public Optional<List<String>> excludeTags;

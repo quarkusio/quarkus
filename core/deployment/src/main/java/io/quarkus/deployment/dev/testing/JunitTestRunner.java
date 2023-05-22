@@ -2,8 +2,6 @@ package io.quarkus.deployment.dev.testing;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,8 +35,6 @@ import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Tags;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestTemplate;
@@ -57,6 +53,7 @@ import org.junit.platform.launcher.EngineFilter;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.PostDiscoveryFilter;
+import org.junit.platform.launcher.TagFilter;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.TestPlan;
@@ -163,9 +160,9 @@ public class JunitTestRunner {
                 launchBuilder.filters(testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
             }
             if (!includeTags.isEmpty()) {
-                launchBuilder.filters(new TagFilter(false, includeTags));
+                launchBuilder.filters(TagFilter.includeTags(new ArrayList<>(includeTags)));
             } else if (!excludeTags.isEmpty()) {
-                launchBuilder.filters(new TagFilter(true, excludeTags));
+                launchBuilder.filters(TagFilter.excludeTags(new ArrayList<>(excludeTags)));
             }
             if (include != null) {
                 launchBuilder.filters(new RegexFilter(false, include));
@@ -849,71 +846,6 @@ public class JunitTestRunner {
         public Builder setFailingTestsOnly(boolean failingTestsOnly) {
             this.failingTestsOnly = failingTestsOnly;
             return this;
-        }
-    }
-
-    private static class TagFilter implements PostDiscoveryFilter {
-
-        final boolean exclude;
-        final Set<String> tags;
-
-        private TagFilter(boolean exclude, Set<String> tags) {
-            this.exclude = exclude;
-            this.tags = tags;
-        }
-
-        @Override
-        public FilterResult apply(TestDescriptor testDescriptor) {
-            if (testDescriptor.getSource().isPresent()) {
-                if (testDescriptor.getSource().get() instanceof MethodSource) {
-                    MethodSource methodSource = (MethodSource) testDescriptor.getSource().get();
-                    Method m = methodSource.getJavaMethod();
-                    FilterResult res = filterTags(m);
-                    if (res != null) {
-                        return res;
-                    }
-                    res = filterTags(methodSource.getJavaClass());
-                    if (res != null) {
-                        return res;
-                    }
-                    return FilterResult.includedIf(exclude);
-                }
-            }
-            return FilterResult.included("not a method");
-        }
-
-        public FilterResult filterTags(AnnotatedElement clz) {
-            List<Tag> all = new ArrayList<>();
-            gatherTags(clz, all);
-            if (all.isEmpty())
-                return null;
-            for (Tag i : all) {
-                if (tags.contains(i.value())) {
-                    return FilterResult.includedIf(!exclude);
-                }
-            }
-            return FilterResult.includedIf(exclude);
-        }
-
-        private void gatherTags(AnnotatedElement clz, List<Tag> all) {
-            Tag tag = clz.getAnnotation(Tag.class);
-            Tags tagsAnn = clz.getAnnotation(Tags.class);
-            if (tag != null) {
-                all.add(tag);
-            } else if (tagsAnn != null) {
-                all.addAll(List.of(tagsAnn.value()));
-            }
-            if (clz instanceof Class) {
-                if (((Class<?>) clz).isAnnotation()) {
-                    //only scan meta annotations one level deep
-                    return;
-                }
-            }
-
-            //meta annotations can also provide tags
-            for (var a : clz.getAnnotations()) {
-                gatherTags(a.annotationType(), all);
-            }
         }
     }
 

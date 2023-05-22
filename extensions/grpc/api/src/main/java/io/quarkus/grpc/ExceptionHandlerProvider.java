@@ -69,19 +69,13 @@ public interface ExceptionHandlerProvider {
      * @return gRPC Status instance
      */
     static Status toStatus(Throwable t) {
-        if (t instanceof StatusException) {
-            return ((StatusException) t).getStatus();
-        } else if (t instanceof StatusRuntimeException) {
-            return ((StatusRuntimeException) t).getStatus();
-        } else {
-            String desc = t.getClass().getName();
-            if (t.getMessage() != null) {
-                desc += " - " + t.getMessage();
-            }
-            if (t instanceof IllegalArgumentException) {
-                return Status.INVALID_ARGUMENT.withDescription(desc);
-            }
-            return Status.fromThrowable(t).withDescription(desc);
+        if (t instanceof StatusException) return ((StatusException) t).getStatus();
+        else if (t instanceof StatusRuntimeException) return ((StatusRuntimeException) t).getStatus();
+        else {
+            final StringBuilder desc = new StringBuilder(t.getClass().getName());
+            if (t.getMessage() != null) desc.append(" - ").append(t.getMessage());
+            if (t instanceof IllegalArgumentException) return Status.INVALID_ARGUMENT.withDescription(desc.toString());
+            return Status.fromThrowable(t).withDescription(desc.toString());
         }
     }
 

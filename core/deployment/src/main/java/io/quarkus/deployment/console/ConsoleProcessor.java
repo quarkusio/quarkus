@@ -142,43 +142,47 @@ public class ConsoleProcessor {
         }
 
         exceptionsConsoleContext.reset(
-                new ConsoleCommand('x', "Open last exception in IDE", new ConsoleCommand.HelpState(new Supplier<String>() {
-                    @Override
-                    public String get() {
-                        return MessageFormat.RED;
-                    }
-                }, new Supplier<String>() {
-                    @Override
-                    public String get() {
-                        StackTraceElement throwable = lastUserCode.get();
-                        if (throwable == null) {
-                            return "none";
-                        }
-                        return throwable.getFileName() + ":" + throwable.getLineNumber();
-                    }
-                }), new Runnable() {
-                    @Override
-                    public void run() {
-                        StackTraceElement throwable = lastUserCode.get();
-                        if (throwable == null) {
-                            return;
-                        }
-                        String className = throwable.getClassName();
-                        String file = throwable.getFileName();
-                        if (className.contains(".")) {
-                            file = className.substring(0, className.lastIndexOf('.') + 1).replace('.', File.separatorChar)
-                                    + file;
-                        }
-                        Path fileName = Ide.findSourceFile(file);
-                        if (fileName == null) {
-                            log.error("Unable to find file: " + file);
-                            return;
-                        }
-                        List<String> args = ideSupport.getIde().createFileOpeningArgs(fileName.toAbsolutePath().toString(),
-                                "" + throwable.getLineNumber());
-                        launchInIDE(ideSupport.getIde(), args);
-                    }
-                }));
+                new ConsoleCommand('x', "Open last exception (or project) in IDE",
+                        new ConsoleCommand.HelpState(new Supplier<String>() {
+                            @Override
+                            public String get() {
+                                return MessageFormat.RED;
+                            }
+                        }, new Supplier<String>() {
+                            @Override
+                            public String get() {
+                                StackTraceElement throwable = lastUserCode.get();
+                                if (throwable == null) {
+                                    return "none";
+                                }
+                                return throwable.getFileName() + ":" + throwable.getLineNumber();
+                            }
+                        }), new Runnable() {
+                            @Override
+                            public void run() {
+                                StackTraceElement throwable = lastUserCode.get();
+                                if (throwable == null) {
+                                    launchInIDE(ideSupport.getIde(), List.of("."));
+                                    return;
+                                }
+                                String className = throwable.getClassName();
+                                String file = throwable.getFileName();
+                                if (className.contains(".")) {
+                                    file = className.substring(0, className.lastIndexOf('.') + 1).replace('.',
+                                            File.separatorChar)
+                                            + file;
+                                }
+                                Path fileName = Ide.findSourceFile(file);
+                                if (fileName == null) {
+                                    log.error("Unable to find file: " + file);
+                                    return;
+                                }
+                                List<String> args = ideSupport.getIde().createFileOpeningArgs(
+                                        fileName.toAbsolutePath().toString(),
+                                        "" + throwable.getLineNumber());
+                                launchInIDE(ideSupport.getIde(), args);
+                            }
+                        }));
     }
 
     protected void launchInIDE(Ide ide, List<String> args) {

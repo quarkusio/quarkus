@@ -40,6 +40,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
 import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
@@ -352,9 +353,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         Type incomingType = null;
 
         // @Incoming
-        if ((isVoid(returnType) && parametersCount == 1)
-                || (isCompletionStage(returnType) && parametersCount == 1)
-                || (isUni(returnType) && parametersCount == 1)) {
+        if ((isVoid(returnType) && parametersCount >= 1)
+                || (isCompletionStage(returnType) && parametersCount >= 1)
+                || (isUni(returnType) && parametersCount >= 1)) {
             incomingType = parameterTypes.get(0);
         } else if ((isSubscriber(returnType) && parametersCount == 0)
                 || (isSubscriberBuilder(returnType) && parametersCount == 0)) {
@@ -365,8 +366,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
         // @Incoming @Outgoing
         if (method.hasAnnotation(DotNames.OUTGOING)) {
-            if ((isCompletionStage(returnType) && parametersCount == 1)
-                    || (isUni(returnType) && parametersCount == 1)
+            if ((isCompletionStage(returnType) && parametersCount >= 1)
+                    || (isUni(returnType) && parametersCount >= 1)
                     || (isPublisher(returnType) && parametersCount == 1)
                     || (isPublisherBuilder(returnType) && parametersCount == 1)
                     || (isMulti(returnType) && parametersCount == 1)) {
@@ -374,7 +375,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             } else if ((isProcessor(returnType) && parametersCount == 0)
                     || (isProcessorBuilder(returnType) && parametersCount == 0)) {
                 incomingType = returnType.asParameterizedType().arguments().get(0);
-            } else if (parametersCount == 1) {
+            } else if (parametersCount >= 1) {
                 incomingType = parameterTypes.get(0);
             } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
                 incomingType = parameterTypes.get(0);
@@ -501,7 +502,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         } else if (isList(type)) {
             List<Type> typeArguments = type.asParameterizedType().arguments();
             keyValueTypeAcceptor.accept(null, typeArguments.get(0), true);
-        } else if (isKafkaRecord(type) || isRecord(type) || isProducerRecord(type) || isConsumerRecord(type)) {
+        } else if (isKafkaRecord(type) || isRecord(type) || isProducerRecord(type) || isConsumerRecord(type)
+                || isKeyedMulti(type)) {
             List<Type> typeArguments = type.asParameterizedType().arguments();
             keyValueTypeAcceptor.accept(typeArguments.get(0), typeArguments.get(1), false);
         } else if (isConsumerRecords(type) || isKafkaBatchRecord(type)) {
@@ -630,6 +632,12 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     private static boolean isConsumerRecord(Type type) {
         // raw type ConsumerRecord is wrong, must be ConsumerRecord<Something, SomethingElse>
         return DotNames.CONSUMER_RECORD.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
+    }
+
+    private static boolean isKeyedMulti(Type type) {
+        return ReactiveMessagingDotNames.KEYED_MULTI.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 2;
     }

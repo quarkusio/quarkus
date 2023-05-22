@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.get;
 import static org.awaitility.Awaitility.await;
 
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,30 @@ public class KafkaConnectorTest {
     public void testPrices() {
         KafkaRepeatableReceivers repeatableReceivers = Arc.container().instance(KafkaRepeatableReceivers.class).get();
         await().untilAsserted(() -> Assertions.assertEquals(repeatableReceivers.getPrices().size(), 6));
+    }
+
+    @Test
+    public void testDataWithMetadata() {
+        await().untilAsserted(() -> {
+            Map<String, String> map = get("/kafka/data-with-metadata").as(new TypeRef<Map<String, String>>() {
+            });
+            Assertions.assertEquals(3, map.size());
+            Assertions.assertEquals("a", map.get("a"));
+            Assertions.assertEquals("a", map.get("a"));
+            Assertions.assertEquals("b", map.get("b"));
+        });
+    }
+
+    @Test
+    public void testDataForKeyed() {
+        await().untilAsserted(() -> {
+            List<String> list = get("/kafka/data-for-keyed").as(new TypeRef<List<String>>() {
+            });
+            Assertions.assertEquals(3, list.size());
+            Assertions.assertTrue(list.contains("A-a"));
+            Assertions.assertTrue(list.contains("A-c"));
+            Assertions.assertTrue(list.contains("B-b"));
+        });
     }
 
 }

@@ -148,7 +148,13 @@ public class SmallRyeReactiveMessagingProcessor {
                                 ReactiveMessagingDotNames.INCOMINGS)),
                 new UnremovableBeanBuildItem(
                         new BeanClassAnnotationExclusion(
-                                ReactiveMessagingDotNames.OUTGOING)));
+                                ReactiveMessagingDotNames.OUTGOING)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.MESSAGE_CONVERTER)),
+                new UnremovableBeanBuildItem(
+                        new BeanClassAnnotationExclusion(
+                                ReactiveMessagingDotNames.KEY_VALUE_EXTRACTOR)));
     }
 
     @BuildStep

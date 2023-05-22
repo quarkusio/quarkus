@@ -16,10 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -813,7 +810,13 @@ public class VertxHttpRecorder {
                             try {
                                 vertx.undeploy(deploymentIdIfAny, handler);
                             } catch (Exception e) {
-                                LOGGER.warn("Failed to undeploy deployment ", e);
+                                if (e instanceof RejectedExecutionException) {
+                                    // Shutting down
+                                    LOGGER.debug("Failed to undeploy deployment because a task was rejected (due to shutdown)",
+                                            e);
+                                } else {
+                                    LOGGER.warn("Failed to undeploy deployment", e);
+                                }
                             }
                         }
 

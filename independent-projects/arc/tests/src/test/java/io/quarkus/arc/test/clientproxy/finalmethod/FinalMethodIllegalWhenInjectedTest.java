@@ -5,17 +5,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.test.ArcTestContainer;
 
-public class FinalMethodIllegalTest {
+public class FinalMethodIllegalWhenInjectedTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
-            .beanClasses(Moo.class)
+            .beanClasses(Moo.class, MooConsumer.class)
             .strictCompatibility(true)
             .shouldFail()
             .build();
@@ -33,5 +35,12 @@ public class FinalMethodIllegalTest {
         final int getVal() {
             return -1;
         }
+    }
+
+    // to trigger deployment-time error (in strict compatible mode)
+    @Dependent
+    static class MooConsumer {
+        @Inject
+        Moo moo;
     }
 }

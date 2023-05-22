@@ -81,15 +81,6 @@
                     <exclude name="testGetBean"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.unproxyable.UnproxyableManagedBeanTest">
-                <methods>
-                    <exclude name="testNormalScopedUnproxyableBeanWithPublicFinalMethodResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithPrivateConstructorResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithFinalClassResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithPackagePrivateFinalMethodResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithProtectedFinalMethodResolution"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">
                 <methods>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/455 -->

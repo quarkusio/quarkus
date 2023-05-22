@@ -78,6 +78,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
     Collection<Resource> generate(BeanInfo bean, String beanClassName,
             Consumer<BytecodeTransformer> bytecodeTransformerConsumer, boolean transformUnproxyableClasses) {
 
+        // see `BeanGenerator` -- if this bean is unproxyable and that error is deferred to runtime,
+        // we don't need to (and cannot, in fact) generate the client proxy class
+        if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
+            return Collections.emptySet();
+        }
+
         ProviderType providerType = new ProviderType(bean.getProviderType());
         ClassInfo providerClass = getClassByName(bean.getDeployment().getBeanArchiveIndex(), providerType.name());
         String baseName = getBaseName(bean, beanClassName);

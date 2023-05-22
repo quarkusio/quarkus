@@ -30,6 +30,7 @@ import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.CreationException;
 import jakarta.enterprise.inject.IllegalProductException;
+import jakarta.enterprise.inject.UnproxyableResolutionException;
 import jakarta.enterprise.inject.literal.InjectLiteral;
 import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.interceptor.InvocationContext;
@@ -1927,7 +1928,10 @@ public class BeanGenerator extends AbstractGenerator {
         MethodCreator get = beanCreator.getMethodCreator("get", providerType.descriptorName(), CreationalContext.class)
                 .setModifiers(ACC_PUBLIC);
 
-        if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
+        if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
+            get.throwException(UnproxyableResolutionException.class, "Bean not proxyable: " + bean);
+            get.returnValue(get.loadNull());
+        } else if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             // @Dependent pseudo-scope
             // Foo instance = create(ctx)
             ResultHandle instance = get.invokeVirtualMethod(
@@ -2214,6 +2218,10 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     private void initializeProxy(BeanInfo bean, String baseName, ClassCreator beanCreator) {
+        if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
+            return;
+        }
+
         // Add proxy volatile field
         String proxyTypeName = getProxyTypeName(bean, baseName);
         beanCreator.getFieldCreator(FIELD_NAME_PROXY, proxyTypeName)

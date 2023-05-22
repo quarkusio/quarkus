@@ -4,24 +4,28 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
+import io.quarkus.swaggerui.deployment.SwaggerUiConfig;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 public class OpenApiDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+    public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            SwaggerUiConfig swaggerUiConfig, SmallRyeOpenApiConfig openApiConfig) {
 
-        String uiPath = nonApplicationRootPathBuildItem.resolvePath("swagger-ui");
+        String uiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
+        String schemaPath = nonApplicationRootPathBuildItem.resolvePath(openApiConfig.path);
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
-                .url(nonApplicationRootPathBuildItem.resolvePath("openapi"))
+                .url(nonApplicationRootPathBuildItem.resolvePath(schemaPath))
                 .isYamlContent()
                 .icon("font-awesome-solid:file-lines"));
 
         cardPageBuildItem.addPage(Page.externalPageBuilder("Schema json")
-                .url(nonApplicationRootPathBuildItem.resolvePath("openapi") + "?format=json")
+                .url(nonApplicationRootPathBuildItem.resolvePath(schemaPath) + "?format=json")
                 .isJsonContent()
                 .icon("font-awesome-solid:file-code"));
 

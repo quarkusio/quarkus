@@ -1,7 +1,5 @@
 package io.quarkus.deployment.dev;
 
-import static io.quarkus.deployment.dev.testing.MessageFormat.BLUE;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -42,10 +40,8 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
-import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
-import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.dev.appstate.ApplicationStartException;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
@@ -110,27 +106,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                                         () -> {
                                             consoleContext.reset();
                                             RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
-                                        }),
-                                        new ConsoleCommand('e', "Edits the command line parameters and restarts",
-                                                "to edit command line args (currently '" + MessageFormat.GREEN
-                                                        + String.join(" ", context.getArgs()) + MessageFormat.RESET + "')",
-                                                100, new ConsoleCommand.HelpState(() -> BLUE,
-                                                        () -> String.join(" ", context.getArgs())),
-                                                new Consumer<String>() {
-                                                    @Override
-                                                    public void accept(String args) {
-                                                        try {
-                                                            context.setArgs(
-                                                                    CommandLineUtil.translateCommandline(args));
-                                                        } catch (Exception e) {
-                                                            log.error("Failed to parse command line", e);
-                                                            return;
-                                                        }
-                                                        consoleContext.reset();
-                                                        RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
-                                                    }
-                                                }));
-
+                                        }));
                             }
                         });
 

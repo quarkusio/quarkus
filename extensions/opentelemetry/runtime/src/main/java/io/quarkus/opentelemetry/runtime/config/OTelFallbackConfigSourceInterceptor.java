@@ -72,27 +72,6 @@ public class OTelFallbackConfigSourceInterceptor extends FallbackConfigSourceInt
                 names.add(name);
             }
         }
-
-        // TODO - Required because the defaults ConfigSource for mappings does not provide configuration names.
-        names.add("quarkus.otel.enabled");
-        names.add("quarkus.otel.metrics.exporter");
-        names.add("quarkus.otel.propagators");
-        names.add("quarkus.otel.logs.exporter");
-        names.add("quarkus.otel.traces.enabled");
-        names.add("quarkus.otel.traces.exporter");
-        names.add("quarkus.otel.traces.sampler");
-        names.add("quarkus.otel.sdk.disabled");
-        names.add("quarkus.otel.service.name");
-        names.add("quarkus.otel.attribute.value.length.limit");
-        names.add("quarkus.otel.attribute.count.limit");
-        names.add("quarkus.otel.span.attribute.count.limit");
-        names.add("quarkus.otel.span.event.count.limit");
-        names.add("quarkus.otel.span.link.count.limit");
-        names.add("quarkus.otel.bsp.schedule.delay");
-        names.add("quarkus.otel.bsp.max.queue.size");
-        names.add("quarkus.otel.bsp.max.export.batch.size");
-        names.add("quarkus.otel.bsp.export.timeout");
-        names.add("quarkus.otel.experimental.resource.disabled-keys");
         return names.iterator();
     }
 }

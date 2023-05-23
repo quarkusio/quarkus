@@ -17,6 +17,7 @@ import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildC
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.config.SmallRyeConfig;
 
 class OpenTelemetryLegacyConfigurationTest {
     @RegisterExtension
@@ -41,6 +42,8 @@ class OpenTelemetryLegacyConfigurationTest {
     OtlpExporterBuildConfig otlpExporterBuildConfig;
     @Inject
     OtlpExporterRuntimeConfig otlpExporterRuntimeConfig;
+    @Inject
+    SmallRyeConfig config;
 
     @Test
     void config() {
@@ -60,5 +63,26 @@ class OpenTelemetryLegacyConfigurationTest {
         assertTrue(otlpExporterRuntimeConfig.traces().headers().isPresent());
         assertEquals("header=value", otlpExporterRuntimeConfig.traces().headers().get().get(0));
         assertEquals("http://localhost:4318/", otlpExporterRuntimeConfig.traces().legacyEndpoint().get());
+    }
+
+    @Test
+    void names() {
+        assertTrue(config.isPropertyPresent("quarkus.otel.enabled"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.metrics.exporter"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.propagators"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.logs.exporter"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.traces.enabled"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.traces.exporter"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.traces.sampler"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.sdk.disabled"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.service.name"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.attribute.count.limit"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.span.attribute.count.limit"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.span.event.count.limit"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.span.link.count.limit"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.bsp.schedule.delay"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.bsp.max.queue.size"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.bsp.max.export.batch.size"));
+        assertTrue(config.isPropertyPresent("quarkus.otel.bsp.export.timeout"));
     }
 }

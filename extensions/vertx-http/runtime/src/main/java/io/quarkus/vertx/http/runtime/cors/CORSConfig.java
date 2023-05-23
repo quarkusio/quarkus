@@ -18,9 +18,6 @@ public class CORSConfig {
      * Comma separated list of valid URLs, e.g.: http://www.quarkus.io,http://localhost:3000
      * In case an entry of the list is surrounded by forward slashes,
      * it is interpreted as a regular expression.
-     * The filter allows any origin if this is not set.
-     *
-     * default: returns any requested origin as valid
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)

@@ -15,7 +15,9 @@ public class OpenApiHttpRootDefaultPathTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
-                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo\n" +
+                            "quarkus.http.cors=true\n"
+                            + "quarkus.http.cors.origins=*"), "application.properties"));
 
     @Test
     public void testOpenApiPathAccessResource() {

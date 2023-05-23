@@ -12,7 +12,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.junit.jupiter.api.Test;
 
@@ -140,7 +144,7 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
-    public void testCodeFlowUserInfo() throws IOException {
+    public void testCodeFlowUserInfo() throws Exception {
         defineCodeFlowAuthorizationOauth2TokenStub();
 
         doTestCodeFlowUserInfo("code-flow-user-info-only");
@@ -150,7 +154,7 @@ public class CodeFlowAuthorizationTest {
         doTestCodeFlowUserInfoCashedInIdToken();
     }
 
-    private void doTestCodeFlowUserInfo(String tenantId) throws IOException {
+    private void doTestCodeFlowUserInfo(String tenantId) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/" + tenantId);
@@ -163,15 +167,29 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice, cache size: 1", page.getBody().asText());
 
-            Cookie sessionCookie = getSessionCookie(webClient, tenantId);
-            assertNotNull(sessionCookie);
-            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            JsonObject idTokenClaims = decryptIdToken(webClient, tenantId);
             assertNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
             webClient.getCookieManager().clearCookies();
         }
     }
 
-    private void doTestCodeFlowUserInfoCashedInIdToken() throws IOException {
+    private JsonObject decryptIdToken(WebClient webClient, String tenantId) throws Exception {
+        Cookie sessionCookie = getSessionCookie(webClient, tenantId);
+        assertNotNull(sessionCookie);
+
+        SecretKey key = new SecretKeySpec(OidcUtils
+                .getSha256Digest("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"
+                        .getBytes(StandardCharsets.UTF_8)),
+                "AES");
+
+        String decryptedSessionCookie = OidcUtils.decryptString(sessionCookie.getValue(), key);
+
+        String encodedIdToken = decryptedSessionCookie.split("\\|")[0];
+
+        return OidcUtils.decodeJwtContent(encodedIdToken);
+    }
+
+    private void doTestCodeFlowUserInfoCashedInIdToken() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);
             HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-user-info-github-cached-in-idtoken");
@@ -184,9 +202,7 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice, cache size: 0", page.getBody().asText());
 
-            Cookie sessionCookie = getSessionCookie(webClient, "code-flow-user-info-github-cached-in-idtoken");
-            assertNotNull(sessionCookie);
-            JsonObject idTokenClaims = OidcUtils.decodeJwtContent(sessionCookie.getValue().split("\\|")[0]);
+            JsonObject idTokenClaims = decryptIdToken(webClient, "code-flow-user-info-github-cached-in-idtoken");
             assertNotNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));
             webClient.getCookieManager().clearCookies();
         }

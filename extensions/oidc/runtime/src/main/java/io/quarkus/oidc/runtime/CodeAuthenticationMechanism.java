@@ -648,7 +648,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                             LOG.debugf("Starting the final redirect");
                                             return tInner;
                                         }
-                                        LOG.errorf("ID token verification has failed: %s", tInner.getMessage());
+                                        String message = tInner.getCause() != null ? tInner.getCause().getMessage()
+                                                : tInner.getMessage();
+                                        LOG.errorf("ID token verification has failed: %s", message);
                                         return new AuthenticationCompletionException(tInner);
                                     }
                                 });

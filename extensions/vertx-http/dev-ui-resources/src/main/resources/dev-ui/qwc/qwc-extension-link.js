@@ -180,12 +180,10 @@ export class QwcExtensionLink extends QwcHotReloadElement {
     }
 
     render() {
-        if(this.path){
-            if(!this.embed) {
-                return html`${this.renderLink(this._effectiveExternalUrl, true, "_blank")}`;
-            }else{
-                return html`${this.renderLink(this.path, false, "_self")}`;
-            }
+        if(!this.embed && this._effectiveExternalUrl) {
+            return html`${this.renderLink(this._effectiveExternalUrl, true, "_blank")}`;
+        }else if(this.path){
+            return html`${this.renderLink(this.path, false, "_self")}`;
         }
     }
     

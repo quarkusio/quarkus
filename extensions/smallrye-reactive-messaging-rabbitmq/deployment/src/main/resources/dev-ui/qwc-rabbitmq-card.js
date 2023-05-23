@@ -1,7 +1,7 @@
 import { LitElement, html, css} from 'lit';
 import { pages } from 'build-time-data';
 import { JsonRpc } from 'jsonrpc';
-import 'qwc/qwc-extension-link.js';
+import 'qwc-extension-link';
 
 const NAME = "Reactive Messaging - RabbitMQ";
 export class QwcRabbitMqCard extends LitElement {
@@ -44,13 +44,6 @@ export class QwcRabbitMqCard extends LitElement {
         _externalUrl: {state: true}
     };
 
-    constructor() {
-        super();
-        if(!this.extensionName){
-            this.extensionName = NAME;
-        }
-    }
-
     connectedCallback() {
         super.connectedCallback();
         this.jsonRpc.getRabbitMqPort().then(jsonRpcResponse => {
@@ -64,8 +57,8 @@ export class QwcRabbitMqCard extends LitElement {
             <div class="identity">
                 <div class="logo">
                     <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjM2MiIgaGVpZ2h0PSIyNTAwIiB2aWV3Qm94PSIwIDAgMjU2IDI3MSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCI+PHBhdGggZD0iTTI0NS40NCAxMDguMzA4aC04NS4wOWE3LjczOCA3LjczOCAwIDAgMS03LjczNS03LjczNHYtODguNjhDMTUyLjYxNSA1LjMyNyAxNDcuMjkgMCAxNDAuNzI2IDBoLTMwLjM3NWMtNi41NjggMC0xMS44OSA1LjMyNy0xMS44OSAxMS44OTR2ODguMTQzYzAgNC41NzMtMy42OTcgOC4yOS04LjI3IDguMzFsLTI3Ljg4NS4xMzNjLTQuNjEyLjAyNS04LjM1OS0zLjcxNy04LjM1LTguMzI1bC4xNzMtODguMjQxQzU0LjE0NCA1LjMzNyA0OC44MTcgMCA0Mi4yNCAwSDExLjg5QzUuMzIxIDAgMCA1LjMyNyAwIDExLjg5NFYyNjAuMjFjMCA1LjgzNCA0LjcyNiAxMC41NiAxMC41NTUgMTAuNTZIMjQ1LjQ0YzUuODM0IDAgMTAuNTYtNC43MjYgMTAuNTYtMTAuNTZWMTE4Ljg2OGMwLTUuODM0LTQuNzI2LTEwLjU2LTEwLjU2LTEwLjU2em0tMzkuOTAyIDkzLjIzM2MwIDcuNjQ1LTYuMTk4IDEzLjg0NC0xMy44NDMgMTMuODQ0SDE2Ny42OWMtNy42NDYgMC0xMy44NDQtNi4xOTktMTMuODQ0LTEzLjg0NHYtMjQuMDA1YzAtNy42NDYgNi4xOTgtMTMuODQ0IDEzLjg0NC0xMy44NDRoMjQuMDA1YzcuNjQ1IDAgMTMuODQzIDYuMTk4IDEzLjg0MyAxMy44NDR2MjQuMDA1eiIgZmlsbD0iI0Y2MCIvPjwvc3ZnPgo="
-                                       alt="${NAME}" 
-                                       title="${NAME}"
+                                       alt="${this.extensionName}" 
+                                       title="${this.extensionName}"
                                        width="32" 
                                        height="32">
                 </div>
@@ -77,17 +70,19 @@ export class QwcRabbitMqCard extends LitElement {
     }
 
     _renderCardLinks(){
-        return html`
-            <qwc-extension-link slot="link"
-                namespace="${this.namespace}"
-                extensionName="${this.extensionName}"
-                iconName="font-awesome-solid:arrow-up-right-from-square"
-                displayName="RabbitMQ Management UI"
-                dynamicLabel="getRabbitMqPort"
-                ?embed=false
-                externalUrl="${this._externalUrl}">
-            </qwc-extension-link>
-        `;
+        if(this._port){
+            return html`
+                <qwc-extension-link slot="link"
+                    namespace="${this.namespace}"
+                    extensionName="${this.extensionName}"
+                    iconName="font-awesome-solid:arrow-up-right-from-square"
+                    displayName="RabbitMQ Management UI"
+                    staticLabel="${this._port}"
+                    ?embed=false
+                    externalUrl="${this._externalUrl}">
+                </qwc-extension-link>
+            `;
+        }
     }
 
 }

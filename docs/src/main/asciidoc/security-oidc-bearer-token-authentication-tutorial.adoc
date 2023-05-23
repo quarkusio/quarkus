@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 Here, you use the Quarkus OpenID Connect (OIDC) extension to secure a Jakarta REST application using Bearer authentication.
 The bearer tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
-To better understand OIDC Bearer authentication, see xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication].
+To better understand OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication].
 
 == Prerequisites
 
@@ -311,12 +311,12 @@ export access_token=$(\
  )
 ----
 
-Please also see the xref:security-oidc-bearer-authentication-concept.adoc#integration-testing-keycloak-devservices[OIDC Bearer authentication, Dev Services for Keycloak] section, about writing the integration tests which depend on `Dev Services for Keycloak`.
+Please also see the xref:security-oidc-bearer-token-authentication-concept.adoc#integration-testing-keycloak-devservices[OIDC Bearer authentication, Dev Services for Keycloak] section, about writing the integration tests which depend on `Dev Services for Keycloak`.
 
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
-* xref:security-oidc-bearer-authentication-concept.adoc[OIDC Bearer authentication]
+* xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication]
 * link:https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * link:https://openid.net/connect/[OpenID Connect]
 * link:https://tools.ietf.org/html/rfc7519[JSON Web Token]

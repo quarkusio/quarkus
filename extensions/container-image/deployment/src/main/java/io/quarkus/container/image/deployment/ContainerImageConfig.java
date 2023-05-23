@@ -24,7 +24,7 @@ public class ContainerImageConfig {
      */
     @ConfigItem(defaultValue = "${quarkus.application.name:unset}")
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> name;
+    public String name;
 
     /**
      * The tag of the container image. If not set defaults to the application version

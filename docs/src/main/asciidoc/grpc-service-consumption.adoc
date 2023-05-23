@@ -455,7 +455,7 @@ include::{generated-dir}/config/quarkus-grpc-config-group-grpc-dev-mode-config.a
 
 == Inject mock clients
 
-In your `@QuarkuTest`, you can use `@InjectMock` to inject the Mutiny client of a gRPC service:
+In your `@QuarkusTest`, you can use `@InjectMock` to inject the Mutiny client of a gRPC service:
 
 [source, java]
 ----

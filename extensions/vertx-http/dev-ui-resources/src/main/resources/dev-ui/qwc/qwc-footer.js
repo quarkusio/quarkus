@@ -20,12 +20,6 @@ export class QwcFooter extends observeState(LitElement) {
     
     static styles = css`
     
-        vaadin-menu-bar {
-            --lumo-size-m: 10px;
-            --lumo-space-xs: 0.7rem;
-            --_lumo-button-background-color: transparent;
-        }
-        
         .openIcon {
             cursor: pointer;
             font-size: var(--lumo-font-size-s);
@@ -54,9 +48,60 @@ export class QwcFooter extends observeState(LitElement) {
         
         .dragOpen {
             overflow: hidden;
-            height: 3px;
+            height: 4px;
             cursor: row-resize;
             background: var(--lumo-contrast-10pct);
+        }
+    
+        .resizeIcon {
+            display: none;
+        }
+    
+        @media screen and (max-width: 1600px) {
+            .dragOpen {
+                height: 5px;
+                background: var(--lumo-contrast-10pct);
+            }
+        }
+    
+        @media screen and (max-width: 1280px) {
+            .dragOpen {
+                height: 6px;
+                background: var(--lumo-contrast-20pct);
+            }
+            #footer {
+                margin-right: 0px;
+                margin-left: 0px;
+                border-radius: 0px 0px 0px 0px;
+            }
+            .resizeIcon {
+                display: inline;
+            }
+        }
+    
+        @media screen and (max-width: 1152px) {
+            .dragOpen {
+                height: 7px;
+                background: var(--lumo-contrast-20pct);
+            }
+        }
+    
+        @media screen and (max-width: 1024px) {
+            .dragOpen {
+                height: 7px;
+                background: var(--lumo-contrast-30pct);
+            }
+        }
+    
+        @media screen and (max-width: 900px) {
+            .dragOpen {
+                height: 8px;
+                background: var(--lumo-contrast-30pct);
+            }
+        } 
+        
+        vaadin-menu-bar-button {
+            background: var(--lumo-contrast-5pct);
         }
         
         .dragOpen:hover {
@@ -211,6 +256,8 @@ export class QwcFooter extends observeState(LitElement) {
                                 ${this._renderControls()}
                             </div>
         
+                            ${this._renderResizeIcon()}
+                            
                         </vaadin-tabsheet>
                     </div>`;
     }
@@ -227,7 +274,8 @@ export class QwcFooter extends observeState(LitElement) {
     }
     
     _renderControls(){
-        return html`<vaadin-menu-bar  
+        return html`<vaadin-menu-bar
+                            theme="small"
                             .items="${this._controlButtons}" 
                             @item-selected="${this._controlButtonClicked}">
                         </vaadin-menu-bar>`;
@@ -257,6 +305,10 @@ export class QwcFooter extends observeState(LitElement) {
             this._selectedTab = 0;
         }
         this.storageControl.set('selected-tab', this._selectedTab);
+    }
+
+    _renderResizeIcon(){
+        return html`<vaadin-icon slot="suffix" class="resizeIcon" icon="font-awesome-solid:up-down" @mousedown=${this._mousedown}></vaadin-icon>`;
     }
 
     _mousedown(e){

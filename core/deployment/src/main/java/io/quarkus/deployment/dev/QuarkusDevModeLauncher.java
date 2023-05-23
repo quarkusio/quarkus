@@ -369,6 +369,7 @@ public abstract class QuarkusDevModeLauncher {
                 port = Integer.parseInt(debug);
             }
         }
+        int originalPort = port;
         if (port <= 0) {
             port = getRandomPort();
         }
@@ -376,19 +377,42 @@ public abstract class QuarkusDevModeLauncher {
         if (debug != null && debug.equalsIgnoreCase("client")) {
             args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=n,suspend=" + suspend);
         } else if (debug == null || !debug.equalsIgnoreCase("false")) {
-            // make sure the debug port is not used, we don't want to just fail if something else is using it
-            // we don't check this on restarts, as the previous process is still running
+            // if the debug port is used, we want to make an effort to pick another one
+            // if we can't find an open port, we don't fail the process launch, we just don't enable debugging
+            // Furthermore, we don't check this on restarts, as the previous process is still running
+            boolean warnAboutChange = false;
             if (debugPortOk == null) {
-                try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
-                    error("Port " + port + " in use, not starting in debug mode");
-                    debugPortOk = false;
-                } catch (IOException e) {
-                    debugPortOk = true;
+                int tries = 0;
+                while (true) {
+                    boolean isPortUsed;
+                    try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
+                        // we can make a connection, that means the port is in use
+                        isPortUsed = true;
+                        warnAboutChange = warnAboutChange || (originalPort != 0); // we only want to warn if the user had not configured a random port
+                    } catch (IOException e) {
+                        // no connection made, so the port is not in use
+                        isPortUsed = false;
+                    }
+                    if (!isPortUsed) {
+                        debugPortOk = true;
+                        break;
+                    }
+                    if (++tries >= 5) {
+                        debugPortOk = false;
+                        break;
+                    } else {
+                        port = getRandomPort();
+                    }
                 }
             }
             if (debugPortOk) {
+                if (warnAboutChange) {
+                    warn("Changed debug port to " + port + " because of a port conflict");
+                }
                 args.add("-agentlib:jdwp=transport=dt_socket,address=" + debugHost + ":" + port + ",server=y,suspend="
                         + suspend);
+            } else {
+                error("Port " + port + " in use, not starting in debug mode");
             }
         }
 

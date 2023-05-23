@@ -16,17 +16,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.console.QuarkusGroupCommand;
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
 import org.aesh.command.CommandResult;
-import org.aesh.command.GroupCommand;
 import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.completer.CompleterInvocation;
 import org.aesh.command.completer.OptionCompleter;
 import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Argument;
-import org.aesh.command.option.Option;
 import org.aesh.command.validator.CommandValidator;
 import org.aesh.command.validator.CommandValidatorException;
 
@@ -313,12 +312,9 @@ public class ConfigEditorProcessor {
     }
 
     @GroupCommandDefinition(name = "config", description = "Config Editing Commands")
-    public static class ConfigCommandGroup implements GroupCommand {
+    public static class ConfigCommandGroup extends QuarkusGroupCommand {
 
         final ConfigDescriptionsManager configDescriptionsManager;
-
-        @Option(shortName = 'h', hasValue = false, overrideRequired = true)
-        public boolean help;
 
         public ConfigCommandGroup(ConfigDescriptionsManager configDescriptionsManager) {
             this.configDescriptionsManager = configDescriptionsManager;
@@ -329,11 +325,6 @@ public class ConfigEditorProcessor {
             return List.of(new SetConfigCommand(configDescriptionsManager));
         }
 
-        @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            commandInvocation.getShell().writeln(commandInvocation.getHelpInfo());
-            return CommandResult.SUCCESS;
-        }
     }
 
     @CommandDefinition(name = "set", description = "Sets a config value", validator = SetValidator.class)

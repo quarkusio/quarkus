@@ -3,16 +3,16 @@
          child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-parent</artifactId>
-        <version>39</version>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-parent</artifactId>
+        <version>999-SNAPSHOT</version>
+        <relativePath>../parent/pom.xml</relativePath>
     </parent>
     
-    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-revapi-config</artifactId>
     <name>Quarkus - Revapi Configuration</name>
-    <version>999-SNAPSHOT</version>    
-    <description>Contains the configuration of the Revapi API checker and the list of the API changes 
+    <version>999-SNAPSHOT</version>
+    <description>Contains the configuration of the Revapi API checker and the list of the API changes
         in the Quarkus APIs.
     </description>
     <url>https://github.com/quarkusio/quarkus</url>

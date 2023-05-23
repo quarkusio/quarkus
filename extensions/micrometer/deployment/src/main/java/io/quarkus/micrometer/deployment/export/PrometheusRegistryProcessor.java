@@ -39,7 +39,8 @@ public class PrometheusRegistryProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return REGISTRY_CLASS != null && mConfig.checkRegistryEnabledWithDefault(mConfig.export.prometheus);
+            return (REGISTRY_CLASS != null) && QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
+                    && mConfig.checkRegistryEnabledWithDefault(mConfig.export.prometheus);
         }
     }
 

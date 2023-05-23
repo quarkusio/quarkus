@@ -68,21 +68,39 @@ public class TenantConfigContext {
 
     private static SecretKey createTokenEncSecretKey(OidcTenantConfig config) {
         if (config.tokenStateManager.encryptionRequired) {
-            String encSecret = config.tokenStateManager.encryptionSecret
-                    .orElse(OidcCommonUtils.clientSecret(config.credentials));
-            if (encSecret == null) {
-                encSecret = OidcCommonUtils.jwtSecret(config.credentials);
+            String encSecret = null;
+            if (config.tokenStateManager.encryptionSecret.isPresent()) {
+                encSecret = config.tokenStateManager.encryptionSecret.get();
+            } else {
+                LOG.debug("'quarkus.oidc.token-state-manager.encryption-secret' is not configured, "
+                        + "trying to use the configured client secret");
+                encSecret = OidcCommonUtils.clientSecret(config.credentials);
+                if (encSecret == null) {
+                    LOG.debug("Client secret is not configured, "
+                            + "trying to use the configured 'client_jwt_secret' secret");
+                    encSecret = OidcCommonUtils.jwtSecret(config.credentials);
+                }
             }
             try {
                 if (encSecret == null) {
-                    LOG.warn("Secret key for encrypting tokens is missing, auto-generating it");
+                    LOG.warn("Secret key for encrypting tokens in a session cookie is missing, auto-generating it");
                     KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
                     keyGenerator.init(256);
                     return keyGenerator.generateKey();
                 }
                 byte[] secretBytes = encSecret.getBytes(StandardCharsets.UTF_8);
                 if (secretBytes.length < 32) {
-                    LOG.warn("Secret key for encrypting tokens should be 32 characters long");
+                    String errorMessage = "Secret key for encrypting tokens in a session cookie should be at least 32 characters long"
+                            + " for the strongest cookie encryption to be produced."
+                            + " Please configure 'quarkus.oidc.token-state-manager.encryption-secret'"
+                            + " or update the configured client secret. You can disable the session cookie"
+                            + " encryption with 'quarkus.oidc.token-state-manager.encryption-required=false'"
+                            + " but only if it is considered to be safe in your application's network.";
+                    if (secretBytes.length < 16) {
+                        LOG.warn(errorMessage);
+                    } else {
+                        LOG.debug(errorMessage);
+                    }
                 }
                 return new SecretKeySpec(OidcUtils.getSha256Digest(secretBytes), "AES");
             } catch (Exception ex) {

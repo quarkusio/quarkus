@@ -372,15 +372,23 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean splitTokens;
 
         /**
-         * Requires that the tokens are encrypted before being stored in the cookies.
+         * Mandates that the session cookie that stores the tokens is encrypted.
          */
         @ConfigItem(defaultValue = "true")
         public boolean encryptionRequired = true;
 
         /**
-         * Secret which will be used to encrypt the tokens.
-         * This secret must be set if the token encryption is required but no client secret is set.
-         * The length of the secret which will be used to encrypt the tokens must be 32 characters long.
+         * Secret which will be used to encrypt the session cookie storing the tokens when {@link #encryptionRequired} property
+         * is enabled.
+         * <p>
+         * If this secret is not set, the client secret configured with
+         * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` will be checked.
+         * Finally, `quarkus.oidc.credentials.jwt.secret` which can be used for `client_jwt_secret` authentication will be
+         * checked.
+         * The secret will be auto-generated if it remains uninitialized after checking all of these properties.
+         * <p>
+         * The length of the secret which will be used to encrypt the tokens should be at least 32 characters long.
+         * Warning will be logged if the secret length is less than 16 characters.
          */
         @ConfigItem
         public Optional<String> encryptionSecret = Optional.empty();

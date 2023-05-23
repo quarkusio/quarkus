@@ -6,6 +6,7 @@ import java.io.InterruptedIOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BiPredicate;
@@ -150,6 +151,20 @@ public abstract class QuarkusConsole {
 
     public void exitCliMode() {
         //noop for the non-aesh console
+    }
+
+    /**
+     * Exposes single character aliases so they can be displayed in the help screen
+     */
+    public Map<Character, String> singleLetterAliases() {
+        return Map.of();
+    }
+
+    /**
+     * runs a single letter alias
+     */
+    public void runAlias(char alias) {
+
     }
 
     protected String stripAnsiCodes(String s) {

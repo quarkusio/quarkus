@@ -198,7 +198,7 @@ public class TestTracingProcessor {
     }
 
     @GroupCommandDefinition(name = "test", description = "Test Commands", groupCommands = { TagsCommand.class,
-            PatternCommand.class })
+            PatternCommand.class }, generateHelp = true)
     public static class TestCommand implements Command {
 
         @Override
@@ -208,7 +208,7 @@ public class TestTracingProcessor {
     }
 
     @GroupCommandDefinition(name = "tags", description = "Tag Commands", groupCommands = { IncludeTagsCommand.class,
-            ExcludeTagsCommand.class })
+            ExcludeTagsCommand.class }, generateHelp = true)
     public static class TagsCommand implements Command {
 
         @Override
@@ -217,7 +217,7 @@ public class TestTracingProcessor {
         }
     }
 
-    @CommandDefinition(name = "include", description = "Sets the current included tags")
+    @CommandDefinition(name = "include", description = "Sets the current included tags, this supports JUnit tag expressions.")
     public static class IncludeTagsCommand extends TestSelectionCommand {
 
         @Arguments(completer = TagCompleter.class)
@@ -243,7 +243,7 @@ public class TestTracingProcessor {
         }
     }
 
-    @CommandDefinition(name = "exclude", description = "Sets the current excluded tags")
+    @CommandDefinition(name = "exclude", description = "Sets the current excluded tags, this supports JUnit tag expressions.")
     public static class ExcludeTagsCommand extends TestSelectionCommand {
 
         @Arguments(completer = TagCompleter.class)
@@ -271,7 +271,7 @@ public class TestTracingProcessor {
 
     @GroupCommandDefinition(name = "pattern", description = "Include/Exclude pattern Commands", groupCommands = {
             IncludePatternCommand.class,
-            ExcludePatternCommand.class })
+            ExcludePatternCommand.class }, generateHelp = true)
     public static class PatternCommand implements Command {
 
         @Override
@@ -302,7 +302,7 @@ public class TestTracingProcessor {
         }
     }
 
-    @CommandDefinition(name = "exclude", description = "Sets the current excluded tags")
+    @CommandDefinition(name = "exclude", description = "Sets the current exclude pattern")
     public static class ExcludePatternCommand extends TestSelectionCommand {
 
         @Argument(completer = TagCompleter.class)

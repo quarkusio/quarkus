@@ -10,6 +10,7 @@ import org.eclipse.microprofile.reactive.messaging.spi.IncomingConnectorFactory;
 import org.eclipse.microprofile.reactive.messaging.spi.OutgoingConnectorFactory;
 import org.jboss.jandex.DotName;
 
+import io.smallrye.reactive.messaging.MessageConverter;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Broadcast;
@@ -23,6 +24,9 @@ import io.smallrye.reactive.messaging.annotations.Merge;
 import io.smallrye.reactive.messaging.annotations.OnOverflow;
 import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
+import io.smallrye.reactive.messaging.keyed.KeyValueExtractor;
+import io.smallrye.reactive.messaging.keyed.Keyed;
+import io.smallrye.reactive.messaging.keyed.KeyedMulti;
 
 public final class ReactiveMessagingDotNames {
 
@@ -60,6 +64,12 @@ public final class ReactiveMessagingDotNames {
     static final DotName OUTBOUND_CONNECTOR = DotName.createSimple(OutboundConnector.class.getName());
 
     static final DotName SMALLRYE_BLOCKING = DotName.createSimple(io.smallrye.common.annotation.Blocking.class.getName());
+
+    static final DotName MESSAGE_CONVERTER = DotName.createSimple(MessageConverter.class.getName());
+    static final DotName KEY_VALUE_EXTRACTOR = DotName.createSimple(KeyValueExtractor.class.getName());
+
+    static final DotName KEYED = DotName.createSimple(Keyed.class.getName());
+    public static final DotName KEYED_MULTI = DotName.createSimple(KeyedMulti.class.getName());
 
     // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be present)
     static final DotName METRIC_DECORATOR = DotName

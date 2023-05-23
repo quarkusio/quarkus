@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
 
@@ -53,17 +51,16 @@ public class MediatorConfigurationSupportTest {
     private MediatorConfigurationSupport create(String method) {
         for (MethodInfo m : classInfo.methods()) {
             if (m.name().equalsIgnoreCase(method)) {
-                List<? extends Class<?>> list = m.parameterTypes().stream().map(t -> load(t.name().toString()))
-                        .collect(Collectors.toList());
                 return new MediatorConfigurationSupport(
                         method,
                         load(m.returnType().name().toString()),
-                        list.toArray(new Class[0]),
+                        m.parameterTypes().stream().map(t -> load(t.name().toString())).toArray(Class[]::new),
                         new QuarkusMediatorConfigurationUtil.ReturnTypeGenericTypeAssignable(m, classLoader),
                         m.parametersCount() == 0
                                 ? new QuarkusMediatorConfigurationUtil.AlwaysInvalidIndexGenericTypeAssignable()
                                 : new QuarkusMediatorConfigurationUtil.MethodParamGenericTypeAssignable(m, 0,
-                                        classLoader));
+                                        classLoader),
+                        null);
             }
         }
         fail("Unable to find method " + method);

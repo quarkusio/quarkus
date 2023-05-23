@@ -1,6 +1,7 @@
 package io.quarkus.it.kafka;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import jakarta.inject.Inject;
@@ -50,5 +51,19 @@ public class KafkaEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Pet> getPets() {
         return receivers.getPets().stream().map(Record::key).collect(Collectors.toList());
+    }
+
+    @GET
+    @Path("/data-with-metadata")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, String> getDataWithMetadata() {
+        return receivers.getDataWithMetadata();
+    }
+
+    @GET
+    @Path("/data-for-keyed")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<String> getDataForKeyed() {
+        return receivers.getDataForKeyed();
     }
 }

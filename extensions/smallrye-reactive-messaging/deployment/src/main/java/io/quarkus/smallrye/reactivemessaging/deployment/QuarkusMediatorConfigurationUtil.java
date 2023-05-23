@@ -16,6 +16,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -30,10 +31,14 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
+import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusParameterDescriptor;
+import io.quarkus.smallrye.reactivemessaging.runtime.TypeInfo;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import io.smallrye.reactive.messaging.annotations.Merge;
+import io.smallrye.reactive.messaging.keyed.KeyValueExtractor;
 import io.smallrye.reactive.messaging.providers.MediatorConfigurationSupport;
 
 public final class QuarkusMediatorConfigurationUtil {
@@ -67,11 +72,34 @@ public final class QuarkusMediatorConfigurationUtil {
         }
 
         QuarkusMediatorConfiguration configuration = new QuarkusMediatorConfiguration();
+
+        List<TypeInfo> gen = new ArrayList<>();
+        for (int i = 0; i < methodInfo.parameterTypes().size(); i++) {
+            TypeInfo ti = new TypeInfo();
+            Type type = methodInfo.parameterTypes().get(i);
+            ti.setName(recorderContext.classProxy(type.name().toString()));
+            List<Class<?>> inner = new ArrayList<>();
+            if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                inner = type.asParameterizedType().arguments().stream()
+                        .map(t -> recorderContext.classProxy(t.name().toString()))
+                        .collect(Collectors.toList());
+            }
+            ti.setGenerics(inner);
+            gen.add(ti);
+        }
+
+        QuarkusParameterDescriptor descriptor = new QuarkusParameterDescriptor(gen);
+        configuration.setParameterDescriptor(descriptor);
+
+        // Extract @Keyed, key type and value type
+        Optional<Class<? extends KeyValueExtractor>> keyed = handleKeyedMulti(methodInfo, recorderContext, configuration);
+
         MediatorConfigurationSupport mediatorConfigurationSupport = new MediatorConfigurationSupport(
                 fullMethodName(methodInfo), returnTypeClass, parameterTypeClasses,
                 genericReturnTypeAssignable,
                 methodInfo.parameterTypes().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
-                        : new MethodParamGenericTypeAssignable(methodInfo, 0, cl));
+                        : new MethodParamGenericTypeAssignable(methodInfo, 0, cl),
+                keyed.orElse(null));
 
         if (strict) {
             mediatorConfigurationSupport.strict();
@@ -82,11 +110,6 @@ public final class QuarkusMediatorConfigurationUtil {
 
         String returnTypeName = returnTypeClass.getName();
         configuration.setReturnType(recorderContext.classProxy(returnTypeName));
-        Class<?>[] parameterTypes = new Class[methodInfo.parametersCount()];
-        for (int i = 0; i < methodInfo.parametersCount(); i++) {
-            parameterTypes[i] = recorderContext.classProxy(methodInfo.parameterType(i).name().toString());
-        }
-        configuration.setParameterTypes(parameterTypes);
 
         // We need to extract the value of @Incoming and @Incomings (which contains an array of @Incoming)
         List<String> incomingValues = new ArrayList<>(getValues(methodInfo, INCOMING));
@@ -174,6 +197,39 @@ public final class QuarkusMediatorConfigurationUtil {
         }
 
         return configuration;
+    }
+
+    private static Optional<Class<? extends KeyValueExtractor>> handleKeyedMulti(MethodInfo methodInfo,
+            RecorderContext recorderContext, QuarkusMediatorConfiguration configuration) {
+        Optional<Class<? extends KeyValueExtractor>> keyed = Optional.empty();
+        if (methodInfo.parametersCount() == 1) { // @Keyed can only be used with a single parameter, a keyed multi
+            var info = methodInfo.parameters().get(0);
+            var annotation = info.annotation(ReactiveMessagingDotNames.KEYED);
+            if (annotation != null) {
+                // Make sure we have a keyed multi and an incoming.
+                if (methodInfo.annotation(INCOMING) == null && methodInfo.annotation(INCOMINGS) == null) {
+                    throw new ConfigurationException(
+                            "The method `" + methodInfo.name() + "` is using `@Keyed` but is not annotated with `@Incoming`");
+                }
+                if (info.type().kind() != Type.Kind.PARAMETERIZED_TYPE
+                        || !info.type().asParameterizedType().name().equals(ReactiveMessagingDotNames.KEYED_MULTI)) {
+                    throw new ConfigurationException("The method `" + methodInfo.name()
+                            + "` is using `@Keyed` but the annotated parameter is not a `KeyedMulti`");
+                }
+                var extractor = (Class<? extends KeyValueExtractor>) recorderContext
+                        .classProxy(annotation.value().asClass().name().toString());
+                configuration.setKeyed(extractor);
+                keyed = Optional.of(extractor);
+            }
+            if (info.type().kind() == Type.Kind.PARAMETERIZED_TYPE
+                    && info.type().asParameterizedType().name().equals(ReactiveMessagingDotNames.KEYED_MULTI)) {
+                var args = info.type().asParameterizedType().arguments();
+                configuration.setKeyType(recorderContext.classProxy(args.get(0).name().toString()));
+                configuration.setValueType(recorderContext.classProxy(args.get(1).name().toString()));
+            }
+        }
+
+        return keyed;
     }
 
     // TODO: avoid hard coding CompletionStage handling
@@ -357,6 +413,10 @@ public final class QuarkusMediatorConfigurationUtil {
 
         public MethodParamGenericTypeAssignable(MethodInfo method, int paramIndex, ClassLoader classLoader) {
             super(getGenericParameterType(method, paramIndex), classLoader);
+        }
+
+        public MethodParamGenericTypeAssignable(Type type, ClassLoader classLoader) {
+            super(type, classLoader);
         }
 
         private static Type getGenericParameterType(MethodInfo method, int paramIndex) {

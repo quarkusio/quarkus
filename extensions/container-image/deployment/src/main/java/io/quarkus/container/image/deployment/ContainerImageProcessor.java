@@ -89,8 +89,7 @@ public class ContainerImageProcessor {
         }
 
         String effectiveName = containerImageCustomName.map(ContainerImageCustomNameBuildItem::getName)
-                .or(() -> containerImageConfig.name)
-                .orElse(app.getName());
+                .orElse(containerImageConfig.name);
         String repository = (containerImageConfig.getEffectiveGroup().map(s -> s + "/").orElse("")) + effectiveName;
         if (!ImageReference.isValidRepository(repository)) {
             throw new IllegalArgumentException("The supplied combination of container-image group '"

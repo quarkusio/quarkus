@@ -1,21 +1,25 @@
 package io.quarkus.redis.client.deployment;
 
 import java.util.Map;
-import java.util.Objects;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
+import io.smallrye.config.WithParentName;
 
-@ConfigRoot
-public class RedisBuildTimeConfig {
+@ConfigMapping(prefix = "quarkus.redis")
+@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+public interface RedisBuildTimeConfig {
 
     /**
      * The default redis client
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public RedisClientBuildTimeConfig defaultRedisClient;
+    @WithParentName
+    RedisClientBuildTimeConfig defaultRedisClient();
 
     /**
      * Configures additional (named) Redis clients.
@@ -44,52 +48,37 @@ public class RedisBuildTimeConfig {
      * }
      * </pre>
      */
-    @ConfigItem(name = ConfigItem.PARENT)
+    @WithParentName
     @ConfigDocMapKey("redis-client-name")
-    public Map<String, RedisClientBuildTimeConfig> namedRedisClients;
+    Map<String, RedisClientBuildTimeConfig> namedRedisClients();
 
     /**
      * Whether a health check is published in case the smallrye-health extension is present.
      */
-    @ConfigItem(name = "health.enabled", defaultValue = "true")
-    public boolean healthEnabled;
+    @WithName("health.enabled")
+    @WithDefault("true")
+    boolean healthEnabled();
 
     /**
      * Default Dev services configuration.
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public DevServiceConfiguration defaultDevService;
+    @WithParentName
+    DevServiceConfiguration defaultDevService();
 
     /**
      * Additional dev services configurations
      */
-    @ConfigItem(name = ConfigItem.PARENT)
+    @WithParentName
     @ConfigDocMapKey("additional-redis-clients")
-    public Map<String, DevServiceConfiguration> additionalDevServices;
+    Map<String, DevServiceConfiguration> additionalDevServices();
 
     @ConfigGroup
-    public static class DevServiceConfiguration {
+    public interface DevServiceConfiguration {
         /**
          * Configuration for DevServices
          * <p>
          * DevServices allows Quarkus to automatically start Redis in dev and test mode.
          */
-        @ConfigItem
-        public DevServicesConfig devservices;
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            DevServiceConfiguration that = (DevServiceConfiguration) o;
-            return Objects.equals(devservices, that.devservices);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(devservices);
-        }
+        DevServicesConfig devservices();
     }
 }

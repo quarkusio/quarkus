@@ -782,10 +782,11 @@ $ ./mvnw clean package -Dquarkus.package.type=native-sources -Dquarkus.native.co
 cd target/native-sources
 docker run \
   -it \
+  --user $(id -ur):$(id -gr) \
   --rm \
-  --v $(pwd):/work \# <1>
+  -v $(pwd):/work \# <1>
   -w /work \# <2>
-  --entrypoint bin/sh \
+  --entrypoint /bin/sh \
   $(cat native-builder.image) \# <3>
   -c "native-image $(cat native-image.args) -J-Xmx4g"# <4>
 ----

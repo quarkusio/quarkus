@@ -715,13 +715,7 @@ public class BeanGenerator extends AbstractGenerator {
                                     reflectionRegistration, injectionPointAnnotationsPredicate));
                 } else {
                     // Not a built-in bean
-                    if (BuiltinScope.DEPENDENT.is(injectionPoint.getResolvedBean().getScope())
-                            && (injectionPoint.getResolvedBean()
-                                    .getAllInjectionPoints().stream()
-                                    .anyMatch(ip -> BuiltinBean.INJECTION_POINT.hasRawTypeDotName(ip.getRequiredType().name()))
-                                    || injectionPoint.getResolvedBean().isSynthetic())) {
-                        // Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
-                        // reference provider
+                    if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
                         ResultHandle wrapHandle = wrapCurrentInjectionPoint(classOutput, beanCreator, bean, constructor,
                                 injectionPoint, paramIdx++, tccl, reflectionRegistration);
                         ResultHandle wrapSupplierHandle = constructor.newInstance(

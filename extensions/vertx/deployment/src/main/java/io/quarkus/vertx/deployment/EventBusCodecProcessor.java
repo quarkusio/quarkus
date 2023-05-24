@@ -29,6 +29,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.vertx.LocalEventBusCodec;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -38,6 +39,7 @@ public class EventBusCodecProcessor {
     private static final Logger LOGGER = Logger.getLogger(EventBusCodecProcessor.class.getName());
 
     private static final DotName OBJECT = DotName.createSimple(Object.class);
+    private static final DotName LOCAL_EVENT_BUT_CODEC = DotName.createSimple(LocalEventBusCodec.class);
 
     @BuildStep
     public void registerCodecs(
@@ -101,17 +103,25 @@ public class EventBusCodecProcessor {
         // But do not override the existing ones
         for (Map.Entry<DotName, DotName> entry : codecByTypes.entrySet()) {
             // we do not consider Object as it would be a mess
-            if (OBJECT.equals(entry.getKey())) {
+            DotName typeDotName = entry.getKey();
+            if (OBJECT.equals(typeDotName)) {
                 continue;
             }
 
-            Set<DotName> subclasses = combinedIndex.getIndex().getAllKnownSubclasses(entry.getKey()).stream()
+            DotName codecDotName = entry.getValue();
+            // we have to limit subclasses to codecs we know that have unique name per-instance
+            // see: https://github.com/quarkusio/quarkus/issues/33458
+            if (!LOCAL_EVENT_BUT_CODEC.equals(codecDotName)) {
+                continue;
+            }
+
+            Set<DotName> subclasses = combinedIndex.getIndex().getAllKnownSubclasses(typeDotName).stream()
                     .map(ci -> ci.name())
                     .filter(d -> !codecByTypes.containsKey(d))
                     .collect(Collectors.toSet());
 
             for (DotName subclass : subclasses) {
-                messageCodecs.produce(new MessageCodecBuildItem(subclass.toString(), entry.getValue().toString()));
+                messageCodecs.produce(new MessageCodecBuildItem(subclass.toString(), codecDotName.toString()));
             }
         }
 

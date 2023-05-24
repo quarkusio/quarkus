@@ -37,6 +37,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExc
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Feature;
@@ -240,7 +241,7 @@ public class SmallRyeReactiveMessagingProcessor {
             }
 
             try {
-                boolean isSuspendMethod = isSuspendMethod(methodInfo);
+                boolean isSuspendMethod = KotlinUtils.isKotlinSuspendMethod(methodInfo);
 
                 QuarkusMediatorConfiguration mediatorConfiguration = QuarkusMediatorConfigurationUtil
                         .create(methodInfo, isSuspendMethod, bean, recorderContext,
@@ -274,14 +275,6 @@ public class SmallRyeReactiveMessagingProcessor {
                 .supplier(recorder.createContext(mediatorConfigurations, workerConfigurations, emittersConfigurations,
                         channelConfigurations))
                 .done());
-    }
-
-    private boolean isSuspendMethod(MethodInfo methodInfo) {
-        if (!methodInfo.parameterTypes().isEmpty()) {
-            return methodInfo.parameterType(methodInfo.parametersCount() - 1).name()
-                    .equals(ReactiveMessagingDotNames.CONTINUATION);
-        }
-        return false;
     }
 
     /**

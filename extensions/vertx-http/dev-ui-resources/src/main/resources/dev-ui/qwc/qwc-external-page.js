@@ -1,5 +1,6 @@
 import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
+import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import 'qui-code-block';
 import '@vaadin/progress-bar';
@@ -35,7 +36,20 @@ export class QwcExternalPage extends LitElement {
     connectedCallback() {
         super.connectedCallback();
         var metadata = this.routerController.getCurrentMetaData();
-        if(metadata){
+        if(metadata && metadata.dynamicUrlMethodName){
+            let ns = this.routerController.getCurrentNamespace();
+            this.jsonRpc = new JsonRpc(ns);
+            this.jsonRpc[metadata.dynamicUrlMethodName]().then(jsonRpcResponse => {
+                this._externalUrl = jsonRpcResponse.result;
+                
+                if(metadata.mimeType){
+                    this._mimeType = metadata.mimeType;
+                    this._deriveModeFromMimeType(this._mimeType);
+                }else{
+                    this._autoDetectMimeType();
+                }
+            });
+        } else if (metadata && metadata.externalUrl){
             this._externalUrl = metadata.externalUrl;
             if(metadata.mimeType){
                 this._mimeType = metadata.mimeType;

@@ -1,12 +1,14 @@
 package io.quarkus.rest.client.reactive;
 
 import static io.quarkus.rest.client.reactive.RestClientTestUtil.setUrlForClass;
-import static io.quarkus.rest.client.reactive.TestRestClientListener.HEADER_PARAM_NAME;
+import static io.quarkus.rest.client.reactive.TestHeaderConfig.HEADER_PARAM_NAME;
 import static io.quarkus.rest.client.reactive.TestRestClientListener.HEADER_PARAM_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
@@ -22,11 +24,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.mutiny.Uni;
 
+@ActivateRequestContext
 public class RestClientListenerTest {
+
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class, TestRestClientListener.class)
+                    .addClasses(Client.class, Resource.class, TestHeaderConfig.class, TestRestClientListener.class)
                     .addAsResource(
                             new StringAsset(setUrlForClass(Client.class)),
                             "application.properties")
@@ -38,7 +42,7 @@ public class RestClientListenerTest {
     Client client;
 
     @Test
-    void shouldCallRegisteredRestClient() {
+    public void shouldCallRegisteredRestClient() {
         String result = client.get()
                 .await().atMost(Duration.ofSeconds(10));
         assertThat(result).isEqualTo(HEADER_PARAM_VALUE);
@@ -47,14 +51,15 @@ public class RestClientListenerTest {
     @Path("/")
     @RegisterRestClient
     @Produces(MediaType.TEXT_PLAIN)
-    interface Client {
+    @RequestScoped
+    public static interface Client {
         @GET
         Uni<String> get();
     }
 
     @Path("/")
     @Produces(MediaType.TEXT_PLAIN)
-    static class Resource {
+    public static class Resource {
 
         @GET
         public String get(@HeaderParam(HEADER_PARAM_NAME) String headerParam) {

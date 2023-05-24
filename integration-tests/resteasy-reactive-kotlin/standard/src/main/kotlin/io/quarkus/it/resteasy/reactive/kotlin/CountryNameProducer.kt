@@ -8,5 +8,11 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing
 class CountryNameProducer {
 
     @Outgoing("countries-out")
-    fun generate(): Multi<String> = Multi.createFrom().items("Greece", "USA", "France")
+    fun generate(): Multi<Country> =
+        Multi.createFrom()
+            .items(
+                Country("Greece", "Athens"),
+                Country("USA", "Washington D.C"),
+                Country("France", "Paris")
+            )
 }

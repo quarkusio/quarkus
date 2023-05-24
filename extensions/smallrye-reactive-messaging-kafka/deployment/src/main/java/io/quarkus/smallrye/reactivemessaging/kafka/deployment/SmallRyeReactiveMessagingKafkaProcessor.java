@@ -25,6 +25,7 @@ import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -358,6 +359,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         } else if ((isSubscriber(returnType) && parametersCount == 0)
                 || (isSubscriberBuilder(returnType) && parametersCount == 0)) {
             incomingType = returnType.asParameterizedType().arguments().get(0);
+        } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
+            incomingType = parameterTypes.get(0);
         }
 
         // @Incoming @Outgoing
@@ -372,6 +375,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                     || (isProcessorBuilder(returnType) && parametersCount == 0)) {
                 incomingType = returnType.asParameterizedType().arguments().get(0);
             } else if (parametersCount == 1) {
+                incomingType = parameterTypes.get(0);
+            } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
                 incomingType = parameterTypes.get(0);
             }
 
@@ -412,6 +417,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             outgoingType = returnType.asParameterizedType().arguments().get(0);
         } else if (parametersCount == 0) {
             outgoingType = returnType;
+        } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
+            outgoingType = getReturnTypeFromKotlinSuspendMethod(method);
         }
 
         // @Incoming @Outgoing
@@ -427,6 +434,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 outgoingType = returnType.asParameterizedType().arguments().get(1);
             } else if (parametersCount == 1) {
                 outgoingType = returnType;
+            } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
+                outgoingType = getReturnTypeFromKotlinSuspendMethod(method);
             }
 
             // @Incoming @Outgoing stream manipulation
@@ -436,6 +445,19 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
         }
         return outgoingType;
+    }
+
+    private static Type getReturnTypeFromKotlinSuspendMethod(MethodInfo method) {
+        Type continuationReturnType = method.parameterType(method.parametersCount() - 1);
+
+        if (continuationReturnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            Type firstGenericType = continuationReturnType.asParameterizedType().arguments().get(0);
+            if (firstGenericType.kind() == Type.Kind.WILDCARD_TYPE) {
+                return firstGenericType.asWildcardType().superBound();
+            }
+        }
+
+        return null;
     }
 
     private Type getOutgoingTypeFromChannelInjectionPoint(Type injectionPointType) {
@@ -454,8 +476,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             BiConsumer<Result, Result> serializerAcceptor, BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflection, Map<String, String> alreadyGeneratedSerializer) {
         extractKeyValueType(outgoingType, (key, value, isBatch) -> {
-            Result keySerializer = serializerFor(discovery, key, generatedClass, reflection, alreadyGeneratedSerializer);
-            Result valueSerializer = serializerFor(discovery, value, generatedClass, reflection, alreadyGeneratedSerializer);
+            Result keySerializer = serializerFor(discovery, key, generatedClass, reflection,
+                    alreadyGeneratedSerializer);
+            Result valueSerializer = serializerFor(discovery, value, generatedClass, reflection,
+                    alreadyGeneratedSerializer);
             serializerAcceptor.accept(keySerializer, valueSerializer);
         });
     }

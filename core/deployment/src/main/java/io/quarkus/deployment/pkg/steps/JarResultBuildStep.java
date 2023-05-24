@@ -1030,6 +1030,7 @@ public class JarResultBuildStep {
                     @Override
                     public void accept(Path jsonPath) {
                         try {
+                            Files.createDirectories(thinJarDirectory);
                             Files.copy(jsonPath, thinJarDirectory.resolve(jsonPath.getFileName().toString()));
                         } catch (IOException e) {
                             throw new UncheckedIOException(

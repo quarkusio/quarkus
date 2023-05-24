@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
@@ -148,7 +148,7 @@ public class DevServicesKubernetesProcessor {
     }
 
     private void shutdownCluster() {
-        if (devService != null) {
+        if (devService != null && devService.isOwner()) {
             try {
                 devService.close();
             } catch (Throwable e) {
@@ -199,17 +199,19 @@ public class DevServicesKubernetesProcessor {
             switch (config.flavor) {
                 case api_only:
                     container = new ApiServerContainer(
-                            config.apiVersion.map(version -> findOrElseThrow(version, ApiServerContainerVersion.class))
+                            config.apiVersion
+                                    .map(version -> findOrElseThrow(config.flavor, version, ApiServerContainerVersion.class))
                                     .orElseGet(() -> latest(ApiServerContainerVersion.class)));
                     break;
                 case k3s:
                     container = new K3sContainer(
-                            config.apiVersion.map(version -> findOrElseThrow(version, K3sContainerVersion.class))
+                            config.apiVersion.map(version -> findOrElseThrow(config.flavor, version, K3sContainerVersion.class))
                                     .orElseGet(() -> latest(K3sContainerVersion.class)));
                     break;
                 case kind:
                     container = new KindContainer(
-                            config.apiVersion.map(version -> findOrElseThrow(version, KindContainerVersion.class))
+                            config.apiVersion
+                                    .map(version -> findOrElseThrow(config.flavor, version, KindContainerVersion.class))
                                     .orElseGet(() -> latest(KindContainerVersion.class)));
                     break;
                 default:
@@ -241,12 +243,17 @@ public class DevServicesKubernetesProcessor {
                 .orElseGet(defaultKubernetesClusterSupplier);
     }
 
-    <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final String version, final Class<T> versions) {
+    <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final Flavor flavor, final String version, final Class<T> versions) {
         final String versionWithPrefix = !version.startsWith("v") ? "v" + version : version;
-        return Stream.of(versions.getEnumConstants())
-                .filter(v -> v.descriptor().getKubernetesVersion().equalsIgnoreCase(versionWithPrefix))
+        return KubernetesVersionEnum.ascending(versions)
+                .stream()
+                .filter(v -> v.descriptor().getKubernetesVersion().startsWith(versionWithPrefix))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("Invalid API version '%s' for flavor '%s'. Options are: [%s]", versionWithPrefix, flavor,
+                                KubernetesVersionEnum.ascending(versions).stream()
+                                        .map(v -> v.descriptor().getKubernetesVersion())
+                                        .collect(Collectors.joining(", ")))));
     }
 
     private Map<String, String> getKubernetesClientConfigFromKubeConfig(KubeConfig kubeConfig) {

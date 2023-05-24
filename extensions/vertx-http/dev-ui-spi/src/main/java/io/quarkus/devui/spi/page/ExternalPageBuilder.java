@@ -5,6 +5,7 @@ import io.quarkus.logging.Log;
 public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
     private static final String QWC_EXTERNAL_PAGE_JS = "qwc-external-page.js";
     private static final String EXTERNAL_URL = "externalUrl";
+    private static final String DYNAMIC_URL = "dynamicUrlMethodName";
     private static final String MIME_TYPE = "mimeType";
 
     public static final String MIME_TYPE_HTML = "text/html";
@@ -24,6 +25,15 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
             throw new RuntimeException("Invalid external URL, can not be empty");
         }
         super.metadata.put(EXTERNAL_URL, url);
+        return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public ExternalPageBuilder dynamicUrlJsonRPCMethodName(String methodName) {
+        if (methodName == null || methodName.isEmpty()) {
+            throw new RuntimeException("Invalid dynamic URL Method name, can not be empty");
+        }
+        super.metadata.put(DYNAMIC_URL, methodName);
         return this;
     }
 

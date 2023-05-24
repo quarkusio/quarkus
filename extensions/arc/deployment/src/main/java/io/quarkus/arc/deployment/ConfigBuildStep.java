@@ -38,6 +38,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
@@ -320,6 +321,7 @@ public class ConfigBuildStep {
                     .configure(configClass.getConfigClass())
                     .types(configClass.getTypes().toArray(new Type[] {}))
                     .creator(ConfigMappingCreator.class)
+                    .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
                     .param("type", configClass.getConfigClass())
                     .param("prefix", configClass.getPrefix());
 
@@ -367,6 +369,7 @@ public class ConfigBuildStep {
                                             createStringValue("prefix", configClass.getPrefix())
                                     }))
                             .creator(ConfigMappingCreator.class)
+                            .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
                             .param("type", configClass.getConfigClass())
                             .param("prefix", configClass.getPrefix())));
         }

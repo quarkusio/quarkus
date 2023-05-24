@@ -74,6 +74,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.UberJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
@@ -150,6 +151,7 @@ public class JibProcessor {
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             List<ContainerImageLabelBuildItem> containerImageLabels,
             Optional<AppCDSResultBuildItem> appCDSResult,
+            List<UberJarRequiredBuildItem> uberJarRequired,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
@@ -161,7 +163,8 @@ public class JibProcessor {
 
         JibContainerBuilder jibContainerBuilder;
         String packageType = packageConfig.type;
-        if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())) {
+        if (packageConfig.isLegacyJar() || packageType.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue())
+                || !uberJarRequired.isEmpty()) {
             jibContainerBuilder = createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
                     jibConfig, containerImageConfig,
                     sourceJar, outputTarget, mainClass, containerImageLabels);

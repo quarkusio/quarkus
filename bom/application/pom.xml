@@ -14,7 +14,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <angus-activation.version>2.0.0</angus-activation.version>
+        <angus-activation.version>2.0.1</angus-activation.version>
         <bouncycastle.version>1.72</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.3</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.14.1</bouncycastle.tls.fips.version>
@@ -31,7 +31,7 @@
         <parsson.version>1.1.1</parsson.version>
         <resteasy-microprofile.version>2.1.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.0.2.Final</resteasy-spring-web.version>
-        <resteasy.version>6.2.1.Final</resteasy.version>
+        <resteasy.version>6.2.4.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>

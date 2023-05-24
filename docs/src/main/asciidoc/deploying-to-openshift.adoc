@@ -220,6 +220,21 @@ You don't necessarily need to add this property in the `application.properties`.
 The same applies to all properties listed below.
 ====
 
+==== Securing the Route resource
+
+To secure the incoming connections, OpenShift provides several types of TLS termination to serve certifications. You can read more information about how to secure routes in https://docs.openshift.com/container-platform/4.12/networking/routes/secured-routes.html[the official OpenShift guide].
+
+Let's see an example about how to configure a secured Route using passthrough termination by simply adding the "quarkus.openshift.route.tls" properties:
+
+[source,properties]
+----
+quarkus.openshift.route.expose=true
+quarkus.openshift.route.target-port=https
+## Route TLS configuration:
+quarkus.openshift.route.tls.termination=passthrough
+quarkus.openshift.route.tls.insecure-edge-termination-policy=None
+----
+
 === Labels
 
 To add a label in the generated resources:

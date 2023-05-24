@@ -276,6 +276,15 @@ public class BeanInfo implements InjectionTargetInfo {
         return injectionPoints;
     }
 
+    boolean requiresInjectionPointMetadata() {
+        for (InjectionPointInfo injectionPoint : getAllInjectionPoints()) {
+            if (DotNames.INJECTION_POINT.equals(injectionPoint.getRequiredType().name())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     Optional<Injection> getConstructorInjection() {
         return injections.isEmpty() ? Optional.empty() : injections.stream().filter(Injection::isConstructor).findAny();
     }

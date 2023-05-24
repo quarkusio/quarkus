@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
 import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_READER;
+import static org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
@@ -156,7 +157,7 @@ public class QuarkusServerEndpointIndexer
 
     @Override
     public boolean additionalRegisterClassForReflectionCheck(ResourceMethodCallbackEntry entry) {
-        return checkBodyParameterMessageBodyReader(entry);
+        return checkBodyParameterMessageBodyReader(entry) || checkReturnTypeMessageBodyWriter(entry);
     }
 
     /**
@@ -194,12 +195,48 @@ public class QuarkusServerEndpointIndexer
         return false;
     }
 
+    /**
+     * Check whether the Resource Method has a return type for which there exists a matching
+     * {@link jakarta.ws.rs.ext.MessageBodyWriter}
+     * that is not a {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter}.
+     * In this case the Resource Class needs to be registered for reflection because the
+     * {@link jakarta.ws.rs.ext.MessageBodyWriter#isWriteable(Class, java.lang.reflect.Type, Annotation[], MediaType)}
+     * method expects to be passed the method annotations.
+     */
+    private boolean checkReturnTypeMessageBodyWriter(ResourceMethodCallbackEntry entry) {
+        Type returnType = entry.getMethodInfo().returnType();
+        String returnTypeName;
+        switch (returnType.kind()) {
+            case CLASS:
+                returnTypeName = returnType.asClassType().name().toString();
+                break;
+            case PARAMETERIZED_TYPE:
+                returnTypeName = returnType.asParameterizedType().name().toString();
+                break;
+            default:
+                returnTypeName = null;
+        }
+        if (returnTypeName == null) {
+            return false;
+        }
+
+        List<ScannedSerializer> writers = getSerializerScanningResult().getWriters();
+
+        for (ScannedSerializer writer : writers) {
+            if (isSubclassOf(returnTypeName, writer.getHandledClassName())
+                    && !isServerMessageBodyWriter(writer.getClassInfo())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean isSubclassOf(String className, String parentName) {
         if (className.equals(parentName)) {
             return true;
         }
         ClassInfo classByName = index.getClassByName(className);
-        if (classByName == null) {
+        if ((classByName == null) || (classByName.superName() == null)) {
             return false;
         }
         try {
@@ -210,8 +247,12 @@ public class QuarkusServerEndpointIndexer
         }
     }
 
-    private boolean isServerMessageBodyReader(ClassInfo readerClassInfo) {
-        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_READER).contains(readerClassInfo);
+    private boolean isServerMessageBodyReader(ClassInfo classInfo) {
+        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_READER).contains(classInfo);
+    }
+
+    private boolean isServerMessageBodyWriter(ClassInfo classInfo) {
+        return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_WRITER).contains(classInfo);
     }
 
     private void warnAboutMissingJsonProviderIfNeeded(ServerResourceMethod method, MethodInfo info) {

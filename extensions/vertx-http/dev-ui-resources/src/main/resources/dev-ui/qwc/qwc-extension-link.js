@@ -1,4 +1,5 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import 'qui-badge';
@@ -7,18 +8,30 @@ import 'qui-badge';
  * This component adds a custom link on the Extension card
  */
 export class QwcExtensionLink extends QwcHotReloadElement {
-  
+
     static styles = css`
+        :host {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--lumo-contrast-80pct);
+            font-size: small;
+            padding: 2px 5px;
+            text-decoration: none;
+            gap: 5px;
+        }
         .extensionLink {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            color: var(--lumo-contrast);
+            color: var(--lumo-contrast-80pct);
             font-size: small;
             padding: 2px 5px;
             cursor: pointer;
             text-decoration: none;
+            gap: 5px;
         }
         .extensionLink:hover {
             filter: brightness(80%);
@@ -36,6 +49,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
     `;
 
     static properties = {
+        namespace: {type: String},
         extensionName: {type: String},
         iconName: {type: String},
         displayName: {type: String},
@@ -46,13 +60,16 @@ export class QwcExtensionLink extends QwcHotReloadElement {
         webcomponent: {type: String},
         embed: {type: Boolean},
         externalUrl: {type: String},
+        dynamicUrlMethodName: {type: String},
         _effectiveLabel: {state: true},
+        _effectiveExternalUrl: {state: true},
         _observer: {state: false},
     };
   
     _staticLabel = null;
     _dynamicLabel = null;
     _streamingLabel = null;
+    _effectiveExternalUrl = null;
 
     set staticLabel(val) {
         if(!this._staticLabel || (this._staticLabel && this._staticLabel != val)){
@@ -102,6 +119,17 @@ export class QwcExtensionLink extends QwcHotReloadElement {
         if(this._observer){
             this._observer.cancel();
         }
+        
+        if(this.dynamicUrlMethodName){
+            let jrpc = new JsonRpc(this.namespace);
+            jrpc[this.dynamicUrlMethodName]().then(jsonRpcResponse => {
+                this._effectiveExternalUrl = jsonRpcResponse.result;
+                this.requestUpdate();
+            });
+        }else {
+            this._effectiveExternalUrl = this.externalUrl;
+        }
+
         this._effectiveLabel = null;
         if(this.streamingLabel){
             this.jsonRpc = new JsonRpc(this);
@@ -152,32 +180,45 @@ export class QwcExtensionLink extends QwcHotReloadElement {
     }
 
     render() {
-        if(this.path){
-            let routerIgnore = false;
-
-            let p = this.path;
-            let t = "_self";
-            if(!this.embed){
-                routerIgnore = true;
-                p = this.externalUrl;
-                t = "_blank";
-            }
-            return html`
-            <a class="extensionLink" href="${p}" ?router-ignore=${routerIgnore} target="${t}">
-                <span class="iconAndName">
-                    <vaadin-icon class="icon" icon="${this.iconName}"></vaadin-icon>
-                    ${this.displayName} 
-                </span>
-                ${this._renderBadge()} 
-            </a>
-            `;
+        if(!this.embed && this._effectiveExternalUrl) {
+            return html`${this.renderLink(this._effectiveExternalUrl, true, "_blank")}`;
+        }else if(this.path){
+            return html`${this.renderLink(this.path, false, "_self")}`;
         }
     }
     
-    _renderBadge() {
-        if (this._effectiveLabel) {
-            return html`<qui-badge tiny pill><span>${this._effectiveLabel}</span></qui-badge>`;
+    renderLink(linkRef, routerIgnore, target){
+        if(linkRef){
+            return html`
+                <a class="extensionLink" href="${linkRef}" ?router-ignore=${routerIgnore} target="${target}">
+                    <span class="iconAndName">
+                        <vaadin-icon class="icon" icon="${this.iconName}"></vaadin-icon>
+                        ${this.displayName}
+                    </span>
+                    ${this._renderBadge()} 
+                </a>
+                `;
+        }else{
+            return html`<a class="extensionLink" ?router-ignore=true>
+            <span class="iconAndName">
+                <vaadin-icon class="icon" icon="font-awesome-solid:spinner"></vaadin-icon>
+                loading ...
+            </span>
+            ${this._renderBadge()} 
+        </a>`;
         }
     }
+
+    _renderBadge() {
+        if (this._effectiveLabel) {
+            if(this.isHTML(this._effectiveLabel)){
+                return html`${unsafeHTML(this._effectiveLabel)}`;
+            }else{
+                return html`<qui-badge tiny pill><span>${this._effectiveLabel}</span></qui-badge>`;
+            }
+        }
+    }
+
+    isHTML = RegExp.prototype.test.bind(/(<([^>]+)>)/i);
 }
 customElements.define('qwc-extension-link', QwcExtensionLink);

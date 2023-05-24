@@ -883,7 +883,7 @@ public class MockTestCase {
     }
 }
 ----
-<1> `@InjectMock` results in a mock being and is available in test methods of the test class (other test classes are *not* affected by this)
+<1> `@InjectMock` results in a Mockito mock being created, which is then available in test methods of the test class (other test classes are *not* affected by this)
 <2> The `mockableBean1` is configured here for every test method of the class
 <3> Since the `mockableBean2` mock has not been configured, it will return the default Mockito response.
 <4> In this test the `mockableBean2` is configured, so it returns the configured response.

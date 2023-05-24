@@ -13,17 +13,28 @@ import io.quarkus.runtime.MockedThroughWrapper;
 public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> implements Closeable, MockedThroughWrapper {
     private static final Logger log = Logger.getLogger(RestClientReactiveCDIWrapperBase.class);
 
-    private final T delegate;
+    private final Class<T> jaxrsInterface;
+    private final String baseUriFromAnnotation;
+    private final String configKey;
+
+    private T delegate;
     private Object mock;
 
-    public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey) {
-        this.delegate = RestClientCDIDelegateBuilder.createDelegate(jaxrsInterface, baseUriFromAnnotation, configKey);
+    public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation,
+            String configKey, boolean requestScope) {
+        this.jaxrsInterface = jaxrsInterface;
+        this.baseUriFromAnnotation = baseUriFromAnnotation;
+        this.configKey = configKey;
+        if (!requestScope) {
+            // when not using the Request scope, we eagerly create the delegate
+            delegate();
+        }
     }
 
     @Override
     @NoClassInterceptors
     public void close() throws IOException {
-        if (mock == null) {
+        if (mock == null && delegate != null) {
             delegate.close();
         }
     }
@@ -44,7 +55,7 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     @SuppressWarnings("unused")
     @NoClassInterceptors
     public Object getDelegate() {
-        return mock == null ? delegate : mock;
+        return mock == null ? delegate() : mock;
     }
 
     @Override
@@ -57,5 +68,14 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     @NoClassInterceptors
     public void clearMock() {
         this.mock = null;
+    }
+
+    @NoClassInterceptors
+    private T delegate() {
+        if (delegate == null) {
+            delegate = RestClientCDIDelegateBuilder.createDelegate(jaxrsInterface, baseUriFromAnnotation, configKey);
+        }
+
+        return delegate;
     }
 }

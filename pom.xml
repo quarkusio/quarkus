@@ -13,6 +13,7 @@
 
     <artifactId>quarkus-project</artifactId>
     <name>Quarkus - Project pom</name>
+    <version>999-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>Quarkus - Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM</description>

@@ -10,13 +10,13 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class InProcess {
     /**
-     * Explicitly enable use of in-progress.
+     * Explicitly enable use of in-process.
      */
     @ConfigItem(defaultValue = "false")
     public boolean enabled;
 
     /**
-     * Set in-progress name.
+     * Set in-process name.
      */
     @ConfigItem(defaultValue = "quarkus-grpc")
     public String name;

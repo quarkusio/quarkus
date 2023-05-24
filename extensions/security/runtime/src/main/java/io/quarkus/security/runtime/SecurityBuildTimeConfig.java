@@ -15,9 +15,9 @@ public class SecurityBuildTimeConfig {
      * E.g. if enabled, in the following bean, <code>methodB</code> will be denied.
      *
      * <pre>
-     *   {@literal @}ApplicationScoped
+     *   &#064;ApplicationScoped
      *   public class A {
-     *      {@literal @}RolesAllowed("admin")
+     *      &#064;RolesAllowed("admin")
      *      public void methodA() {
      *          ...
      *      }

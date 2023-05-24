@@ -44,11 +44,11 @@ public interface HibernateValidatorBuildTimeConfig {
          * <p>
          * See Section 4.5.5 of the JSR 380 specification, specifically
          *
-         * <pre>
-         * "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may
+         * <blockquote>
+         * In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may
          * be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation.
-         * This would pose a strengthening of preconditions to be fulfilled by the caller."
-         * </pre>
+         * This would pose a strengthening of preconditions to be fulfilled by the caller.
+         * </blockquote>
          */
         @WithDefault("false")
         boolean allowOverridingParameterConstraints();
@@ -59,12 +59,12 @@ public interface HibernateValidatorBuildTimeConfig {
          * <p>
          * See Section 4.5.5 of the JSR 380 specification, specifically
          *
-         * <pre>
-         * "If a sub type overrides/implements a method originally defined in several parallel types of the hierarchy
+         * <blockquote>
+         * If a sub type overrides/implements a method originally defined in several parallel types of the hierarchy
          * (e.g. two interfaces not extending each other, or a class and an interface not implemented by said class),
          * no parameter constraints may be declared for that method at all nor parameters be marked for cascaded validation.
-         * This again is to avoid an unexpected strengthening of preconditions to be fulfilled by the caller."
-         * </pre>
+         * This again is to avoid an unexpected strengthening of preconditions to be fulfilled by the caller.
+         * </blockquote>
          */
         @WithDefault("false")
         boolean allowParameterConstraintsOnParallelMethods();
@@ -75,12 +75,12 @@ public interface HibernateValidatorBuildTimeConfig {
          * <p>
          * See Section 4.5.5 of the JSR 380 specification, specifically
          *
-         * <pre>
-         * "One must not mark a method return value for cascaded validation more than once in a line of a class hierarchy.
+         * <blockquote>
+         * One must not mark a method return value for cascaded validation more than once in a line of a class hierarchy.
          * In other words, overriding methods on sub types (be it sub classes/interfaces or interface implementations)
          * cannot mark the return value for cascaded validation if the return value has already been marked on the
-         * overridden method of the super type or interface."
-         * </pre>
+         * overridden method of the super type or interface.
+         * </blockquote>
          */
         @WithDefault("false")
         boolean allowMultipleCascadedValidationOnReturnValues();

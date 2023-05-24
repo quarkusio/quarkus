@@ -147,13 +147,13 @@ public class JibConfig {
      * List of target platforms. Each platform is defined using the pattern:
      *
      * <pre>
-     *  {@literal <os>|<arch>[/variant]|<os>/<arch>[/variant]}
+     * &lt;os>|&lt;arch>[/variant]|&lt;os>/&lt;arch>[/variant]
      * </pre>
      *
      * for example:
      *
      * <pre>
-     * {@literal linux/amd64,linux/arm64/v8}
+     * linux/amd64,linux/arm64/v8
      * </pre>
      *
      * If not specified, OS default is linux and architecture default is {@code amd64}.

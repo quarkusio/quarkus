@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.common.processor;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
+
 import java.util.List;
 import java.util.function.Function;
 
@@ -24,7 +26,7 @@ public class TypeArgMapper implements Function<String, Type> {
         ClassInfo declarer = declaringClass;
         int pos = -1;
         for (;;) {
-            if (declarer == null) {
+            if (declarer == null || OBJECT.equals(declarer.name())) {
                 return null;
             }
             List<TypeVariable> typeParameters = declarer.typeParameters();

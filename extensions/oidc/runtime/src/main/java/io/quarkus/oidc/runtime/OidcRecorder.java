@@ -156,13 +156,13 @@ public class OidcRecorder {
 
         try {
             verifyAuthServerUrl(oidcConfig);
-            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, isServiceApp(oidcConfig), true);
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, OidcUtils.isServiceApp(oidcConfig), true);
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
         }
 
         if (!oidcConfig.discoveryEnabled.orElse(true)) {
-            if (!isServiceApp(oidcConfig)) {
+            if (!OidcUtils.isServiceApp(oidcConfig)) {
                 if (!oidcConfig.authorizationPath.isPresent() || !oidcConfig.tokenPath.isPresent()) {
                     throw new ConfigurationException(
                             "'web-app' applications must have 'authorization-path' and 'token-path' properties "
@@ -183,7 +183,7 @@ public class OidcRecorder {
             }
         }
 
-        if (isServiceApp(oidcConfig)) {
+        if (OidcUtils.isServiceApp(oidcConfig)) {
             if (oidcConfig.token.refreshExpired) {
                 throw new ConfigurationException(
                         "The 'token.refresh-expired' property can only be enabled for " + ApplicationType.WEB_APP
@@ -219,7 +219,7 @@ public class OidcRecorder {
     }
 
     private static TenantConfigContext createTenantContextFromPublicKey(OidcTenantConfig oidcConfig) {
-        if (!isServiceApp(oidcConfig)) {
+        if (!OidcUtils.isServiceApp(oidcConfig)) {
             throw new ConfigurationException("'public-key' property can only be used with the 'service' applications");
         }
         LOG.debug("'public-key' property for the local token verification is set,"
@@ -359,6 +359,7 @@ public class OidcRecorder {
                         }
                         return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
                     }
+
                 });
     }
 
@@ -376,15 +377,10 @@ public class OidcRecorder {
                 oidcConfig.token.issuer.orElse(null));
     }
 
-    private static boolean isServiceApp(OidcTenantConfig oidcConfig) {
-        return ApplicationType.SERVICE.equals(oidcConfig.applicationType.orElse(ApplicationType.SERVICE));
-    }
-
     private static void verifyAuthServerUrl(OidcCommonConfig oidcConfig) {
         if (!oidcConfig.getAuthServerUrl().isPresent()) {
             throw new ConfigurationException("'quarkus.oidc.auth-server-url' property must be configured");
         }
         OidcCommonUtils.verifyEndpointUrl(oidcConfig.getAuthServerUrl().get());
     }
-
 }

@@ -81,6 +81,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("devui/", contextRoot);
         // Quarkus Web Components
         internalImportMapBuildItem.add("qwc/", contextRoot + "qwc/");
+        internalImportMapBuildItem.add("qwc-no-data", contextRoot + "qwc/qwc-no-data.js");
         internalImportMapBuildItem.add("qwc-hot-reload-element", contextRoot + "qwc/qwc-hot-reload-element.js");
         internalImportMapBuildItem.add("qwc-server-log", contextRoot + "qwc/qwc-server-log.js");
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");

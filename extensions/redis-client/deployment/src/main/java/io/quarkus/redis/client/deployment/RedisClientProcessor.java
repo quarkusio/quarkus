@@ -182,12 +182,12 @@ public class RedisClientProcessor {
         recorder.cleanup(shutdown);
 
         // Handle data import
-        preloadRedisData(DEFAULT_CLIENT_NAME, buildTimeConfig.defaultRedisClient, applicationArchivesBuildItem,
+        preloadRedisData(DEFAULT_CLIENT_NAME, buildTimeConfig.defaultRedisClient(), applicationArchivesBuildItem,
                 launchMode.getLaunchMode(),
                 nativeImageResources, hotDeploymentWatchedFiles, recorder);
 
-        if (buildTimeConfig.namedRedisClients != null) {
-            for (Map.Entry<String, RedisClientBuildTimeConfig> entry : buildTimeConfig.namedRedisClients.entrySet()) {
+        if (buildTimeConfig.namedRedisClients() != null) {
+            for (Map.Entry<String, RedisClientBuildTimeConfig> entry : buildTimeConfig.namedRedisClients().entrySet()) {
                 preloadRedisData(entry.getKey(), entry.getValue(), applicationArchivesBuildItem, launchMode.getLaunchMode(),
                         nativeImageResources, hotDeploymentWatchedFiles, recorder);
             }
@@ -197,10 +197,10 @@ public class RedisClientProcessor {
     static Set<String> configuredClientNames(RedisBuildTimeConfig buildTimeConfig, Config config) {
         Set<String> names = new HashSet<>();
         // redis client names from dev services
-        if (buildTimeConfig.defaultDevService.devservices.enabled) {
+        if (buildTimeConfig.defaultDevService().devservices().enabled()) {
             names.add(DEFAULT_CLIENT_NAME);
         }
-        names.addAll(buildTimeConfig.additionalDevServices.keySet());
+        names.addAll(buildTimeConfig.additionalDevServices().keySet());
         // redis client names declared in config
         for (String propertyName : config.getPropertyNames()) {
             if (propertyName.equals("quarkus.redis.hosts")) {
@@ -255,12 +255,12 @@ public class RedisClientProcessor {
             if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                 // enlist resource if present
                 nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
-            } else if (clientConfig != null && clientConfig.loadScript.isPresent()) {
+            } else if (clientConfig != null && clientConfig.loadScript().isPresent()) {
                 //raise exception if explicit file is not present (i.e. not the default)
                 throw new ConfigurationException(
                         "Unable to find file referenced in '"
                                 + RedisConfig.propertyKey(name, "redis-load-script") + "="
-                                + String.join(", ", clientConfig.loadScript.get())
+                                + String.join(", ", clientConfig.loadScript().get())
                                 + "'. Remove property or add file to your path.");
             }
             // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
@@ -274,7 +274,7 @@ public class RedisClientProcessor {
 
         if (!paths.isEmpty()) {
             if (clientConfig != null) {
-                recorder.preload(name, paths, clientConfig.flushBeforeLoad, clientConfig.loadOnlyIfEmpty);
+                recorder.preload(name, paths, clientConfig.flushBeforeLoad(), clientConfig.loadOnlyIfEmpty());
             } else {
                 recorder.preload(name, paths, true, true);
             }
@@ -285,7 +285,7 @@ public class RedisClientProcessor {
     @BuildStep
     HealthBuildItem addHealthCheck(RedisBuildTimeConfig buildTimeConfig) {
         return new HealthBuildItem("io.quarkus.redis.runtime.client.health.RedisHealthCheck",
-                buildTimeConfig.healthEnabled);
+                buildTimeConfig.healthEnabled());
     }
 
     public static final String NO_REDIS_SCRIPT_FILE = "no-file";
@@ -294,7 +294,7 @@ public class RedisClientProcessor {
         if (config == null) {
             return List.of("import.redis");
         }
-        var scripts = config.loadScript;
+        var scripts = config.loadScript();
         if (scripts.isPresent()) {
             return scripts.get().stream()
                     .filter(s -> !NO_REDIS_SCRIPT_FILE.equalsIgnoreCase(s))

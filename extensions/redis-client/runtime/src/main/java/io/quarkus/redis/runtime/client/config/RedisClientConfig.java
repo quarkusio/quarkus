@@ -5,16 +5,17 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 import io.vertx.redis.client.RedisClientType;
 import io.vertx.redis.client.RedisReplicas;
 import io.vertx.redis.client.RedisRole;
 
-@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 @ConfigGroup
-public class RedisClientConfig {
+public interface RedisClientConfig {
+
     /**
      * The redis hosts to use while connecting to the redis server. Only the cluster and sentinel modes will consider more than
      * 1 element.
@@ -25,8 +26,7 @@ public class RedisClientConfig {
      *
      * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
      */
-    @ConfigItem(name = RedisConfig.HOSTS_CONFIG_NAME)
-    public Optional<Set<URI>> hosts;
+    Optional<Set<URI>> hosts();
 
     /**
      * The hosts provider bean name.
@@ -37,75 +37,72 @@ public class RedisClientConfig {
      * <p>
      * Used when `quarkus.redis.hosts` is not set.
      */
-    @ConfigItem
-    public Optional<String> hostsProviderName;
+    Optional<String> hostsProviderName();
 
     /**
      * The maximum delay to wait before a blocking command to redis server times out
      */
-    @ConfigItem(defaultValue = "10s")
-    public Duration timeout;
+    @WithDefault("10s")
+    Duration timeout();
 
     /**
      * The redis client type.
      * Accepted values are: {@code STANDALONE} (default), {@code CLUSTER}, {@code REPLICATION}, {@code SENTINEL}.
      */
-    @ConfigItem(defaultValue = "standalone")
-    public RedisClientType clientType;
+    @WithDefault("standalone")
+    RedisClientType clientType();
 
     /**
      * The master name (only considered in HA mode).
      */
-    @ConfigItem(defaultValueDocumentation = "my-master")
-    public Optional<String> masterName;
+    @ConfigDocDefault("my-master")
+    Optional<String> masterName();
 
     /**
      * The role name (only considered in Sentinel / HA mode).
      * Accepted values are: {@code MASTER}, {@code REPLICA}, {@code SENTINEL}.
      */
-    @ConfigItem(defaultValueDocumentation = "master")
-    public Optional<RedisRole> role;
+    @ConfigDocDefault("master")
+    Optional<RedisRole> role();
 
     /**
      * Whether to use replicas nodes (only considered in Cluster mode).
      * Accepted values are: {@code ALWAYS}, {@code NEVER}, {@code SHARE}.
      */
-    @ConfigItem(defaultValueDocumentation = "never")
-    public Optional<RedisReplicas> replicas;
+    @ConfigDocDefault("never")
+    Optional<RedisReplicas> replicas();
 
     /**
      * The default password for cluster/sentinel connections.
      * <p>
      * If not set it will try to extract the value from the current default {@code #hosts}.
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * The maximum size of the connection pool. When working with cluster or sentinel.
      * <p>
      * This value should be at least the total number of cluster member (or number of sentinels + 1)
      */
-    @ConfigItem(defaultValue = "6")
-    public int maxPoolSize;
+    @WithDefault("6")
+    int maxPoolSize();
 
     /**
      * The maximum waiting requests for a connection from the pool.
      */
-    @ConfigItem(defaultValue = "24")
-    public int maxPoolWaiting;
+    @WithDefault("24")
+    int maxPoolWaiting();
 
     /**
      * The duration indicating how often should the connection pool cleaner executes.
      */
-    @ConfigItem
-    public Optional<Duration> poolCleanerInterval;
+    Optional<Duration> poolCleanerInterval();
 
     /**
      * The timeout for a connection recycling.
      */
-    @ConfigItem(defaultValue = "15")
-    public Duration poolRecycleTimeout;
+    @WithDefault("15")
+    Duration poolRecycleTimeout();
 
     /**
      * Sets how many handlers is the client willing to queue.
@@ -113,69 +110,66 @@ public class RedisClientConfig {
      * The client will always work on pipeline mode, this means that messages can start queueing.
      * Using this configuration option, you can control how much backlog you're willing to accept.
      */
-    @ConfigItem(defaultValue = "2048")
-    public int maxWaitingHandlers;
+    @WithDefault("2048")
+    int maxWaitingHandlers();
 
     /**
      * Tune how much nested arrays are allowed on a redis response. This affects the parser performance.
      */
-    @ConfigItem(defaultValue = "32")
-    public int maxNestedArrays;
+    @WithDefault("32")
+    int maxNestedArrays();
 
     /**
      * The number of reconnection attempts when a pooled connection cannot be established on first try.
      */
-    @ConfigItem(defaultValue = "0")
-    public int reconnectAttempts;
+    @WithDefault("0")
+    int reconnectAttempts();
 
     /**
      * The interval between reconnection attempts when a pooled connection cannot be established on first try.
      */
-    @ConfigItem(defaultValue = "1")
-    public Duration reconnectInterval;
+    @WithDefault("1")
+    Duration reconnectInterval();
 
     /**
      * Should the client perform {@code RESP protocol negotiation during the connection handshake.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean protocolNegotiation;
+    @WithDefault("true")
+    boolean protocolNegotiation();
 
     /**
      * TCP config.
      */
-    @ConfigItem
     @ConfigDocSection
-    public NetConfig tcp;
+    NetConfig tcp();
 
     /**
      * SSL/TLS config.
      */
-    @ConfigItem
     @ConfigDocSection
-    public TlsConfig tls;
+    TlsConfig tls();
 
-    @Override
-    public String toString() {
+    default String toDebugString() {
         return "RedisClientConfig{" +
-                "hosts=" + hosts +
-                ", hostsProviderName=" + hostsProviderName +
-                ", timeout=" + timeout +
-                ", clientType=" + clientType +
-                ", masterName=" + masterName +
-                ", role=" + role +
-                ", replicas=" + replicas +
-                ", password=" + password +
-                ", maxPoolSize=" + maxPoolSize +
-                ", maxPoolWaiting=" + maxPoolWaiting +
-                ", poolCleanerInterval=" + poolCleanerInterval +
-                ", poolRecycleTimeout=" + poolRecycleTimeout +
-                ", maxWaitingHandlers=" + maxWaitingHandlers +
-                ", maxNestedArrays=" + maxNestedArrays +
-                ", reconnectAttempts=" + reconnectAttempts +
-                ", reconnectInterval=" + reconnectInterval +
-                ", protocolNegotiation=" + protocolNegotiation +
-                ", tcp=" + tcp +
-                ", tls=" + tls +
+                "hosts=" + hosts() +
+                ", hostsProviderName=" + hostsProviderName() +
+                ", timeout=" + timeout() +
+                ", clientType=" + clientType() +
+                ", masterName=" + masterName() +
+                ", role=" + role() +
+                ", replicas=" + replicas() +
+                ", password=" + password() +
+                ", maxPoolSize=" + maxPoolSize() +
+                ", maxPoolWaiting=" + maxPoolWaiting() +
+                ", poolCleanerInterval=" + poolCleanerInterval() +
+                ", poolRecycleTimeout=" + poolRecycleTimeout() +
+                ", maxWaitingHandlers=" + maxWaitingHandlers() +
+                ", maxNestedArrays=" + maxNestedArrays() +
+                ", reconnectAttempts=" + reconnectAttempts() +
+                ", reconnectInterval=" + reconnectInterval() +
+                ", protocolNegotiation=" + protocolNegotiation() +
+                ", tcp=" + tcp() +
+                ", tls=" + tls() +
                 '}';
     }
 

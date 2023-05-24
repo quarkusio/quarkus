@@ -3,12 +3,15 @@ package io.quarkus.redis.client.deployment;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.redis.client.deployment.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
@@ -34,14 +37,10 @@ public class RedisConfigClientNamesTest {
     @Test
     void testWithEmptyConfig() {
         createConfig(Map.of());
-        DevServicesConfig devservices = new DevServicesConfig();
 
-        RedisBuildTimeConfig.DevServiceConfiguration devService = new RedisBuildTimeConfig.DevServiceConfiguration();
-        devService.devservices = devservices;
-
-        RedisBuildTimeConfig redisBuildTimeConfig = new RedisBuildTimeConfig();
-        redisBuildTimeConfig.defaultDevService = devService;
-        redisBuildTimeConfig.additionalDevServices = Map.of();
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                createDevServiceConfiguration(false),
+                Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
         assertThat(names).isEmpty();
@@ -50,15 +49,10 @@ public class RedisConfigClientNamesTest {
     @Test
     void testWithDefaultConfig() {
         createConfig(Map.of());
-        DevServicesConfig devservices = new DevServicesConfig();
-        devservices.enabled = true;
 
-        RedisBuildTimeConfig.DevServiceConfiguration devService = new RedisBuildTimeConfig.DevServiceConfiguration();
-        devService.devservices = devservices;
-
-        RedisBuildTimeConfig redisBuildTimeConfig = new RedisBuildTimeConfig();
-        redisBuildTimeConfig.defaultDevService = devService;
-        redisBuildTimeConfig.additionalDevServices = Map.of();
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                createDevServiceConfiguration(true),
+                Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
         assertThat(names).containsOnly("<default>");
@@ -67,21 +61,10 @@ public class RedisConfigClientNamesTest {
     @Test
     void testWithAdditionalDevServices() {
         createConfig(Map.of());
-        DevServicesConfig devservicesCfg = new DevServicesConfig();
-        devservicesCfg.enabled = true;
 
-        RedisBuildTimeConfig.DevServiceConfiguration devService = new RedisBuildTimeConfig.DevServiceConfiguration();
-        devService.devservices = devservicesCfg;
-
-        RedisBuildTimeConfig redisBuildTimeConfig = new RedisBuildTimeConfig();
-        redisBuildTimeConfig.defaultDevService = devService;
-
-        DevServicesConfig additionalDevService = new DevServicesConfig();
-        additionalDevService.enabled = true;
-
-        RedisBuildTimeConfig.DevServiceConfiguration additional = new RedisBuildTimeConfig.DevServiceConfiguration();
-        additional.devservices = additionalDevService;
-        redisBuildTimeConfig.additionalDevServices = Map.of("additional", additional);
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                createDevServiceConfiguration(true),
+                Map.of("additional", createDevServiceConfiguration(true)));
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
         assertThat(names).containsOnly("<default>", "additional");
@@ -90,21 +73,10 @@ public class RedisConfigClientNamesTest {
     @Test
     void testWithDisabledDefaultDevServiceConfig() {
         createConfig(Map.of());
-        DevServicesConfig devservicesCfg = new DevServicesConfig();
-        devservicesCfg.enabled = false;
 
-        RedisBuildTimeConfig.DevServiceConfiguration devService = new RedisBuildTimeConfig.DevServiceConfiguration();
-        devService.devservices = devservicesCfg;
-
-        RedisBuildTimeConfig redisBuildTimeConfig = new RedisBuildTimeConfig();
-        redisBuildTimeConfig.defaultDevService = devService;
-
-        DevServicesConfig additionalDevService = new DevServicesConfig();
-        additionalDevService.enabled = true;
-
-        RedisBuildTimeConfig.DevServiceConfiguration additional = new RedisBuildTimeConfig.DevServiceConfiguration();
-        additional.devservices = additionalDevService;
-        redisBuildTimeConfig.additionalDevServices = Map.of("additional", additional);
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                createDevServiceConfiguration(false),
+                Map.of("additional", createDevServiceConfiguration(true)));
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
         assertThat(names).containsOnly("additional");
@@ -113,16 +85,10 @@ public class RedisConfigClientNamesTest {
     @Test
     void testWithDisabledDefaultDevServiceWithHostsConfig() {
         createConfig(Map.of("quarkus.redis.hosts", "redis://localhost:1234"));
-        DevServicesConfig devservicesCfg = new DevServicesConfig();
-        devservicesCfg.enabled = false;
 
-        RedisBuildTimeConfig.DevServiceConfiguration devService = new RedisBuildTimeConfig.DevServiceConfiguration();
-        devService.devservices = devservicesCfg;
-
-        RedisBuildTimeConfig redisBuildTimeConfig = new RedisBuildTimeConfig();
-        redisBuildTimeConfig.defaultDevService = devService;
-
-        redisBuildTimeConfig.additionalDevServices = Map.of();
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                createDevServiceConfiguration(false),
+                Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
         assertThat(names).containsOnly("<default>");
@@ -132,18 +98,90 @@ public class RedisConfigClientNamesTest {
     void testWithDisabledDefaultDevServiceWithAdditionalHostsConfig() {
         createConfig(Map.of("quarkus.redis.my-redis.hosts", "redis://localhost:5678",
                 "quarkus.redis.my-redis-2.hosts-provider-name", "my-redis-2-provider"));
-        DevServicesConfig devservicesCfg = new DevServicesConfig();
-        devservicesCfg.enabled = false;
 
-        RedisBuildTimeConfig.DevServiceConfiguration devService = new RedisBuildTimeConfig.DevServiceConfiguration();
-        devService.devservices = devservicesCfg;
-
-        RedisBuildTimeConfig redisBuildTimeConfig = new RedisBuildTimeConfig();
-        redisBuildTimeConfig.defaultDevService = devService;
-
-        redisBuildTimeConfig.additionalDevServices = Map.of();
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
+                createDevServiceConfiguration(false),
+                Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
         assertThat(names).containsOnly("my-redis", "my-redis-2");
+    }
+
+    private static RedisBuildTimeConfig createRedisBuildTimeConfig(DevServiceConfiguration defaultDevService,
+            Map<String, DevServiceConfiguration> additionalDevServices) {
+        RedisBuildTimeConfig redisBuildTimeConfig = new RedisBuildTimeConfig() {
+
+            @Override
+            public RedisClientBuildTimeConfig defaultRedisClient() {
+                return null;
+            }
+
+            @Override
+            public Map<String, RedisClientBuildTimeConfig> namedRedisClients() {
+                return Map.of();
+            }
+
+            @Override
+            public boolean healthEnabled() {
+                return false;
+            }
+
+            @Override
+            public DevServiceConfiguration defaultDevService() {
+                return defaultDevService;
+            }
+
+            @Override
+            public Map<String, DevServiceConfiguration> additionalDevServices() {
+                return additionalDevServices;
+            }
+        };
+
+        return redisBuildTimeConfig;
+    }
+
+    private static DevServiceConfiguration createDevServiceConfiguration(boolean enabled) {
+        DevServicesConfig devServicesConfig = new DevServicesConfig() {
+
+            @Override
+            public boolean enabled() {
+                return enabled;
+            }
+
+            @Override
+            public Optional<String> imageName() {
+                return Optional.empty();
+            }
+
+            @Override
+            public OptionalInt port() {
+                return OptionalInt.empty();
+            }
+
+            @Override
+            public boolean shared() {
+                return false;
+            }
+
+            @Override
+            public String serviceName() {
+                return null;
+            }
+
+            @Override
+            public Map<String, String> containerEnv() {
+                return Map.of();
+            }
+        };
+
+        DevServiceConfiguration devServiceConfiguration = new DevServiceConfiguration() {
+
+            @Override
+            public DevServicesConfig devservices() {
+                return devServicesConfig;
+            }
+        };
+
+        return devServiceConfiguration;
     }
 }

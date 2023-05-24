@@ -45,13 +45,13 @@ public class VertxRedisClientFactory {
         RedisOptions options = new RedisOptions();
 
         List<URI> hosts = new ArrayList<>();
-        if (config.hosts.isPresent()) {
-            hosts.addAll(config.hosts.get());
-            for (URI uri : config.hosts.get()) {
+        if (config.hosts().isPresent()) {
+            hosts.addAll(config.hosts().get());
+            for (URI uri : config.hosts().get()) {
                 options.addConnectionString(uri.toString().trim());
             }
-        } else if (config.hostsProviderName.isPresent()) {
-            RedisHostsProvider hostsProvider = findProvider(config.hostsProviderName.get());
+        } else if (config.hostsProviderName().isPresent()) {
+            RedisHostsProvider hostsProvider = findProvider(config.hostsProviderName().get());
             Set<URI> computedHosts = hostsProvider.getHosts();
             hosts.addAll(computedHosts);
             for (URI uri : computedHosts) {
@@ -62,26 +62,26 @@ public class VertxRedisClientFactory {
                     " 'quarkus.redis.host-provider-name' and have a bean providing the hosts programmatically.");
         }
 
-        if (RedisClientType.STANDALONE == config.clientType) {
+        if (RedisClientType.STANDALONE == config.clientType()) {
             if (hosts.size() > 1) {
                 throw new ConfigurationException("Multiple Redis hosts supplied for non-clustered configuration");
             }
         }
 
-        config.masterName.ifPresent(options::setMasterName);
-        options.setMaxNestedArrays(config.maxNestedArrays);
-        options.setMaxPoolSize(config.maxPoolSize);
-        options.setMaxPoolWaiting(config.maxPoolWaiting);
-        options.setMaxWaitingHandlers(config.maxWaitingHandlers);
+        config.masterName().ifPresent(options::setMasterName);
+        options.setMaxNestedArrays(config.maxNestedArrays());
+        options.setMaxPoolSize(config.maxPoolSize());
+        options.setMaxPoolWaiting(config.maxPoolWaiting());
+        options.setMaxWaitingHandlers(config.maxWaitingHandlers());
 
-        options.setProtocolNegotiation(config.protocolNegotiation);
-        options.setPassword(config.password.orElse(null));
-        config.poolCleanerInterval.ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
-        options.setPoolRecycleTimeout((int) config.poolRecycleTimeout.toMillis());
+        options.setProtocolNegotiation(config.protocolNegotiation());
+        options.setPassword(config.password().orElse(null));
+        config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
+        options.setPoolRecycleTimeout((int) config.poolRecycleTimeout().toMillis());
 
-        config.role.ifPresent(options::setRole);
-        options.setType(config.clientType);
-        config.replicas.ifPresent(options::setUseReplicas);
+        config.role().ifPresent(options::setRole);
+        options.setType(config.clientType());
+        config.replicas().ifPresent(options::setUseReplicas);
 
         options.setNetClientOptions(toNetClientOptions(config));
 
@@ -107,61 +107,61 @@ public class VertxRedisClientFactory {
     }
 
     private static NetClientOptions toNetClientOptions(RedisClientConfig config) {
-        NetConfig tcp = config.tcp;
-        TlsConfig tls = config.tls;
+        NetConfig tcp = config.tcp();
+        TlsConfig tls = config.tls();
         NetClientOptions net = new NetClientOptions();
 
-        tcp.alpn.ifPresent(net::setUseAlpn);
-        tcp.applicationLayerProtocols.ifPresent(net::setApplicationLayerProtocols);
-        tcp.connectionTimeout.ifPresent(d -> net.setConnectTimeout((int) d.toMillis()));
-        tls.hostnameVerificationAlgorithm.ifPresent(net::setHostnameVerificationAlgorithm);
-        tcp.idleTimeout.ifPresent(d -> net.setIdleTimeout((int) d.toSeconds()));
+        tcp.alpn().ifPresent(net::setUseAlpn);
+        tcp.applicationLayerProtocols().ifPresent(net::setApplicationLayerProtocols);
+        tcp.connectionTimeout().ifPresent(d -> net.setConnectTimeout((int) d.toMillis()));
+        tls.hostnameVerificationAlgorithm().ifPresent(net::setHostnameVerificationAlgorithm);
+        tcp.idleTimeout().ifPresent(d -> net.setIdleTimeout((int) d.toSeconds()));
 
-        tcp.keepAlive.ifPresent(b -> net.setTcpKeepAlive(true));
-        tcp.noDelay.ifPresent(b -> net.setTcpNoDelay(true));
+        tcp.keepAlive().ifPresent(b -> net.setTcpKeepAlive(true));
+        tcp.noDelay().ifPresent(b -> net.setTcpNoDelay(true));
 
-        net.setSsl(tls.enabled).setTrustAll(tls.trustAll);
+        net.setSsl(tls.enabled()).setTrustAll(tls.trustAll());
 
-        configurePemTrustOptions(net, tls.trustCertificatePem);
-        configureJksTrustOptions(net, tls.trustCertificateJks);
-        configurePfxTrustOptions(net, tls.trustCertificatePfx);
+        configurePemTrustOptions(net, tls.trustCertificatePem());
+        configureJksTrustOptions(net, tls.trustCertificateJks());
+        configurePfxTrustOptions(net, tls.trustCertificatePfx());
 
-        configurePemKeyCertOptions(net, tls.keyCertificatePem);
-        configureJksKeyCertOptions(net, tls.keyCertificateJks);
-        configurePfxKeyCertOptions(net, tls.keyCertificatePfx);
+        configurePemKeyCertOptions(net, tls.keyCertificatePem());
+        configureJksKeyCertOptions(net, tls.keyCertificateJks());
+        configurePfxKeyCertOptions(net, tls.keyCertificatePfx());
 
-        net.setReconnectAttempts(config.reconnectAttempts);
-        net.setReconnectInterval(config.reconnectInterval.toMillis());
+        net.setReconnectAttempts(config.reconnectAttempts());
+        net.setReconnectInterval(config.reconnectInterval().toMillis());
 
-        tcp.localAddress.ifPresent(net::setLocalAddress);
-        tcp.nonProxyHosts.ifPresent(net::setNonProxyHosts);
-        tcp.proxyOptions.ifPresent(s -> {
+        tcp.localAddress().ifPresent(net::setLocalAddress);
+        tcp.nonProxyHosts().ifPresent(net::setNonProxyHosts);
+        if (tcp.proxyOptions().host().isPresent()) {
             ProxyOptions po = new ProxyOptions();
-            po.setHost(s.host);
-            po.setType(s.type);
-            po.setPort(s.port);
-            s.username.ifPresent(po::setUsername);
-            s.password.ifPresent(po::setPassword);
+            po.setHost(tcp.proxyOptions().host().get());
+            po.setType(tcp.proxyOptions().type());
+            po.setPort(tcp.proxyOptions().port());
+            tcp.proxyOptions().username().ifPresent(po::setUsername);
+            tcp.proxyOptions().password().ifPresent(po::setPassword);
             net.setProxyOptions(po);
-        });
-        tcp.readIdleTimeout.ifPresent(d -> net.setReadIdleTimeout((int) d.toSeconds()));
-        tcp.reconnectAttempts.ifPresent(net::setReconnectAttempts);
-        tcp.reconnectInterval.ifPresent(v -> net.setReconnectInterval(v.toMillis()));
-        tcp.reuseAddress.ifPresent(net::setReuseAddress);
-        tcp.reusePort.ifPresent(net::setReusePort);
-        tcp.receiveBufferSize.ifPresent(net::setReceiveBufferSize);
-        tcp.sendBufferSize.ifPresent(net::setSendBufferSize);
-        tcp.soLinger.ifPresent(d -> net.setSoLinger((int) d.toMillis()));
-        tcp.secureTransportProtocols.ifPresent(net::setEnabledSecureTransportProtocols);
-        tcp.trafficClass.ifPresent(net::setTrafficClass);
-        tcp.noDelay.ifPresent(net::setTcpNoDelay);
-        tcp.cork.ifPresent(net::setTcpCork);
-        tcp.keepAlive.ifPresent(net::setTcpKeepAlive);
-        tcp.fastOpen.ifPresent(net::setTcpFastOpen);
-        tcp.quickAck.ifPresent(net::setTcpQuickAck);
-        tcp.writeIdleTimeout.ifPresent(d -> net.setWriteIdleTimeout((int) d.toSeconds()));
+        }
+        tcp.readIdleTimeout().ifPresent(d -> net.setReadIdleTimeout((int) d.toSeconds()));
+        tcp.reconnectAttempts().ifPresent(net::setReconnectAttempts);
+        tcp.reconnectInterval().ifPresent(v -> net.setReconnectInterval(v.toMillis()));
+        tcp.reuseAddress().ifPresent(net::setReuseAddress);
+        tcp.reusePort().ifPresent(net::setReusePort);
+        tcp.receiveBufferSize().ifPresent(net::setReceiveBufferSize);
+        tcp.sendBufferSize().ifPresent(net::setSendBufferSize);
+        tcp.soLinger().ifPresent(d -> net.setSoLinger((int) d.toMillis()));
+        tcp.secureTransportProtocols().ifPresent(net::setEnabledSecureTransportProtocols);
+        tcp.trafficClass().ifPresent(net::setTrafficClass);
+        tcp.noDelay().ifPresent(net::setTcpNoDelay);
+        tcp.cork().ifPresent(net::setTcpCork);
+        tcp.keepAlive().ifPresent(net::setTcpKeepAlive);
+        tcp.fastOpen().ifPresent(net::setTcpFastOpen);
+        tcp.quickAck().ifPresent(net::setTcpQuickAck);
+        tcp.writeIdleTimeout().ifPresent(d -> net.setWriteIdleTimeout((int) d.toSeconds()));
 
-        tls.hostnameVerificationAlgorithm.ifPresent(net::setHostnameVerificationAlgorithm);
+        tls.hostnameVerificationAlgorithm().ifPresent(net::setHostnameVerificationAlgorithm);
 
         return net;
     }

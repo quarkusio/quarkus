@@ -70,8 +70,8 @@ public class DevServicesRedisProcessor {
             LoggingSetupBuildItem loggingSetupBuildItem,
             GlobalDevServicesConfig devServicesConfig) {
 
-        Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices);
-        currentDevServicesConfiguration.put(RedisConfig.DEFAULT_CLIENT_NAME, config.defaultDevService);
+        Map<String, DevServiceConfiguration> currentDevServicesConfiguration = new HashMap<>(config.additionalDevServices());
+        currentDevServicesConfiguration.put(RedisConfig.DEFAULT_CLIENT_NAME, config.defaultDevService());
 
         // figure out if we need to shut down and restart existing redis containers
         // if not and the redis containers have already started we just return
@@ -101,7 +101,7 @@ public class DevServicesRedisProcessor {
             for (Entry<String, DevServiceConfiguration> entry : currentDevServicesConfiguration.entrySet()) {
                 String connectionName = entry.getKey();
                 RunningDevService devService = startContainer(dockerStatusBuildItem, connectionName,
-                        entry.getValue().devservices,
+                        entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
                         !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout);
                 if (devService == null) {
@@ -148,7 +148,7 @@ public class DevServicesRedisProcessor {
     private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem, String name,
             DevServicesConfig devServicesConfig, LaunchMode launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
-        if (!devServicesConfig.enabled) {
+        if (!devServicesConfig.enabled()) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (RedisConfig.isDefaultClient(name) ? "default redis client" : name)
                     + " as it has been disabled in the config");
@@ -171,21 +171,21 @@ public class DevServicesRedisProcessor {
             return null;
         }
 
-        DockerImageName dockerImageName = DockerImageName.parse(devServicesConfig.imageName.orElse(REDIS_7_ALPINE))
+        DockerImageName dockerImageName = DockerImageName.parse(devServicesConfig.imageName().orElse(REDIS_7_ALPINE))
                 .asCompatibleSubstituteFor(REDIS_7_ALPINE);
 
         Supplier<RunningDevService> defaultRedisServerSupplier = () -> {
-            QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port,
-                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork);
+            QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port(),
+                    launchMode == DEVELOPMENT ? devServicesConfig.serviceName() : null, useSharedNetwork);
             timeout.ifPresent(redisContainer::withStartupTimeout);
-            redisContainer.withEnv(devServicesConfig.containerEnv);
+            redisContainer.withEnv(devServicesConfig.containerEnv());
             redisContainer.start();
             String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
             return new RunningDevService(Feature.REDIS_CLIENT.getName(), redisContainer.getContainerId(),
                     redisContainer::close, configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisHost);
         };
 
-        return redisContainerLocator.locateContainer(devServicesConfig.serviceName, devServicesConfig.shared, launchMode)
+        return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
                 .map(containerAddress -> {
                     String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
                     return new RunningDevService(Feature.REDIS_CLIENT.getName(), containerAddress.getId(),

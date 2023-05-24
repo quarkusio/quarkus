@@ -103,10 +103,10 @@ public class RedisClientRecorder {
 
     static Optional<RedisClientConfig> getConfigForName(RedisConfig cfg, String name) {
         if (RedisConfig.isDefaultClient(name)) {
-            return Optional.ofNullable(cfg.defaultRedisClient);
+            return Optional.ofNullable(cfg.defaultRedisClient());
         }
 
-        for (Map.Entry<String, RedisClientConfig> entry : cfg.namedRedisClients.entrySet()) {
+        for (Map.Entry<String, RedisClientConfig> entry : cfg.namedRedisClients().entrySet()) {
             if (entry.getKey().equalsIgnoreCase(name)) {
                 return Optional.of(entry.getValue());
             }
@@ -192,9 +192,9 @@ public class RedisClientRecorder {
     private Duration getTimeoutForClient(String name) {
         Duration timeout;
         if (RedisConfig.isDefaultClient(name)) {
-            timeout = config.defaultRedisClient.timeout;
+            timeout = config.defaultRedisClient().timeout();
         } else {
-            timeout = config.namedRedisClients.get(name).timeout;
+            timeout = config.namedRedisClients().get(name).timeout();
         }
         return timeout;
     }

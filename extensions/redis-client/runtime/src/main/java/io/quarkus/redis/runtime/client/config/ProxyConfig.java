@@ -3,41 +3,38 @@ package io.quarkus.redis.runtime.client.config;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 import io.vertx.core.net.ProxyType;
 
 @ConfigGroup
-public class ProxyConfig {
+public interface ProxyConfig {
 
     /**
      * Set proxy username.
      */
-    @ConfigItem
-    public Optional<String> username;
+    Optional<String> username();
 
     /**
      * Set proxy password.
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * Set proxy port. Defaults to 3128.
      */
-    @ConfigItem(defaultValue = "3128")
-    public int port;
+    @WithDefault("3128")
+    int port();
 
     /**
      * Set proxy host.
      */
-    @ConfigItem
-    public String host;
+    Optional<String> host();
 
     /**
      * Set proxy type.
      * Accepted values are: {@code HTTP} (default), {@code SOCKS4} and {@code SOCKS5}.
      */
-    @ConfigItem(defaultValue = "http")
-    public ProxyType type;
+    @WithDefault("http")
+    ProxyType type();
 
 }

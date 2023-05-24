@@ -24,6 +24,6 @@ public class JaxbContextConfigRecorder {
     }
 
     public static boolean isClassBound(Class<?> clazz) {
-        return classesToBeBound.contains(clazz.getName());
+        return classesToBeBound.contains(clazz);
     }
 }

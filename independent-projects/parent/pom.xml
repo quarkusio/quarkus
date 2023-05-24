@@ -36,6 +36,7 @@
         <version.shade.plugin>3.4.1</version.shade.plugin>
         <version.source.plugin>3.2.1</version.source.plugin>
         <version.surefire.plugin>${version.failsafe.plugin}</version.surefire.plugin>
+        <version.versions.plugin>2.15.0</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
 
         <!-- Code format -->
@@ -383,6 +384,11 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>${version.exec.plugin}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>${version.versions.plugin}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

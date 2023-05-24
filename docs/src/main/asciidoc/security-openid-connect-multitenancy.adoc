@@ -637,6 +637,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.function.Supplier;
 
 import io.smallrye.mutiny.Uni;
+import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -645,7 +646,7 @@ import io.vertx.ext.web.RoutingContext;
 public class CustomTenantConfigResolver implements TenantConfigResolver {
 
     @Override
-    public Uni<OidcTenantConfig> resolve(RoutingContext context, TenantConfigResolver.TenantConfigRequestContext requestContext) {
+    public Uni<OidcTenantConfig> resolve(RoutingContext context, OidcRequestContext<OidcTenantConfig> requestContext) {
         String path = context.request().path();
         String[] parts = path.split("/");
 

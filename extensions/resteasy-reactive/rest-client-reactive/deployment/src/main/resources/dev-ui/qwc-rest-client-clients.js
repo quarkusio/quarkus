@@ -3,7 +3,6 @@ import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@vaadin/progress-bar';
 import '@vaadin/checkbox';
-import { until } from 'lit/directives/until.js';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
@@ -45,14 +44,17 @@ export class QwcRestClientClients extends LitElement {
      * @returns {*}
      */
     render() {
-        return html`${until(this._renderClientsTable(), html`<span>Loading REST Clients...</span>`)}`;
+        if (this._clients) {
+            return this._renderClientsTable();
+        } else {
+            return html`<span>Loading REST Clients...</span>`;
+        }
     }
 
     // View / Templates
 
     _renderClientsTable() {
-        if (this._clients) {
-            return html`
+        return html`
                 <vaadin-grid .items="${this._clients}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
                                         header="Client interface"
@@ -72,7 +74,6 @@ export class QwcRestClientClients extends LitElement {
                                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
-        }
     }
 
   _clientInterfaceRenderer(client){

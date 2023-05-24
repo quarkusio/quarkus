@@ -30,6 +30,10 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
     /**
      * If this tenant configuration is enabled.
+     *
+     * Note that the default tenant will be disabled if it is not configured
+     * but either {@link TenantResolver} or {@link TenantConfigResolver} are registered.
+     * You do not have to disable the default tenant in this case.
      */
     @ConfigItem(defaultValue = "true")
     public boolean tenantEnabled = true;
@@ -1081,6 +1085,30 @@ public class OidcTenantConfig extends OidcCommonConfig {
         }
     }
 
+    /**
+     * Supported asymmetric signature algorithms
+     */
+    public static enum SignatureAlgorithm {
+        RS256,
+        RS384,
+        RS512,
+        PS256,
+        PS384,
+        PS512,
+        ES256,
+        ES384,
+        ES512,
+        EDDSA;
+
+        private static String EDDSA_ALG = "EDDSA";
+        private static String REQUIRED_EDDSA_ALG = "EdDSA";
+
+        public String getAlgorithm() {
+            String name = name();
+            return EDDSA_ALG.equals(name) ? REQUIRED_EDDSA_ALG : name;
+        }
+    }
+
     @ConfigGroup
     public static class Token {
 
@@ -1215,6 +1243,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
          */
         @ConfigItem
         public Optional<String> header = Optional.empty();
+
+        /**
+         * Required signature algorithm.
+         * OIDC providers support many signature algorithms but if necessary you can restrict
+         * Quarkus application to accept tokens signed only using an algorithm configured with this property.
+         */
+        @ConfigItem
+        public Optional<SignatureAlgorithm> signatureAlgorithm = Optional.empty();
 
         /**
          * Decryption key location.
@@ -1393,6 +1429,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setRequireJwtIntrospectionOnly(boolean requireJwtIntrospectionOnly) {
             this.requireJwtIntrospectionOnly = requireJwtIntrospectionOnly;
+        }
+
+        public Optional<SignatureAlgorithm> getSignatureAlgorithm() {
+            return signatureAlgorithm;
+        }
+
+        public void setSignatureAlgorithm(SignatureAlgorithm signatureAlgorithm) {
+            this.signatureAlgorithm = Optional.of(signatureAlgorithm);
         }
     }
 

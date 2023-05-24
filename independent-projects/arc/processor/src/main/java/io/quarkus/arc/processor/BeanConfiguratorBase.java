@@ -257,10 +257,9 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      * @see SyntheticCreationalContext
      */
     public THIS addInjectionPoint(Type requiredType, AnnotationInstance... requiredQualifiers) {
-        if (requiredQualifiers.length == 0) {
-            requiredQualifiers = new AnnotationInstance[] { AnnotationInstance.builder(Default.class).build() };
-        }
-        this.injectionPoints.add(new TypeAndQualifiers(requiredType, Set.of(requiredQualifiers)));
+        this.injectionPoints.add(new TypeAndQualifiers(requiredType,
+                requiredQualifiers.length == 0 ? Set.of(AnnotationInstance.builder(Default.class).build())
+                        : Set.of(requiredQualifiers)));
         return self();
     }
 

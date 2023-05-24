@@ -41,6 +41,19 @@ export class QwcMenu extends observeState(LitElement) {
                 color: var(--lumo-primary-color-50pct);
             }
 
+            @media screen and (max-width: 1280px) {
+                .menuSizeControl, .quarkusVersion, .item-text {
+                    display: none;
+                }
+                .menu, .left {
+                    width: 35px!important;
+                }
+                vaadin-icon {
+                    width: var(--lumo-icon-size-s);
+                    height: var(--lumo-icon-size-s);
+                }
+            }
+
             .item {
                 display: flex;
                 flex-direction: row;

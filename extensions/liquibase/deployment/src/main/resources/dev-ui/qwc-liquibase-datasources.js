@@ -11,7 +11,6 @@ import '@vaadin/checkbox';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import 'qui-alert';
-import { until } from 'lit/directives/until.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 
 export class QwcLiquibaseDatasources extends LitElement {
@@ -54,12 +53,15 @@ export class QwcLiquibaseDatasources extends LitElement {
     }
 
     render() {
-        return html`${until(this._renderDataSourceTable(), html`<span>Loading datasources...</span>`)}`;
+        if (this._factories) {
+            return this._renderDataSourceTable();
+        } else {
+            return html`<span>Loading datasources...</span>`;
+        }
     }
 
     _renderDataSourceTable() {
-        if (this._factories) {
-            return html`
+        return html`
                 ${this._message}
                 <vaadin-grid .items="${this._factories}" class="datatable" theme="no-border">
                     <vaadin-grid-column auto-width
@@ -78,16 +80,15 @@ export class QwcLiquibaseDatasources extends LitElement {
                   confirm-text="Clear"
                   .opened="${this._dialogOpened}"
                   @confirm="${() => {
-                    this._clear(this._ds);
-                  }}"
+            this._clear(this._ds);
+        }}"
                   @cancel="${() => {
-                    this._dialogOpened = false;
-                  }}"
+            this._dialogOpened = false;
+        }}"
                 >
                   This will drop all objects (tables, views, procedures, triggers, ...) in the configured schema. Do you want to continue?
                 </vaadin-confirm-dialog>
             `;
-        }
     }
 
     _actionRenderer(ds) {

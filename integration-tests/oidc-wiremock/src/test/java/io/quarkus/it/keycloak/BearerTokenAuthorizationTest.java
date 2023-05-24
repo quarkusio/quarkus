@@ -19,6 +19,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 
 @QuarkusTest
@@ -43,6 +44,21 @@ public class BearerTokenAuthorizationTest {
     public void testAccessAdminResource() {
         RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin")))
                 .when().get("/api/admin/bearer")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    @Test
+    public void testAccessAdminResourceRequiredAlgorithm() {
+        // RS256 is rejected
+        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin")))
+                .when().get("/api/admin/bearer-required-algorithm")
+                .then()
+                .statusCode(401);
+        // PS256 is OK
+        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin"), SignatureAlgorithm.PS256))
+                .when().get("/api/admin/bearer-required-algorithm")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
@@ -189,10 +205,15 @@ public class BearerTokenAuthorizationTest {
     }
 
     private String getAccessToken(String userName, Set<String> groups) {
+        return getAccessToken(userName, groups, SignatureAlgorithm.RS256);
+    }
+
+    private String getAccessToken(String userName, Set<String> groups, SignatureAlgorithm alg) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer("https://server.example.com")
                 .audience("https://service.example.com")
+                .jws().algorithm(alg)
                 .sign();
     }
 

@@ -21,7 +21,7 @@ public class SwaggerUiConfig {
      * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
      */
     @ConfigItem(defaultValue = "swagger-ui")
-    String path;
+    public String path;
 
     /**
      * If this should be included every time. By default, this is only included when the application is running

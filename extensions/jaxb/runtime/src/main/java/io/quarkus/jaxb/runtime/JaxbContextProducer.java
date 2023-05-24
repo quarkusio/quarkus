@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.RequestScoped;
@@ -71,7 +73,7 @@ public class JaxbContextProducer {
                 customizer.customizeContextProperties(properties);
             }
 
-            List<Class> classes = new ArrayList<>();
+            Set<Class> classes = new HashSet<>();
             classes.addAll(Arrays.asList(extraClasses));
             classes.addAll(JaxbContextConfigRecorder.getClassesToBeBound());
 

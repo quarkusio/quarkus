@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-parent</artifactId>
         <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-project</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
@@ -31,7 +31,7 @@
         <parsson.version>1.1.1</parsson.version>
         <resteasy-microprofile.version>2.1.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.0.2.Final</resteasy-spring-web.version>
-        <resteasy.version>6.2.3.Final</resteasy.version>
+        <resteasy.version>6.2.4.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
         <opentracing-jdbc.version>0.2.4</opentracing-jdbc.version>
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
@@ -89,7 +89,7 @@
         <jboss-metadata-web.version>16.0.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <graal-sdk.version>22.3.0</graal-sdk.version>
+        <graal-sdk.version>22.3.2</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
         <gizmo.version>1.6.1.Final</gizmo.version>
         <jackson-bom.version>2.15.0</jackson-bom.version>
@@ -119,7 +119,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.1.0.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.0.Final</jboss-threads.version>
-        <vertx.version>4.4.1</vertx.version>
+        <vertx.version>4.4.2</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -141,7 +141,7 @@
         <infinispan.version>14.0.9.Final</infinispan.version>
         <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.90.Final</netty.version>
+        <netty.version>4.1.92.Final</netty.version>
         <brotli4j.version>1.11.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.0.Final</jboss-logging.version>

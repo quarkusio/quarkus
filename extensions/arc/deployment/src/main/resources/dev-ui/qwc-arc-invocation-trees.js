@@ -1,5 +1,4 @@
 import { LitElement, html, css} from 'lit';
-import { until } from 'lit/directives/until.js';
 import { JsonRpc } from 'jsonrpc';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid';
@@ -50,12 +49,15 @@ export class QwcArcInvocationTrees extends LitElement {
     }
   
     render() {
-        return html`${until(this._renderInvocations(), html`<span>Loading ArC invocation trees...</span>`)}`;
+        if(this._invocations){
+            return this._renderInvocations();
+        } else {
+            return html`<span>Loading ArC invocation trees...</span>`;
+        }
     }
   
     _renderInvocations(){
-        if(this._invocations){
-            return html`<div class="menubar">
+        return html`<div class="menubar">
                     <vaadin-button theme="small" @click=${() => this._refresh()} class="button">
                         <vaadin-icon icon="font-awesome-solid:rotate"></vaadin-icon> Refresh
                     </vaadin-button> 
@@ -76,7 +78,6 @@ export class QwcArcInvocationTrees extends LitElement {
                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
-        }
     }
     
      _invocationsRenderer(invocation) {

@@ -322,6 +322,7 @@ public class JaxbProcessor {
             SynthesisFinishedBuildItem beanContainerState,
             JaxbContextConfigRecorder jaxbContextConfig /* Force the build time container to invoke this method */) {
 
+        jaxbContextConfig.reset();
         final BeanResolver beanResolver = beanContainerState.getBeanResolver();
         final Set<BeanInfo> beans = beanResolver
                 .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));

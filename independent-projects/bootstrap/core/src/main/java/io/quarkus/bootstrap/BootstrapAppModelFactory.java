@@ -205,7 +205,7 @@ public class BootstrapAppModelFactory {
         if (serializedModel != null) {
             final Path p = Paths.get(serializedModel);
             if (Files.exists(p)) {
-                try (InputStream existing = Files.newInputStream(Paths.get(serializedModel))) {
+                try (InputStream existing = Files.newInputStream(p)) {
                     final ApplicationModel appModel = (ApplicationModel) new ObjectInputStream(existing).readObject();
                     return new CurationResult(appModel);
                 } catch (IOException | ClassNotFoundException e) {

@@ -292,14 +292,10 @@ public final class PathTestHelper {
      * @return project build dir
      */
     public static Path getProjectBuildDir(Path projectRoot, Path testClassLocation) {
-        Path outputDir;
-        try {
-            // this should work for both maven and gradle
-            outputDir = projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
-        } catch (Exception e) {
-            // this shouldn't happen since testClassLocation is usually found under the project dir
-            outputDir = projectRoot;
+        if (!testClassLocation.startsWith(projectRoot)) {
+            // this typically happens in the platform testsuite where test classes are loaded from jars
+            return projectRoot.resolve("target");
         }
-        return outputDir;
+        return projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
     }
 }

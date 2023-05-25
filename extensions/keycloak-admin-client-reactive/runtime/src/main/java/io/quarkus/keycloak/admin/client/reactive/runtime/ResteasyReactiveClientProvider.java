@@ -31,7 +31,7 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
 
     @Override
     public Client newRestEasyClient(Object messageHandler, SSLContext sslContext, boolean disableTrustManager) {
-        ClientBuilderImpl clientBuilder = new ClientBuilderImpl();
+        ClientBuilderImpl clientBuilder = new ClientBuilderImpl().trustAll(disableTrustManager);
         return registerJacksonProviders(clientBuilder).build();
     }
 

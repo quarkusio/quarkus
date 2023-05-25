@@ -111,6 +111,10 @@ public class MultipartFilenameTest {
         // Using a field form param
         assertThat(client.postMultipartWithPartFilenameUsingInputStream(new ByteArrayInputStream(bytes)))
                 .isEqualTo(EXPECTED_OUTPUT);
+        // Using rest data annotation without filename
+        ClientRestFormUsingInputStream restForm = new ClientRestFormUsingInputStream();
+        restForm.file = new ByteArrayInputStream(bytes);
+        assertThat(client.postMultipartWithPartFilenameUsingInputStream(restForm)).isEqualTo("myFile:" + FILE_CONTENT);
     }
 
     @Test
@@ -279,6 +283,11 @@ public class MultipartFilenameTest {
         @POST
         @Path("/using-form-data")
         @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String postMultipartWithPartFilenameUsingInputStream(@MultipartForm ClientRestFormUsingInputStream clientForm);
+
+        @POST
+        @Path("/using-form-data")
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postMultipartWithPartFilenameUsingInputStream(
                 @FormParam("myFile") @PartType(APPLICATION_OCTET_STREAM) @PartFilename(FILE_NAME) InputStream file);
 
@@ -342,6 +351,12 @@ public class MultipartFilenameTest {
         @FormParam("myFile")
         @PartType(APPLICATION_OCTET_STREAM)
         @PartFilename(FILE_NAME)
+        public InputStream file;
+    }
+
+    public static class ClientRestFormUsingInputStream {
+        @RestForm("myFile")
+        @PartType(APPLICATION_OCTET_STREAM)
         public InputStream file;
     }
 

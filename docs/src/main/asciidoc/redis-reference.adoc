@@ -809,7 +809,7 @@ See xref:redis-dev-services.adoc[Redis Dev Service].
 
 === Enable metrics collection
 
-Redis client metrics are automatically enabled when the application also uses the xref:micrometer.adoc[`quarkus-micrometer`] extension.
+Redis client metrics are automatically enabled when the application also uses the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension.
 Micrometer collects the metrics of all the Redis clients implemented by the application.
 
 As an example, if you export the metrics to Prometheus, you will get:

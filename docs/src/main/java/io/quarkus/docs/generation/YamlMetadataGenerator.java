@@ -47,7 +47,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
  * </ul>
  */
 public class YamlMetadataGenerator {
-    private static Errors errors = new Errors();
+    private static Messages messages = new Messages();
 
     final static String INCL_ATTRIBUTES = "include::_attributes.adoc[]\n";
     final static String YAML_FRONTMATTER = "---\n";
@@ -117,8 +117,8 @@ public class YamlMetadataGenerator {
         om.writeValue(targetDir.resolve("indexByType.yaml").toFile(), index);
         om.writeValue(targetDir.resolve("indexByFile.yaml").toFile(), metadata);
 
-        om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), errors);
-        om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), errors.messagesByFile);
+        om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), messages);
+        om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), messages.allByFile());
     }
 
     public Index generateIndex() throws IOException {
@@ -130,7 +130,7 @@ public class YamlMetadataGenerator {
             throw new IllegalStateException(
                     String.format("Target directory (%s) does not exist. Exiting.%n", targetDir.toAbsolutePath()));
         }
-        errors.setRoot(srcDir);
+        messages.setRoot(srcDir);
 
         Options options = Options.builder()
                 .docType("book")
@@ -147,7 +147,7 @@ public class YamlMetadataGenerator {
                             try {
                                 str = Files.readString(path);
                             } catch (IOException e) {
-                                errors.record("ioexception", path);
+                                messages.record("ioexception", path);
                                 return;
                             }
 
@@ -162,11 +162,11 @@ public class YamlMetadataGenerator {
                             // it should be part of the document header
                             int includeAttr = str.indexOf(INCL_ATTRIBUTES);
                             if (includeAttr < 0) {
-                                errors.record("missing-attributes", path);
+                                messages.record("missing-attributes", path);
                             } else {
                                 String prefix = str.substring(0, includeAttr);
                                 if (prefix.contains("\n\n")) {
-                                    errors.record("detached-attributes", path);
+                                    messages.record("detached-attributes", path);
                                 }
                             }
 
@@ -174,7 +174,7 @@ public class YamlMetadataGenerator {
                             int documentHeaderEnd = str.indexOf("\n\n", titlePos);
                             String documentHeader = str.substring(0, documentHeaderEnd);
                             if (documentHeader.contains(":toc:")) {
-                                errors.record("toc", path);
+                                messages.record("toc", path);
                             }
 
                             String title = doc.getDoctitle();
@@ -200,18 +200,18 @@ public class YamlMetadataGenerator {
                                 if (content.isPresent()) {
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
                                 } else {
-                                    errors.record("empty-preamble", path);
+                                    messages.record("empty-preamble", path);
                                     index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
                                 }
                             } else {
-                                errors.record("missing-preamble", path);
+                                messages.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
                                 index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
                             if (spaceCount > 26) {
-                                errors.record("summary-too-long", path);
+                                messages.record("summary-too-long", path);
                             }
                         });
             }
@@ -297,11 +297,14 @@ public class YamlMetadataGenerator {
                 return;
             }
             for (String c : source.toString().split("\\s*,\\s*")) {
-                try {
-                    Category cat = Category.valueOf(c.toLowerCase().replace("-", "_"));
-                    set.add(cat);
-                } catch (IllegalArgumentException ex) {
-                    errors.record("unknown-category", path, "Unknown category: " + c);
+                String lower = c.toLowerCase();
+                Optional<Category> match = Stream.of(Category.values())
+                        .filter(cat -> cat.id.equals(lower))
+                        .findFirst();
+                if (match.isEmpty()) {
+                    messages.record("unknown-category", path, "Unknown category: " + c);
+                } else {
+                    set.add(match.get());
                 }
             }
         }
@@ -329,15 +332,17 @@ public class YamlMetadataGenerator {
         }
     }
 
-    private static class Errors {
+    private static class Messages {
         String root;
-        Map<String, Collection<String>> messagesByFile = new TreeMap<>();
+        Map<String, Collection<String>> errorsByFile = new TreeMap<>();
+        Map<String, Collection<String>> warningsByFile = new TreeMap<>();
         public final Map<String, Collection<String>> errors = new TreeMap<>();
 
         void setRoot(Path root) {
             this.root = root.toString();
             errors.clear();
-            messagesByFile.clear();
+            errorsByFile.clear();
+            warningsByFile.clear();
         }
 
         void record(String errorKey, Path path) {
@@ -349,8 +354,22 @@ public class YamlMetadataGenerator {
             if (message == null) {
                 message = getMessageforKey(errorKey);
             }
-            messagesByFile.computeIfAbsent(filename, k -> new ArrayList<>()).add(message);
+
+            if (isWarning(errorKey)) {
+                warningsByFile.computeIfAbsent(filename, k -> new ArrayList<>()).add(message);
+            } else {
+                errorsByFile.computeIfAbsent(filename, k -> new ArrayList<>()).add(message);
+            }
             errors.computeIfAbsent(errorKey, k -> new HashSet<>()).add(filename);
+        }
+
+        private boolean isWarning(String errorKey) {
+            switch (errorKey) {
+                case "missing-id":
+                case "not-diataxis-type":
+                    return true;
+            }
+            return false;
         }
 
         private String getMessageforKey(String errorKey) {
@@ -377,8 +396,26 @@ public class YamlMetadataGenerator {
             return errorKey;
         }
 
+        public Map<String, FileMessages> allByFile() {
+            Map<String, FileMessages> result = new TreeMap<>();
+            errorsByFile.forEach((k, v) -> {
+                FileMessages mr = result.computeIfAbsent(k, x -> new FileMessages());
+                mr.errors = v;
+            });
+            warningsByFile.forEach((k, v) -> {
+                FileMessages mr = result.computeIfAbsent(k, x -> new FileMessages());
+                mr.warnings = v;
+            });
+
+            return result;
+        }
+
         Map<String, Collection<String>> errorsByFile() {
-            return messagesByFile;
+            return errorsByFile;
+        }
+
+        Map<String, Collection<String>> warningsByFile() {
+            return warningsByFile;
         }
     }
 
@@ -407,8 +444,8 @@ public class YamlMetadataGenerator {
         }
 
         // convenience
-        public Map<String, Collection<String>> errorsByFile() {
-            return errors.errorsByFile();
+        public Map<String, FileMessages> messagesByFile() {
+            return messages.allByFile();
         }
     }
 
@@ -464,20 +501,20 @@ public class YamlMetadataGenerator {
                 this.type = Type.reference;
             } else {
                 this.type = Type.other;
-                errors.record("not-diataxis-type", path);
+                messages.record("not-diataxis-type", path);
             }
 
             if (id == null) {
-                errors.record("missing-id", path);
+                messages.record("missing-id", path);
             } else if (type != Type.other && !id.endsWith(type.suffix)) {
-                errors.record("incorrect-id", path,
+                messages.record("incorrect-id", path,
                         String.format(
                                 "The document id (%s) does not end with the correct suffix, should end with '-%s'%n",
                                 id, type.suffix));
             }
 
             if (this.categories.isEmpty()) {
-                errors.record("missing-categories", path);
+                messages.record("missing-categories", path);
             }
         }
 
@@ -518,6 +555,27 @@ public class YamlMetadataGenerator {
         @Override
         public int compareTo(DocMetadata that) {
             return this.title.compareTo(that.title);
+        }
+    }
+
+    @JsonInclude(value = Include.NON_EMPTY)
+    public static class FileMessages {
+        Collection<String> errors;
+        Collection<String> warnings;
+
+        Collection<String> warnings() {
+            return warnings == null ? List.of() : warnings;
+        }
+
+        Collection<String> errors() {
+            return errors == null ? List.of() : errors;
+        }
+
+        public boolean listAll(StringBuilder sb) {
+            errors().forEach(e -> sb.append("    [ ERR] ").append(e).append("\n"));
+            warnings().forEach(e -> sb.append("    [WARN] ").append(e).append("\n"));
+            sb.append("\n");
+            return !errors().isEmpty();
         }
     }
 }

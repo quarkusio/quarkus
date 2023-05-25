@@ -2,13 +2,13 @@ package io.quarkus.docs;
 
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import io.quarkus.docs.generation.YamlMetadataGenerator;
+import io.quarkus.docs.generation.YamlMetadataGenerator.FileMessages;
 import io.quarkus.docs.generation.YamlMetadataGenerator.Index;
 
 public class YamlMetadataGeneratorTest {
@@ -39,21 +39,22 @@ public class YamlMetadataGeneratorTest {
 
         // Generate YAML: doc requirements
         Index index = metadataGenerator.generateIndex();
-        Map<String, Collection<String>> metadataErrors = index.errorsByFile();
+        Map<String, FileMessages> messages = index.messagesByFile();
 
+        boolean hasErrors = false;
         StringBuilder sb = new StringBuilder("\n");
-        for (String fileName : metadataErrors.keySet()) {
-            sb.append(fileName).append(": ").append("\n");
-
-            Collection<String> mErrors = metadataErrors.getOrDefault(fileName, List.of());
-            mErrors.forEach(e -> sb.append("    ").append(e).append("\n"));
-            sb.append("\n");
+        for (String fileName : messages.keySet()) {
+            FileMessages fm = messages.get(fileName);
+            if (fm != null) {
+                sb.append(fileName).append(": ").append("\n");
+                hasErrors |= fm.listAll(sb);
+            }
         }
 
         String result = sb.toString().trim();
-        if (result.length() > 0) {
-            System.err.println(result);
-            // throw new LintException("target/errorsByFile.yaml");
+        System.err.println(result);
+        if (hasErrors) {
+            throw new LintException("target/errorsByFile.yaml");
         } else {
             System.out.println("🥳 OK");
         }

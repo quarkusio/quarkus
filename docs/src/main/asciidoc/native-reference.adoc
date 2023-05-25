@@ -3,8 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="native-reference"]
 = Native Reference Guide
-
 include::_attributes.adoc[]
 :categories: native
 

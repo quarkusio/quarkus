@@ -3,11 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Building Quarkus apps with Gradle
+[id="gradle-tooling"]
+= Quarkus and Gradle
 include::_attributes.adoc[]
-:categories: tooling
-:summary: This guide covers: Gradle configuration, creating a new project, dealing with extensions, development mode, debugging, import in your IDE, building a native image, and build a container friendly executable
+:categories: tooling, native
+:summary: Develop and build your Quarkus application with Gradle
 :devtools-no-maven:
+
+Use Gradle to create a new project, add or remove extensions, launch development mode, debug your application, and build your application into a jar, native executable, or container-friendly executable. Import your project into your favorite IDE using Gradle project metadata.
 
 [[project-creation]]
 == Creating a new project

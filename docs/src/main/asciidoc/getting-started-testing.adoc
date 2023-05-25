@@ -3,9 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="testing"]
 = Testing Your Application
 include::_attributes.adoc[]
-:categories: core
+:categories: core, native, tooling
 :summary: This guide covers testing in JVM mode, native mode, and injection of resources into tests
 :numbered:
 :sectnums:

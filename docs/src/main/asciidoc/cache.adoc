@@ -764,7 +764,7 @@ Each cache declared using the <<#annotations-api,annotations caching API>> can b
 [NOTE]
 ====
 The cache metrics collection will only work if your application depends on a `quarkus-micrometer-registry-*` extension.
-See the xref:micrometer.adoc[Micrometer metrics guide] to learn how to use Micrometer in Quarkus.
+See the xref:telemetry-micrometer.adoc[Micrometer metrics guide] to learn how to use Micrometer in Quarkus.
 ====
 
 The cache metrics collection is disabled by default.

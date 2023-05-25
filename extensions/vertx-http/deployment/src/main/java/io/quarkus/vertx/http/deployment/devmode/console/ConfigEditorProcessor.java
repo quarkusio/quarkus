@@ -44,8 +44,6 @@ import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsRecorder;
@@ -154,16 +152,6 @@ public class ConfigEditorProcessor {
         }));
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    JsonRPCProvidersBuildItem registerJsonRpcService() {
-        DevConsoleManager.register("config-update-property", map -> {
-            Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
-            updateConfig(values);
-            return null;
-        });
-        return new JsonRPCProvidersBuildItem("devui-configuration", ConfigJsonRPCService.class);
-    }
-
     private Map<String, String> filterAndApplyProfile(Map<String, String> autoconfig, List<String> configFilter,
             String profile) {
         return autoconfig.entrySet().stream()
@@ -221,6 +209,10 @@ public class ConfigEditorProcessor {
     }
 
     public static void updateConfig(Map<String, String> values) {
+        updateConfig(values, true);
+    }
+
+    public static void updateConfig(Map<String, String> values, boolean preventKill) {
         if (values != null && !values.isEmpty()) {
             try {
                 Path configPath = getConfigPath();
@@ -255,7 +247,8 @@ public class ConfigEditorProcessor {
                         writer.newLine();
                     }
                 }
-                preventKill();
+                if (preventKill)
+                    preventKill();
             } catch (Throwable t) {
                 throw new RuntimeException(t);
             }
@@ -263,6 +256,10 @@ public class ConfigEditorProcessor {
     }
 
     static void setConfig(String value) {
+        setConfig(value, true);
+    }
+
+    static void setConfig(String value, boolean preventKill) {
         try {
             Path configPath = getConfigPath();
             try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
@@ -272,7 +269,8 @@ public class ConfigEditorProcessor {
                     writer.write(value);
                 }
             }
-            preventKill();
+            if (preventKill)
+                preventKill();
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

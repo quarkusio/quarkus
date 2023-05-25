@@ -576,5 +576,12 @@ public class YamlMetadataGenerator {
             sb.append("\n");
             return !errors().isEmpty();
         }
+
+        public boolean mdListAll(StringBuilder sb) {
+            errors().forEach(e -> sb.append("- 🛑 ").append(e).append("\n"));
+            warnings().forEach(e -> sb.append("- ⚠️ ").append(e).append("\n"));
+            sb.append("\n");
+            return !errors().isEmpty();
+        }
     }
 }

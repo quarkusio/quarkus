@@ -24,6 +24,19 @@ public class ChangedFiles implements AutoCloseable {
         return Path.of("").resolve(defaultValue);
     }
 
+    public static Collection<String> getChangedFiles(Path gitDir, Path docsDir) throws Exception {
+        try (ChangedFiles git = new ChangedFiles(gitDir)) {
+            Collection<String> files = git.modifiedFiles(docsDir, s -> s.replace(docsDir.toString() + "/", ""));
+            if (files.isEmpty()) {
+                System.out.println("\nConfigured to analyze changed files: there are no pending changes.\n");
+            } else {
+                System.out.println("The following files will be inspected: ");
+                files.forEach(System.out::println);
+            }
+            return files;
+        }
+    }
+
     final Repository repo;
     final Git git;
 

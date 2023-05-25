@@ -499,7 +499,7 @@ image::malloc-bytes.svg[malloc bytes flamegraph]
 
 This shows that most of the memory requested using `malloc` comes from epoll in Java NIO,
 but the overall amount allocated via `malloc` is barely 268KB.
-This amount of 274,269 bytes can be observed by hoovering on top of `all` at the bottom of flamegraph
+This amount of 274,269 bytes can be observed by hovering on top of `all` at the bottom of flamegraph
 (you might need to ask the browser to open the flamegraph in a different tab or window to observe this).
 This is very small compared with the amount allocated for the heap with `mmap`.
 

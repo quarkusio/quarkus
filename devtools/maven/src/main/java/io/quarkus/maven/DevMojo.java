@@ -102,7 +102,6 @@ import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -117,47 +116,23 @@ import io.smallrye.common.expression.Expression;
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.TEST, threadSafe = true)
 public class DevMojo extends AbstractMojo {
 
-    private static final String PROCESS_CLASSES = "process-classes";
+    private static final Set<String> IGNORED_PHASES = Set.of(
+            "pre-clean", "clean", "post-clean");
 
-    /**
-     * running any one of these phases means the compile phase will have been run, if these have
-     * not been run we manually run compile.
-     */
-    private static final List<String> POST_COMPILE_PHASES = List.of(
+    private static final List<String> PRE_DEV_MODE_PHASES = List.of(
+            "validate",
+            "initialize",
+            "generate-sources",
+            "process-sources",
+            "generate-resources",
+            "process-resources",
             "compile",
-            PROCESS_CLASSES,
+            "process-classes",
             "generate-test-sources",
             "process-test-sources",
             "generate-test-resources",
             "process-test-resources",
-            "test-compile",
-            "process-test-classes",
-            "test",
-            "prepare-package",
-            "package",
-            "pre-integration-test",
-            "integration-test",
-            "post-integration-test",
-            "verify",
-            "install",
-            "deploy");
-
-    /**
-     * running any one of these phases means the test-compile phase will have been run, if these have
-     * not been run we manually run test-compile
-     */
-    private static final List<String> POST_TEST_COMPILE_PHASES = List.of(
-            "test-compile",
-            "process-test-classes",
-            "test",
-            "prepare-package",
-            "package",
-            "pre-integration-test",
-            "integration-test",
-            "post-integration-test",
-            "verify",
-            "install",
-            "deploy");
+            "test-compile");
 
     private static final String IO_QUARKUS = "io.quarkus";
     private static final String QUARKUS_GENERATE_CODE_GOAL = "generate-code";
@@ -364,7 +339,7 @@ public class DevMojo extends AbstractMojo {
     @Component
     private ToolchainManager toolchainManager;
 
-    private Map<GACT, Plugin> pluginMap;
+    private Map<ArtifactKey, Plugin> pluginMap;
 
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
@@ -458,8 +433,7 @@ public class DevMojo extends AbstractMojo {
                         getLog().info("Changes detected to " + changed + ", restarting dev mode");
                         final DevModeRunner newRunner;
                         try {
-                            triggerCompile(false, false);
-                            triggerCompile(true, false);
+                            handleAutoCompile();
                             newRunner = new DevModeRunner(runner.launcher.getDebugPortOk());
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
@@ -537,15 +511,6 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void handleAutoCompile() throws MojoExecutionException {
-        //we check to see if there was a compile (or later) goal before this plugin
-        boolean compileNeeded = true;
-        boolean testCompileNeeded = true;
-        boolean prepareNeeded = true;
-        boolean prepareTestsNeeded = true;
-
-        String jandexGoalPhase = getGoalPhaseOrNull(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, JANDEX, PROCESS_CLASSES);
-        String legacyJandexGoalPhase = getGoalPhaseOrNull(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, JANDEX, PROCESS_CLASSES);
-        boolean indexClassNeeded = legacyJandexGoalPhase != null || jandexGoalPhase != null;
 
         List<String> goals = session.getGoals();
         // check for default goal(s) if none were specified explicitly,
@@ -553,67 +518,115 @@ public class DevMojo extends AbstractMojo {
         if (goals.isEmpty() && !StringUtils.isEmpty(project.getDefaultGoal())) {
             goals = List.of(StringUtils.split(project.getDefaultGoal()));
         }
+
+        int latestHandledPhaseIndex = -1;
         for (String goal : goals) {
-            if (goal.endsWith("quarkus:generate-code")) {
-                prepareNeeded = false;
-            }
-            if (goal.endsWith("quarkus:generate-code-tests")) {
-                prepareTestsNeeded = false;
-            }
-
-            if (POST_COMPILE_PHASES.contains(goal)) {
-                compileNeeded = false;
-            }
-
-            if (jandexGoalPhase != null
-                    && POST_COMPILE_PHASES.indexOf(goal) >= POST_COMPILE_PHASES.indexOf(jandexGoalPhase)) {
-                indexClassNeeded = false;
-            }
-            if (jandexGoalPhase == null && legacyJandexGoalPhase != null
-                    && POST_COMPILE_PHASES.indexOf(goal) >= POST_COMPILE_PHASES.indexOf(legacyJandexGoalPhase)) {
-                indexClassNeeded = false;
-            }
-
-            if (POST_TEST_COMPILE_PHASES.contains(goal)) {
-                testCompileNeeded = false;
-            }
             if (goal.endsWith("quarkus:dev")) {
                 break;
             }
-        }
-
-        //if the user did not compile we run it for them
-        if (compileNeeded) {
-            triggerCompile(false, prepareNeeded);
-        }
-        if (indexClassNeeded) {
-            initClassIndexes(jandexGoalPhase == null);
-        }
-        if (testCompileNeeded) {
-            try {
-                triggerCompile(true, prepareTestsNeeded);
-            } catch (Throwable t) {
-                getLog().error("Test compile failed, you will need to fix your tests before you can use continuous testing", t);
+            if (goal.indexOf(':') >= 0 || IGNORED_PHASES.contains(goal)) {
+                continue;
+            }
+            var i = PRE_DEV_MODE_PHASES.indexOf(goal);
+            if (i < 0 || i == PRE_DEV_MODE_PHASES.size() - 1) {
+                // all the necessary goals have already been executed
+                return;
+            }
+            if (i > latestHandledPhaseIndex) {
+                latestHandledPhaseIndex = i;
             }
         }
-    }
 
-    private void initToolchain() throws MojoExecutionException {
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN, "toolchain", Map.of());
-    }
+        final String quarkusPluginId = getPluginDescriptor().getId();
+        // configured plugin executions by lifecycle phases
+        final Map<String, List<Map.Entry<Plugin, PluginExecution>>> phaseExecutions = new HashMap<>();
+        // goals with prefixes on the command line
+        final Map<String, Plugin> prefixedGoals = new HashMap<>();
+        for (Plugin p : project.getBuildPlugins()) {
+            if (p.getExecutions().isEmpty()) {
+                continue;
+            }
+            for (PluginExecution e : p.getExecutions()) {
+                if (e.getPhase() != null) {
+                    phaseExecutions.computeIfAbsent(e.getPhase(), k -> new ArrayList<>()).add(Map.entry(p, e));
+                } else {
+                    for (String goal : e.getGoals()) {
+                        if (goal.equals(QUARKUS_GENERATE_CODE_GOAL) && p.getId().equals(quarkusPluginId)) {
+                            var clone = e.clone();
+                            clone.setGoals(List.of(QUARKUS_GENERATE_CODE_GOAL));
+                            // this will schedule it before the compile phase goals
+                            phaseExecutions.computeIfAbsent("compile", k -> new ArrayList<>())
+                                    .add(0, Map.entry(p, clone));
+                        } else if (goal.equals(QUARKUS_GENERATE_CODE_TESTS_GOAL) && p.getId().equals(quarkusPluginId)) {
+                            var clone = e.clone();
+                            clone.setGoals(List.of(QUARKUS_GENERATE_CODE_TESTS_GOAL));
+                            // this will schedule it before the test-compile phase goals
+                            phaseExecutions.computeIfAbsent("test-compile", k -> new ArrayList<>())
+                                    .add(0, Map.entry(p, clone));
+                        } else {
+                            var mojoDescr = getMojoDescriptor(p, goal);
+                            if (mojoDescr.getPhase() != null) {
+                                phaseExecutions.computeIfAbsent(mojoDescr.getPhase(), k -> new ArrayList<>())
+                                        .add(Map.entry(p, e));
+                            } else {
+                                getLog().warn("Failed to determine the lifecycle phase for " + p.getId() + ":" + goal);
+                            }
+                        }
+                    }
+                }
+                if (!e.getGoals().isEmpty()) {
+                    var goalPrefix = getMojoDescriptor(p, e.getGoals().get(0)).getPluginDescriptor().getGoalPrefix();
+                    for (String goal : e.getGoals()) {
+                        prefixedGoals.put(goalPrefix + ":" + goal, p);
+                    }
+                }
+            }
+        }
 
-    private void triggerPrepare(boolean test) throws MojoExecutionException {
-        final PluginDescriptor pluginDescr = getPluginDescriptor();
-        executeIfConfigured(pluginDescr.getGroupId(), pluginDescr.getArtifactId(),
-                test ? QUARKUS_GENERATE_CODE_TESTS_GOAL : QUARKUS_GENERATE_CODE_GOAL,
-                Map.of("mode", LaunchMode.DEVELOPMENT.name(), QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false"));
-    }
+        // Map<pluginId, List<goals>>
+        final Map<String, List<String>> executedPluginGoals = new HashMap<>();
+        for (String goal : goals) {
+            if (goal.endsWith("quarkus:dev")) {
+                break;
+            }
+            var colon = goal.indexOf(':');
+            if (colon >= 0) {
+                var plugin = prefixedGoals.get(goal);
+                if (plugin == null) {
+                    getLog().warn("Failed to locate plugin for " + goal);
+                } else {
+                    executedPluginGoals.computeIfAbsent(plugin.getId(), k -> new ArrayList<>()).add(goal.substring(colon + 1));
+                }
+            }
+        }
 
-    private void initClassIndexes(boolean legacyJandex) throws MojoExecutionException {
-        if (legacyJandex) {
-            executeIfConfigured(ORG_JBOSS_JANDEX, JANDEX_MAVEN_PLUGIN, JANDEX, Map.of());
-        } else {
-            executeIfConfigured(IO_SMALLRYE, JANDEX_MAVEN_PLUGIN, JANDEX, Map.of());
+        for (int phaseIndex = latestHandledPhaseIndex + 1; phaseIndex < PRE_DEV_MODE_PHASES.size(); ++phaseIndex) {
+            var executions = phaseExecutions.get(PRE_DEV_MODE_PHASES.get(phaseIndex));
+            if (executions == null) {
+                continue;
+            }
+            for (Map.Entry<Plugin, PluginExecution> pe : executions) {
+                var executedGoals = executedPluginGoals.getOrDefault(pe.getKey().getId(), List.of());
+                for (String goal : pe.getValue().getGoals()) {
+                    if (!executedGoals.contains(goal)) {
+                        try {
+                            executeGoal(pe.getKey(), pe.getValue().getId(), goal,
+                                    pe.getKey().getId().equals(quarkusPluginId)
+                                            ? Map.of("mode", LaunchMode.DEVELOPMENT.name(),
+                                                    QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false")
+                                            : Map.of());
+                        } catch (Throwable t) {
+                            if (goal.equals("testCompile")) {
+                                getLog().error(
+                                        "Test compile failed, you will need to fix your tests before you can use continuous testing",
+                                        t);
+                            } else {
+                                throw t;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -621,43 +634,27 @@ public class DevMojo extends AbstractMojo {
         return mojoExecution.getMojoDescriptor().getPluginDescriptor();
     }
 
-    private void triggerCompile(boolean test, boolean prepareNeeded) throws MojoExecutionException {
-        handleResources(test);
-
-        if (prepareNeeded) {
-            triggerPrepare(test);
-        }
-
-        // compile the Kotlin sources if needed
-        executeIfConfigured(ORG_JETBRAINS_KOTLIN, KOTLIN_MAVEN_PLUGIN, test ? "test-compile" : "compile", Map.of());
-
-        // Compile the Java sources if needed
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_COMPILER_PLUGIN, test ? "testCompile" : "compile", Map.of());
-    }
-
-    /**
-     * Execute the resources:resources goal if resources have been configured on the project
-     */
-    private void handleResources(boolean test) throws MojoExecutionException {
-        List<Resource> resources = project.getResources();
-        if (resources.isEmpty()) {
+    private void initToolchain() throws MojoExecutionException {
+        final Plugin plugin = getConfiguredPluginOrNull(ORG_APACHE_MAVEN_PLUGINS, MAVEN_TOOLCHAINS_PLUGIN);
+        if (!isGoalConfigured(plugin, "toolchain")) {
             return;
         }
-        executeIfConfigured(ORG_APACHE_MAVEN_PLUGINS, MAVEN_RESOURCES_PLUGIN, test ? "testResources" : "resources", Map.of());
+        executeGoal(plugin, null, "toolchain", Map.of());
     }
 
-    private void executeIfConfigured(String pluginGroupId, String pluginArtifactId, String goal, Map<String, String> params)
+    private void executeGoal(Plugin plugin, String executionId, String goal, Map<String, String> params)
             throws MojoExecutionException {
-        final Plugin plugin = getConfiguredPluginOrNull(pluginGroupId, pluginArtifactId);
-        if (!isGoalConfigured(plugin, goal)) {
-            return;
+        var msg = new StringBuilder();
+        msg.append("Invoking ").append(plugin.getId()).append(":").append(goal);
+        if (executionId != null) {
+            msg.append(" (").append(executionId).append(")");
         }
-        getLog().info("Invoking " + plugin.getGroupId() + ":" + plugin.getArtifactId() + ":" + plugin.getVersion() + ":" + goal
-                + " @ " + project.getArtifactId());
+        msg.append(" @ ").append(project.getArtifactId());
+        getLog().info(msg.toString());
         executeMojo(
                 plugin(
-                        groupId(pluginGroupId),
-                        artifactId(pluginArtifactId),
+                        groupId(plugin.getGroupId()),
+                        artifactId(plugin.getArtifactId()),
                         version(plugin.getVersion()),
                         plugin.getDependencies()),
                 goal(goal),
@@ -668,22 +665,7 @@ public class DevMojo extends AbstractMojo {
                         pluginManager));
     }
 
-    private String getGoalPhaseOrNull(String groupId, String artifactId, String goal, String defaultPhase) {
-        Plugin plugin = getConfiguredPluginOrNull(groupId, artifactId);
-
-        if (plugin == null) {
-            return null;
-        }
-        for (PluginExecution pluginExecution : plugin.getExecutions()) {
-            if (pluginExecution.getGoals().contains(goal)) {
-                var configuredPhase = pluginExecution.getPhase();
-                return configuredPhase != null ? configuredPhase : defaultPhase;
-            }
-        }
-        return null;
-    }
-
-    public boolean isGoalConfigured(Plugin plugin, String goal) {
+    private boolean isGoalConfigured(Plugin plugin, String goal) {
         if (plugin == null) {
             return false;
         }
@@ -751,10 +733,10 @@ public class DevMojo extends AbstractMojo {
             pluginMap = new HashMap<>();
             // the original plugin keys may include property expressions, so we can't rely on the exact groupId:artifactId keys
             for (Plugin p : project.getBuildPlugins()) {
-                pluginMap.put(new GACT(p.getGroupId(), p.getArtifactId()), p);
+                pluginMap.put(ArtifactKey.ga(p.getGroupId(), p.getArtifactId()), p);
             }
         }
-        return pluginMap.get(new GACT(groupId, artifactId));
+        return pluginMap.get(ArtifactKey.ga(groupId, artifactId));
     }
 
     private Map<Path, Long> readPomFileTimestamps(DevModeRunner runner) throws IOException {

@@ -29,12 +29,12 @@ public class AnnotationHandler {
     }
 
     static AnnotationsTransformerBuildItem transformAnnotations(final IndexView index,
-            DotName sourceAnnotation, DotName targetAnnotation) {
+            DotName sourceAnnotationName, DotName targetAnnotationName) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
             public void transform(TransformationContext ctx) {
                 final Collection<AnnotationInstance> annotations = ctx.getAnnotations();
-                AnnotationInstance annotation = Annotations.find(annotations, sourceAnnotation);
+                AnnotationInstance annotation = Annotations.find(annotations, sourceAnnotationName);
                 if (annotation == null) {
                     return;
                 }
@@ -59,8 +59,8 @@ public class AnnotationHandler {
 
                 // Remove the @Counted annotation when both @Counted & @Timed/SimplyTimed
                 // Ignore @Metric with @Produces
-                if (removeCountedWhenTimed(sourceAnnotation, target, classInfo, methodInfo) ||
-                        removeMetricWhenProduces(sourceAnnotation, target, methodInfo, fieldInfo)) {
+                if (removeCountedWhenTimed(sourceAnnotationName, target, classInfo, methodInfo) ||
+                        removeMetricWhenProduces(sourceAnnotationName, target, methodInfo, fieldInfo)) {
                     ctx.transform()
                             .remove(x -> x == annotation)
                             .done();
@@ -71,10 +71,14 @@ public class AnnotationHandler {
                 MetricAnnotationInfo annotationInfo = new MetricAnnotationInfo(annotation, index,
                         classInfo, methodInfo, fieldInfo);
 
+                // preserve the original annotation target, `ctx.getTarget()` is different in case of method parameters
+                AnnotationInstance newAnnotation = AnnotationInstance.create(targetAnnotationName, annotation.target(),
+                        annotationInfo.getAnnotationValues());
+
                 // Remove the existing annotation, and add a new one with all the fields
                 ctx.transform()
                         .remove(x -> x == annotation)
-                        .add(targetAnnotation, annotationInfo.getAnnotationValues())
+                        .add(newAnnotation)
                         .done();
             }
         });

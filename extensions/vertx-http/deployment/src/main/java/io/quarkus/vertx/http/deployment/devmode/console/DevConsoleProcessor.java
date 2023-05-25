@@ -65,6 +65,7 @@ import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
+import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;

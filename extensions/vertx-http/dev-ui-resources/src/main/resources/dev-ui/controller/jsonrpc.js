@@ -249,10 +249,11 @@ export class JsonRpc {
                 
                 if (messageType === MessageType.Void.toString()) { // Void response, typically used on initial subscription
                     // Do nothing
-                } else if (messageType === MessageType.HotReload.toString()){
-                    connectionState.hotreload(JsonRpc.serverUri);
-                    connectionState.connected(JsonRpc.serverUri)
-                } else if (messageType === MessageType.Response.toString()) { // Normal Request-Response
+                } else if (messageType === MessageType.HotReload.toString() || messageType === MessageType.Response.toString()) {
+                    if (messageType === MessageType.HotReload.toString()){
+                        connectionState.hotreload(JsonRpc.serverUri);
+                        connectionState.connected(JsonRpc.serverUri);
+                    }    
                     if (JsonRpc.promiseQueue.has(response.id)) {
                         var saved = JsonRpc.promiseQueue.get(response.id);
                         var promise = saved.promise;

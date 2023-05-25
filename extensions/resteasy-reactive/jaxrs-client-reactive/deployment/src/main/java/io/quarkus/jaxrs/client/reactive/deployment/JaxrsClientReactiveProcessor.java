@@ -1706,10 +1706,12 @@ public class JaxrsClientReactiveProcessor {
 
     private void addInputStream(BytecodeCreator methodCreator, AssignableResultHandle multipartForm, String formParamName,
             String partType, String partFilename, ResultHandle fieldValue, String type) {
+        ResultHandle formParamResult = methodCreator.load(formParamName);
+        ResultHandle partFilenameResult = partFilename == null ? formParamResult : methodCreator.load(partFilename);
         methodCreator.assign(multipartForm,
                 methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(QuarkusMultipartForm.class, "entity",
                         QuarkusMultipartForm.class, String.class, String.class, Object.class, String.class, Class.class),
-                        multipartForm, methodCreator.load(formParamName), methodCreator.load(partFilename), fieldValue,
+                        multipartForm, formParamResult, partFilenameResult, fieldValue,
                         methodCreator.load(partType),
                         // FIXME: doesn't support generics
                         methodCreator.loadClassFromTCCL(type)));

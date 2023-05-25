@@ -55,7 +55,15 @@ jobs:
 
       - name: Build Docs
         run: |
-          ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs -Dasciidoctor.fail-if=DEBUG
+          if ./mvnw -e -B --settings .github/mvn-settings.xml clean package -pl docs -Dasciidoctor.fail-if=DEBUG ; then
+            echo "Build ok"
+          else
+            if [ -f docs/target/metadataErrors.md ]; then
+              echo "### Document Metadata Errors" >> $GITHUB_STEP_SUMMARY
+              cat docs/target/metadataErrors.md >> $GITHUB_STEP_SUMMARY
+            fi
+            exit 1
+          fi
 
       - name: Store PR id
         run: echo ${{ github.event.number }} > pr-id.txt

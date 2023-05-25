@@ -4,7 +4,9 @@ import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProce
 import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor.isSetByDevServices;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -13,8 +15,12 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 
 /**
@@ -44,6 +50,16 @@ public class ConfigurationProcessor {
                 getAllConfig(configDescriptionBuildItems, devServicesLauncherConfig));
 
         return configurationPages;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    JsonRPCProvidersBuildItem registerJsonRpcService() {
+        DevConsoleManager.register("config-update-property", map -> {
+            Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
+            ConfigEditorProcessor.updateConfig(values, false);
+            return null;
+        });
+        return new JsonRPCProvidersBuildItem("devui-configuration", ConfigJsonRPCService.class);
     }
 
     private List<ConfigDescription> getAllConfig(List<ConfigDescriptionBuildItem> configDescriptionBuildItems,

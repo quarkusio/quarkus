@@ -2,8 +2,8 @@ package io.quarkus.devui.runtime.jsonrpc;
 
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.INTERNAL_ERROR;
 import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.METHOD_NOT_FOUND;
-import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.MessageType;
 
+import io.quarkus.devui.runtime.comms.MessageType;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;

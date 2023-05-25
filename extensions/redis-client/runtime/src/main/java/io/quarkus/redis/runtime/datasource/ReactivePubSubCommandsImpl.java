@@ -143,9 +143,11 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         doesNotContainNull(channels, "channels");
 
         return Multi.createFrom().emitter(emitter -> {
-            subscribe(List.of(channels), emitter::emit)
+            subscribe(List.of(channels), emitter::emit, emitter::complete, emitter::fail)
                     .subscribe().with(x -> {
-                        emitter.onTermination(() -> x.unsubscribe(channels).subscribe().asCompletionStage());
+                        emitter.onTermination(() -> {
+                            x.unsubscribe(channels).subscribe().asCompletionStage();
+                        });
                     }, emitter::fail);
         });
     }
@@ -156,7 +158,7 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         doesNotContainNull(patterns, "patterns");
 
         return Multi.createFrom().emitter(emitter -> {
-            subscribeToPatterns(List.of(patterns), emitter::emit)
+            subscribeToPatterns(List.of(patterns), emitter::emit, emitter::complete, emitter::fail)
                     .subscribe().with(x -> {
                         emitter.onTermination(() -> x.unsubscribe(patterns).subscribe().asCompletionStage());
                     }, emitter::fail);
@@ -186,10 +188,12 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         public Uni<String> subscribe() {
             Uni<Void> handled = Uni.createFrom().emitter(emitter -> {
                 connection.handler(r -> runOnDuplicatedContext(() -> handleRedisEvent(emitter, r)));
-                if (onEnd != null)
+                if (onEnd != null) {
                     connection.endHandler(() -> runOnDuplicatedContext(onEnd));
-                if (onException != null)
+                }
+                if (onException != null) {
                     connection.exceptionHandler(t -> runOnDuplicatedContext(() -> onException.accept(t)));
+                }
             });
 
             Uni<Void> subscribed = subscribeToRedis();

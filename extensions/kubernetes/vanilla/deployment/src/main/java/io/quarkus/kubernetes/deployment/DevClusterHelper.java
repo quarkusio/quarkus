@@ -133,15 +133,18 @@ public class DevClusterHelper {
         result.add(
                 KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, LIVENESS_PROBE, config.livenessProbe,
                         portName,
-                        ports));
+                        ports,
+                        config.ports));
         result.add(
                 KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, READINESS_PROBE, config.readinessProbe,
                         portName,
-                        ports));
+                        ports,
+                        config.ports));
         result.add(
                 KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, STARTUP_PROBE, config.startupProbe,
                         portName,
-                        ports));
+                        ports,
+                        config.ports));
 
         // Handle init Containers
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));

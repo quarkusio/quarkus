@@ -107,6 +107,8 @@ public class KubernetesCommonHelper {
             "Deployment", "DeploymentConfig" };
     private static final String DEFAULT_ROLE_NAME_VIEW = "view";
     private static final List<String> LIST_WITH_EMPTY = List.of("");
+    private static final String SCHEME_HTTP = "HTTP";
+    private static final String SCHEME_HTTPS = "HTTPS";
 
     public static Optional<Project> createProject(ApplicationInfoBuildItem app,
             Optional<CustomProjectRootBuildItem> customProjectRoot, OutputTargetBuildItem outputTarget,
@@ -946,7 +948,8 @@ public class KubernetesCommonHelper {
     public static DecoratorBuildItem createProbeHttpPortDecorator(String name, String target, String probeKind,
             ProbeConfig probeConfig,
             Optional<KubernetesProbePortNameBuildItem> portName,
-            List<KubernetesPortBuildItem> ports) {
+            List<KubernetesPortBuildItem> ports,
+            Map<String, PortConfig> portsFromConfig) {
 
         //1. check if `httpActionPort` is defined
         //2. lookup port by `httpPortName`
@@ -958,7 +961,26 @@ public class KubernetesCommonHelper {
         Integer port = probeConfig.httpActionPort
                 .orElse(ports.stream().filter(p -> httpPortName.equals(p.getName()))
                         .map(KubernetesPortBuildItem::getPort).findFirst().orElse(DEFAULT_HTTP_PORT));
-        return new DecoratorBuildItem(target, new ApplyHttpGetActionPortDecorator(name, name, port, probeKind));
+
+        // Resolve scheme property from:
+        String scheme;
+        if (probeConfig.httpActionScheme.isPresent()) {
+            // 1. User in Probe config
+            scheme = probeConfig.httpActionScheme.get();
+        } else if (portsFromConfig.containsKey(httpPortName) && portsFromConfig.get(httpPortName).tls) {
+            // 2. User in Ports config
+            scheme = SCHEME_HTTPS;
+        } else if (portName.isPresent()
+                && portName.get().getScheme() != null
+                && portName.get().getName().equals(httpPortName)) {
+            // 3. Extensions
+            scheme = portName.get().getScheme();
+        } else {
+            // 4. Using the port number.
+            scheme = port != null && (port == 443 || port == 8443) ? SCHEME_HTTPS : SCHEME_HTTP;
+        }
+
+        return new DecoratorBuildItem(target, new ApplyHttpGetActionPortDecorator(name, name, port, probeKind, scheme));
     }
 
     /**

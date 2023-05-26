@@ -8,12 +8,22 @@ import io.quarkus.builder.item.SimpleBuildItem;
 public final class KubernetesProbePortNameBuildItem extends SimpleBuildItem {
 
     private final String name;
+    private final String scheme;
 
     public KubernetesProbePortNameBuildItem(String name) {
+        this(name, null);
+    }
+
+    public KubernetesProbePortNameBuildItem(String name, String scheme) {
         this.name = name;
+        this.scheme = scheme;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getScheme() {
+        return scheme;
     }
 }

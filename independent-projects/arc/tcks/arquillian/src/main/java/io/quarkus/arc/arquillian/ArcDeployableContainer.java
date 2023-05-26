@@ -106,11 +106,13 @@ public class ArcDeployableContainer implements DeployableContainer<ArcContainerC
             return instance.get();
         }
 
-        // fallback for generic test classes, whose set of bean types does not contain a `Class`
-        // but a `ParameterizedType` instead
-        for (InstanceHandle<Object> handle : arc.listAll(Object.class)) {
-            if (testClass.equals(handle.getBean().getBeanClass())) {
-                return handle.get();
+        if (testClass.getTypeParameters().length > 0) {
+            // fallback for generic test classes, whose set of bean types does not contain a `Class`
+            // but a `ParameterizedType` instead
+            for (InstanceHandle<Object> handle : arc.listAll(Object.class)) {
+                if (testClass.equals(handle.getBean().getBeanClass())) {
+                    return handle.get();
+                }
             }
         }
 

@@ -29,8 +29,6 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
-import io.quarkus.vertx.http.runtime.devmode.ConfigSourceName;
-import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -161,9 +159,6 @@ public class ConfigurationProcessor {
                 }
                 properties.add(item.getName());
                 item.setConfigValue(current.getConfigValue(item.getName()));
-
-                String configSourceName = item.getConfigValue().getConfigSourceName();
-                item.setConfigSource(configSourceName);
                 ordered.add(item);
             } else if (!item.getName().startsWith("quarkus.log.filter")) { //special case, we use this internally and we don't want it clogging up the editor
                 //we need to figure out how to expand it
@@ -245,10 +240,6 @@ public class ConfigurationProcessor {
 
             properties.add(newDesc.getName());
             newDesc.setConfigValue(current.getConfigValue(newDesc.getName()));
-
-            String configSourceName = newDesc.getConfigValue().getConfigSourceName();
-            int configSourceOrdinal = newDesc.getConfigValue().getConfigSourceOrdinal();
-            newDesc.setConfigSource(configSourceName);
             ordered.add(newDesc);
         }
 
@@ -275,8 +266,6 @@ public class ConfigurationProcessor {
 
             properties.add(newDesc.getName());
             newDesc.setConfigValue(current.getConfigValue(newDesc.getName()));
-            String configSourceName = newDesc.getConfigValue().getConfigSourceName();
-            newDesc.setConfigSource(configSourceName);
             ordered.add(newDesc);
         }
 
@@ -293,10 +282,6 @@ public class ConfigurationProcessor {
                 }
 
                 ConfigDescription item = new ConfigDescription(propertyName, null, null, current.getConfigValue(propertyName));
-                ConfigValue configValue = current.getConfigValue(propertyName);
-                ConfigSourceName csn = new ConfigSourceName(configValue.getConfigSourceName(),
-                        configValue.getConfigSourceOrdinal());
-                item.setConfigSource(csn.getName());
                 ordered.add(item);
 
                 configDescriptions.add(item);

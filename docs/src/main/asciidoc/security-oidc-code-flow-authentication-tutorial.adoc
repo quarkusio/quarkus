@@ -5,7 +5,9 @@ include::_attributes.adoc[]
 
 With the Quarkus OpenID Connect (OIDC) extension, you can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism.
 
-To learn more about the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications] or to learn about other authentication mechanisms, see xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[authentication mechanisms].
+To learn more about the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications].
+To learn about how well-known social providers such as Google, GitHub, Microsoft, Twitter, Apple, Facebook, and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
+See also, xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus].
 
 == Prerequisites
 
@@ -246,19 +248,18 @@ For more information about writing the integration tests that depend on `Dev Ser
 
 Congratulations!
 You have learned how to set up and use the OIDC authorization code flow mechanism to protect and test application HTTP endpoints.
-After you have completed this tutorial, explore some of the other security mechanisms in Quarkus.
-
-* xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication]
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-
+After you have completed this tutorial, explore xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication] and xref:security-authentication-mechanisms-concept.adoc[other authentication mechanisms].
 
 == References
+* xref:security-overview-concept.adoc[Quarkus Security overview]
 * xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
-* https://www.keycloak.org/documentation.html[Keycloak Documentation]
-* https://openid.net/connect/[OpenID Connect]
-* https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect Providers]
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
 * xref:security-authentication-mechanisms-concept.adoc#oidc-jwt-oauth2-comparison[Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
+* https://www.keycloak.org/documentation.html[Keycloak Documentation]
+* https://openid.net/connect/[OpenID Connect]
+* https://tools.ietf.org/html/rfc7519[JSON Web Token]
+

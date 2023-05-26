@@ -148,7 +148,9 @@ public class BeanArchiveProcessor {
                         .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
                         .collect(Collectors.toList()), stereotypes);
         beanDefiningAnnotations.addAll(customScopes.getCustomScopeNames());
-        // Also include archives that are not bean archives but contain qualifiers or interceptor bindings
+        // Also include archives that are not bean archives but contain scopes, qualifiers or interceptor bindings
+        beanDefiningAnnotations.add(DotNames.SCOPE);
+        beanDefiningAnnotations.add(DotNames.NORMAL_SCOPE);
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
 

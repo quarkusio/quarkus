@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="doc-create-tutorial"]
 = Creating a tutorial
 include::_attributes.adoc[]
+:diataxis-type: tutorial
 :categories: contributing
 
 Create a new tutorial that guides users through creating, running, and testing a Quarkus application that uses annotations from an imaginary extension.
@@ -29,7 +30,8 @@ For this example, we will use `acme-serve-http-requests-tutorial.adoc`:
 
 - `acme-` will group this guide with other resources related to the acme extension
 - `serve-http-requests` is a derivative of the document title
-- `-tutorial.adoc` will indicate that this document is a tutorial
+- `-tutorial` will indicate that this document is a tutorial (optional)
+- `.adoc` to indicate this is an asciidoc file
 
 == Copy the tutorial template
 
@@ -46,7 +48,7 @@ include::_attributes.adoc[] // <3>
 :extension-status: experimental // <5>
 ----
 
-<1> Specify a unique id for the section in lower-kebab-case.
+<1> Use the file name as a unique id for the section.
 <2> Add the title as a top-level heading.
 <3> Include additional attributes that help define consistent formatting and provide source portability.
 <4> Specify the `web` category, as our imaginary extension works with Http requests.

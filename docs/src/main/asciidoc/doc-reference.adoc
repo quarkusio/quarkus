@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="doc-reference"]
 = Quarkus style and content guidelines
 include::_attributes.adoc[]
+:diataxis-type: reference
 :categories: contributing
 
 Guidelines are provided to help you to contribute clear and consistent content that is also sourced in the required diataxis structure and composition of Quarkus documentation.
@@ -132,13 +133,12 @@ Use all lowercase letters, separate words with hyphens, and avoid symbols and sp
 Prefix:: Use a common prefix to group-related documents.
 Documents related to writing and contributing to Quarkus docs share the `doc-` prefix, for example.
 
-Suffix:: The file name should reflect the document type:
+Suffix:: Use a suffix that reflects the document type (optional):
 
-- Concept documents should end in `-concept.adoc`
-- How-to guides should end in `-howto.adoc`
-- References should end in `-reference.adoc`
-- Tutorials should end in `-tutorial.adoc`
-
+- `-concept.adoc` for concept documents
+- `-howto.adoc` for how-to guides
+- `-reference.adoc` for references 
+- `-tutorial.adoc` for tutorials
 
 [[doc-structure]]
 == Document structure
@@ -156,13 +156,15 @@ Minimally, each document should define and id and a title, and include common at
 [id="doc-reference"] // <1>
 = Quarkus style and content guidelines // <2>
 \include::_attributes.adoc[] // <3>
-:categories: contributing // <4>
+:diataxis-type: {type} // <4>
+:categories: contributing // <5>
 ----
 
 <1> Use the filename as the ID for the document.
 <2> Define the document title following guidance in <<titles-headings>>.
 <3> Include common document attributes.
-<4> Specify the relevant <<categories>> (comma separated).
+<4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
+<5> Specify the relevant <<categories>> (comma separated).
 
 [[doc-header-optional]]
 ==== Other common document header attributes

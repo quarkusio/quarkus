@@ -3003,7 +3003,7 @@
                     </execution>
                     <execution>
                         <id>generate-doc-manifests</id>
-                        <phase>prepare-package</phase>
+                        <phase>package</phase>
                         <goals>
                             <goal>java</goal>
                         </goals>

@@ -5,6 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="doc-contribute-howto"]
 = Contribute to Quarkus documentation
 include::_attributes.adoc[]
+:diataxis-type: howto
 :categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
 
@@ -39,28 +40,32 @@ To ensure that your content shows up correctly on the link:https://quarkus.io/gu
 TIP: To help you decide, see the content type descriptions in xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "About Quarkus documentation" page.
 
 . Go to the `src/main/asciidoc/_templates` directory, and make a copy of the relevant template for the content type you have chosen. Be sure to:
-** Use the filename syntax of`<category>-<titlekeyword>-<titlekeyword>-<content-type>.adoc`. For example, `security-basic-authentication-tutorial.adoc`.
+** Use the filename syntax of`<category>-<titlekeyword>-<titlekeyword>.adoc`. For example, `security-basic-authentication.adoc`.
+** Include the diataxis type (concept, howto, reference, tutorial) in the file name if it makes sense to do so.
+For example, `telemetry-micrometer.adoc` is a reference, and `telemetry-micrometer-tutorial.adoc` is a tutorial.
 ** Save the file to the `docs/src/main/asciidoc` folder in the `quarkus` repository.
 
 . Set the minimum required header information to ensure that the content renders correctly in the website portal and on the documentation home page, as outlined in the following example:
 +
 [source,asciidoc]
 ----
-[id="security-basic-authentication-howto"] <1>
+[id="security-basic-authentication"] <1>
 = Secure a Quarkus application with basic authentication <2>
 include::_attributes.adoc[] <3>
-:categories: security,web <4>
-<5>
+:diataxis-type: howto <4>
+:categories: security,web <5>
+<6>
 ----
-<1> Set the `id` value to be the same as the file name but without the extension. You can shorten this if the file name is too long.
+<1> Set the `id` value to be the same as the file name but without the extension. 
 <2> For information about how to create a good title for each content type, see xref:{doc-guides}/doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
 <3> The `_attributes.adoc` include is required to ensure that attributes get resolved and the table of contents is generated.
-<4> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:{doc-guides}/doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
-<5> Insert a blank line before the abstract.
+<4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
+<5> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:{doc-guides}/doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
+<6> Insert a blank line after all document attributes and before the abstract.
 +
 [IMPORTANT]
 ====
-Ensure there are no line breaks in the header section until after `:categories:` line.
+Ensure there are no blank lines between the document id and title, the attribute include (`include::_attributes.adoc[]`) and the declaration of other document attributes(`:attribute:`).
 ====
 
 . Add an abstract that describes the purpose of the guide.

@@ -57,13 +57,14 @@ public class YamlMetadataGeneratorTest {
         String result = sb.toString().trim();
         System.err.println(result);
 
+        Path metadataErrors = targetDir.resolve("metadataErrors.md");
         if (hasErrors) {
             result = "For a full list see target/errorsByType.xml and target/errorsByFile.xml\n\n" + result;
 
-            Path fileName = targetDir.resolve("metadataErrors.md");
-            Files.writeString(fileName, result, StandardOpenOption.CREATE);
+            Files.writeString(metadataErrors, result, StandardOpenOption.CREATE);
             throw new LintException("target/metadataErrors.md");
         } else {
+            Files.deleteIfExists(metadataErrors);
             System.out.println("🥳 OK");
         }
     }

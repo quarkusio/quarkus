@@ -1,6 +1,7 @@
 [id="security-basic-authentication-concept"]
 = Basic authentication
 include::_attributes.adoc[]
+:diataxis-type: concept
 :categories: security,web
 
 HTTP Basic authentication is one of the least resource-demanding techniques that enforce access controls to web resources. 

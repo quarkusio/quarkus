@@ -4,14 +4,15 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 ////
-TODO: See xref:{doc-guides}/doc-reference.adoc[Quarkus style and content guidelines] for details
-- Title should have an implied "About..." in front. 
-- ID should end with '-reference' (using the filename works)
-- choose appropriate categories
+TODO: 
+- Title: https://quarkus.io/guides/doc-reference#titles-headings
+- Use the file name as the ID
+- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
 ////
-[id="...-reference"]
+[id="..."]
 = Title using sentence capitalization
 include::_attributes.adoc[]
+:diataxis-type: reference
 :categories: ...
 ////
 :extension-status: preview

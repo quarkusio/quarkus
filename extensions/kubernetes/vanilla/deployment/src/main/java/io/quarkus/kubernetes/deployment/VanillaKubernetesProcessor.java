@@ -74,14 +74,11 @@ public class VanillaKubernetesProcessor {
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         String kind = config.getDeploymentResourceKind(capabilities).kind;
 
-        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getConfiguratedDeploymentTargets();
+        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(KUBERNETES)) {
-            // when nothing was selected by the user, we enable vanilla Kubernetes by
-            // default
-            deploymentTargets
-                    .produce(
-                            new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
-                                    DEPLOYMENT_VERSION, VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy));
+            // when nothing was selected by the user, we enable vanilla Kubernetes by default
+            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, kind, DEPLOYMENT_GROUP,
+                    DEPLOYMENT_VERSION, VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy));
 
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,

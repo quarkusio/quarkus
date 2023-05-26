@@ -19,7 +19,7 @@ public class DeploymentUtil {
 
     /**
      * Get the available deployers.
-     * The list is obtained by checking for properties `quarkus.xxx.deploy`.
+     * The list is obtained by checking for properties {@code quarkus.xxx.deploy}.
      * These properties have a default value and thus they will be found regardless of the
      * actual user configuration, so we check for property names instead.
      *
@@ -28,14 +28,14 @@ public class DeploymentUtil {
     public static List<String> getDeployers() {
         Config config = ConfigProvider.getConfig();
         return StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .map(p -> QUARKUS_DEPLOY_PATTERN.matcher(p))
+                .map(QUARKUS_DEPLOY_PATTERN::matcher)
                 .filter(Matcher::matches)
                 .map(m -> m.group(1))
                 .collect(Collectors.toList());
     }
 
     /**
-     * @return a {@link Predicate} that tests if deploye is enabled.
+     * @return a {@link Predicate} that tests if deployer is enabled.
      */
     public static Predicate<String> isDeployExplicitlyEnabled() {
         return deployer -> ConfigProvider.getConfig().getOptionalValue(String.format(DEPLOY, deployer), Boolean.class)
@@ -50,17 +50,20 @@ public class DeploymentUtil {
     }
 
     /**
-     * Check if any of the specified deployers is enabled.
+     * Check if any of the specified deployers are enabled.
      *
-     * @param the name of the speicifed deployers.
-     * @return true if the specified deploy is explicitly enabled, fasle otherwise.
+     * @param deployers name of the specified deployers.
+     * @return {@code true} if the specified deployer is explicitly enabled, {@code false} otherwise.
      */
-    public static boolean isDeploymentEnabled(String... deployer) {
-        return getDeployers().stream().filter(isDeployExplicitlyEnabled()).anyMatch(d -> Arrays.asList(deployer).contains(d));
+    public static boolean isDeploymentEnabled(String... deployers) {
+        if (deployers == null) {
+            return false;
+        }
+        return getDeployers().stream().filter(isDeployExplicitlyEnabled()).anyMatch(d -> Arrays.asList(deployers).contains(d));
     }
 
     /**
-     * @return true if deployment is explicitly enabled using: `quarkus.<deployment target>.deploy=true`.
+     * @return true if deployment is explicitly enabled using: {@code quarkus.<deployment target>.deploy=true}.
      */
     public static boolean isDeploymentEnabled() {
         return getEnabledDeployer().isPresent();

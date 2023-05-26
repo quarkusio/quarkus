@@ -18,6 +18,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -175,10 +176,22 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
                             getLogger().debug("Dependency {} : copying {} to {}",
                                     dep.toGACTVString(),
                                     p, target);
-                            try {
-                                Files.copy(p, target);
-                            } catch (IOException e) {
-                                throw new GradleException(String.format("Failed to copy %s to %s", p, target), e);
+                            if (Files.isDirectory(p)) {
+                                // This case can happen when we are building a jar from inside the Quarkus repository
+                                // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
+                                // the non-jar dependencies are the Quarkus dependencies picked up on the file system
+                                try {
+                                    ZipUtils.zip(p, target);
+                                } catch (IOException e) {
+                                    throw new GradleException(
+                                            String.format("Failed to archive classes at %s into %s", p, target), e);
+                                }
+                            } else {
+                                try {
+                                    Files.copy(p, target);
+                                } catch (IOException e) {
+                                    throw new GradleException(String.format("Failed to copy %s to %s", p, target), e);
+                                }
                             }
                         }
                     });

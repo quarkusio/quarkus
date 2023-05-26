@@ -497,9 +497,15 @@ public class GrpcServerProcessor {
     @BuildStep(onlyIf = IsNormal.class)
     KubernetesPortBuildItem registerGrpcServiceInKubernetes(List<BindableServiceBuildItem> bindables) {
         if (!bindables.isEmpty()) {
-            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
-                    .orElse(9000);
-            return new KubernetesPortBuildItem(port, "grpc");
+            boolean useSeparateServer = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.use-separate-server",
+                    Boolean.class)
+                    .orElse(true);
+            if (useSeparateServer) {
+                // Only expose the named port "grpc" if the gRPC server is exposed using a separate server.
+                int port = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
+                        .orElse(9000);
+                return new KubernetesPortBuildItem(port, "grpc");
+            }
         }
         return null;
     }

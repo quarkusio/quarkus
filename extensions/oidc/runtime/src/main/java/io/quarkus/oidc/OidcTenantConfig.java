@@ -1294,6 +1294,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean allowOpaqueTokenIntrospection = true;
 
         /**
+         * Token customizer name.
+         *
+         * Allows to select a tenant specific token customizer as a named bean.
+         * Prefer using {@link Tenant} qualifier when registering custom {@link TokenCustomizer}.
+         * Use this property only to refer to `TokenCustomizer` implementations provided by this extension.
+         */
+        @ConfigItem
+        public Optional<String> customizerName = Optional.empty();
+
+        /**
          * Indirectly verify that the opaque (binary) access token is valid by using it to request UserInfo.
          * Opaque access token is considered valid if the provider accepted this token and returned a valid UserInfo.
          * You should only enable this option if the opaque access tokens have to be accepted but OpenId Connect
@@ -1437,6 +1447,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setSignatureAlgorithm(SignatureAlgorithm signatureAlgorithm) {
             this.signatureAlgorithm = Optional.of(signatureAlgorithm);
+        }
+
+        public Optional<String> getCustomizerName() {
+            return customizerName;
+        }
+
+        public void setCustomizerName(String customizerName) {
+            this.customizerName = Optional.of(customizerName);
         }
     }
 

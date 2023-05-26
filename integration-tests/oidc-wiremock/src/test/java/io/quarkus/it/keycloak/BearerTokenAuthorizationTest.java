@@ -3,8 +3,11 @@ package io.quarkus.it.keycloak;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static org.hamcrest.Matchers.equalTo;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
+import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
@@ -41,12 +46,71 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testAccessResourceAzure() throws Exception {
+        String azureJwk = readFile("jwks.json");
+        wireMockServer.stubFor(WireMock.get("/auth/azure/jwk")
+                .willReturn(WireMock.aResponse().withBody(azureJwk)));
+        String azureToken = readFile("token.txt");
+        RestAssured.given().auth().oauth2(azureToken)
+                .when().get("/api/admin/bearer-azure")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("Issuer:https://sts.windows.net/e7861267-92c5-4a03-bdb2-2d3e491e7831/"));
+    }
+
+    private String readFile(String filePath) throws Exception {
+        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filePath)) {
+            byte[] content = FileUtil.readFileContents(is);
+            return new String(content, StandardCharsets.UTF_8);
+        }
+    }
+
+    @Test
     public void testAccessAdminResource() {
-        RestAssured.given().auth().oauth2(getAccessToken("admin", Set.of("admin")))
+        String token = Jwt.preferredUserName("admin")
+                .groups(Set.of("admin"))
+                .issuer("https://server.example.com")
+                .audience("https://service.example.com")
+                .jws().header("customize", true)
+                .sign();
+
+        // 1st pass with `RS256` - OK
+        RestAssured.given().auth().oauth2(token)
                 .when().get("/api/admin/bearer")
                 .then()
                 .statusCode(200)
                 .body(Matchers.containsString("admin"));
+
+        // 2nd pass with `RS256` - 401 because the customizer removes `customize` header
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/api/admin/bearer")
+                .then()
+                .statusCode(401);
+
+        // replacing RS256 with RS384 fails - the customizer does nothing
+        token = setTokenAlgorithm(token, "RS384");
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/api/admin/bearer")
+                .then()
+                .statusCode(401);
+
+        // replacing RS256 with RS512 - OK, customizer sets the algorithm to the original RS256
+        token = setTokenAlgorithm(token, "RS512");
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/api/admin/bearer")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("admin"));
+    }
+
+    private static String setTokenAlgorithm(String token, String alg) {
+        io.vertx.core.json.JsonObject headers = OidcUtils.decodeJwtHeaders(token);
+        headers.put("alg", alg);
+        String newHeaders = new String(
+                Base64.getUrlEncoder().withoutPadding().encode(headers.toString().getBytes()),
+                StandardCharsets.UTF_8);
+        int dotIndex = token.indexOf('.');
+        return newHeaders + token.substring(dotIndex);
     }
 
     @Test

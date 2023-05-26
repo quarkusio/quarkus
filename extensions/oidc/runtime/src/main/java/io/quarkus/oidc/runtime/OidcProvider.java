@@ -1,12 +1,16 @@
 package io.quarkus.oidc.runtime;
 
 import java.io.Closeable;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -29,6 +33,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TokenCustomizer;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -60,6 +65,7 @@ public class OidcProvider implements Closeable {
     final OidcProviderClient client;
     final RefreshableVerificationKeyResolver asymmetricKeyResolver;
     final OidcTenantConfig oidcConfig;
+    final TokenCustomizer tokenCustomizer;
     final String issuer;
     final String[] audience;
     final Map<String, String> requiredClaims;
@@ -67,8 +73,14 @@ public class OidcProvider implements Closeable {
     final AlgorithmConstraints requiredAlgorithmConstraints;
 
     public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks, Key tokenDecryptionKey) {
+        this(client, oidcConfig, jwks, TokenCustomizerFinder.find(oidcConfig), tokenDecryptionKey);
+    }
+
+    public OidcProvider(OidcProviderClient client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks,
+            TokenCustomizer tokenCustomizer, Key tokenDecryptionKey) {
         this.client = client;
         this.oidcConfig = oidcConfig;
+        this.tokenCustomizer = tokenCustomizer;
         this.asymmetricKeyResolver = jwks == null ? null
                 : new JsonWebKeyResolver(jwks, oidcConfig.token.forcedJwkRefreshInterval);
 
@@ -82,6 +94,7 @@ public class OidcProvider implements Closeable {
     public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
         this.client = null;
         this.oidcConfig = oidcConfig;
+        this.tokenCustomizer = TokenCustomizerFinder.find(oidcConfig);
         this.asymmetricKeyResolver = new LocalPublicKeyResolver(publicKeyEnc);
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
@@ -125,8 +138,8 @@ public class OidcProvider implements Closeable {
 
     public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification)
             throws InvalidJwtException {
-        return verifyJwtTokenInternal(token, enforceAudienceVerification,
-                requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS,
+        return verifyJwtTokenInternal(customizeJwtToken(token), enforceAudienceVerification,
+                (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
                 asymmetricKeyResolver, true);
     }
 
@@ -206,6 +219,23 @@ public class OidcProvider implements Closeable {
 
         verifyTokenAge(result.localVerificationResult.getLong(Claims.iat.name()));
         return result;
+    }
+
+    private String customizeJwtToken(String token) {
+        if (tokenCustomizer != null) {
+            JsonObject headers = AbstractJsonObjectResponse.toJsonObject(
+                    OidcUtils.decodeJwtHeadersAsString(token));
+            headers = tokenCustomizer.customizeHeaders(headers);
+            if (headers != null) {
+                String newHeaders = new String(
+                        Base64.getUrlEncoder().withoutPadding().encode(headers.toString().getBytes()),
+                        StandardCharsets.UTF_8);
+                int dotIndex = token.indexOf('.');
+                String newToken = newHeaders + token.substring(dotIndex);
+                return newToken;
+            }
+        }
+        return token;
     }
 
     private void verifyTokenAge(Long iat) throws InvalidJwtException {

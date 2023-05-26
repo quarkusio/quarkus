@@ -7,6 +7,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 
 /**
@@ -32,6 +35,14 @@ public class AdminResource {
     @Produces(MediaType.APPLICATION_JSON)
     public String adminRequiredAlgorithm() {
         return "granted:" + identity.getRoles();
+    }
+
+    @Path("bearer-azure")
+    @GET
+    @Authenticated
+    @Produces(MediaType.APPLICATION_JSON)
+    public String adminAzure() {
+        return "Issuer:" + ((JsonWebToken) identity.getPrincipal()).getIssuer();
     }
 
     @Path("bearer-no-introspection")

@@ -14,7 +14,6 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
     private List<String> allowedValues;
     private String configPhase;
     private boolean wildcardEntry = false;
-    private String configSource;
 
     public ConfigDescription() {
     }
@@ -117,14 +116,6 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
     public ConfigDescription setWildcardEntry(boolean wildcardEntry) {
         this.wildcardEntry = wildcardEntry;
         return this;
-    }
-
-    public String getConfigSource() {
-        return configSource;
-    }
-
-    public void setConfigSource(String configSource) {
-        this.configSource = configSource;
     }
 
     @Override

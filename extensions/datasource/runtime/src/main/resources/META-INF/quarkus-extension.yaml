@@ -9,3 +9,5 @@ metadata:
   - "data"
   status: "stable"
   unlisted: true
+  config:
+  - "quarkus.datasource."

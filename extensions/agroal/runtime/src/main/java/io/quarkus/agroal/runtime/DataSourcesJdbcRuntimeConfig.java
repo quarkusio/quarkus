@@ -2,15 +2,14 @@ package io.quarkus.agroal.runtime;
 
 import java.util.Map;
 
-import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig.DataSourceJdbcOuterNamedRuntimeConfig;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.datasource")
@@ -28,6 +27,7 @@ public interface DataSourcesJdbcRuntimeConfig {
     @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
+    @WithDefaults
     Map<String, DataSourceJdbcOuterNamedRuntimeConfig> namedDataSources();
 
     @ConfigGroup
@@ -44,12 +44,6 @@ public interface DataSourcesJdbcRuntimeConfig {
             return jdbc();
         }
 
-        DataSourceJdbcOuterNamedRuntimeConfig dataSourceJdbcRuntimeConfig = namedDataSources().get(dataSourceName);
-
-        if (dataSourceJdbcRuntimeConfig != null) {
-            return dataSourceJdbcRuntimeConfig.jdbc();
-        }
-
-        return ConfigUtils.getInitializedConfigGroup(DataSourceJdbcRuntimeConfig.class, "quarkus.datasource.*.jdbc");
+        return namedDataSources().get(dataSourceName).jdbc();
     }
 }

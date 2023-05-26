@@ -51,9 +51,9 @@ public class OraclePoolRecorder {
         OraclePool oraclePool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactiveOracleConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
+                dataSourcesReactiveOracleConfig.dataSources().get(dataSourceName).reactive().oracle());
 
         shutdown.addShutdownTask(oraclePool::close);
         return new RuntimeValue<>(oraclePool);

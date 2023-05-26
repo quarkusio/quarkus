@@ -1,5 +1,6 @@
 package io.quarkus.datasource.deployment;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -11,13 +12,13 @@ public class DataSourceBindingProcessor {
 
     @BuildStep
     public void process(DataSourcesBuildTimeConfig config, BuildProducer<ServiceBindingQualifierBuildItem> bindings) {
-        config.defaultDataSource().dbKind().ifPresent(k -> {
-            bindings.produce(new ServiceBindingQualifierBuildItem(k, k, DEFAULT_DATASOURCE));
-        });
-
-        config.namedDataSources().forEach((n, c) -> {
+        config.dataSources().forEach((name, c) -> {
             c.dbKind().ifPresent(dbKind -> {
-                bindings.produce(new ServiceBindingQualifierBuildItem(dbKind, n));
+                if (DataSourceUtil.isDefault(name)) {
+                    bindings.produce(new ServiceBindingQualifierBuildItem(dbKind, dbKind, DEFAULT_DATASOURCE));
+                } else {
+                    bindings.produce(new ServiceBindingQualifierBuildItem(dbKind, name));
+                }
             });
         });
     }

@@ -9,7 +9,7 @@ import io.quarkus.runtime.LaunchMode;
 public interface DevServicesDatasourceProvider {
 
     RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-            Optional<String> datasourceName,
+            String datasourceName,
             DevServicesDatasourceContainerConfig devServicesDatasourceContainerConfig,
             LaunchMode launchMode,
             Optional<Duration> startupTimeout);

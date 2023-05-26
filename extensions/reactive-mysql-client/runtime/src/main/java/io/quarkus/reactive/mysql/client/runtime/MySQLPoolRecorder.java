@@ -54,9 +54,9 @@ public class MySQLPoolRecorder {
         MySQLPool mysqlPool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactiveMySQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
+                dataSourcesReactiveMySQLConfig.dataSources().get(dataSourceName).reactive().mysql());
 
         shutdown.addShutdownTask(mysqlPool::close);
         return new RuntimeValue<>(mysqlPool);
@@ -124,8 +124,8 @@ public class MySQLPoolRecorder {
             poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
 
-        if (dataSourceReactiveMySQLConfig.connectionTimeout.isPresent()) {
-            poolOptions.setConnectionTimeout(dataSourceReactiveMySQLConfig.connectionTimeout.getAsInt());
+        if (dataSourceReactiveMySQLConfig.connectionTimeout().isPresent()) {
+            poolOptions.setConnectionTimeout(dataSourceReactiveMySQLConfig.connectionTimeout().getAsInt());
             poolOptions.setConnectionTimeoutUnit(TimeUnit.SECONDS);
         }
 
@@ -173,17 +173,17 @@ public class MySQLPoolRecorder {
 
             mysqlConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
 
-            dataSourceReactiveMySQLConfig.charset.ifPresent(mysqlConnectOptions::setCharset);
-            dataSourceReactiveMySQLConfig.collation.ifPresent(mysqlConnectOptions::setCollation);
+            dataSourceReactiveMySQLConfig.charset().ifPresent(mysqlConnectOptions::setCharset);
+            dataSourceReactiveMySQLConfig.collation().ifPresent(mysqlConnectOptions::setCollation);
 
-            if (dataSourceReactiveMySQLConfig.pipeliningLimit.isPresent()) {
-                mysqlConnectOptions.setPipeliningLimit(dataSourceReactiveMySQLConfig.pipeliningLimit.getAsInt());
+            if (dataSourceReactiveMySQLConfig.pipeliningLimit().isPresent()) {
+                mysqlConnectOptions.setPipeliningLimit(dataSourceReactiveMySQLConfig.pipeliningLimit().getAsInt());
             }
 
-            dataSourceReactiveMySQLConfig.useAffectedRows.ifPresent(mysqlConnectOptions::setUseAffectedRows);
+            dataSourceReactiveMySQLConfig.useAffectedRows().ifPresent(mysqlConnectOptions::setUseAffectedRows);
 
-            if (dataSourceReactiveMySQLConfig.sslMode.isPresent()) {
-                final SslMode sslMode = dataSourceReactiveMySQLConfig.sslMode.get();
+            if (dataSourceReactiveMySQLConfig.sslMode().isPresent()) {
+                final SslMode sslMode = dataSourceReactiveMySQLConfig.sslMode().get();
                 mysqlConnectOptions.setSslMode(sslMode);
 
                 // If sslMode is verify-identity, we also need a hostname verification algorithm
@@ -211,7 +211,7 @@ public class MySQLPoolRecorder {
             dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().ifPresent(
                     mysqlConnectOptions::setHostnameVerificationAlgorithm);
 
-            dataSourceReactiveMySQLConfig.authenticationPlugin.ifPresent(mysqlConnectOptions::setAuthenticationPlugin);
+            dataSourceReactiveMySQLConfig.authenticationPlugin().ifPresent(mysqlConnectOptions::setAuthenticationPlugin);
 
             dataSourceReactiveRuntimeConfig.additionalProperties().forEach(mysqlConnectOptions::addProperty);
 

@@ -311,40 +311,31 @@ class AgroalProcessor {
             List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
-        Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
-                .resolve(dataSourcesBuildTimeConfig.defaultDataSource().dbKind(), defaultDbKinds,
-                        dataSourcesBuildTimeConfig.defaultDataSource().devservices().enabled()
-                                .orElse(dataSourcesBuildTimeConfig.namedDataSources().isEmpty()),
-                        curateOutcomeBuildItem);
-
-        if (effectiveDbKind.isPresent()) {
-            if (dataSourcesJdbcBuildTimeConfig.jdbc().enabled()) {
-                dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
-                        dataSourcesBuildTimeConfig.defaultDataSource(),
-                        dataSourcesJdbcBuildTimeConfig.jdbc(),
-                        effectiveDbKind.get(),
-                        resolveDriver(DataSourceUtil.DEFAULT_DATASOURCE_NAME, effectiveDbKind.get(),
-                                dataSourcesJdbcBuildTimeConfig.jdbc(), jdbcDriverBuildItems)));
-            }
-        }
-        for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.namedDataSources().entrySet()) {
+        for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
             DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
-                    .getDataSourceJdbcBuildTimeConfig(entry.getKey());
+                    .dataSources().get(entry.getKey()).jdbc();
             if (!jdbcBuildTimeConfig.enabled()) {
                 continue;
             }
-            Optional<String> dbKind = DefaultDataSourceDbKindBuildItem
+
+            boolean enableImplicitResolution = DataSourceUtil.isDefault(entry.getKey())
+                    ? entry.getValue().devservices().enabled().orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources())
+                    : true;
+
+            Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
                     .resolve(entry.getValue().dbKind(), defaultDbKinds,
-                            true,
+                            enableImplicitResolution,
                             curateOutcomeBuildItem);
-            if (!dbKind.isPresent()) {
+
+            if (!effectiveDbKind.isPresent()) {
                 continue;
             }
+
             dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
                     entry.getValue(),
                     jdbcBuildTimeConfig,
-                    dbKind.get(),
-                    resolveDriver(entry.getKey(), dbKind.get(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
+                    effectiveDbKind.get(),
+                    resolveDriver(entry.getKey(), effectiveDbKind.get(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
         }
 
         return dataSources;

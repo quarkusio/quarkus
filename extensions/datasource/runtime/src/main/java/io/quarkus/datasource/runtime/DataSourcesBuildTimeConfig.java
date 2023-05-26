@@ -1,38 +1,33 @@
 package io.quarkus.datasource.runtime;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.datasource")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface DataSourcesBuildTimeConfig {
 
     /**
-     * The default datasource.
-     */
-    @WithParentName
-    DataSourceBuildTimeConfig defaultDataSource();
-
-    /**
-     * Additional named datasources.
+     * Datasources.
      */
     @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
-    Map<String, DataSourceBuildTimeConfig> namedDataSources();
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceBuildTimeConfig> dataSources();
 
     /**
      * Whether or not an health check is published in case the smallrye-health extension is present.
@@ -73,19 +68,9 @@ public interface DataSourcesBuildTimeConfig {
     @Deprecated
     Optional<String> driver();
 
-    default DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return defaultDataSource();
-        }
-
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = namedDataSources().get(dataSourceName);
-        return Objects.requireNonNullElseGet(dataSourceBuildTimeConfig, new Supplier<DataSourceBuildTimeConfig>() {
-
-            @Override
-            public DataSourceBuildTimeConfig get() {
-                return ConfigUtils.getInitializedConfigGroup(DataSourceBuildTimeConfig.class, "quarkus.datasource.*");
-            }
-        });
+    default boolean hasNamedDataSources() {
+        return dataSources().keySet().size() > 1
+                || (!dataSources().isEmpty()
+                        && !dataSources().containsKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
     }
-
 }

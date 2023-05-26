@@ -80,12 +80,7 @@ class ReactiveMySQLClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
 
-        createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, mySQLPool, vertxPool, syntheticBeans,
-                DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
-                dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactiveMySQLConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
-
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
             createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, mySQLPool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMySQLConfig, defaultDataSourceDbKindBuildItems,
@@ -230,14 +225,14 @@ class ReactiveMySQLClientProcessor {
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .getDataSourceBuildTimeConfig(dataSourceName);
+                .dataSources().get(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
         Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
                 !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
-                        .orElse(dataSourcesBuildTimeConfig.namedDataSources().isEmpty()),
+                        .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
         if (!dbKind.isPresent()) {
             return false;
@@ -261,7 +256,7 @@ class ReactiveMySQLClientProcessor {
             return true;
         }
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
             if (isReactiveMySQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 return true;

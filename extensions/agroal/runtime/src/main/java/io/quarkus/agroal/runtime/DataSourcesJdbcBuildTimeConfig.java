@@ -8,26 +8,24 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigMapping(prefix = "quarkus.datasource")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface DataSourcesJdbcBuildTimeConfig {
 
     /**
-     * The default datasource.
-     */
-    DataSourceJdbcBuildTimeConfig jdbc();
-
-    /**
-     * Additional named datasources.
+     * Datasources.
      */
     @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
-    Map<String, DataSourceJdbcOuterNamedBuildTimeConfig> namedDataSources();
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceJdbcOuterNamedBuildTimeConfig> dataSources();
 
     @ConfigGroup
     public interface DataSourceJdbcOuterNamedBuildTimeConfig {
@@ -36,19 +34,5 @@ public interface DataSourcesJdbcBuildTimeConfig {
          * The JDBC build time configuration.
          */
         DataSourceJdbcBuildTimeConfig jdbc();
-    }
-
-    default DataSourceJdbcBuildTimeConfig getDataSourceJdbcBuildTimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return jdbc();
-        }
-
-        DataSourceJdbcOuterNamedBuildTimeConfig dataSourceJdbcBuildTimeConfig = namedDataSources().get(dataSourceName);
-
-        if (dataSourceJdbcBuildTimeConfig != null) {
-            return dataSourceJdbcBuildTimeConfig.jdbc();
-        }
-
-        return ConfigUtils.getInitializedConfigGroup(DataSourceJdbcBuildTimeConfig.class, "quarkus.datasource.*.jdbc");
     }
 }

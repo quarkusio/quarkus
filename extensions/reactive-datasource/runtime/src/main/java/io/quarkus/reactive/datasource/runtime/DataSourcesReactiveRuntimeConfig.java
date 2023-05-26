@@ -8,8 +8,8 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
@@ -29,6 +29,7 @@ public interface DataSourcesReactiveRuntimeConfig {
     @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
+    @WithDefaults
     Map<String, DataSourceReactiveOuterNamedRuntimeConfig> namedDataSources();
 
     default DataSourceReactiveRuntimeConfig getDataSourceReactiveRuntimeConfig(String dataSourceName) {
@@ -36,13 +37,7 @@ public interface DataSourcesReactiveRuntimeConfig {
             return defaultDataSource();
         }
 
-        DataSourceReactiveOuterNamedRuntimeConfig dataSourceReactiveRuntimeConfig = namedDataSources().get(dataSourceName);
-
-        if (dataSourceReactiveRuntimeConfig != null) {
-            return dataSourceReactiveRuntimeConfig.reactive();
-        }
-
-        return ConfigUtils.getInitializedConfigGroup(DataSourceReactiveRuntimeConfig.class, "quarkus.datasource.*.reactive");
+        return namedDataSources().get(dataSourceName).reactive();
     }
 
     @ConfigGroup

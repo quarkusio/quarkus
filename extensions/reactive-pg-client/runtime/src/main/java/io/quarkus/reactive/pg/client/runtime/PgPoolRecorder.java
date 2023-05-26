@@ -54,9 +54,9 @@ public class PgPoolRecorder {
         PgPool pgPool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactivePostgreSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
+                dataSourcesReactivePostgreSQLConfig.dataSources().get(dataSourceName).reactive().postgresql());
 
         shutdown.addShutdownTask(pgPool::close);
         return new RuntimeValue<>(pgPool);
@@ -167,12 +167,12 @@ public class PgPoolRecorder {
 
             pgConnectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
 
-            if (dataSourceReactivePostgreSQLConfig.pipeliningLimit.isPresent()) {
-                pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit.getAsInt());
+            if (dataSourceReactivePostgreSQLConfig.pipeliningLimit().isPresent()) {
+                pgConnectOptions.setPipeliningLimit(dataSourceReactivePostgreSQLConfig.pipeliningLimit().getAsInt());
             }
 
-            if (dataSourceReactivePostgreSQLConfig.sslMode.isPresent()) {
-                final SslMode sslMode = dataSourceReactivePostgreSQLConfig.sslMode.get();
+            if (dataSourceReactivePostgreSQLConfig.sslMode().isPresent()) {
+                final SslMode sslMode = dataSourceReactivePostgreSQLConfig.sslMode().get();
                 pgConnectOptions.setSslMode(sslMode);
 
                 // If sslMode is verify-full, we also need a hostname verification algorithm

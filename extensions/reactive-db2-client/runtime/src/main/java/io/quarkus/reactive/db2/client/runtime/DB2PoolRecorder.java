@@ -56,9 +56,9 @@ public class DB2PoolRecorder {
         DB2Pool db2Pool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactiveDB2Config.getDataSourceReactiveRuntimeConfig(dataSourceName));
+                dataSourcesReactiveDB2Config.dataSources().get(dataSourceName).reactive().db2());
 
         shutdown.addShutdownTask(db2Pool::close);
         return new RuntimeValue<>(db2Pool);
@@ -175,7 +175,7 @@ public class DB2PoolRecorder {
 
         connectOptions.setCachePreparedStatements(dataSourceReactiveRuntimeConfig.cachePreparedStatements());
 
-        connectOptions.setSsl(dataSourceReactiveDB2Config.ssl);
+        connectOptions.setSsl(dataSourceReactiveDB2Config.ssl());
 
         connectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll());
 

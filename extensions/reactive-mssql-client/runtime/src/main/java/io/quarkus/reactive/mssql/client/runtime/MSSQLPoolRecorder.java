@@ -56,9 +56,9 @@ public class MSSQLPoolRecorder {
         MSSQLPool mssqlPool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactiveMSSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
+                dataSourcesReactiveMSSQLConfig.dataSources().get(dataSourceName).reactive().mssql());
 
         shutdown.addShutdownTask(mssqlPool::close);
         return new RuntimeValue<>(mssqlPool);
@@ -148,8 +148,8 @@ public class MSSQLPoolRecorder {
             mssqlConnectOptions = new MSSQLConnectOptions();
         }
 
-        if (dataSourceReactiveMSSQLConfig.packetSize.isPresent()) {
-            mssqlConnectOptions.setPacketSize(dataSourceReactiveMSSQLConfig.packetSize.getAsInt());
+        if (dataSourceReactiveMSSQLConfig.packetSize().isPresent()) {
+            mssqlConnectOptions.setPacketSize(dataSourceReactiveMSSQLConfig.packetSize().getAsInt());
         }
 
         if (dataSourceRuntimeConfig.username().isPresent()) {
@@ -180,7 +180,7 @@ public class MSSQLPoolRecorder {
 
         mssqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-        mssqlConnectOptions.setSsl(dataSourceReactiveMSSQLConfig.ssl);
+        mssqlConnectOptions.setSsl(dataSourceReactiveMSSQLConfig.ssl());
 
         mssqlConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll());
 

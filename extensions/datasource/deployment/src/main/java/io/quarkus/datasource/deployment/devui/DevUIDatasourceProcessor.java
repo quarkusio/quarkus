@@ -20,7 +20,7 @@ public class DevUIDatasourceProcessor {
 
         List<String> names = new ArrayList<>();
         names.add("<default>");
-        names.addAll(dataSourceBuildTimeConfig.namedDataSources().keySet());
+        names.addAll(dataSourceBuildTimeConfig.dataSources().keySet());
         Collections.sort(names);
         card.addBuildTimeData("datasources", names);
 

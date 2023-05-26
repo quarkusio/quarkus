@@ -152,9 +152,16 @@ public class BeanArchiveProcessor {
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
 
+        boolean rootIsAlwaysBeanArchive = !config.strictCompatibility;
+        Collection<ApplicationArchive> candidateArchives = applicationArchivesBuildItem.getApplicationArchives();
+        if (!rootIsAlwaysBeanArchive) {
+            candidateArchives = new ArrayList<>(candidateArchives);
+            candidateArchives.add(applicationArchivesBuildItem.getRootArchive());
+        }
+
         List<IndexView> indexes = new ArrayList<>();
 
-        for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
+        for (ApplicationArchive archive : candidateArchives) {
             if (isApplicationArchiveExcluded(config, excludeDependencyBuildItems, archive)) {
                 continue;
             }
@@ -168,7 +175,9 @@ public class BeanArchiveProcessor {
                 indexes.add(index);
             }
         }
-        indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
+        if (rootIsAlwaysBeanArchive) {
+            indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
+        }
         return CompositeIndex.create(indexes);
     }
 

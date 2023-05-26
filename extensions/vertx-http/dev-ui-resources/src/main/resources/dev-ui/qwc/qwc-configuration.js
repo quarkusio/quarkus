@@ -134,7 +134,7 @@ export class QwcConfiguration extends observeState(LitElement) {
     _filterTextChanged(e) {
         const searchTerm = (e.detail.value || '').trim();
         if (searchTerm === '') {
-            this._filtered = devuiState.allConfiguration
+            this._filtered = devuiState.allConfiguration;
             return;
         }
 
@@ -211,7 +211,7 @@ export class QwcConfiguration extends observeState(LitElement) {
                 <vaadin-icon id="icon-dev-${prop.name}" icon="font-awesome-solid:magic"></vaadin-icon>
                 <vaadin-tooltip for="icon-dev-${prop.name}" text="Automatically set by Dev Services"
                                 position="top-start"></vaadin-tooltip>
-            `
+            `;
         }
 
         if (prop.wildcardEntry) {
@@ -219,7 +219,7 @@ export class QwcConfiguration extends observeState(LitElement) {
                 <vaadin-icon id="icon-wc-${prop.name}" icon="font-awesome-solid:plus"></vaadin-icon>
                 <vaadin-tooltip for="icon-wc-${prop.name}" text="This will add a new named config group"
                                 position="top-start"></vaadin-tooltip>
-            `
+            `;
         }
 
         return html`
@@ -339,12 +339,13 @@ export class QwcConfiguration extends observeState(LitElement) {
         if (prop.defaultValue) {
             def = "<strong>Default value: </strong>" + prop.defaultValue;
         }
-        
+        let src = "<strong>Config source: </strong> " + prop.configValue.sourceName;
         return html`<div class="description">
                         <p>${unsafeHTML(prop.description)}</p>
                         <div>
                             <span><strong>Environment variable: </strong></span><code>${res}</code><br/>
-                            <span>${unsafeHTML(def)}</span>
+                            <span>${unsafeHTML(def)}</span><br/>
+                            <span>${unsafeHTML(src)}</span>
                         </div>
                     </div>`;
     }

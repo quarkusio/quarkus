@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 
 import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
 import org.jboss.arquillian.container.test.api.RunAsClient;
-import org.jboss.arquillian.core.api.InstanceProducer;
+import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.annotation.Inject;
 import org.jboss.arquillian.core.api.annotation.Observes;
 
@@ -25,7 +25,7 @@ public class QuarkusBeforeAfterLifecycle {
 
     @Inject
     @DeploymentScoped
-    private InstanceProducer<ClassLoader> appClassloader;
+    private Instance<QuarkusDeployment> deployment;
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) org.jboss.arquillian.test.spi.event.suite.Before event)
             throws Throwable {
@@ -97,7 +97,9 @@ public class QuarkusBeforeAfterLifecycle {
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
             NoSuchMethodException, SecurityException, ClassNotFoundException {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        ClassLoader cl = appClassloader.get() != null ? appClassloader.get() : old;
+        ClassLoader cl = deployment.get() != null && deployment.get().hasAppClassLoader()
+                ? deployment.get().getAppClassLoader()
+                : old;
 
         try {
             Thread.currentThread().setContextClassLoader(cl);

@@ -985,10 +985,11 @@ public class KubernetesCommonHelper {
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath) {
         if (livenessProbe.hasUserSuppliedAction()) {
             return Optional.of(
-                    new DecoratorBuildItem(target, new AddLivenessProbeDecorator(name, ProbeConverter.convert(livenessProbe))));
+                    new DecoratorBuildItem(target,
+                            new AddLivenessProbeDecorator(name, ProbeConverter.convert(name, livenessProbe))));
         } else if (livenessPath.isPresent()) {
             return Optional.of(new DecoratorBuildItem(target, new AddLivenessProbeDecorator(name,
-                    ProbeConverter.builder(livenessProbe).withHttpActionPath(livenessPath.get().getPath()).build())));
+                    ProbeConverter.builder(name, livenessProbe).withHttpActionPath(livenessPath.get().getPath()).build())));
         }
         return Optional.empty();
     }
@@ -997,10 +998,10 @@ public class KubernetesCommonHelper {
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath) {
         if (readinessProbe.hasUserSuppliedAction()) {
             return Optional.of(new DecoratorBuildItem(target,
-                    new AddReadinessProbeDecorator(name, ProbeConverter.convert(readinessProbe))));
+                    new AddReadinessProbeDecorator(name, ProbeConverter.convert(name, readinessProbe))));
         } else if (readinessPath.isPresent()) {
             return Optional.of(new DecoratorBuildItem(target, new AddReadinessProbeDecorator(name,
-                    ProbeConverter.builder(readinessProbe).withHttpActionPath(readinessPath.get().getPath()).build())));
+                    ProbeConverter.builder(name, readinessProbe).withHttpActionPath(readinessPath.get().getPath()).build())));
         }
         return Optional.empty();
     }
@@ -1009,10 +1010,10 @@ public class KubernetesCommonHelper {
             Optional<KubernetesHealthStartupPathBuildItem> startupPath) {
         if (startupProbe.hasUserSuppliedAction()) {
             return Optional.of(new DecoratorBuildItem(target,
-                    new AddStartupProbeDecorator(name, ProbeConverter.convert(startupProbe))));
+                    new AddStartupProbeDecorator(name, ProbeConverter.convert(name, startupProbe))));
         } else if (startupPath.isPresent()) {
             return Optional.of(new DecoratorBuildItem(target, new AddStartupProbeDecorator(name,
-                    ProbeConverter.builder(startupProbe).withHttpActionPath(startupPath.get().getPath()).build())));
+                    ProbeConverter.builder(name, startupProbe).withHttpActionPath(startupPath.get().getPath()).build())));
         }
         return Optional.empty();
     }

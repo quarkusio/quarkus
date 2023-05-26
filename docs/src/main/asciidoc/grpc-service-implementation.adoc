@@ -158,6 +158,7 @@ public class StreamingService implements Streaming {
 }
 ----
 
+[[health]]
 == Health Check
 For the implemented services, Quarkus gRPC exposes health information in the following format:
 [source,protobuf]

@@ -1282,6 +1282,7 @@ quarkus.kubernetes.env-vars.foo.configmap=myconfigmap
 `quarkus.kubernetes.env-vars` are deprecated (though still currently supported as of this writing) and the new declaration style should be used instead.
 See <<#env-vars>> and more specifically <<env-vars-backwards>> for more details.
 
+[[deployment]]
 == Deployment
 
 To trigger building and deploying a container image you need to enable the `quarkus.kubernetes.deploy` flag (the flag is disabled by default - furthermore it has no effect during test runs or dev mode).

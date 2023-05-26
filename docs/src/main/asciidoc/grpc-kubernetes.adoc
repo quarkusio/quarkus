@@ -1,0 +1,92 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Deploying your gRPC Service in Kubernetes
+include::_attributes.adoc[]
+:categories: serialization
+:summary: This guide explains how to deploy your gRPC services in Quarkus to Kubernetes.
+
+This page explains how to deploy your gRPC service in Quarkus in Kubernetes. 
+We'll continue with the example from xref:grpc-getting-started.adoc[the Getting Started gRPC guide]. 
+
+== Configuring your project to use the Quarkus Kubernetes extension
+
+Add the Quarkus Kubernetes extension to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kubernetes")
+----
+
+Next, we want to expose our application using the Kubernetes Ingress resource:
+
+[source,properties]
+----
+quarkus.kubernetes.ingress.expose=true
+----
+
+The Quarkus Kubernetes will bind the HTTP server using the port name `http` and the gRPC server using the port name `grpc`. By default, the Quarkus application will only expose the port name `http`, so only the HTTP server will be publicly accessible. To expose the gRPC server instead, set the `quarkus.kubernetes.ingress.target-port=grpc` property in your application.properties:
+
+[source,properties]
+----
+quarkus.kubernetes.ingress.target-port=grpc
+----
+
+TIP: If you configure Quarkus to use the same port for both HTTP and gRPC servers with the property `quarkus.grpc.server.use-separate-server=false`, then you don't need to change the default `target-port`.
+
+Finally, we need to generate the Kubernetes manifests by running the command in a terminal:
+
+include::{includes}/devtools/build.adoc[]
+
+Once generated, you can look at the `target/kubernetes` directory:
+
+[source,txt]
+----
+target/kubernetes
+└── kubernetes.json
+└── kubernetes.yml
+----
+
+You can find more information about how to deploy the application in Kubernetes in the xref:deploying-to-kubernetes.adoc#deployment[the Kubernetes guide].
+
+== Using gRPC Health probes
+
+By default, the Kubernetes resources do not contain readiness and liveness probes. To add them, import the Smallrye Health extension to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-health</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-health")
+----
+
+TIP: More information about the health extension can be found in xref:microprofile-health.adoc[the Microprofile Health guide].
+
+By the default, this extension will configure the probes to use the HTTP server (which is provided by some extensions like the Quarkus RESTEasy reactive extension). Internally, this probe will also use xref:grpc-service-implementation.adoc#health[the generated gRPC Health services]. 
+
+If your application does not use any Quarkus extension that exposes an HTTP server, you can still configure the probes to directly use the gRPC Health service by adding the property `quarkus.kubernetes.readiness-probe.grpc-action-enabled=true` into your configuration:
+
+[source,properties]
+----
+quarkus.kubernetes.readiness-probe.grpc-action-enabled=true
+----

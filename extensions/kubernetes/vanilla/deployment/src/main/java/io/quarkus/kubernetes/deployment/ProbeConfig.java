@@ -55,6 +55,12 @@ public class ProbeConfig {
     Optional<String> grpcAction;
 
     /**
+     * If enabled and `grpc-action` is not provided, it will use the generated service name and the gRPC port.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean grpcActionEnabled;
+
+    /**
      * The amount of time to wait before starting to probe.
      */
     @ConfigItem(defaultValue = "5")

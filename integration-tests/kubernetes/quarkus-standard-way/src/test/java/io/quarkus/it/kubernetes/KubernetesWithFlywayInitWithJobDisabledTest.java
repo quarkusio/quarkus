@@ -1,6 +1,7 @@
 package io.quarkus.it.kubernetes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -24,16 +25,16 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithFlywayInitTest {
+public class KubernetesWithFlywayInitWithJobDisabledTest {
 
-    private static final String NAME = "kubernetes-with-flyway";
+    private static final String NAME = "kubernetes-with-flyway-with-job-disabled";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .setLogFileName("k8s.log")
+            .overrideConfigKey("quarkus.kubernetes.init-tasks.\"" + NAME + "-flyway-init\".enabled", "false")
             .setForcedDependencies(Arrays.asList(
                     new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
                     new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
@@ -65,11 +66,9 @@ public class KubernetesWithFlywayInitTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
+                        assertThat(podSpec.getInitContainers()).noneSatisfy(container -> {
                             assertThat(container.getName()).isEqualTo("init");
-                            assertThat(container.getImage()).isEqualTo("groundnuty/k8s-wait-for:no-root-v1.7");
                         });
-
                     });
                 });
             });
@@ -79,34 +78,11 @@ public class KubernetesWithFlywayInitTest {
                 .filter(j -> "Job".equals(j.getKind()) && (NAME + "-flyway-init").equals(j.getMetadata().getName()))
                 .map(j -> (Job) j)
                 .findAny();
-        assertTrue(job.isPresent());
-
-        assertThat(job.get()).satisfies(j -> {
-            assertThat(j.getSpec()).satisfies(jobSpec -> {
-                assertThat(jobSpec.getCompletionMode()).isEqualTo("NonIndexed");
-                assertThat(jobSpec.getTemplate()).satisfies(t -> {
-                    assertThat(t.getSpec()).satisfies(podSpec -> {
-                        assertThat(podSpec.getRestartPolicy()).isEqualTo("OnFailure");
-                        assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo(NAME + "-flyway-init");
-                            assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))
-                                    .singleElement().satisfies(env -> {
-                                        assertThat(env.getValue()).isEqualTo("true");
-                                    });
-                            assertThat(container.getEnv())
-                                    .filteredOn(env -> "QUARKUS_INIT_AND_EXIT".equals(env.getName())).singleElement()
-                                    .satisfies(env -> {
-                                        assertThat(env.getValue()).isEqualTo("true");
-                                    });
-                        });
-                    });
-                });
-            });
-        });
+        assertFalse(job.isPresent());
 
         Optional<RoleBinding> roleBinding = kubernetesList.stream().filter(
                 r -> r instanceof RoleBinding && (NAME + "-view-jobs").equals(r.getMetadata().getName()))
                 .map(r -> (RoleBinding) r).findFirst();
-        assertTrue(roleBinding.isPresent());
+        assertFalse(roleBinding.isPresent());
     }
 }

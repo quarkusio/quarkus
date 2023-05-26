@@ -384,8 +384,8 @@ public class OpenshiftProcessor {
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         if (config.externalizeInit) {
-            InitTaskProcessor.process(OPENSHIFT, name, image, initTasks, jobs, initContainers, env, roles, roleBindings,
-                    decorators);
+            InitTaskProcessor.process(OPENSHIFT, name, image, initTasks, config.initTasks,
+                    jobs, initContainers, env, roles, roleBindings, decorators);
         }
     }
 }

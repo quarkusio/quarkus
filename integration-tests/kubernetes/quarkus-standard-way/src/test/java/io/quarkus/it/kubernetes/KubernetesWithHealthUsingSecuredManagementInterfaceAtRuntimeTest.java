@@ -1,8 +1,6 @@
 package io.quarkus.it.kubernetes;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -23,17 +21,15 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class KubernetesWithHealthUsingManagementInterfaceTest {
+public class KubernetesWithHealthUsingSecuredManagementInterfaceAtRuntimeTest {
 
-    private static final String NAME = "kubernetes-with-health-and-management";
+    private static final String NAME = "kubernetes-with-health-and-secured-management-at-runtime";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .setRun(true)
-            .setLogFileName("k8s.log")
             .withConfigurationResource(NAME + ".properties")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-smallrye-health", Version.getVersion())));
@@ -43,18 +39,6 @@ public class KubernetesWithHealthUsingManagementInterfaceTest {
 
     @LogFile
     private Path logfile;
-
-    @Test
-    public void assertApplicationRuns() {
-        assertThat(logfile).isRegularFile().hasFileName("k8s.log");
-        TestUtil.assertLogFileContents(logfile, "kubernetes", "health");
-
-        given()
-                .when().get("/greeting")
-                .then()
-                .statusCode(200)
-                .body(is("hello"));
-    }
 
     @Test
     public void assertGeneratedResources() throws IOException {
@@ -78,7 +62,7 @@ public class KubernetesWithHealthUsingManagementInterfaceTest {
                                 assertProbePath(p, "/q/health/ready");
 
                                 assertNotNull(p.getHttpGet());
-                                assertEquals("HTTP", p.getHttpGet().getScheme());
+                                assertEquals("HTTPS", p.getHttpGet().getScheme());
                                 assertEquals(9000, p.getHttpGet().getPort().getIntVal());
                             });
                             assertThat(container.getLivenessProbe()).isNotNull().satisfies(p -> {
@@ -86,7 +70,7 @@ public class KubernetesWithHealthUsingManagementInterfaceTest {
                                 assertProbePath(p, "/liveness");
 
                                 assertNotNull(p.getHttpGet());
-                                assertEquals("HTTP", p.getHttpGet().getScheme());
+                                assertEquals("HTTPS", p.getHttpGet().getScheme());
                                 assertEquals(9000, p.getHttpGet().getPort().getIntVal());
                             });
                         });

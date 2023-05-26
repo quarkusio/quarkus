@@ -322,15 +322,16 @@ public class OpenshiftProcessor {
         // Probe port handling
         result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, LIVENESS_PROBE, config.livenessProbe,
                 portName,
-                ports));
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, READINESS_PROBE, config.readinessProbe,
-                        portName,
-                        ports));
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, STARTUP_PROBE, config.startupProbe,
-                        portName,
-                        ports));
+                ports,
+                config.ports));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, READINESS_PROBE, config.readinessProbe,
+                portName,
+                ports,
+                config.ports));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, OPENSHIFT, STARTUP_PROBE, config.startupProbe,
+                portName,
+                ports,
+                config.ports));
 
         // Handle non-openshift builds
         if (deploymentKind == DeploymentResourceKind.DeploymentConfig

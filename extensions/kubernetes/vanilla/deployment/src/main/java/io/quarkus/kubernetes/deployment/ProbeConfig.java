@@ -37,6 +37,12 @@ public class ProbeConfig {
     Optional<String> httpActionPath;
 
     /**
+     * The scheme of the {@literal HTTP get} action. Can be either "HTTP" or "HTTPS".
+     */
+    @ConfigItem
+    Optional<String> httpActionScheme;
+
+    /**
      * The command to use for the probe.
      */
     @ConfigItem

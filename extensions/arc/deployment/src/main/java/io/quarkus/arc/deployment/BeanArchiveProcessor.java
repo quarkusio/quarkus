@@ -22,10 +22,12 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -51,7 +53,8 @@ public class BeanArchiveProcessor {
             CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
             List<BeanArchivePredicateBuildItem> beanArchivePredicates,
             List<KnownCompatibleBeanArchiveBuildItem> knownCompatibleBeanArchives,
-            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions)
+            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformations)
             throws Exception {
 
         // First build an index from application archives
@@ -69,6 +72,20 @@ public class BeanArchiveProcessor {
         Set<String> additionalBeansFromExtensions = new HashSet<>();
         buildCompatibleExtensions.entrypoint.runDiscovery(applicationIndex, additionalBeansFromExtensions);
         additionalBeanClasses.addAll(additionalBeansFromExtensions);
+        annotationsTransformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                if (additionalBeansFromExtensions.contains(ctx.getTarget().asClass().name().toString())) {
+                    // make all the `@Discovery`-registered classes beans
+                    ctx.transform().add(AdditionalBean.class).done();
+                }
+            }
+        }));
 
         // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();

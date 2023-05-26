@@ -8,8 +8,8 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
 @ConfigMapping(prefix = "quarkus.datasource")
@@ -27,6 +27,7 @@ public interface DataSourcesJdbcBuildTimeConfig {
     @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
     @WithParentName
+    @WithDefault
     Map<String, DataSourceJdbcOuterNamedBuildTimeConfig> namedDataSources();
 
     @ConfigGroup
@@ -43,12 +44,6 @@ public interface DataSourcesJdbcBuildTimeConfig {
             return jdbc();
         }
 
-        DataSourceJdbcOuterNamedBuildTimeConfig dataSourceJdbcBuildTimeConfig = namedDataSources().get(dataSourceName);
-
-        if (dataSourceJdbcBuildTimeConfig != null) {
-            return dataSourceJdbcBuildTimeConfig.jdbc();
-        }
-
-        return ConfigUtils.getInitializedConfigGroup(DataSourceJdbcBuildTimeConfig.class, "quarkus.datasource.*.jdbc");
+        return namedDataSources().get(dataSourceName).jdbc();
     }
 }

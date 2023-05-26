@@ -85,7 +85,7 @@ class ReactiveOracleClientProcessor {
                 dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveOracleConfig, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
             createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, oraclePool, vertxPool, syntheticBeans,
                     dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
@@ -230,14 +230,14 @@ class ReactiveOracleClientProcessor {
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .getDataSourceBuildTimeConfig(dataSourceName);
+                .dataSources().get(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
         Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
                 !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
-                        .orElse(dataSourcesBuildTimeConfig.namedDataSources().isEmpty()),
+                        .orElse(dataSourcesBuildTimeConfig.dataSources().isEmpty()),
                 curateOutcomeBuildItem);
         if (!dbKind.isPresent()) {
             return false;
@@ -260,7 +260,7 @@ class ReactiveOracleClientProcessor {
             return true;
         }
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources().keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
             if (isReactiveOraclePoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 return true;

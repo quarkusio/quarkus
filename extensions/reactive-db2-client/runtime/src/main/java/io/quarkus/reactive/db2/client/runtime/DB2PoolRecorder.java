@@ -52,7 +52,7 @@ public class DB2PoolRecorder {
         DB2Pool db2Pool = initialize(vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
                 dataSourcesReactiveDB2Config.getDataSourceReactiveRuntimeConfig(dataSourceName));
 

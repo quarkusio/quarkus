@@ -136,7 +136,7 @@ public class DataSources {
 
         DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
                 .getDataSourceJdbcBuildTimeConfig(dataSourceName);
-        DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName);
+        DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourcesRuntimeConfig.dataSources().get(dataSourceName);
         DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
                 .getDataSourceJdbcRuntimeConfig(dataSourceName);
 

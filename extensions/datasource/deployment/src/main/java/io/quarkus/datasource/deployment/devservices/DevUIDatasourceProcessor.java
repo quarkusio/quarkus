@@ -25,7 +25,7 @@ public class DevUIDatasourceProcessor {
             DataSourcesBuildTimeConfig dataSourceBuildTimeConfig) {
         List<String> names = new ArrayList<>();
         names.add("<default>");
-        names.addAll(dataSourceBuildTimeConfig.namedDataSources().keySet());
+        names.addAll(dataSourceBuildTimeConfig.dataSources().keySet());
         Collections.sort(names);
         return new DevConsoleTemplateInfoBuildItem("dbs", names);
     }
@@ -42,7 +42,7 @@ public class DevUIDatasourceProcessor {
 
         List<String> names = new ArrayList<>();
         names.add("<default>");
-        names.addAll(dataSourceBuildTimeConfig.namedDataSources().keySet());
+        names.addAll(dataSourceBuildTimeConfig.dataSources().keySet());
         Collections.sort(names);
         card.addBuildTimeData("datasources", names);
 

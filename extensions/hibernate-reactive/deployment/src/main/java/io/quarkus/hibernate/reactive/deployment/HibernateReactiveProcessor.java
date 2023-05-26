@@ -146,10 +146,10 @@ public final class HibernateReactiveProcessor {
 
         // we only support the default pool for now
         Optional<String> dbKindOptional = DefaultDataSourceDbKindBuildItem.resolve(
-                dataSourcesBuildTimeConfig.defaultDataSource().dbKind(),
+                dataSourcesBuildTimeConfig.dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME).dbKind(),
                 defaultDataSourceDbKindBuildItems,
-                dataSourcesBuildTimeConfig.defaultDataSource().devservices().enabled()
-                        .orElse(dataSourcesBuildTimeConfig.namedDataSources().isEmpty()),
+                dataSourcesBuildTimeConfig.dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME).devservices().enabled()
+                        .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
         if (dbKindOptional.isPresent()) {
             final String dbKind = dbKindOptional.get();

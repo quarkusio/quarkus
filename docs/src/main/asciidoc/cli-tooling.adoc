@@ -748,7 +748,7 @@ Commands:
 
 ==== Where are the plugins added?
 
-Plugins are added in the plugin catalog that lives at: `<user home>/.quakrus/cli/plugins/quarkus-cli-catalog.json`.
+Plugins are added in the plugin catalog that lives at: `<user home>/.quarkus/cli/plugins/quarkus-cli-catalog.json`.
 
 There is a second plugin catalog that is relative to the current project (if available): `<project root>/.quarkus/cli/plugins/quarkus-cli-catalog.json`.
 

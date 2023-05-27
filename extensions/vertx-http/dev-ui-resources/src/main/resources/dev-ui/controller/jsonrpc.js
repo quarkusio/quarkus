@@ -245,6 +245,24 @@ export class JsonRpc {
             JsonRpc.webSocket.onmessage = function (event) {
                 var response = JSON.parse(event.data);
                 var devUiResponse = response.result;
+
+                if (!devUiResponse && response.error) {
+                    if (JsonRpc.promiseQueue.has(response.id)) {
+                        var saved = JsonRpc.promiseQueue.get(response.id);
+                        var promise = saved.promise;
+                        var log = saved.log;
+
+                        promise.reject_ex(response);
+                        JsonRpc.promiseQueue.delete(response.id);
+                        if (log) {
+                            var jsonrpcpayload = JSON.stringify(response);
+                            JsonRpc.dispatchMessageLogEntry(Level.Error, MessageDirection.Down, jsonrpcpayload);
+                        }
+                    }
+
+                    return;
+                }
+
                 var messageType = devUiResponse.messageType;
                 
                 if (messageType === MessageType.Void.toString()) { // Void response, typically used on initial subscription

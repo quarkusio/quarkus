@@ -6,7 +6,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -168,35 +167,28 @@ public class ApplicationArchiveBuildStep {
         if (indexDependencyBuildItems.isEmpty()) {
             return;
         }
-        final Collection<ResolvedDependency> userDeps = curateOutcomeBuildItem.getApplicationModel()
-                .getRuntimeDependencies();
-        final Map<ArtifactKey, ResolvedDependency> userMap = new HashMap<>(userDeps.size());
-        for (ResolvedDependency dep : userDeps) {
-            userMap.put(dep.getKey(), dep);
+        final Set<ArtifactKey> indexDependencyKeys = new HashSet<>(indexDependencyBuildItems.size());
+        for (IndexDependencyBuildItem indexDependencyBuildItem : indexDependencyBuildItems) {
+            indexDependencyKeys.add(ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
+                    indexDependencyBuildItem.getArtifactId(),
+                    indexDependencyBuildItem.getClassifier(),
+                    ArtifactCoords.TYPE_JAR));
         }
-        try {
-            for (IndexDependencyBuildItem indexDependencyBuildItem : indexDependencyBuildItems) {
-                final ArtifactKey key = ArtifactKey.of(indexDependencyBuildItem.getGroupId(),
-                        indexDependencyBuildItem.getArtifactId(),
-                        indexDependencyBuildItem.getClassifier(),
-                        ArtifactCoords.TYPE_JAR);
-                final ResolvedDependency artifact = userMap.get(key);
-                if (artifact == null) {
-                    throw new RuntimeException(
-                            "Additional dependency to be indexed (added via 'quarkus.index-dependency' configuration) "
-                                    + key
-                                    + " could not be found among the runtime dependencies of the application. Either remove the indexing configuration or add the dependency to your build system.");
-                }
-                for (Path path : artifact.getContentTree().getRoots()) {
-                    if (!root.isExcludedFromIndexing(path) && !root.getResolvedPaths().contains(path)
+        for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+            if (dep.isRuntimeCp() && indexDependencyKeys.contains(dep.getKey())) {
+                for (Path path : dep.getContentTree().getRoots()) {
+                    if (!root.isExcludedFromIndexing(path)
+                            && !root.getResolvedPaths().contains(path)
                             && indexedDeps.add(path)) {
-                        appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, key,
-                                removedResources));
+                        try {
+                            appArchives.add(createApplicationArchive(buildCloseables, indexCache, path, dep.getKey(),
+                                    removedResources));
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
                     }
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

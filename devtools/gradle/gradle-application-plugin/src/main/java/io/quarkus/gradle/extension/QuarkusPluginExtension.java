@@ -136,10 +136,18 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     public void setCacheLargeArtifacts(boolean cacheLargeArtifacts) {
         this.cacheLargeArtifacts.set(cacheLargeArtifacts);
     }
-
-    public String finalName() {
-        return getFinalName().get();
-    }
+    
+     /**
+     * @param fileCollection The file collection from which to retrieve the last file.
+     * @return The last file in the file collection, or null if the file collection is empty.
+     */
+    public static File getLastFile(FileCollection fileCollection) {
+        File lastFile = null;
+        for (File file : fileCollection) {
+            lastFile = file;
+        }
+        return lastFile;
+   }
 
     public void setFinalName(String finalName) {
         getFinalName().set(finalName);

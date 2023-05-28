@@ -4,9 +4,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import jakarta.inject.Inject;
+import jakarta.persistence.NonUniqueResultException;
 
 import org.hibernate.FlushMode;
-import org.hibernate.NonUniqueResultException;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logging.Logger;
 

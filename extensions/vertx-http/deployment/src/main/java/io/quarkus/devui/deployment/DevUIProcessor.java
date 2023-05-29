@@ -68,6 +68,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.DevConsoleCORSFilter;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
@@ -120,6 +121,7 @@ public class DevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     void registerDevUiHandlers(
+            DevUIConfig devUIConfig,
             MvnpmBuildItem mvnpmBuildItem,
             List<DevUIRoutesBuildItem> devUIRoutesBuildItems,
             List<StaticContentBuildItem> staticContentBuildItems,
@@ -131,6 +133,14 @@ public class DevUIProcessor {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
+        }
+
+        if (devUIConfig.cors.enabled) {
+            routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    //.orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS)
+                    .route(DEVUI + SLASH_ALL)
+                    .handler(new DevConsoleCORSFilter())
+                    .build());
         }
 
         // Websocket for JsonRPC comms
@@ -155,8 +165,8 @@ public class DevUIProcessor {
                     .route(route)
                     .handler(uihandler);
 
-            if (route.endsWith(DEVUI)) {
-                builder = builder.displayOnNotFoundPage("Dev UI 2.0");
+            if (route.endsWith(DEVUI + SLASH)) {
+                builder = builder.displayOnNotFoundPage("Dev UI (v2)");
                 routeProducer.produce(builder.build());
             }
 

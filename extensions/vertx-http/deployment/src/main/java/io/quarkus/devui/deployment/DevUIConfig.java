@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.devmode.console;
+package io.quarkus.devui.deployment;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;

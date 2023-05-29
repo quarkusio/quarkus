@@ -312,7 +312,7 @@ public class PackageConfig {
         public String version;
 
         /**
-         * The directory into which to save the fernflower tool if it doesn't exist
+         * The directory into which to save the Quiltflower tool if it doesn't exist
          */
         @ConfigItem(defaultValue = "${user.home}/.quarkus")
         public String jarDirectory;

@@ -711,25 +711,34 @@ public final class Beans {
     }
 
     static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
-            Set<DotName> classesReceivingNoArgsCtor) {
+            Set<DotName> classesReceivingNoArgsCtor, Set<BeanInfo> injectedBeans) {
+
+        // by default, we fail deployment due to unproxyability for all beans, but in strict mode,
+        // we only do that for beans that are injected somewhere -- and defer the error to runtime otherwise,
+        // due to CDI spec requirements
+        boolean failIfNotProxyable = bean.getDeployment().strictCompatibility ? injectedBeans.contains(bean) : true;
+
         if (bean.isClassBean()) {
             ClassInfo beanClass = bean.getTarget().get().asClass();
             String classifier = bean.getScope().isNormal() ? "Normal scoped" : null;
             if (classifier == null && bean.isSubclassRequired()) {
                 classifier = "Intercepted";
+                failIfNotProxyable = true;
             }
             if (Modifier.isFinal(beanClass.flags()) && classifier != null) {
                 // Client proxies and subclasses require a non-final class
                 if (bean.getDeployment().transformUnproxyableClasses) {
                     bytecodeTransformerConsumer
                             .accept(new BytecodeTransformer(beanClass.name().toString(), new FinalClassTransformFunction()));
-                } else {
+                } else if (failIfNotProxyable) {
                     errors.add(new DeploymentException(String.format("%s bean must not be final: %s", classifier, bean)));
+                } else {
+                    bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                 }
             }
             if (bean.getDeployment().strictCompatibility && classifier != null) {
-                validateNonStaticFinalMethods(beanClass, bean.getDeployment().getBeanArchiveIndex(),
-                        classifier, errors);
+                validateNonStaticFinalMethods(bean, beanClass, bean.getDeployment().getBeanArchiveIndex(),
+                        classifier, errors, failIfNotProxyable);
             }
 
             MethodInfo noArgsConstructor = beanClass.method(Methods.INIT);
@@ -754,13 +763,16 @@ public final class Beans {
                             classesReceivingNoArgsCtor.add(beanClass.name());
                         }
 
-                    } else {
+                    } else if (failIfNotProxyable) {
                         errors.add(cannotAddSyntheticNoArgsConstructor(beanClass));
+                    } else {
+                        bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                     }
+                } else if (failIfNotProxyable) {
+                    errors.add(new DeploymentException(String.format(
+                            "Normal scoped beans must declare a non-private constructor with no parameters: %s", bean)));
                 } else {
-                    errors.add(new DeploymentException(String
-                            .format("Normal scoped beans must declare a non-private constructor with no parameters: %s",
-                                    bean)));
+                    bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                 }
             }
 
@@ -770,12 +782,12 @@ public final class Beans {
                     bytecodeTransformerConsumer.accept(
                             new BytecodeTransformer(beanClass.name().toString(),
                                     new PrivateNoArgsConstructorTransformFunction()));
+                } else if (failIfNotProxyable) {
+                    errors.add(new DeploymentException(String.format(
+                            "%s bean is not proxyable because it has a private no-args constructor: %s. To fix this problem, change the constructor to be package-private",
+                            classifier, bean)));
                 } else {
-                    errors.add(
-                            new DeploymentException(
-                                    String.format(
-                                            "%s bean is not proxyable because it has a private no-args constructor: %s. To fix this problem, change the constructor to be package-private",
-                                            classifier, bean)));
+                    bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                 }
             }
 
@@ -811,15 +823,16 @@ public final class Beans {
                         bytecodeTransformerConsumer
                                 .accept(new BytecodeTransformer(returnTypeClass.name().toString(),
                                         new FinalClassTransformFunction()));
+                    } else if (failIfNotProxyable) {
+                        errors.add(new DeploymentException(
+                                String.format("%s must not have a return type that is final: %s", classifier, bean)));
                     } else {
-                        errors.add(
-                                new DeploymentException(String.format("%s must not have a" +
-                                        " return type that is final: %s", classifier, bean)));
+                        bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                     }
                 }
                 if (bean.getDeployment().strictCompatibility) {
-                    validateNonStaticFinalMethods(returnTypeClass, bean.getDeployment().getBeanArchiveIndex(),
-                            classifier, errors);
+                    validateNonStaticFinalMethods(bean, returnTypeClass, bean.getDeployment().getBeanArchiveIndex(),
+                            classifier, errors, failIfNotProxyable);
                 }
                 MethodInfo noArgsConstructor = returnTypeClass.method(Methods.INIT);
                 if (noArgsConstructor == null) {
@@ -844,22 +857,23 @@ public final class Beans {
                         } else {
                             errors.add(cannotAddSyntheticNoArgsConstructor(returnTypeClass));
                         }
+                    } else if (failIfNotProxyable) {
+                        errors.add(new DefinitionException(String.format(
+                                "Return type of a producer %s for normal scoped beans must declare a non-private constructor with no parameters: %s",
+                                methodOrField, bean)));
                     } else {
-                        errors.add(new DefinitionException(String
-                                .format("Return type of a producer %s for normal scoped beans must" +
-                                        " declare a non-private constructor with no parameters: %s", methodOrField, bean)));
+                        bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                     }
                 } else if (Modifier.isPrivate(noArgsConstructor.flags())) {
                     if (bean.getDeployment().transformUnproxyableClasses) {
                         bytecodeTransformerConsumer.accept(
                                 new BytecodeTransformer(returnTypeClass.name().toString(),
                                         new PrivateNoArgsConstructorTransformFunction()));
+                    } else if (failIfNotProxyable) {
+                        errors.add(new DeploymentException(String.format(
+                                "%s is not proxyable because it has a private no-args constructor: %s.", classifier, bean)));
                     } else {
-                        errors.add(
-                                new DeploymentException(
-                                        String.format(
-                                                "%s is not proxyable because it has a private no-args constructor: %s.",
-                                                classifier, bean)));
+                        bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                     }
                 }
             }
@@ -894,21 +908,23 @@ public final class Beans {
                     } else {
                         errors.add(cannotAddSyntheticNoArgsConstructor(beanClass));
                     }
+                } else if (failIfNotProxyable) {
+                    errors.add(new DeploymentException(String.format(
+                            "Normal scoped beans must declare a non-private constructor with no parameters: %s", bean)));
                 } else {
-                    errors.add(new DeploymentException(String
-                            .format("Normal scoped beans must declare a non-private constructor with no parameters: %s",
-                                    bean)));
+                    bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
                 }
             }
             if (bean.getScope().isNormal() && !Modifier.isInterface(beanClass.flags())
                     && bean.getDeployment().strictCompatibility) {
-                validateNonStaticFinalMethods(beanClass, bean.getDeployment().getBeanArchiveIndex(), "Normal scoped", errors);
+                validateNonStaticFinalMethods(bean, beanClass, bean.getDeployment().getBeanArchiveIndex(), "Normal scoped",
+                        errors, failIfNotProxyable);
             }
         }
     }
 
-    private static void validateNonStaticFinalMethods(ClassInfo clazz, IndexView beanArchiveIndex,
-            String classifier, List<Throwable> errors) {
+    private static void validateNonStaticFinalMethods(BeanInfo bean, ClassInfo clazz, IndexView beanArchiveIndex,
+            String classifier, List<Throwable> errors, boolean failIfNotProxyable) {
         // see also Methods.skipForClientProxy()
         while (!clazz.name().equals(DotNames.OBJECT)) {
             for (MethodInfo method : clazz.methods()) {
@@ -920,9 +936,13 @@ public final class Beans {
                 }
 
                 if (Modifier.isFinal(method.flags())) {
-                    errors.add(new DeploymentException(String.format(
-                            "%s bean must not declare non-static final methods with public, protected or default visibility: %s",
-                            classifier, method)));
+                    if (failIfNotProxyable) {
+                        errors.add(new DeploymentException(String.format(
+                                "%s bean must not declare non-static final methods with public, protected or default visibility: %s",
+                                classifier, method)));
+                    } else {
+                        bean.getDeployment().deferUnproxyableErrorToRuntime(bean);
+                    }
                 }
             }
 

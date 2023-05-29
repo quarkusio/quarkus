@@ -582,8 +582,8 @@ public class BeanInfo implements InjectionTargetInfo {
     }
 
     void validate(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
-            Set<DotName> classesReceivingNoArgsCtor) {
-        Beans.validateBean(this, errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor);
+            Set<DotName> classesReceivingNoArgsCtor, Set<BeanInfo> injectedBeans) {
+        Beans.validateBean(this, errors, bytecodeTransformerConsumer, classesReceivingNoArgsCtor, injectedBeans);
     }
 
     void validateInterceptorDecorator(List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
@@ -797,7 +797,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private void addClassLevelBindings(ClassInfo targetClass, Collection<AnnotationInstance> bindings) {
         List<AnnotationInstance> classLevelBindings = new ArrayList<>();
-        doAddClassLevelBindings(targetClass, classLevelBindings, Set.of());
+        doAddClassLevelBindings(targetClass, classLevelBindings, Set.of(), false);
         bindings.addAll(classLevelBindings);
         if (!stereotypes.isEmpty()) {
             // interceptor binding declared on a bean class replaces an interceptor binding of the same type
@@ -808,22 +808,27 @@ public class BeanInfo implements InjectionTargetInfo {
             }
             for (StereotypeInfo stereotype : Beans.stereotypesWithTransitive(stereotypes,
                     beanDeployment.getStereotypesMap())) {
-                doAddClassLevelBindings(stereotype.getTarget(), bindings, skip);
+                doAddClassLevelBindings(stereotype.getTarget(), bindings, skip, false);
             }
         }
     }
 
     // bindings whose class name is present in `skip` are ignored (this is used to ignore bindings on stereotypes
     // when the original class has a binding of the same type)
-    private void doAddClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings, Set<DotName> skip) {
+    private void doAddClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings, Set<DotName> skip,
+            boolean onlyInherited) {
         beanDeployment.getAnnotations(classInfo).stream()
                 .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
                 .filter(a -> !skip.contains(a.name()))
+                .filter(a -> !onlyInherited
+                        || beanDeployment.hasAnnotation(beanDeployment.getInterceptorBinding(a.name()), DotNames.INHERITED))
                 .forEach(bindings::add);
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
             ClassInfo superClass = getClassByName(beanDeployment.getBeanArchiveIndex(), classInfo.superName());
             if (superClass != null) {
-                doAddClassLevelBindings(superClass, bindings, skip);
+                // proper interceptor binding inheritance only in strict mode, due to Quarkus expecting security
+                // annotations (such as `@RolesAllowed`) to be inherited, even though they are not `@Inherited`
+                doAddClassLevelBindings(superClass, bindings, skip, beanDeployment.strictCompatibility);
             }
         }
     }

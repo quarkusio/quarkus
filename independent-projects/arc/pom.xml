@@ -58,7 +58,7 @@
         <version.kotlin-coroutines>1.6.4</version.kotlin-coroutines>
         <version.mockito>5.3.1</version.mockito>
         <!-- TCK versions -->
-        <version.arquillian>1.7.0.Alpha14</version.arquillian>
+        <version.arquillian>1.7.0.Final</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
         <version.cdi-tck>4.0.9</version.cdi-tck>
         <version.junit4>4.13.2</version.junit4>

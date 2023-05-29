@@ -64,6 +64,12 @@ public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
      */
     @Override
     default void close() {
+        // https://github.com/quarkusio/quarkus/issues/33665
+        if (Arc.container().strictCompatibility()) {
+            destroy();
+            return;
+        }
+
         InjectableBean<T> bean = getBean();
         if (bean == null || Dependent.class.equals(bean.getScope())) {
             destroy();

@@ -60,11 +60,7 @@
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.inheritance.InterceptorBindingInheritanceTest">
                 <methods>
                     <exclude name="testInterceptorBindingDirectlyInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingDirectlyInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingDirectlyNotInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingIndirectlyInheritedFromManagedBean"/>
                     <exclude name="testInterceptorBindingIndirectlyInheritedFromManagedBean"/>
-                    <exclude name="testMethodInterceptorBindingIndirectlyNotInheritedFromManagedBean"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.lookup.injectionpoint.InjectionPointTest">
@@ -85,25 +81,10 @@
                     <exclude name="testGetBean"/>
                 </methods>
             </class>
-            <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.unproxyable.UnproxyableManagedBeanTest">
-                <methods>
-                    <exclude name="testNormalScopedUnproxyableBeanWithPublicFinalMethodResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithPrivateConstructorResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithFinalClassResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithPackagePrivateFinalMethodResolution"/>
-                    <exclude name="testNormalScopedUnproxyableBeanWithProtectedFinalMethodResolution"/>
-                </methods>
-            </class>
             <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">
                 <methods>
                     <!-- https://github.com/jakartaee/cdi-tck/issues/455 -->
                     <exclude name="testInterceptorsImplementInterceptorInterface"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.dynamic.handle.InstanceHandleTest">
-                <methods>
-                    <exclude name="testGetHandle"/>
-                    <exclude name="testHandles"/>
                 </methods>
             </class>
             <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">

@@ -183,18 +183,20 @@ final class Methods {
         skipPredicate.startProcessing(classInfo, originalClassInfo);
 
         for (MethodInfo method : classInfo.methods()) {
+            MethodKey key = new MethodKey(method);
+            if (candidates.containsKey(key)) {
+                continue;
+            }
+
             // Note that we must merge the bindings first
             Set<AnnotationInstance> bindings = mergeBindings(beanDeployment, originalClassInfo, classLevelBindings,
                     ignoreMethodLevelBindings, method, noClassInterceptorsMethods);
-            if (bindings.isEmpty() && !targetHasAroundInvokes) {
-                // No bindings found and target class does not declare around invoke interceptor methods
-                continue;
-            }
+            boolean possiblyIntercepted = !bindings.isEmpty() || targetHasAroundInvokes;
             if (skipPredicate.test(method)) {
                 continue;
             }
             boolean addToCandidates = true;
-            if (Modifier.isFinal(method.flags())) {
+            if (Modifier.isFinal(method.flags()) && possiblyIntercepted) {
                 if (transformUnproxyableClasses && !isNoninterceptableKotlinMethod(method)) {
                     methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
                 } else {
@@ -203,7 +205,7 @@ final class Methods {
                 }
             }
             if (addToCandidates) {
-                candidates.computeIfAbsent(new Methods.MethodKey(method), key -> bindings);
+                candidates.putIfAbsent(key, bindings);
             }
         }
         skipPredicate.methodsProcessed();

@@ -65,6 +65,7 @@ import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
+import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
@@ -477,12 +478,6 @@ public class DevConsoleProcessor {
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             // otherwise this is handled in the setupDeploymentSideHandling method
             if (!i.isDeploymentSide()) {
-                if (devUIConfig.cors.enabled) {
-                    routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                            .route("dev-v1/*")
-                            .handler(new DevConsoleCORSFilter())
-                            .build());
-                }
                 NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
                                 "dev-v1/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
@@ -494,6 +489,14 @@ public class DevConsoleProcessor {
                 builder.handler(i.getHandler());
                 routeBuildItemBuildProducer.produce(builder.build());
             }
+        }
+
+        if (devUIConfig.cors.enabled) {
+            routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    //.orderedRoute("dev-v1/*", -1 * FilterBuildItem.CORS)
+                    .route("dev-v1/*")
+                    .handler(new DevConsoleCORSFilter())
+                    .build());
         }
 
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());

@@ -20,85 +20,12 @@
         </packages>
 
         <classes>
-            <class name="org.jboss.cdi.tck.tests.implementation.simple.lifecycle.SimpleBeanLifecycleTest">
-                <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
-                    <exclude name="testBeanCreateInjectsDependenciesAndInvokesInitializerToInstantiateInstance"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.contract.lifecycleCallback.LifecycleCallbackInterceptorTest">
-                <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/issues/448 -->
-                    <exclude name="testPostConstructInterceptor"/>
-                    <exclude name="testProtectedLifecycleInterceptorMethod"/>
-                    <exclude name="testLifeCycleCallbackInterceptorNotInvokedForMethodLevelInterceptor"/>
-                    <exclude name="testSingleMethodInterposingMultipleLifecycleCallbackEvents"/>
-                    <exclude name="testPackagePrivateLifecycleInterceptorMethod"/>
-                    <exclude name="testPreDestroyInterceptor"/>
-                    <exclude name="testAroundInvokeAndLifeCycleCallbackInterceptorsCanBeDefinedOnTheSameClass"/>
-                    <exclude name="testPrivateLifecycleInterceptorMethod"/>
-                    <exclude name="testPublicLifecycleInterceptorMethod"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.interceptors.tests.contract.invocationContext.InvocationContextTest">
-                <methods>
-                    <exclude name="testGetTargetMethod"/>
-                </methods>
-            </class>
+            <!-- === exclusions from the canonical exclusion list in the CDI TCK === -->
+
+            <!-- https://github.com/jakartaee/cdi-tck/issues/453 -->
             <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContextTest">
                 <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
                     <exclude name="testDestroyForSameCreationalContextOnly"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContext2Test">
-                <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/issues/457 -->
-                    <exclude name="testDestroyForSameCreationalContextOnly"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.interceptors.definition.inheritance.InterceptorBindingInheritanceTest">
-                <methods>
-                    <exclude name="testInterceptorBindingDirectlyInheritedFromManagedBean"/>
-                    <exclude name="testInterceptorBindingIndirectlyInheritedFromManagedBean"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.lookup.injectionpoint.InjectionPointTest">
-                <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/issues/459 -->
-                    <exclude name="testApiTypeInjectionPoint"/>
-                    <exclude name="testGetBindingTypes"/>
-                    <exclude name="testGetMemberField"/>
-                    <exclude name="testGetMemberMethod"/>
-                    <exclude name="testNullInjectionPointInjectedIntoNonInjectedObject"/>
-                    <exclude name="testCurrentBinding"/>
-                    <exclude name="testDependentScope"/>
-                    <exclude name="testGetAnnotatedParameter"/>
-                    <exclude name="testGetType"/>
-                    <exclude name="testIsTransient"/>
-                    <exclude name="testGetAnnotatedField"/>
-                    <exclude name="testGetMemberConstructor"/>
-                    <exclude name="testGetBean"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.interceptors.definition.InterceptorDefinitionTest">
-                <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/issues/455 -->
-                    <exclude name="testInterceptorsImplementInterceptorInterface"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.context.dependent.DependentContextTest">
-                <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
-                    <exclude name="testContextIsActiveDuringInjection"/>
-                    <!-- https://github.com/jakartaee/cdi-tck/issues/454 -->
-                    <exclude name="testDependentScopedInterceptorsAreDependentObjectsOfBean"/>
-                </methods>
-            </class>
-            <class name="org.jboss.cdi.tck.tests.context.GetFromContextualTest">
-                <methods>
-                    <!-- https://github.com/jakartaee/cdi-tck/pull/452 -->
-                    <exclude name="testGetMayNotCreateNewInstanceUnlessCreationalContextGiven"/>
                 </methods>
             </class>
         </classes>

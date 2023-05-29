@@ -9,9 +9,17 @@ public class ResteasyReactiveConfig {
     private long inputBufferSize;
 
     /**
+     * The size of the chunks of memory allocated when writing data.
+     * <p>
+     * This is a very advanced setting that should only be set if you understand exactly how it affects the output IO operations
+     * of the application.
+     */
+    private int minChunkSize = 128;
+
+    /**
      * The size of the output stream response buffer. If a response is larger than this and no content-length
      * is provided then the request will be chunked.
-     *
+     * <p>
      * Larger values may give slight performance increases for large responses, at the expense of more memory usage.
      */
     private int outputBufferSize = 8192;
@@ -35,9 +43,10 @@ public class ResteasyReactiveConfig {
     public ResteasyReactiveConfig() {
     }
 
-    public ResteasyReactiveConfig(long inputBufferSize, int outputBufferSize, boolean singleDefaultProduces,
+    public ResteasyReactiveConfig(long inputBufferSize, int minChunkSize, int outputBufferSize, boolean singleDefaultProduces,
             boolean defaultProduces) {
         this.inputBufferSize = inputBufferSize;
+        this.minChunkSize = minChunkSize;
         this.outputBufferSize = outputBufferSize;
         this.singleDefaultProduces = singleDefaultProduces;
         this.defaultProduces = defaultProduces;
@@ -53,6 +62,14 @@ public class ResteasyReactiveConfig {
 
     public int getOutputBufferSize() {
         return outputBufferSize;
+    }
+
+    public int getMinChunkSize() {
+        return minChunkSize;
+    }
+
+    public void setMinChunkSize(int minChunkSize) {
+        this.minChunkSize = minChunkSize;
     }
 
     public void setOutputBufferSize(int outputBufferSize) {

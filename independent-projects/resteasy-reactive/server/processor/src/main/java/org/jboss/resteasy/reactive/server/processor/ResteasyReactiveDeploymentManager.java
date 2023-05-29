@@ -82,6 +82,8 @@ public class ResteasyReactiveDeploymentManager {
     public static class ScanStep {
         final IndexView index;
         int inputBufferSize = 10000;
+
+        int minChunkSize = 128;
         int outputBufferSize = 8192;
         /**
          * By default, we assume a default produced media type of "text/plain"
@@ -215,8 +217,9 @@ public class ResteasyReactiveDeploymentManager {
                     .setAdditionalReaders(readers)
                     .setAdditionalWriters(writers)
                     .setInjectableBeans(new HashMap<>())
-                    .setConfig(new ResteasyReactiveConfig(inputBufferSize, outputBufferSize, singleDefaultProduces,
-                            defaultProduces))
+                    .setConfig(
+                            new ResteasyReactiveConfig(inputBufferSize, minChunkSize, outputBufferSize, singleDefaultProduces,
+                                    defaultProduces))
                     .setHttpAnnotationToMethod(resources.getHttpAnnotationToMethod())
                     .setApplicationScanningResult(applicationScanningResult);
             for (MethodScanner scanner : methodScanners) {

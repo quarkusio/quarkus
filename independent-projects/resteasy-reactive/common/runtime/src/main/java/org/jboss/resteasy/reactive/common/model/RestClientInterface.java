@@ -26,6 +26,8 @@ public class RestClientInterface {
 
     private Set<String> pathParameters = new HashSet<>();
 
+    private boolean encoded = false;
+
     public String getClassName() {
         return className;
     }
@@ -58,6 +60,15 @@ public class RestClientInterface {
 
     public RestClientInterface setPathParameters(Set<String> pathParameters) {
         this.pathParameters = pathParameters;
+        return this;
+    }
+
+    public boolean isEncoded() {
+        return encoded;
+    }
+
+    public RestClientInterface setEncoded(boolean encoded) {
+        this.encoded = encoded;
         return this;
     }
 }

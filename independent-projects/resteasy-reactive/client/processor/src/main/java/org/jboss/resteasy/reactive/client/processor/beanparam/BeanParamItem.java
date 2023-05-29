@@ -7,7 +7,7 @@ public class BeanParamItem extends Item {
     private final String className;
 
     public BeanParamItem(String fieldName, List<Item> items, String className, ValueExtractor extractor) {
-        super(fieldName, ItemType.BEAN_PARAM, extractor);
+        super(fieldName, ItemType.BEAN_PARAM, false, extractor);
         this.items = items;
         this.className = className;
     }

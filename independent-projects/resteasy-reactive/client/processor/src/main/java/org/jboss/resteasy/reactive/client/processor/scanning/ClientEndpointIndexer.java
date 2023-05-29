@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.client.processor.scanning;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_ARRAY;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_NUMBER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.JSONP_JSON_OBJECT;
@@ -64,6 +65,7 @@ public class ClientEndpointIndexer
         try {
             RestClientInterface clazz = new RestClientInterface();
             clazz.setClassName(classInfo.name().toString());
+            clazz.setEncoded(classInfo.hasDeclaredAnnotation(ENCODED));
             if (path != null) {
                 if (!path.startsWith("/")) {
                     path = "/" + path;

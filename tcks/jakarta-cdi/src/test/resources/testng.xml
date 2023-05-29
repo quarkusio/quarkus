@@ -1,0 +1,33 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="CDI TCK">
+    <listeners>
+        <listener class-name="org.jboss.cdi.tck.impl.testng.ConfigurationLoggingListener"/>
+        <listener class-name="org.jboss.cdi.tck.impl.testng.ProgressLoggingTestListener"/>
+        <listener class-name="org.jboss.cdi.tck.impl.testng.SingleTestClassMethodInterceptor"/>
+    </listeners>
+
+    <test name="CDI Lite TCK">
+        <groups>
+            <run>
+                <exclude name="cdi-full"/>
+                <exclude name="se"/>
+            </run>
+        </groups>
+
+        <packages>
+            <package name="org.jboss.cdi.tck.tests.*"/>
+            <package name="org.jboss.cdi.tck.interceptors.tests.*"/>
+        </packages>
+
+        <classes>
+            <!-- === exclusions from the canonical exclusion list in the CDI TCK === -->
+
+            <!-- https://github.com/jakartaee/cdi-tck/issues/453 -->
+            <class name="org.jboss.cdi.tck.tests.context.DestroyForSameCreationalContextTest">
+                <methods>
+                    <exclude name="testDestroyForSameCreationalContextOnly"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

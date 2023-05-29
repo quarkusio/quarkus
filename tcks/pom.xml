@@ -97,6 +97,9 @@
                 </property>
             </activation>
             <modules>
+                <module>jakarta-atinject</module>
+                <module>jakarta-cdi</module>
+                <module>jakarta-cdi-lang-model</module>
                 <module>microprofile-config</module>
                 <module>microprofile-context-propagation</module>
                 <module>microprofile-fault-tolerance</module>

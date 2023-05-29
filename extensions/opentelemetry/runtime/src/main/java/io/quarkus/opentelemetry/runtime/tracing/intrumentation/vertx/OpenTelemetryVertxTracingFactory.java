@@ -2,6 +2,8 @@ package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
 import java.util.function.BiConsumer;
 
+import org.jboss.logging.Logger;
+
 import io.vertx.core.Context;
 import io.vertx.core.spi.VertxTracerFactory;
 import io.vertx.core.spi.tracing.SpanKind;
@@ -11,12 +13,12 @@ import io.vertx.core.tracing.TracingOptions;
 import io.vertx.core.tracing.TracingPolicy;
 
 public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
-    private final Delegator vertxTracerDelegator = new Delegator();
+    private final VertxDelegator vertxTracerDelegator = new VertxDelegator();
 
     public OpenTelemetryVertxTracingFactory() {
     }
 
-    public Delegator getVertxTracerDelegator() {
+    public VertxDelegator getVertxTracerDelegator() {
         return vertxTracerDelegator;
     }
 
@@ -25,14 +27,16 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
         return vertxTracerDelegator;
     }
 
-    public static class Delegator implements VertxTracer {
+    public static class VertxDelegator implements VertxTracer {
+        private static final Logger log = Logger.getLogger(VertxDelegator.class);
+
         private VertxTracer delegate;
 
         public VertxTracer getDelegate() {
             return delegate;
         }
 
-        public Delegator setDelegate(final VertxTracer delegate) {
+        public VertxDelegator setDelegate(final VertxTracer delegate) {
             this.delegate = delegate;
             return this;
         }
@@ -46,6 +50,11 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final String operation,
                 final Iterable headers,
                 final TagExtractor tagExtractor) {
+            if (delegate == null) {
+                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
+                        "SpanKind: {}; Object: {}; Operation:{}.", kind, request.toString(), operation);
+                return null;
+            }
             return delegate.receiveRequest(context, kind, policy, request, operation, headers, tagExtractor);
         }
 
@@ -56,6 +65,11 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final Object payload,
                 final Throwable failure,
                 final TagExtractor tagExtractor) {
+            if (delegate == null) {
+                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
+                        "response: {}; failure: {}.", response.toString(), failure.getMessage());
+                return;
+            }
             delegate.sendResponse(context, response, payload, failure, tagExtractor);
         }
 
@@ -68,6 +82,11 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final String operation,
                 final BiConsumer headers,
                 final TagExtractor tagExtractor) {
+            if (delegate == null) {
+                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
+                        "SpanKind: {}; Object: {}; Operation:{}.", kind, request.toString(), operation);
+                return null;
+            }
             return delegate.sendRequest(context, kind, policy, request, operation, headers, tagExtractor);
         }
 
@@ -78,6 +97,11 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
                 final Object payload,
                 final Throwable failure,
                 final TagExtractor tagExtractor) {
+            if (delegate == null) {
+                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
+                        "response: {}; failure: {}.", response.toString(), failure.getMessage());
+                return;
+            }
             delegate.receiveResponse(context, response, payload, failure, tagExtractor);
         }
     }

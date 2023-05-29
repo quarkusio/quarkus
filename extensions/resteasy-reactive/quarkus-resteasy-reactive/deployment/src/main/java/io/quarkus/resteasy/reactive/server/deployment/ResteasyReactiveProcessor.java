@@ -5,6 +5,7 @@ import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReac
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
 import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DATE_FORMAT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LEGACY_PUBLISHER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUBLISHER;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MULTI;
@@ -556,6 +557,7 @@ public class ResteasyReactiveProcessor {
                                     MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     REST_MULTI.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     PUBLISHER.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
+                                    LEGACY_PUBLISHER.toString().equals(entry.getResourceMethod().getSimpleReturnType()) ||
                                     filtersAccessResourceMethod(resourceInterceptorsBuildItem.getResourceInterceptors()) ||
                                     entry.additionalRegisterClassForReflectionCheck()) {
                                 minimallyRegisterResourceClassForReflection(entry, reflectiveClassBuildItemBuildProducer);

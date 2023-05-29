@@ -539,12 +539,19 @@ public class KafkaProcessor {
         }
     }
 
-    // Kafka UI related stuff
-
     @BuildStep
-    public AdditionalBeanBuildItem kafkaClientBeans() {
+    public AdditionalBeanBuildItem kafkaAdmin() {
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(KafkaAdminClient.class)
+                .setUnremovable()
+                .build();
+    }
+
+    // Kafka UI related stuff
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public AdditionalBeanBuildItem kafkaClientBeans() {
+        return AdditionalBeanBuildItem.builder()
                 .addBeanClass(KafkaTopicClient.class)
                 .addBeanClass(KafkaUiUtils.class)
                 .setUnremovable()

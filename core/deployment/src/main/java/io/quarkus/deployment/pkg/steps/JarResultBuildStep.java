@@ -1681,7 +1681,12 @@ public class JarResultBuildStep {
                     int dotIndex = jarToDecompile.getFileName().toString().indexOf('.');
                     String fileName = jarToDecompile.getFileName().toString().substring(0, dotIndex);
                     ProcessBuilder processBuilder = new ProcessBuilder(
-                            Arrays.asList("java", "-jar", decompilerJar.toAbsolutePath().toString(),
+                            Arrays.asList(
+                                    "java",
+                                    "-jar",
+                                    decompilerJar.toAbsolutePath().toString(),
+                                    "-rsy=0", // synthetic methods
+                                    "-rbr=0", // bridge methods
                                     jarToDecompile.toAbsolutePath().toString(),
                                     context.decompiledOutputDir.resolve(fileName).toAbsolutePath().toString()));
                     if (log.isDebugEnabled()) {

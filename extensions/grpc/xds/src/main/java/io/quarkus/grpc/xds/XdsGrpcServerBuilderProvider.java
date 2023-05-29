@@ -21,6 +21,7 @@ import io.grpc.xds.XdsChannelCredentials;
 import io.grpc.xds.XdsServerBuilder;
 import io.grpc.xds.XdsServerCredentials;
 import io.quarkus.grpc.runtime.config.ClientXds;
+import io.quarkus.grpc.runtime.config.Enabled;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.Xds;
@@ -37,8 +38,7 @@ import io.vertx.core.impl.VertxInternal;
 public class XdsGrpcServerBuilderProvider implements GrpcBuilderProvider<XdsServerBuilder> {
     @Override
     public boolean providesServer(GrpcServerConfiguration configuration) {
-        Xds xds = configuration.xds;
-        return xds != null && xds.enabled;
+        return Enabled.isEnabled(configuration.xds);
     }
 
     @Override
@@ -96,12 +96,7 @@ public class XdsGrpcServerBuilderProvider implements GrpcBuilderProvider<XdsServ
 
     @Override
     public boolean providesChannel(GrpcClientConfiguration configuration) {
-        Xds xds = configuration.xds;
-        if (xds != null) {
-            return xds.enabled || XDS.equalsIgnoreCase(configuration.nameResolver);
-        } else {
-            return false;
-        }
+        return Enabled.isEnabled(configuration.xds) || XDS.equalsIgnoreCase(configuration.nameResolver);
     }
 
     @Override

@@ -12,6 +12,7 @@ import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
+import io.quarkus.grpc.runtime.config.Enabled;
 import io.quarkus.grpc.runtime.config.GrpcClientConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.spi.GrpcBuilderProvider;
@@ -24,7 +25,7 @@ import io.vertx.core.impl.VertxInternal;
 public class InProcessGrpcServerBuilderProvider implements GrpcBuilderProvider<InProcessServerBuilder> {
     @Override
     public boolean providesServer(GrpcServerConfiguration configuration) {
-        return configuration.inProcess.enabled;
+        return Enabled.isEnabled(configuration.inProcess);
     }
 
     @Override
@@ -69,7 +70,7 @@ public class InProcessGrpcServerBuilderProvider implements GrpcBuilderProvider<I
 
     @Override
     public boolean providesChannel(GrpcClientConfiguration configuration) {
-        return configuration.inProcess.enabled;
+        return Enabled.isEnabled(configuration.inProcess);
     }
 
     @Override

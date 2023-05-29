@@ -9,6 +9,7 @@ import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.D
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
@@ -58,6 +59,7 @@ import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.ParamConverter;
 import jakarta.ws.rs.ext.ParamConverterProvider;
 
@@ -100,6 +102,7 @@ import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 import org.jboss.resteasy.reactive.common.model.MaybeRestClientInterface;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
@@ -806,15 +809,21 @@ public class JaxrsClientReactiveProcessor {
         MethodDescriptor constructorDesc = MethodDescriptor.ofConstructor(name, WebTarget.class.getName(), List.class);
         try (ClassRestClientContext classContext = new ClassRestClientContext(name, constructorDesc, generatedClasses,
                 RestClientBase.class, Closeable.class.getName(), restClientInterface.getClassName())) {
-
             classContext.constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(RestClientBase.class, List.class),
                     classContext.constructor.getThis(), classContext.constructor.getMethodParam(1));
 
-            AssignableResultHandle baseTarget = classContext.constructor.createVariable(WebTarget.class);
+            AssignableResultHandle baseTarget = classContext.constructor.createVariable(WebTargetImpl.class);
+            if (restClientInterface.isEncoded()) {
+                classContext.constructor.assign(baseTarget,
+                        disableEncodingForWebTarget(classContext.constructor, classContext.constructor.getMethodParam(0)));
+            } else {
+                classContext.constructor.assign(baseTarget, classContext.constructor.getMethodParam(0));
+            }
+
             classContext.constructor.assign(baseTarget,
-                    classContext.constructor.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(WebTarget.class, "path", WebTarget.class, String.class),
-                            classContext.constructor.getMethodParam(0),
+                    classContext.constructor.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(WebTargetImpl.class, "path", WebTargetImpl.class, String.class),
+                            baseTarget,
                             classContext.constructor.load(restClientInterface.getPath())));
             FieldDescriptor baseTargetField = classContext.classCreator
                     .getFieldCreator("baseTarget", WebTargetImpl.class.getName())
@@ -893,6 +902,9 @@ public class JaxrsClientReactiveProcessor {
                     AssignableResultHandle methodTarget = methodCreator.createVariable(WebTarget.class);
                     methodCreator.assign(methodTarget,
                             methodCreator.readInstanceField(webTargetForMethod, methodCreator.getThis()));
+                    if (!restClientInterface.isEncoded() && method.isEncoded()) {
+                        methodCreator.assign(methodTarget, disableEncodingForWebTarget(methodCreator, methodTarget));
+                    }
 
                     Integer bodyParameterIdx = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
@@ -903,8 +915,20 @@ public class JaxrsClientReactiveProcessor {
 
                     AssignableResultHandle formParams = null;
 
+                    boolean lastEncodingEnabledByParam = true;
                     for (int paramIdx = 0; paramIdx < method.getParameters().length; ++paramIdx) {
                         MethodParameter param = method.getParameters()[paramIdx];
+                        if (!restClientInterface.isEncoded() && !method.isEncoded()) {
+                            boolean needsDisabling = isParamAlreadyEncoded(param);
+                            if (lastEncodingEnabledByParam && needsDisabling) {
+                                methodCreator.assign(methodTarget, disableEncodingForWebTarget(methodCreator, methodTarget));
+                                lastEncodingEnabledByParam = false;
+                            } else if (!lastEncodingEnabledByParam && !needsDisabling) {
+                                methodCreator.assign(methodTarget, enableEncodingForWebTarget(methodCreator, methodTarget));
+                                lastEncodingEnabledByParam = true;
+                            }
+                        }
+
                         if (param.parameterType == ParameterType.QUERY) {
                             //TODO: converters
 
@@ -1080,6 +1104,40 @@ public class JaxrsClientReactiveProcessor {
 
     }
 
+    /**
+     * The @Encoded annotation is only supported in path/query/matrix/form params.
+     */
+    private boolean isParamAlreadyEncoded(MethodParameter param) {
+        return param.encoded
+                && (param.parameterType == ParameterType.PATH
+                        || param.parameterType == ParameterType.QUERY
+                        || param.parameterType == ParameterType.FORM
+                        || param.parameterType == ParameterType.MATRIX);
+    }
+
+    private ResultHandle disableEncodingForWebTarget(BytecodeCreator creator, ResultHandle baseTarget) {
+        return setEncodingForWebTarget(creator, baseTarget, false);
+    }
+
+    private ResultHandle enableEncodingForWebTarget(BytecodeCreator creator, ResultHandle baseTarget) {
+        return setEncodingForWebTarget(creator, baseTarget, true);
+    }
+
+    private ResultHandle setEncodingForWebTarget(BytecodeCreator creator, ResultHandle baseTarget, boolean encode) {
+        ResultHandle webTarget = creator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(WebTargetImpl.class, "clone", WebTargetImpl.class), baseTarget);
+
+        ResultHandle uriBuilderImpl = creator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(WebTargetImpl.class, "getUriBuilderUnsafe", UriBuilderImpl.class),
+                webTarget);
+
+        creator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(UriBuilderImpl.class, "encode", UriBuilder.class, boolean.class),
+                uriBuilderImpl, creator.load(encode));
+
+        return webTarget;
+    }
+
     private boolean isMultipart(String[] consumes, MethodParameter[] methodParameters) {
         if (consumes != null) {
             for (String mimeType : consumes) {
@@ -1201,8 +1259,16 @@ public class JaxrsClientReactiveProcessor {
             AssignableResultHandle constructorTarget = createWebTargetForMethod(ownerContext.constructor, ownerTarget,
                     method);
 
+            boolean encodingEnabled = true;
+
             FieldDescriptor forMethodTargetDesc = ownerContext.classCreator
                     .getFieldCreator("targetInOwner" + methodIndex, WebTargetImpl.class).getFieldDescriptor();
+            if (subInterface.hasDeclaredAnnotation(ENCODED)) {
+                ownerContext.constructor.assign(constructorTarget,
+                        disableEncodingForWebTarget(ownerContext.constructor, constructorTarget));
+                encodingEnabled = false;
+            }
+
             ownerContext.constructor.writeInstanceField(forMethodTargetDesc, ownerContext.constructor.getThis(),
                     constructorTarget);
 
@@ -1214,9 +1280,26 @@ public class JaxrsClientReactiveProcessor {
             AssignableResultHandle client = createRestClientField(name, ownerContext.classCreator, ownerMethod);
             AssignableResultHandle webTarget = ownerMethod.createVariable(WebTarget.class);
             ownerMethod.assign(webTarget, ownerMethod.readInstanceField(forMethodTargetDesc, ownerMethod.getThis()));
+
+            if (encodingEnabled && method.isEncoded()) {
+                ownerMethod.assign(webTarget, disableEncodingForWebTarget(ownerMethod, webTarget));
+            }
+
             // Setup Path param from current method
+            boolean lastEncodingEnabledByParam = true;
             for (int i = 0; i < method.getParameters().length; i++) {
                 MethodParameter param = method.getParameters()[i];
+                if (encodingEnabled && !method.isEncoded()) {
+                    boolean needsDisabling = isParamAlreadyEncoded(param);
+                    if (lastEncodingEnabledByParam && needsDisabling) {
+                        ownerMethod.assign(webTarget, disableEncodingForWebTarget(ownerMethod, webTarget));
+                        lastEncodingEnabledByParam = false;
+                    } else if (!lastEncodingEnabledByParam && !needsDisabling) {
+                        ownerMethod.assign(webTarget, enableEncodingForWebTarget(ownerMethod, webTarget));
+                        lastEncodingEnabledByParam = true;
+                    }
+                }
+
                 if (param.parameterType == ParameterType.PATH) {
                     ResultHandle paramValue = ownerMethod.getMethodParam(i);
                     // methodTarget = methodTarget.resolveTemplate(paramname, paramvalue);
@@ -1310,17 +1393,34 @@ public class JaxrsClientReactiveProcessor {
                     AssignableResultHandle methodTarget = subMethodCreator.createVariable(WebTarget.class);
                     subMethodCreator.assign(methodTarget,
                             subMethodCreator.readInstanceField(subMethodTarget, subMethodCreator.getThis()));
+                    if (encodingEnabled && subMethod.isEncoded()) {
+                        subMethodCreator.assign(methodTarget, disableEncodingForWebTarget(subMethodCreator, methodTarget));
+                    }
 
                     ResultHandle bodyParameterValue = null;
                     AssignableResultHandle formParams = null;
                     Map<MethodDescriptor, ResultHandle> invocationBuilderEnrichers = new HashMap<>();
 
+                    boolean lastEncodingEnabledBySubParam = true;
                     int inheritedParamIndex = 0;
                     for (SubResourceParameter subParamField : subParamFields) {
                         inheritedParamIndex++;
                         MethodParameter param = subParamField.methodParameter;
                         ResultHandle paramValue = subMethodCreator.readInstanceField(subParamField.field,
                                 subMethodCreator.getThis());
+                        if (encodingEnabled && !subMethod.isEncoded()) {
+                            boolean needsDisabling = isParamAlreadyEncoded(param);
+                            if (lastEncodingEnabledBySubParam && needsDisabling) {
+                                subMethodCreator.assign(methodTarget,
+                                        disableEncodingForWebTarget(subMethodCreator, methodTarget));
+                                lastEncodingEnabledBySubParam = false;
+                            } else if (!lastEncodingEnabledBySubParam && !needsDisabling) {
+                                subMethodCreator.assign(methodTarget,
+                                        enableEncodingForWebTarget(subMethodCreator, methodTarget));
+                                lastEncodingEnabledBySubParam = true;
+                            }
+                        }
+
                         if (param.parameterType == ParameterType.QUERY) {
                             //TODO: converters
 
@@ -1435,6 +1535,19 @@ public class JaxrsClientReactiveProcessor {
                     // handle sub-method parameters:
                     for (int paramIdx = 0; paramIdx < subMethod.getParameters().length; ++paramIdx) {
                         MethodParameter param = subMethod.getParameters()[paramIdx];
+                        if (encodingEnabled && !subMethod.isEncoded()) {
+                            boolean needsDisabling = isParamAlreadyEncoded(param);
+                            if (lastEncodingEnabledBySubParam && needsDisabling) {
+                                subMethodCreator.assign(methodTarget,
+                                        disableEncodingForWebTarget(subMethodCreator, methodTarget));
+                                lastEncodingEnabledBySubParam = false;
+                            } else if (!lastEncodingEnabledBySubParam && !needsDisabling) {
+                                subMethodCreator.assign(methodTarget,
+                                        enableEncodingForWebTarget(subMethodCreator, methodTarget));
+                                lastEncodingEnabledBySubParam = true;
+                            }
+                        }
+
                         if (param.parameterType == ParameterType.QUERY) {
                             //TODO: converters
 
@@ -2338,7 +2451,17 @@ public class JaxrsClientReactiveProcessor {
         BytecodeCreator invoEnricher = invocationBuilderEnricher.ifNotNull(invocationBuilderEnricher.getMethodParam(1))
                 .trueBranch();
 
+        boolean encodingEnabled = true;
         for (Item item : beanParamItems) {
+
+            if (encodingEnabled && item.isEncoded()) {
+                creator.assign(target, disableEncodingForWebTarget(creator, target));
+                encodingEnabled = false;
+            } else if (!encodingEnabled && !item.isEncoded()) {
+                creator.assign(target, enableEncodingForWebTarget(creator, target));
+                encodingEnabled = true;
+            }
+
             switch (item.type()) {
                 case BEAN_PARAM:
                     BeanParamItem beanParamItem = (BeanParamItem) item;

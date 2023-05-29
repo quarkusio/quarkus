@@ -756,6 +756,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                     .setRunOnVirtualThread(runOnVirtualThread)
                     .setSuspended(suspended)
                     .setSse(sse)
+                    .setEncoded(currentMethodInfo.hasDeclaredAnnotation(ENCODED))
                     .setStreamElementType(streamElementType)
                     .setFormParamRequired(formParamRequired)
                     .setFileFormNames(fileFormNames)

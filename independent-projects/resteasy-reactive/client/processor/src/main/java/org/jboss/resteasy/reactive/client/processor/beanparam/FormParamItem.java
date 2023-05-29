@@ -12,8 +12,9 @@ public class FormParamItem extends Item {
     public FormParamItem(String fieldName, String formParamName, String paramType, String paramSignature,
             String sourceName,
             String mimeType, String fileName,
+            boolean encoded,
             ValueExtractor valueExtractor) {
-        super(fieldName, ItemType.FORM_PARAM, valueExtractor);
+        super(fieldName, ItemType.FORM_PARAM, encoded, valueExtractor);
         this.formParamName = formParamName;
         this.paramType = paramType;
         this.paramSignature = paramSignature;

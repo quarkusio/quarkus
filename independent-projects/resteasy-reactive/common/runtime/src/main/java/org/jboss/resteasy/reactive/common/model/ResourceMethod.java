@@ -72,13 +72,15 @@ public class ResourceMethod {
 
     private List<ResourceMethod> subResourceMethods;
 
+    private boolean encoded;
+
     public ResourceMethod() {
     }
 
     public ResourceMethod(String httpMethod, String path, String[] produces, String streamElementType, String[] consumes,
             Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
             boolean blocking, boolean suspended, boolean isSse, boolean isFormParamRequired,
-            List<ResourceMethod> subResourceMethods) {
+            List<ResourceMethod> subResourceMethods, boolean encoded) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.produces = produces;
@@ -94,6 +96,7 @@ public class ResourceMethod {
         this.isSse = isSse;
         this.isFormParamRequired = isFormParamRequired;
         this.subResourceMethods = subResourceMethods;
+        this.encoded = encoded;
     }
 
     public boolean isResourceLocator() {
@@ -242,6 +245,15 @@ public class ResourceMethod {
 
     public String getStreamElementType() {
         return streamElementType;
+    }
+
+    public boolean isEncoded() {
+        return encoded;
+    }
+
+    public ResourceMethod setEncoded(boolean encoded) {
+        this.encoded = encoded;
+        return this;
     }
 
     @Override

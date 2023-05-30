@@ -2,6 +2,9 @@ package io.quarkus.narayana.jta.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import jakarta.annotation.Priority;
@@ -13,6 +16,8 @@ import com.arjuna.ats.arjuna.common.ObjectStoreEnvironmentBean;
 import com.arjuna.ats.arjuna.recovery.TransactionStatusConnectionManager;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
+import com.arjuna.ats.internal.arjuna.objectstore.jdbc.JDBCImple_driver;
+import com.arjuna.ats.internal.arjuna.objectstore.jdbc.JDBCStore;
 import com.arjuna.ats.internal.arjuna.recovery.AtomicActionExpiryScanner;
 import com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule;
 import com.arjuna.ats.internal.arjuna.recovery.ExpiredTransactionStatusManagerScanner;
@@ -30,19 +35,23 @@ import com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple;
 import com.arjuna.ats.jta.common.JTAEnvironmentBean;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
+import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfiguratorBuildItem;
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -76,6 +85,7 @@ class NarayanaJtaProcessor {
     @Record(RUNTIME_INIT)
     @Produce(NarayanaInitBuildItem.class)
     public void build(NarayanaJtaRecorder recorder,
+            CombinedIndexBuildItem indexBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
@@ -95,21 +105,25 @@ class NarayanaJtaProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(AtomicActionExpiryScanner.class.getName()));
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(JTAEnvironmentBean.class.getName(),
-                UserTransactionImple.class.getName(),
-                CheckedActionFactoryImple.class.getName(),
-                TransactionManagerImple.class.getName(),
-                TransactionSynchronizationRegistryImple.class.getName(),
-                ObjectStoreEnvironmentBean.class.getName(),
-                ShadowNoFileLockStore.class.getName(),
-                SocketProcessId.class.getName(),
-                AtomicActionRecoveryModule.class.getName(),
-                XARecoveryModule.class.getName(),
-                XAResourceRecord.class.getName(),
-                JTATransactionLogXAResourceOrphanFilter.class.getName(),
-                JTANodeNameXAResourceOrphanFilter.class.getName(),
-                JTAActionStatusServiceXAResourceOrphanFilter.class.getName(),
-                ExpiredTransactionStatusManagerScanner.class.getName()).build());
+        indexBuildItem.getIndex().getAllKnownSubclasses(JDBCImple_driver.class).stream()
+                .map(impl -> ReflectiveClassBuildItem.builder(impl.name().toString()).build())
+                .forEach(reflectiveClass::produce);
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(JTAEnvironmentBean.class,
+                UserTransactionImple.class,
+                CheckedActionFactoryImple.class,
+                TransactionManagerImple.class,
+                TransactionSynchronizationRegistryImple.class,
+                ObjectStoreEnvironmentBean.class,
+                ShadowNoFileLockStore.class,
+                JDBCStore.class,
+                SocketProcessId.class,
+                AtomicActionRecoveryModule.class,
+                XARecoveryModule.class,
+                XAResourceRecord.class,
+                JTATransactionLogXAResourceOrphanFilter.class,
+                JTANodeNameXAResourceOrphanFilter.class,
+                JTAActionStatusServiceXAResourceOrphanFilter.class,
+                ExpiredTransactionStatusManagerScanner.class).build());
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);
@@ -133,6 +147,18 @@ class NarayanaJtaProcessor {
         recorder.setNodeName(transactions);
         recorder.setDefaultTimeout(transactions);
         recorder.setConfig(transactions);
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    @Consume(NarayanaInitBuildItem.class)
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    public void startRecoveryService(NarayanaJtaRecorder recorder,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems, TransactionManagerConfiguration transactions) {
+        Map<Boolean, String> namedDataSources = new HashMap<>();
+
+        jdbcDataSourceBuildItems.forEach(i -> namedDataSources.put(i.isDefault(), i.getName()));
+        recorder.startRecoveryService(transactions, namedDataSources);
     }
 
     @BuildStep(onlyIf = IsTest.class)

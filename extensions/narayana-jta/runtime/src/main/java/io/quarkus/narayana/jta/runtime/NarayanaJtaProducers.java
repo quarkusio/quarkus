@@ -7,18 +7,19 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 import jakarta.transaction.UserTransaction;
 
+import org.jboss.logging.Logger;
 import org.jboss.tm.JBossXATerminator;
 import org.jboss.tm.XAResourceRecoveryRegistry;
 import org.jboss.tm.usertx.UserTransactionRegistry;
 
 import com.arjuna.ats.internal.jbossatx.jta.jca.XATerminator;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
-import com.arjuna.ats.jbossatx.jta.RecoveryManagerService;
 
 import io.quarkus.arc.Unremovable;
 
 @Dependent
 public class NarayanaJtaProducers {
+    private static final Logger log = Logger.getLogger(NarayanaJtaProducers.class);
 
     @Produces
     @ApplicationScoped
@@ -41,13 +42,8 @@ public class NarayanaJtaProducers {
 
     @Produces
     @Singleton
-    public XAResourceRecoveryRegistry xaResourceRecoveryRegistry(TransactionManagerConfiguration config) {
-        RecoveryManagerService recoveryManagerService = new RecoveryManagerService();
-        if (config.enableRecovery) {
-            recoveryManagerService.create();
-            recoveryManagerService.start();
-        }
-        return recoveryManagerService;
+    public XAResourceRecoveryRegistry xaResourceRecoveryRegistry() {
+        return QuarkusRecoveryService.getInstance();
     }
 
     @Produces

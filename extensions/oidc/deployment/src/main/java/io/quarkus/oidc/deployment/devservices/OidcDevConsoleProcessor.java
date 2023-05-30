@@ -6,24 +6,34 @@ import java.util.Set;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
+import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.devui.OidcDevServicesUtils;
+import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
@@ -50,13 +60,19 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     OidcBuildTimeConfig oidcConfig;
 
+    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(BuildProducer<DevConsoleTemplateInfoBuildItem> devConsoleInfo,
             BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
-            Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<CardPageBuildItem> cardPageProducer,
+            ConfigurationBuildItem configurationBuildItem,
+            OidcDevUiRecorder recorder) {
         if (!isOidcTenantEnabled() || !isClientIdSet()) {
             return;
         }
@@ -95,6 +111,9 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                 devConsoleInfo.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl",
                         authServerUrl.substring(0, authServerUrl.indexOf("/realms/"))));
             }
+            boolean metadataNotNull = metadata != null;
+
+            // old DEV UI
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
                     devConsoleRuntimeInfo,
@@ -102,10 +121,10 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     providerName,
                     getApplicationType(providerConfig),
                     oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
-                    metadata != null ? metadata.getString("authorization_endpoint") : null,
-                    metadata != null ? metadata.getString("token_endpoint") : null,
-                    metadata != null ? metadata.getString("end_session_endpoint") : null,
-                    metadata != null
+                    metadataNotNull ? metadata.getString("authorization_endpoint") : null,
+                    metadataNotNull ? metadata.getString("token_endpoint") : null,
+                    metadataNotNull ? metadata.getString("end_session_endpoint") : null,
+                    metadataNotNull
                             ? (metadata.containsKey("introspection_endpoint") || metadata.containsKey("userinfo_endpoint"))
                             : checkProviderUserInfoRequired(providerConfig));
 
@@ -115,7 +134,41 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                             oidcConfig.devui.grantOptions),
                     new OidcPasswordClientCredHandler(vertxInstance, oidcConfig.devui.webClientTimeout,
                             oidcConfig.devui.grantOptions));
+
+            // new DEV UI
+            final String keycloakAdminUrl;
+            if (KEYCLOAK.equals(providerName)) {
+                keycloakAdminUrl = authServerUrl.substring(0, authServerUrl.indexOf("/realms/"));
+            } else {
+                keycloakAdminUrl = null;
+            }
+            var cardPage = createProviderWebComponent(recorder,
+                    capabilities,
+                    providerName,
+                    getApplicationType(providerConfig),
+                    oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
+                    metadataNotNull ? metadata.getString("authorization_endpoint") : null,
+                    metadataNotNull ? metadata.getString("token_endpoint") : null,
+                    metadataNotNull ? metadata.getString("end_session_endpoint") : null,
+                    metadataNotNull
+                            ? (metadata.containsKey("introspection_endpoint") || metadata.containsKey("userinfo_endpoint"))
+                            : checkProviderUserInfoRequired(providerConfig),
+                    syntheticBeanBuildItemBuildProducer,
+                    oidcConfig.devui.webClientTimeout,
+                    oidcConfig.devui.grantOptions,
+                    nonApplicationRootPathBuildItem,
+                    configurationBuildItem,
+                    keycloakAdminUrl,
+                    null,
+                    null,
+                    true);
+            cardPageProducer.produce(cardPage);
         }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    JsonRPCProvidersBuildItem produceOidcDevJsonRpcService() {
+        return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
     }
 
     private boolean checkProviderUserInfoRequired(OidcTenantConfig providerConfig) {

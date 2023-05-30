@@ -9,6 +9,8 @@ import static io.quarkus.kubernetes.deployment.Constants.MIN_NODE_PORT_VALUE;
 import static io.quarkus.kubernetes.deployment.Constants.MIN_PORT_NUMBER;
 import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
+import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
+import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPortIsEnabled;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -149,6 +151,14 @@ public class DevClusterHelper {
         // Handle init Containers
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(clusterKind, name, initContainers, result));
         result.addAll(KubernetesCommonHelper.createInitJobDecorators(clusterKind, name, jobs, result));
+
+        // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
+        if (managementPortIsEnabled()
+                && (config.ingress == null
+                        || !config.ingress.expose
+                        || !config.ingress.targetPort.equals(MANAGEMENT_PORT_NAME))) {
+            result.add(new DecoratorBuildItem(clusterKind, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+        }
         return result;
     }
 

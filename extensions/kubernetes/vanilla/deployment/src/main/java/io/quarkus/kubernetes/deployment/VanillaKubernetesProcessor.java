@@ -8,6 +8,8 @@ import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
+import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
+import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPortIsEnabled;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
 
 import java.util.ArrayList;
@@ -279,6 +281,15 @@ public class VanillaKubernetesProcessor {
         // Handle init Containers and Jobs
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(KUBERNETES, name, initContainers, result));
         result.addAll(KubernetesCommonHelper.createInitJobDecorators(KUBERNETES, name, jobs, result));
+
+        // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
+        if (managementPortIsEnabled()
+                && (config.ingress == null
+                        || !config.ingress.expose
+                        || !config.ingress.targetPort.equals(MANAGEMENT_PORT_NAME))) {
+            result.add(new DecoratorBuildItem(KUBERNETES, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+        }
+
         return result;
     }
 

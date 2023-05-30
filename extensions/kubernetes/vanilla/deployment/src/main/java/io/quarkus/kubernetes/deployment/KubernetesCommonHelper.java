@@ -230,13 +230,13 @@ public class KubernetesCommonHelper {
         result.addAll(createCommandDecorator(project, target, name, config, command));
         result.addAll(createArgsDecorator(project, target, name, config, command));
 
-        //Handle Probes
+        // Handle Probes
         if (!port.isEmpty()) {
             result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
                     config.getStartupProbe(), livenessProbePath, readinessProbePath, startupPath));
         }
 
-        //Handle RBAC
+        // Handle RBAC
         result.addAll(createRbacDecorators(name, target, config, kubernetesClientConfiguration, roles, clusterRoles,
                 serviceAccounts, roleBindings));
         return result;

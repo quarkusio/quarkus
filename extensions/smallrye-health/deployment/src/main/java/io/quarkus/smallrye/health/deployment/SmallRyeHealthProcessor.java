@@ -7,11 +7,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
@@ -101,6 +103,15 @@ class SmallRyeHealthProcessor {
     private static final String BRANDING_STYLE_MODULE = BRANDING_DIR + "smallrye-health-ui.css";
     private static final String BRANDING_FAVICON_GENERAL = BRANDING_DIR + "favicon.ico";
     private static final String BRANDING_FAVICON_MODULE = BRANDING_DIR + "smallrye-health-ui.ico";
+
+    // For Kubernetes exposing
+    private static final String SCHEME_HTTP = "HTTP";
+    private static final String SCHEME_HTTPS = "HTTPS";
+
+    // For Management ports
+    private static final String MANAGEMENT_SSL_PREFIX = "quarkus.management.ssl.certificate.";
+    private static final List<String> MANAGEMENT_SSL_PROPERTIES = List.of("key-store-file", "trust-store-file", "files",
+            "key-files");
 
     static class OpenAPIIncluded implements BooleanSupplier {
         HealthBuildTimeConfig config;
@@ -344,7 +355,7 @@ class SmallRyeHealthProcessor {
 
         if (managementInterfaceBuildTimeConfig.enabled) {
             // Switch to the "management" port
-            port.produce(new KubernetesProbePortNameBuildItem("management"));
+            port.produce(new KubernetesProbePortNameBuildItem("management", selectSchemeForManagement()));
         }
 
         livenessPathItemProducer.produce(
@@ -465,5 +476,22 @@ class SmallRyeHealthProcessor {
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SmallRyeHealthConfig healthConfig) {
         return launchMode.getLaunchMode().isDevOrTest() || healthConfig.ui.alwaysInclude;
+    }
+
+    /**
+     * This method will check whether any of the management SSL runtime properties are set at build time.
+     * If so, it will select the scheme HTTPS, otherwise HTTP.
+     */
+    private static String selectSchemeForManagement() {
+        Config config = ConfigProvider.getConfig();
+        for (String sslProperty : MANAGEMENT_SSL_PROPERTIES) {
+            Optional<List<String>> property = config.getOptionalValues(MANAGEMENT_SSL_PREFIX + sslProperty,
+                    String.class);
+            if (property.isPresent()) {
+                return SCHEME_HTTPS;
+            }
+        }
+
+        return SCHEME_HTTP;
     }
 }

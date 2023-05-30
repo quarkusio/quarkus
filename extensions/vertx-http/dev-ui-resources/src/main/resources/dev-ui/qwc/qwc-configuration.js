@@ -37,6 +37,12 @@ export class QwcConfiguration extends observeState(LitElement) {
         overflow: hidden;
       }
     
+      .confTopBar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
       vaadin-grid {
         height: 100%;
       }
@@ -82,10 +88,13 @@ export class QwcConfiguration extends observeState(LitElement) {
     `;
 
     static properties = {
-        _filtered: {state: true, type: Array},
+        _filtered: {state: true, type: Array}, // Filter the visible configuration
+        _visibleConfiguration: {state: true, type: Array}, // Either all or just user's configuration
         _values: {state: true},
         _detailsOpenedItem: {state: true, type: Array},
         _busy: {state: true},
+        _showOnlyOwnProperties: {state: true},
+        _searchTerm: {state: true}
     };
 
     constructor() {
@@ -96,13 +105,16 @@ export class QwcConfiguration extends observeState(LitElement) {
         if(this._filteredValue){
             this._filteredValue = this._filteredValue.replaceAll(",", " OR ");
         }
-
-        this._filtered = devuiState.allConfiguration;
+        this._visibleConfiguration = devuiState.allConfiguration;
+        this._filtered = this._visibleConfiguration;
         this.jsonRpc.getAllValues().then(e => {
             this._values = e.result;
         });
         this._detailsOpenedItem = [];
         this._busy = null;
+
+        this._showOnlyOwnProperties = false;
+        this._searchTerm = '';
     }
 
     render() {
@@ -132,29 +144,54 @@ export class QwcConfiguration extends observeState(LitElement) {
     }
 
     _filterTextChanged(e) {
-        const searchTerm = (e.detail.value || '').trim();
-        if (searchTerm === '') {
-            this._filtered = devuiState.allConfiguration;
+        this._searchTerm = (e.detail.value || '').trim();
+        return this._filterGrid();
+    }
+
+    _filterGrid(){
+        if (this._searchTerm === '') {
+            this._filtered = this._visibleConfiguration;
             return;
         }
 
-        this._filtered = devuiState.allConfiguration.filter((prop) => {
-           return  this._match(prop.name, searchTerm) || this._match(prop.description, searchTerm)
+        this._filtered = this._visibleConfiguration.filter((prop) => {
+           return  this._match(prop.name, this._searchTerm) || this._match(prop.description, this._searchTerm)
         });
     }
 
     _render() {
         return html`<div class="conf">
-                <vaadin-text-field
-                        placeholder="Filter"
-                        value="${this._filteredValue}"
-                        style="width: 100%;"
-                        @value-changed="${(e) => this._filterTextChanged(e)}">
-                    <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
-                    <qui-badge slot="suffix"><span>${this._filtered.length}</span></qui-badge>
-                </vaadin-text-field>
+                <div class="confTopBar">
+                    <vaadin-text-field
+                            placeholder="Filter"
+                            value="${this._filteredValue}"
+                            style="flex: 1;"
+                            @value-changed="${(e) => this._filterTextChanged(e)}">
+                        <vaadin-icon slot="prefix" icon="font-awesome-solid:filter"></vaadin-icon>
+                        <qui-badge slot="suffix"><span>${this._filtered.length}</span></qui-badge>
+                    </vaadin-text-field>
+                    <vaadin-checkbox theme="small" label="Show only my properties"
+                                    @change="${(event) => {
+                                        this._toggleShowOnlyOwnProperties(event.target.checked);
+                                    }}"
+                                    .checked=${this._showOnlyOwnProperties}>
+                    </vaadin-checkbox>
+                </div>
                 ${this._renderGrid()}
                 </div>`;
+    }
+
+    _toggleShowOnlyOwnProperties(onlyMine){
+        this._showOnlyOwnProperties = onlyMine;
+        if(this._showOnlyOwnProperties){
+            this._visibleConfiguration = devuiState.allConfiguration.filter((prop) => {
+                return (prop.configValue.sourceName && prop.configValue.sourceName.startsWith("PropertiesConfigSource[source")
+                    && prop.configValue.sourceName.endsWith("/application.properties]"));
+            });
+        }else {
+            this._visibleConfiguration = devuiState.allConfiguration;
+        }
+        return this._filterGrid();
     }
 
     _renderGrid(){

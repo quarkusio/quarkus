@@ -63,6 +63,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.qute.Qute;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
@@ -137,8 +138,8 @@ public class DevUIProcessor {
 
         if (devUIConfig.cors.enabled) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    //.orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS)
-                    .route(DEVUI + SLASH_ALL)
+                    .orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS)
+                    //.route(DEVUI + SLASH_ALL)
                     .handler(new DevConsoleCORSFilter())
                     .build());
         }

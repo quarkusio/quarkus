@@ -91,6 +91,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
@@ -493,8 +494,8 @@ public class DevConsoleProcessor {
 
         if (devUIConfig.cors.enabled) {
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    //.orderedRoute("dev-v1/*", -1 * FilterBuildItem.CORS)
-                    .route("dev-v1/*")
+                    .orderedRoute("dev-v1/*", -1 * FilterBuildItem.CORS)
+                    //.route("dev-v1/*")
                     .handler(new DevConsoleCORSFilter())
                     .build());
         }

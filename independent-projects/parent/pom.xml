@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-parent</artifactId>
@@ -93,7 +94,9 @@
         </developer>
     </developers>
 
-    <scm>
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
         <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
         <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
         <url>https://github.com/quarkusio/quarkus</url>

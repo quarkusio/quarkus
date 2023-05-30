@@ -3,21 +3,30 @@ package io.quarkus.oidc.deployment.devservices.keycloak;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevConsoleProcessor;
 import io.quarkus.oidc.deployment.devservices.OidcAuthorizationCodePostHandler;
 import io.quarkus.oidc.deployment.devservices.OidcPasswordClientCredHandler;
 import io.quarkus.oidc.deployment.devservices.OidcTestServiceHandler;
+import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
+import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
@@ -41,6 +50,7 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                             configProps.get().getProperties().get("keycloak.realms")));
 
             String realmUrl = configProps.get().getConfig().get("quarkus.oidc.auth-server-url");
+
             produceDevConsoleTemplateItems(capabilities,
                     devConsoleInfo,
                     devConsoleRuntimeInfo,
@@ -54,6 +64,50 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     realmUrl + "/protocol/openid-connect/logout",
                     true);
         }
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    void produceProviderComponent(Optional<KeycloakDevServicesConfigBuildItem> configProps,
+            BuildProducer<CardPageBuildItem> cardPageProducer,
+            OidcDevUiRecorder recorder,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+            ConfigurationBuildItem configurationBuildItem,
+            Capabilities capabilities) {
+        if (configProps.isPresent() && configProps.get().getConfig().containsKey("keycloak.url")) {
+            String realmUrl = configProps.get().getConfig().get("quarkus.oidc.auth-server-url");
+            @SuppressWarnings("unchecked")
+            Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");
+
+            var cardPage = createProviderWebComponent(
+                    recorder,
+                    capabilities,
+                    "Keycloak",
+                    configProps.get().getConfig().get("quarkus.oidc.application-type"),
+                    oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType()
+                            : keycloakConfig.devservices.grant.type.getGrantType(),
+                    realmUrl + "/protocol/openid-connect/auth",
+                    realmUrl + "/protocol/openid-connect/token",
+                    realmUrl + "/protocol/openid-connect/logout",
+                    true,
+                    syntheticBeanBuildItemBuildProducer,
+                    oidcConfig.devui.webClientTimeout,
+                    oidcConfig.devui.grantOptions,
+                    nonApplicationRootPathBuildItem,
+                    configurationBuildItem,
+                    configProps.get().getConfig().get("keycloak.url"),
+                    users,
+                    configProps.get().getProperties().get("keycloak.realms"),
+                    configProps.get().isContainerRestarted());
+            cardPageProducer.produce(cardPage);
+        }
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    JsonRPCProvidersBuildItem produceOidcDevJsonRpcService() {
+        return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

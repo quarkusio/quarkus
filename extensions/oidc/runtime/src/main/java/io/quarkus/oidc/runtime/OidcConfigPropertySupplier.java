@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.oidc.OidcTenantConfig;
@@ -46,43 +47,12 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
 
     @Override
     public String get() {
-        Optional<Provider> provider = ConfigProvider.getConfig().getOptionalValue(OIDC_PROVIDER_CONFIG_KEY,
-                Provider.class);
-        OidcTenantConfig providerConfig = provider.isPresent() ? KnownOidcProviders.provider(provider.get()) : null;
-        if (defaultValue != null || RELATIVE_PATH_CONFIG_PROPS.contains(oidcConfigProperty)) {
-            Optional<String> value = ConfigProvider.getConfig().getOptionalValue(oidcConfigProperty, String.class);
-            if (value.isEmpty() && providerConfig != null) {
-                if (END_SESSION_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
-                    value = providerConfig.endSessionPath;
-                } else if (TOKEN_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
-                    value = providerConfig.tokenPath;
-                } else if (AUTH_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
-                    value = providerConfig.authorizationPath;
-                }
-            }
-            if (value.isPresent()) {
-                return checkUrlProperty(value, providerConfig);
-            }
-            return defaultValue;
-        } else if (SCOPES_KEY.equals(oidcConfigProperty)) {
-            Optional<List<String>> scopes = ConfigProvider.getConfig().getOptionalValues(oidcConfigProperty, String.class);
-            if (scopes.isEmpty() && providerConfig != null) {
-                scopes = providerConfig.authentication.scopes;
-            }
-            if (scopes.isPresent()) {
-                return OidcCommonUtils.urlEncode(String.join(" ", scopes.get()));
-            } else {
-                return OidcConstants.OPENID_SCOPE;
-            }
-        } else {
-            return checkUrlProperty(ConfigProvider.getConfig().getOptionalValue(oidcConfigProperty, String.class),
-                    providerConfig);
-        }
+        return get(ConfigProvider.getConfig());
     }
 
-    private String checkUrlProperty(Optional<String> value, OidcTenantConfig providerConfig) {
+    private String checkUrlProperty(Optional<String> value, OidcTenantConfig providerConfig, Config config) {
         if (urlProperty && value.isPresent() && !value.get().startsWith("http:")) {
-            Optional<String> authServerUrl = ConfigProvider.getConfig().getOptionalValue(AUTH_SERVER_URL_CONFIG_KEY,
+            Optional<String> authServerUrl = config.getOptionalValue(AUTH_SERVER_URL_CONFIG_KEY,
                     String.class);
             if (authServerUrl.isEmpty() && providerConfig != null) {
                 authServerUrl = providerConfig.authServerUrl;
@@ -116,4 +86,38 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
         this.urlProperty = urlProperty;
     }
 
+    public String get(Config config) {
+        Optional<Provider> provider = config.getOptionalValue(OIDC_PROVIDER_CONFIG_KEY,
+                Provider.class);
+        OidcTenantConfig providerConfig = provider.isPresent() ? KnownOidcProviders.provider(provider.get()) : null;
+        if (defaultValue != null || RELATIVE_PATH_CONFIG_PROPS.contains(oidcConfigProperty)) {
+            Optional<String> value = config.getOptionalValue(oidcConfigProperty, String.class);
+            if (value.isEmpty() && providerConfig != null) {
+                if (END_SESSION_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
+                    value = providerConfig.endSessionPath;
+                } else if (TOKEN_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
+                    value = providerConfig.tokenPath;
+                } else if (AUTH_PATH_CONFIG_KEY.equals(oidcConfigProperty)) {
+                    value = providerConfig.authorizationPath;
+                }
+            }
+            if (value.isPresent()) {
+                return checkUrlProperty(value, providerConfig, config);
+            }
+            return defaultValue;
+        } else if (SCOPES_KEY.equals(oidcConfigProperty)) {
+            Optional<List<String>> scopes = config.getOptionalValues(oidcConfigProperty, String.class);
+            if (scopes.isEmpty() && providerConfig != null) {
+                scopes = providerConfig.authentication.scopes;
+            }
+            if (scopes.isPresent()) {
+                return OidcCommonUtils.urlEncode(String.join(" ", scopes.get()));
+            } else {
+                return OidcConstants.OPENID_SCOPE;
+            }
+        } else {
+            return checkUrlProperty(config.getOptionalValue(oidcConfigProperty, String.class),
+                    providerConfig, config);
+        }
+    }
 }

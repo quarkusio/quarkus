@@ -315,6 +315,28 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             return this;
         }
 
+        @Override
+        public RouteBuildItem.Builder orderedRoute(String route, Integer order) {
+            orderedRoute(route, order, null);
+            return this;
+        }
+
+        @Override
+        public RouteBuildItem.Builder orderedRoute(String route, Integer order, Consumer<Route> routeCustomizer) {
+            routeFunction(route, new Consumer<Route>() {
+                @Override
+                public void accept(Route route) {
+                    if (order != null) {
+                        route.order(order);
+                    }
+                    if (routeCustomizer != null) {
+                        routeCustomizer.accept(route);
+                    }
+                }
+            });
+            return this;
+        }
+
         public Builder nestedRoute(String baseRoute, String subRoute) {
             if (subRoute.startsWith("/")) {
                 routeFunction(subRoute, null);

@@ -495,7 +495,6 @@ public class DevConsoleProcessor {
         if (devUIConfig.cors.enabled) {
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .orderedRoute("dev-v1/*", -1 * FilterBuildItem.CORS)
-                    //.route("dev-v1/*")
                     .handler(new DevConsoleCORSFilter())
                     .build());
         }

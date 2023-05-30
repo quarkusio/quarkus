@@ -29,7 +29,7 @@ public final class QuarkusUpdatesRepository {
     private static final String QUARKUS_RECIPE_GA = "io.quarkus:quarkus-update-recipes";
     public static final String DEFAULT_UPDATE_RECIPES_VERSION = "LATEST";
 
-    public static final String DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION = "4.41.0";
+    public static final String DEFAULT_MAVEN_REWRITE_PLUGIN_VERSION = "4.46.0";
     public static final String DEFAULT_GRADLE_REWRITE_PLUGIN_VERSION = "5.38.0";
     public static final String PROP_REWRITE_MAVEN_PLUGIN_VERSION = "rewrite-maven-plugin-version";
     public static final String PROP_REWRITE_GRADLE_PLUGIN_VERSION = "rewrite-gradle-plugin-version";

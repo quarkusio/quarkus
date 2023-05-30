@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.quarkus.builder.Version;
@@ -47,6 +48,36 @@ public class KubernetesWithIngressTargetPortTest {
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo(APP_NAME);
+            });
+
+            assertThat(d.getSpec().getTemplate().getSpec().getContainers()).satisfiesOnlyOnce(c -> {
+                assertThat(c.getPorts()).hasSize(2);
+                assertThat(c.getPorts()).anySatisfy(port -> {
+                    assertThat(port.getName()).isEqualTo("http");
+                    assertThat(port.getContainerPort()).isEqualTo(8080);
+                });
+                assertThat(c.getPorts()).anySatisfy(port -> {
+                    assertThat(port.getName()).isEqualTo("https");
+                    assertThat(port.getContainerPort()).isEqualTo(7777);
+                });
+            });
+        });
+
+        assertThat(kubernetesList).filteredOn(i -> "Service".equals(i.getKind())).singleElement().satisfies(item -> {
+            assertThat(item).isInstanceOfSatisfying(Service.class, service -> {
+                assertThat(service.getMetadata()).satisfies(m -> {
+                    assertThat(m.getName()).isEqualTo(APP_NAME);
+                });
+
+                assertThat(service.getSpec().getPorts()).hasSize(2);
+                assertThat(service.getSpec().getPorts()).anySatisfy(port -> {
+                    assertThat(port.getName()).isEqualTo("http");
+                    assertThat(port.getTargetPort().getIntVal()).isEqualTo(8080);
+                });
+                assertThat(service.getSpec().getPorts()).anySatisfy(port -> {
+                    assertThat(port.getName()).isEqualTo("https");
+                    assertThat(port.getTargetPort().getIntVal()).isEqualTo(7777);
+                });
             });
         });
 

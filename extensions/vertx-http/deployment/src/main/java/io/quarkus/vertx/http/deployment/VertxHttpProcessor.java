@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
@@ -76,6 +77,11 @@ class VertxHttpProcessor {
 
     private static final String META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER = "META-INF/services/io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder";
     private static final Logger logger = Logger.getLogger(VertxHttpProcessor.class);
+
+    // For enabling HTTPS port in Kubernetes
+    private static final String HTTP_SSL_PREFIX = "quarkus.http.ssl.certificate.";
+    private static final List<String> HTTP_SSL_PROPERTIES = List.of("key-store-file", "trust-store-file", "files",
+            "key-files");
 
     @BuildStep
     LogCategoryBuildItem logging() {
@@ -168,10 +174,7 @@ class VertxHttpProcessor {
 
     @BuildStep
     public void kubernetes(BuildProducer<KubernetesPortBuildItem> kubernetesPorts) {
-        HttpConfiguration.InsecureRequests insecureRequests = ConfigProvider.getConfig()
-                .getOptionalValue("quarkus.http.insecure-requests", HttpConfiguration.InsecureRequests.class)
-                .orElse(HttpConfiguration.InsecureRequests.ENABLED);
-        if (insecureRequests != HttpConfiguration.InsecureRequests.DISABLED) {
+        if (isSslConfigured()) {
             // ssl is not disabled
             int sslPort = ConfigProvider.getConfig()
                     .getOptionalValue("quarkus.http.ssl-port", Integer.class)
@@ -460,5 +463,32 @@ class VertxHttpProcessor {
                 return null;
             });
         }
+    }
+
+    /**
+     * This method will return true if:
+     * <1> "quarkus.http.insecure-requests" is not explicitly disabled
+     * <2> any of the http SSL runtime properties are set at build time
+     *
+     * If any of the above rules applied, the port "https" will be generated as part of the Kubernetes resources.
+     */
+    private static boolean isSslConfigured() {
+        Config config = ConfigProvider.getConfig();
+        HttpConfiguration.InsecureRequests insecureRequests = config
+                .getOptionalValue("quarkus.http.insecure-requests", HttpConfiguration.InsecureRequests.class)
+                .orElse(HttpConfiguration.InsecureRequests.ENABLED);
+        if (insecureRequests == HttpConfiguration.InsecureRequests.DISABLED) {
+            return false;
+        }
+
+        for (String sslProperty : HTTP_SSL_PROPERTIES) {
+            Optional<List<String>> property = config.getOptionalValues(HTTP_SSL_PREFIX + sslProperty,
+                    String.class);
+            if (property.isPresent()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

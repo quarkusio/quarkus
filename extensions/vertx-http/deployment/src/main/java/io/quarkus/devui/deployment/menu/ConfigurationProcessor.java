@@ -29,6 +29,7 @@ import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -158,7 +159,7 @@ public class ConfigurationProcessor {
                     }
                 }
                 properties.add(item.getName());
-                item.setConfigValue(current.getConfigValue(item.getName()));
+                item.setConfigValue(getConfigValue(current, item.getName()));
                 ordered.add(item);
             } else if (!item.getName().startsWith("quarkus.log.filter")) { //special case, we use this internally and we don't want it clogging up the editor
                 //we need to figure out how to expand it
@@ -239,7 +240,7 @@ public class ConfigurationProcessor {
                     item.getConfigPhase());
 
             properties.add(newDesc.getName());
-            newDesc.setConfigValue(current.getConfigValue(newDesc.getName()));
+            newDesc.setConfigValue(getConfigValue(current, newDesc.getName()));
             ordered.add(newDesc);
         }
 
@@ -265,7 +266,7 @@ public class ConfigurationProcessor {
             ConfigDescription newDesc = new ConfigDescription(expandedName, true);
 
             properties.add(newDesc.getName());
-            newDesc.setConfigValue(current.getConfigValue(newDesc.getName()));
+            newDesc.setConfigValue(getConfigValue(current, newDesc.getName()));
             ordered.add(newDesc);
         }
 
@@ -281,7 +282,7 @@ public class ConfigurationProcessor {
                     continue;
                 }
 
-                ConfigDescription item = new ConfigDescription(propertyName, null, null, current.getConfigValue(propertyName));
+                ConfigDescription item = new ConfigDescription(propertyName, null, null, getConfigValue(current, propertyName));
                 ordered.add(item);
 
                 configDescriptions.add(item);
@@ -289,6 +290,14 @@ public class ConfigurationProcessor {
         });
 
         return ordered;
+    }
+
+    private ConfigValue getConfigValue(SmallRyeConfig config, String name) {
+        try {
+            return config.getConfigValue(name);
+        } catch (java.util.NoSuchElementException nse) {
+            return null;
+        }
     }
 
     private String ensureQuoted(String part) {

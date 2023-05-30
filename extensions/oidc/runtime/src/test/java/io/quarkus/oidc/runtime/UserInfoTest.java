@@ -18,8 +18,9 @@ public class UserInfoTest {
                     + "\"sub\": \"alice123456\","
                     + "\"name\": \"alice\","
                     + "\"first_name\": \"Alice\","
-                    + "\"family_name\": \"Alice\","
+                    + "\"family_name\": \"Brown\","
                     + "\"preferred_username\": \"Alice Alice\","
+                    + "\"display_name\": \"Alice Brown\","
                     + "\"email\": \"alice@email.com\","
                     + "\"admin\": true,"
                     + "\"custom\": null,"
@@ -40,12 +41,17 @@ public class UserInfoTest {
 
     @Test
     public void testGetFamilyName() {
-        assertEquals("Alice", userInfo.getFamilyName());
+        assertEquals("Brown", userInfo.getFamilyName());
     }
 
     @Test
     public void testPreferredName() {
         assertEquals("Alice Alice", userInfo.getPreferredUserName());
+    }
+
+    @Test
+    public void testDisplayName() {
+        assertEquals("Alice Brown", userInfo.getDisplayName());
     }
 
     @Test

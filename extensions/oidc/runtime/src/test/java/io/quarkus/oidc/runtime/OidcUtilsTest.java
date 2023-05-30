@@ -315,7 +315,9 @@ public class OidcUtilsTest {
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
         assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
         assertEquals("https://accounts.spotify.com", config.getAuthServerUrl().get());
-        assertEquals(List.of("user-read-email"), config.authentication.scopes.get());
+        assertEquals(List.of("user-read-private", "user-read-email"), config.authentication.scopes.get());
+        assertTrue(config.token.verifyAccessTokenWithUserInfo.get());
+        assertEquals("display_name", config.getToken().getPrincipalClaim().get());
     }
 
     @Test
@@ -328,6 +330,8 @@ public class OidcUtilsTest {
         tenant.getToken().setIssuer("http://localhost/wiremock");
         tenant.authentication.setScopes(List.of("write"));
         tenant.authentication.setForceRedirectHttpsScheme(false);
+        tenant.token.setPrincipalClaim("firstname");
+        tenant.token.setVerifyAccessTokenWithUserInfo(false);
 
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SPOTIFY));
 
@@ -337,6 +341,8 @@ public class OidcUtilsTest {
         assertEquals(List.of("write"), config.authentication.scopes.get());
         assertEquals("http://localhost/wiremock", config.getToken().getIssuer().get());
         assertFalse(config.authentication.forceRedirectHttpsScheme.get());
+        assertEquals("firstname", config.getToken().getPrincipalClaim().get());
+        assertFalse(config.token.verifyAccessTokenWithUserInfo.get());
     }
 
     @Test

@@ -46,7 +46,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
     private static final String KEYCLOAK = "Keycloak";
     private static final String AZURE = "Azure";
-    private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google", "Github");
+    private static final Set<String> OTHER_PROVIDERS = Set.of("Auth0", "Okta", "Google", "Github", "Spotify");
 
     OidcBuildTimeConfig oidcConfig;
 

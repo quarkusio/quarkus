@@ -18,6 +18,7 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import { observeState } from 'lit-element-state';
 import { devuiState } from 'devui-state';
+import { connectionState } from 'connection-state';
 import 'qui-badge';
 
 /**
@@ -107,6 +108,8 @@ export class QwcConfiguration extends observeState(LitElement) {
     render() {
         if (this._filtered && this._values) {
             return this._render();
+        } else if(!connectionState.current.isConnected){
+            return html`<span>Waiting for backend connection...</span>`;
         } else {
             return html`<span>Loading configuration properties...</span>`;
         }

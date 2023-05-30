@@ -5,7 +5,7 @@ public class CookieParamItem extends Item {
     private final String paramType;
 
     public CookieParamItem(String fieldName, String cookieName, ValueExtractor extractor, String paramType) {
-        super(fieldName, ItemType.COOKIE, extractor);
+        super(fieldName, ItemType.COOKIE, false, extractor);
         this.cookieName = cookieName;
         this.paramType = paramType;
     }

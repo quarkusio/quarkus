@@ -771,6 +771,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                     actualTestInstance = declaredConstructor.newInstance(actualTestInstance);
                 } else {
                     Object outerInstance = createActualTestInstance(outerClass, state);
+                    invokeAfterConstructCallbacks(Object.class, outerInstance);
                     actualTestInstance = declaredConstructor.newInstance(outerInstance);
                     outerInstances.add(outerInstance);
                 }

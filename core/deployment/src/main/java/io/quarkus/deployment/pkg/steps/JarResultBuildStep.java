@@ -602,6 +602,7 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
+        BytecodeOptimizer bytecodeOptimizer = null;
         if (packageConfig.quiltflower.enabled) {
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
@@ -613,7 +614,21 @@ public class JarResultBuildStep {
                     Files.createDirectory(jarDirectory);
                 }
                 decompiler.init(new Decompiler.Context(packageConfig.quiltflower.version, jarDirectory, decompiledOutputDir));
-                decompiler.downloadIfNecessary();
+                if (!decompiler.downloadIfNecessary()) {
+                    decompiler = null;
+                }
+            }
+        }
+
+        if (packageConfig.proguard.enabled) {
+            bytecodeOptimizer = new BytecodeOptimizer.ProguardBytecodeOptimizer();
+            Path jarDirectory = Paths.get(packageConfig.proguard.jarDirectory);
+            if (!Files.exists(jarDirectory)) {
+                Files.createDirectory(jarDirectory);
+            }
+            bytecodeOptimizer.init(new BytecodeOptimizer.Context(packageConfig.proguard.version, jarDirectory));
+            if (!bytecodeOptimizer.downloadIfNecessary()) {
+                bytecodeOptimizer = null;
             }
         }
 
@@ -662,6 +677,9 @@ public class JarResultBuildStep {
                 }
                 Files.write(target, i.getClassData());
             }
+        }
+        if (bytecodeOptimizer != null) {
+            bytecodeOptimizer.optimize(generatedZip);
         }
         if (decompiler != null) {
             wasDecompiledSuccessfully &= decompiler.decompile(generatedZip);
@@ -1633,6 +1651,122 @@ public class JarResultBuildStep {
 
                 if (exitCode != 0) {
                     log.errorf("Quiltflower decompiler exited with error code: %d.", exitCode);
+                    return false;
+                }
+
+                return true;
+            }
+        }
+    }
+
+    public interface BytecodeOptimizer {
+        void init(Context context);
+
+        /**
+         * @return {@code true} if the optimizer was successfully download or already exists
+         */
+        boolean downloadIfNecessary();
+
+        /**
+         * @return {@code true} if the optimization process was successful
+         */
+        boolean optimize(Path jarToOptimize);
+
+        class Context {
+            final String versionStr;
+            final Path jarLocation;
+
+            public Context(String versionStr, Path jarLocation) {
+                this.versionStr = versionStr;
+                this.jarLocation = jarLocation;
+            }
+
+        }
+
+        class ProguardBytecodeOptimizer implements BytecodeOptimizer {
+            private Context context;
+            private Path proguardJar;
+
+            @Override
+            public void init(Context context) {
+                this.context = context;
+                this.proguardJar = context.jarLocation.resolve(String.format("proguard-%s.jar", context.versionStr));
+            }
+
+            @Override
+            public boolean downloadIfNecessary() {
+                if (Files.exists(proguardJar)) {
+                    return true;
+                }
+                String downloadURL = String.format(
+                        "https://github.com/Guardsquare/proguard/releases/download/v%s/proguard-%s.zip",
+                        context.versionStr, context.versionStr);
+                Path tempDownloadDir;
+                try {
+                    tempDownloadDir = Files.createTempDirectory("proguard");
+                } catch (IOException e) {
+                    log.error("Unable to download ProGuard", e);
+                    return false;
+                }
+                Path downloadedZip = tempDownloadDir.resolve("proguard.zip");
+                try (BufferedInputStream in = new BufferedInputStream(new URL(downloadURL).openStream());
+                        FileOutputStream fileOutputStream = new FileOutputStream(downloadedZip.toFile())) {
+                    byte[] dataBuffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                        fileOutputStream.write(dataBuffer, 0, bytesRead);
+                    }
+
+                    Path unzipped = tempDownloadDir.resolve("proguard");
+                    ZipUtils.unzip(downloadedZip, unzipped);
+                    Path proguardJarInLib = unzipped.resolve("proguard-" + context.versionStr).resolve("lib")
+                            .resolve("proguard.jar");
+                    if (Files.exists(proguardJarInLib)) {
+                        Files.copy(proguardJarInLib, proguardJar);
+                        return true;
+                    } else {
+                        log.warn("Unable to locate proguard.jar in lib directory of " + downloadURL);
+                        return false;
+                    }
+                } catch (IOException e) {
+                    log.error("Unable to download ProGuard from " + downloadURL, e);
+                    return false;
+                }
+            }
+
+            @Override
+            public boolean optimize(Path jarToOptimize) {
+                int exitCode;
+                try {
+                    int dotIndex = jarToOptimize.getFileName().toString().indexOf('.');
+                    ProcessBuilder processBuilder = new ProcessBuilder(
+                            Arrays.asList(
+                                    "java",
+                                    "-jar",
+                                    proguardJar.toAbsolutePath().toString(),
+                                    "-injars",
+                                    jarToOptimize.toAbsolutePath().toString(),
+                                    "-keep public class **", // we don't want to remove any classes
+                                    "-verbose",
+                                    "-dontwarn", // the classpath is not complete, so turn off warnings
+                                    "-dontshrink", // the classpath is not complete, so we can't shrink
+                                    "-dontobfuscate", // no need to obfuscate
+                                    "-optimizations",
+                                    "code/simplification/advanced,code/removal/advanced,code/allocation/variable"));
+                    if (log.isDebugEnabled()) {
+                        processBuilder.inheritIO();
+                    } else {
+                        processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD.file())
+                                .redirectOutput(ProcessBuilder.Redirect.DISCARD.file());
+                    }
+                    exitCode = processBuilder.start().waitFor();
+                } catch (Exception e) {
+                    log.error("Failed to launch ProGuard.", e);
+                    return false;
+                }
+
+                if (exitCode != 0) {
+                    log.errorf("ProGuard exited with error code: %d.", exitCode);
                     return false;
                 }
 

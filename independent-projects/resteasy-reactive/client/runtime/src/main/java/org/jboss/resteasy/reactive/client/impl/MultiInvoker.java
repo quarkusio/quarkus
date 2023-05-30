@@ -241,7 +241,6 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         });
 
         // this captures the end of the response
-        // FIXME: won't this call complete twice()?
         vertxClientResponse.endHandler(v -> {
             multiRequest.emitter.complete();
         });
@@ -265,9 +264,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 try {
                     R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
                             response.getMetadata());
-                    multiRequest.emitter.emit(item);
+                    multiRequest.emit(item);
                 } catch (IOException e) {
-                    multiRequest.emitter.fail(e);
+                    multiRequest.fail(e);
                 }
             }
         });
@@ -275,7 +274,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             if (t == ConnectionBase.CLOSED_EXCEPTION) {
                 // we can ignore this one since we registered a closeHandler
             } else {
-                multiRequest.emitter.fail(t);
+                multiRequest.fail(t);
             }
         });
         vertxClientResponse.endHandler(new Handler<Void>() {

@@ -139,7 +139,6 @@ public class DevUIProcessor {
         if (devUIConfig.cors.enabled) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS)
-                    //.route(DEVUI + SLASH_ALL)
                     .handler(new DevConsoleCORSFilter())
                     .build());
         }

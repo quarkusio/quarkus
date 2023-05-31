@@ -97,7 +97,7 @@ include::{includes}/prerequisites.adoc[] <3>
 
 By default, `include::{includes}/prerequisites.adoc[]` inserts the following asciidoc:
 
-[quote,subs="none"]
+[source,subs="none"]
 ----
 include::{includes}/prerequisites.adoc[]
 ----

@@ -4,6 +4,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -69,6 +70,44 @@ public class BlockingPubSubCommandsImpl<V> extends AbstractRedisCommandGroup imp
 
     @Override
     public RedisSubscriber subscribe(List<String> channels, Consumer<V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException) {
+        return reactive.subscribe(channels, onMessage, onEnd, onException)
+                .map(r -> new BlockingRedisSubscriber(r))
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public RedisSubscriber subscribeToPattern(String pattern, BiConsumer<String, V> onMessage) {
+        return reactive.subscribeToPattern(pattern, onMessage)
+                .map(r -> new BlockingRedisSubscriber(r))
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public RedisSubscriber subscribeToPatterns(List<String> patterns, BiConsumer<String, V> onMessage) {
+        return reactive.subscribeToPatterns(patterns, onMessage)
+                .map(r -> new BlockingRedisSubscriber(r))
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public RedisSubscriber subscribeToPattern(String pattern, BiConsumer<String, V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException) {
+        return reactive.subscribeToPattern(pattern, onMessage, onEnd, onException)
+                .map(r -> new BlockingRedisSubscriber(r))
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public RedisSubscriber subscribeToPatterns(List<String> patterns, BiConsumer<String, V> onMessage, Runnable onEnd,
+            Consumer<Throwable> onException) {
+        return reactive.subscribeToPatterns(patterns, onMessage, onEnd, onException)
+                .map(r -> new BlockingRedisSubscriber(r))
+                .await().atMost(timeout);
+    }
+
+    @Override
+    public RedisSubscriber subscribe(List<String> channels, BiConsumer<String, V> onMessage, Runnable onEnd,
             Consumer<Throwable> onException) {
         return reactive.subscribe(channels, onMessage, onEnd, onException)
                 .map(r -> new BlockingRedisSubscriber(r))

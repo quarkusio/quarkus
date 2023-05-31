@@ -35,11 +35,11 @@
         <plugin>
           <groupId>io.quarkus</groupId>
           <artifactId>quarkus-maven-plugin</artifactId>
-          <version>${quarkus.version}</version>
+          <version>\${quarkus.version}</version>
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>${compiler-plugin.version}</version>
+          <version>\${compiler-plugin.version}</version>
           <configuration>
             <compilerArgs>
               <arg>-parameters</arg>

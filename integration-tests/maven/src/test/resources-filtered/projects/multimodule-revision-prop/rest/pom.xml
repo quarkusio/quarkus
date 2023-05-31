@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.acme</groupId>
         <artifactId>quarkus-quickstart-multimodule-parent</artifactId>
-        <version>${revision}</version>
+        <version>\${revision}</version>
     </parent>
     <artifactId>quarkus-quickstart-multimodule-rest</artifactId>
 

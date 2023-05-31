@@ -18,7 +18,7 @@
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>\${quarkus-plugin.version}</version>
         <extensions>true</extensions>
         <executions>
           <!-- Opposite order compared to module-1 -->
@@ -51,7 +51,7 @@
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire-plugin.version}</version>
+        <version>\${surefire-plugin.version}</version>
         <executions>
           <!-- Opposite order compared to module-1 -->
           <execution>
@@ -62,11 +62,11 @@
             <configuration>
               <groups>bar</groups>
               <excludedGroups>others</excludedGroups>
-              <skip>${maven.test.skip}</skip>
+              <skip>\${maven.test.skip}</skip>
               <systemPropertyVariables>
                 <quarkus.test.profile>bar-2</quarkus.test.profile>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                <maven.home>${maven.home}</maven.home>
+                <maven.home>\${maven.home}</maven.home>
               </systemPropertyVariables>
             </configuration>
           </execution>
@@ -78,11 +78,11 @@
             <configuration>
               <groups>foo</groups>
               <excludedGroups>others</excludedGroups>
-              <skip>${maven.test.skip}</skip>
+              <skip>\${maven.test.skip}</skip>
               <systemPropertyVariables>
                 <quarkus.test.profile>foo-2</quarkus.test.profile>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                <maven.home>${maven.home}</maven.home>
+                <maven.home>\${maven.home}</maven.home>
               </systemPropertyVariables>
             </configuration>
           </execution>

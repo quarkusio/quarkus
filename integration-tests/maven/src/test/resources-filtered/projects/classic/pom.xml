@@ -21,9 +21,9 @@
     <dependencies>
       <!-- insert managed dependencies here -->
       <dependency>
-        <groupId>${quarkus.platform.group-id}</groupId>
-        <artifactId>${quarkus.platform.artifact-id}</artifactId>
-        <version>${quarkus.platform.version}</version>
+        <groupId>\${quarkus.platform.group-id}</groupId>
+        <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+        <version>\${quarkus.platform.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -51,7 +51,7 @@
     <dependency>
       <groupId>org.webjars</groupId>
       <artifactId>jquery-ui</artifactId>
-      <version>${webjar.jquery-ui.version}</version>
+      <version>\${webjar.jquery-ui.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -73,7 +73,7 @@
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>\${quarkus-plugin.version}</version>
         <executions>
           <execution>
             <goals>

@@ -8,10 +8,18 @@ import io.quarkus.runtime.util.ContainerRuntimeUtil;
 
 public class TestNativeConfig implements NativeConfig {
 
-    private final String builderImage;
+    private final NativeConfig.BuilderImageConfig builderImage;
 
     public TestNativeConfig(String builderImage) {
-        this.builderImage = builderImage;
+        this(builderImage, ImagePullStrategy.ALWAYS);
+    }
+
+    public TestNativeConfig(ImagePullStrategy builderImagePull) {
+        this("mandrel", builderImagePull);
+    }
+
+    public TestNativeConfig(String builderImage, ImagePullStrategy builderImagePull) {
+        this.builderImage = new TestBuildImageConfig(builderImage, builderImagePull);
     }
 
     @Override
@@ -135,7 +143,7 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
-    public String builderImage() {
+    public BuilderImageConfig builderImage() {
         return builderImage;
     }
 
@@ -202,5 +210,25 @@ public class TestNativeConfig implements NativeConfig {
     @Override
     public Compression compression() {
         return null;
+    }
+
+    private class TestBuildImageConfig implements BuilderImageConfig {
+        private final String image;
+        private final ImagePullStrategy pull;
+
+        TestBuildImageConfig(String image, ImagePullStrategy pull) {
+            this.image = image;
+            this.pull = pull;
+        }
+
+        @Override
+        public String image() {
+            return image;
+        }
+
+        @Override
+        public ImagePullStrategy pull() {
+            return pull;
+        }
     }
 }

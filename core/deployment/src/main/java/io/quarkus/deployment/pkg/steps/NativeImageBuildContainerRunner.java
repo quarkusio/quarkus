@@ -30,7 +30,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
         this.nativeConfig = nativeConfig;
         containerRuntime = nativeConfig.containerRuntime().orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
 
-        this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm" };
+        this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm",
+                "--pull", nativeConfig.builderImage().pull().commandLineParamValue };
 
         containerName = "build-native-" + RandomStringUtils.random(5, true, false);
     }
@@ -47,8 +48,41 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
             // we pull the docker image in order to give users an indication of which step the process is at
             // it's not strictly necessary we do this, however if we don't the subsequent version command
             // will appear to block and no output will be shown
-            String effectiveBuilderImage = nativeConfig.getEffectiveBuilderImage();
-            log.info("Checking image status " + effectiveBuilderImage);
+            String effectiveBuilderImage = nativeConfig.builderImage().getEffectiveImage();
+            var builderImagePull = nativeConfig.builderImage().pull();
+            log.infof("Checking status of builder image '%s'", effectiveBuilderImage);
+            if (builderImagePull != NativeConfig.ImagePullStrategy.ALWAYS) {
+                Process imageInspectProcess = null;
+                try {
+                    final ProcessBuilder pb = new ProcessBuilder(
+                            Arrays.asList(containerRuntime.getExecutableName(), "image", "inspect",
+                                    "-f", "{{ .Id }}",
+                                    effectiveBuilderImage))
+                            // We only need the command's return status
+                            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                            .redirectError(ProcessBuilder.Redirect.DISCARD);
+                    imageInspectProcess = pb.start();
+                    if (imageInspectProcess.waitFor() != 0) {
+                        if (builderImagePull == NativeConfig.ImagePullStrategy.NEVER) {
+                            throw new RuntimeException(
+                                    "Could not find builder image '" + effectiveBuilderImage
+                                            + "' locally and 'quarkus.native.builder-image.pull' is set to 'never'.");
+                        } else {
+                            log.infof("Could not find builder image '%s' locally, pulling the builder image",
+                                    effectiveBuilderImage);
+                        }
+                    } else {
+                        log.infof("Found builder image '%s' locally, skipping image pulling", effectiveBuilderImage);
+                        return;
+                    }
+                } catch (IOException | InterruptedException e) {
+                    throw new RuntimeException("Failed to check status of builder image '" + effectiveBuilderImage + "'", e);
+                } finally {
+                    if (imageInspectProcess != null) {
+                        imageInspectProcess.destroy();
+                    }
+                }
+            }
             Process pullProcess = null;
             try {
                 final ProcessBuilder pb = new ProcessBuilder(
@@ -56,7 +90,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                 pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
                 pullProcess.waitFor();
             } catch (IOException | InterruptedException e) {
-                throw new RuntimeException("Failed to pull builder image " + effectiveBuilderImage, e);
+                throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'", e);
             } finally {
                 if (pullProcess != null) {
                     pullProcess.destroy();
@@ -123,7 +157,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
     protected String[] buildCommand(String dockerCmd, List<String> containerRuntimeArgs, List<String> command) {
         return Stream
                 .of(Stream.of(containerRuntime.getExecutableName()), Stream.of(dockerCmd), Stream.of(baseContainerRuntimeArgs),
-                        containerRuntimeArgs.stream(), Stream.of(nativeConfig.getEffectiveBuilderImage()), command.stream())
+                        containerRuntimeArgs.stream(), Stream.of(nativeConfig.builderImage().getEffectiveImage()),
+                        command.stream())
                 .flatMap(Function.identity()).toArray(String[]::new);
     }
 

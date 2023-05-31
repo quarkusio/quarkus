@@ -44,7 +44,7 @@ public class UpxCompressionBuildStep {
             return;
         }
 
-        String effectiveBuilderImage = nativeConfig.getEffectiveBuilderImage();
+        String effectiveBuilderImage = nativeConfig.builderImage().getEffectiveImage();
         Optional<File> upxPathFromSystem = getUpxFromSystem();
         if (upxPathFromSystem.isPresent()) {
             log.debug("Running UPX from system path");

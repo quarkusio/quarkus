@@ -17,6 +17,11 @@
     <module>runtime</module>
     <module>docs</module>
   </modules>
+  <scm>
+    <connection>scm:git:git@github.com:quarkiverse/quarkus-my-quarkiverse-ext.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkiverse/quarkus-my-quarkiverse-ext.git</developerConnection>
+    <url>https://github.com/quarkiverse/quarkus-my-quarkiverse-ext</url>
+  </scm>
   <properties>
     <compiler-plugin.version>3.11.0</compiler-plugin.version>
     <maven.compiler.release>11</maven.compiler.release>

@@ -4,14 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Packaging And Releasing With JReleaser
-
 include::_attributes.adoc[]
+:categories: tooling
 :jreleaser-version: 1.6.0
-
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
 
 This guide covers packaging and releasing CLI applications using the link:https://jreleaser.org[JReleaser] tool.
 

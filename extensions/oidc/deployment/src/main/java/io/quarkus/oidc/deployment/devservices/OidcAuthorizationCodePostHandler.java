@@ -1,25 +1,20 @@
 package io.quarkus.oidc.deployment.devservices;
 
+import static io.quarkus.oidc.runtime.devui.OidcDevServicesUtils.getTokens;
+
 import java.time.Duration;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
-import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.mutiny.core.buffer.Buffer;
-import io.vertx.mutiny.ext.web.client.HttpRequest;
-import io.vertx.mutiny.ext.web.client.HttpResponse;
-import io.vertx.mutiny.ext.web.client.WebClient;
 
 public class OidcAuthorizationCodePostHandler extends DevConsolePostHandler {
-    private static final Logger LOG = Logger.getLogger(OidcAuthorizationCodePostHandler.class);
-    private static final String APPLICATION_JSON = "application/json";
 
+    private static final Logger LOG = Logger.getLogger(OidcAuthorizationCodePostHandler.class);
     Vertx vertxInstance;
     Duration timeout;
     Map<String, String> grantOptions;
@@ -33,39 +28,20 @@ public class OidcAuthorizationCodePostHandler extends DevConsolePostHandler {
 
     @Override
     protected void handlePostAsync(RoutingContext event, MultiMap form) throws Exception {
-        WebClient client = OidcDevServicesUtils.createWebClient(vertxInstance);
-        String tokenUrl = form.get("tokenUrl");
-
         try {
-            LOG.infof("Using authorization_code grant to get a token from '%s' with client id '%s'",
-                    tokenUrl, form.get("client"));
-
-            HttpRequest<Buffer> request = client.postAbs(tokenUrl);
-            request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
-            request.putHeader(HttpHeaders.ACCEPT.toString(), APPLICATION_JSON);
-
-            io.vertx.mutiny.core.MultiMap props = new io.vertx.mutiny.core.MultiMap(MultiMap.caseInsensitiveMultiMap());
-            props.add("client_id", form.get("client"));
-            if (form.get("clientSecret") != null && !form.get("clientSecret").isBlank()) {
-                props.add("client_secret", form.get("clientSecret"));
-            }
-            props.add("grant_type", "authorization_code");
-            props.add("code", form.get("authorizationCode"));
-            props.add("redirect_uri", form.get("redirectUri"));
-            if (grantOptions != null) {
-                props.addAll(grantOptions);
-            }
-
-            String tokens = request.sendBuffer(OidcCommonUtils.encodeForm(props)).onItem()
-                    .transform(resp -> getBodyAsString(resp))
+            final String tokens = getTokens(
+                    form.get("tokenUrl"),
+                    form.get("client"),
+                    form.get("clientSecret"),
+                    form.get("authorizationCode"),
+                    form.get("redirectUri"),
+                    vertxInstance,
+                    grantOptions)
+                    .onFailure().recoverWithNull()
                     .await().atMost(timeout);
-
             event.put("tokens", tokens);
-
         } catch (Throwable t) {
             LOG.errorf("Token can not be acquired from OpenId Connect provider: %s", t.toString());
-        } finally {
-            client.close();
         }
     }
 
@@ -78,12 +54,4 @@ public class OidcAuthorizationCodePostHandler extends DevConsolePostHandler {
         }
     }
 
-    private static String getBodyAsString(HttpResponse<Buffer> resp) {
-        if (resp.statusCode() == 200) {
-            return resp.bodyAsString();
-        } else {
-            String errorMessage = resp.bodyAsString();
-            throw new RuntimeException(errorMessage);
-        }
-    }
 }

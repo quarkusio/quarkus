@@ -61,7 +61,7 @@ import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.oidc.deployment.OidcBuildStep.IsEnabled;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.OidcDevServicesBuildItem;
-import io.quarkus.oidc.deployment.devservices.OidcDevServicesUtils;
+import io.quarkus.oidc.runtime.devui.OidcDevServicesUtils;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.mutiny.Uni;
@@ -171,7 +171,7 @@ public class KeycloakDevServicesProcessor {
                         : Arrays.stream(realmsString.split(",")).collect(Collectors.toList());
                 keycloakBuildItemBuildProducer
                         .produce(new KeycloakDevServicesConfigBuildItem(result.getConfig(),
-                                Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realms)));
+                                Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realms), false));
                 return result;
             }
             try {
@@ -307,7 +307,7 @@ public class KeycloakDevServicesProcessor {
 
         keycloakBuildItemBuildProducer
                 .produce(new KeycloakDevServicesConfigBuildItem(configProperties,
-                        Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realmNames)));
+                        Map.of(OIDC_USERS, users, KEYCLOAK_REALMS, realmNames), true));
 
         return configProperties;
     }
@@ -623,7 +623,8 @@ public class KeycloakDevServicesProcessor {
 
             return OidcDevServicesUtils.getPasswordAccessToken(client,
                     keycloakUrl + "/realms/master/protocol/openid-connect/token",
-                    "admin-cli", null, "admin", "admin", null, oidcConfig.devui.webClientTimeout);
+                    "admin-cli", null, "admin", "admin", null)
+                    .await().atMost(oidcConfig.devui.webClientTimeout);
         } catch (Throwable t) {
             LOG.errorf("Admin token can not be acquired: %s", t.getMessage());
         }

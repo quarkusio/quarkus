@@ -88,7 +88,9 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                 final ProcessBuilder pb = new ProcessBuilder(
                         Arrays.asList(containerRuntime.getExecutableName(), "pull", effectiveBuilderImage));
                 pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
-                pullProcess.waitFor();
+                if (pullProcess.waitFor() != 0) {
+                    throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'");
+                }
             } catch (IOException | InterruptedException e) {
                 throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'", e);
             } finally {

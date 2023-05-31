@@ -53,7 +53,7 @@ quarkus update <1>
 [source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
 .Maven
 ----
-./mvnw io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:update -N <1>
+./mvnw {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:update -N <1>
 ----
 <1> Updates to the latest stream by default. To specify a stream, use the `Dstream` option; for example, `-Dstream=3.0`.
 

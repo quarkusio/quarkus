@@ -681,11 +681,11 @@ and the REST client `apicurio-common-rest-client-vertx` dependency are set to co
 </dependency>
 ----
 
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle",subs=attributes+]
 .build.gradle
 ----
 dependencies {
-    implementation(platform("io.quarkus.platform:quarkus-bom:2.12.3.Final"))
+    implementation(platform("{quarkus-platform-groupid}:quarkus-bom:2.12.3.Final"))
 
     ...
 

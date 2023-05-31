@@ -102,11 +102,11 @@ It will try to auto-detect its options:
 * in other cases it will use the 'Standalone' extension layout and defaults.
 * we may introduce other layout types in the future.
 
-TIP: You may call it without any parameter to use the interactive mode: `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
+TIP: You may call it without any parameter to use the interactive mode: `mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
 
 [source,shell,subs=attributes+]
 ----
-$ mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+$ mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DgroupId=org.acme \ #<1>
     -DextensionId=greeting-extension \  #<2>
     -DwithoutTests #<3>
@@ -845,7 +845,7 @@ mvn clean install
 Then from another directory, use our tooling to create a new `greeting-app` Quarkus application with your new extension:
 [source,bash, subs=attributes+]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
      -DprojectGroupId=org.acme \
      -DprojectArtifactId=greeting-app \
      -Dextensions="org.acme:greeting-extension:1.0.0-SNAPSHOT" \
@@ -897,7 +897,7 @@ That's why there is the Quarkus Platform.
 *Quarkus Platform*
 
 Quarkus platform is a set of extensions that target the primary use-cases of Quarkus as a development framework and can safely be used in any combination in the same application without creating a dependency conflict.
-From an application developer perspective, a Quarkus platform is represented as one or more Maven BOMs, for example `io.quarkus.platform:quarkus-bom:{quarkus-version}`, `io.quarkus.platform:quarkus-camel-bom:{quarkus-version}`, etc, whose dependency version constraints were globally aligned so that these BOMs can be imported in the same application in any order without introducing a dependency conflict.
+From an application developer perspective, a Quarkus platform is represented as one or more Maven BOMs, for example `{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}`, `{quarkus-platform-groupid}:quarkus-camel-bom:{quarkus-version}`, etc, whose dependency version constraints were globally aligned so that these BOMs can be imported in the same application in any order without introducing a dependency conflict.
 
 *Quarkiverse Hub*
 

@@ -1,5 +1,7 @@
 package io.quarkus.it.hibernate.reactive.postgresql;
 
+import java.util.List;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -24,6 +26,13 @@ public class HibernateReactiveTestEndpoint {
     // independently validate the contents of the database for the test
     @Inject
     PgPool pgPool;
+
+    @GET
+    @Path("/reactiveFindNativeQuery")
+    public Uni<List<GuineaPig>> reactiveFindNativeQuery() {
+        return populateDB()
+                .chain(() -> sessionFactory.withSession(s -> s.createNamedQuery("pig.all", GuineaPig.class).getResultList()));
+    }
 
     @GET
     @Path("/reactiveFindMutiny")

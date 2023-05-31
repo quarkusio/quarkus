@@ -1,16 +1,9 @@
 package io.quarkus.infinispan.client.runtime.devconsole;
 
-import jakarta.inject.Singleton;
-
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.Unremovable;
-import io.quarkus.arc.profile.IfBuildProfile;
 import io.quarkus.logging.Log;
 import io.smallrye.common.annotation.NonBlocking;
 
-@IfBuildProfile("dev")
-@Unremovable
-@Singleton
 public class InfinispanJsonRPCService {
 
     @NonBlocking

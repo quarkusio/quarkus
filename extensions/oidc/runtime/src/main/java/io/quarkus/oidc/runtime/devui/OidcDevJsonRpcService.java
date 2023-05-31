@@ -5,8 +5,6 @@ import static io.quarkus.oidc.runtime.devui.OidcDevServicesUtils.getTokens;
 import java.time.Duration;
 import java.util.Map;
 
-import jakarta.enterprise.context.ApplicationScoped;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
 import io.smallrye.common.annotation.NonBlocking;
@@ -14,7 +12,6 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
-@ApplicationScoped
 public class OidcDevJsonRpcService {
 
     private final String authorizationUrl;

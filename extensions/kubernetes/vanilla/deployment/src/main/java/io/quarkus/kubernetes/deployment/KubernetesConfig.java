@@ -45,13 +45,13 @@ public class KubernetesConfig implements PlatformConfiguration {
      * The name of the application. This value will be used for naming Kubernetes
      * resources like: - Deployment - Service and so on ...
      */
-    @ConfigItem(defaultValue = "${quarkus.container-image.name}")
+    @ConfigItem
     Optional<String> name;
 
     /**
      * The version of the application.
      */
-    @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
+    @ConfigItem
     Optional<String> version;
     /**
      * The kind of the deployment resource to use.

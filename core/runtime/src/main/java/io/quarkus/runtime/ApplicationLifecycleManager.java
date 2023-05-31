@@ -194,7 +194,7 @@ public class ApplicationLifecycleManager {
                     System.err.println(rootCause.getMessage());
                 } else {
                     // If it is not a ConfigurationException it should be safe to call ConfigProvider.getConfig here
-                    applicationLogger.errorv(rootCause, "Failed to start application (with profile {0})",
+                    applicationLogger.errorv(e, "Failed to start application (with profile {0})",
                             ConfigUtils.getProfiles());
                     ensureConsoleLogsDrained();
                 }

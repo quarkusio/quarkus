@@ -15,6 +15,7 @@ import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.jboss.arquillian.container.spi.context.annotation.DeploymentScoped;
+import org.jboss.arquillian.core.api.Instance;
 import org.jboss.arquillian.core.api.InstanceProducer;
 import org.jboss.arquillian.core.api.annotation.Inject;
 import org.jboss.arquillian.test.spi.TestEnricher;
@@ -37,7 +38,7 @@ public class InjectionEnricher implements TestEnricher {
 
     @Inject
     @DeploymentScoped
-    private InstanceProducer<ClassLoader> appClassloader;
+    private Instance<QuarkusDeployment> deployment;
 
     @Override
     public void enrich(Object testCase) {
@@ -50,7 +51,9 @@ public class InjectionEnricher implements TestEnricher {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 CreationContextHolder holder = getCreationalContext();
-                ClassLoader cl = appClassloader.get() != null ? appClassloader.get() : getClass().getClassLoader();
+                ClassLoader cl = deployment.get() != null && deployment.get().hasAppClassLoader()
+                        ? deployment.get().getAppClassLoader()
+                        : getClass().getClassLoader();
                 Thread.currentThread().setContextClassLoader(cl);
                 Class<?> c = cl.loadClass(IsolatedEnricher.class.getName());
                 BiFunction<Method, Object, Object[]> function = (BiFunction<Method, Object, Object[]>) c
@@ -67,7 +70,9 @@ public class InjectionEnricher implements TestEnricher {
 
     private CreationContextHolder getCreationalContext() {
         try {
-            ClassLoader cl = appClassloader.get() != null ? appClassloader.get() : getClass().getClassLoader();
+            ClassLoader cl = deployment.get() != null && deployment.get().hasAppClassLoader()
+                    ? deployment.get().getAppClassLoader()
+                    : getClass().getClassLoader();
             Class<?> c = cl.loadClass(IsolatedCreationContextCreator.class.getName());
             Supplier<Map.Entry<Closeable, Object>> supplier = (Supplier<Map.Entry<Closeable, Object>>) c
                     .getDeclaredConstructor().newInstance();

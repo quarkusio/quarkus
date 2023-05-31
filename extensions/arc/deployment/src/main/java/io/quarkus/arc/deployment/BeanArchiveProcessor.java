@@ -22,10 +22,12 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -51,7 +53,8 @@ public class BeanArchiveProcessor {
             CustomScopeAnnotationsBuildItem customScopes, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
             List<BeanArchivePredicateBuildItem> beanArchivePredicates,
             List<KnownCompatibleBeanArchiveBuildItem> knownCompatibleBeanArchives,
-            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions)
+            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformations)
             throws Exception {
 
         // First build an index from application archives
@@ -69,6 +72,20 @@ public class BeanArchiveProcessor {
         Set<String> additionalBeansFromExtensions = new HashSet<>();
         buildCompatibleExtensions.entrypoint.runDiscovery(applicationIndex, additionalBeansFromExtensions);
         additionalBeanClasses.addAll(additionalBeansFromExtensions);
+        annotationsTransformations.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(Kind kind) {
+                return kind == Kind.CLASS;
+            }
+
+            @Override
+            public void transform(TransformationContext ctx) {
+                if (additionalBeansFromExtensions.contains(ctx.getTarget().asClass().name().toString())) {
+                    // make all the `@Discovery`-registered classes beans
+                    ctx.transform().add(AdditionalBean.class).done();
+                }
+            }
+        }));
 
         // Build the index for additional beans and generated bean classes
         Set<DotName> additionalIndex = new HashSet<>();
@@ -131,13 +148,22 @@ public class BeanArchiveProcessor {
                         .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
                         .collect(Collectors.toList()), stereotypes);
         beanDefiningAnnotations.addAll(customScopes.getCustomScopeNames());
-        // Also include archives that are not bean archives but contain qualifiers or interceptor bindings
+        // Also include archives that are not bean archives but contain scopes, qualifiers or interceptor bindings
+        beanDefiningAnnotations.add(DotNames.SCOPE);
+        beanDefiningAnnotations.add(DotNames.NORMAL_SCOPE);
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
 
+        boolean rootIsAlwaysBeanArchive = !config.strictCompatibility;
+        Collection<ApplicationArchive> candidateArchives = applicationArchivesBuildItem.getApplicationArchives();
+        if (!rootIsAlwaysBeanArchive) {
+            candidateArchives = new ArrayList<>(candidateArchives);
+            candidateArchives.add(applicationArchivesBuildItem.getRootArchive());
+        }
+
         List<IndexView> indexes = new ArrayList<>();
 
-        for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
+        for (ApplicationArchive archive : candidateArchives) {
             if (isApplicationArchiveExcluded(config, excludeDependencyBuildItems, archive)) {
                 continue;
             }
@@ -151,7 +177,9 @@ public class BeanArchiveProcessor {
                 indexes.add(index);
             }
         }
-        indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
+        if (rootIsAlwaysBeanArchive) {
+            indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
+        }
         return CompositeIndex.create(indexes);
     }
 

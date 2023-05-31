@@ -17,7 +17,7 @@ public class LoggingApiCompletenessTest {
     public void compareWithJbossLogging() {
         Method[] jbossLoggingMethods = BasicLogger.class.getDeclaredMethods();
         Method[] quarkusLogMethods = Arrays.stream(Log.class.getDeclaredMethods())
-                .filter(Predicate.not(LoggingApiCompletenessTest::isPrivateStaticFail))
+                .filter(Predicate.not(LoggingApiCompletenessTest::isPrivateStaticAdditionalMethod))
                 .toArray(Method[]::new);
 
         List<String> mismatches = new ArrayList<>();
@@ -59,10 +59,10 @@ public class LoggingApiCompletenessTest {
         }
     }
 
-    private static boolean isPrivateStaticFail(Method method) {
+    private static boolean isPrivateStaticAdditionalMethod(Method method) {
         return Modifier.isPrivate(method.getModifiers())
                 && Modifier.isStatic(method.getModifiers())
-                && ("fail".equals(method.getName()) || "always".equals(method.getName()));
+                && ("fail".equals(method.getName()) || "isTest".equals(method.getName()));
     }
 
     private static boolean areEquivalent(Method jbossLoggingMethod, Method quarkusLogMethod) {

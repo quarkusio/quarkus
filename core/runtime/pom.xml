@@ -116,6 +116,12 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <!-- Used to generate the Log class -->
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-core</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

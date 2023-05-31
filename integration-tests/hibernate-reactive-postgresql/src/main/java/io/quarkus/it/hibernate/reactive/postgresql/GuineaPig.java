@@ -4,10 +4,12 @@ import java.util.Objects;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.NamedNativeQuery;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "Pig")
+@NamedNativeQuery(name = "pig.all", query = "select * from Pig", resultClass = GuineaPig.class)
 public class GuineaPig {
 
     @Id

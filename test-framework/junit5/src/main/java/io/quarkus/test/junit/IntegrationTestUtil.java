@@ -413,6 +413,11 @@ public final class IntegrationTestUtil {
         }
 
         @Override
+        public CuratedApplication getCuratedApplication() {
+            return curatedApplication;
+        }
+
+        @Override
         public void close() {
             curatedApplication.close();
         }

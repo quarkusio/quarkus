@@ -17,6 +17,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
@@ -46,11 +48,13 @@ import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.LauncherUtil;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.RunCommandLauncher;
 import io.quarkus.test.common.TestHostLauncher;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
+import io.quarkus.test.junit.launcher.ConfigUtil;
 
 public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeEachCallback, AfterEachCallback,
@@ -258,13 +262,22 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             if ((testHost != null) && !testHost.isEmpty()) {
                 launcher = new TestHostLauncher();
             } else {
-                ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
-                for (ArtifactLauncherProvider launcherProvider : loader) {
-                    if (launcherProvider.supportsArtifactType(artifactType)) {
-                        launcher = launcherProvider.create(
-                                new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
-                                        devServicesLaunchResult));
-                        break;
+                Config config = LauncherUtil.installAndGetSomeConfig();
+                Duration waitDuration = ConfigUtil.waitTimeValue(config);
+                String target = ConfigUtil.runTarget(config);
+                // try to execute a run command published by an extension if it exists.  We do this so that extensions that have a custom run don't have to create any special artifact type
+                launcher = RunCommandLauncher.tryLauncher(devServicesLaunchResult.getCuratedApplication().getQuarkusBootstrap(),
+                        target, waitDuration);
+                if (launcher == null) {
+                    ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
+                    for (ArtifactLauncherProvider launcherProvider : loader) {
+                        if (launcherProvider.supportsArtifactType(artifactType)) {
+                            launcher = launcherProvider.create(
+                                    new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context,
+                                            requiredTestClass,
+                                            devServicesLaunchResult));
+                            break;
+                        }
                     }
                 }
             }

@@ -44,4 +44,9 @@ public final class ConfigUtil {
                 .orElseGet(() -> config.getOptionalValue("quarkus.test.native-image-profile", String.class)
                         .orElse(null));
     }
+
+    public static String runTarget(Config config) {
+        return config.getOptionalValue("quarkus.run.target", String.class)
+                .orElse(null);
+    }
 }

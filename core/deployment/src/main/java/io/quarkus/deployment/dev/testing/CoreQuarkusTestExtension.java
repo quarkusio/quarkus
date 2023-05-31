@@ -57,8 +57,6 @@ public class CoreQuarkusTestExtension {
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
 
-    protected static Class currentJUnitTestClass;
-
     /// end copied
 
     private static final Logger log = Logger.getLogger(CoreQuarkusTestExtension.class);
@@ -94,8 +92,15 @@ public class CoreQuarkusTestExtension {
         }
     }
 
-    // Re-used from AbstractJvmQuarkusTestExtension
     protected PrepareResult createAugmentor(Class requiredTestClass, Class<? extends QuarkusTestProfile> profile,
+            Collection<Runnable> shutdownTasks) throws Exception {
+
+        Path testClassLocation = getTestClassesLocation(requiredTestClass);
+        return createAugmentor(testClassLocation, profile, shutdownTasks);
+    }
+
+    // Re-used from AbstractJvmQuarkusTestExtension
+    protected PrepareResult createAugmentor(Path testClassLocation, Class<? extends QuarkusTestProfile> profile,
             Collection<Runnable> shutdownTasks) throws Exception {
 
         // I think the required test class is just an example, since the augmentor is only
@@ -108,9 +113,6 @@ public class CoreQuarkusTestExtension {
             }
         };
 
-        currentJUnitTestClass = requiredTestClass;
-
-        final Path testClassLocation;
         final Path appClassLocation;
         final Path projectRoot = Paths.get("")
                 .normalize()
@@ -175,7 +177,7 @@ public class CoreQuarkusTestExtension {
             }
         }
 
-        testClassLocation = getTestClassesLocation(requiredTestClass);
+        // testClassLocation = getTestClassesLocation(requiredTestClass);
         System.out.println("test class location is " + testClassLocation);
         appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
         System.out.println("app class location is " + appClassLocation);
@@ -279,7 +281,7 @@ public class CoreQuarkusTestExtension {
                         .isAuxiliaryApplication());
         final Map<String, Object> props = new HashMap<>();
         props.put(TEST_LOCATION, testClassLocation);
-        props.put(TEST_CLASS, requiredTestClass);
+        // TODO surely someone reads this? props.put(TEST_CLASS, requiredTestClass);
         // TODO what's going on here with the profile?
         Class<? extends QuarkusTestProfile> quarkusTestProfile = profile;
         PrepareResult result = new PrepareResult(curatedApplication
@@ -301,9 +303,31 @@ public class CoreQuarkusTestExtension {
         QuarkusTestProfile profileInstance = result.profileInstance;
 
         testHttpEndpointProviders = TestHttpEndpointProvider.load();
-        System.out.println("CORE MAKER SEES CLASS OF STARTUP " + StartupAction.class.getClassLoader());
+        System.out.println(
+                "CORE MAKER SEES CLASS OF STARTUP " + StartupAction.class.getClassLoader());
 
         System.out.println("HOLLY about to make app for " + testClass);
+        StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
+        // TODO this seems to be safe to do because the classloaders are the same
+        startupAction.store();
+        System.out.println("HOLLY did store " + startupAction);
+        return startupAction.getClassLoader();
+
+    }
+
+    public ClassLoader doJavaStart(Path location, CuratedApplication curatedApplication) throws Exception {
+        Class<? extends QuarkusTestProfile> profile = null;
+        // TODO do we want any of these?
+        Collection shutdownTasks = new HashSet();
+        PrepareResult result = createAugmentor(location, profile, shutdownTasks);
+        AugmentAction augmentAction = result.augmentAction;
+        QuarkusTestProfile profileInstance = result.profileInstance;
+
+        testHttpEndpointProviders = TestHttpEndpointProvider.load();
+        System.out.println(
+                "CORE MAKER SEES CLASS OF STARTUP " + StartupAction.class.getClassLoader());
+
+        System.out.println("HOLLY about to make app for " + location);
         StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
         // TODO this seems to be safe to do because the classloaders are the same
         startupAction.store();
@@ -319,8 +343,15 @@ public class CoreQuarkusTestExtension {
         public List<Consumer<BuildChainBuilder>> apply(Map<String, Object> stringObjectMap) {
             Path testLocation = (Path) stringObjectMap.get(TEST_LOCATION);
             // the index was written by the extension
-            Index testClassesIndex = TestClassIndexer.readIndex(testLocation, (Class<?>) stringObjectMap.get(TEST_CLASS));
+            Class<?> testClass = (Class<?>) stringObjectMap.get(TEST_CLASS);
+            // TODO is this at all safe?
 
+            Index testClassesIndex;
+            if (testClass != null) {
+                testClassesIndex = TestClassIndexer.readIndex(testLocation, testClass);
+            } else {
+                testClassesIndex = TestClassIndexer.readIndex(testLocation);
+            }
             List<Consumer<BuildChainBuilder>> allCustomizers = new ArrayList<>(1);
             Consumer<BuildChainBuilder> defaultCustomizer = new Consumer<BuildChainBuilder>() {
 

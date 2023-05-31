@@ -297,9 +297,9 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         return false;
     }
 
-    protected static class PrepareResult {
-        protected final AugmentAction augmentAction;
-        protected final QuarkusTestProfile profileInstance;
+    public static class PrepareResult {
+        public final AugmentAction augmentAction;
+        public final QuarkusTestProfile profileInstance;
         protected final CuratedApplication curatedApplication;
         protected final Path testClassLocation;
 

@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
@@ -401,9 +400,9 @@ public class ApplicationDependencyTreeResolver {
     }
 
     private void visitRuntimeDependencies(List<DependencyNode> list) {
-        System.out.println(list.size() + "HOLLY will visit " + Arrays.toString(list.toArray()));
+        //     System.out.println(list.size() + "HOLLY will visit " + Arrays.toString(list.toArray()));
         for (DependencyNode n : list) {
-            System.out.println("HOLLY visiting " + n);
+            //      System.out.println("HOLLY visiting " + n);
             visitRuntimeDependency(n);
         }
     }
@@ -426,9 +425,9 @@ public class ApplicationDependencyTreeResolver {
         }
 
         try {
-            System.out.println("about to get  " + node + ".>" + artifact);
+            //     System.out.println("about to get  " + node + ".>" + artifact);
             final ExtensionDependency extDep = getExtensionDependencyOrNull(node, artifact);
-            System.out.println("got " + extDep);
+            //     System.out.println("got " + extDep);
 
             if (dep == null) {
                 // in case it was relocated it might not survive conflict resolution in the deployment graph

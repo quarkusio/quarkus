@@ -88,6 +88,7 @@ public class TestSupport implements TestController {
 
     public TestSupport(CuratedApplication curatedApplication, List<CompilationProvider> compilationProviders,
             DevModeContext context, DevModeType devModeType) {
+        System.out.println("HOLLY making test support");
         this.curatedApplication = curatedApplication;
         this.compilationProviders = compilationProviders;
         this.context = context;

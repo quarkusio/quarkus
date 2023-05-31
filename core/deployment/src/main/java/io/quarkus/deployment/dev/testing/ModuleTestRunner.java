@@ -25,6 +25,7 @@ public class ModuleTestRunner {
 
     public ModuleTestRunner(TestSupport testSupport, CuratedApplication testApplication,
             DevModeContext.ModuleInfo moduleInfo) {
+        System.out.println("HOLLY making module test runner");
         this.testSupport = testSupport;
         this.testApplication = testApplication;
         this.moduleInfo = moduleInfo;

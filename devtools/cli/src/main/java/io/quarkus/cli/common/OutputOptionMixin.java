@@ -17,7 +17,7 @@ public class OutputOptionMixin implements MessageWriter {
 
     static final boolean picocliDebugEnabled = "DEBUG".equalsIgnoreCase(System.getProperty("picocli.trace"));
 
-    @CommandLine.Option(names = { "-e", "--errors" }, description = "Display error messages.")
+    @CommandLine.Option(names = { "-e", "--errors" }, description = "Print more context on errors and exceptions.")
     boolean showErrors;
 
     @CommandLine.Option(names = { "--verbose" }, description = "Verbose mode.")

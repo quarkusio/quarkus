@@ -396,7 +396,7 @@ in pulling all the deployment time code into runtime scope, which defeats the pu
 
 You will need to include the `io.quarkus:quarkus-extension-maven-plugin` and configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor to collect and generate the necessary xref:extension-metadata.adoc[Quarkus extension metadata] for the extension artifacts, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 
-TIP: You may want to use the `create-extension` mojo of `io.quarkus.platform:quarkus-maven-plugin` to create these Maven modules - see the next section.
+TIP: You may want to use the `create-extension` mojo of `{quarkus-platform-groupid}:quarkus-maven-plugin` to create these Maven modules - see the next section.
 
 NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
 has no suffix (and is what the end user adds to their project).
@@ -486,7 +486,7 @@ It will try to auto-detect its options:
 * in other cases it will use the 'Standalone' extension layout and defaults.
 * we may introduce other layout types in the future.
 
-TIP: You may not specify any parameter to use the interactive mode: `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
+TIP: You may not specify any parameter to use the interactive mode: `mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
 
 As and example, let's add a new extension called `my-ext` to the Quarkus source tree:
 
@@ -494,7 +494,7 @@ As and example, let's add a new extension called `my-ext` to the Quarkus source 
 ----
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DextensionId=my-ext \
     -DextensionName="My Extension" \
     -DextensionDescription="Do something useful."
@@ -2331,7 +2331,7 @@ using the Quarkus maven plugin as shown in this example taken from the xref:rest
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-json \
     -DclassName="org.acme.rest.json.FruitResource" \

@@ -30,7 +30,7 @@ Normally we would link to a Git repository to clone but in this case there is no
 [source,java,subs=attributes+]
 ----
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus.platform:quarkus-bom:{quarkus-version}@pom
+//DEPS {quarkus-platform-groupid}:quarkus-bom:{quarkus-version}@pom
 //DEPS io.quarkus:quarkus-resteasy-reactive
 //JAVAC_OPTIONS -parameters
 //JAVA_OPTIONS -Djava.util.logging.manager=org.jboss.logmanager.LogManager
@@ -121,7 +121,7 @@ Go ahead and update this line to include the `quarkus-bom` and the `quarkus-rest
 
 [source,java,subs=attributes+]
 ----
-//DEPS io.quarkus.platform:quarkus-bom:{quarkus-version}@pom
+//DEPS {quarkus-platform-groupid}:quarkus-bom:{quarkus-version}@pom
 //DEPS io.quarkus:quarkus-resteasy-reactive
 ----
 

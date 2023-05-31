@@ -2,23 +2,8 @@ name: Podman Test Build (Linux)
 
 
 on:
-  pull_request: # TODO testing only, we do not want to build on PRs
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore:
-      - '.gitignore'
-      - '.dockerignore'
-      - '*.md'
-      - '*.adoc'
-      - '*.txt'
-      - 'adr/**'
-      - 'jakarta/**'
-      - 'docs/src/main/asciidoc/**'
-      - '.github/ISSUE_TEMPLATE/**'
-      - '.github/*.yml'
-      - '.github/*.java'
-      - '.github/*.conf'
   workflow_dispatch:
-  schedule: ## Do a run daily, to refresh website content
+  schedule: ## Do a run daily, to check our compatibility
     - cron: '0 3 * * *'
 
 env:

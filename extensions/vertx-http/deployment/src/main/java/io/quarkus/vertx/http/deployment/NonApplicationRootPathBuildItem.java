@@ -273,7 +273,23 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         }
 
         public Builder routeFunction(String route, Consumer<Route> routeFunction) {
+            return orderedRoute(route, null, routeFunction);
+        }
 
+        @Override
+        public Builder route(String route) {
+            routeFunction(route, null);
+            return this;
+        }
+
+        @Override
+        public Builder orderedRoute(String route, Integer order) {
+            orderedRoute(route, order, null);
+            return this;
+        }
+
+        @Override
+        public Builder orderedRoute(String route, Integer order, Consumer<Route> routeFunction) {
             if (isManagement && this.buildItem.managementRootPath != null) {
                 // The logic is slightly different when the management interface is enabled, as we have a single
                 // router mounted at the root.
@@ -283,7 +299,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                     this.path = buildItem.getManagementRootPath() + route;
                 }
                 this.routerType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
-                super.routeFunction(this.path, routeFunction);
+                super.orderedRoute(this.path, order, routeFunction);
                 return this;
             }
 
@@ -304,14 +320,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                 this.path = route;
                 this.routerType = RouteBuildItem.RouteType.ABSOLUTE_ROUTE;
             }
-
-            super.routeFunction(this.path, routeFunction);
-            return this;
-        }
-
-        @Override
-        public Builder route(String route) {
-            routeFunction(route, null);
+            super.orderedRoute(this.path, order, routeFunction);
             return this;
         }
 
@@ -401,6 +410,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             super.management();
             return this;
         }
+
     }
 
     /**

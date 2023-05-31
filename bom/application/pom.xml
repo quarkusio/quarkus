@@ -172,7 +172,7 @@
         <mongo-client.version>4.9.1</mongo-client.version>
         <mongo-crypt.version>1.7.3</mongo-crypt.version>
         <proton-j.version>0.34.1</proton-j.version>
-        <javaparser.version>3.25.2</javaparser.version>
+        <javaparser.version>3.25.3</javaparser.version>
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
         <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.2.1</hibernate-quarkus-local-cache.version>

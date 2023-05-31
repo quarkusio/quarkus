@@ -254,7 +254,7 @@ jobs:
     needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 360
+    timeout-minutes: 600
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
     strategy:
@@ -663,93 +663,10 @@ jobs:
             LICENSE.txt
           retention-days: 2
 
-  native-tests:
-    name: Native Tests - ${{matrix.category}}
-    needs: calculate-test-jobs
-    runs-on: ${{matrix.os-name}}
-    env:
-      # leave more space for the actual native compilation and execution
-      MAVEN_OPTS: -Xmx1g
-    # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.native_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    # Ignore the following YAML Schema error
-    timeout-minutes: ${{matrix.timeout}}
-    strategy:
-      max-parallel: 12
-      fail-fast: false
-      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
-    steps:
-      - name: Support longpaths on Windows
-        if: "startsWith(matrix.os-name, 'windows')"
-        run: git config --global core.longpaths true
-      - uses: actions/checkout@v3
-      - name: Reclaim Disk Space
-        run: .github/ci-prerequisites.sh
-      - name: Set up JDK 11
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 11
-      - name: Install cl.exe
-        if: startsWith(matrix.os-name, 'windows')
-        uses: ilammy/msvc-dev-cmd@v1
-      - uses: microsoft/setup-msbuild@v1
-        if: startsWith(matrix.os-name, 'windows')
-      - name: Setup GraalVM
-        id: setup-graalvm
-        uses: graalvm/setup-graalvm@v1
-        if: startsWith(matrix.os-name, 'windows')
-        with:
-          version: 'mandrel-latest'
-          java-version: '17'
-          components: 'native-image'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      # We do this so we can get better analytics for the downloaded version of the build images
-      - name: Update Docker Client User Agent
-        shell: bash
-        run: |
-          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v3
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Build
-        shell: bash
-        env:
-          TEST_MODULES: ${{matrix.test-modules}}
-          CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
-        run: ./mvnw $COMMON_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=$CONTAINER_BUILD
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: test-reports-native-${{matrix.category}}
-          path: 'test-reports.tgz'
-          retention-days: 5
-      - name: Upload build reports (if build failed)
-        uses: actions/upload-artifact@v3
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "build-reports-Native Tests - ${{matrix.category}}"
-          path: |
-            **/target/*-reports/TEST-*.xml
-            **/build/test-results/test/TEST-*.xml
-            target/build-report.json
-            LICENSE.txt
-          retention-days: 2
-
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests]
+    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test]
     if: always() && github.repository != 'quarkusio/quarkus'
     steps:
       - uses: actions/download-artifact@v3

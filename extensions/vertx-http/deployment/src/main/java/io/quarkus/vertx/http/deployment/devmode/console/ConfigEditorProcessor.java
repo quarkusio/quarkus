@@ -253,11 +253,11 @@ public class ConfigEditorProcessor {
         }
     }
 
-    static void setConfig(String value) {
+    public static void setConfig(String value) {
         setConfig(value, true);
     }
 
-    static void setConfig(String value, boolean preventKill) {
+    public static void setConfig(String value, boolean preventKill) {
         try {
             Path configPath = getConfigPath();
             try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {

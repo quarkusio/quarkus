@@ -71,6 +71,11 @@ public class ConfigurationProcessor {
             ConfigEditorProcessor.updateConfig(values, false);
             return null;
         });
+        DevConsoleManager.register("config-set-properties", value -> {
+            String content = value.get("content");
+            ConfigEditorProcessor.setConfig(content, false);
+            return null;
+        });
         return new JsonRPCProvidersBuildItem("devui-configuration", ConfigJsonRPCService.class);
     }
 

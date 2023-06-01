@@ -204,7 +204,8 @@ public class SmallRyeGraphQLProcessor {
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(EventingService.class.getName()));
 
         // Add a condition for the optional eventing services
-        reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(TracingService.class, "io.opentracing.Tracer"));
+        reflectiveClassCondition
+                .produce(new ReflectiveClassConditionBuildItem(TracingService.class, "io.opentelemetry.api.trace.Tracer"));
 
         // Use MicroProfile Config (We use the one from the CDI Module)
         serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath(MicroProfileConfig.class.getName()));

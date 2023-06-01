@@ -47,9 +47,8 @@ public class KubernetesExposingManagementInterfaceTest {
         });
 
         assertThat(service.getSpec()).satisfies(spec -> {
-            assertThat(spec.getPorts()).hasSize(3);
+            assertThat(spec.getPorts()).hasSize(2);
             assertThat(spec.getPorts()).satisfiesOnlyOnce(port -> assertThat(port.getName()).isEqualTo("http"));
-            assertThat(spec.getPorts()).satisfiesOnlyOnce(port -> assertThat(port.getName()).isEqualTo("https"));
             assertThat(spec.getPorts()).satisfiesOnlyOnce(port -> assertThat(port.getName()).isEqualTo("management"));
         });
     }

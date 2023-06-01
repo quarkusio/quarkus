@@ -241,10 +241,13 @@ public class DevUIProcessor {
 
             Class c = jsonRPCProvidersBuildItem.getJsonRPCMethodProviderClass();
             additionalIndexProducer.produce(new AdditionalIndexedClassesBuildItem(c.getName()));
+            DotName defaultBeanScope = jsonRPCProvidersBuildItem.getDefaultBeanScope() == null
+                    ? BuiltinScope.APPLICATION.getName()
+                    : jsonRPCProvidersBuildItem.getDefaultBeanScope();
 
             additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                     .addBeanClass(c)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
+                    .setDefaultScope(defaultBeanScope)
                     .setUnremovable().build());
         }
 

@@ -2,6 +2,7 @@ package io.quarkus.infinispan.client.deployment.devconsole;
 
 import org.infinispan.commons.util.Version;
 
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -42,6 +43,6 @@ public class InfinispanDevUiProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public JsonRPCProvidersBuildItem createJsonRPCService() {
-        return new JsonRPCProvidersBuildItem(InfinispanJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem(InfinispanJsonRPCService.class, BuiltinScope.SINGLETON.getName());
     }
 }

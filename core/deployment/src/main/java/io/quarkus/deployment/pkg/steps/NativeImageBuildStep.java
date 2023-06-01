@@ -149,7 +149,7 @@ public class NativeImageBuildStep {
             Files.writeString(outputDir.resolve("native-image.args"), String.join(" ", command));
             Files.writeString(outputDir.resolve("graalvm.version"), GraalVM.Version.CURRENT.version.toString());
             if (nativeImageRunner.isContainerBuild()) {
-                Files.writeString(outputDir.resolve("native-builder.image"), nativeConfig.getEffectiveBuilderImage());
+                Files.writeString(outputDir.resolve("native-builder.image"), nativeConfig.builderImage().getEffectiveImage());
             }
         } catch (IOException | RuntimeException e) {
             throw new RuntimeException("Failed to build native image sources", e);

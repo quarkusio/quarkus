@@ -226,6 +226,11 @@ public class OidcRecorder {
                             Set.of("quarkus.oidc.jwks-path", "quarkus.oidc.introspection-path"));
                 }
             }
+            if (oidcConfig.authentication.userInfoRequired.orElse(false) && !oidcConfig.userInfoPath.isPresent()) {
+                throw new ConfigurationException(
+                        "UserInfo is required but 'quarkus.oidc.user-info-path' is not configured.",
+                        Set.of("quarkus.oidc.user-info-path"));
+            }
         }
 
         if (OidcUtils.isServiceApp(oidcConfig)) {
@@ -449,6 +454,12 @@ public class OidcRecorder {
                                 return Uni.createFrom().failure(new ConfigurationException(
                                         "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
                             }
+                        }
+                        if (oidcConfig.authentication.userInfoRequired.orElse(false) && metadata.getUserInfoUri() == null) {
+                            client.close();
+                            return Uni.createFrom().failure(new ConfigurationException(
+                                    "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
+                                            + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
                         return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
                     }

@@ -40,6 +40,8 @@ final class FailOnDuplicateCodestartFileStrategyHandler implements DefaultCodest
                             + targetPath);
         }
         Files.createDirectories(targetPath.getParent());
+
         source.copyTo(targetPath);
     }
+
 }

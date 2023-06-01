@@ -37,8 +37,9 @@ public class AzureFunctionsRunCommand {
 
     @BuildStep
     public RunCommandActionBuildItem run(List<AzureFunctionBuildItem> functions, OutputTargetBuildItem target,
+            AzureFunctionsAppNameBuildItem appName,
             AzureFunctionsConfig config) throws Exception {
-        Path stagingDir = getDeploymentStagingDirectoryPath(target, config);
+        Path stagingDir = getDeploymentStagingDirectoryPath(target, appName.getAppName());
         File file = stagingDir.toFile();
         if (!file.exists() || !file.isDirectory()) {
             throw new BuildException("Staging directory does not exist.  Rebuild the app", Collections.emptyList());
@@ -57,8 +58,8 @@ public class AzureFunctionsRunCommand {
         return launcher;
     }
 
-    protected Path getDeploymentStagingDirectoryPath(OutputTargetBuildItem target, AzureFunctionsConfig config) {
-        return target.getOutputDirectory().resolve("azure-functions").resolve(config.appName);
+    protected Path getDeploymentStagingDirectoryPath(OutputTargetBuildItem target, String appName) {
+        return target.getOutputDirectory().resolve("azure-functions").resolve(appName);
     }
 
     protected void checkRuntimeExistence(final CommandHandler handler) throws AzureExecutionException {

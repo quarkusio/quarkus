@@ -98,12 +98,13 @@ public class AzureFunctionsDeployCommand {
 
     @BuildStep
     public void deploy(DeployConfig deployConfig, AzureFunctionsConfig config,
+            AzureFunctionsAppNameBuildItem appName,
             OutputTargetBuildItem output,
 
             BuildProducer<DeployCommandActionBuildItem> producer) throws Exception {
         if (!deployConfig.isEnabled(AZURE_FUNCTIONS))
             return;
-        validateParameters(config);
+        validateParameters(config, appName.getAppName());
         setCurrentOperation();
         AzureMessager.setDefaultMessager(new QuarkusAzureMessager());
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
@@ -111,9 +112,10 @@ public class AzureFunctionsDeployCommand {
         AzureTaskManager.register(new QuarkusAzureTaskManager());
         initAzureAppServiceClient(config);
 
-        final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(config.toFunctionAppConfig(subscriptionId));
+        final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
+                config.toFunctionAppConfig(subscriptionId, appName.getAppName()));
         Path outputDirectory = output.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(config.appName);
+        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(appName.getAppName());
 
         deployArtifact(functionStagingDir, target);
         producer.produce(new DeployCommandActionBuildItem(AZURE_FUNCTIONS, true));
@@ -156,12 +158,12 @@ public class AzureFunctionsDeployCommand {
         }
     }
 
-    protected void validateParameters(AzureFunctionsConfig config) throws BuildException {
+    protected void validateParameters(AzureFunctionsConfig config, String appName) throws BuildException {
         // app name
-        if (StringUtils.isBlank(config.appName)) {
+        if (StringUtils.isBlank(appName)) {
             throw new BuildException(EMPTY_APP_NAME);
         }
-        if (config.appName.startsWith("-") || !config.appName.matches(APP_NAME_PATTERN)) {
+        if (appName.startsWith("-") || !appName.matches(APP_NAME_PATTERN)) {
             throw new BuildException(INVALID_APP_NAME);
         }
         // resource group

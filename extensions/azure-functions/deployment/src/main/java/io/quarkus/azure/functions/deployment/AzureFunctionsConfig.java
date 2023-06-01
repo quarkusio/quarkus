@@ -39,10 +39,12 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class AzureFunctionsConfig {
 
     /**
-     * App name for azure function project. This is required setting
+     * App name for azure function project. This is required setting.
+     *
+     * Defaults to the base artifact name
      */
     @ConfigItem
-    public String appName;
+    public Optional<String> appName;
 
     /**
      * Azure Resource Group for your Azure Functions
@@ -141,7 +143,7 @@ public class AzureFunctionsConfig {
 
     }
 
-    public FunctionAppConfig toFunctionAppConfig(String subscriptionId) {
+    public FunctionAppConfig toFunctionAppConfig(String subscriptionId, String appName) {
         Map<String, String> appSettings = this.appSettings;
         if (appSettings.isEmpty()) {
             appSettings = new HashMap<>();

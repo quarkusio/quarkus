@@ -26,37 +26,12 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
-import io.quarkus.runtime.Quarkus;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 
 public class BaseFunction {
     private static final Logger log = Logger.getLogger("io.quarkus.azure");
 
     private static final int BUFFER_SIZE = 8096;
-
-    protected static void ensureQuarkusInitialized() {
-        // The following will atomically call initQuarkus if this hasn't been done before,
-        // and therefore make sure that deploymentStatus, started and bootstrapError are all set as necessary
-        QuarkusInitializer.ensureQuarkusInitialized();
-    }
-
-    // needed for mock tests
-    public static boolean throwException = true;
-
-    private static void initQuarkus() {
-        if (throwException) {
-            Quarkus.manualInitialize();
-            Quarkus.manualStart();
-        } else {
-            try {
-                Quarkus.manualInitialize();
-                Quarkus.manualStart();
-
-            } catch (Exception ex) {
-
-            }
-        }
-    }
 
     protected HttpResponseMessage dispatch(HttpRequestMessage<Optional<String>> request) {
         try {
@@ -167,21 +142,6 @@ public class BaseFunction {
         public void close() {
             if (!future.isDone())
                 future.completeExceptionally(new RuntimeException("Connection closed"));
-        }
-    }
-
-    private static final class QuarkusInitializer {
-
-        static {
-            // Using an initializer block ensures that initQuarkus is called exactly once,
-            // and is called atomically, thereby making it thread-safe.
-
-            initQuarkus();
-        }
-
-        private static void ensureQuarkusInitialized() {
-            // No code needed; the static initializer block will take care of the initialization.
-            // This method exists to ensure that this class is loaded, and therefore Quarkus is initialized.
         }
     }
 }

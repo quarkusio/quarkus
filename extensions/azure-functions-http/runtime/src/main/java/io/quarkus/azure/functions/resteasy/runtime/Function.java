@@ -12,14 +12,14 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 
 public class Function extends BaseFunction {
 
-    @FunctionName("QuarkusHttp")
+    public static final String QUARKUS_HTTP = "QuarkusHttp";
+
+    @FunctionName(QUARKUS_HTTP)
     public HttpResponseMessage run(
             @HttpTrigger(name = "req", dataType = "binary", methods = { HttpMethod.GET, HttpMethod.HEAD, HttpMethod.POST,
                     HttpMethod.PUT,
                     HttpMethod.OPTIONS }, route = "{*path}", authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context) {
-
-        ensureQuarkusInitialized();
 
         return dispatch(request);
     }

@@ -52,6 +52,10 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
             return true;
         }
 
+        if (codestart.startsWith("azure-functions")) {
+            return true;
+        }
+
         return EXCLUDED.contains(codestart);
     }
 

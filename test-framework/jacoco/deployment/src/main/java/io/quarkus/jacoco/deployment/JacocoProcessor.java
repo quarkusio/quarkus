@@ -123,6 +123,9 @@ public class JacocoProcessor {
     private void addProjectModule(ResolvedDependency module, JacocoConfig config, ReportInfo info, String includes,
             String excludes, Set<String> classes, Set<String> sources) throws Exception {
         info.savedData.add(new File(module.getWorkspaceModule().getBuildDir(), config.dataFile).getAbsolutePath());
+        if (module.getSources() == null) {
+            return;
+        }
         for (SourceDir src : module.getSources().getSourceDirs()) {
             for (Path p : src.getSourceTree().getRoots()) {
                 sources.add(p.toAbsolutePath().toString());

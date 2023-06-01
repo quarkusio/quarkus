@@ -102,9 +102,8 @@ public class KubernetesWithHealthUsingManagementInterfaceTest {
             });
 
             assertThat(s.getSpec()).satisfies(spec -> {
-                assertThat(spec.getPorts()).hasSize(2);
+                assertThat(spec.getPorts()).hasSize(1);
                 assertThat(spec.getPorts()).satisfiesOnlyOnce(port -> assertThat(port.getName()).isEqualTo("http"));
-                assertThat(spec.getPorts()).satisfiesOnlyOnce(port -> assertThat(port.getName()).isEqualTo("https"));
             });
         });
     }

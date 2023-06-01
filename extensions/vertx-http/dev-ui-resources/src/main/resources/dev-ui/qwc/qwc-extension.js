@@ -141,13 +141,21 @@ export class QwcExtension extends LitElement {
     _footerTemplate() {
         return html`
             <div class="card-footer">
-                <a href="configuration-form-editor?filter=${this.configFilter}" class="config">
-                    <vaadin-icon class="icon" icon="font-awesome-solid:pen-to-square" title="Configuration for the ${this.name} extension"></vaadin-icon>
-                </a>
+                ${this._renderConfigFilterIcon()}
                 ${this._renderStatus()}
                 <vaadin-icon class="icon more" icon="font-awesome-solid:ellipsis-vertical" @click="${() => (this._dialogOpened = true)}" title="More about the ${this.name} extension"></vaadin-icon>
             </div>
         `;
+    }
+
+    _renderConfigFilterIcon(){
+        if(this.configFilter){
+            return html`<a href="configuration-form-editor?filter=${this.configFilter}" class="config">
+                    <vaadin-icon class="icon" icon="font-awesome-solid:pen-to-square" title="Configuration for the ${this.name} extension"></vaadin-icon>
+                </a>`;
+        }else{
+            return html`<span></span>`;
+        }
     }
 
     _renderStatus(){

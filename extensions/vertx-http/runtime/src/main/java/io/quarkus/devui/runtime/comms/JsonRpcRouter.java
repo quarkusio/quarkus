@@ -1,7 +1,5 @@
 package io.quarkus.devui.runtime.comms;
 
-import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.MessageType;
-
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -199,8 +197,14 @@ public class JsonRpcRouter {
                 }
                 uni.subscribe()
                         .with(item -> {
-                            codec.writeResponse(s, jsonRpcRequest.getId(), item,
-                                    MessageType.Response);
+                            if (JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
+                                JsonRpcMessage jsonRpcMessage = (JsonRpcMessage) item;
+                                codec.writeResponse(s, jsonRpcRequest.getId(), jsonRpcMessage.getResponse(),
+                                        jsonRpcMessage.getMessageType());
+                            } else {
+                                codec.writeResponse(s, jsonRpcRequest.getId(), item,
+                                        MessageType.Response);
+                            }
                         }, failure -> {
                             codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
                         });

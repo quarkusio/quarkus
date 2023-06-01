@@ -26,7 +26,7 @@ class AcmeExtensionProcessor {
     SyntheticBeanBuildItem syntheticBean(ConfigReportRecorder recorder, NativeConfig nativeConfig) {
        return SyntheticBeanBuildItem.configure(ConfigReport.class)
     		   .scope(Singleton.class)
-    		   .runtimeValue(recorder.configReport(nativeConfig.builderImage()))
+    		   .runtimeValue(recorder.configReport(nativeConfig.builderImage().image()))
     		   .done();
     }
 }

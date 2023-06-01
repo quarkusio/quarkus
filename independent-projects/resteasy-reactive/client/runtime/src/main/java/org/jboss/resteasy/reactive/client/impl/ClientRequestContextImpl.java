@@ -171,8 +171,12 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
 
     @Override
     public MediaType getMediaType() {
+        if (restClientRequestContext.entity == null) {
+            return null;
+        }
         // those come from the entity
-        return restClientRequestContext.entity != null ? restClientRequestContext.entity.getMediaType() : null;
+        return restClientRequestContext.entity.getMediaType() == RestClientRequestContext.IGNORED_MEDIA_TYPE ? null
+                : restClientRequestContext.entity.getMediaType();
     }
 
     @Override
@@ -515,12 +519,8 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         }
 
         private String mediaType() {
-            Entity<?> entity = restClientRequestContext.entity;
-            return entity == null
-                    ? null
-                    : entity.getMediaType() == null
-                            ? null
-                            : entity.getMediaType().toString();
+            MediaType mediaType = getMediaType();
+            return mediaType == null ? null : mediaType.toString();
         }
     }
 }

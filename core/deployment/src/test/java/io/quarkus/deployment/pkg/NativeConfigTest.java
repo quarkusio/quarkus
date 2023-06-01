@@ -8,23 +8,23 @@ class NativeConfigTest {
 
     @Test
     public void testBuilderImageProperlyDetected() {
-        assertThat(createConfig("graalvm").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
+        assertThat(createConfig("graalvm").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
-        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
+        assertThat(createConfig("GraalVM").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
-        assertThat(createConfig("GraalVM").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
+        assertThat(createConfig("GraalVM").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
-        assertThat(createConfig("GRAALVM").getEffectiveBuilderImage()).contains("ubi-quarkus-graalvmce-builder-image")
-                .contains("java17");
-
-        assertThat(createConfig("mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel-builder-image")
-                .contains("java17");
-        assertThat(createConfig("Mandrel").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel-builder-image")
-                .contains("java17");
-        assertThat(createConfig("MANDREL").getEffectiveBuilderImage()).contains("ubi-quarkus-mandrel-builder-image")
+        assertThat(createConfig("GRAALVM").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
                 .contains("java17");
 
-        assertThat(createConfig("aRandomString").getEffectiveBuilderImage()).isEqualTo("aRandomString");
+        assertThat(createConfig("mandrel").builderImage().getEffectiveImage()).contains("ubi-quarkus-mandrel-builder-image")
+                .contains("java17");
+        assertThat(createConfig("Mandrel").builderImage().getEffectiveImage()).contains("ubi-quarkus-mandrel-builder-image")
+                .contains("java17");
+        assertThat(createConfig("MANDREL").builderImage().getEffectiveImage()).contains("ubi-quarkus-mandrel-builder-image")
+                .contains("java17");
+
+        assertThat(createConfig("aRandomString").builderImage().getEffectiveImage()).isEqualTo("aRandomString");
     }
 
     private NativeConfig createConfig(String builderImage) {

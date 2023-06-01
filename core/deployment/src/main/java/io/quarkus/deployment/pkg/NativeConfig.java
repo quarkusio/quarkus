@@ -14,6 +14,7 @@ import io.quarkus.runtime.util.ContainerRuntimeUtil;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithParentName;
 
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.native")
@@ -208,21 +209,44 @@ public interface NativeConfig {
     }
 
     /**
-     * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
-     * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17}.
+     * Configuration related to the builder image, when performing native builds in a container.
      */
-    @WithDefault("${platform.quarkus.native.builder-image}")
-    @ConfigDocDefault("mandrel")
-    String builderImage();
+    BuilderImageConfig builderImage();
 
-    default String getEffectiveBuilderImage() {
-        final String builderImageName = this.builderImage().toUpperCase();
-        if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
-            return DEFAULT_GRAALVM_BUILDER_IMAGE;
-        } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
-            return DEFAULT_MANDREL_BUILDER_IMAGE;
-        } else {
-            return this.builderImage();
+    interface BuilderImageConfig {
+        /**
+         * The docker image to use to do the image build. It can be one of `graalvm`, `mandrel`, or the full image path, e.g.
+         * {@code quay.io/quarkus/ubi-quarkus-mandrel-builder-image:22.3-java17}.
+         */
+        @WithParentName
+        @WithDefault("${platform.quarkus.native.builder-image}")
+        @ConfigDocDefault("mandrel")
+        String image();
+
+        /**
+         * The strategy for pulling the builder image during the build.
+         * <p>
+         * Defaults to 'always', which will always pull the most up-to-date image;
+         * useful to keep up with fixes when a (floating) tag is updated.
+         * <p>
+         * Use 'missing' to only pull if there is no image locally;
+         * useful on development environments where building with out-of-date images is acceptable
+         * and bandwidth may be limited.
+         * <p>
+         * Use 'never' to fail the build if there is no image locally.
+         */
+        @WithDefault("always")
+        ImagePullStrategy pull();
+
+        default String getEffectiveImage() {
+            final String builderImageName = this.image().toUpperCase();
+            if (builderImageName.equals(BuilderImageProvider.GRAALVM.name())) {
+                return DEFAULT_GRAALVM_BUILDER_IMAGE;
+            } else if (builderImageName.equals(BuilderImageProvider.MANDREL.name())) {
+                return DEFAULT_MANDREL_BUILDER_IMAGE;
+            } else {
+                return this.image();
+            }
         }
     }
 
@@ -465,5 +489,26 @@ public interface NativeConfig {
         JMXSERVER,
         JMXCLIENT,
         ALL
+    }
+
+    enum ImagePullStrategy {
+        /**
+         * Always pull the most recent image.
+         */
+        ALWAYS("always"),
+        /**
+         * Only pull the image if it's missing locally.
+         */
+        MISSING("missing"),
+        /**
+         * Never pull any image; fail if the image is missing locally.
+         */
+        NEVER("never");
+
+        public final String commandLineParamValue;
+
+        ImagePullStrategy(String commandLineParamValue) {
+            this.commandLineParamValue = commandLineParamValue;
+        }
     }
 }

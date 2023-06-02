@@ -12,7 +12,7 @@ include::_attributes.adoc[]
 .Dev UI v1
 ====
 This guide covers the Dev UI v1, which has been replaced in Quarkus 3.
-You can still access the Dev UI v1 using http://localhost/q/dev-v1/
+You can still access the Dev UI v1 using http://localhost:8080/q/dev-v1[/q/dev-v1]
 ====
 
 This guide covers the Quarkus Dev UI for xref:building-my-first-extension.adoc[extension authors].

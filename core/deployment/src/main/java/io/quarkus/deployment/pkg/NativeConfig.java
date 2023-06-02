@@ -495,20 +495,14 @@ public interface NativeConfig {
         /**
          * Always pull the most recent image.
          */
-        ALWAYS("always"),
+        ALWAYS,
         /**
          * Only pull the image if it's missing locally.
          */
-        MISSING("missing"),
+        MISSING,
         /**
          * Never pull any image; fail if the image is missing locally.
          */
-        NEVER("never");
-
-        public final String commandLineParamValue;
-
-        ImagePullStrategy(String commandLineParamValue) {
-            this.commandLineParamValue = commandLineParamValue;
-        }
+        NEVER
     }
 }

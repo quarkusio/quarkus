@@ -40,6 +40,9 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
     private static final String JSON = "json";
 
+    private static final ServerMediaType REST_MULTI_DEFAULT_SERVER_MEDIA_TYPE = new ServerMediaType(
+            List.of(MediaType.APPLICATION_OCTET_STREAM_TYPE), StandardCharsets.UTF_8.name(), false);
+
     private List<StreamingResponseCustomizer> streamingResponseCustomizers = Collections.emptyList();
 
     public void setStreamingResponseCustomizers(List<StreamingResponseCustomizer> streamingResponseCustomizers) {
@@ -301,8 +304,13 @@ public class PublisherResponseHandler implements ServerRestHandler {
             // or make this SSE produce build-time
             ServerMediaType produces = requestContext.getTarget().getProduces();
             if (produces == null) {
-                throw new IllegalStateException(
-                        "Negotiation or dynamic media type not supported yet for Multi: please use the @Produces annotation when returning a Multi");
+                if (result instanceof RestMulti) {
+                    produces = REST_MULTI_DEFAULT_SERVER_MEDIA_TYPE;
+                } else {
+                    throw new IllegalStateException(
+                            "Negotiation or dynamic media type not supported yet for Multi: please use the @Produces annotation when returning a Multi");
+                }
+
             }
             MediaType[] mediaTypes = produces.getSortedOriginalMediaTypes();
             if (mediaTypes.length != 1) {

@@ -290,6 +290,11 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
         metadata.visitRegisteredComponents(consumer);
     }
 
+    @Override
+    public Component getGenericComponent(Class<?> componentClass) {
+        return metadata.getGenericComponent(componentClass);
+    }
+
     public Map<String, PersistentClass> getEntityBindingMap() {
         return metadata.getEntityBindingMap();
     }

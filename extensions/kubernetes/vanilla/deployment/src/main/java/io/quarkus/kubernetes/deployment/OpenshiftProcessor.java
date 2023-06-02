@@ -9,6 +9,8 @@ import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
 import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.ROUTE;
 import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
+import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
+import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPortIsEnabled;
 import static io.quarkus.kubernetes.deployment.OpenshiftConfig.OpenshiftFlavor.v3;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.DEFAULT_PRIORITY;
 
@@ -368,6 +370,14 @@ public class OpenshiftProcessor {
         // Handle init Containers and Jobs
         result.addAll(KubernetesCommonHelper.createInitContainerDecorators(OPENSHIFT, name, initContainers, result));
         result.addAll(KubernetesCommonHelper.createInitJobDecorators(OPENSHIFT, name, jobs, result));
+
+        // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
+        if (managementPortIsEnabled()
+                && (config.route == null
+                        || !config.route.expose
+                        || !config.route.targetPort.equals(MANAGEMENT_PORT_NAME))) {
+            result.add(new DecoratorBuildItem(OPENSHIFT, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+        }
         return result;
     }
 

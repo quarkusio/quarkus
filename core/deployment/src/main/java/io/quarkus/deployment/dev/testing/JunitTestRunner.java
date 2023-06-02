@@ -235,6 +235,9 @@ public class JunitTestRunner {
                                 startTimes.put(testIdentifier, System.currentTimeMillis());
                                 String testClassName = "";
                                 Class<?> testClass = getTestClassFromSource(testIdentifier.getSource());
+                                if (testClass != null) {
+                                    testClassName = testClass.getName();
+                                }
                                 for (TestRunListener listener : listeners) {
                                     listener.testStarted(testIdentifier, testClassName);
                                 }

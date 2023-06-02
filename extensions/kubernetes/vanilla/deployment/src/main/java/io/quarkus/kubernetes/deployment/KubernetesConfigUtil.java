@@ -22,6 +22,11 @@ import io.quarkus.deployment.util.DeploymentUtil;
 
 public class KubernetesConfigUtil {
 
+    /**
+     * It should be the same name as in VertxHttpProcessor.kubernetesForManagement.
+     */
+    public static final String MANAGEMENT_PORT_NAME = "management";
+
     private static final String DEKORATE_PREFIX = "dekorate.";
     private static final Pattern QUARKUS_DEPLOY_PATTERN = Pattern.compile("quarkus\\.([^\\.]+)\\.deploy");
 
@@ -109,6 +114,10 @@ public class KubernetesConfigUtil {
         result.putAll(quarkusPrefixed);
         result.putAll(toS2iProperties(quarkusPrefixed));
         return result;
+    }
+
+    public static boolean managementPortIsEnabled() {
+        return ConfigProvider.getConfig().getOptionalValue("quarkus.management.enabled", Boolean.class).orElse(false);
     }
 
     private static Map<String, Object> toS2iProperties(Map<String, Object> map) {

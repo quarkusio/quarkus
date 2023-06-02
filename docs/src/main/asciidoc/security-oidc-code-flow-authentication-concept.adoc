@@ -589,31 +589,44 @@ If you plan to consume this application from a Single-page application running o
 ==== Integration with GitHub and other OAuth2 providers
 
 Some well known providers such as GitHub or LinkedIn are not OpenID Connect but OAuth2 providers which support the `authorization code flow`, for example, link:https://docs.github.com/en/developers/apps/building-oauth-apps/authorizing-oauth-apps[GitHub OAuth2] and link:https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow[LinkedIn OAuth2].
+Remember, OIDC is built on top of OAuth2.
 
-The main difference between OpenID Connect and OAuth2 providers is that OpenID Connect providers, by building on top of OAuth2, return an `ID Token` representing a user authentication, in addition to the standard authorization code flow `access` and `refresh` tokens returned by `OAuth2` providers.
+The main difference between OpenID Connect and OAuth2 providers is that OpenID Connect providers return an `ID Token` representing a user authentication, in addition to the standard authorization code flow `access` and `refresh` tokens returned by `OAuth2` providers.
 
 OAuth2 providers such as GitHub do not return `IdToken`, the fact of the user authentication is implicit and is indirectly represented by the `access` token which represents an authenticated user authorizing the current Quarkus `web-app` application to access some data on behalf of the authenticated user.
 
+While in the OIDC case, we validate the ID Token as proof of the authentication validity, in the raw OAuth2 case, we need to validate the access token.
+This is done by subsequently calling an endpoint that requires the access token and that typically returns user information.
+This very much the same as the OIDC <<user-info,UserInfo>> approach which is fetched by the OIDC flow on your behalf.
+
 For example, when working with GitHub, the Quarkus endpoint can acquire an `access` token which will allow it to request a GitHub profile of the current user.
-In fact this is exactly how a standard OpenID Connect `UserInfo` acquisition also works - by authenticating into your OpenID Connect provider you also give a permission to Quarkus application to acquire your <<user-info,UserInfo>> on your behalf - and it also shows what is meant by OpenID Connect being built on top of OAuth2.
 
-To support the integration with such OAuth2 servers, `quarkus-oidc` needs to be configured to allow the authorization code flow responses without `IdToken`: `quarkus.oidc.authentication.id-token-required=false`.
+To support the integration with such OAuth2 servers, `quarkus-oidc` needs to be configured a bit differently to allow the authorization code flow responses without `IdToken`: `quarkus.oidc.authentication.id-token-required=false`.
 
-It is required because `quarkus-oidc` expects that not only `access` and `refresh` tokens but also `IdToken` will be returned once the authorization code flow completes.
+[NOTE]
+--
+Even though you will configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` will be generated to standardize the way `quarkus-oidc` operates: an `IdToken` is used to support the authentication session and to avoid redirecting the user to the provider such as GitHub on every request. In this case the session lifespan is set to 5 minutes which can be extended further as described in the <<session-management,session management>> section.
 
-Note, even though you will configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` will be generated to support the way `quarkus-oidc` operates where an `IdToken` is used to support the authentication session and to avoid redirecting the user to the provider such as GitHub on every request. In this case the session lifespan is set to 5 minutes which can be extended further as described in the <<session-management,session management>> section.
+This simplifies how you handle an application supporting multiple OIDC providers.
+--
 
-The next step is to ensure that the returned access token can be useful to the current Quarkus endpoint.
-If the OAuth2 provider supports the introspection endpoint then you may be able to use this access token as a source of roles with `quarkus.oidc.roles.source=accesstoken`. If no introspection endpoint is available then at the very least it should be possible to request <<user-info,UserInfo>> from this provider with `quarkus.oidc.authentication.user-info-required` - this is the case with GitHub.
+The next step is to ensure that the returned access token can be useful and is valid to the current Quarkus endpoint.
+The first way is to call the OAuth2 provider introspection endpoint by configuring `quarkus.oidc.introspection-path` if the provider offers such an endpoint.
+In this case you can use the access token as a source of role using `quarkus.oidc.roles.source=accesstoken`.
+If no introspection endpoint is present, your next best step is to request <<user-info,UserInfo>> from the provider as it will at least validate the access token. Use `quarkus.oidc.authentication.user-info-required=true`.
+You also need to set the `quarkus.oidc.user-info-path` property to a URL endpoint fetching the user info (or at least to an endpoint protected by the access token).
+For GitHub, since it does not have an introspection endpoint, we use the last method.
 
-Configuring the endpoint to request <<user-info,UserInfo>> is the only way `quarkus-oidc` can be integrated with the providers such as GitHub.
-
-Note that requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see xref:security-oidc-bearer-token-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more details.
+[NOTE]
+--
+Requiring <<user-info,UserInfo>> involves making a remote call on every request - therefore you may want to consider caching `UserInfo` data, see xref:security-oidc-bearer-token-authentication-concept.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] for more details.
 
 Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken` with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data. For more information, see <<token-state-manager,Encrypt tokens with TokenStateManager>>.
+--
 
-Also, OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
+OAuth2 servers may not support a well-known configuration endpoint in which case the discovery has to be disabled and the authorization, token, and introspection and/or userinfo endpoint paths have to be configured manually.
 
+This can look a bit daunting but Quarkus simplifies your life for well known OIDC or OAuth2 providers like Apple, Facebook, GitHub, Google, Microsoft, Spotify and Twitter. Use the `quarkus.oidc.provider` property.
 Here is how you can integrate `quarkus-oidc` with GitHub after you have link:https://docs.github.com/en/developers/apps/building-oauth-apps/creating-an-oauth-app[created a GitHub OAuth application]. Configure your Quarkus endpoint like this:
 
 [source,properties]

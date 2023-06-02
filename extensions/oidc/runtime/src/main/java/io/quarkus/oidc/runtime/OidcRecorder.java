@@ -124,7 +124,7 @@ public class OidcRecorder {
                     public TenantConfigContext apply(Throwable t) {
                         if (t instanceof OIDCException) {
                             LOG.warnf("Tenant '%s': '%s'."
-                                    + " OIDC server is not available yet, an attempt to connect will be made duiring the first request."
+                                    + " OIDC server is not available yet, an attempt to connect will be made during the first request."
                                     + " Access to resources protected by this tenant may fail"
                                     + " if OIDC server will not become available",
                                     tenantId, t.getMessage());

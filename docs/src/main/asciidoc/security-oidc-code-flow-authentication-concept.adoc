@@ -807,7 +807,7 @@ This simplifies how you handle an application supporting multiple OIDC providers
 The next step is to ensure that the returned access token can be useful and is valid to the current Quarkus endpoint.
 The first way is to call the OAuth2 provider introspection endpoint by configuring `quarkus.oidc.introspection-path` if the provider offers such an endpoint.
 In this case you can use the access token as a source of role using `quarkus.oidc.roles.source=accesstoken`.
-If no introspection endpoint is present, your next best step is to request <<user-info,UserInfo>> from the provider as it will at least validate the access token. Use `quarkus.oidc.authentication.user-info-required=true`.
+If no introspection endpoint is present, your next best step is to request <<user-info,UserInfo>> from the provider as it will at least validate the access token. Use `quarkus.oidc.token.verify-access-token-with-user-info=true`.
 You also need to set the `quarkus.oidc.user-info-path` property to a URL endpoint fetching the user info (or at least to an endpoint protected by the access token).
 For GitHub, since it does not have an introspection endpoint, we use the last method.
 

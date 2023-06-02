@@ -55,7 +55,7 @@ public class KubernetesServiceMappingTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         List<ContainerPort> ports = podSpec.getContainers().get(0).getPorts();
-                        assertThat(ports.size()).isEqualTo(3);
+                        assertThat(ports.size()).isEqualTo(2);
                         assertTrue(ports.stream().anyMatch(port -> "http".equals(port.getName())
                                 && port.getContainerPort() == 8080
                                 && "TCP".equals(port.getProtocol())),
@@ -74,7 +74,7 @@ public class KubernetesServiceMappingTest {
                 assertThat(m.getName()).isEqualTo("kubernetes-service-mapping");
             });
             assertThat(s.getSpec()).satisfies(serviceSpec -> {
-                assertThat(serviceSpec.getPorts().size()).isEqualTo(3);
+                assertThat(serviceSpec.getPorts().size()).isEqualTo(2);
                 assertTrue(serviceSpec.getPorts().stream().anyMatch(port -> "http".equals(port.getName())
                         && port.getTargetPort().getIntVal() == 8080
                         && "TCP".equals(port.getProtocol())

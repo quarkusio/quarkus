@@ -7,12 +7,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.smallrye.common.os.OS;
 import io.smallrye.config.SmallRyeConfig;
 
 public final class ContainerRuntimeUtil {
@@ -20,6 +20,7 @@ public final class ContainerRuntimeUtil {
     private static final Logger log = Logger.getLogger(ContainerRuntimeUtil.class);
     private static final String CONTAINER_EXECUTABLE = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
             .getOptionalValue("quarkus.native.container-runtime", String.class).orElse(null);
+    private static final Pattern PODMAN_PATTERN = Pattern.compile("^podman(?:\\.exe)? version.*", Pattern.DOTALL);
 
     /**
      * Static variable is not used because the class gets loaded by different classloaders at
@@ -44,7 +45,7 @@ public final class ContainerRuntimeUtil {
             return containerRuntime;
         }
 
-        ContainerRuntime containerRuntimeEnvironment = getContainerRuntimeEnvironment();
+        final ContainerRuntime containerRuntimeEnvironment = getContainerRuntimeEnvironment();
         if (containerRuntimeEnvironment == ContainerRuntime.UNAVAILABLE) {
             storeContainerRuntimeInSystemProperty(ContainerRuntime.UNAVAILABLE);
 
@@ -83,7 +84,7 @@ public final class ContainerRuntimeUtil {
             }
             if (CONTAINER_EXECUTABLE.trim().equalsIgnoreCase("podman")) {
                 podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-                podmanAvailable = podmanVersionOutput.startsWith("podman version");
+                podmanAvailable = PODMAN_PATTERN.matcher(podmanVersionOutput).matches();
                 if (podmanAvailable) {
                     return ContainerRuntime.PODMAN;
                 }
@@ -96,15 +97,13 @@ public final class ContainerRuntimeUtil {
         dockerAvailable = dockerVersionOutput.contains("Docker version");
         if (dockerAvailable) {
             // Check if "docker" is an alias to "podman"
-            if (dockerVersionOutput.startsWith("podman version") ||
-                    dockerVersionOutput.startsWith("podman.exe version")) {
+            if (PODMAN_PATTERN.matcher(dockerVersionOutput).matches()) {
                 return ContainerRuntime.PODMAN;
             }
             return ContainerRuntime.DOCKER;
         }
         podmanVersionOutput = getVersionOutputFor(ContainerRuntime.PODMAN);
-        podmanAvailable = podmanVersionOutput.startsWith("podman version") ||
-                podmanVersionOutput.startsWith("podman.exe version");
+        podmanAvailable = PODMAN_PATTERN.matcher(podmanVersionOutput).matches();
         if (podmanAvailable) {
             return ContainerRuntime.PODMAN;
         }
@@ -130,7 +129,7 @@ public final class ContainerRuntimeUtil {
             return null;
         }
 
-        ContainerRuntime containerRuntime = ContainerRuntime.valueOf(runtime);
+        final ContainerRuntime containerRuntime = ContainerRuntime.of(runtime);
 
         if (containerRuntime == null) {
             log.warnf("System property %s contains an unknown value %s. Ignoring it.",
@@ -225,7 +224,7 @@ public final class ContainerRuntimeUtil {
         private final boolean rootless;
 
         ContainerRuntime(String executableName, boolean rootless) {
-            this.executableName = executableName + (OS.current() == OS.WINDOWS ? ".exe" : "");
+            this.executableName = executableName;
             this.rootless = rootless;
         }
 

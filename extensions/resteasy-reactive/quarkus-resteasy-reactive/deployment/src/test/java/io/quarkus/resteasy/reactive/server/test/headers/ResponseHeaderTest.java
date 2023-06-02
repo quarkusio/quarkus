@@ -13,6 +13,7 @@ import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.ResponseStatus;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 import io.restassured.http.Headers;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -179,6 +181,50 @@ public class ResponseHeaderTest {
                         "header2", "h2"));
     }
 
+    @Test
+    public void testReturnRestMulti4() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi2")
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.TEXT)
+                .headers(Map.of(
+                        "Access-Control-Allow-Origin", "foo",
+                        "Keep-Alive", "bar"));
+
+        RestAssured
+                .given()
+                .get("/test/rest-multi2?keepAlive=dummy")
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.TEXT)
+                .headers(Map.of(
+                        "Access-Control-Allow-Origin", "foo",
+                        "Keep-Alive", "dummy"));
+    }
+
+    @Test
+    public void testReturnRestMulti5() {
+        RestAssured
+                .given()
+                .get("/test/rest-multi3")
+                .then()
+                .statusCode(200)
+                .headers(Map.of(
+                        "header1", "foo",
+                        "header2", "bar"));
+
+        RestAssured
+                .given()
+                .get("/test/rest-multi3?h1=h1&h2=h2")
+                .then()
+                .statusCode(200)
+                .headers(Map.of(
+                        "header1", "h1",
+                        "header2", "h2"));
+    }
+
     @Path("/test")
     public static class TestResource {
 
@@ -271,6 +317,21 @@ public class ResponseHeaderTest {
         @Path("/rest-multi3")
         @Produces("application/octet-stream")
         public RestMulti<byte[]> getTestRestMulti3(@DefaultValue("foo") @RestQuery("h1") String header1,
+                @DefaultValue("bar") @RestQuery("h2") String header2) {
+            return RestMulti.fromUniResponse(getWrapper(header1, header2), Wrapper::getData, Wrapper::getHeaders);
+        }
+
+        @GET
+        @Path("/rest-multi4")
+        public RestMulti<byte[]> getTestRestMulti4(@DefaultValue("bar") @RestQuery String keepAlive) {
+            return RestMulti.fromMultiData(Multi.createFrom().item("test".getBytes(StandardCharsets.UTF_8)))
+                    .header("Access-Control-Allow-Origin", "foo")
+                    .header("Keep-Alive", keepAlive).header("Content-Type", MediaType.TEXT_PLAIN).build();
+        }
+
+        @GET
+        @Path("/rest-multi5")
+        public RestMulti<byte[]> getTestRestMulti5(@DefaultValue("foo") @RestQuery("h1") String header1,
                 @DefaultValue("bar") @RestQuery("h2") String header2) {
             return RestMulti.fromUniResponse(getWrapper(header1, header2), Wrapper::getData, Wrapper::getHeaders);
         }

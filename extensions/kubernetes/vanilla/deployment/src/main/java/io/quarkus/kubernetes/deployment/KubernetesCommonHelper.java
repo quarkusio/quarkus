@@ -24,6 +24,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
@@ -169,6 +171,7 @@ public class KubernetesCommonHelper {
             String name = e.getKey();
             Port configuredPort = PortConverter.convert(e);
             Port buildItemPort = allPorts.get(name);
+
             Port combinedPort = buildItemPort == null ? configuredPort
                     : new PortBuilder()
                             .withName(name)
@@ -182,6 +185,16 @@ public class KubernetesCommonHelper {
                             .withPath(Strings.isNotNullOrEmpty(configuredPort.getPath()) ? configuredPort.getPath()
                                     : buildItemPort.getPath())
                             .build();
+
+            // Special handling for ports with name "https". We look up the container port from the Quarkus configuration.
+            if ("https".equals(name) && combinedPort.getContainerPort() == null) {
+                int containerPort = ConfigProvider.getConfig()
+                        .getOptionalValue("quarkus.http.ssl-port", Integer.class)
+                        .orElse(8443);
+
+                combinedPort = new PortBuilder(combinedPort).withContainerPort(containerPort).build();
+            }
+
             allPorts.put(name, combinedPort);
         });
         return allPorts;
@@ -217,13 +230,13 @@ public class KubernetesCommonHelper {
         result.addAll(createCommandDecorator(project, target, name, config, command));
         result.addAll(createArgsDecorator(project, target, name, config, command));
 
-        //Handle Probes
+        // Handle Probes
         if (!port.isEmpty()) {
             result.addAll(createProbeDecorators(name, target, config.getLivenessProbe(), config.getReadinessProbe(),
                     config.getStartupProbe(), livenessProbePath, readinessProbePath, startupPath));
         }
 
-        //Handle RBAC
+        // Handle RBAC
         result.addAll(createRbacDecorators(name, target, config, kubernetesClientConfiguration, roles, clusterRoles,
                 serviceAccounts, roleBindings));
         return result;

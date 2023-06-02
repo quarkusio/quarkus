@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Probe;
+import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
@@ -92,6 +93,17 @@ public class KubernetesWithHealthUsingManagementInterfaceTest {
                         });
                     });
                 });
+            });
+        });
+
+        assertThat(kubernetesList.get(1)).isInstanceOfSatisfying(Service.class, s -> {
+            assertThat(s.getMetadata()).satisfies(m -> {
+                assertThat(m.getName()).isEqualTo(NAME);
+            });
+
+            assertThat(s.getSpec()).satisfies(spec -> {
+                assertThat(spec.getPorts()).hasSize(1);
+                assertThat(spec.getPorts()).satisfiesOnlyOnce(port -> assertThat(port.getName()).isEqualTo("http"));
             });
         });
     }

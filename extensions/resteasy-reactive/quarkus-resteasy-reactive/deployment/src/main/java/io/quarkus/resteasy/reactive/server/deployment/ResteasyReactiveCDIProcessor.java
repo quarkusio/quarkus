@@ -1,16 +1,23 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION_PATH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PROVIDER;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import jakarta.ws.rs.BeanParam;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.server.injection.ContextProducers;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
@@ -18,6 +25,7 @@ import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerD
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -45,13 +53,36 @@ public class ResteasyReactiveCDIProcessor {
     @BuildStep
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.PATH, BuiltinScope.SINGLETON.getName()));
+                .produce(new BeanDefiningAnnotationBuildItem(PATH, BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.APPLICATION_PATH,
+                .produce(new BeanDefiningAnnotationBuildItem(APPLICATION_PATH,
                         BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyReactiveDotNames.PROVIDER,
+                .produce(new BeanDefiningAnnotationBuildItem(PROVIDER,
                         BuiltinScope.SINGLETON.getName()));
+    }
+
+    @BuildStep
+    void unremovableContextMethodParams(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> producer) {
+
+        if (resourceScanningResultBuildItem.isEmpty()) {
+            return;
+        }
+
+        Collection<ClassInfo> resourceClasses = resourceScanningResultBuildItem.get().getResult().getScannedResources()
+                .values();
+        for (ClassInfo resourceClass : resourceClasses) {
+            if (resourceClass.annotationsMap().containsKey(CONTEXT)) {
+                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CONTEXT)) {
+                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
+                        continue;
+                    }
+                    producer.produce(UnremovableBeanBuildItem
+                            .beanTypes(instance.target().asMethodParameter().type().name()));
+                }
+            }
+        }
     }
 
     @BuildStep

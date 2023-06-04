@@ -10,6 +10,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -51,8 +52,9 @@ public class VertxRedisClientFactory {
             }
         } else if (config.hostsProviderName.isPresent()) {
             RedisHostsProvider hostsProvider = findProvider(config.hostsProviderName.get());
-            hosts.addAll(hostsProvider.getHosts());
-            for (URI uri : hostsProvider.getHosts()) {
+            Set<URI> computedHosts = hostsProvider.getHosts();
+            hosts.addAll(computedHosts);
+            for (URI uri : computedHosts) {
                 options.addConnectionString(uri.toString());
             }
         } else {

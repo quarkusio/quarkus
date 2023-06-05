@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -80,6 +81,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final AtomicBoolean running;
 
     private final List<InjectableBean<?>> beans;
+    private final Map<String, List<InjectableBean<?>>> beansByRawType;
     private final LazyValue<List<RemovedBean>> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableDecorator<?>> decorators;
@@ -106,6 +108,7 @@ public class ArcContainerImpl implements ArcContainer {
         id = String.valueOf(ID_GENERATOR.incrementAndGet());
         running = new AtomicBoolean(true);
         List<InjectableBean<?>> beans = new ArrayList<>();
+        Map<String, List<InjectableBean<?>>> beansByRawType = new HashMap<>();
         List<Supplier<Collection<RemovedBean>>> removedBeans = new ArrayList<>();
         List<InjectableInterceptor<?>> interceptors = new ArrayList<>();
         List<InjectableDecorator<?>> decorators = new ArrayList<>();
@@ -130,6 +133,7 @@ public class ArcContainerImpl implements ArcContainer {
                     decorators.add((InjectableDecorator<?>) bean);
                 } else {
                     beans.add(bean);
+                    precomputeBeanRawTypes(beansByRawType, bean);
                 }
             }
             removedBeans.add(c.getRemovedBeans());
@@ -141,7 +145,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
 
         // register built-in beans
-        addBuiltInBeans(beans);
+        addBuiltInBeans(beans, beansByRawType);
 
         interceptors.sort(Comparator.comparingInt(InjectableInterceptor::getPriority));
         decorators.sort(Comparator.comparingInt(InjectableDecorator::getPriority));
@@ -158,6 +162,17 @@ public class ArcContainerImpl implements ArcContainer {
         instance = InstanceImpl.forGlobalEntrypoint(Object.class, Collections.emptySet());
 
         this.beans = List.copyOf(beans);
+        this.beansByRawType = Map.copyOf(beansByRawType);
+        // Trim the size of the non-singleton lists
+        this.beansByRawType.forEach(new BiConsumer<String, List<InjectableBean<?>>>() {
+            @Override
+            public void accept(String key, List<InjectableBean<?>> val) {
+                if (val.size() > 1) {
+                    ((ArrayList<InjectableBean<?>>) val).trimToSize();
+                }
+            }
+        });
+
         this.interceptors = List.copyOf(interceptors);
         this.decorators = List.copyOf(decorators);
         this.observers = List.copyOf(observers);
@@ -200,6 +215,38 @@ public class ArcContainerImpl implements ArcContainer {
         }
 
         this.contexts = contextsBuilder.build();
+    }
+
+    static void precomputeBeanRawTypes(Map<String, List<InjectableBean<?>>> map, InjectableBean<?> bean) {
+        for (Type type : bean.getTypes()) {
+            if (Object.class.equals(type)) {
+                continue;
+            }
+            Class<?> rawType = Types.getRawType(type);
+            if (rawType == null) {
+                continue;
+            }
+            rawType = Types.boxedClass(rawType);
+            String key = rawType.getName();
+            List<InjectableBean<?>> match = map.get(key);
+            if (match == null) {
+                // very often a singleton list will be used
+                map.put(key, List.of(bean));
+            } else {
+                // we don't expect large lists so this should be fine performance wise
+                if (match.contains(bean)) {
+                    continue;
+                }
+                if (match.size() == 1) {
+                    List<InjectableBean<?>> newMatch = new ArrayList<>();
+                    newMatch.add(match.get(0));
+                    newMatch.add(bean);
+                    map.put(key, newMatch);
+                } else {
+                    match.add(bean);
+                }
+            }
+        }
     }
 
     public void init() {
@@ -462,12 +509,19 @@ public class ArcContainerImpl implements ArcContainer {
         return notifier.isEmpty() ? null : notifier;
     }
 
-    private static void addBuiltInBeans(List<InjectableBean<?>> beans) {
+    private static void addBuiltInBeans(List<InjectableBean<?>> beans, Map<String, List<InjectableBean<?>>> beansByRawType) {
         // BeanManager, Event<?>, Instance<?>, InjectionPoint
-        beans.add(new BeanManagerBean());
-        beans.add(new EventBean());
+        BeanManagerBean beanManagerBean = new BeanManagerBean();
+        beans.add(beanManagerBean);
+        precomputeBeanRawTypes(beansByRawType, beanManagerBean);
+        EventBean eventBean = new EventBean();
+        beans.add(eventBean);
+        precomputeBeanRawTypes(beansByRawType, eventBean);
         beans.add(InstanceBean.INSTANCE);
-        beans.add(new InjectionPointBean());
+        precomputeBeanRawTypes(beansByRawType, InstanceBean.INSTANCE);
+        InjectionPointBean injectionPointBean = new InjectionPointBean();
+        beans.add(injectionPointBean);
+        precomputeBeanRawTypes(beansByRawType, injectionPointBean);
     }
 
     private <T> InstanceHandle<T> instanceHandle(Type type, Annotation... qualifiers) {
@@ -680,12 +734,23 @@ public class ArcContainerImpl implements ArcContainer {
 
     List<InjectableBean<?>> getMatchingBeans(Resolvable resolvable) {
         List<InjectableBean<?>> matching = new ArrayList<>();
-        for (InjectableBean<?> bean : beans) {
+        for (InjectableBean<?> bean : potentialBeans(resolvable.requiredType)) {
             if (matches(bean, resolvable.requiredType, resolvable.qualifiers)) {
                 matching.add(bean);
             }
         }
         return matching;
+    }
+
+    Iterable<InjectableBean<?>> potentialBeans(Type type) {
+        if (!Object.class.equals(type)) {
+            Class<?> rawType = Types.getRawType(type);
+            if (rawType != null) {
+                List<InjectableBean<?>> match = beansByRawType.get(Types.boxedClass(rawType).getName());
+                return match == null ? List.of() : match;
+            }
+        }
+        return beans;
     }
 
     List<RemovedBean> getMatchingRemovedBeans(Resolvable resolvable) {

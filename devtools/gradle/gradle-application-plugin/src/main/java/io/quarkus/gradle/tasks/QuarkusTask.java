@@ -20,6 +20,9 @@ import io.quarkus.gradle.extension.QuarkusPluginExtension;
 import io.quarkus.utilities.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
+    private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.package.",
+            "quarkus.application.", "quarkus.gradle-worker.");
+
     private final transient QuarkusPluginExtension extension;
     protected final File projectDir;
     protected final File buildDir;
@@ -85,15 +88,17 @@ public abstract class QuarkusTask extends DefaultTask {
             forkOptions.environment("PATH", javaBin + File.pathSeparator + System.getenv("PATH"));
         }
 
-        // It's kind of a "very big hammer" here, but this way we ensure that all 'quarkus.*' properties from
-        // all configuration sources are (forcefully) used in the Quarkus build - even properties defined on the
-        // QuarkusPluginExtension.
+        // It's kind of a "very big hammer" here, but this way we ensure that all necessary properties
+        // ("quarkus.package.*","quarkus.application,*", "quarkus.gradle-worker.*") from all configuration sources
+        // are (forcefully) used in the Quarkus build - even properties defined on the QuarkusPluginExtension.
         // This prevents that settings from e.g. a application.properties takes precedence over an explicit
         // setting in Gradle project properties, the Quarkus extension or even via the environment or system
         // properties.
+        // see https://github.com/quarkusio/quarkus/issues/33321 why not all properties are passed as system properties
         // Note that we MUST NOT mess with the system properties of the JVM running the build! And that is the
         // main reason why build and code generation happen in a separate process.
-        configMap.entrySet().stream().filter(e -> e.getKey().startsWith("quarkus."))
+        configMap.entrySet().stream()
+                .filter(e -> WORKER_BUILD_FORK_OPTIONS.stream().anyMatch(e.getKey().toLowerCase()::startsWith))
                 .forEach(e -> forkOptions.systemProperty(e.getKey(), e.getValue()));
 
         // populate worker classpath with additional content?

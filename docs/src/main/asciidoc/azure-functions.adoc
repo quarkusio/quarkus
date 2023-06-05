@@ -100,15 +100,11 @@ deployment is now all done by Quarkus.
 Build configuration is now all within `application.properties`.  The only required configuration switch
 is `quarkus.azure-functions.app-name`.
 
+== Azure Deployment Descriptors
 
-== Login to Azure
-
-If you don't log in to Azure you won't be able to deploy.
-
-[source,bash,subs=attributes+]
-----
-az login
-----
+The Azure Functions `host.json` deployment descriptor is automatically
+generated, but if you need to override it, declare it in the root directory of the project and
+rerun the build when you are ready.
 
 == Quarkus dev mode
 
@@ -137,6 +133,11 @@ destroy the process cleanly and you'll have open ports.
 Note that you must have the https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
 installed for this to work!
 
+The URL to access the example would be:
+
+https://localhost:8081/HttpExample?name=Bill
+
+
 == Quarkus Integration Testing
 
 You can implement integration tests using `@QuarkusIntegrationTest` functionality.  When these
@@ -160,6 +161,15 @@ For Gradle:
 
 Make sure any integration tests you execute with Gradle are located within `src/integrationTest/java`.  Integration
 tests that exist in `src/test` will run with normal build and fail.
+
+== Login to Azure
+
+If you don't log in to Azure you won't be able to deploy.
+
+[source,bash,subs=attributes+]
+----
+az login
+----
 
 == Deploy to Azure
 
@@ -197,9 +207,5 @@ The URL to access the service would be
 
 https://{appName}.azurewebsites.net/api/HttpExample
 
-== Azure Deployment Descriptors
-
-Templates for Azure Functions deployment descriptors (`host.json`, `function.json`) are within
-base directory of the project.  Edit them as you need to.  Rerun the build when you are ready.
 
 

@@ -76,14 +76,23 @@ public class AzureFunctionsProcessor {
         return new FeatureBuildItem(Feature.AZURE_FUNCTIONS);
     }
 
+    @BuildStep
+    AzureFunctionsAppNameBuildItem appName(OutputTargetBuildItem output, AzureFunctionsConfig functionsConfig) {
+        String appName = functionsConfig.appName.orElse(output.getBaseName());
+        return new AzureFunctionsAppNameBuildItem(appName);
+    }
+
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public ArtifactResultBuildItem packageFunctions(List<AzureFunctionBuildItem> functions,
             OutputTargetBuildItem target,
             AzureFunctionsConfig functionsConfig,
             PackageConfig packageConfig,
+            AzureFunctionsAppNameBuildItem appName,
             JarBuildItem jar) throws Exception {
-        if (functions == null || functions.isEmpty())
+        if (functions == null || functions.isEmpty()) {
+            log.warn("No azure functions exist in deployment");
             return null;
+        }
         AnnotationHandler handler = new AnnotationHandlerImpl();
         HashSet<Method> methods = new HashSet<>();
         for (AzureFunctionBuildItem item : functions)
@@ -97,7 +106,7 @@ public class AzureFunctionsProcessor {
 
         Path rootPath = target.getOutputDirectory().resolve("..");
         Path outputDirectory = target.getOutputDirectory();
-        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(functionsConfig.appName);
+        Path functionStagingDir = outputDirectory.resolve("azure-functions").resolve(appName.getAppName());
 
         copyHostJson(rootPath, functionStagingDir);
 

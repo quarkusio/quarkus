@@ -18,7 +18,6 @@ import com.microsoft.azure.functions.HttpMethod;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 
-import io.quarkus.azure.functions.resteasy.runtime.BaseFunction;
 import io.quarkus.azure.functions.resteasy.runtime.Function;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -30,7 +29,6 @@ import io.restassured.RestAssured;
 public class FunctionTest {
     @BeforeAll
     public static void setFlag() {
-        BaseFunction.throwException = false;
     }
 
     @Test

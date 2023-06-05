@@ -56,7 +56,6 @@ public class FunctionTest {
     private final HttpResponseMessage response = mock(HttpResponseMessage.class);
 
     static {
-        BaseFunction.throwException = false;
     }
 
     @BeforeEach

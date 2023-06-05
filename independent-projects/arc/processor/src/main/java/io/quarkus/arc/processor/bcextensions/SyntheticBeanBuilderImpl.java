@@ -13,6 +13,9 @@ import jakarta.enterprise.lang.model.types.Type;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.processor.Annotations;
+import io.quarkus.arc.processor.Types;
+
 class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<SyntheticBeanBuilderImpl<T>>
         implements SyntheticBeanBuilder<T> {
     DotName implementationClass;
@@ -37,7 +40,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
 
     @Override
     public SyntheticBeanBuilder<T> type(Class<?> type) {
-        this.types.add(TypesReflection.jandexType(type));
+        this.types.add(Types.jandexType(type));
         return this;
     }
 
@@ -69,7 +72,7 @@ class SyntheticBeanBuilderImpl<T> extends SyntheticComponentBuilderBase<Syntheti
 
     @Override
     public SyntheticBeanBuilder<T> qualifier(Annotation qualifierAnnotation) {
-        this.qualifiers.add(AnnotationsReflection.jandexAnnotation(qualifierAnnotation));
+        this.qualifiers.add(Annotations.jandexAnnotation(qualifierAnnotation));
         return this;
     }
 

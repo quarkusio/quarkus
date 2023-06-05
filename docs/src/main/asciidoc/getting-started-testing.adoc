@@ -1507,3 +1507,135 @@ For `@QuarkusIntegrationTest` tests that result in launcher the application as a
 This can be used by `QuarkusTestResourceLifecycleManager` that need to launch additional containers that the application will communicate with.
 ====
 
+== Testing Components
+
+IMPORTANT: This feature is experimental and the API may change in the future.
+
+In Quarkus, the component model is built on top CDI.
+Therefore, Quarkus provides the `QuarkusComponentTestExtension`, a JUnit extension to ease the testing of components and mocking of their dependencies.
+This extension is available in the `quarkus-junit5-component` dependency.
+
+Let's have a component `Foo`:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped <1>
+public class Foo {
+
+    @Inject
+    Charlie charlie; <2>
+    
+    @ConfigProperty(name = "bar") 
+    boolean bar; <3>
+
+    public String ping() {
+        return bar ? charlie.ping() : "nok";
+    }
+}
+----
+<1> `Foo` is an `@ApplicationScoped` CDI bean.
+<2> `Foo` depends on `Charlie` which declares a method `ping()`.
+<3> `Foo` depends on the config property `bar`.
+
+Then a component test could look like:
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.TestConfigProperty;
+import io.quarkus.test.component.TestMock;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+@QuarkusComponentTest <1>
+@TestConfigProperty(key = "bar", value = "true") <2>
+public class FooTest {
+
+    @Inject
+    Foo foo; <3>
+
+    @ConfigureMock
+    Charlie charlieMock; <4>
+
+    @Test
+    public void testPing() {
+        Mockito.when(charlieMock.ping()).thenReturn("OK"); <5>
+        assertEquals("OK", foo.ping());
+    }
+}
+----
+<1> The `QuarkusComponentTest` annotation registers the JUnit extension.
+<2> Set a configuration property for the test.
+<3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`.
+<4> The test also injects `Charlie`, a dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
+<5> We can leverage the Mockito API in a test method to configure the behavior.
+
+If you need the full control over the `QuarkusComponentTestExtension` configuration then you can use the `@RegisterExtension` annotation and configure the extension programatically.
+The test above could be rewritten like:
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.TestMock;
+import io.quarkus.test.component.QuarkusComponentTestExtension;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+public class FooTest {
+
+    @RegisterExtension <1>
+    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension().configProperty("bar","true");
+
+    @Inject
+    Foo foo;
+
+    @ConfigureMock
+    Charlie charlieMock;
+
+    @Test
+    public void testPing() {
+        Mockito.when(charlieMock.ping()).thenReturn("OK");
+        assertEquals("OK", foo.ping());
+    }
+}
+----
+<1> The `QuarkusComponentTestExtension` is configured in a static field.
+
+=== Lifecycle
+
+So what exactly does the `QuarkusComponentTest` do?
+It starts the CDI container and registers a dedicated xref:config-reference.adoc[configuration object] during the `before all` test phase. 
+The container is stopped and the config is released during the `after all` test phase.
+The fields annotated with `@Inject` and `@ConfigureMock` are injected after a test instance is created and unset before a test instance is destroyed.
+Finally, the CDI request context is activated and terminated per each test method.
+
+NOTE: By default, a new test instance is created for each test method. Therefore, a new CDI container is started for each test method. However, if the test class is annotated with `@org.junit.jupiter.api.TestInstance` and the test instance lifecycle is set to `org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS` then the CDI container will be shared across all test method executions of a given test class.
+
+=== Auto Mocking Unsatisfied Dependencies
+
+Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency. 
+Instead, a synthetic bean is registered automatically for each combination of required type and qualifiers of an injection point that resolves to an unsatisfied dependency.
+The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers. 
+The injected reference is an _unconfigured_ Mockito mock.
+You can inject the mock in your test and leverage the Mockito API to configure the behavior.
+
+=== Custom Mocks For Unsatisfied Dependencies
+
+Sometimes you need the full control over the bean attributes and maybe even configure the default mock behavior.
+You can use the mock configurator API via the `QuarkusComponentTestExtension#mock()` method.
+
+=== Configuration
+
+A dedicated `SmallRyeConfig` is registered during the `before all` test phase.
+Moreover, it's possible to set the configuration properties via the `QuarkusComponentTestExtension#configProperty(String, String)` method or the `@TestConfigProperty` annotation.
+If you only need to use the default values for missing config properties, then the `QuarkusComponentTestExtension#useDefaultConfigProperties()` or `@QuarkusComponentTest#useDefaultConfigProperties()` might come in useful.

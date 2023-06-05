@@ -13,6 +13,8 @@ import jakarta.enterprise.lang.model.declarations.ClassInfo;
 
 import org.jboss.jandex.DotName;
 
+import io.quarkus.arc.processor.Annotations;
+
 class SyntheticObserverBuilderImpl<T> extends SyntheticComponentBuilderBase<SyntheticObserverBuilderImpl<T>>
         implements SyntheticObserverBuilder<T> {
     DotName declaringClass;
@@ -60,7 +62,7 @@ class SyntheticObserverBuilderImpl<T> extends SyntheticComponentBuilderBase<Synt
 
     @Override
     public SyntheticObserverBuilder<T> qualifier(Annotation qualifierAnnotation) {
-        this.qualifiers.add(AnnotationsReflection.jandexAnnotation(qualifierAnnotation));
+        this.qualifiers.add(Annotations.jandexAnnotation(qualifierAnnotation));
         return this;
     }
 

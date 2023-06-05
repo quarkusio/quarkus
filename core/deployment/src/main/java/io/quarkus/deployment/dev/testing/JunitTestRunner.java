@@ -569,6 +569,7 @@ public class JunitTestRunner {
                 }
             }
         }
+
         Set<DotName> allTestAnnotations = collectTestAnnotations(index);
         Set<DotName> allTestClasses = new HashSet<>();
         Map<DotName, DotName> enclosingClasses = new HashMap<>();
@@ -600,7 +601,8 @@ public class JunitTestRunner {
         Set<String> unitTestClasses = new HashSet<>();
         for (DotName testClass : allTestClasses) {
             String name = testClass.toString();
-            if (integrationTestClasses.contains(name) || quarkusTestClasses.contains(name)) {
+            if (integrationTestClasses.contains(name)
+                    || quarkusTestClasses.contains(name)) {
                 continue;
             }
             var enclosing = enclosingClasses.get(testClass);

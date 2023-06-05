@@ -23,7 +23,7 @@ import java.util.Set;
  * @author Marko Luksa
  * @author Jozef Hartinger
  */
-class HierarchyDiscovery {
+public final class HierarchyDiscovery {
 
     private final Map<Class<?>, Type> types;
     private final Map<TypeVariable<?>, Type> resolvedTypeVariables;
@@ -35,11 +35,11 @@ class HierarchyDiscovery {
      *
      * @param type the type whose hierarchy will be discovered
      */
-    HierarchyDiscovery(Type type) {
+    public HierarchyDiscovery(Type type) {
         this(type, new TypeResolver(new HashMap<TypeVariable<?>, Type>()));
     }
 
-    HierarchyDiscovery(Type type, TypeResolver resolver) {
+    public HierarchyDiscovery(Type type, TypeResolver resolver) {
         this.types = new HashMap<Class<?>, Type>();
         this.resolver = resolver;
         this.resolvedTypeVariables = resolver.getResolvedTypeVariables();

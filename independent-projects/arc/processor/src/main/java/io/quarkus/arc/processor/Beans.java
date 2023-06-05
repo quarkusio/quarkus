@@ -448,7 +448,7 @@ public final class Beans {
      * Checks if given {@link BeanInfo} has all the required qualifiers and a bean type that matches required type.
      * Uses standard bean assignability rules; see {@link BeanResolverImpl}.
      */
-    static boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
+    public static boolean matches(BeanInfo bean, Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
         return bean.getDeployment().getBeanResolver().matches(bean, requiredType, requiredQualifiers);
     }
 

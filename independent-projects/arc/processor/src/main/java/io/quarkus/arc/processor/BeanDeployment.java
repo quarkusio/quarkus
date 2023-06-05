@@ -129,7 +129,7 @@ public class BeanDeployment {
     BeanDeployment(String name, BuildContextImpl buildContext, BeanProcessor.Builder builder) {
         this.name = name;
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
-        this.buildContext = buildContext;
+        this.buildContext = Objects.requireNonNull(buildContext);
         Map<DotName, BeanDefiningAnnotation> beanDefiningAnnotations = new HashMap<>();
         if (builder.additionalBeanDefiningAnnotations != null) {
             for (BeanDefiningAnnotation bda : builder.additionalBeanDefiningAnnotations) {
@@ -142,9 +142,8 @@ public class BeanDeployment {
         this.beanArchiveImmutableIndex = Objects.requireNonNull(builder.beanArchiveImmutableIndex);
         this.applicationIndex = builder.applicationIndex;
         this.annotationStore = new AnnotationStore(initAndSort(builder.annotationTransformers, buildContext), buildContext);
-        if (buildContext != null) {
-            buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
-        }
+        buildContext.putInternal(Key.ANNOTATION_STORE, annotationStore);
+
         this.injectionPointTransformer = new InjectionPointModifier(
                 initAndSort(builder.injectionPointTransformers, buildContext), buildContext);
         this.observerTransformers = initAndSort(builder.observerTransformers, buildContext);
@@ -176,7 +175,7 @@ public class BeanDeployment {
             }
         }
         repeatingQualifierAnnotations = findContainerAnnotations(qualifiers);
-        buildContextPut(Key.QUALIFIERS.asString(), Collections.unmodifiableMap(qualifiers));
+        buildContext.putInternal(Key.QUALIFIERS, Collections.unmodifiableMap(qualifiers));
 
         interceptorNonbindingMembers = new HashMap<>();
         interceptorBindings = findInterceptorBindings();
@@ -197,7 +196,7 @@ public class BeanDeployment {
             }
         }
         repeatingInterceptorBindingAnnotations = findContainerAnnotations(interceptorBindings);
-        buildContextPut(Key.INTERCEPTOR_BINDINGS.asString(), Collections.unmodifiableMap(interceptorBindings));
+        buildContext.putInternal(Key.INTERCEPTOR_BINDINGS, Collections.unmodifiableMap(interceptorBindings));
 
         Set<DotName> additionalStereotypes = new HashSet<>();
         for (StereotypeRegistrar stereotypeRegistrar : builder.stereotypeRegistrars) {
@@ -206,7 +205,7 @@ public class BeanDeployment {
 
         this.stereotypes = findStereotypes(interceptorBindings, customContexts, additionalStereotypes,
                 annotationStore);
-        buildContextPut(Key.STEREOTYPES.asString(), Collections.unmodifiableMap(stereotypes));
+        buildContext.putInternal(Key.STEREOTYPES, Collections.unmodifiableMap(stereotypes));
 
         this.transitiveInterceptorBindings = findTransitiveInterceptorBindings(interceptorBindings.keySet(),
                 new HashMap<>(), interceptorBindings, annotationStore);
@@ -273,14 +272,14 @@ public class BeanDeployment {
                         injectionPoints, jtaCapabilities));
         // Note that we use unmodifiable views because the underlying collections may change in the next phase
         // E.g. synthetic beans are added and unused interceptors removed
-        buildContextPut(Key.BEANS.asString(), Collections.unmodifiableList(beans));
-        buildContextPut(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
+        buildContext.putInternal(Key.BEANS, Collections.unmodifiableList(beans));
+        buildContext.putInternal(Key.OBSERVERS, Collections.unmodifiableList(observers));
         this.interceptors.addAll(findInterceptors(injectionPoints));
-        buildContextPut(Key.INTERCEPTORS.asString(), Collections.unmodifiableList(interceptors));
+        buildContext.putInternal(Key.INTERCEPTORS, Collections.unmodifiableList(interceptors));
         this.decorators.addAll(findDecorators(injectionPoints));
-        buildContextPut(Key.DECORATORS.asString(), Collections.unmodifiableList(decorators));
+        buildContext.putInternal(Key.DECORATORS, Collections.unmodifiableList(decorators));
         this.injectionPoints.addAll(injectionPoints);
-        buildContextPut(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(this.injectionPoints));
+        buildContext.putInternal(Key.INJECTION_POINTS, Collections.unmodifiableList(this.injectionPoints));
 
         if (buildCompatibleExtensions != null) {
             buildCompatibleExtensions.runRegistration(beanArchiveComputingIndex, beans, observers);
@@ -326,12 +325,10 @@ public class BeanDeployment {
                     TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - removalStart));
             //we need to re-initialize it, so it does not contain removed beans
             initBeanByTypeMap();
-            buildContext.putInternal(BuildExtension.Key.REMOVED_INTERCEPTORS.asString(),
-                    Collections.unmodifiableSet(removedInterceptors));
-            buildContext.putInternal(BuildExtension.Key.REMOVED_DECORATORS.asString(),
-                    Collections.unmodifiableSet(removedDecorators));
+            buildContext.putInternal(BuildExtension.Key.REMOVED_INTERCEPTORS, Collections.unmodifiableSet(removedInterceptors));
+            buildContext.putInternal(BuildExtension.Key.REMOVED_DECORATORS, Collections.unmodifiableSet(removedDecorators));
         }
-        buildContext.putInternal(BuildExtension.Key.REMOVED_BEANS.asString(), Collections.unmodifiableSet(removedBeans));
+        buildContext.putInternal(BuildExtension.Key.REMOVED_BEANS, Collections.unmodifiableSet(removedBeans));
         LOGGER.debugf("Bean deployment initialized in %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
@@ -726,12 +723,6 @@ public class BeanDeployment {
             }
         }
         return ret;
-    }
-
-    private void buildContextPut(String key, Object value) {
-        if (buildContext != null) {
-            buildContext.putInternal(key, value);
-        }
     }
 
     private boolean isRuntimeAnnotationType(ClassInfo annotationType) {

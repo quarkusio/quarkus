@@ -425,10 +425,10 @@ To include them into your project a few things have to be changed.
 
 ```
 <properties>
-    <quarkus-plugin.version>999-SNAPSHOT</quarkus-plugin.version>
+    <quarkus-plugin.version>2.7.999-SNAPSHOT</quarkus-plugin.version>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-    <quarkus.platform.version>999-SNAPSHOT</quarkus.platform.version>
+    <quarkus.platform.version>2.7.999-SNAPSHOT</quarkus.platform.version>
     .
     .
     .

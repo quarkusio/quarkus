@@ -97,7 +97,13 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     }
                     responseBuilder.setMultiValueHeaders(new Headers());
                     for (String name : res.headers().names()) {
+                        if (name.equalsIgnoreCase("Transfer-Encoding")) {
+                            continue; // ignore transfer encoding, chunked screws up message and response
+                        }
                         for (String v : res.headers().getAll(name)) {
+                            if (name.equalsIgnoreCase("Transfer-Encoding") && v.contains("chunked")) {
+                                continue;
+                            }
                             responseBuilder.getMultiValueHeaders().add(name, v);
                         }
                     }

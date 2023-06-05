@@ -104,6 +104,11 @@ public class BaseFunction {
                     HttpResponse res = (HttpResponse) msg;
                     responseBuilder = request.createResponseBuilder(HttpStatus.valueOf(res.status().code()));
                     for (Map.Entry<String, String> entry : res.headers()) {
+                        if (entry.getKey().equalsIgnoreCase("Transfer-Encoding")
+                                && entry.getValue().contains("chunked")) {
+                            continue; // ignore transfer encoding, chunked screws up message and response
+                        }
+                        //log.info("header(" + entry.getKey() + ")=" + entry.getValue());
                         responseBuilder.header(entry.getKey(), entry.getValue());
                     }
                 }

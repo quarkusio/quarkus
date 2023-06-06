@@ -1,7 +1,6 @@
 package io.quarkus.test.common;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,16 +84,6 @@ public final class LauncherUtil {
             }
             process = Runtime.getRuntime().exec(args.toArray(new String[0]), envArray);
         }
-        return process;
-    }
-
-    /**
-     * Launches a process using the supplied arguments and makes sure the process's output is drained to standard out
-     */
-    static Process launchProcessAndDrainIO(List<String> args, File dir) throws IOException {
-        Process process = Runtime.getRuntime().exec(args.toArray(new String[0]), null, dir);
-        new Thread(new ProcessReader(process.getInputStream())).start();
-        new Thread(new ProcessReader(process.getErrorStream())).start();
         return process;
     }
 

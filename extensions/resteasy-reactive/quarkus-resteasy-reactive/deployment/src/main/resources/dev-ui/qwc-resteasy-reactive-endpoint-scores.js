@@ -5,6 +5,7 @@ import '@vaadin/details';
 import '@vaadin/horizontal-layout';
 import 'echarts-gauge-grade';
 import 'qui-badge';
+import 'qwc-no-data';
 
 /**
  * This component shows the Rest Easy Reactive Endpoint scores
@@ -98,10 +99,13 @@ export class QwcResteasyReactiveEndpointScores extends QwcHotReloadElement {
                 return html`${this._latestScores.endpoints.map(endpoint=>{
                     return html`${this._renderEndpoint(endpoint)}`;
                 })}`;
-            }else{
-                return html`<p>No endpoints detected</p>`;
             }
         }
+        return html`<qwc-no-data message="You do not have any REST endpoints." 
+                                    link="https://quarkus.io/guides/resteasy-reactive"
+                                    linkText="Learn how to write REST Services with RESTEasy Reactive">
+                </qwc-no-data>
+            `;
     }
 
     _renderEndpoint(endpoint){

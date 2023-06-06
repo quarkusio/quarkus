@@ -4,12 +4,20 @@ import java.io.IOException;
 
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
 
 public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTestWithCallbacksExtension
-        implements LifecycleMethodExecutionExceptionHandler, TestWatcher {
+        implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler, TestWatcher {
 
     public static final String IO_QUARKUS_TESTING_TYPE = "io.quarkus.testing.type";
+
+    @Override
+    public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        markTestAsFailed(context, throwable);
+
+        throw throwable;
+    }
 
     @Override
     public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {

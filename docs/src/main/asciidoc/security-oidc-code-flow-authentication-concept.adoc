@@ -132,7 +132,7 @@ The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is 
 
 The way the roles are mapped to the SecurityIdentity roles from the verified tokens is identical to how it is done for the xref:security-oidc-bearer-authentication-concept.adoc[Bearer tokens] with the only difference being that https://openid.net/specs/openid-connect-core-1_0.html#IDToken[ID Token] is used as a source of the roles by default.
 
-Note if you use Keycloak then you should set a Microprofile JWT client scope for ID token to contain a `groups` claim, please see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak Server Administration Guide] for more information.
+Note if you use Keycloak then you should set a `microprofile_jwt` client scope for ID token to contain a `groups` claim, please see the https://www.keycloak.org/docs/latest/server_admin/#protocol[Keycloak Server Administration Guide] for more information.
 
 If only the access token contains the roles and this access token is not meant to be propagated to the downstream endpoints then set `quarkus.oidc.roles.source=accesstoken`.
 

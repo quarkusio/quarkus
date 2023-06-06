@@ -62,12 +62,12 @@
         <smallrye-open-api.version>3.3.4</smallrye-open-api.version>
         <smallrye-graphql.version>2.2.0</smallrye-graphql.version>
         <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
-        <smallrye-fault-tolerance.version>6.2.2</smallrye-fault-tolerance.version>
+        <smallrye-fault-tolerance.version>6.2.3</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.2.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.0</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.3.0</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>3.4.1</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.5.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.2.0</smallrye-stork.version>
         <jakarta.activation.version>2.1.2</jakarta.activation.version>
@@ -160,7 +160,7 @@
         <kotlin.version>1.8.21</kotlin.version>
         <kotlin.coroutine.version>1.7.1</kotlin.coroutine.version>
         <kotlin-serialization.version>1.5.0</kotlin-serialization.version>
-        <dekorate.version>3.6.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>3.6.1</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.1.1</jboss-logmanager.version>

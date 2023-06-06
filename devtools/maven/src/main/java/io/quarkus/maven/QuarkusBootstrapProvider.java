@@ -197,8 +197,11 @@ public class QuarkusBootstrapProvider implements Closeable {
             effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
 
             for (Map.Entry<String, String> attribute : mojo.manifestEntries().entrySet()) {
-                effectiveProperties.put(toManifestAttributeKey(attribute.getKey()),
-                        attribute.getValue());
+                if (attribute.getValue() == null) {
+                    mojo.getLog().warn("Skipping manifest entry property " + attribute.getKey() + " with a missing value");
+                } else {
+                    effectiveProperties.put(toManifestAttributeKey(attribute.getKey()), attribute.getValue());
+                }
             }
             for (ManifestSection section : mojo.manifestSections()) {
                 for (Map.Entry<String, String> attribute : section.getManifestEntries().entrySet()) {

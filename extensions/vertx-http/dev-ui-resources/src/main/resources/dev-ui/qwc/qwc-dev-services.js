@@ -3,6 +3,7 @@ import { devServices } from 'devui-data';
 import '@vaadin/icon';
 import 'qui-code-block';
 import 'qui-card';
+import 'qwc-no-data';
 
 /**
  * This component shows the Dev Services Page
@@ -35,22 +36,7 @@ export class QwcDevServices extends QwcHotReloadElement {
             padding-left: 10px;
             background: var(--lumo-contrast-5pct);
         }
-
-        .no-dev-services {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid var(--lumo-contrast-20pct);
-            border-radius: 9px;
-            padding: 30px;
-            margin: 30px;
-        }
-        .no-dev-services a {
-            color: var(--lumo-contrast-90pct);
-        }
     `;
-
 
     static properties = {
         _services: {state: true}
@@ -73,10 +59,10 @@ export class QwcDevServices extends QwcHotReloadElement {
                             ${this._services.map(devService => this._renderCard(devService))}  
                         </div>`;
         } else {
-            return html`<p class="no-dev-services">
-                    <span>You do not have any Dev Services running.</span>
-                    <a href="https://quarkus.io/guides/dev-services" target="_blank">Read more about Dev Services</a>
-                </p>
+            return html`<qwc-no-data message="You do not have any Dev Services running." 
+                                    link="https://quarkus.io/guides/dev-services"
+                                    linkText="Read more about Dev Services">
+                </qwc-no-data>
             `;
         }
     }

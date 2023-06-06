@@ -114,6 +114,12 @@ public class QuarkusTestCallbacksTestCase {
         assertTrue(TestContextCheckerBeforeEachCallback.CONTEXT.getTestStatus().isTestFailed());
     }
 
+    @Test
+    @Order(6)
+    public void testCallbackContextIsNotFailedAgain() {
+        assertTrue(TestContextCheckerBeforeEachCallback.CONTEXT.getTestStatus().isTestFailed());
+    }
+
     @Target({ METHOD })
     @Retention(RUNTIME)
     public @interface TestAnnotation {

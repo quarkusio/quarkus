@@ -85,4 +85,11 @@ public interface BeanResolver {
      */
     boolean hasQualifier(Collection<AnnotationInstance> qualifiers, AnnotationInstance requiredQualifier);
 
+    /**
+     * @param requiredTypeArgument
+     * @param typeArgument
+     * @return {@code true} if the required type argument matches the given type argument, {@code false} otherwise
+     */
+    boolean matchTypeArguments(Type requiredTypeArgument, Type typeArgument);
+
 }

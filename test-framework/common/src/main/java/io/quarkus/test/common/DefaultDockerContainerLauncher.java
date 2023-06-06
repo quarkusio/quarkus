@@ -42,6 +42,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private String containerImage;
     private boolean pullRequired;
     private Map<Integer, Integer> additionalExposedPorts;
+
+    private Map<String, String> labels;
     private final Map<String, String> systemProps = new HashMap<>();
     private boolean isSsl;
     private final String containerName = "quarkus-integration-test-" + RandomStringUtils.random(5, true, false);
@@ -60,6 +62,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.containerImage = initContext.containerImage();
         this.pullRequired = initContext.pullRequired();
         this.additionalExposedPorts = initContext.additionalExposedPorts();
+        this.labels = initContext.labels();
     }
 
     @Override
@@ -135,6 +138,11 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         for (var e : env.entrySet()) {
             args.addAll(envAsLaunchArg(e.getKey(), e.getValue()));
+        }
+
+        for (var e : labels.entrySet()) {
+            args.add("--label");
+            args.add(e.getKey() + "=" + e.getValue());
         }
         args.add(containerImage);
 

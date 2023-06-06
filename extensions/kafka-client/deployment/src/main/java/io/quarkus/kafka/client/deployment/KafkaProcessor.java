@@ -561,14 +561,17 @@ public class KafkaProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void registerKafkaUiExecHandler(
+            Capabilities capabilities,
             BuildProducer<DevConsoleRouteBuildItem> routeProducer,
             KafkaUiRecorder recorder) {
-        routeProducer.produce(DevConsoleRouteBuildItem.builder()
-                .method("POST")
-                .handler(recorder.kafkaControlHandler())
-                .path(KAFKA_ADMIN_PATH)
-                .bodyHandlerRequired()
-                .build());
+        if (capabilities.isPresent(Capability.VERTX_HTTP)) {
+            routeProducer.produce(DevConsoleRouteBuildItem.builder()
+                    .method("POST")
+                    .handler(recorder.kafkaControlHandler())
+                    .path(KAFKA_ADMIN_PATH)
+                    .bodyHandlerRequired()
+                    .build());
+        }
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

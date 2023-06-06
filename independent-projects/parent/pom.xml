@@ -27,7 +27,7 @@
         <version.failsafe.plugin>3.1.0</version.failsafe.plugin>
         <version.formatter.plugin>2.22.0</version.formatter.plugin>
         <version.gpg.plugin>3.0.1</version.gpg.plugin>
-        <version.impsort.plugin>1.8.0</version.impsort.plugin>
+        <version.impsort.plugin>1.9.0</version.impsort.plugin>
         <version.install.plugin>3.1.1</version.install.plugin>
         <version.javadoc.plugin>3.5.0</version.javadoc.plugin>
         <version.jar.plugin>3.3.0</version.jar.plugin>

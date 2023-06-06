@@ -82,6 +82,14 @@ public class HttpConfiguration {
     public boolean http2;
 
     /**
+     * Enables or Disable the HTTP/2 Push feature.
+     * This setting can be used to disable server push. The server will not send a {@code PUSH_PROMISE} frame if it
+     * receives this parameter set to @{code false}.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean http2PushEnabled;
+
+    /**
      * The CORS config
      */
     public CORSConfig cors;
@@ -178,6 +186,14 @@ public class HttpConfiguration {
      */
     @ConfigItem(defaultValue = "-1")
     public int acceptBacklog;
+
+    /**
+     * Set the SETTINGS_INITIAL_WINDOW_SIZE HTTP/2 setting.
+     * Indicates the sender's initial window size (in octets) for stream-level flow control.
+     * The initial value is {@code 2^16-1} (65,535) octets.
+     */
+    @ConfigItem
+    public OptionalInt initialWindowSize;
 
     /**
      * Path to a unix domain socket

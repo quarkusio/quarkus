@@ -292,6 +292,10 @@ If you want to disable HTTP/2 you can set:
 quarkus.http.http2=false
 ----
 
+Note that some configuration attributes are specific to HTTP/2.
+For example, to configure the max header list size (~ header), you need to configure the `quarkus.http.limits.max-header-list-size` attribute.
+You can also enable or disable HTTP/2 push using `quarkus.http.http2-push-enabled`.
+
 == Listening on a Random Port
 
 If you don't want to specify a port you can set `quarkus.http.port=0` or `quarkus.http.test-port=0`. A random open port

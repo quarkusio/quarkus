@@ -78,6 +78,27 @@ public class BasicTest {
     }
 
     @Test
+    void shouldLogWithExplicitLogger() {
+        RestAssured.with().body(baseUrl).post("/call-client-with-explicit-client-logger")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void shouldLogWithGlobalLogger() {
+        RestAssured.with().body(baseUrl).post("/call-client-with-global-client-logger")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
+    void shouldLogCdiWithGlobalLogger() {
+        RestAssured.with().body(baseUrl).post("/call-cdi-client-with-global-client-logger")
+                .then()
+                .statusCode(200);
+    }
+
+    @Test
     void shouldMapException() {
         RestAssured.with().body(baseUrl).post("/call-client-with-exception-mapper")
                 .then()

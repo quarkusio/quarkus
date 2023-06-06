@@ -16,6 +16,7 @@ import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderListener;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
 
 import io.quarkus.rest.client.reactive.runtime.QuarkusRestClientBuilderImpl;
 import io.quarkus.rest.client.reactive.runtime.RestClientBuilderImpl;
@@ -249,6 +250,14 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
      * @return the current builder
      */
     QuarkusRestClientBuilder httpClientOptions(HttpClientOptions httpClientOptions);
+
+    /**
+     * Specifies the client logger to use.
+     *
+     * @param clientLogger the client logger to use.
+     * @return the current builder
+     */
+    QuarkusRestClientBuilder clientLogger(ClientLogger clientLogger);
 
     /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls

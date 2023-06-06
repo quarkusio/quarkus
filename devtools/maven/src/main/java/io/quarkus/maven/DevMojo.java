@@ -389,12 +389,14 @@ public class DevMojo extends AbstractMojo {
         if (enforceBuildGoal) {
             final PluginDescriptor pluginDescr = getPluginDescriptor();
             final Plugin pluginDef = getConfiguredPluginOrNull(pluginDescr.getGroupId(), pluginDescr.getArtifactId());
-            if (pluginDef == null || !isGoalConfigured(pluginDef, "build")) {
-                getLog().warn("The quarkus-maven-plugin build goal was not configured for this project," +
-                        " skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus:dev" +
-                        " on this project make sure the quarkus-maven-plugin is configured with the build goal" +
-                        " or disable the enforceBuildGoal flag (via plugin configuration or via" +
-                        " -Dquarkus.enforceBuildGoal=false).");
+            if (!isGoalConfigured(pluginDef, "build")) {
+                var currentGoal = getCurrentGoal();
+                getLog().warn(
+                        "The quarkus-maven-plugin build goal was not configured for this project, skipping " +
+                                currentGoal + " as this is assumed to be a support library. If you want to run " + currentGoal +
+                                " on this project make sure the quarkus-maven-plugin is configured with the build goal" +
+                                " or disable the enforceBuildGoal flag (via plugin configuration or via" +
+                                " -Dquarkus.enforceBuildGoal=false).");
                 return;
             }
         }
@@ -518,10 +520,11 @@ public class DevMojo extends AbstractMojo {
         if (goals.isEmpty() && !StringUtils.isEmpty(project.getDefaultGoal())) {
             goals = List.of(StringUtils.split(project.getDefaultGoal()));
         }
+        final String currentGoal = getCurrentGoal();
 
         int latestHandledPhaseIndex = -1;
         for (String goal : goals) {
-            if (goal.endsWith("quarkus:dev")) {
+            if (goal.endsWith(currentGoal)) {
                 break;
             }
             if (goal.indexOf(':') >= 0 || IGNORED_PHASES.contains(goal)) {
@@ -541,7 +544,7 @@ public class DevMojo extends AbstractMojo {
         // configured plugin executions by lifecycle phases
         final Map<String, List<Map.Entry<Plugin, PluginExecution>>> phaseExecutions = new HashMap<>();
         // goals with prefixes on the command line
-        final Map<String, Plugin> prefixedGoals = new HashMap<>();
+        final Map<String, Plugin> pluginPrefixes = new HashMap<>();
         for (Plugin p : project.getBuildPlugins()) {
             if (p.getExecutions().isEmpty()) {
                 continue;
@@ -576,9 +579,7 @@ public class DevMojo extends AbstractMojo {
                 }
                 if (!e.getGoals().isEmpty()) {
                     var goalPrefix = getMojoDescriptor(p, e.getGoals().get(0)).getPluginDescriptor().getGoalPrefix();
-                    for (String goal : e.getGoals()) {
-                        prefixedGoals.put(goalPrefix + ":" + goal, p);
-                    }
+                    pluginPrefixes.put(goalPrefix, p);
                 }
             }
         }
@@ -586,12 +587,12 @@ public class DevMojo extends AbstractMojo {
         // Map<pluginId, List<goals>>
         final Map<String, List<String>> executedPluginGoals = new HashMap<>();
         for (String goal : goals) {
-            if (goal.endsWith("quarkus:dev")) {
+            if (goal.endsWith(currentGoal)) {
                 break;
             }
             var colon = goal.indexOf(':');
             if (colon >= 0) {
-                var plugin = prefixedGoals.get(goal);
+                var plugin = pluginPrefixes.get(goal.substring(0, colon));
                 if (plugin == null) {
                     getLog().warn("Failed to locate plugin for " + goal);
                 } else {
@@ -628,6 +629,11 @@ public class DevMojo extends AbstractMojo {
                 }
             }
         }
+    }
+
+    private String getCurrentGoal() {
+        return mojoExecution.getMojoDescriptor().getPluginDescriptor().getGoalPrefix() + ":"
+                + mojoExecution.getGoal();
     }
 
     private PluginDescriptor getPluginDescriptor() {

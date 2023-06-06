@@ -21,7 +21,7 @@ class DelegateInjectionPointResolverImpl extends BeanResolverImpl {
     }
 
     @Override
-    boolean parametersMatch(Type delegateType, Type beanParameter) {
+    public boolean matchTypeArguments(Type delegateType, Type beanParameter) {
         // this is the same as for bean types
         if (isActualType(delegateType) && isActualType(beanParameter)) {
             /*

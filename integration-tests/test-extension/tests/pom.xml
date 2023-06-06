@@ -140,6 +140,9 @@
             <classpathEntriesRecordingFile>${project.build.directory}/recorded-classpath-entries-failsafe.txt</classpathEntriesRecordingFile>
             <quarkus.dymmy>test</quarkus.dymmy>
           </systemPropertyVariables>
+          <environmentVariables>
+            <DUMMY_AGE>70</DUMMY_AGE>  <!-- Used to test that env vars are propagated -->
+          </environmentVariables>
         </configuration>
       </plugin>
     </plugins>

@@ -37,6 +37,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private long waitTimeSeconds;
     private String testProfile;
     private List<String> argLine;
+    private Map<String, String> env;
     private ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
     private String containerImage;
     private boolean pullRequired;
@@ -54,6 +55,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.waitTimeSeconds = initContext.waitTime().getSeconds();
         this.testProfile = initContext.testProfile();
         this.argLine = initContext.argLine();
+        this.env = initContext.env();
         this.devServicesLaunchResult = initContext.getDevServicesLaunchResult();
         this.containerImage = initContext.containerImage();
         this.pullRequired = initContext.pullRequired();
@@ -127,8 +129,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.addAll(toEnvVar("quarkus.profile", testProfile));
         }
 
-        for (Map.Entry<String, String> e : systemProps.entrySet()) {
+        for (var e : systemProps.entrySet()) {
             args.addAll(toEnvVar(e.getKey(), e.getValue()));
+        }
+
+        for (var e : env.entrySet()) {
+            args.addAll(envAsLaunchArg(e.getKey(), e.getValue()));
         }
         args.add(containerImage);
 
@@ -180,9 +186,13 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         this.systemProps.putAll(systemProps);
     }
 
+    private static List<String> envAsLaunchArg(String name, String value) {
+        return List.of("--env", String.format("%s=%s", name, value));
+    }
+
     private List<String> toEnvVar(String property, String value) {
         if ((property != null) && (!property.isEmpty())) {
-            return List.of("--env", String.format("%s=%s", convertPropertyToEnvVar(property), value));
+            return envAsLaunchArg(convertPropertyToEnvVar(property), value);
         }
         return Collections.emptyList();
     }

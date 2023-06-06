@@ -183,6 +183,12 @@ public class TestConfig {
     Optional<List<String>> argLine;
 
     /**
+     * Additional environment variables to be set in the process that {@code @QuarkusIntegrationTest} launches.
+     */
+    @ConfigItem
+    Map<String, String> env;
+
+    /**
      * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
      * application to launch
      */

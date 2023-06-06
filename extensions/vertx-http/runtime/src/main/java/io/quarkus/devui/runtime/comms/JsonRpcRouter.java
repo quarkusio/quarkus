@@ -197,7 +197,7 @@ public class JsonRpcRouter {
                 }
                 uni.subscribe()
                         .with(item -> {
-                            if (JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
+                            if (item != null && JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
                                 JsonRpcMessage jsonRpcMessage = (JsonRpcMessage) item;
                                 codec.writeResponse(s, jsonRpcRequest.getId(), jsonRpcMessage.getResponse(),
                                         jsonRpcMessage.getMessageType());

@@ -293,6 +293,12 @@ public class TestConfig {
          */
         @ConfigItem
         Map<String, String> additionalExposedPorts;
+
+        /**
+         * A set of labels to add to the launched container
+         */
+        @ConfigItem
+        Map<String, String> labels;
     }
 
     public enum Mode {

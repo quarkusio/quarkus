@@ -11,5 +11,7 @@ public interface DockerContainerArtifactLauncher extends ArtifactLauncher<Docker
         boolean pullRequired();
 
         Map<Integer, Integer> additionalExposedPorts();
+
+        Map<String, String> labels();
     }
 }

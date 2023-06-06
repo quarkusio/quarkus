@@ -51,7 +51,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                     context.devServicesLaunchResult(),
                     containerImage,
                     pullRequired,
-                    additionalExposedPorts(config)));
+                    additionalExposedPorts(config),
+                    labels(config)));
             return launcher;
         } else {
             throw new IllegalStateException("The container image to be launched could not be determined");
@@ -66,20 +67,32 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         }
     }
 
+    private Map<String, String> labels(SmallRyeConfig config) {
+        try {
+            return config.getValues("quarkus.test.container.labels", String.class, String.class);
+        } catch (NoSuchElementException e) {
+            return Collections.emptyMap();
+        }
+    }
+
     static class DefaultDockerInitContext extends DefaultInitContextBase
             implements DockerContainerArtifactLauncher.DockerInitContext {
         private final String containerImage;
         private final boolean pullRequired;
         private final Map<Integer, Integer> additionalExposedPorts;
+        private Map<String, String> labels;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
-                String containerImage, boolean pullRequired, Map<Integer, Integer> additionalExposedPorts) {
+                String containerImage, boolean pullRequired,
+                Map<Integer, Integer> additionalExposedPorts,
+                Map<String, String> labels) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
             this.additionalExposedPorts = additionalExposedPorts;
+            this.labels = labels;
         }
 
         @Override
@@ -95,6 +108,11 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         @Override
         public Map<Integer, Integer> additionalExposedPorts() {
             return additionalExposedPorts;
+        }
+
+        @Override
+        public Map<String, String> labels() {
+            return labels;
         }
     }
 }

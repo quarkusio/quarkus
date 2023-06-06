@@ -2727,5 +2727,32 @@ public class DefaultSerdeConfigTest {
 
     }
 
+    @Test
+    void channelNameContainingDot() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.\"new.channel\".key.deserializer", "org.apache.kafka.common.serialization.IntegerDeserializer"),
+                tuple("mp.messaging.incoming.\"new.channel\".value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".key.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".transactional.id", "${quarkus.application.name}-new.channel.out"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".enable.idempotence", "true"),
+                tuple("mp.messaging.outgoing.\"new.channel.out\".acks", "all"),
+        };
+        doTest(expectations, ChannelContainingDot.class);
+    }
+
+
+    private static class ChannelContainingDot {
+
+        @Incoming("new.channel")
+        void method1(KafkaRecord<Integer, String> msg) {
+
+        }
+
+        @Channel("new.channel.out")
+        KafkaTransactions<ProducerRecord<Long, JsonObject>> transactions;
+
+    }
+
 
 }

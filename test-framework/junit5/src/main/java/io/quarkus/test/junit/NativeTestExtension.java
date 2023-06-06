@@ -193,6 +193,7 @@ public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
                 ConfigUtil.waitTimeValue(config),
                 config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
                 ConfigUtil.argLineValue(config),
+                ConfigUtil.env(config),
                 new ArtifactLauncher.InitContext.DevServicesLaunchResult() {
                     @Override
                     public Map<String, String> properties() {

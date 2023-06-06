@@ -47,6 +47,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                     ConfigUtil.waitTimeValue(config),
                     ConfigUtil.integrationTestProfile(config),
                     ConfigUtil.argLineValue(config),
+                    ConfigUtil.env(config),
                     context.devServicesLaunchResult(),
                     containerImage,
                     pullRequired,
@@ -72,9 +73,10 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final Map<Integer, Integer> additionalExposedPorts;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
-                List<String> argLine, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
+                List<String> argLine, Map<String, String> env,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
                 String containerImage, boolean pullRequired, Map<Integer, Integer> additionalExposedPorts) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine, devServicesLaunchResult);
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
             this.additionalExposedPorts = additionalExposedPorts;

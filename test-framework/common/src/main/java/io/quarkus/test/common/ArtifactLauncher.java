@@ -32,6 +32,13 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
         List<String> argLine();
 
+        /**
+         * Additional environment variables to be passed to the launched process.
+         * Note: When Quarkus launches the new process, it will always include the environment
+         * variables of the current process
+         */
+        Map<String, String> env();
+
         ArtifactLauncher.InitContext.DevServicesLaunchResult getDevServicesLaunchResult();
 
         interface DevServicesLaunchResult extends AutoCloseable {

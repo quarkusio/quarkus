@@ -24,6 +24,7 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.InvalidRestClientDefinitionException;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties;
@@ -64,6 +65,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
     private String proxyUser;
     private String proxyPassword;
     private String nonProxyHosts;
+
+    private ClientLogger clientLogger;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -153,6 +156,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
         this.nonProxyHosts = nonProxyHosts;
+        return this;
+    }
+
+    public RestClientBuilderImpl clientLogger(ClientLogger clientLogger) {
+        this.clientLogger = clientLogger;
         return this;
     }
 
@@ -322,6 +330,14 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         Integer loggingBodySize = logging != null ? logging.bodyLimit : 100;
         clientBuilder.loggingScope(loggingScope);
         clientBuilder.loggingBodySize(loggingBodySize);
+        if (clientLogger != null) {
+            clientBuilder.clientLogger(clientLogger);
+        } else {
+            InstanceHandle<ClientLogger> clientLoggerInstance = Arc.container().instance(ClientLogger.class);
+            if (clientLoggerInstance.isAvailable()) {
+                clientBuilder.clientLogger(clientLoggerInstance.get());
+            }
+        }
 
         clientBuilder.multiQueryParamMode(toMultiQueryParamMode(queryParamStyle));
 

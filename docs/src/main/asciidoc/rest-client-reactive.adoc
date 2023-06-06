@@ -1364,6 +1364,8 @@ quarkus.rest-client.logging.body-limit=50
 quarkus.log.category."org.jboss.resteasy.reactive.client.logging".level=DEBUG
 ----
 
+TIP: REST Client Reactive uses a default `ClientLogger` implementation. You can change it by providing a custom `ClientLogger` instance through CDI or when programmatically creating your client.
+
 == Mocking the client for tests
 If you use a client injected with the `@RestClient` annotation, you can easily mock it for tests.
 You can do it with Mockito's `@InjectMock` or with `QuarkusMock`.

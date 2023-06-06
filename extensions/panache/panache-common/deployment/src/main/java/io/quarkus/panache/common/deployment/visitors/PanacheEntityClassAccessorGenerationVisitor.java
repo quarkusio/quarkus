@@ -22,6 +22,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -30,6 +31,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import io.quarkus.deployment.util.AsmUtil;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.panache.common.deployment.EntityField;
 import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
@@ -60,13 +62,17 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
         EntityField entityField = fields == null ? null : fields.get(name);
-        if (entityField == null) {
+        if (entityField == null || hasGetterForField(entityField)) {
+            // If the getter for this entity field already exists,
+            // we won't alter it in any way.
             return super.visitField(access, name, descriptor, signature, value);
         }
 
+        // We're going to generate a getter for this field;
+        // let's alter the field accordingly.
+
         //we make the fields protected
         //so any errors are visible immediately, rather than data just being lost
-
         FieldVisitor superVisitor;
         if (name.equals("id")) {
             superVisitor = super.visitField(access, name, descriptor, signature, value);
@@ -138,7 +144,7 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
                 for (EntityFieldAnnotation anno : field.annotations) {
                     anno.writeToVisitor(mv);
                 }
-                // Add an explicit Jackson annotation so that the entire property is not ignored due to having @XmlTransient
+                // Add an explicit JAXB annotation so that the entire property is not ignored due to having @XmlTransient
                 // on the field
                 if (shouldAddJsonProperty(field)) {
                     AnnotationVisitor visitor = mv.visitAnnotation(JSON_PROPERTY_SIGNATURE, true);
@@ -239,4 +245,9 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
         return false;
     }
 
+    private boolean hasGetterForField(EntityField entityField) {
+        MethodInfo methodInfo = entityInfo.method(entityField.getGetterName());
+        return methodInfo != null
+                && entityField.descriptor.equals(DescriptorUtils.typeToString(methodInfo.returnType()));
+    }
 }

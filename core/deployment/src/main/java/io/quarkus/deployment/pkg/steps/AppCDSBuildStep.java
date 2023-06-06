@@ -348,6 +348,11 @@ public class AppCDSBuildStep {
             return null;
         }
 
+        try {
+            appCDSPath.toFile().setWritable(true); // needed to overcome Gradle caching issue, see https://github.com/quarkusio/quarkus/issues/33842
+        } catch (Exception e) {
+            log.debug("Unable to make AppCDS file writeable.", e);
+        }
         return appCDSPath;
     }
 

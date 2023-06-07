@@ -10,6 +10,7 @@ import '@vaadin/checkbox';
 import '@vaadin/checkbox-group';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import 'qui-badge';
+import 'qui-ide-link';
 import '@vaadin/grid';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
@@ -23,7 +24,8 @@ export class QwcServerLog extends QwcHotReloadElement {
     
     logControl = new LogController(this);
     jsonRpc = new JsonRpc("devui-logstream", false);
-    
+    space = "&nbsp;";
+
     static styles = css`
         .log {
             width: 100%;
@@ -229,17 +231,17 @@ export class QwcServerLog extends QwcHotReloadElement {
                 ${this._renderLoggerNameShort(message.loggerNameShort)}
                 ${this._renderLoggerName(message.loggerName)}
                 ${this._renderLoggerClassName(message.loggerClassName)}
-                ${this._renderSourceClassNameFull(message.sourceClassNameFull)}
-                ${this._renderSourceClassNameFullShort(message.sourceClassNameFullShort)}
-                ${this._renderSourceClassName(message.sourceClassName)}
+                ${this._renderSourceClassNameFull(message.sourceClassNameFull, message.sourceLineNumber)}
+                ${this._renderSourceClassNameFullShort(message.sourceClassNameFullShort, message.sourceClassNameFull, message.sourceLineNumber)}
+                ${this._renderSourceClassName(message.sourceClassName, message.sourceClassNameFull, message.sourceLineNumber)}
                 ${this._renderSourceMethodName(message.sourceMethodName)}
-                ${this._renderSourceFileName(message.sourceFileName)}
+                ${this._renderSourceFileName(message.sourceFileName, message.sourceClassNameFull, message.sourceLineNumber)}
                 ${this._renderSourceLineNumber(message.sourceLineNumber)}
                 ${this._renderProcessId(message.processId)}
                 ${this._renderProcessName(message.processName)}
                 ${this._renderThreadId(message.threadId)}
                 ${this._renderThreadName(message.threadName)}
-                ${this._renderMessage(level, message.formattedMessage)}
+                ${this._renderMessage(level, message.formattedMessage, message.stacktrace)}
             `;
         }
     }
@@ -308,21 +310,30 @@ export class QwcServerLog extends QwcHotReloadElement {
         }
     }
     
-    _renderSourceClassNameFull(sourceClassNameFull){
+    _renderSourceClassNameFull(sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('9')){
-            return html`<span title='Source full class name' class='text-source'>[${sourceClassNameFull}]</span>`;
+            return html`<qui-ide-link title='Source full class name' 
+                        class='text-source'
+                        fileName='${sourceClassNameFull}'
+                        lineNumber=${sourceLineNumber}>[${sourceClassNameFull}]</qui-ide-link>`;
         }
     }
     
-    _renderSourceClassNameFullShort(sourceClassNameFullShort){
+    _renderSourceClassNameFullShort(sourceClassNameFullShort, sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('10')){
-            return html`<span title='Source full class name (short)' class='text-source'>[${sourceClassNameFullShort}]</span>`;
+            return html`<qui-ide-link title='Source full class name (short)' 
+                        class='text-source'
+                        fileName='${sourceClassNameFull}'
+                        lineNumber=${sourceLineNumber}>[${sourceClassNameFullShort}]</qui-ide-link>`;
         }
     }
     
-    _renderSourceClassName(sourceClassName){
+    _renderSourceClassName(sourceClassName, sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('11')){
-            return html`<span title='Source class name' class='text-source'>[${sourceClassName}]</span>`;
+            return html`<qui-ide-link title='Source class name' 
+                        class='text-source'
+                        fileName='${sourceClassNameFull}'
+                        lineNumber=${sourceLineNumber}>[${sourceClassName}]</qui-ide-link>`;
         }
     }
     
@@ -332,9 +343,12 @@ export class QwcServerLog extends QwcHotReloadElement {
         }
     }
     
-    _renderSourceFileName(sourceFileName){
+    _renderSourceFileName(sourceFileName, sourceClassNameFull, sourceLineNumber){
         if(this._selectedColumns.includes('13')){
-            return html`<span title='Source file name' class='text-file'>${sourceFileName}</span>`;
+            return html`<qui-ide-link title='Source file name' 
+                        class='text-file'
+                        fileName='${sourceClassNameFull}'
+                        lineNumber=${sourceLineNumber}>${sourceFileName}</qui-ide-link>`;
         }
     }
     
@@ -368,7 +382,7 @@ export class QwcServerLog extends QwcHotReloadElement {
         }
     }
     
-    _renderMessage(level, message){
+    _renderMessage(level, message, stacktrace){
         if(this._selectedColumns.includes('19')){
             // Clean up Ansi
             message = message.replace(/\u001b\[.*?m/g, "");
@@ -397,10 +411,41 @@ export class QwcServerLog extends QwcHotReloadElement {
                 message = htmlifiedLines.join('');
             }
         
-            return html`<span title="Message" class='text-${level}'>${unsafeHTML(message)}</span>`;
+            if(message){
+                return html`<span title="Message" class='text-${level}'>${unsafeHTML(message)}${this._renderStackTrace(stacktrace)}</span>`;
+            }
+
+            
         }
     }
     
+    _renderStackTrace(stacktrace){
+        if(stacktrace){
+            var htmlifiedLines = [];
+            for (let i = 0; i < stacktrace.length; i++) {
+                let st = stacktrace[i];
+                
+                if(st.includes('\n')){
+                    var lines = st.split('\n');
+                    for (var j = 0; j < lines.length; j++) {
+                        let line = lines[j].trim();
+                        
+                        var startWithAt = line.startsWith("at ");
+                        line = "<qui-ide-link stackTraceLine='" + line + "'>" + line + "</qui-ide-link>";
+                        if(startWithAt){
+                            line = this.space + this.space + this.space + this.space + this.space + this.space + line;
+                        }
+                        htmlifiedLines.push(line + '<br/>');
+                    }
+                }else{
+                    htmlifiedLines.push(st + '<br/>');
+                }
+            }
+            let trace = htmlifiedLines.join(''); 
+            return html`: ${unsafeHTML(trace)}`;
+        }
+    }
+
     _renderLevelsDialog(){
         if(this._filteredLoggers){
             return html`<vaadin-vertical-layout

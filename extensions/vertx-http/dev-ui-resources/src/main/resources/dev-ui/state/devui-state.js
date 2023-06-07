@@ -2,6 +2,7 @@ import { extensions } from 'devui-data';
 import { menuItems } from 'devui-data';
 import { footerTabs } from 'devui-data';
 import { applicationInfo } from 'devui-data';
+import { ideInfo } from 'devui-data';
 import { allConfiguration } from 'devui-data';
 import { connectionState } from 'connection-state';
 import { LitState } from 'lit-element-state';
@@ -26,6 +27,7 @@ class DevUIState extends LitState {
             footer: footerTabs,
             applicationInfo: applicationInfo,
             allConfiguration: allConfiguration,
+            ideInfo: ideInfo, 
         };
     }
     
@@ -56,6 +58,11 @@ class DevUIState extends LitState {
                     document.title = "Dev UI | " + devuiState.applicationInfo.applicationName + " " + devuiState.applicationInfo.applicationVersion; 
                 }
                 
+                // Check ide info for updates
+                if(newDevUIData.ideInfo !== devuiState.ideInfo){
+                    devuiState.ideInfo = newDevUIData.ideInfo;
+                }
+
                 // Check configuration for updates
                 if(newDevUIData.allConfiguration !== devuiState.allConfiguration){
                     devuiState.allConfiguration = newDevUIData.allConfiguration;

@@ -19,7 +19,7 @@
             <artifactId>smallrye-health</artifactId>
             <exclusions>
                 <exclusion>
-                    <groupId>org.glassfish</groupId>
+                    <groupId>org.eclipse.parsson</groupId>
                     <artifactId>jakarta.json</artifactId>
                 </exclusion>
             </exclusions>

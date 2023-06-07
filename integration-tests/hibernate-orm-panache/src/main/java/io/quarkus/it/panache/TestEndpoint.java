@@ -1264,6 +1264,9 @@ public class TestEndpoint {
         person = Person.find("name = :name", Parameters.with("name", "2")).project(PersonName.class).firstResult();
         Assertions.assertEquals("2", person.name);
 
+        person = Person.find("#Person.getByName", Parameters.with("name", "2")).project(PersonName.class).firstResult();
+        Assertions.assertEquals("2", person.name);
+
         PanacheQuery<PersonName> query = Person.findAll().project(PersonName.class).page(0, 2);
         Assertions.assertEquals(1, query.list().size());
         query.nextPage();
@@ -1289,10 +1292,15 @@ public class TestEndpoint {
                 .project(CatProjectionBean.class).firstResult();
         Assertions.assertEquals("Julie", fieldsProjection.getOwnerName());
 
+        fieldsProjection = Cat.find("#Cat.NameAndOwnerName")
+                .project(CatProjectionBean.class).firstResult();
+        Assertions.assertEquals("Julie", fieldsProjection.getOwnerName());
+
         PanacheQueryException exception = Assertions.assertThrows(PanacheQueryException.class,
                 () -> Cat.find("select new FakeClass('fake_cat', 'fake_owner', 12.5 from Cat c)")
                         .project(CatProjectionBean.class).firstResult());
-        Assertions.assertTrue(exception.getMessage().startsWith("Unable to perform a projection on a 'select new' query"));
+        Assertions.assertTrue(
+                exception.getMessage().startsWith("Unable to perform a projection on a 'select [distinct]? new' query"));
 
         CatProjectionBean constantProjection = Cat.find("select 'fake_cat', 'fake_owner', 12.5D from Cat c")
                 .project(CatProjectionBean.class).firstResult();

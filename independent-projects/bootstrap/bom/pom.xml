@@ -457,6 +457,12 @@
                 <groupId>io.smallrye.beanbag</groupId>
                 <artifactId>smallrye-beanbag-maven</artifactId>
                 <version>${smallrye-beanbag.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>jcl-over-slf4j</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <!-- Smallrye Common dependencies, imported as a BOM -->
             <dependency>

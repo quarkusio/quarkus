@@ -8,18 +8,27 @@ import static org.fusesource.jansi.Ansi.ansi;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.commands.CreateExtension;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.components.Prompter;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * Creates the base of a
@@ -213,6 +222,18 @@ public class CreateExtensionMojo extends AbstractMojo {
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
 
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
+    List<RemoteRepository> repos;
+
+    @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
+    RepositorySystemSession repoSession;
+
+    @Component
+    RepositorySystem repoSystem;
+
+    @Component
+    RemoteRepositoryManager remoteRepoManager;
+
     @Override
     public void execute() throws MojoExecutionException {
 
@@ -233,6 +254,20 @@ public class CreateExtensionMojo extends AbstractMojo {
         promptValues();
 
         autoComputeQuarkiverseExtensionId();
+
+        try {
+            final MavenArtifactResolver resolver = MavenArtifactResolver.builder()
+                    .setRepositorySystem(repoSystem)
+                    .setRepositorySystemSession(
+                            getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
+                    .setRemoteRepositories(repos)
+                    .setRemoteRepositoryManager(remoteRepoManager)
+                    .build();
+            // there should be a better way to pass the resolver
+            QuarkusProjectHelper.setArtifactResolver(resolver);
+        } catch (Exception e) {
+            throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
+        }
 
         final CreateExtension createExtension = new CreateExtension(basedir.toPath())
                 .extensionId(extensionId)

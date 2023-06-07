@@ -71,4 +71,8 @@ public class ClientResponseImpl extends ResponseImpl {
     public String getHttpVersion() {
         return restClientRequestContext.getVertxClientResponse().version().toString();
     }
+
+    public StackTraceElement[] getCallerStackTrace() {
+        return restClientRequestContext.getCallerStackTrace();
+    }
 }

@@ -115,7 +115,12 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                         }
                         final StringBuilder sb = new StringBuilder();
                         for (Iterator<String> valueIterator = allForName.iterator(); valueIterator.hasNext();) {
-                            sb.append(valueIterator.next());
+                            String val = valueIterator.next();
+                            if (name.equalsIgnoreCase("Transfer-Encoding")
+                                    && val.equals("chunked")) {
+                                continue; // ignore transfer encoding, chunked screws up message and response
+                            }
+                            sb.append(val);
                             if (valueIterator.hasNext()) {
                                 sb.append(",");
                             }

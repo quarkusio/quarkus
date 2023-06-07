@@ -2,6 +2,7 @@
 // --> No blank lines (it ends the document header)
 :project-name: Quarkus
 :quarkus-version: ${project.version}
+:quarkus-platform-groupid: io.quarkus.platform
 // .
 :maven-version: ${proposed-maven-version}
 :graalvm-version: ${graal-sdk.version-for-documentation}

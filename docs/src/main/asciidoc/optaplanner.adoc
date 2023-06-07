@@ -75,14 +75,14 @@ This will include the following dependencies in your build file:
 <dependencyManagement>
     <dependencies>
         <dependency>
-            <groupId>io.quarkus.platform</groupId>
+            <groupId>{quarkus-platform-groupid}</groupId>
             <artifactId>quarkus-bom</artifactId>
             <version>{quarkus-version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
         <dependency>
-            <groupId>io.quarkus.platform</groupId>
+            <groupId>{quarkus-platform-groupid}</groupId>
             <artifactId>quarkus-optaplanner-bom</artifactId>
             <version>{quarkus-version}</version>
             <type>pom</type>
@@ -120,8 +120,8 @@ This will include the following dependencies in your build file:
 .build.gradle
 ----
 dependencies {
-    implementation enforcedPlatform("io.quarkus.platform:quarkus-bom:{quarkus-version}")
-    implementation enforcedPlatform("io.quarkus.platform:quarkus-optaplanner-bom:{quarkus-version}")
+    implementation enforcedPlatform("{quarkus-platform-groupid}:quarkus-bom:{quarkus-version}")
+    implementation enforcedPlatform("{quarkus-platform-groupid}:quarkus-optaplanner-bom:{quarkus-version}")
     implementation 'io.quarkus:quarkus-resteasy-reactive'
     implementation 'io.quarkus:quarkus-resteasy-reactive-jackson'
     implementation 'org.optaplanner:optaplanner-quarkus'

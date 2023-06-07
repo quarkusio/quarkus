@@ -83,9 +83,6 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     private final boolean disableContextualErrorMessages;
     /**
-     * Only initialised if we have request or response filters
-     */
-    /**
      * Only initialised once we get the response
      */
     private HttpClientResponse vertxClientResponse;
@@ -103,6 +100,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private Response abortedWith;
     private ServiceInstance callStatsCollector;
     private Map<Class<?>, MultipartResponseData> multipartResponsesData;
+    private StackTraceElement[] callerStackTrace;
 
     public RestClientRequestContext(ClientImpl restClient,
             HttpClient httpClient, String httpMethod, URI uri,
@@ -539,6 +537,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
 
     public void setMultipartResponsesData(Map<Class<?>, MultipartResponseData> multipartResponsesData) {
         this.multipartResponsesData = multipartResponsesData;
+    }
+
+    public StackTraceElement[] getCallerStackTrace() {
+        return callerStackTrace;
+    }
+
+    public void setCallerStackTrace(StackTraceElement[] callerStackTrace) {
+        this.callerStackTrace = callerStackTrace;
     }
 
     @SuppressWarnings("SameParameterValue")

@@ -10,8 +10,10 @@ import jakarta.persistence.NonUniqueResultException;
 import org.hibernate.Session;
 import org.hibernate.annotations.FilterDef;
 
+import io.quarkus.hibernate.reactive.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 
@@ -33,10 +35,29 @@ public interface PanacheQuery<Entity> {
     // Builder
 
     /**
-     * Defines a projection class: the getters, and the public fields, will be used to restrict which fields should be
-     * retrieved from the database.
+     * Defines a projection class. This will transform the returned values into instances of the given type using the following
+     * mapping rules:
+     * <ul>
+     * <li>If your query already selects some specific columns (starts with <code>select distinct? a, b, c…</code>) then we
+     * transform
+     * it into a query of the form: <code>select distinct? new ProjectionClass(a, b, c)…</code>. There must be a matching
+     * constructor
+     * that accepts the selected column types, in the right order.</li>
+     * <li>If your query does not select any specific column (starts with <code>from…</code>) then we transform it into a query
+     * of the form:
+     * <code>select new ProjectionClass(a, b, c…) from…</code> where we fetch the list of selected columns from your projection
+     * class'
+     * single constructor, using its parameter names (or their {@link ProjectedFieldName} annotations), in the same order as the
+     * constructor.</li>
+     * <li>If this is a named query, we throw a {@link PanacheQueryException}</li>
+     * <li>If this is already a project query of the form <code>select distinct? new…</code>, we throw a
+     * {@link PanacheQueryException}</li>
      *
-     * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...).
+     * @param type the projected class type
+     * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...) but a projected
+     *         result of the type
+     *         <code>type</code>
+     * @throws PanacheQueryException if this represents a named query or an already-projected query
      */
     public <T> PanacheQuery<T> project(Class<T> type);
 

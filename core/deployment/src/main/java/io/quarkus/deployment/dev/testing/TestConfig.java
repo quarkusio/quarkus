@@ -183,6 +183,12 @@ public class TestConfig {
     Optional<List<String>> argLine;
 
     /**
+     * Additional environment variables to be set in the process that {@code @QuarkusIntegrationTest} launches.
+     */
+    @ConfigItem
+    Map<String, String> env;
+
+    /**
      * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
      * application to launch
      */
@@ -287,6 +293,12 @@ public class TestConfig {
          */
         @ConfigItem
         Map<String, String> additionalExposedPorts;
+
+        /**
+         * A set of labels to add to the launched container
+         */
+        @ConfigItem
+        Map<String, String> labels;
     }
 
     public enum Mode {

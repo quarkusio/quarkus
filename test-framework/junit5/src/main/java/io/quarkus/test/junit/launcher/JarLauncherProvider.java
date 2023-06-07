@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 
@@ -45,6 +46,7 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
                     ConfigUtil.waitTimeValue(config),
                     ConfigUtil.integrationTestProfile(config),
                     ConfigUtil.argLineValue(config),
+                    ConfigUtil.env(config),
                     context.devServicesLaunchResult(),
                     context.buildOutputDirectory().resolve(pathStr)));
             return launcher;
@@ -57,9 +59,10 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
 
         private final Path jarPath;
 
-        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile, List<String> argLine,
+        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
+                List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine, devServicesLaunchResult);
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.jarPath = jarPath;
         }
 

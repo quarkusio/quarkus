@@ -1,7 +1,6 @@
 package io.quarkus.test.common;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -57,20 +58,32 @@ public final class LauncherUtil {
      * Implementation detail: Avoid using ProcessBuilder's redirect here because it causes problems with Maven Failsafe
      * as can be seen in <a href="https://github.com/quarkusio/quarkus/issues/33229">here</a>
      */
-    static Process launchProcess(List<String> args) throws IOException {
-        Process process = Runtime.getRuntime().exec(args.toArray(new String[0]));
+    static Process launchProcessAndDrainIO(List<String> args, Map<String, String> env) throws IOException {
+        Process process = launchProcess(args, env);
         new Thread(new ProcessReader(process.getInputStream())).start();
         new Thread(new ProcessReader(process.getErrorStream())).start();
         return process;
     }
 
     /**
-     * Launches a process using the supplied arguments and makes sure the process's output is drained to standard out
+     * Launches a process using the supplied arguments but does drain the IO
      */
-    static Process launchProcess(List<String> args, File dir) throws IOException {
-        Process process = Runtime.getRuntime().exec(args.toArray(new String[0]), null, dir);
-        new Thread(new ProcessReader(process.getInputStream())).start();
-        new Thread(new ProcessReader(process.getErrorStream())).start();
+    static Process launchProcess(List<String> args, Map<String, String> env) throws IOException {
+        Process process;
+        if (env.isEmpty()) {
+            process = Runtime.getRuntime().exec(args.toArray(new String[0]));
+        } else {
+            Map<String, String> currentEnv = System.getenv();
+            Map<String, String> finalEnv = new HashMap<>(currentEnv);
+            finalEnv.putAll(env);
+            String[] envArray = new String[finalEnv.size()];
+            int i = 0;
+            for (var entry : finalEnv.entrySet()) {
+                envArray[i] = entry.getKey() + "=" + entry.getValue();
+                i++;
+            }
+            process = Runtime.getRuntime().exec(args.toArray(new String[0]), envArray);
+        }
         return process;
     }
 

@@ -100,7 +100,7 @@
                                 </systemProperties>
                             </normalization>
                             <!-- config to avoid unbind-executions confuses gradle enterprise caching-->
-                            <plugins>
+                            <plugins combine.children="append">
                                 <plugin>
                                     <artifactId>maven-compiler-plugin</artifactId>
                                     <inputs>

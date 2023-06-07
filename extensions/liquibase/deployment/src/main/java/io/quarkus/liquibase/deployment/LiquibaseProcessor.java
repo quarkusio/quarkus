@@ -31,8 +31,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
@@ -303,7 +303,7 @@ class LiquibaseProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Consume(BeanContainerBuildItem.class)
     ServiceStartBuildItem startLiquibase(LiquibaseRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,

@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.kafka.deployment.SmallRyeReactiveMessagingKafkaProcessor.getChannelPropertyKey;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +59,7 @@ class DefaultSerdeDiscoveryState {
 
         String channelType = incoming ? "incoming" : "outgoing";
         return isKafkaConnector.computeIfAbsent(channelType + "|" + channelName, ignored -> {
-            String connectorKey = "mp.messaging." + channelType + "." + channelName + ".connector";
+            String connectorKey = getChannelPropertyKey(channelName, "connector", incoming);
             String connector = getConfig()
                     .getOptionalValue(connectorKey, String.class)
                     .orElse("ignored");

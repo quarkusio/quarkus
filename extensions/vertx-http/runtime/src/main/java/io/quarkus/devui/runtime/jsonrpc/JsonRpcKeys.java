@@ -20,10 +20,4 @@ public interface JsonRpcKeys {
     public static final int INVALID_PARAMS = -32602; // Invalid params.	Invalid method parameter(s).
     public static final int INTERNAL_ERROR = -32603; //	Internal error. Internal JSON-RPC error.
 
-    public static enum MessageType {
-        Void,
-        Response,
-        SubscriptionMessage,
-        HotReload
-    }
 }

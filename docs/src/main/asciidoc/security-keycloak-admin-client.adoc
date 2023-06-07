@@ -179,7 +179,7 @@ An example using the `client-credentials` grant type needs only a minor adjustme
 
 [source,properties]
 ----
-quarkus.keycloak.admin-client=true
+quarkus.keycloak.admin-client.enabled=true
 quarkus.keycloak.admin-client.server-url=http://localhost:8081
 quarkus.keycloak.admin-client.realm=quarkus
 quarkus.keycloak.admin-client.client-id=quarkus-client

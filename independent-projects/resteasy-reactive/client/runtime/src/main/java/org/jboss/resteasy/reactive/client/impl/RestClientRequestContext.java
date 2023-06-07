@@ -60,6 +60,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     public static final String DEFAULT_CONTENT_TYPE_PROP = "io.quarkus.rest.client.defaultContentType";
     private static final String TMP_FILE_PATH_KEY = "tmp_file_path";
 
+    static final MediaType IGNORED_MEDIA_TYPE = new MediaType("ignored", "ignored");
+
     private final HttpClient httpClient;
     // Changeable by the request filter
     String httpMethod;
@@ -273,7 +275,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     }
 
     public void setEntity(Object entity, Annotation[] annotations, MediaType mediaType) {
-        this.entity = Entity.entity(entity, mediaType, annotations);
+        if (entity == null) {
+            this.entity = null;
+        } else {
+            if (mediaType == null) {
+                mediaType = IGNORED_MEDIA_TYPE; // we need this in order to avoid getting IAE from Variant...
+            }
+            this.entity = Entity.entity(entity, mediaType, annotations);
+        }
     }
 
     public CompletableFuture<ResponseImpl> getResult() {

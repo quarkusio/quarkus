@@ -92,15 +92,15 @@
         <graal-sdk.version>22.3.2</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
         <gizmo.version>1.6.1.Final</gizmo.version>
-        <jackson-bom.version>2.15.0</jackson-bom.version>
+        <jackson-bom.version>2.15.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.15</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>6.2.1.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
+        <hibernate-orm.version>6.2.4.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
         <bytebuddy.version>1.12.18</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
-        <hibernate-reactive.version>2.0.0.CR1</hibernate-reactive.version>
+        <hibernate-reactive.version>2.0.0.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>6.0.1.Final</narayana.version>
@@ -159,7 +159,7 @@
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
         <kotlin.version>1.8.21</kotlin.version>
         <kotlin.coroutine.version>1.7.1</kotlin.coroutine.version>
-        <kotlin-serialization.version>1.5.0</kotlin-serialization.version>
+        <kotlin-serialization.version>1.5.1</kotlin-serialization.version>
         <dekorate.version>3.6.1</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
@@ -201,7 +201,7 @@
         <log4j2-api.version>2.20.0</log4j2-api.version>
         <log4j-jboss-logmanager.version>1.3.0.Final</log4j-jboss-logmanager.version>
         <avro.version>1.11.1</avro.version>
-        <apicurio-registry.version>2.4.2.Final</apicurio-registry.version>
+        <apicurio-registry.version>2.4.3.Final</apicurio-registry.version>
         <apicurio-common-rest-client.version>0.1.15.Final</apicurio-common-rest-client.version> <!-- must be the version Apicurio Registry uses -->
         <testcontainers.version>1.18.1</testcontainers.version> <!-- Make sure to also update docker-java.version to match its needs -->
         <docker-java.version>3.3.0</docker-java.version> <!-- must be the version Testcontainers use -->

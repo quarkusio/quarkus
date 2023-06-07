@@ -86,13 +86,16 @@ public class CommonPanacheQueryImpl<Entity> {
     // Builder
 
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
+        String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            throw new PanacheQueryException("Unable to perform a projection on a named query");
+            org.hibernate.query.Query q = (org.hibernate.query.Query) em.createNamedQuery(query.substring(1));
+            selectQuery = q.getQueryString();
         }
 
-        String lowerCasedTrimmedQuery = query.trim().replace('\n', ' ').replace('\r', ' ').toLowerCase();
-        if (lowerCasedTrimmedQuery.startsWith("select new ")) {
-            throw new PanacheQueryException("Unable to perform a projection on a 'select new' query: " + query);
+        String lowerCasedTrimmedQuery = selectQuery.trim().replace('\n', ' ').replace('\r', ' ').toLowerCase();
+        if (lowerCasedTrimmedQuery.startsWith("select new ")
+                || lowerCasedTrimmedQuery.startsWith("select distinct new ")) {
+            throw new PanacheQueryException("Unable to perform a projection on a 'select [distinct]? new' query: " + query);
         }
 
         // If the query starts with a select clause, we generate an HQL query
@@ -101,7 +104,7 @@ public class CommonPanacheQueryImpl<Entity> {
         // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
         if (lowerCasedTrimmedQuery.startsWith("select ")) {
             int endSelect = lowerCasedTrimmedQuery.indexOf(" from ");
-            String trimmedQuery = query.trim().replace('\n', ' ').replace('\r', ' ');
+            String trimmedQuery = selectQuery.trim().replace('\n', ' ').replace('\r', ' ');
             // 7 is the length of "select "
             String selectClause = trimmedQuery.substring(7, endSelect).trim();
             String from = trimmedQuery.substring(endSelect);
@@ -150,7 +153,7 @@ public class CommonPanacheQueryImpl<Entity> {
         }
         select.append(") ");
 
-        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
+        return new CommonPanacheQueryImpl<>(this, select.toString() + selectQuery, "select count(*) " + selectQuery);
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {

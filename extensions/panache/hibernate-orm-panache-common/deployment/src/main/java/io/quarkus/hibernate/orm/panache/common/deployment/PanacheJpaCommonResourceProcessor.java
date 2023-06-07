@@ -1,10 +1,8 @@
 package io.quarkus.hibernate.orm.panache.common.deployment;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
@@ -38,7 +36,7 @@ public final class PanacheJpaCommonResourceProcessor {
             JpaModelBuildItem jpaModel) {
         for (String modelClass : jpaModel.getAllModelClassNames()) {
             // lookup for `@NamedQuery` on the hierarchy and produce NamedQueryEntityClassBuildStep
-            Set<String> typeNamedQueries = new HashSet<>();
+            Map<String, String> typeNamedQueries = new HashMap<>();
             lookupNamedQueries(index, DotName.createSimple(modelClass), typeNamedQueries);
             namedQueries.produce(new PanacheNamedQueryEntityClassBuildStep(modelClass, typeNamedQueries));
         }
@@ -48,7 +46,7 @@ public final class PanacheJpaCommonResourceProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void buildNamedQueryMap(List<PanacheNamedQueryEntityClassBuildStep> namedQueryEntityClasses,
             PanacheHibernateRecorder panacheHibernateRecorder) {
-        Map<String, Set<String>> namedQueryMap = new HashMap<>();
+        Map<String, Map<String, String>> namedQueryMap = new HashMap<>();
         for (PanacheNamedQueryEntityClassBuildStep entityNamedQueries : namedQueryEntityClasses) {
             namedQueryMap.put(entityNamedQueries.getClassName(), entityNamedQueries.getNamedQueries());
         }
@@ -56,7 +54,7 @@ public final class PanacheJpaCommonResourceProcessor {
         panacheHibernateRecorder.setNamedQueryMap(namedQueryMap);
     }
 
-    private void lookupNamedQueries(CombinedIndexBuildItem index, DotName name, Set<String> namedQueries) {
+    private void lookupNamedQueries(CombinedIndexBuildItem index, DotName name, Map<String, String> namedQueries) {
         ClassInfo classInfo = index.getComputingIndex().getClassByName(name);
         if (classInfo == null) {
             return;
@@ -65,7 +63,7 @@ public final class PanacheJpaCommonResourceProcessor {
         List<AnnotationInstance> namedQueryInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_QUERY);
         if (namedQueryInstances != null) {
             for (AnnotationInstance namedQueryInstance : namedQueryInstances) {
-                namedQueries.add(namedQueryInstance.value("name").asString());
+                namedQueries.put(namedQueryInstance.value("name").asString(), namedQueryInstance.value("query").asString());
             }
         }
 
@@ -75,7 +73,7 @@ public final class PanacheJpaCommonResourceProcessor {
                 AnnotationValue value = namedQueriesInstance.value();
                 AnnotationInstance[] nestedInstances = value.asNestedArray();
                 for (AnnotationInstance nested : nestedInstances) {
-                    namedQueries.add(nested.value("name").asString());
+                    namedQueries.put(nested.value("name").asString(), nested.value("query").asString());
                 }
             }
         }

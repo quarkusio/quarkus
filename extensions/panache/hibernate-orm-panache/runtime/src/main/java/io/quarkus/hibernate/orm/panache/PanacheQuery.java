@@ -49,7 +49,6 @@ public interface PanacheQuery<Entity> {
      * class'
      * single constructor, using its parameter names (or their {@link ProjectedFieldName} annotations), in the same order as the
      * constructor.</li>
-     * <li>If this is a named query, we throw a {@link PanacheQueryException}</li>
      * <li>If this is already a project query of the form <code>select distinct? new…</code>, we throw a
      * {@link PanacheQueryException}</li>
      *
@@ -57,7 +56,7 @@ public interface PanacheQuery<Entity> {
      * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...) but a projected
      *         result of the type
      *         <code>type</code>
-     * @throws PanacheQueryException if this represents a named query or an already-projected query
+     * @throws PanacheQueryException if this represents an already-projected query
      */
     public <T> PanacheQuery<T> project(Class<T> type);
 

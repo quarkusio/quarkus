@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import org.hibernate.query.SemanticException;
 
@@ -11,13 +10,13 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
 public final class NamedQueryUtil {
 
     // will be replaced at augmentation phase
-    private static volatile Map<String, Set<String>> namedQueryMap = Collections.emptyMap();
+    private static volatile Map<String, Map<String, String>> namedQueryMap = Collections.emptyMap();
 
     private NamedQueryUtil() {
         // prevent initialization
     }
 
-    public static void setNamedQueryMap(Map<String, Set<String>> newNamedQueryMap) {
+    public static void setNamedQueryMap(Map<String, Map<String, String>> newNamedQueryMap) {
         namedQueryMap = newNamedQueryMap;
     }
 
@@ -29,13 +28,13 @@ public final class NamedQueryUtil {
     }
 
     public static boolean isNamedQuery(Class<?> entityClass, String namedQuery) {
-        Set<String> namedQueries = namedQueryMap.get(entityClass.getName());
-        return namedQueries != null && namedQueries.contains(namedQuery);
+        Map<String, String> namedQueries = namedQueryMap.get(entityClass.getName());
+        return namedQueries != null && namedQueries.containsKey(namedQuery);
     }
 
     private static boolean isNamedQuery(String namedQuery) {
-        for (Set<String> namedQueries : namedQueryMap.values()) {
-            if (namedQueries.contains(namedQuery)) {
+        for (Map<String, String> namedQueries : namedQueryMap.values()) {
+            if (namedQueries.containsKey(namedQuery)) {
                 return true;
             }
         }

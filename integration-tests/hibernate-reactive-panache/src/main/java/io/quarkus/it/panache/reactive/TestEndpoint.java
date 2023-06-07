@@ -1600,6 +1600,11 @@ public class TestEndpoint {
                             .<PersonName> firstResult();
                 }).flatMap(person -> {
                     Assertions.assertEquals("2", person.name);
+                    return Person.find("#Person.getByName", Parameters.with("name", "2")).project(PersonName.class)
+                            .<PersonName> firstResult();
+
+                }).flatMap(person -> {
+                    Assertions.assertEquals("2", person.name);
 
                     PanacheQuery<PersonName> query = Person.findAll().project(PersonName.class).page(0, 2);
                     return query.list()
@@ -1638,6 +1643,15 @@ public class TestEndpoint {
                     Assertions.assertEquals(ownerName, cat.ownerName);
                 })
                 .chain(() -> Cat.find("select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
+                        Parameters.with("name", catName))
+                        .project(CatProjectionBean.class)
+                        .<CatProjectionBean> singleResult())
+                .invoke(catView -> {
+                    Assertions.assertEquals(catName, catView.name);
+                    Assertions.assertEquals(ownerName, catView.ownerName);
+                    Assertions.assertNull(catView.weight);
+                })
+                .chain(() -> Cat.find("#Cat.NameAndOwnerName",
                         Parameters.with("name", catName))
                         .project(CatProjectionBean.class)
                         .<CatProjectionBean> singleResult())

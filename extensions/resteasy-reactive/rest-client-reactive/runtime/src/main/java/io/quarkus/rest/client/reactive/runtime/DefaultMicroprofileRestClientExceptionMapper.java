@@ -9,11 +9,6 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 public class DefaultMicroprofileRestClientExceptionMapper implements ResponseExceptionMapper {
 
     public Throwable toThrowable(Response response) {
-        try {
-            response.bufferEntity();
-        } catch (Exception var3) {
-        }
-
         return new WebApplicationException(
                 String.format("%s, status code %d", response.getStatusInfo().getReasonPhrase(), response.getStatus()),
                 response);

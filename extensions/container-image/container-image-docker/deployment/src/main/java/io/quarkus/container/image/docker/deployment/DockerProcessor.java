@@ -258,7 +258,8 @@ public class DockerProcessor {
 
     private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, ContainerImageConfig containerImageConfig,
             DockerConfig dockerConfig, ContainerImageInfoBuildItem containerImageInfo, boolean pushImages) {
-        List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size());
+        List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size() + dockerConfig.additionalArgs.map(
+                List::size).orElse(0));
         boolean useBuildx = dockerConfig.buildx.useBuildx();
 
         if (useBuildx) {
@@ -303,6 +304,7 @@ public class DockerProcessor {
             dockerArgs.add("--network");
             dockerArgs.add(network);
         });
+        dockerConfig.additionalArgs.ifPresent(dockerArgs::addAll);
         dockerArgs.addAll(Arrays.asList("-t", image));
 
         if (useBuildx) {

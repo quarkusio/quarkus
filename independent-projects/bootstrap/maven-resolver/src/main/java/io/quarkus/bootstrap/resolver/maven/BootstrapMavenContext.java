@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecrypter;
 import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecryptionResult;
+import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.ConfigurationProperties;
@@ -95,6 +97,16 @@ public class BootstrapMavenContext {
     private static final String SETTINGS_XML = "settings.xml";
 
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
+
+    private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
+    private static final String MAVEN_RESOLVER_TRANSPORT_DEFAULT = "default";
+    private static final String MAVEN_RESOLVER_TRANSPORT_WAGON = "wagon";
+    private static final String MAVEN_RESOLVER_TRANSPORT_NATIVE = "native";
+    private static final String MAVEN_RESOLVER_TRANSPORT_AUTO = "auto";
+    private static final String WAGON_TRANSPORTER_PRIORITY_KEY = "aether.priority.WagonTransporterFactory";
+    private static final String NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY = "aether.priority.HttpTransporterFactory";
+    private static final String NATIVE_FILE_TRANSPORTER_PRIORITY_KEY = "aether.priority.FileTransporterFactory";
+    private static final String RESOLVER_MAX_PRIORITY = String.valueOf(Float.MAX_VALUE);
 
     private boolean artifactTransferLogging;
     private BootstrapMavenOptions cliOptions;
@@ -488,11 +500,96 @@ public class BootstrapMavenContext {
                 }
                 XmlPlexusConfiguration config = new XmlPlexusConfiguration(dom);
                 configProps.put("aether.connector.wagon.config." + server.getId(), config);
+
+                // Translate to proper resolver configuration properties as well (as Plexus XML above is Wagon specific
+                // only), but support only configuration/httpConfiguration/all, see
+                // https://maven.apache.org/guides/mini/guide-http-settings.html
+                Map<String, String> headers = null;
+                Integer connectTimeout = null;
+                Integer requestTimeout = null;
+
+                PlexusConfiguration httpHeaders = config.getChild("httpHeaders", false);
+                if (httpHeaders != null) {
+                    PlexusConfiguration[] properties = httpHeaders.getChildren("property");
+                    if (properties != null && properties.length > 0) {
+                        headers = new HashMap<>();
+                        for (PlexusConfiguration property : properties) {
+                            headers.put(
+                                    property.getChild("name").getValue(),
+                                    property.getChild("value").getValue());
+                        }
+                    }
+                }
+
+                PlexusConfiguration connectTimeoutXml = config.getChild("connectTimeout", false);
+                if (connectTimeoutXml != null) {
+                    connectTimeout = Integer.parseInt(connectTimeoutXml.getValue());
+                } else {
+                    // fallback configuration name
+                    PlexusConfiguration httpConfiguration = config.getChild("httpConfiguration", false);
+                    if (httpConfiguration != null) {
+                        PlexusConfiguration httpConfigurationAll = httpConfiguration.getChild("all", false);
+                        if (httpConfigurationAll != null) {
+                            connectTimeoutXml = httpConfigurationAll.getChild("connectionTimeout", false);
+                            if (connectTimeoutXml != null) {
+                                connectTimeout = Integer.parseInt(connectTimeoutXml.getValue());
+                                log.warn("Settings for server " + server.getId() + " uses legacy format");
+                            }
+                        }
+                    }
+                }
+
+                PlexusConfiguration requestTimeoutXml = config.getChild("requestTimeout", false);
+                if (requestTimeoutXml != null) {
+                    requestTimeout = Integer.parseInt(requestTimeoutXml.getValue());
+                } else {
+                    // fallback configuration name
+                    PlexusConfiguration httpConfiguration = config.getChild("httpConfiguration", false);
+                    if (httpConfiguration != null) {
+                        PlexusConfiguration httpConfigurationAll = httpConfiguration.getChild("all", false);
+                        if (httpConfigurationAll != null) {
+                            requestTimeoutXml = httpConfigurationAll.getChild("readTimeout", false);
+                            if (requestTimeoutXml != null) {
+                                requestTimeout = Integer.parseInt(requestTimeoutXml.getValue());
+                                log.warn("Settings for server " + server.getId() + " uses legacy format");
+                            }
+                        }
+                    }
+                }
+
+                // org.eclipse.aether.ConfigurationProperties.HTTP_HEADERS => Map<String, String>
+                if (headers != null) {
+                    configProps.put(ConfigurationProperties.HTTP_HEADERS + "." + server.getId(), headers);
+                }
+                // org.eclipse.aether.ConfigurationProperties.CONNECT_TIMEOUT => int
+                if (connectTimeout != null) {
+                    configProps.put(ConfigurationProperties.CONNECT_TIMEOUT + "." + server.getId(), connectTimeout);
+                }
+                // org.eclipse.aether.ConfigurationProperties.REQUEST_TIMEOUT => int
+                if (requestTimeout != null) {
+                    configProps.put(ConfigurationProperties.REQUEST_TIMEOUT + "." + server.getId(), requestTimeout);
+                }
             }
             configProps.put("aether.connector.perms.fileMode." + server.getId(), server.getFilePermissions());
             configProps.put("aether.connector.perms.dirMode." + server.getId(), server.getDirectoryPermissions());
         }
         session.setAuthenticationSelector(authSelector);
+
+        Object transport = configProps.getOrDefault(MAVEN_RESOLVER_TRANSPORT_KEY, MAVEN_RESOLVER_TRANSPORT_DEFAULT);
+        if (MAVEN_RESOLVER_TRANSPORT_DEFAULT.equals(transport)) {
+            // The "default" mode (user did not set anything) from now on defaults to AUTO
+        } else if (MAVEN_RESOLVER_TRANSPORT_NATIVE.equals(transport)) {
+            // Make sure (whatever extra priority is set) that resolver native is selected
+            configProps.put(NATIVE_FILE_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+            configProps.put(NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+        } else if (MAVEN_RESOLVER_TRANSPORT_WAGON.equals(transport)) {
+            // Make sure (whatever extra priority is set) that wagon is selected
+            configProps.put(WAGON_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+        } else if (!MAVEN_RESOLVER_TRANSPORT_AUTO.equals(transport)) {
+            throw new IllegalArgumentException("Unknown resolver transport '" + transport
+                    + "'. Supported transports are: " + MAVEN_RESOLVER_TRANSPORT_WAGON + ", "
+                    + MAVEN_RESOLVER_TRANSPORT_NATIVE + ", " + MAVEN_RESOLVER_TRANSPORT_AUTO);
+        }
 
         session.setConfigProperties(configProps);
 

@@ -185,7 +185,6 @@
                                         <from>${mariadb.image}</from>
                                         <healthCheck>
                                             <!-- The exact values for these aren't very important, but it is important they are there -->
-                                            <!-- The exact values for these aren't very important, but it is important they are there -->
                                             <interval>5s</interval>
                                             <timeout>3s</timeout>
                                             <startPeriod>5s</startPeriod>

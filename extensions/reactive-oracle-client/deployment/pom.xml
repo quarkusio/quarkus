@@ -160,6 +160,8 @@
                                             <time>60000</time>
                                             <!-- leverage the healthcheck in the image we use -->
                                             <healthy>yes</healthy>
+                                            <!-- In case of any issues with the built-in healthcheck we can revert back to the original log check:-->
+                                            <!--<log>DATABASE IS READY TO USE!</log>-->
                                         </wait>
                                     </run>
                                 </image>

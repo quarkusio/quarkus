@@ -6,6 +6,7 @@ import '@vaadin/details';
 import '@vaadin/grid';
 import '@vaadin/grid/vaadin-grid-sort-column.js';
 import 'qui-badge';
+import 'qui-ide-link';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/progress-bar';
@@ -66,6 +67,10 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         .total {
             padding-right: 20px;
             text-align: center;
+        }
+        .ideIcon {
+            color: var(--lumo-contrast-40pct);
+            font-size: small;
         }
     `;
 
@@ -274,14 +279,17 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _renderStacktrace(stackTraces){
         return html`${stackTraces.map((stackTrace) => 
-            html`&ensp;\nat ${stackTrace.className}#${stackTrace.methodName}(${stackTrace.fileName}:${stackTrace.lineNumber})`
+            html`<br><qui-ide-link fileName='${stackTrace.className}'
+                        lineNumber=${stackTrace.lineNumber}>${stackTrace.className}#${stackTrace.methodName}(${stackTrace.fileName}:${stackTrace.lineNumber})</qui-ide-link>`
         )}`;
     }
 
     _testRenderer(testLine){
         let level = testLine.testExecutionResult.status.toLowerCase();
 
-        return html`<span class="${level}">
+        return html`<qui-ide-link fileName='${testLine.testClass}'
+                        lineNumber=0><vaadin-icon class="ideIcon" icon="font-awesome-solid:code"></vaadin-icon></qui-ide-link>
+                    <span class="${level}">
                         ${testLine.testClass}
                     </span>`;
     }

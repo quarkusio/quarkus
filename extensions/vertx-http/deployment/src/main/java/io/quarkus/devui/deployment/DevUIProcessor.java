@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.JandexReflection;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -663,10 +664,16 @@ public class DevUIProcessor {
     }
 
     private Class toClass(Type type) {
-        try {
-            return tccl.loadClass(type.name().toString());
-        } catch (ClassNotFoundException ex) {
-            throw new RuntimeException(ex);
+        if (type.kind().equals(Type.Kind.PRIMITIVE)) {
+            return JandexReflection.loadRawType(type);
+        } else if (type.kind().equals(Type.Kind.VOID)) {
+            throw new RuntimeException("Void method return detected, JsonRPC Method needs to return something.");
+        } else {
+            try {
+                return tccl.loadClass(type.name().toString());
+            } catch (ClassNotFoundException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 

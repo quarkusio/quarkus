@@ -626,15 +626,6 @@ public class BeanProcessor {
             return this;
         }
 
-        /**
-         * @deprecated annotation literal sharing is now always enabled, this method doesn't do anything
-         *             and will be removed at some time after Quarkus 3.0
-         */
-        @Deprecated
-        public Builder setSharedAnnotationLiterals(boolean sharedAnnotationLiterals) {
-            return this;
-        }
-
         public Builder setReflectionRegistration(ReflectionRegistration reflectionRegistration) {
             this.reflectionRegistration = reflectionRegistration;
             return this;

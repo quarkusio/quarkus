@@ -17,7 +17,6 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.impl.ComputingCache;
 import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -55,17 +54,6 @@ public class AnnotationLiteralProcessor {
 
     ComputingCache<CacheKey, AnnotationLiteralClassInfo> getCache() {
         return cache;
-    }
-
-    /**
-     * @deprecated annotation literal sharing is now always enabled, this method is superseded
-     *             by {@link #create(BytecodeCreator, ClassInfo, AnnotationInstance)} and will be removed
-     *             at some time after Quarkus 3.0
-     */
-    @Deprecated
-    public ResultHandle process(BytecodeCreator bytecode, ClassOutput classOutput, ClassInfo annotationClass,
-            AnnotationInstance annotationInstance, String targetPackage) {
-        return create(bytecode, annotationClass, annotationInstance);
     }
 
     /**

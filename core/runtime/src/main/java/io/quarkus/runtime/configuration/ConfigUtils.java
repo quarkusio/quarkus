@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -94,7 +95,7 @@ public final class ConfigUtils {
             builder.withSources(new RuntimeOverrideConfigSource(Thread.currentThread().getContextClassLoader()));
         }
         if (runTime || bootstrap) {
-            builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
+            builder.withDefaultValue(UUID_KEY, generateUUID().toString());
         }
         if (addDiscovered) {
             builder.addDiscoveredSources();
@@ -309,6 +310,11 @@ public final class ConfigUtils {
             }
         }
         return Optional.empty();
+    }
+
+    private static UUID generateUUID() {
+        Random random = new Random();
+        return new UUID(random.nextLong(), random.nextLong());
     }
 
     private static class ConfigBuilderComparator implements Comparator<ConfigBuilder> {

@@ -8,6 +8,7 @@ import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
+import static io.quarkus.kubernetes.deployment.KubernetesCommonHelper.printMessageAboutPortsThatCantChange;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPortIsEnabled;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.VANILLA_KUBERNETES_PRIORITY;
@@ -298,7 +299,7 @@ public class VanillaKubernetesProcessor {
                             .withMaxUnavailable(config.rollingUpdate.maxUnavailable)
                             .build())));
         }
-
+        printMessageAboutPortsThatCantChange(KUBERNETES, ports, config);
         return result;
     }
 

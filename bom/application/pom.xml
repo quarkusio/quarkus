@@ -106,7 +106,7 @@
         <narayana.version>6.0.1.Final</narayana.version>
         <agroal.version>2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.7.1</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>8.8.1</elasticsearch-opensource-components.version>
         <!-- for the now proprietary components of Elasticsearch, we use the last Open Source version -->
         <elasticsearch-proprietary-components-keeping-old-opensource-version.version>7.10.2</elasticsearch-proprietary-components-keeping-old-opensource-version.version>
         <rxjava.version>2.2.21</rxjava.version>

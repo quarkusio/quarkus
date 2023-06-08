@@ -126,10 +126,6 @@ public final class Beans {
                 priority = annotation.value().asInt();
                 continue;
             }
-            if (priority == null && DotNames.ARC_PRIORITY.equals(annotationName)) {
-                priority = annotation.value().asInt();
-                continue;
-            }
             if (DotNames.DEFAULT_BEAN.equals(annotationName)) {
                 isDefaultBean = true;
                 continue;
@@ -242,10 +238,6 @@ public final class Beans {
                 continue;
             }
             if (DotNames.PRIORITY.equals(annotation.name())) {
-                priority = annotation.value().asInt();
-                continue;
-            }
-            if (priority == null && DotNames.ARC_PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 continue;
             }
@@ -1250,10 +1242,6 @@ public final class Beans {
                 return;
             }
             if (DotNames.PRIORITY.equals(annotationName)) {
-                priority = annotation.value().asInt();
-                return;
-            }
-            if (priority == null && DotNames.ARC_PRIORITY.equals(annotationName)) {
                 priority = annotation.value().asInt();
                 return;
             }

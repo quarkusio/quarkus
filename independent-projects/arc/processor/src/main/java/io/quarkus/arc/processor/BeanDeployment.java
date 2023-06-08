@@ -880,8 +880,6 @@ public class BeanDeployment {
                         isNamed = true;
                     } else if (DotNames.PRIORITY.equals(annotation.name())) {
                         alternativePriority = annotation.value().asInt();
-                    } else if (DotNames.ARC_PRIORITY.equals(annotation.name()) && alternativePriority == null) {
-                        alternativePriority = annotation.value().asInt();
                     } else {
                         final ScopeInfo scope = getScope(annotation.name(), customContexts);
                         if (scope != null) {

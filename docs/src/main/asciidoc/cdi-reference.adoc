@@ -962,7 +962,7 @@ public class Processor {
 <1> The injected instance is an _immutable list_ of the contextual references of the _disambiguated_ beans.
 <2> For this injection point the required type is `Service` and no additional qualifiers are declared.
 
-TIP: The list is sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first. In general, the `@jakarta.annotation.Priority` and `@io.quarkus.arc.Priority` annotations can be used to assign the priority to a class bean, producer method or producer field.
+TIP: The list is sorted by priority as defined by `io.quarkus.arc.InjectableBean#getPriority()`. Higher priority goes first. In general, the `@jakarta.annotation.Priority` annotation can be used to assign the priority to a class bean, producer method or producer field.
 
 If an injection point declares no other qualifier than `@All` then `@Any` is used, i.e. the behavior is equivalent to `@Inject @Any Instance<Service>`.
 

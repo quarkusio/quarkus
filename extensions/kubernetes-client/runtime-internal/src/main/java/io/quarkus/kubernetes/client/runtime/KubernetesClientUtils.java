@@ -14,6 +14,9 @@ public class KubernetesClientUtils {
 
     private static final String PREFIX = "quarkus.kubernetes-client.";
 
+    private KubernetesClientUtils() {
+    }
+
     public static Config createConfig(KubernetesClientBuildConfig buildConfig, TlsConfig tlsConfig) {
         Config base = Config.autoConfigure(null);
         boolean trustAll = buildConfig.trustCerts.isPresent() ? buildConfig.trustCerts.get() : tlsConfig.trustAll;

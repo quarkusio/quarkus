@@ -61,6 +61,8 @@ In dev mode and when running tests, xref:kubernetes-dev-services.adoc[Dev Servic
 
 Quarkus provides multiple integration points for influencing the Kubernetes Client provided as a CDI bean.
 
+==== Kubernetes Client Config customization
+
 The first integration point is the use of the `io.quarkus.kubernetes.client.KubernetesConfigCustomizer` interface. When such a bean exists,
 it allows for arbitrary customizations of the `io.fabric8.kubernetes.client.Config` created by Quarkus (which takes into account the `quarkus.kubernetes-client.*` properties).
 
@@ -81,6 +83,47 @@ public class KubernetesClientProducer {
     }
 }
 ----
+
+==== Kubernetes Client ObjectMapper customization
+
+The Fabric8 Kubernetes Client uses its own `ObjectMapper` instance for serialization and deserialization of Kubernetes resources.
+This mapper is provided to the client through a `KubernetesSerialization` instance that's injected into
+the `KubernetesClient` bean.
+
+If for some reason you must customize the default `ObjectMapper` bean provided by this extension and used by the Kubernetes Client, you can do so by declaring a bean that implements the `KubernetesClientObjectMapperCustomizer` interface.
+
+The following code snippet contains an example of a `KubernetesClientObjectMapperCustomizer` to set the `ObjectMapper` locale:
+
+[source,java]
+----
+@Singleton
+public static class Customizer implements KubernetesClientObjectMapperCustomizer {
+    @Override
+    public void customize(ObjectMapper objectMapper) {
+        objectMapper.setLocale(Locale.ROOT);
+    }
+}
+----
+
+Furthermore, if you must replace the default `ObjectMapper` bean used by the Kubernetes Client that the extension creates automatically, you can do so by declaring a bean of type `@KubernetesClientObjectMapper`.
+The following code snippet shows how you can declare this bean:
+
+[source,java]
+----
+@Singleton
+public class KubernetesObjectMapperProducer {
+    @KubernetesClientObjectMapper
+    @Singleton
+    @Produces
+    public ObjectMapper kubernetesClientObjectMapper() {
+        return new ObjectMapper();
+    }
+}
+----
+
+
+WARNING: The static `io.fabric8.kubernetes.client.utils.Serialization` utils class is deprecated and should not be used.
+Access to `Serialization.jsonMapper()` should be replaced by the usage of @KubernetesClientObjectMapperCustomizer` declared beans.
 
 == Testing
 

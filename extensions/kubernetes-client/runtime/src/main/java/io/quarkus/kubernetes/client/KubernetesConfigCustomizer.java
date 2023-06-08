@@ -4,6 +4,7 @@ import java.util.List;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.utils.KubernetesSerialization;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
@@ -16,8 +17,8 @@ import io.quarkus.runtime.TlsConfig;
  * The {@link Config} is in turn used to produce the default {@link KubernetesClient}
  * <p>
  *
- * @see KubernetesConfigProducer#config(KubernetesClientBuildConfig, TlsConfig, List) }
- * @see KubernetesClientProducer#kubernetesClient(Config) }
+ * @see KubernetesConfigProducer#config(KubernetesClientBuildConfig, TlsConfig, List)
+ * @see KubernetesClientProducer#kubernetesClient(KubernetesSerialization, Config)
  */
 public interface KubernetesConfigCustomizer {
 

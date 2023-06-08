@@ -95,7 +95,7 @@ public final class ConfigUtils {
             builder.withSources(new RuntimeOverrideConfigSource(Thread.currentThread().getContextClassLoader()));
         }
         if (runTime || bootstrap) {
-            builder.withDefaultValue(UUID_KEY, generateUUID().toString());
+            builder.withDefaultValue(UUID_KEY, notSoRandomUUID().toString());
         }
         if (addDiscovered) {
             builder.addDiscoveredSources();
@@ -312,9 +312,29 @@ public final class ConfigUtils {
         return Optional.empty();
     }
 
-    private static UUID generateUUID() {
-        Random random = new Random();
-        return new UUID(random.nextLong(), random.nextLong());
+    /**
+     * We are not using {@link UUID#randomUUID()} as it uses SecureRandom and we don't really need that.
+     */
+    private static UUID notSoRandomUUID() {
+        Random ng = new Random();
+
+        byte[] randomBytes = new byte[16];
+        ng.nextBytes(randomBytes);
+        randomBytes[6] &= 0x0f; /* clear version */
+        randomBytes[6] |= 0x40; /* set to version 4 */
+        randomBytes[8] &= 0x3f; /* clear variant */
+        randomBytes[8] |= 0x80; /* set to IETF variant */
+
+        long msb = 0;
+        long lsb = 0;
+        for (int i = 0; i < 8; i++) {
+            msb = (msb << 8) | (randomBytes[i] & 0xff);
+        }
+        for (int i = 8; i < 16; i++) {
+            lsb = (lsb << 8) | (randomBytes[i] & 0xff);
+        }
+
+        return new UUID(msb, lsb);
     }
 
     private static class ConfigBuilderComparator implements Comparator<ConfigBuilder> {

@@ -182,6 +182,16 @@ public interface ArcContainer {
     <T> List<InstanceHandle<T>> listAll(TypeLiteral<T> type, Annotation... qualifiers);
 
     /**
+     *
+     * @param <X>
+     * @param type
+     * @param qualifiers
+     * @return the list of handles for the disambiguated beans
+     * @see #listAll(Class, Annotation...)
+     */
+    <X> List<InstanceHandle<X>> listAll(Type type, Annotation... qualifiers);
+
+    /**
      * Returns true if Arc container is running.
      * This can be used as a quick check to determine CDI availability in Quarkus.
      *

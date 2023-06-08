@@ -25,7 +25,6 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.impl.HierarchyDiscovery;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanResolver;
-import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.Types;
 
 class MockBeanConfiguratorImpl<T> implements MockBeanConfigurator<T> {
@@ -169,9 +168,9 @@ class MockBeanConfiguratorImpl<T> implements MockBeanConfigurator<T> {
         return test;
     }
 
-    boolean matches(BeanResolver beanResolver, InjectionPointInfo injectionPoint) {
-        return matchesType(injectionPoint.getRequiredType(), beanResolver)
-                && hasQualifiers(injectionPoint.getRequiredQualifiers(), beanResolver);
+    boolean matches(BeanResolver beanResolver, org.jboss.jandex.Type requiredType, Set<AnnotationInstance> qualifiers) {
+        return matchesType(requiredType, beanResolver)
+                && hasQualifiers(qualifiers, beanResolver);
     }
 
     boolean matchesType(org.jboss.jandex.Type requiredType, BeanResolver beanResolver) {

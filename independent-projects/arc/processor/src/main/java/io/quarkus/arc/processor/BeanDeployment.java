@@ -452,7 +452,8 @@ public class BeanDeployment {
     }
 
     private Set<BeanInfo> removeUnusedBeans(Set<BeanInfo> declaresObserver, List<Predicate<BeanInfo>> allUnusedExclusions) {
-        Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(this.beans, this.injectionPoints, declaresObserver,
+        Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(beanResolver, this.beans, this.injectionPoints,
+                declaresObserver,
                 allUnusedExclusions);
         if (!removableBeans.isEmpty()) {
             this.beans.removeAll(removableBeans);

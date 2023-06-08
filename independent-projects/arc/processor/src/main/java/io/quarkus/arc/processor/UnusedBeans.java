@@ -1,9 +1,9 @@
 package io.quarkus.arc.processor;
 
-import static java.util.function.Predicate.not;
-
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,7 +11,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
 final class UnusedBeans {
 
@@ -20,22 +24,49 @@ final class UnusedBeans {
     private UnusedBeans() {
     }
 
-    static Set<BeanInfo> findRemovableBeans(Collection<BeanInfo> beans, Collection<InjectionPointInfo> injectionPoints,
-            Set<BeanInfo> declaresObserver, List<Predicate<BeanInfo>> allUnusedExclusions) {
+    static Set<BeanInfo> findRemovableBeans(BeanResolver beanResolver, Collection<BeanInfo> beans,
+            Iterable<InjectionPointInfo> injectionPoints, Set<BeanInfo> declaresObserver,
+            List<Predicate<BeanInfo>> allUnusedExclusions) {
         Set<BeanInfo> removableBeans = new HashSet<>();
 
         Set<BeanInfo> unusedProducers = new HashSet<>();
         Set<BeanInfo> unusedButDeclaresProducer = new HashSet<>();
         List<BeanInfo> producers = beans.stream().filter(b -> b.isProducerMethod() || b.isProducerField())
                 .collect(Collectors.toList());
-        List<InjectionPointInfo> instanceInjectionPoints = injectionPoints.stream()
-                .filter(InjectionPointInfo::isProgrammaticLookup)
-                .collect(Collectors.toList());
-        // Collect all injected beans; skip delegate injection points and injection points that resolve to a built-in bean
-        Set<BeanInfo> injected = injectionPoints.stream()
-                .filter(not(InjectionPointInfo::isDelegate).and(InjectionPointInfo::hasResolvedBean))
-                .map(InjectionPointInfo::getResolvedBean)
-                .collect(Collectors.toSet());
+        // Collect all:
+        // - injected beans; skip delegate injection points and injection points that resolve to a built-in bean
+        // - Instance<> injection points
+        // - @All List<> injection points
+        Set<BeanInfo> injected = new HashSet<>();
+        List<InjectionPointInfo> instanceInjectionPoints = new ArrayList<>();
+        List<TypeAndQualifiers> listAllInjectionPoints = new ArrayList<>();
+
+        for (InjectionPointInfo injectionPoint : injectionPoints) {
+            if (injectionPoint.isProgrammaticLookup()) {
+                instanceInjectionPoints.add(injectionPoint);
+            } else if (!injectionPoint.isDelegate()) {
+                BeanInfo resolved = injectionPoint.getResolvedBean();
+                if (resolved != null) {
+                    injected.add(resolved);
+                } else {
+                    BuiltinBean builtin = BuiltinBean.resolve(injectionPoint);
+                    if (builtin == BuiltinBean.LIST) {
+                        Type requiredType = injectionPoint.getType().asParameterizedType().arguments().get(0);
+                        if (requiredType.name().equals(DotNames.INSTANCE_HANDLE)) {
+                            requiredType = requiredType.asParameterizedType().arguments().get(0);
+                        }
+                        Set<AnnotationInstance> qualifiers = new HashSet<>(injectionPoint.getRequiredQualifiers());
+                        for (Iterator<AnnotationInstance> it = qualifiers.iterator(); it.hasNext();) {
+                            AnnotationInstance qualifier = it.next();
+                            if (qualifier.name().equals(DotNames.ALL)) {
+                                it.remove();
+                            }
+                        }
+                        listAllInjectionPoints.add(new TypeAndQualifiers(requiredType, qualifiers));
+                    }
+                }
+            }
+        }
         Set<BeanInfo> declaresProducer = producers.stream().map(BeanInfo::getDeclaringBean).collect(Collectors.toSet());
 
         // Beans - first pass to find unused beans that do not declare a producer
@@ -70,9 +101,17 @@ final class UnusedBeans {
             // Instance<Foo>
             for (InjectionPointInfo injectionPoint : instanceInjectionPoints) {
                 if (Beans.hasQualifiers(bean, injectionPoint.getRequiredQualifiers())
-                        && bean.getDeployment().getBeanResolver().matchesType(bean,
+                        && beanResolver.matchesType(bean,
                                 injectionPoint.getType().asParameterizedType().arguments().get(0))) {
                     LOG.debugf("Unremovable - programmatic lookup: %s", bean);
+                    continue test;
+                }
+            }
+            // @All List<Foo>
+            for (TypeAndQualifiers tq : listAllInjectionPoints) {
+                if (Beans.hasQualifiers(bean, tq.qualifiers)
+                        && beanResolver.matchesType(bean, tq.type)) {
+                    LOG.debugf("Unremovable - @All List: %s", bean);
                     continue test;
                 }
             }

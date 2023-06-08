@@ -31,7 +31,6 @@ public class ListAllTest {
     public ArcTestContainer container = new ArcTestContainer(Service.class, ServiceAlpha.class, ServiceBravo.class,
             MyQualifier.class, Foo.class);
 
-    @SuppressWarnings("serial")
     @Test
     public void testSelectAll() {
         verifyHandleInjection(Arc.container().listAll(Service.class), Object.class);

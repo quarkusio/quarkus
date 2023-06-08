@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+import static io.quarkus.arc.processor.KotlinUtils.isKotlinClass;
 
 import java.lang.reflect.Member;
 import java.util.HashSet;
@@ -64,7 +65,7 @@ public enum BuiltinBean {
             BuiltinBean::validateEventMetadata, DotNames.EVENT_METADATA),
     LIST(BuiltinBean::generateListBytecode,
             (ip, names) -> cdiAndRawTypeMatches(ip, DotNames.LIST) && ip.getRequiredQualifier(DotNames.ALL) != null,
-            DotNames.LIST),
+            BuiltinBean::validateList, DotNames.LIST),
             ;
 
     private final DotName[] rawTypeDotNames;
@@ -440,6 +441,38 @@ public enum BuiltinBean {
             errors.accept(new DefinitionException(
                     "Type variable is not a legal type argument for jakarta.enterprise.inject.Instance: " +
                             injectionPoint.getTargetInfo()));
+        }
+    }
+
+    private static void validateList(InjectionTargetInfo injectionTarget, InjectionPointInfo injectionPoint,
+            Consumer<Throwable> errors) {
+        if (injectionPoint.getType().kind() != Kind.PARAMETERIZED_TYPE) {
+            errors.accept(
+                    new DefinitionException("An injection point of raw type is defined: " + injectionPoint.getTargetInfo()));
+        } else {
+            // Note that at this point we can be sure that the required type is List<>
+            Type typeParam = injectionPoint.getType().asParameterizedType().arguments().get(0);
+            if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
+                ClassInfo declaringClass;
+                if (injectionPoint.isField()) {
+                    declaringClass = injectionPoint.getTarget().asField().declaringClass();
+                } else {
+                    declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
+                }
+                if (isKotlinClass(declaringClass)) {
+                    errors.accept(
+                            new DefinitionException(
+                                    "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
+                                            + injectionPoint.getTargetInfo()));
+                } else {
+                    errors.accept(
+                            new DefinitionException(
+                                    "Wildcard is not a legal type argument for: " + injectionPoint.getTargetInfo()));
+                }
+            } else if (typeParam.kind() == Type.Kind.TYPE_VARIABLE) {
+                errors.accept(new DefinitionException(
+                        "Type variable is not a legal type argument for: " + injectionPoint.getTargetInfo()));
+            }
         }
     }
 

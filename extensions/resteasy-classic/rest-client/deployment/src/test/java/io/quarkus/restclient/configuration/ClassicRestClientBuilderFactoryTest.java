@@ -14,7 +14,7 @@ public class ClassicRestClientBuilderFactoryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(EchoClientWithoutAnnotation.class, EchoClientWithConfigKey.class,
-                    EchoResource.class))
+                    EchoClientWithEmptyPath.class, EchoResource.class))
             .withConfigurationResource("factory-test-application.properties");
 
     @Test
@@ -32,5 +32,14 @@ public class ClassicRestClientBuilderFactoryTest {
         EchoClientWithoutAnnotation restClient = restClientBuilder.build(EchoClientWithoutAnnotation.class);
 
         assertThat(restClient.echo("Hello")).contains("Hello");
+    }
+
+    @Test
+    public void testEmptyPathAnnotationOnClass() {
+        RestClientBuilder restClientBuilder = RestClientBuilderFactory.getInstance()
+                .newBuilder(EchoClientWithEmptyPath.class);
+        EchoClientWithEmptyPath restClient = restClientBuilder.build(EchoClientWithEmptyPath.class);
+
+        assertThat(restClient.echo("echo", "Hello")).contains("Hello");
     }
 }

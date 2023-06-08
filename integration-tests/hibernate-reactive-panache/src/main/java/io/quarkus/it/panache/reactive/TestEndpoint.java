@@ -181,6 +181,9 @@ public class TestEndpoint {
                             }).flatMap(v -> assertThrows(IllegalArgumentException.class,
                                     () -> Person.list("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")),
                                     "Should have thrown sort exception"))
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> Person.list("Person.getByName", Parameters.with("name", "stef")),
+                                    "Should have thrown helpful exception"))
                             .flatMap(v -> NamedQueryEntity.list("#NamedQueryMappedSuperClass.getAll"))
                             .flatMap(v -> NamedQueryEntity.list("#NamedQueryEntity.getAll"))
                             .flatMap(v -> NamedQueryWith2QueriesEntity.list("#NamedQueryWith2QueriesEntity.getAll1"))
@@ -213,7 +216,119 @@ public class TestEndpoint {
                                 Assertions.assertEquals(0, count);
 
                                 return makeSavedPerson();
-                            });
+                            })
+                            .flatMap(v -> Person.count("#Person.countAll")
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.count("#Person.countByName", Parameters.with("name", "stef").map());
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.count("#Person.countByName", Parameters.with("name", "stef"));
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.count("#Person.countByName.ordinal", "stef");
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Uni.createFrom().voidItem();
+                                    }))
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> Person.count("Person.countAll"),
+                                    "Should have thrown helpful exception"))
+                            .flatMap(voidUni -> Person.update("#Person.updateAllNames", Parameters.with("name", "stef2").map())
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateAllNames", Parameters.with("name", "stef3"));
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateNameById",
+                                                Parameters.with("name", "stef2").and("id", ((Person) persons.get(0)).id).map());
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateNameById",
+                                                Parameters.with("name", "stef3").and("id", ((Person) persons.get(0)).id));
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.update("#Person.updateNameById.ordinal", "stef",
+                                                ((Person) persons.get(0)).id);
+                                    }).flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+                                    }).flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    }))
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> Person.update("Person.updateAllNames"),
+                                    "Should have thrown helpful exception"))
+                            .flatMap(voidUni -> Dog.deleteAll()
+                                    .flatMap(v -> Person.delete("#Person.deleteAll"))
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    }))
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> Person.delete("Person.deleteAll"),
+                                    "Should have thrown helpful exception"))
+                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
+                                    .flatMap(v -> Person.find("").list())
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.delete("#Person.deleteById",
+                                                Parameters.with("id", personToDelete.id).map());
+                                    })
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    })))
+                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
+                                    .flatMap(v -> Person.find("").list())
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.delete("#Person.deleteById", Parameters.with("id", personToDelete.id));
+                                    })
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return Uni.createFrom().voidItem();
+                                    })))
+                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
+                                    .flatMap(v -> Person.find("").list())
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(1, persons.size());
+                                        return Person.delete("#Person.deleteById.ordinal", personToDelete.id);
+                                    })
+                                    .flatMap(count -> {
+                                        Assertions.assertEquals(1, count);
+                                        return Person.find("").list();
+                                    })
+                                    .flatMap(persons -> {
+                                        Assertions.assertEquals(0, persons.size());
+                                        return makeSavedPersonDao();
+                                    })));
+
                 }).flatMap(person -> {
 
                     return Person.count()
@@ -858,6 +973,9 @@ public class TestEndpoint {
                             }).flatMap(v -> assertThrows(IllegalArgumentException.class,
                                     () -> personDao.list("#Person.getByName", Sort.by("name"), Parameters.with("name", "stef")),
                                     "Should have thrown sort exception"))
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> personDao.list("Person.getByName", Parameters.with("name", "stef")),
+                                    "Should have thrown helpful exception"))
                             .flatMap(v -> namedQueryRepository.list("#NamedQueryMappedSuperClass.getAll"))
                             .flatMap(v -> namedQueryRepository.list("#NamedQueryEntity.getAll"))
                             .flatMap(v -> namedQueryWith2QueriesRepository.list("#NamedQueryWith2QueriesEntity.getAll1"))
@@ -892,103 +1010,113 @@ public class TestEndpoint {
                                 return makeSavedPersonDao();
                             })
 
-                            .flatMap(v -> Person.count("#Person.countAll")
+                            .flatMap(v -> personDao.count("#Person.countAll")
                                     .flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.count("#Person.countByName", Parameters.with("name", "stef").map());
+                                        return personDao.count("#Person.countByName", Parameters.with("name", "stef").map());
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.count("#Person.countByName", Parameters.with("name", "stef"));
+                                        return personDao.count("#Person.countByName", Parameters.with("name", "stef"));
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.count("#Person.countByName.ordinal", "stef");
+                                        return personDao.count("#Person.countByName.ordinal", "stef");
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
                                         return Uni.createFrom().voidItem();
                                     }))
-                            .flatMap(voidUni -> Person.update("#Person.updateAllNames", Parameters.with("name", "stef2").map())
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> personDao.count("Person.countAll"),
+                                    "Should have thrown helpful exception"))
+                            .flatMap(voidUni -> personDao
+                                    .update("#Person.updateAllNames", Parameters.with("name", "stef2").map())
                                     .flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+                                        return personDao.find("#Person.getByName", Parameters.with("name", "stef2")).list();
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
-                                        return Person.update("#Person.updateAllNames", Parameters.with("name", "stef3"));
+                                        return personDao.update("#Person.updateAllNames", Parameters.with("name", "stef3"));
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+                                        return personDao.find("#Person.getByName", Parameters.with("name", "stef3")).list();
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
-                                        return Person.update("#Person.updateNameById",
+                                        return personDao.update("#Person.updateNameById",
                                                 Parameters.with("name", "stef2").and("id", ((Person) persons.get(0)).id).map());
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("#Person.getByName", Parameters.with("name", "stef2")).list();
+                                        return personDao.find("#Person.getByName", Parameters.with("name", "stef2")).list();
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
-                                        return Person.update("#Person.updateNameById",
+                                        return personDao.update("#Person.updateNameById",
                                                 Parameters.with("name", "stef3").and("id", ((Person) persons.get(0)).id));
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("#Person.getByName", Parameters.with("name", "stef3")).list();
+                                        return personDao.find("#Person.getByName", Parameters.with("name", "stef3")).list();
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
-                                        return Person.update("#Person.updateNameById.ordinal", "stef",
+                                        return personDao.update("#Person.updateNameById.ordinal", "stef",
                                                 ((Person) persons.get(0)).id);
                                     }).flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("#Person.getByName", Parameters.with("name", "stef")).list();
+                                        return personDao.find("#Person.getByName", Parameters.with("name", "stef")).list();
                                     }).flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
                                         return Uni.createFrom().voidItem();
                                     }))
-                            .flatMap(voidUni -> Dog.deleteAll()
-                                    .flatMap(v -> Person.delete("#Person.deleteAll"))
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> personDao.update("Person.updateAllNames"),
+                                    "Should have thrown helpful exception"))
+                            .flatMap(voidUni -> dogDao.deleteAll()
+                                    .flatMap(v -> personDao.delete("#Person.deleteAll"))
                                     .flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("").list();
+                                        return personDao.find("").list();
                                     })
                                     .flatMap(persons -> {
                                         Assertions.assertEquals(0, persons.size());
                                         return Uni.createFrom().voidItem();
                                     }))
-                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
-                                    .flatMap(v -> Person.find("").list())
+                            .flatMap(v -> assertThrows(PanacheQueryException.class,
+                                    () -> personDao.delete("Person.deleteAll"),
+                                    "Should have thrown helpful exception"))
+                            .flatMap(voidUni -> makeSavedPersonDao().flatMap(personToDelete -> dogDao.deleteAll()
+                                    .flatMap(v -> personDao.find("").list())
                                     .flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
-                                        return Person.delete("#Person.deleteById",
+                                        return personDao.delete("#Person.deleteById",
                                                 Parameters.with("id", personToDelete.id).map());
                                     })
                                     .flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("").list();
+                                        return personDao.find("").list();
                                     })
                                     .flatMap(persons -> {
                                         Assertions.assertEquals(0, persons.size());
                                         return Uni.createFrom().voidItem();
                                     })))
-                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
-                                    .flatMap(v -> Person.find("").list())
+                            .flatMap(voidUni -> makeSavedPersonDao().flatMap(personToDelete -> dogDao.deleteAll()
+                                    .flatMap(v -> personDao.find("").list())
                                     .flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
-                                        return Person.delete("#Person.deleteById", Parameters.with("id", personToDelete.id));
+                                        return personDao.delete("#Person.deleteById", Parameters.with("id", personToDelete.id));
                                     })
                                     .flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("").list();
+                                        return personDao.find("").list();
                                     })
                                     .flatMap(persons -> {
                                         Assertions.assertEquals(0, persons.size());
                                         return Uni.createFrom().voidItem();
                                     })))
-                            .flatMap(voidUni -> makeSavedPerson().flatMap(personToDelete -> Dog.deleteAll()
-                                    .flatMap(v -> Person.find("").list())
+                            .flatMap(voidUni -> makeSavedPersonDao().flatMap(personToDelete -> dogDao.deleteAll()
+                                    .flatMap(v -> personDao.find("").list())
                                     .flatMap(persons -> {
                                         Assertions.assertEquals(1, persons.size());
-                                        return Person.delete("#Person.deleteById.ordinal", personToDelete.id);
+                                        return personDao.delete("#Person.deleteById.ordinal", personToDelete.id);
                                     })
                                     .flatMap(count -> {
                                         Assertions.assertEquals(1, count);
-                                        return Person.find("").list();
+                                        return personDao.find("").list();
                                     })
                                     .flatMap(persons -> {
                                         Assertions.assertEquals(0, persons.size());

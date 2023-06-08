@@ -13,7 +13,7 @@ public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
 
     public CustomCountPanacheQuery(EntityManager em, Query jpaQuery, String customCountQuery,
             Object paramsArrayOrMap) {
-        super(new CommonPanacheQueryImpl<>(em, castQuery(jpaQuery).getQueryString(), null, paramsArrayOrMap) {
+        super(new CommonPanacheQueryImpl<>(em, castQuery(jpaQuery).getQueryString(), null, null, paramsArrayOrMap) {
             {
                 this.countQuery = customCountQuery;
             }

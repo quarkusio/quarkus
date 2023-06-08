@@ -25,7 +25,14 @@ import io.smallrye.mutiny.Uni;
 public class CommonPanacheQueryImpl<Entity> {
 
     private Object paramsArrayOrMap;
+    /**
+     * this is the HQL query expanded from the Panache-Query
+     */
     private String query;
+    /**
+     * this is the original Panache-Query, if any (can be null)
+     */
+    private String originalQuery;
     protected String countQuery;
     private String orderBy;
     private Uni<Mutiny.Session> em;
@@ -40,9 +47,11 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private Map<String, Map<String, Object>> filters;
 
-    public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String orderBy, Object paramsArrayOrMap) {
+    public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy,
+            Object paramsArrayOrMap) {
         this.em = em;
         this.query = query;
+        this.originalQuery = originalQuery;
         this.orderBy = orderBy;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
@@ -340,7 +349,11 @@ public class CommonPanacheQueryImpl<Entity> {
             String namedQuery = query.substring(1);
             jpaQuery = em.createNamedQuery(namedQuery);
         } else {
-            jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+            try {
+                jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+            } catch (IllegalArgumentException x) {
+                throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
+            }
         }
 
         if (paramsArrayOrMap instanceof Map) {

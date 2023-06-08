@@ -9,49 +9,55 @@ import io.quarkus.gizmo.Gizmo;
 public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
 
     private final String methodName;
-    private String owner;
-    private String methodDescriptor;
-    private MetamodelInfo modelInfo;
+    private final String methodOwnerClassName;
+    private final String methodDescriptor;
+    private final MetamodelInfo modelInfo;
 
-    public PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String owner,
+    public PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String methodOwner,
             String methodName, String methodDescriptor,
             MetamodelInfo modelInfo) {
         super(Gizmo.ASM_API_VERSION, methodVisitor);
-        this.owner = owner;
+        this.methodOwnerClassName = methodOwner.replace('/', '.');
         this.methodName = methodName;
         this.methodDescriptor = methodDescriptor;
         this.modelInfo = modelInfo;
     }
 
     @Override
-    public void visitFieldInsn(int opcode, String owner, String fieldName, String descriptor) {
-        String ownerName = owner.replace('/', '.');
-        if ((opcode == Opcodes.GETFIELD
-                || opcode == Opcodes.PUTFIELD)
+    public void visitFieldInsn(int opcode, String fieldOwner, String fieldName, String descriptor) {
+        String fieldOwnerClassName = fieldOwner.replace('/', '.');
+        if ( // we only care about non-static access
+        !(opcode == Opcodes.GETFIELD || opcode == Opcodes.PUTFIELD)
                 // if we're in the constructor, do not replace field accesses to this type and its supertypes
                 // otherwise we risk running setters that depend on initialisation
-                && (!this.methodName.equals("<init>")
-                        || !targetIsInHierarchy(this.owner.replace('/', '.'), ownerName))
-                && isEntityField(ownerName, fieldName)) {
-            String methodName;
-            String methodDescriptor;
-            if (opcode == Opcodes.GETFIELD) {
-                methodName = JavaBeanUtil.getGetterName(fieldName, descriptor);
-                methodDescriptor = "()" + descriptor;
-            } else {
-                methodName = JavaBeanUtil.getSetterName(fieldName);
-                methodDescriptor = "(" + descriptor + ")V";
-            }
-            if (!owner.equals(this.owner)
-                    || !methodName.equals(this.methodName)
-                    || !methodDescriptor.equals(this.methodDescriptor)) {
-                super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, owner, methodName, methodDescriptor, false);
-            } else {
-                // do not substitute to accessors inside its own accessor
-                super.visitFieldInsn(opcode, owner, fieldName, descriptor);
-            }
+                || (this.methodName.equals("<init>")
+                        && targetIsInHierarchy(methodOwnerClassName, fieldOwnerClassName))
+                // we only care about entity fields
+                || !isEntityField(fieldOwnerClassName, fieldName)) {
+            // In those cases, don't do anything.
+            super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
+            return;
+        }
+
+        String methodName;
+        String methodDescriptor;
+        if (opcode == Opcodes.GETFIELD) {
+            methodName = JavaBeanUtil.getGetterName(fieldName, descriptor);
+            methodDescriptor = "()" + descriptor;
         } else {
-            super.visitFieldInsn(opcode, owner, fieldName, descriptor);
+            methodName = JavaBeanUtil.getSetterName(fieldName);
+            methodDescriptor = "(" + descriptor + ")V";
+        }
+        if (fieldOwnerClassName.equals(this.methodOwnerClassName)
+                && methodName.equals(this.methodName)
+                && methodDescriptor.equals(this.methodDescriptor)) {
+            // The current method accessing the entity field is the corresponding getter/setter.
+            // We don't perform substitution at all.
+            super.visitFieldInsn(opcode, fieldOwner, fieldName, descriptor);
+        } else {
+            // The current method accessing the entity field is *not* the corresponding getter/setter.
+            // We found a relevant field access: replace it with a call to the getter/setter.
+            super.visitMethodInsn(Opcodes.INVOKEVIRTUAL, fieldOwner, methodName, methodDescriptor, false);
         }
     }
 

@@ -20,9 +20,9 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>${quarkus.platform.group-id}</groupId>
-        <artifactId>${quarkus.platform.artifact-id}</artifactId>
-        <version>${quarkus.platform.version}</version>
+        <groupId>\${quarkus.platform.group-id}</groupId>
+        <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+        <version>\${quarkus.platform.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -58,9 +58,9 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>${quarkus.platform.group-id}</groupId>
+          <groupId>\${quarkus.platform.group-id}</groupId>
           <artifactId>quarkus-maven-plugin</artifactId>
-          <version>${quarkus.platform.version}</version>
+          <version>\${quarkus.platform.version}</version>
           <extensions>true</extensions>
         </plugin>
         <plugin>
@@ -74,7 +74,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>${surefire-plugin.version}</version>
+          <version>\${surefire-plugin.version}</version>
           <configuration>
             <systemPropertyVariables>
               <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>

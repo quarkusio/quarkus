@@ -17,25 +17,25 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
-            <version>${quarkus.version}</version>
+            <version>\${quarkus.version}</version>
         </dependency>
         <dependency>
             <groupId>org.acme</groupId>
             <artifactId>my-project-itest</artifactId>
-            <version>${project.version}</version>
+            <version>\${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
-            <version>${quarkus.version}</version>
+            <version>\${quarkus.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>${rest-assured.version}</version>
+            <version>\${rest-assured.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -73,7 +73,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <skipTests>${native.surefire.skip}</skipTests>
+                            <skipTests>\${native.surefire.skip}</skipTests>
                         </configuration>
                     </plugin>
                     <plugin>
@@ -87,9 +87,9 @@
                                 </goals>
                                 <configuration>
                                     <systemPropertyVariables>
-                                        <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                                        <native.image.path>\${project.build.directory}/\${project.build.finalName}-runner</native.image.path>
                                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                        <maven.home>${maven.home}</maven.home>
+                                        <maven.home>\${maven.home}</maven.home>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>

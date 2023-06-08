@@ -22,9 +22,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <groupId>\${quarkus.platform.group-id}</groupId>
+                <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+                <version>\${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -56,7 +56,7 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>${awaitility.version}</version>
+            <version>\${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -65,7 +65,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${quarkus-plugin.version}</version>
+                <version>\${quarkus-plugin.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -76,11 +76,11 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
+                <version>\${surefire-plugin.version}</version>
                 <configuration>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <maven.home>${maven.home}</maven.home>
+                        <maven.home>\${maven.home}</maven.home>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -101,7 +101,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${surefire-plugin.version}</version>
+                        <version>\${surefire-plugin.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -112,7 +112,7 @@
                                     <systemPropertyVariables>
                                         <java.util.logging.manager>org.jboss.logmanager.LogManager
                                         </java.util.logging.manager>
-                                        <maven.home>${maven.home}</maven.home>
+                                        <maven.home>\${maven.home}</maven.home>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>
@@ -135,7 +135,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${surefire-plugin.version}</version>
+                        <version>\${surefire-plugin.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -146,7 +146,7 @@
                                     <systemPropertyVariables>
                                         <java.util.logging.manager>org.jboss.logmanager.LogManager
                                         </java.util.logging.manager>
-                                        <maven.home>${maven.home}</maven.home>
+                                        <maven.home>\${maven.home}</maven.home>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>
@@ -169,7 +169,7 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>${surefire-plugin.version}</version>
+                        <version>\${surefire-plugin.version}</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -180,7 +180,7 @@
                                     <systemPropertyVariables>
                                         <java.util.logging.manager>org.jboss.logmanager.LogManager
                                         </java.util.logging.manager>
-                                        <maven.home>${maven.home}</maven.home>
+                                        <maven.home>\${maven.home}</maven.home>
                                     </systemPropertyVariables>
                                 </configuration>
                             </execution>

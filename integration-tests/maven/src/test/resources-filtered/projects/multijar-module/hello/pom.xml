@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.acme</groupId>
         <artifactId>acme-parent</artifactId>
-        <version>${revision}.${changelist}${sha1}</version>
+        <version>\${revision}.\${changelist}\${sha1}</version>
     </parent>
     <artifactId>acme-hello</artifactId>
 

@@ -16,7 +16,7 @@
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>acme-local-dep</artifactId>
-                <version>${local-dep.version}</version>
+                <version>\${local-dep.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

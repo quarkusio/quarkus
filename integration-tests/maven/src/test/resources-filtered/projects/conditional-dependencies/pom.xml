@@ -35,7 +35,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${compiler-plugin.version}</version>
+                    <version>\${compiler-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -43,7 +43,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${quarkus-plugin.version}</version>
+                <version>\${quarkus-plugin.version}</version>
             </plugin>
         </plugins>
     </build>
@@ -51,9 +51,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <groupId>\${quarkus.platform.group-id}</groupId>
+                <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+                <version>\${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

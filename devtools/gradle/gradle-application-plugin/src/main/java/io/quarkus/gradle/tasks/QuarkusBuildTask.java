@@ -1,14 +1,18 @@
 package io.quarkus.gradle.tasks;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.Classpath;
@@ -168,6 +172,9 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         PackageConfig.BuiltInType packageType = packageType();
         getLogger().info("Building Quarkus app for package type {} in {}", packageType, genDir);
 
+        // Need to delete app-cds.jsa specially, because it's usually read-only and Gradle's delete file-system
+        // operation doesn't delete "read only" files :(
+        deleteFileIfExists(genDir.resolve(outputDirectory()).resolve("app-cds.jsa"));
         getFileSystemOperations().delete(delete -> {
             // Caching and "up-to-date" checks depend on the inputs, this 'delete()' should ensure that the up-to-date
             // checks work against "clean" outputs, considering that the outputs depend on the package-type.
@@ -223,6 +230,7 @@ abstract class QuarkusBuildTask extends QuarkusTask {
         getFileSystemOperations().copy(copy -> {
             copy.from(buildDir);
             copy.into(genDir);
+            copy.eachFile(new CopyActionDeleteNonWriteableTarget(genDir));
             switch (packageType) {
                 case NATIVE:
                     copy.include(nativeRunnerFileName());
@@ -260,5 +268,33 @@ abstract class QuarkusBuildTask extends QuarkusTask {
                     t.setEnabled(false);
                 });
         throw new StopExecutionException();
+    }
+
+    public static final class CopyActionDeleteNonWriteableTarget implements Action<FileCopyDetails> {
+        private final Path destDir;
+
+        public CopyActionDeleteNonWriteableTarget(Path destDir) {
+            this.destDir = destDir;
+        }
+
+        @Override
+        public void execute(FileCopyDetails details) {
+            // Delete a pre-existing non-writeable file, otherwise a copy or sync operation would fail.
+            // This situation happens for 'app-cds.jsa' files, which are created as "read only" files,
+            // prefer to keep those files read-only.
+
+            Path destFile = destDir.resolve(details.getPath());
+            if (Files.exists(destFile) && !Files.isWritable(destFile)) {
+                deleteFileIfExists(destFile);
+            }
+        }
+    }
+
+    protected static void deleteFileIfExists(Path file) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -100,12 +100,6 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return Collections.emptySet();
     }
 
-    // Deprecated method which can be safely removed once we use CDI 4.0+
-    @Deprecated
-    default boolean isNullable() {
-        return false;
-    }
-
     @Override
     default boolean isAlternative() {
         return false;

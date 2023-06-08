@@ -4,35 +4,43 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="deploy-openshift"]
-= Deploying on OpenShift
+= Deploy Quarkus applications on OpenShift Container Platform
 include::_attributes.adoc[]
+:diataxis-type: howto
 :categories: cloud, native
-:summary: This guide covers how to deploy a native application on OpenShift.
 
-This guide covers generating and deploying OpenShift resources based on sane default and user supplied configuration.
+Deploy your Quarkus applications to OpenShift Container Platform by using the `quarkus-openshift` extension.
 
+Quarkus supports multiple build strategies and deployment options.
+For information about build and deployment options, see xref:deployment-to-openshift.adoc[Quarkus deployment to OpenShift].
 
 == Prerequisites
 
 :prerequisites-no-graalvm:
 include::{includes}/prerequisites.adoc[]
-* Access to an OpenShift cluster (Minishift is a viable option)
-* OpenShift CLI (Optional, only required for manual deployment)
+* Access to an OpenShift Container Platform cluster and the latest compatible version of the `oc` tool installed (Minishift is a viable option)
+* Access to the link:https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI] (Optional, only required for manual deployment)
+* Mandrel or GraalVM installed and configured appropriately.
+For more information, see link:https://quarkus.io/guides/building-native-image#configuring-graalvm[Configuring GraalVM].
 
-== Bootstrapping the project
+:sectnums:
+:sectnumlevels: 3
 
-First, we need a new project that contains the OpenShift extension. This can be done using the following command:
+== Create a new project that includes the Quarkus OpenShift extension
+
+Create a new project that includes the `quarkus-openshift` extension.
+To build and deploy your applications as a container image that runs inside your OpenShift Container Platform cluster, add the Quarkus OpenShift extension as a dependency to your project.
+Run the following command:
 
 :create-app-artifact-id: openshift-quickstart
 :create-app-extensions: resteasy-reactive,openshift
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
 
-Quarkus offers the ability to automatically generate OpenShift resources based on sane defaults and user supplied configuration.
-The OpenShift extension is actually a wrapper extension that brings together the xref:deploying-to-kubernetes.adoc[kubernetes] and xref:container-image.adoc#s2i[container-image-s2i]
-extensions with sensible defaults so that it's easier for the user to get started with Quarkus on OpenShift.
+By using Quarkus, you can automatically generate OpenShift resources based on sane defaults and user-supplied configuration.
+The OpenShift extension is a wrapper extension that brings together the xref:deploying-to-kubernetes.adoc[kubernetes] and xref:container-image.adoc#openshift[container-image-openshift] extensions with sensible defaults, which helps you to get started with Quarkus on OpenShift.
 
-When we added the OpenShift extension to the command line invocation above, the following dependency was added to the `pom.xml`
+When you add the OpenShift extension, you add the following dependency to the `pom.xml` or `build.gradle` files.
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -49,55 +57,75 @@ When we added the OpenShift extension to the command line invocation above, the 
 implementation("io.quarkus:quarkus-openshift")
 ----
 
-== Log Into the OpenShift Cluster
+== Log in to the OpenShift cluster
 
-Before we build and deploy our application we need to log into an OpenShift cluster.
-You can log in via the https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI]:
+Before you build and deploy your Quarkus application, you must log in to an OpenShift cluster.
 
-.Log In - OpenShift CLI Example
+* To log in by using the link:https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI], enter the following command:
++
+.Example: Log in by using the OpenShift CLI
 [source,bash]
 ----
 oc login -u myUsername <1>
 ----
-<1> You'll be prompted for the required information such as server URL, password, etc.
+<1> You will be prompted for required information, such as server URL and password.
 
-Alternatively, you may log in using the API token:
-
-.Log In - OpenShift CLI With API Token Example
+* Alternatively, you can log in by using an API token:
++
+.Example: Log in by using the OpenShift CLI and the API token
 [source,bash]
 ----
 oc login --token=myToken --server=myServerUrl
 ----
++
+[TIP]
+====
+You can request the token by using the _Copy Login Command_ link in the OpenShift web console.
+====
 
-TIP: You can request the token via the _Copy Login Command_ link in the OpenShift web console.
-
-Finally, you don't need to use the OpenShift CLI at all.
-Instead, set the `quarkus.kubernetes-client.api-server-url` config property and authenticate with the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively:
+* Alternatively, you can set the `quarkus.kubernetes-client.api-server-url` configuration property.
+Then, authenticate by using the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` properties respectively.
 
 :build-additional-parameters: -Dquarkus.kubernetes-client.api-server-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
-== Build and Deployment
+== Choose how you want to build and deploy your Quarkus application
 
-You can trigger a build and deployment in a single step or build the container image first and then configure the OpenShift application manually if you need <<control_application_config,more control over the deployment configuration>>.
+You can build and deploy your Quarkus application to OpenShift Container Platform in a single step.
+Alternatively, you can build the container image first and then configure the OpenShift application manually if you want more control over the deployment configuration.
 
-To trigger a build and deployment in a single step:
+For information about other deployment options, see
+* xref:deploying-native-executable-openshift.adoc[Deploy your Quarkus applications compiled to native executables].
+* xref:deploying-to-openshift-serveless.adoc[Deploy Quarkus applications as an OpenShift Serverless service].
+
+=== Option: Build and deploy in a single step
+To trigger a build and deployment in a single step, run the following command:
 
 :build-additional-parameters: -Dquarkus.kubernetes.deploy=true
 include::{includes}/devtools/build.adoc[]
 :!build-additional-parameters:
 
-TIP: If you want to test your application immediately then set the `quarkus.openshift.route.expose` config property to `true` to <<exposing_routes,expose the service automatically>>, e.g. add `-Dquarkus.openshift.route.expose=true` to the command above.
+By running this command, you build your application locally, trigger a container image build, and finally, apply the generated OpenShift resources automatically.
+The generated resources use OpenShift's `DeploymentConfig` that is configured to automatically trigger a redeployment when a change in the `ImageStream` is noticed.
+That is, any container image build after the initial deployment automatically triggers redeployment, without having to delete, update, or reapply the generated resources.
+
+[TIP]
+====
+If you want to test your application immediately, set the `quarkus.openshift.route.expose` configuration property to `true` to <<exposing_routes,expose the service automatically>>.
+For example, add `-Dquarkus.openshift.route.expose=true` to the command.
+====
 
 [#re-deploy-with-service-binding]
-NOTE: When using `DeploymentConfig` and https://quarkus.io/guides/deploying-to-kubernetes#service_binding[Service Binding], re-deploying might remove the configuration added by OpenShift to allow service discovery. A new container image build will trigger a refresh of the Quarkus app in OpenShift: `-Dquarkus.container-image.build=true` which might be enough in most situations. If you need to update the OpenShift resources, you need to delete the binding first to create it again after new deployment.
+[NOTE]
+====
+When you use `DeploymentConfig` and link:https://quarkus.io/guides/deploying-to-kubernetes#service_binding[Service Binding], re-deploying might remove the configuration that is added by OpenShift to allow service discovery.
 
-This command will build your application locally, then trigger a container image build and finally apply the generated OpenShift resources automatically.
-The generated resources use OpenShift's `DeploymentConfig` that is configured to automatically trigger a redeployment when a change in the `ImageStream` is noticed.
-In other words, any container image build after the initial deployment will automatically trigger redeployment, without the need to delete, update or re-apply the generated resources.
+A new container image build triggers a refresh of the Quarkus application in OpenShift, `-Dquarkus.container-image.build=true`, which might suffice in most situations.
+If you must update the OpenShift resources, you first delete the binding to create it again after a new deployment.
+====
 
-You can use the OpenShift web console to verify that the above command has created an image stream, a service resource and has deployed the application.
+To verify that the above command created an image stream and a service resource and has deployed the application, use the OpenShift web console.
 Alternatively, you can run the following OpenShift CLI commands:
 [source,bash,subs=attributes+]
 ----
@@ -105,14 +133,14 @@ oc get is <1>
 oc get pods <2>
 oc get svc <3>
 ----
-<1> Lists the image streams created.
-<2> Get the list of pods.
+<1> List the image streams created.
+<2> View a list of pods associated with your current OpenShift project.
 <3> Get the list of Kubernetes services.
 
-Note that the service is not exposed to the outside world by default.
-So unless you've used the `quarkus.openshift.route.expose` config property to expose the created service automatically you'll need to expose the service manually.
+The service is not exposed to the outside world by default.
+Therefore, unless you have used the `quarkus.openshift.route.expose` configuration property to expose the created service automatically, you must expose the service manually.
 
-.Expose The Service - OpenShift CLI Example
+.Example: Expose the service by using the OpenShift CLI
 [source,bash,subs=attributes+]
 ----
 oc expose svc/openshift-quickstart <1>
@@ -124,9 +152,10 @@ curl http://<route>/hello <3>
 <3> Access your application.
 
 [[control_application_config]]
-=== Configure the OpenShift Application Manually
 
-If you need more control over the deployment configuration you can build the container image first and then configure the OpenShift application manually.
+=== Option: Build image and configure OpenShift application manually
+
+If you want more control over the deployment configuration, you can build the container image first and then configure the OpenShift application manually.
 
 To trigger a container image build:
 
@@ -135,22 +164,25 @@ To trigger a container image build:
 ./mvnw clean package -Dquarkus.container-image.build=true
 ----
 
-The build that will be performed is a _s2i binary_ build.
-The input of the build is the jar that has been built locally and the output of the build is an `ImageStream` that is configured to automatically trigger a deployment.
+An OpenShift binary build is performed.
+The build input is the JAR file that was built locally.
+The build output is an `ImageStream` that is configured to automatically trigger a deployment.
 
 [NOTE]
 ====
-During the build you may find the `Caused by: javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException: PKIX path building failed` exception due to self-signed certificate. To solve this, just add the following line to your `application.properties`:
+During the build, you might find the `Caused by: javax.net.ssl.SSLHandshakeException: sun.security.validator.ValidatorException: PKIX path building failed` exception occurred due to self-signed certificate.
+To solve this, add the following line to your `application.properties` file:
 
 [source,properties]
 ----
 quarkus.kubernetes-client.trust-certs=true
 ----
 
-For more information, see link:https://quarkus.io/guides/deploying-to-kubernetes#client-connection-configuration[deploying to Kubernetes].
+For more information, see the link:https://quarkus.io/guides/deploying-to-kubernetes#client-connection-configuration[Client connection configuraton] section of the "Kubernetes extension" guide.
 ====
 
-Once the build is done we can create a new application from the relevant `ImageStream`.
+When the build finishes, create a new application from the relevant `ImageStream`.
+Run the following commands:
 
 [source,bash,subs=attributes+]
 ----
@@ -161,48 +193,120 @@ oc expose svc/greeting <3>
 oc get routes <4>
 curl http://<route>/hello <5>
 ----
-<1> Lists the image streams created. The image stream of our application should be tagged as <project>/openshift-quickstart:1.0.0-SNAPSHOT.
+<1> Lists the image streams created.
+The image stream of the application should be tagged as <project>/openshift-quickstart:1.0.0-SNAPSHOT.
 <2> Create a new application from the image source.
 <3> Expose the service to the outside world.
 <4> Get the list of exposed routes.
 <5> Access your application.
 
-After this setup the next time the container image is built a deployment to OpenShift is triggered automatically.
-In other words, you don't need to repeat the above steps.
+After this setup, the next time you build a container image, a deployment to OpenShift is triggered automatically so you do not need to repeat the above steps.
 
-=== Non-S2I Builds
+=== Option: Configure OpenShift application manually by using the Docker build
 
-Out of the box the OpenShift extension is configured to use xref:container-image.adoc#s2i[container-image-s2i]. However, it's still possible to use other container image extensions like:
+Build and deploy your Quarkus application to OpenShift Container Platform by using the Docker build strategy.
+
+. Set the Docker build strategy in your `application.properties` configuration file:
++
+[source, properties]
+----
+quarkus.openshift.build-strategy=docker
+----
+. (Optional): Set the following properties in the `application.properties` file, as required by your environment:
+.. If you are using an untrusted certificate, configure the `KubernetesClient`:
++
+[source,properties]
+----
+quarkus.kubernetes-client.trust-certs=true
+----
+.. Expose the service to create an OpenShift Container Platform route:
++
+[source,properties]
+----
+quarkus.openshift.route.expose=true
+----
+.. Set the path to your custom Dockerfile:
++
+[source,properties,subs="attributes+,+quotes"]
+----
+quarkus.openshift.jvm-dockerfile=<path_to_your_dockerfile>
+----
+The following example shows the path to the `Dockerfile.custom-jvm`:
++
+[source,properties]
+----
+quarkus.openshift.jvm-dockerfile=src/main/resources/Dockerfile.custom-jvm
+----
+. Package and deploy your Quarkus application to the current OpenShift project:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+./mvnw clean package -Dquarkus.kubernetes.deploy=true
+----
+
+When the build finishes, verify your deployment.
+Run the following commands:
+
+[source,bash,subs=attributes+]
+----
+oc get pods <1>
+oc logs -f <pod_name> <2>
+oc get svc <3>
+oc get routes <4>
+curl http://<route>/hello <5>
+----
+
+<1> View a list of pods associated with your current OpenShift project.
+<2> Retrieve the log output for your application’s pod, where <pod_name> is the name of the latest pod prefixed with the name of your application.
+<3> Get the list of Kubernetes services.
+<4> Get a URL to test your application.
+<5> Access your application.
+
+=== Option: Configure non-OpenShift container image build
+
+As an out-of-the-box feature, the OpenShift extension is configured to use the `quarkus-container-image-openshift` extension to build the container image inside the OpenShift cluster.
+For information about the OpenShift container image, see xref:container-image.adoc#openshift[container-image-openshift].
+
+However, you can use other container image extensions.
+For example:
 
 - xref:container-image.adoc#docker[container-image-docker]
 - xref:container-image.adoc#jib[container-image-jib]
 
-When a non-s2i container image extension is used, an `ImageStream` is created that is pointing to an external `dockerImageRepository`. The image is built and pushed to the registry and the `ImageStream` populates the tags that are available in the `dockerImageRepository`.
+When you use a non-OpenShift container image extension, an `ImageStream` is created that points to an external `dockerImageRepository`.
+The image is built and pushed to the registry and the `ImageStream` populates the tags that are available in the `dockerImageRepository`.
 
-To select which extension will be used for building the image:
+Select the extension you want to use to build the image, by choosing one of the following commands.
 
+* To use the `quarkus-container-image-docker` extenstion, run the following command:
++
 [source,properties]
 ----
 quarkus.container-image.builder=docker
 ----
 
-or
-
+* To use the `quarkus-container-image-jib` extension, run the following command:
++
 [source,properties]
 ----
 quarkus.container-image.builder=jib
 ----
 
-== Customizing
+To view other deployment options, see the following guides:
 
-All available customization options are available in the xref:deploying-to-kubernetes.adoc#openshift[OpenShift configuration options].
+* xref:deploying-native-executable-openshift.adoc[Deploy a Quarkus native application on OpenShift]
+* xref:deploying-to-openshift-serverless.adoc[Deploy Quarkus applications as an OpenShift Serverless service]
+
+== Customize your deployment
+
+For a list of available customization options, see xref:deploying-to-kubernetes.adoc#openshift[OpenShift configuration options].
 
 Some examples are provided in the sections below:
 
 [[exposing_routes]]
-=== Exposing Routes
+=== Expose routes
 
-To expose a `Route` for the Quarkus application:
+To expose a `Route` for the Quarkus application, run the following command:
 
 [source,properties]
 ----
@@ -211,7 +315,9 @@ quarkus.openshift.route.expose=true
 
 [TIP]
 ====
-You don't necessarily need to add this property in the `application.properties`. You can pass it as a command line argument:
+
+You do not need add this property in the `application.properties` file.
+Instead, you pass it as a command-line argument:
 
 [source,bash,subs=attributes+]
 ----
@@ -221,11 +327,12 @@ You don't necessarily need to add this property in the `application.properties`.
 The same applies to all properties listed below.
 ====
 
-==== Securing the Route resource
+==== Secure the Route resource
 
-To secure the incoming connections, OpenShift provides several types of TLS termination to serve certifications. You can read more information about how to secure routes in https://docs.openshift.com/container-platform/4.12/networking/routes/secured-routes.html[the official OpenShift guide].
+To secure incoming connections, OpenShift provides several types of TLS termination to serve certifications.
+For more information about how to secure routes, see the link:https://docs.openshift.com/container-platform/4.12/networking/routes/secured-routes.html[Secured routes] section in the "OpenShift Container Platform" documentation.
 
-Let's see an example about how to configure a secured Route using passthrough termination by simply adding the "quarkus.openshift.route.tls" properties:
+.Example: Configure a secured Route using passthrough termination by adding the "quarkus.openshift.route.tls" properties:
 
 [source,properties]
 ----
@@ -236,18 +343,18 @@ quarkus.openshift.route.tls.termination=passthrough
 quarkus.openshift.route.tls.insecure-edge-termination-policy=None
 ----
 
-=== Labels
+=== Add labels
 
-To add a label in the generated resources:
+To add a label in the generated resources, run the following command:
 
 [source,properties]
 ----
 quarkus.openshift.labels.foo=bar
 ----
 
-=== Annotations
+=== Add annotations
 
-To add an annotation in the generated resources:
+To add an annotation in the generated resources, run the following command:
 
 [source,properties]
 ----
@@ -255,38 +362,38 @@ quarkus.openshift.annotations.foo=bar
 ----
 
 [#env-vars]
-=== Environment variables
+=== Define environment variables
 
-OpenShift provides multiple ways of defining environment variables:
+OpenShift provides multiple ways of defining environment variables.
+For example:
 
-- key/value pairs
-- import all values from a Secret or ConfigMap
-- interpolate a single value identified by a given field in a Secret or ConfigMap
-- interpolate a value from a field within the same resource
+- Use key/value pairs
+- Import all values from a Secret or ConfigMap
+- Interpolate a single value identified by a given field in a Secret or ConfigMap
+- Interpolate a value from a field within the same resource
 
-==== Environment variables from key/value pairs
+==== Environment variables from key-value pairs
 
-To add a key/value pair as an environment variable in the generated resources:
+To add a key-value pair as an environment variable in the generated resources, run the following command:
 
 [source,properties]
 ----
 quarkus.openshift.env.vars.my-env-var=foobar
 ----
 
-The command above will add `MY_ENV_VAR=foobar` as an environment variable.
-Please note that the key `my-env-var` will be converted to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
+By using this command, you add `MY_ENV_VAR=foobar` as an environment variable.
+The key `my-env-var` is converted to uppercase and dashes are replaced by underscores, resulting in `MY_ENV_VAR`.
 
 ==== Environment variables from Secret
 
-To add all key/value pairs of `Secret` as environment variables just apply the following configuration, separating each `Secret`
-to be used as source by a comma (`,`):
+To add all key-value pairs of `Secret` as environment variables, specify the following configuration, by using a comma-separated list to separate each `Secret` you use as a source:
 
 [source,properties]
 ----
 quarkus.openshift.env.secrets=my-secret,my-other-secret
 ----
 
-which would generate the following in the container definition:
+This configuration generates the following output in the container definition:
 
 [source,yaml]
 ----
@@ -299,7 +406,7 @@ envFrom:
       optional: false
 ----
 
-The following extracts a value identified by the `keyName` field from the `my-secret` Secret into a `foo` environment variable:
+The following configuration extracts a value identified by the `keyName` field from the `my-secret` Secret into a `foo` environment variable:
 
 [source,properties]
 ----
@@ -307,7 +414,7 @@ quarkus.openshift.env.mapping.foo.from-secret=my-secret
 quarkus.openshift.env.mapping.foo.with-key=keyName
 ----
 
-This would generate the following in the `env` section of your container:
+This configuration generates the following in the `env` section of your container:
 
 [source,yaml]
 ----
@@ -322,15 +429,14 @@ This would generate the following in the `env` section of your container:
 
 ==== Environment variables from ConfigMap
 
-To add all key/value pairs from `ConfigMap` as environment variables just apply the following configuration, separating each
-`ConfigMap` to be used as source by a comma (`,`):
+To add all key-value pairs from `ConfigMap` as environment variables, specify the following configuration, using a comma-separated list to separate each `ConfigMap` you use as a source:
 
 [source,properties]
 ----
 quarkus.openshift.env.configmaps=my-config-map,another-config-map
 ----
 
-which would generate the following in the container definition:
+This configuration generates the following output in the container definition:
 
 [source,yaml]
 ----
@@ -343,8 +449,7 @@ envFrom:
       optional: false
 ----
 
-The following extracts a value identified by the `keyName` field from the `my-config-map` ConfigMap into a `foo`
-environment variable:
+The following configuration extracts a value identified by the `keyName` field from the `my-config-map` ConfigMap into a `foo` environment variable:
 
 [source,properties]
 ----
@@ -352,7 +457,7 @@ quarkus.openshift.env.mapping.foo.from-configmap=my-configmap
 quarkus.openshift.env.mapping.foo.with-key=keyName
 ----
 
-This would generate the following in the `env` section of your container:
+This configuration generates the following in the `env` section of your container:
 
 [source,yaml]
 ----
@@ -367,112 +472,137 @@ This would generate the following in the `env` section of your container:
 
 ==== Environment variables from fields
 
-It's also possible to use the value from another field to add a new environment variable by specifying the path of the field to be used as a source, as follows:
+You can also use the value from another field to add a new environment variable by specifying the path of the field to use as a source.
+For example:
 
 [source,properties]
 ----
 quarkus.openshift.env.fields.foo=metadata.name
 ----
 
-==== Changing the generated deployment resource
+==== Change the generated deployment resource
 
-Beside generating a `DeploymentConfig` resource, you can also choose to get either a `Deployment`, `StatefulSet`, or a `Job`, or a `CronJob` resource instead via `application.properties`:
+In addition to generating a `DeploymentConfig` resource, you can also choose to get either a `Deployment`, `StatefulSet`, or a `Job` or a `CronJob` resource instead by using `application.properties`:
 
 [source,properties]
 ----
 quarkus.openshift.deployment-kind=StatefulSet
 ----
 
-===== Using Deployment instead of DeploymentConfig
-Out of the box the extension will generate a `DeploymentConfig` resource. Often users, prefer to use `Deployment` as the main deployment resource, but still make use of OpenShift specific resources like `Route`, `BuildConfig` etc.
-This feature is enabled by setting `quarkus.openshift.deployment-kind` to `Deployment`.
+* Use Deployment resource instead of DeploymentConfig
++
+As an out-of-the-box feature, the `quarkus-extension` generates a `DeploymentConfig` resource.
+However, you might prefer to use `Deployment` as the main deployment resource, but still make use of OpenShift-specific resources, such as `Route`, `BuildConfig`, and so on.
++
+Enable the `Deployment` feature by setting the `quarkus.openshift.deployment-kind` property to `Deployment`.
++
+.Example
 
 [source,properties]
 ----
 quarkus.openshift.deployment-kind=Deployment
 ----
-
-Since `Deployment` is a Kubernetes resource and not OpenShift specific, it can't possibly leverage `ImageStream` resources, as is the case with `DeploymentConfig`. This means that the image references need to include the container image registry that hosts the image.
-When the image is built, using OpenShift builds (s2i binary and docker strategy) the OpenShift internal image registry `image-registry.openshift-image-registry.svc:5000` will be used, unless another registry has been explicitly specified by the user. Please note, that in the internal registry the project/namespace name is added as part of the image repository: `image-registry.openshift-image-registry.svc:5000/<project name>/<name>:<tag>`, so users will need to make sure that the target project/namespace name is aligned with the `quarkus.container-image.group`.
-
++
+As `Deployment` is a Kubernetes resource and not OpenShift specific, it cannot leverage `ImageStream` resources, as is the case with `DeploymentConfig`.
+This means that the image references must include the container image registry that hosts the image.
+When the image is built, using OpenShift builds (S2I binary and Docker strategy) the OpenShift internal image registry `image-registry.openshift-image-registry.svc:5000` is used, unless the user explicitly specifies another registry.
+In the internal registry, the project or namespace name is added as part of the image repository: `image-registry.openshift-image-registry.svc:5000/<project name>/<name>:<tag>`, so users must ensure that the target project or namespace name is aligned with the `quarkus.container-image.group`.
++
 [source,properties]
 ----
 quarkus.container-image.group=<project/namespace name>
 ----
 
-===== Generating Job resources
-
-If you want to generate a Job resource, you need to add the following property via the `application.properties`:
-
+* Generate Job resources
++
+If you want to generate a Job resource, add the following property to your `application.properties` file:
++
 [source,properties]
 ----
 quarkus.openshift.deployment-kind=Job
 ----
++
+[IMPORTANT]
+====
+If you are using the `Picocli` extension, the Job resource is generated by default.
+====
++
+You can use the `quarkus.openshift.arguments` property to provide the arguments that the Kubernetes job uses.
+For example, specify `quarkus.openshift.arguments=A,B`.
++
+Finally, the Kubernetes job launches every time that it is installed in OpenShift.
+For more information about how to run Kubernetes jobs, see the link:https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[Running an example job] topic in the Kubernetes documentation.
++
+You can configure the rest of the Kubernetes job configuration by using the properties under `quarkus.openshift.job.xxx`.
+For more information, see link:https://quarkus.io/guides/deploying-to-openshift#quarkus-openshift-openshift-config_quarkus.openshift.job.parallelism[quarkus.openshift.job.parallelism]).
 
-IMPORTANT: If you are using the Picocli extension, by default the Job resource will be generated.
-
-You can provide the arguments that will be used by the Kubernetes Job via the property `quarkus.openshift.arguments`. For example, adding the property `quarkus.openshift.arguments=A,B`.
-
-Finally, the Kubernetes job will be launched every time that is installed in OpenShift. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[link].
-
-You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.openshift.job.xxx` (see https://quarkus.io/guides/deploying-to-openshift#quarkus-openshift-openshift-config_quarkus.openshift.job.parallelism[link]).
-
-===== Generating CronJob resources
-
-If you want to generate a CronJob resource, you need to add the following property via the `application.properties`:
-
+* Generate CronJob resources
++
+If you want to generate a CronJob resource, add the following property to your `application.properties` file:
++
 [source,properties]
 ----
 quarkus.openshift.deployment-kind=CronJob
 # Cron expression to run the job every hour
 quarkus.openshift.cron-job.schedule=0 * * * *
 ----
-
-IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.openshift.cron-job.schedule`. If not provide, the build will fail.
-
-You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.openshift.cron-job.xxx` (see https://quarkus.io/guides/deploying-to-openshift#quarkus-openshift-openshift-config_quarkus.openshift.cron-job.parallelism[link]).
++
+[IMPORTANT]
+====
+CronJob resources require the link:https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when the `quarkus.openshift.cron-job.schedule` property starts the job, otherwise the build fails.
+====
++
+You can configure the rest of the Kubernetes CronJob configuration by using the properties under `quarkus.openshift.cron-job.xxx`.
+For more information, see link:https://quarkus.io/guides/deploying-to-openshift#quarkus-openshift-openshift-config_quarkus.openshift.cron-job.parallelism[quarkus.openshift.cron-job.parallelism]).
 
 ==== Validation
 
-A conflict between two definitions, e.g. mistakenly assigning both a value and specifying that a variable is derived from a field, will result in an error being thrown at build time so that you get the opportunity to fix the issue before you deploy your application to your cluster where it might be more difficult to diagnose the source of the issue.
+If a conflict between two definitions occurs, for example, if you mistakenly both assign a value and specify that a variable is derived from a field, an error is thrown at build time.
+By throwing the error at build time, you can fix the issue before you deploy your application to your cluster, where it might be more difficult to diagnose the source of the issue.
 
-Similarly, two redundant definitions, e.g. defining an injection from the same secret twice, will not cause an issue but will indeed report a warning to let you know that you might not have intended to duplicate that definition.
+Similarly, two redundant definitions, for example, defining an injection from the same secret twice, does not cause an issue but still reports a warning to inform you that you might not have intended to duplicate that definition.
 
 [#env-vars-backwards]
-===== Backwards compatibility
+==== Backwards compatibility
 
-Previous versions of the OpenShift extension supported a different syntax to add environment variables. The older syntax is still supported but is deprecated, and it's advised that you migrate to the new syntax.
+Previous versions of the OpenShift extension supported a different syntax to add environment variables.
+The older syntax is still supported, however it is deprecated.
+It is recommended that you migrate to the new syntax.
 
-.Old vs. new syntax
+.Comparison of syntax supported by earlier OpenShift extension versions and new syntax
 |====
-|                               |Old                                                    | New                                                 |
-| Plain variable                |`quarkus.openshift.env-vars.my-env-var.value=foobar`  | `quarkus.openshift.env.vars.my-env-var=foobar`     |
-| From field                    |`quarkus.openshift.env-vars.my-env-var.field=foobar`  | `quarkus.openshift.env.fields.my-env-var=foobar`   |
-| All from `ConfigMap`          |`quarkus.openshift.env-vars.xxx.configmap=foobar`     | `quarkus.openshift.env.configmaps=foobar`          |
-| All from `Secret`             |`quarkus.openshift.env-vars.xxx.secret=foobar`        | `quarkus.openshift.env.secrets=foobar`             |
-| From one `Secret` field       |`quarkus.openshift.env-vars.foo.secret=foobar`        | `quarkus.openshift.env.mapping.foo.from-secret=foobar` |
-|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field` |
-| From one `ConfigMap` field    |`quarkus.openshift.env-vars.foo.configmap=foobar`     | `quarkus.openshift.env.mapping.foo.from-configmap=foobar` |
-|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field` |
+| Variable details                              |Old syntax                                                    | New syntax
+| Plain variable                |`quarkus.openshift.env-vars.my-env-var.value=foobar`  | `quarkus.openshift.env.vars.my-env-var=foobar`
+| From field                    |`quarkus.openshift.env-vars.my-env-var.field=foobar`  | `quarkus.openshift.env.fields.my-env-var=foobar`
+| All from `ConfigMap`          |`quarkus.openshift.env-vars.xxx.configmap=foobar`     | `quarkus.openshift.env.configmaps=foobar`
+| All from `Secret`             |`quarkus.openshift.env-vars.xxx.secret=foobar`        | `quarkus.openshift.env.secrets=foobar`
+| From one `Secret` field       |`quarkus.openshift.env-vars.foo.secret=foobar`        | `quarkus.openshift.env.mapping.foo.from-secret=foobar`
+|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field`
+| From one `ConfigMap` field    |`quarkus.openshift.env-vars.foo.configmap=foobar`     | `quarkus.openshift.env.mapping.foo.from-configmap=foobar`
+|                               |`quarkus.openshift.env-vars.foo.value=field`          | `quarkus.openshift.env.mapping.foo.with-key=field`
 |====
 
-NOTE: If you redefine the same variable using the new syntax while keeping the old syntax, **ONLY** the new version will be kept, and a warning will be issued to alert you of the problem. For example, if you define both
-`quarkus.openshift.env-vars.my-env-var.value=foobar` and `quarkus.openshift.env.vars.my-env-var=newValue`, the extension will only generate an environment variable `MY_ENV_VAR=newValue` and issue a warning.
+[NOTE]
+====
+If you redefine the same variable by using the new syntax while also keeping the old syntax, **ONLY** the new version is kept and a warning is issued to alert you of the problem.
+For example, if you define both
+`quarkus.openshift.env-vars.my-env-var.value=foobar` and `quarkus.openshift.env.vars.my-env-var=newValue`, the extension only generates the `MY_ENV_VAR=newValue` environment variable and issues a warning.
+====
 
-=== Mounting volumes
+=== Mount volumes
 
-The OpenShift extension allows the user to configure both volumes and mounts for the application.
+You can use the OpenShift extension to configure both volumes and mounts for the application.
 
-Any volume can be mounted with a simple configuration:
+To mount any volume, specify the following configuration:
 
 [source,properties]
 ----
 quarkus.openshift.mounts.my-volume.path=/where/to/mount
 ----
 
-This will add a mount to my pod for volume `my-volume` to path `/where/to/mount`
+This configuration adds a mount to my pod for `my-volume` volume to `/where/to/mount` path.
 
-The volumes themselves can be configured as shown in the sections below:
+You can configure the volumes themselves as shown in the following sections:
 
 ==== Secret volumes
 
@@ -488,37 +618,23 @@ quarkus.openshift.secret-volumes.my-volume.secret-name=my-secret
 quarkus.openshift.config-map-volumes.my-volume.config-map-name=my-config-map
 ----
 
-==== Persistent Volume Claims
+==== Persistent volume claims
 
 [source,properties]
 ----
 quarkus.openshift.pvc-volumes.my-pvc.claim-name=my-pvc
 ----
 
-== Knative - OpenShift Serverless
+:sectnums!:
 
-OpenShift also provides the ability to use Knative via the link:https://www.openshift.com/learn/topics/serverless[OpenShift Serverless] functionality.
-
-The first order of business is to instruct Quarkus to generate Knative resources by setting:
-
-[source,properties]
-----
-quarkus.kubernetes.deployment-target=knative
-----
-
-In order to leverage OpenShift S2I to build the container image on the cluster and use the resulting container image for the Knative application,
-we need to set a couple of configuration properties:
-
-[source,properties]
-----
-# set the Kubernetes namespace which will be used to run the application
-quarkus.container-image.group=geoand
-# set the container image registry - this is the standard URL used to refer to the internal OpenShift registry
-quarkus.container-image.registry=image-registry.openshift-image-registry.svc:5000
-----
-
-The application can then be deployed to OpenShift Serverless by enabling the standard `quarkus.kubernetes.deploy=true` property.
-
-== Configuration Reference
+== Configuration properties
 
 include::{generated-dir}/config/quarkus-openshift-openshift-config.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* xref:container-image.adoc[Container images]
+* xref:cli-tooling.adoc[Building Quarkus Apps with Quarkus CLI]
+* xref:deploying-to-openshift.adoc[Deploy Quarkus applications to OpenShift Container Platform]
+* xref:deploying-native-executable-openshift.adoc[Deploy your Quarkus applications compiled to native executables]
+* xref:deploying-to-openshift-serveless.adoc[Deploy Quarkus applications as an OpenShift Serverless service]

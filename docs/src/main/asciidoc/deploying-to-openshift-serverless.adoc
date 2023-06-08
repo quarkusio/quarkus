@@ -1,0 +1,197 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="deploy-openshift-serverless"]
+= Deploy Quarkus applications as an OpenShift Serverless service
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: cloud,native
+
+Deploy your Quarkus applications to OpenShift Serverless by using the Docker build strategy.
+OpenShift provides the ability to use Knative by using OpenShift Serverless functionality.
+
+By using the Knative Serving feature of OpenShift Serverless, you can scale services up and down depending on the load size.
+Scaling down services that are currently not requested improves memory capabilities.
+
+[NOTE]
+====
+The Docker build strategy builds the artifacts outside the OpenShift Container Platform cluster, locally or in a continuous integration (CI) environment, and provides them to the OpenShift Container Platform build system together with a Dockerfile.
+For more information, see xref:deployment-to-openshift.adoc[Quarkus deployment to OpenShift].
+====
+
+Your Quarkus project includes pregenerated Dockerfiles with instructions.
+When you want to use a custom Dockerfile, you must add the file in the `src/main/docker` directory or anywhere inside the module.
+Additionally, you must set the path to your Dockerfile by using the `quarkus.openshift.jvm-dockerfile` property for JVM mode and `quarkus.openshift.native-dockerfile` property for native mode.
+
+To deploy a Serverless Quarkus Java application or a Serverless application compiled to a native executable by using the Quarkus OpenShift extension, complete the following steps.
+
+== Prerequisites
+
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+* Access to an OpenShift Container Platform cluster and the latest compatible version of the `oc` tool installed (Minishift is a viable option)
+* Access to the link:https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI] (Optional, only required for manual deployment)
+* Mandrel or GraalVM installed and configured appropriately
+For more information, see link:https://quarkus.io/guides/building-native-image#configuring-graalvm[Configuring GraalVM]
+* You have a Quarkus Maven project that includes the `quarkus-openshift` extension
+* You are working in the required OpenShift project namespace
+
+:sectnums:
+:sectnumlevels: 3
+
+== Log in to OpenShift Container Platform
+
+. Log in to OpenShift Container Platform by using the `oc` tool, and change to the directory that has your Quarkus Maven project.
+
+== Configure properties in the `application.properties` file
+
+Set the following properties in the `application.properties` file:
+
+.. Instruct Quarkus to generate Knative resources by setting Knative as a deployment target:
++
+[source,properties]
+----
+quarkus.kubernetes.deployment-target=knative
+----
+.. Set the Docker build strategy:
++
+[source, properties]
+----
+quarkus.openshift.build-strategy=docker
+----
+.. Direct OpenShift Serverless to pull your container image from the OpenShift internal registry.
+This is the standard URL used to refer to the internal OpenShift registry.
++
+[source,properties]
+----
+quarkus.container-image.registry=image-registry.openshift-image-registry.svc:5000
+----
++
+[NOTE]
+====
+If your OpenShift Container Platform `<project_name>` is different from the `username` of the host system, set the group for the container image otherwise Quarkus cannot pull the image from the image registry.
+
+[source,properties]
+----
+quarkus.container-image.group=<project_name>
+----
+====
+
+.. Optional: If you are using an untrusted certificate, configure the `KubernetesClient`:
++
+[source,properties]
+----
+quarkus.kubernetes-client.trust-certs=true
+----
+
+.. Optional: Expose the service to create an OpenShift Container Platform route:
++
+[source,properties]
+----
+quarkus.openshift.route.expose=true
+----
+
+.. Optional: Set the path to your custom Dockerfile:
++
+[source,properties,subs="attributes+,+quotes"]
+----
+quarkus.openshift.jvm-dockerfile=<path_to_your_dockerfile>
+----
++
+The following example shows the path to the `Dockerfile.custom-jvm`:
++
+[source,properties]
+----
+quarkus.openshift.jvm-dockerfile=src/main/resources/Dockerfile.custom-jvm
+----
+
+== Optional: Deploy a Serverless application compiled to a native executable
+
+To deploy a Serverless application compiled to a native executable, configure the following properties:
+
+.. Set the container runtime:
++
+[source,properties]
+----
+quarkus.native.container-build=true
+----
+
+.. Specify the container engine:
+
+*** To build a native executable with Podman:
++
+[source,properties]
+----
+quarkus.native.container-runtime=podman
+----
+
+*** To build a native executable with Docker:
++
+[source,properties]
+----
+quarkus.native.container-runtime=docker
+----
+
+.. Optional: Set the path to your custom Dockerfile:
++
+[source,properties,subs="attributes+,+quotes"]
+----
+quarkus.openshift.native-dockerfile=<path_to_your_dockerfile>
+----
+
+== Package and deploy the Serverless application to OpenShift Container Platform
+
+Package and deploy your Serverless application to OpenShift Container Platform by using one of the following options:
+
+.. Deploy a Quarkus Java application:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+./mvnw clean package -Dquarkus.kubernetes.deploy=true
+----
+.. Deploy a Quarkus native application:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+./mvnw clean package -Pnative -Dquarkus.kubernetes.deploy=true
+----
+
+.. Deploy a Quarkus Java application by enabling the following property:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+quarkus.kubernetes.deploy=true property
+----
+
+== Verify your deployment
+
+. To view a list of pods associated with your current OpenShift project:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc get pods
+----
+. To retrieve the log output for your application's pod, enter the following command where `<pod_name>` is the name of the latest pod prefixed with the name of your application:
++
+[source,shell,subs="attributes+,+quotes"]
+----
+oc logs -f <pod_name>
+----
+
+== Optional: Customize your deployment
+
+For information about available customization options, see xref:deploying-to-openshift.adoc[Deploy Quarkus applications to OpenShift Container Platform].
+
+:sectnums!:
+
+== Configuration properties
+
+include::{generated-dir}/config/quarkus-openshift-openshift-config.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* link:https://www.openshift.com/learn/topics/serverless[OpenShift Serverless]
+* xref:cli-tooling.adoc[Building Quarkus Apps with Quarkus CLI]
+* xref:deploying-to-openshift.adoc[Deploy Quarkus applications to OpenShift Container Platform]

@@ -1,0 +1,98 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="deployment-to-openshift"]
+= Quarkus deployment to OpenShift
+include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: cloud,native
+
+Quarkus supports multiple deployment options to deploy Quarkus applications to OpenShift Container Platform.
+
+== Quarkus deployment to OpenShift overview
+
+OpenShift Container Platform is a Kubernetes-based platform for developing and running containerized applications.
+As an application developer, to deploy Quarkus applications OpenShift Container Platform, you first choose how you want to build the application, for example, by using the `quarkus-openshift` extension or the Quarkus CLI.
+Then, you choose how you want to build the container image.
+Finally, you choose how you want to deploy the application, for example, deploy to native executable or as an OpenShift Serverless service.
+
+You can build and deploy your Quarkus applications to OpenShift Container Platform in several ways:
+
+* By using the `quarkus-openshift` extension
++
+The OpenShift extension is a wrapper extension that brings together the xref:deploying-to-kubernetes.adoc[kubernetes] and xref:container-image.adoc#openshift[container-image-openshift] extensions with sensible default values, which help you to get started with Quarkus on OpenShift.
+The extension supports multiple deployment options, including an OpenShift binary build strategy or Docker build strategy.
+
+* By using the Quarkus CLI
++
+You can issue the `quarkus deploy` command to enable the deployment of Quarkus applications to platforms, such as Kubernetes or OpenShift Container Platform.
++
+By using the Quarkus CLI, you can deploy your Quarkus applications without needing to manually add or remove extensions to your project.
+Instead of needing to update your project configuration file (`application.properties` file), the Quarkus CLI provides a simpler approach to deploy your Quarkus applications.
++
+You can further simplify your use of the CLI by using the `--help` flag to get more information about commands or the autocompletion feature to help when issuing commands.
++
+For more information about the Quarkus CLI, see xref:cli-tooling.adoc[Building Quarkus apps with Quarkus CLI].
+
+* By using the Maven or Gradle plugins
++
+You can use the Maven and Gradle plugins to deploy Quarkus applications by running the provided deploy commands.
+For example, if you are using Maven, issue the `mvn quarkus:deploy` command.
+If you are using Gradle, issue the `gradle deploy` command.
+
+Use the information provided here to determine the strategy to use to build and deploy your Quarkus applications on OpenShift.
+
+[#overviewbuildstrategies]
+== OpenShift Container Platform build strategies overview
+
+OpenShift binary build:: This strategy leverages the OpenShift container image framework and uses a JAR file as input to the build process, which speeds up building and deploying your application.
+As an out-of-the-box feature, the OpenShift extension is configured to use the `quarkus-container-image-openshift` extension to build the container image inside the OpenShift cluster.
+For information about the OpenShift container image, see xref:container-image.adoc#openshift[container-image-openshift].
+
+non-OpenShift build:: As an alternative to the `quarkus-container-image-openshift` approach, Quarkus also supports the following extensions for building container images.
+
+- xref:container-image.adoc#docker[Container-image-docker]
+- xref:container-image.adoc#jib[Container-image-jib]
+- xref:container-image.adoc#buildpack[Container-image-buildpack]
+
+[NOTE]
+====
+The OpenShift Container Platform Docker build strategy is the preferred non-OpenShift build strategy because it supports Quarkus applications targeted for JVM or compiled to native executables.
+However, for compatibility with earlier Quarkus versions, the default build strategy is the OpenShift binary build.
+To select the OpenShift Container Platform Docker build strategy, use the `quarkus.openshift.build-strategy` property.
+====
+
+If you use a non-OpenShift container image extension, an `ImageStream` is created that points to an external `dockerImageRepository`.
+The image is built and pushed to the registry and the `ImageStream` populates the tags that are available in the `dockerImageRepository`.
+To select one of the above extensions to use to build the image, issue the following command and specify the corresponding `builder` value.
+
+For example, to select the `container-image-docker` extension, issue the following command:
+
+[source,bash]
+----
+quarkus.container-image.builder=docker
+----
+
+The Docker build strategy builds the artifacts outside the OpenShift Container Platform cluster, locally or in a continuous integration (CI) environment, and provides them to the OpenShift Container Platform build system together with a Dockerfile.
+The artifacts include JAR files or a native executable.
+The container gets built inside the OpenShift Container Platform cluster and is provided as an image stream.
+
+== Deployment options
+
+You can deploy a Quarkus application to OpenShift in different ways:
+
+* To deploy Quarkus applications to OpenShift Container Platform, see xref:deploying-to-openshift.adoc[Deploy Quarkus applications to OpenShift Container Platform].
+
+* To deploy Quarkus applications compiled to native executables, see xref:deploying-native-executable-openshift.adoc[Deploy your Quarkus applications compiled to native executables].
+
+* To deploy Quarkus applications as an OpenShift Serverless service, see xref:deploying-to-openshift-serveless.adoc[Deploy Quarkus applications as an OpenShift Serverless service].
+
+== References
+
+* xref:container-image.adoc[Container images]
+* xref:cli-tooling.adoc[Building Quarkus Apps with Quarkus CLI]
+* xref:deploying-to-openshift.adoc[Deploy Quarkus applications to OpenShift Container Platform]
+* xref:deploying-native-executable-openshift.adoc[Deploy your Quarkus applications compiled to native executables]
+* xref:deploying-to-openshift-serveless.adoc[Deploy Quarkus applications as an OpenShift Serverless service]

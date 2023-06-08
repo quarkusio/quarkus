@@ -45,7 +45,7 @@ public class AlternativePriorityResolutionTest {
         @Produces
         @Singleton
         @Alternative
-        @io.quarkus.arc.Priority(4)
+        @Priority(4)
         public MessageBean createBar() {
             return new MessageBean("jar");
         };

@@ -3,6 +3,7 @@ package io.quarkus.arc.test.decorators.generics;
 import java.util.List;
 import java.util.Set;
 
+import jakarta.annotation.Priority;
 import jakarta.decorator.Decorator;
 import jakarta.decorator.Delegate;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -15,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.Priority;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.test.ArcTestContainer;
 

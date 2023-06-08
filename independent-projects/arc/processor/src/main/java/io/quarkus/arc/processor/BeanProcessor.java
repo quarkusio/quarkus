@@ -23,9 +23,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.Priority;
-
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -39,6 +36,7 @@ import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 import io.quarkus.gizmo.BytecodeCreator;
+import jakarta.annotation.Priority;
 
 /**
  * An integrator should create a new instance of the bean processor using the convenient {@link Builder} and then invoke the
@@ -583,26 +581,6 @@ public class BeanProcessor {
                 Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations) {
             Objects.requireNonNull(additionalBeanDefiningAnnotations);
             this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
-            return this;
-        }
-
-        /**
-         * @deprecated use {@link #addStereotypeRegistrar(StereotypeRegistrar)};
-         *             this method will be removed at some time after Quarkus 3.0
-         */
-        @Deprecated
-        public Builder setAdditionalStereotypes(Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
-            Objects.requireNonNull(additionalStereotypes);
-            this.stereotypeRegistrars.add(new StereotypeRegistrar() {
-                @Override
-                public Set<DotName> getAdditionalStereotypes() {
-                    return additionalStereotypes.values()
-                            .stream()
-                            .flatMap(Collection::stream)
-                            .map(AnnotationInstance::name)
-                            .collect(Collectors.toSet());
-                }
-            });
             return this;
         }
 

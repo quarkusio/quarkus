@@ -7,6 +7,7 @@ import jakarta.inject.Singleton;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.fabric8.kubernetes.client.utils.KubernetesSerialization;
 import io.quarkus.arc.DefaultBean;
 
 @Singleton
@@ -17,8 +18,9 @@ public class KubernetesClientProducer {
     @DefaultBean
     @Singleton
     @Produces
-    public KubernetesClient kubernetesClient(Config config) {
-        client = new KubernetesClientBuilder().withConfig(config).build();
+    public KubernetesClient kubernetesClient(KubernetesSerialization kubernetesSerialization, Config config) {
+        client = new KubernetesClientBuilder()
+                .withKubernetesSerialization(kubernetesSerialization).withConfig(config).build();
         return client;
     }
 

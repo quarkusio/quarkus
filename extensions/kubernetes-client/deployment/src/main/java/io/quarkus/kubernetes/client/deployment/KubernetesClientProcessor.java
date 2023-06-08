@@ -52,8 +52,10 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.jackson.deployment.IgnoreJsonDeserializeClassBuildItem;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
+import io.quarkus.kubernetes.client.runtime.KubernetesClientObjectMapperProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesConfigProducer;
+import io.quarkus.kubernetes.client.runtime.KubernetesSerializationProducer;
 import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 
@@ -77,6 +79,9 @@ public class KubernetesClientProcessor {
     @BuildStep
     public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
             Capabilities capabilities) {
+        additionalBeanBuildItemBuildItem
+                .produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientObjectMapperProducer.class));
+        additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesSerializationProducer.class));
         // wire up the Config bean support
         additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesConfigProducer.class));
         // do not register our client producer if the openshift client is present, because it provides it too

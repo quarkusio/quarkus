@@ -14,9 +14,9 @@ public class JpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
     public static final JpaOperations INSTANCE = new JpaOperations();
 
     @Override
-    protected PanacheQueryImpl<?> createPanacheQuery(EntityManager em, String query, String orderBy,
+    protected PanacheQueryImpl<?> createPanacheQuery(EntityManager em, String query, String originalQuery, String orderBy,
             Object paramsArrayOrMap) {
-        return new PanacheQueryImpl<>(em, query, orderBy, paramsArrayOrMap);
+        return new PanacheQueryImpl<>(em, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 
     @Override

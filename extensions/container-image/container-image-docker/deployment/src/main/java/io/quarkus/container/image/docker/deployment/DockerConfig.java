@@ -59,6 +59,12 @@ public class DockerConfig {
     public Optional<String> executableName;
 
     /**
+     * Additional arbitrary arguments passed to the executable when building the container image.
+     */
+    @ConfigItem
+    public Optional<List<String>> additionalArgs;
+
+    /**
      * Configuration for Docker Buildx options
      */
     @ConfigItem

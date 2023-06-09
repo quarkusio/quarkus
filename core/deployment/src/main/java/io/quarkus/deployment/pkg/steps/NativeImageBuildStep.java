@@ -194,11 +194,15 @@ public class NativeImageBuildStep {
         Path outputDir = nativeImageSourceJarBuildItem.getPath().getParent();
         final String runnerJarName = runnerJar.getFileName().toString();
 
-        String noPIE = "";
+        String pie = "";
 
         boolean isContainerBuild = nativeImageRunner.isContainerBuild();
         if (!isContainerBuild && SystemUtils.IS_OS_LINUX) {
-            noPIE = detectNoPIE();
+            if (nativeConfig.pie().isPresent() && nativeConfig.pie().get()) {
+                pie = detectPIE();
+            } else {
+                pie = detectNoPIE();
+            }
         }
 
         String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
@@ -242,7 +246,7 @@ public class NativeImageBuildStep {
                     .setOutputDir(outputDir)
                     .setRunnerJarName(runnerJarName)
                     .setNativeImageName(nativeImageName)
-                    .setNoPIE(noPIE)
+                    .setPIE(pie)
                     .setGraalVMVersion(graalVMVersion)
                     .setNativeImageFeatures(nativeImageFeatures)
                     .setContainerBuild(isContainerBuild)
@@ -522,6 +526,10 @@ public class NativeImageBuildStep {
         return argument.length() == 0 ? testGCCArgument("-nopie") : argument;
     }
 
+    private static String detectPIE() {
+        return testGCCArgument("-pie");
+    }
+
     private static String testGCCArgument(String argument) {
         try {
             Process gcc = new ProcessBuilder("cc", "-v", "-E", argument, "-").start();
@@ -562,7 +570,7 @@ public class NativeImageBuildStep {
             private List<NativeImageFeatureBuildItem> nativeImageFeatures;
             private Path outputDir;
             private String runnerJarName;
-            private String noPIE = "";
+            private String pie = "";
             private GraalVM.Version graalVMVersion = null;
             private String nativeImageName;
             private boolean classpathIsBroken;
@@ -646,8 +654,8 @@ public class NativeImageBuildStep {
                 return this;
             }
 
-            public Builder setNoPIE(String noPIE) {
-                this.noPIE = noPIE;
+            public Builder setPIE(String pie) {
+                this.pie = pie;
                 return this;
             }
 
@@ -857,8 +865,8 @@ public class NativeImageBuildStep {
                 if (!inlineBeforeAnalysis) {
                     nativeImageArgs.add("-H:-InlineBeforeAnalysis");
                 }
-                if (!noPIE.isEmpty()) {
-                    nativeImageArgs.add("-H:NativeLinkerOption=" + noPIE);
+                if (!pie.isEmpty()) {
+                    nativeImageArgs.add("-H:NativeLinkerOption=" + pie);
                 }
 
                 if (!nativeConfig.enableIsolates()) {

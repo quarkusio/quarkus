@@ -138,6 +138,11 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
+    public Optional<Boolean> pie() {
+        return Optional.empty();
+    }
+
+    @Override
     public boolean remoteContainerBuild() {
         return false;
     }

@@ -727,9 +727,12 @@ public final class Beans {
             }
             if (Modifier.isFinal(beanClass.flags()) && classifier != null) {
                 // Client proxies and subclasses require a non-final class
-                if (bean.getDeployment().transformUnproxyableClasses) {
-                    bytecodeTransformerConsumer
-                            .accept(new BytecodeTransformer(beanClass.name().toString(), new FinalClassTransformFunction()));
+                if (beanClass.isRecord()) {
+                    errors.add(new DeploymentException(String.format(
+                            "%s bean must not be a record, because records are always final: %s", classifier, bean)));
+                } else if (bean.getDeployment().transformUnproxyableClasses) {
+                    bytecodeTransformerConsumer.accept(
+                            new BytecodeTransformer(beanClass.name().toString(), new FinalClassTransformFunction()));
                 } else if (failIfNotProxyable) {
                     errors.add(new DeploymentException(String.format("%s bean must not be final: %s", classifier, bean)));
                 } else {
@@ -819,10 +822,13 @@ public final class Beans {
             // null for primitive or array types, but those are covered above
             if (returnTypeClass != null && bean.getScope().isNormal() && !Modifier.isInterface(returnTypeClass.flags())) {
                 if (Modifier.isFinal(returnTypeClass.flags())) {
-                    if (bean.getDeployment().transformUnproxyableClasses) {
-                        bytecodeTransformerConsumer
-                                .accept(new BytecodeTransformer(returnTypeClass.name().toString(),
-                                        new FinalClassTransformFunction()));
+                    if (returnTypeClass.isRecord()) {
+                        errors.add(new DeploymentException(String.format(
+                                "%s must not have a type that is a record, because records are always final: %s",
+                                classifier, bean)));
+                    } else if (bean.getDeployment().transformUnproxyableClasses) {
+                        bytecodeTransformerConsumer.accept(
+                                new BytecodeTransformer(returnTypeClass.name().toString(), new FinalClassTransformFunction()));
                     } else if (failIfNotProxyable) {
                         errors.add(new DeploymentException(
                                 String.format("%s must not have a return type that is final: %s", classifier, bean)));

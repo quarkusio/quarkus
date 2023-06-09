@@ -5,12 +5,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URI;
 import java.util.Objects;
 
+import javax.xml.namespace.QName;
+
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.annotation.XmlRootElement;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,18 +32,24 @@ public class SimpleJaxbTest {
     @TestHTTPResource
     URI uri;
 
+    XmlClient client;
+
+    @BeforeEach
+    public void setup() {
+        client = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class);
+    }
+
     @Test
     void shouldConsumeXMLEntity() {
-        var dto = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
-                .dto();
-        assertThat(dto).isEqualTo(new Dto("foo", "bar"));
+        assertThat(client.dto()).isEqualTo(new Dto("foo", "bar"));
+        assertThat(client.createDto(new Dto("foo", "bar"))).isEqualTo(new Dto("foo", "bar"));
+        assertThat(client.createDto(new JAXBElement<>(new QName("Dto"), Dto.class, new Dto("foo", "bar"))))
+                .isEqualTo(new Dto("foo", "bar"));
     }
 
     @Test
     void shouldConsumePlainXMLEntity() {
-        var dto = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(XmlClient.class)
-                .plain();
-        assertThat(dto).isEqualTo(new Dto("foo", "bar"));
+        assertThat(client.plain()).isEqualTo(new Dto("foo", "bar"));
     }
 
     @Path("/xml")
@@ -47,6 +59,18 @@ public class SimpleJaxbTest {
         @Path("/dto")
         @Produces(MediaType.APPLICATION_XML)
         Dto dto();
+
+        @POST
+        @Path("/dto")
+        @Consumes(MediaType.APPLICATION_XML)
+        @Produces(MediaType.APPLICATION_XML)
+        Dto createDto(Dto dto);
+
+        @POST
+        @Path("/dto")
+        @Consumes(MediaType.APPLICATION_XML)
+        @Produces(MediaType.APPLICATION_XML)
+        Dto createDto(JAXBElement<Dto> dto);
 
         @GET
         @Path("/plain")
@@ -65,6 +89,14 @@ public class SimpleJaxbTest {
         @Path("/dto")
         public String dto() {
             return DTO_FOO_BAR;
+        }
+
+        @POST
+        @Consumes(MediaType.APPLICATION_XML)
+        @Produces(MediaType.APPLICATION_XML)
+        @Path("/dto")
+        public String dto(String dto) {
+            return dto;
         }
 
         @GET

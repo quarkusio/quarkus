@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.StringWriter;
 
+import javax.xml.namespace.QName;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.Consumes;
@@ -18,6 +20,7 @@ import jakarta.ws.rs.container.AsyncResponse;
 import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.xml.bind.JAXB;
+import jakarta.xml.bind.JAXBElement;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlRootElement;
@@ -178,6 +181,19 @@ public class SimpleXmlTest {
                 .body(is("bb"));
     }
 
+    @Test
+    public void testSupportReturningJaxbElement() {
+        Person response = RestAssured
+                .get("/simple/person-as-jaxb-element")
+                .then()
+                .statusCode(200)
+                .contentType(ContentType.XML)
+                .extract().as(Person.class);
+
+        assertEquals("Bob", response.getFirst());
+        assertEquals("Builder", response.getLast());
+    }
+
     private String toXml(Object person) {
         StringWriter sw = new StringWriter();
         JAXB.marshal(person, sw);
@@ -244,6 +260,13 @@ public class SimpleXmlTest {
             person.setFirst("Bob");
             person.setLast("Builder");
             return person;
+        }
+
+        @GET
+        @Produces(MediaType.APPLICATION_XML)
+        @Path("/person-as-jaxb-element")
+        public JAXBElement<Person> getPersonAsJaxbElement() {
+            return new JAXBElement<>(new QName("person"), Person.class, getPerson());
         }
 
         @POST

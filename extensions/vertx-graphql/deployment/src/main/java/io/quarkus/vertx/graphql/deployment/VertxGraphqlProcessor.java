@@ -22,7 +22,6 @@ import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
-// import io.vertx.ext.web.handler.graphql.impl.GraphQLInputDeserializer;
 import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
 
 class VertxGraphqlProcessor {
@@ -34,14 +33,18 @@ class VertxGraphqlProcessor {
     }
 
     @BuildStep
-    WebsocketSubProtocolsBuildItem websocketSubProtocols() {
+    WebsocketSubProtocolsBuildItem graphQLWSProtocol() {
+        return new WebsocketSubProtocolsBuildItem("graphql-transport-ws");
+    }
+
+    @BuildStep
+    WebsocketSubProtocolsBuildItem appoloWSProtocol() {
         return new WebsocketSubProtocolsBuildItem("graphql-ws");
     }
 
     @BuildStep
     List<ReflectiveClassBuildItem> registerForReflection() {
         return Arrays.asList(
-                //new ReflectiveClassBuildItem(true, true, GraphQLInputDeserializer.class.getName()),
                 ReflectiveClassBuildItem.builder(GraphQLBatch.class.getName()).methods().fields().build(),
                 ReflectiveClassBuildItem.builder(GraphQLQuery.class.getName()).methods().fields().build());
     }

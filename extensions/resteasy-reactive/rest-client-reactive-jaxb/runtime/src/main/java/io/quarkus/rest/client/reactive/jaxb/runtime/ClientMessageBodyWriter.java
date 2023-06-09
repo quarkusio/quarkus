@@ -46,11 +46,13 @@ public class ClientMessageBodyWriter implements MessageBodyWriter<Object> {
 
     protected void marshal(Object o, OutputStream outputStream) {
         try {
-            Object jaxbObject = o;
             Class<?> clazz = o.getClass();
-            XmlRootElement jaxbElement = clazz.getAnnotation(XmlRootElement.class);
-            if (jaxbElement == null) {
-                jaxbObject = new JAXBElement(new QName(Introspector.decapitalize(clazz.getSimpleName())), clazz, o);
+            Object jaxbObject = o;
+            if (!(o instanceof JAXBElement)) {
+                XmlRootElement jaxbElement = clazz.getAnnotation(XmlRootElement.class);
+                if (jaxbElement == null) {
+                    jaxbObject = new JAXBElement(new QName(Introspector.decapitalize(clazz.getSimpleName())), clazz, o);
+                }
             }
 
             marshaller.marshal(jaxbObject, outputStream);

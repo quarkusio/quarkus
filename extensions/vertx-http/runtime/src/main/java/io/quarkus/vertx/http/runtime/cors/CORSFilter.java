@@ -176,6 +176,12 @@ public class CORSFilter implements Handler<RoutingContext> {
             if (allowedMethods != null) {
                 response.headers().add(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowedMethods);
             }
+
+            //always set expose headers if present
+            if (exposedHeaders != null) {
+                response.headers().add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, exposedHeaders);
+            }
+
             //we check that the actual request matches the allowed methods and headers
             if (!isMethodAllowed(request.method())) {
                 LOG.debug("Method is not allowed");
@@ -214,10 +220,6 @@ public class CORSFilter implements Handler<RoutingContext> {
         //always set expose headers if present
         if (exposedHeaders != null) {
             response.headers().add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, exposedHeaders);
-        }
-
-        if (!isConfiguredWithWildcard(corsConfig.exposedHeaders)) {
-            response.headers().set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, this.exposedHeaders);
         }
 
     }

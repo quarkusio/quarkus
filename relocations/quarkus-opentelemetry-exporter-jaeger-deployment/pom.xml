@@ -15,7 +15,7 @@
         <relocation>
             <groupId>io.quarkiverse.opentelemetry.exporter</groupId>
             <artifactId>quarkus-opentelemetry-exporter-jaeger-deployment</artifactId>
-            <version>1.0.0</version>
+            <version>2.0.0.Final</version>
             <message>${project.groupId}:${project.artifactId}:${project.version} was relocated to io.quarkiverse.opentelemetry.exporter:${project.artifactId}:1.0.0 and is not managed by io.quarkus.platform:quarkus-bom:${project.version} anymore. Please, update the groupId and add the corresponding version to the dependency declaration in your project configuration. For more information about this change, please refer to https://github.com/quarkusio/quarkus/wiki/Migration-Guide-2.14</message>
         </relocation>
     </distributionManagement>

@@ -5120,11 +5120,6 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-context-propagation</artifactId>
-                <version>${resteasy.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.resteasy.spring</groupId>
                 <artifactId>resteasy-spring-web</artifactId>
                 <version>${resteasy-spring-web.version}</version>

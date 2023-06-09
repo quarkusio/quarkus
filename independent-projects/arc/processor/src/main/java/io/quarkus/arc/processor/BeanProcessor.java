@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -586,26 +585,6 @@ public class BeanProcessor {
             return this;
         }
 
-        /**
-         * @deprecated use {@link #addStereotypeRegistrar(StereotypeRegistrar)};
-         *             this method will be removed at some time after Quarkus 3.0
-         */
-        @Deprecated
-        public Builder setAdditionalStereotypes(Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
-            Objects.requireNonNull(additionalStereotypes);
-            this.stereotypeRegistrars.add(new StereotypeRegistrar() {
-                @Override
-                public Set<DotName> getAdditionalStereotypes() {
-                    return additionalStereotypes.values()
-                            .stream()
-                            .flatMap(Collection::stream)
-                            .map(AnnotationInstance::name)
-                            .collect(Collectors.toSet());
-                }
-            });
-            return this;
-        }
-
         public Builder addQualifierRegistrar(QualifierRegistrar qualifierRegistrar) {
             this.qualifierRegistrars.add(qualifierRegistrar);
             return this;
@@ -623,15 +602,6 @@ public class BeanProcessor {
 
         public Builder setOutput(ResourceOutput output) {
             this.output = output;
-            return this;
-        }
-
-        /**
-         * @deprecated annotation literal sharing is now always enabled, this method doesn't do anything
-         *             and will be removed at some time after Quarkus 3.0
-         */
-        @Deprecated
-        public Builder setSharedAnnotationLiterals(boolean sharedAnnotationLiterals) {
             return this;
         }
 

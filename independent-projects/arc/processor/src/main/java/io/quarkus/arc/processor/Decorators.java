@@ -61,9 +61,6 @@ final class Decorators {
             if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
             }
-            if (priority == null && annotation.name().equals(DotNames.ARC_PRIORITY)) {
-                priority = annotation.value().asInt();
-            }
             ScopeInfo scopeAnnotation = beanDeployment.getScope(annotation.name());
             if (scopeAnnotation != null && !BuiltinScope.DEPENDENT.is(scopeAnnotation)) {
                 throw new DefinitionException(

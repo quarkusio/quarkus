@@ -19,19 +19,6 @@ public class StereotypeInfo {
     // used to differentiate between standard stereotype and one that was added through StereotypeRegistrarBuildItem
     private final boolean isAdditionalStereotype;
 
-    /**
-     *
-     * @deprecated This constructor will be removed at some time after Quarkus 3.0
-     */
-    @Deprecated
-    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
-            Integer alternativePriority, boolean isNamed, boolean isAdditionalBeanDefiningAnnotation,
-            boolean isAdditionalStereotype,
-            ClassInfo target, boolean isInherited, List<AnnotationInstance> parentStereotypes) {
-        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, isAdditionalStereotype, target,
-                isInherited, parentStereotypes);
-    }
-
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority, boolean isNamed, boolean isAdditionalStereotype, ClassInfo target, boolean isInherited,
             List<AnnotationInstance> parentStereotypes) {
@@ -49,7 +36,7 @@ public class StereotypeInfo {
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
             Integer alternativePriority, boolean isNamed, ClassInfo target, boolean isInherited,
             List<AnnotationInstance> parentStereotype) {
-        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, false, target, isInherited,
+        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, target, isInherited,
                 parentStereotype);
     }
 
@@ -83,24 +70,6 @@ public class StereotypeInfo {
 
     public DotName getName() {
         return target.name();
-    }
-
-    /**
-     *
-     * @deprecated This method will be removed at some time after Quarkus 3.0
-     */
-    @Deprecated
-    public boolean isAdditionalBeanDefiningAnnotation() {
-        return false;
-    }
-
-    /**
-     * @deprecated use {@link #isAdditionalStereotype()};
-     *             this method will be removed at some time after Quarkus 3.0
-     */
-    @Deprecated
-    public boolean isAdditionalStereotypeBuildItem() {
-        return isAdditionalStereotype;
     }
 
     public boolean isAdditionalStereotype() {

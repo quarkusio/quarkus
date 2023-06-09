@@ -22,7 +22,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -60,7 +59,6 @@ import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.StereotypeInfo;
-import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -148,25 +146,6 @@ public class ArcProcessor {
                 .setDefaultScope(DotName.createSimple(ApplicationScoped.class.getName()))
                 .addBeanClasses(quarkusApplications)
                 .build();
-    }
-
-    @BuildStep
-    StereotypeRegistrarBuildItem convertLegacyAdditionalStereotypes(List<AdditionalStereotypeBuildItem> buildItems) {
-        return new StereotypeRegistrarBuildItem(new StereotypeRegistrar() {
-            @Override
-            public Set<DotName> getAdditionalStereotypes() {
-                Set<DotName> result = new HashSet<>();
-                for (AdditionalStereotypeBuildItem buildItem : buildItems) {
-                    result.addAll(buildItem.getStereotypes()
-                            .values()
-                            .stream()
-                            .flatMap(Collection::stream)
-                            .map(AnnotationInstance::name)
-                            .collect(Collectors.toSet()));
-                }
-                return result;
-            }
-        });
     }
 
     // PHASE 1 - build BeanProcessor

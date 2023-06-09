@@ -7,7 +7,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import io.quarkus.test.component.ConfigureMock;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.component.TestConfigProperty;
 import io.quarkus.test.component.beans.Charlie;
@@ -20,7 +20,7 @@ public class DeclarativeDependencyMockingTest {
     @Inject
     MyComponent myComponent;
 
-    @ConfigureMock
+    @InjectMock
     Charlie charlie;
 
     @Test

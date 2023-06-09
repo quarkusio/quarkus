@@ -2,8 +2,6 @@ package io.quarkus.runtime.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.UUID;
-
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.LaunchMode;
@@ -15,7 +13,7 @@ public class UUIDPropertyTest {
 
     private SmallRyeConfig buildConfig() {
         final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withDefaultValue(ConfigUtils.UUID_KEY, UUID.randomUUID().toString());
+        builder.withSources(QuarkusUUIDConfigSource.INSTANCE);
         final SmallRyeConfig config = builder.build();
         return config;
     }
@@ -24,7 +22,7 @@ public class UUIDPropertyTest {
     void testConfigSource() {
         SmallRyeConfig config = buildConfig();
         assertThat(config.getConfigSources()).isNotEmpty();
-        ConfigValue value = config.getConfigValue(ConfigUtils.UUID_KEY);
+        ConfigValue value = config.getConfigValue(QuarkusUUIDConfigSource.QUARKUS_UUID_CONFIG_KEY);
         assertThat(value).isNotNull();
         assertThat(value.getValue()).isNotNull().isNotBlank();
     }
@@ -33,7 +31,7 @@ public class UUIDPropertyTest {
     void testBuildTimeWithDevMode() {
         SmallRyeConfig config = ConfigUtils.configBuilder(false, LaunchMode.DEVELOPMENT).build();
         assertThat(config.getConfigSources()).isNotEmpty();
-        ConfigValue value = config.getConfigValue(ConfigUtils.UUID_KEY);
+        ConfigValue value = config.getConfigValue(QuarkusUUIDConfigSource.QUARKUS_UUID_CONFIG_KEY);
         assertThat(value).isNotNull();
         assertThat(value.getValue()).isNull();
     }

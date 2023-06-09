@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -300,7 +301,7 @@ public class ConfigurationProcessor {
     private ConfigValue getConfigValue(SmallRyeConfig config, String name) {
         try {
             return config.getConfigValue(name);
-        } catch (java.util.NoSuchElementException nse) {
+        } catch (NullPointerException | NoSuchElementException nse) {
             return null;
         }
     }

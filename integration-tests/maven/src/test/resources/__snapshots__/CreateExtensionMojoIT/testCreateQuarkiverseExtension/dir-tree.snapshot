@@ -1,6 +1,7 @@
 /
 quarkus-my-quarkiverse-ext/
 quarkus-my-quarkiverse-ext/.github/
+quarkus-my-quarkiverse-ext/.github/CODEOWNERS
 quarkus-my-quarkiverse-ext/.github/dependabot.yml
 quarkus-my-quarkiverse-ext/.github/project.yml
 quarkus-my-quarkiverse-ext/.github/workflows/

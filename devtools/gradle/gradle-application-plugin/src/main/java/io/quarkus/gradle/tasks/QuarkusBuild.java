@@ -308,6 +308,7 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
         getLogger().info("Synchronizing Quarkus build for {} packaging from {} and {} into {}", packageType(),
                 appBuildDir, depBuildDir, appTargetDir);
         getFileSystemOperations().sync(sync -> {
+            sync.eachFile(new CopyActionDeleteNonWriteableTarget(appTargetDir.toPath()));
             sync.into(appTargetDir);
             sync.from(appBuildDir, depBuildDir);
         });

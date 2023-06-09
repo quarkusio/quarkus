@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
+import io.quarkus.test.InjectMock;
+
 public class MockNotSharedForClassHierarchyTest {
 
     @RegisterExtension
@@ -18,7 +20,7 @@ public class MockNotSharedForClassHierarchyTest {
     @Inject
     Component component;
 
-    @ConfigureMock
+    @InjectMock
     Alpha alpha;
 
     @Test

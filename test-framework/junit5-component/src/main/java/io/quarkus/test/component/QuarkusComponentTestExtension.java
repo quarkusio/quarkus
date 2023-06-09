@@ -87,6 +87,7 @@ import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.Types;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
+import io.quarkus.test.InjectMock;
 import io.smallrye.common.annotation.Experimental;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -753,11 +754,11 @@ public class QuarkusComponentTestExtension
 
     private List<FieldInjector> injectFields(Class<?> testClass, Object testInstance) throws Exception {
         List<Class<? extends Annotation>> injectAnnotations;
-        Class<? extends Annotation> injectMock = loadInjectMock();
-        if (injectMock != null) {
-            injectAnnotations = List.of(Inject.class, ConfigureMock.class, injectMock);
+        Class<? extends Annotation> deprecatedInjectMock = loadDeprecatedInjectMock();
+        if (deprecatedInjectMock != null) {
+            injectAnnotations = List.of(Inject.class, InjectMock.class, deprecatedInjectMock);
         } else {
-            injectAnnotations = List.of(Inject.class, ConfigureMock.class);
+            injectAnnotations = List.of(Inject.class, InjectMock.class);
         }
         List<FieldInjector> injectedFields = new ArrayList<>();
         for (Field field : testClass.getDeclaredFields()) {
@@ -839,7 +840,7 @@ public class QuarkusComponentTestExtension
     }
 
     @SuppressWarnings("unchecked")
-    private Class<? extends Annotation> loadInjectMock() {
+    private Class<? extends Annotation> loadDeprecatedInjectMock() {
         try {
             return (Class<? extends Annotation>) Class.forName("io.quarkus.test.junit.mockito.InjectMock");
         } catch (Throwable e) {

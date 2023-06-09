@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import io.quarkus.arc.All;
-import io.quarkus.test.component.ConfigureMock;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.component.beans.Bravo;
 import io.quarkus.test.component.beans.Delta;
@@ -24,10 +24,10 @@ public class ListAllMockTest {
     @Inject
     ListAllComponent component;
 
-    @ConfigureMock
+    @InjectMock
     Delta delta;
 
-    @ConfigureMock
+    @InjectMock
     @SimpleQualifier
     Bravo bravo;
 

@@ -8,14 +8,15 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +60,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.junit.jupiter.api.extension.TestInstancePreDestroyCallback;
 
+import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ComponentsProvider;
@@ -78,6 +80,7 @@ import io.quarkus.arc.processor.BuildExtension.Key;
 import io.quarkus.arc.processor.BuiltinBean;
 import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.arc.processor.ResourceOutput;
@@ -553,7 +556,7 @@ public class QuarkusComponentTestExtension
                     long start = System.nanoTime();
                     List<BeanInfo> beans = context.beans().collect();
                     BeanDeployment beanDeployment = context.get(Key.DEPLOYMENT);
-                    List<InjectionPointInfo> unsatisfied = new ArrayList<>();
+                    Set<TypeAndQualifiers> unsatisfiedInjectionPoints = new HashSet<>();
                     boolean configInjectionPoint = false;
                     Set<TypeAndQualifiers> configPropertyInjectionPoints = new HashSet<>();
                     DotName configDotName = DotName.createSimple(Config.class);
@@ -564,10 +567,11 @@ public class QuarkusComponentTestExtension
                     // - find unsatisfied injection points
                     for (InjectionPointInfo injectionPoint : context.getInjectionPoints()) {
                         BuiltinBean builtin = BuiltinBean.resolve(injectionPoint);
-                        if (builtin != null && builtin != BuiltinBean.INSTANCE) {
+                        if (builtin != null && builtin != BuiltinBean.INSTANCE && builtin != BuiltinBean.LIST) {
                             continue;
                         }
-                        if (injectionPoint.getRequiredType().name().equals(configDotName)) {
+                        if (injectionPoint.getRequiredType().name().equals(configDotName)
+                                && injectionPoint.hasDefaultedQualifier()) {
                             configInjectionPoint = true;
                             continue;
                         }
@@ -576,38 +580,31 @@ public class QuarkusComponentTestExtension
                                     injectionPoint.getRequiredQualifiers()));
                             continue;
                         }
-                        if (isSatisfied(injectionPoint, beans, beanDeployment)) {
+                        Type requiredType = injectionPoint.getRequiredType();
+                        Set<AnnotationInstance> qualifiers = injectionPoint.getRequiredQualifiers();
+                        if (builtin == BuiltinBean.LIST) {
+                            // @All List<Delta> -> Delta
+                            requiredType = requiredType.asParameterizedType().arguments().get(0);
+                            qualifiers = new HashSet<>(qualifiers);
+                            qualifiers.removeIf(q -> q.name().equals(DotNames.ALL));
+                        }
+                        if (isSatisfied(requiredType, qualifiers, injectionPoint, beans, beanDeployment)) {
                             continue;
                         }
-                        unsatisfied.add(injectionPoint);
+                        if (requiredType.kind() == Kind.PRIMITIVE || requiredType.kind() == Kind.ARRAY) {
+                            throw new IllegalStateException(
+                                    "Found an unmockable unsatisfied injection point: " + injectionPoint.getTargetInfo());
+                        }
+                        unsatisfiedInjectionPoints.add(new TypeAndQualifiers(requiredType, qualifiers));
                         LOG.debugf("Unsatisfied injection point found: %s", injectionPoint.getTargetInfo());
                     }
 
-                    Set<TypeAndQualifiers> mockableInjectionPoints = new HashSet<>();
-
-                    for (Iterator<InjectionPointInfo> it = unsatisfied.iterator(); it.hasNext();) {
-                        InjectionPointInfo injectionPoint = it.next();
-
-                        Type requiredType = injectionPoint.getRequiredType();
-                        if (requiredType.kind() == Kind.PRIMITIVE || requiredType.kind() == Kind.ARRAY) {
-                            continue;
-                        }
-                        it.remove();
-                        mockableInjectionPoints.add(new TypeAndQualifiers(injectionPoint.getRequiredType(),
-                                injectionPoint.getRequiredQualifiers()));
-                    }
-
-                    if (!unsatisfied.isEmpty()) {
-                        throw new IllegalStateException("Found unmockable unsatisfied injection points:\n\t - " + unsatisfied
-                                .stream().map(InjectionPointInfo::getTargetInfo).collect(Collectors.joining("\n\t - ")));
-                    }
-
-                    for (TypeAndQualifiers typeAndQualifiers : mockableInjectionPoints) {
-                        ClassInfo implementationClass = computingIndex.getClassByName(typeAndQualifiers.type.name());
+                    for (TypeAndQualifiers unsatisfied : unsatisfiedInjectionPoints) {
+                        ClassInfo implementationClass = computingIndex.getClassByName(unsatisfied.type.name());
                         BeanConfigurator<Object> configurator = context.configure(implementationClass.name())
                                 .scope(Singleton.class)
-                                .addType(typeAndQualifiers.type);
-                        typeAndQualifiers.qualifiers.forEach(configurator::addQualifier);
+                                .addType(unsatisfied.type);
+                        unsatisfied.qualifiers.forEach(configurator::addQualifier);
                         configurator.param("implementationClass", implementationClass)
                                 .creator(MockBeanCreator.class)
                                 .defaultBean()
@@ -637,7 +634,7 @@ public class QuarkusComponentTestExtension
 
                     LOG.debugf("Test injection points analyzed in %s ms [found: %s, mocked: %s]",
                             TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), context.getInjectionPoints().size(),
-                            mockableInjectionPoints.size());
+                            unsatisfiedInjectionPoints.size());
                 }
             });
 
@@ -725,16 +722,18 @@ public class QuarkusComponentTestExtension
         }
     }
 
-    private boolean isSatisfied(InjectionPointInfo injectionPoint, Iterable<BeanInfo> beans, BeanDeployment beanDeployment) {
+    private boolean isSatisfied(Type requiredType, Set<AnnotationInstance> qualifiers, InjectionPointInfo injectionPoint,
+            Iterable<BeanInfo> beans,
+            BeanDeployment beanDeployment) {
         for (BeanInfo bean : beans) {
-            if (Beans.matches(bean, injectionPoint.getRequiredType(), injectionPoint.getRequiredQualifiers())) {
+            if (Beans.matches(bean, requiredType, qualifiers)) {
                 LOG.debugf("Injection point %s satisfied by %s", injectionPoint.getTargetInfo(),
                         bean.toString());
                 return true;
             }
         }
         for (MockBeanConfiguratorImpl<?> mock : mockConfigurators) {
-            if (mock.matches(beanDeployment.getBeanResolver(), injectionPoint)) {
+            if (mock.matches(beanDeployment.getBeanResolver(), requiredType, qualifiers)) {
                 LOG.debugf("Injection point %s satisfied by %s", injectionPoint.getTargetInfo(),
                         mock);
                 return true;
@@ -775,38 +774,62 @@ public class QuarkusComponentTestExtension
     static class FieldInjector {
 
         private final Field field;
-        private final InstanceHandle<?> handle;
+        private final List<InstanceHandle<?>> unsetHandles;
 
         public FieldInjector(Field field, Object testInstance) throws Exception {
+            this.field = field;
+
             ArcContainer container = Arc.container();
             BeanManager beanManager = container.beanManager();
+            java.lang.reflect.Type requiredType = field.getGenericType();
+            Annotation[] qualifiers = getQualifiers(field, beanManager);
 
-            this.field = field;
-            this.handle = container.instance(field.getGenericType(), getQualifiers(field, beanManager));
+            Object injectedInstance;
 
-            if (field.isAnnotationPresent(Inject.class)) {
-                if (handle.getBean().getKind() == io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
-                    throw new IllegalStateException(String
-                            .format("The injected field %s expects a real component; but obtained: %s", field,
-                                    handle.getBean()));
+            if (qualifiers.length > 0 && Arrays.stream(qualifiers).anyMatch(All.Literal.INSTANCE::equals)) {
+                // Special handling for @Injec @All List
+                if (isListRequiredType(requiredType)) {
+                    List<InstanceHandle<Object>> handles = container.listAll(requiredType, qualifiers);
+                    if (isTypeArgumentInstanceHandle(requiredType)) {
+                        injectedInstance = handles;
+                    } else {
+                        injectedInstance = handles.stream().map(InstanceHandle::get).collect(Collectors.toUnmodifiableList());
+                    }
+                    unsetHandles = cast(handles);
+                } else {
+                    throw new IllegalStateException("Invalid injection point type: " + field);
                 }
             } else {
-                if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
-                    throw new IllegalStateException(String
-                            .format("The injected field %s expects a mocked bean; but obtained: %s", field, handle.getBean()));
+                InstanceHandle<?> handle = container.instance(requiredType, qualifiers);
+                if (field.isAnnotationPresent(Inject.class)) {
+                    if (handle.getBean().getKind() == io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
+                        throw new IllegalStateException(String
+                                .format("The injected field %s expects a real component; but obtained: %s", field,
+                                        handle.getBean()));
+                    }
+                } else {
+                    if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
+                        throw new IllegalStateException(String
+                                .format("The injected field %s expects a mocked bean; but obtained: %s", field,
+                                        handle.getBean()));
+                    }
                 }
+                injectedInstance = handle.get();
+                unsetHandles = List.of(handle);
             }
 
             field.setAccessible(true);
-            field.set(testInstance, handle.get());
+            field.set(testInstance, injectedInstance);
         }
 
         void unset(Object testInstance) throws Exception {
-            if (handle.getBean() != null && handle.getBean().getScope().equals(Dependent.class)) {
-                try {
-                    handle.destroy();
-                } catch (Exception e) {
-                    LOG.errorf(e, "Unable to destroy the injected %s", handle.getBean());
+            for (InstanceHandle<?> handle : unsetHandles) {
+                if (handle.getBean() != null && handle.getBean().getScope().equals(Dependent.class)) {
+                    try {
+                        handle.destroy();
+                    } catch (Exception e) {
+                        LOG.errorf(e, "Unable to destroy the injected %s", handle.getBean());
+                    }
                 }
             }
             field.setAccessible(true);
@@ -822,6 +845,23 @@ public class QuarkusComponentTestExtension
         } catch (Throwable e) {
             return null;
         }
+    }
+
+    private static boolean isListRequiredType(java.lang.reflect.Type type) {
+        if (type instanceof ParameterizedType) {
+            final ParameterizedType parameterizedType = (ParameterizedType) type;
+            return List.class.equals(parameterizedType.getRawType());
+        }
+        return false;
+    }
+
+    private static boolean isTypeArgumentInstanceHandle(java.lang.reflect.Type type) {
+        // List<String> -> String
+        java.lang.reflect.Type typeArgument = ((ParameterizedType) type).getActualTypeArguments()[0];
+        if (typeArgument instanceof ParameterizedType) {
+            return ((ParameterizedType) typeArgument).getRawType().equals(InstanceHandle.class);
+        }
+        return false;
     }
 
     private boolean resolvesToBuiltinBean(Class<?> rawType) {

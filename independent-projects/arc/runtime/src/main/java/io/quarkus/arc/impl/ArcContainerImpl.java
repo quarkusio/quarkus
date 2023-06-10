@@ -354,13 +354,17 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public <T> List<InstanceHandle<T>> listAll(Class<T> type, Annotation... qualifiers) {
-        return Instances.listOfHandles(CurrentInjectionPointProvider.EMPTY_SUPPLIER, type, Set.of(qualifiers),
-                new CreationalContextImpl<>(null));
+        return listAll((Type) type, qualifiers);
     }
 
     @Override
     public <T> List<InstanceHandle<T>> listAll(TypeLiteral<T> type, Annotation... qualifiers) {
-        return Instances.listOfHandles(CurrentInjectionPointProvider.EMPTY_SUPPLIER, type.getType(), Set.of(qualifiers),
+        return listAll(type.getType(), qualifiers);
+    }
+
+    @Override
+    public <X> List<InstanceHandle<X>> listAll(Type type, Annotation... qualifiers) {
+        return Instances.listOfHandles(CurrentInjectionPointProvider.EMPTY_SUPPLIER, type, Set.of(qualifiers),
                 new CreationalContextImpl<>(null));
     }
 

@@ -71,6 +71,7 @@ public class KnativeWithHealthUsingManagementInterfaceTest {
                                     assertNotNull(p.getHttpGet());
                                     assertNull(p.getHttpGet().getPort());
                                 });
+                                assertThat(c.getStartupProbe()).isNull();
                             });
                         });
                     });

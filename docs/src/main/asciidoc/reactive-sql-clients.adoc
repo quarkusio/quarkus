@@ -698,7 +698,10 @@ A typical configuration with several connections would look like:
 ----
 quarkus.datasource.reactive.url=postgresql://host1:5432/default,postgresql://host2:5432/default,postgresql://host3:5432/default
 ----
+
 This can also be written with indexed property syntax:
+
+[source,properties]
 ----
 quarkus.datasource.reactive.url[0]=postgresql://host1:5432/default
 quarkus.datasource.reactive.url[1]=postgresql://host2:5432/default
@@ -770,6 +773,58 @@ public class CustomPgPoolCreator implements PgPoolCreator {
     }
 }
 ----
+
+== Pipelining
+
+The PostgreSQL and MariaDB/MySQL clients support pipelining of queries at the connection level.
+The feature consists in sending multiple queries on the same database connection without waiting for the corresponding responses.
+
+In some use cases, query pipelining can improve database access performance.
+
+Here's an example for PostgreSQL:
+
+[source,java]
+----
+import jakarta.inject.Inject;
+
+import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.pgclient.PgPool;
+
+public class PipeliningExample {
+
+    @Inject
+    PgPool client;
+
+    public Uni<String> favoriteFruitAndVegetable() {
+        // Explicitely acquire a connection
+        return client.withConnection(conn -> {
+            Uni<String> favoriteFruit = conn.query("SELECT name FROM fruits WHERE preferred IS TRUE").execute()
+                    .onItem().transform(rows -> rows.iterator().next().getString("name"));
+            Uni<String> favoriteVegetable = conn.query("SELECT name FROM vegetables WHERE preferred IS TRUE").execute()
+                    .onItem().transform(rows -> rows.iterator().next().getString("name"));
+            // favoriteFruit and favoriteVegetable unis will be subscribed at the same time
+            return Uni.combine().all().unis(favoriteFruit, favoriteVegetable)
+                    .combinedWith(PipeliningExample::formatMessage);
+        });
+    }
+
+    private static String formatMessage(String fruit, String vegetable) {
+        return String.format("The favorite fruit is %s and the favorite vegetable is %s", fruit, vegetable);
+    }
+}
+----
+
+The maximum number of pipelined queries is configured with the `pipelining-limit` property:
+
+[source,properties]
+----
+# For PostgreSQL
+quarkus.datasource.reactive.postgresql.pipelining-limit=256
+# For MariaDB/MySQL
+quarkus.datasource.reactive.mysql.pipelining-limit=256
+----
+
+By default, `pipelining-limit` is set to 256.
 
 == Configuration Reference
 

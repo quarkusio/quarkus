@@ -36,6 +36,7 @@ import io.dekorate.utils.Strings;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -94,7 +95,7 @@ class KubernetesProcessor {
         }
     }
 
-    @BuildStep(onlyIfNot = IsTest.class)
+    @BuildStep(onlyIfNot = { IsTest.class, IsDevelopment.class })
     public void build(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget,
             List<UberJarRequiredBuildItem> uberJarRequired,

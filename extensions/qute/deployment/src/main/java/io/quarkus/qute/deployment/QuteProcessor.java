@@ -1711,11 +1711,17 @@ public class QuteProcessor {
             List<PanacheEntityClassesBuildItem> panacheEntityClasses,
             List<TemplateDataBuildItem> templateData,
             List<TemplateGlobalBuildItem> templateGlobals,
+            List<IncorrectExpressionBuildItem> incorrectExpressions,
             LiveReloadBuildItem liveReloadBuildItem,
             CompletedApplicationClassPredicateBuildItem applicationClassPredicate,
             BuildProducer<GeneratedValueResolverBuildItem> generatedResolvers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<GeneratedTemplateInitializerBuildItem> generatedInitializers) {
+
+        if (!incorrectExpressions.isEmpty()) {
+            // Skip generation if a validation error occurs
+            return;
+        }
 
         IndexView index = beanArchiveIndex.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClasses, new Function<String, String>() {

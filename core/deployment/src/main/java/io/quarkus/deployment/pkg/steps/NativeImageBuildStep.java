@@ -900,10 +900,13 @@ public class NativeImageBuildStep {
                 } else {
                     nativeImageArgs.add("-H:-UseServiceLoaderFeature");
                 }
-                if (nativeConfig.fullStackTraces()) {
-                    nativeImageArgs.add("-H:+StackTrace");
-                } else {
-                    nativeImageArgs.add("-H:-StackTrace");
+                // This option has no effect on GraalVM 23.1+
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) < 0) {
+                    if (nativeConfig.fullStackTraces()) {
+                        nativeImageArgs.add("-H:+StackTrace");
+                    } else {
+                        nativeImageArgs.add("-H:-StackTrace");
+                    }
                 }
 
                 if (nativeConfig.enableDashboardDump()) {

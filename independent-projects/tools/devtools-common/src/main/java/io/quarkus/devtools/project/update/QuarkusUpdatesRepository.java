@@ -77,7 +77,8 @@ public final class QuarkusUpdatesRepository {
                     targetVersion,
                     buildTool,
                     propRewritePluginVersion));
-            return new FetchResult(recipes, propRewritePluginVersion);
+            return new FetchResult(artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion(),
+                    recipes, propRewritePluginVersion);
         } catch (BootstrapMavenException e) {
             throw new RuntimeException("Failed to resolve artifact: " + gav, e);
         } catch (IOException e) {
@@ -101,12 +102,18 @@ public final class QuarkusUpdatesRepository {
 
     public static class FetchResult {
 
+        private final String recipesGAV;
         private final List<String> recipes;
         private final String rewritePluginVersion;
 
-        public FetchResult(List<String> recipes, String rewritePluginVersion) {
+        public FetchResult(String recipesGAV, List<String> recipes, String rewritePluginVersion) {
+            this.recipesGAV = recipesGAV;
             this.rewritePluginVersion = rewritePluginVersion;
             this.recipes = recipes;
+        }
+
+        public String getRecipesGAV() {
+            return recipesGAV;
         }
 
         public List<String> getRecipes() {

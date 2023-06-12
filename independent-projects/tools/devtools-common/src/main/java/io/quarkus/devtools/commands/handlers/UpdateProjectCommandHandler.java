@@ -98,6 +98,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                             buildTool,
                             quarkusProject.getProjectDirPath(),
                             rewritePluginVersion,
+                            fetchResult.getRecipesGAV(),
                             recipe,
                             rewriteDryRun);
                 } catch (IOException e) {

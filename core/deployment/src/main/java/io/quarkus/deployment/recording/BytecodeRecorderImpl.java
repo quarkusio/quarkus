@@ -1531,8 +1531,13 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             } else if (Set.class.isAssignableFrom(expectedType)) {
                                 out = method.newInstance(ofConstructor(LinkedHashSet.class));
                             } else {
-                                throw new RuntimeException("Unable to serialize objects of type " + param.getClass()
-                                        + " to bytecode as it has no default constructor");
+                                if (param.getClass().isAnonymousClass()) {
+                                    throw new RuntimeException(
+                                            "Bytecode recording of anonymous classes created at build time is not supported - please use a regular class that is present on the runtime classpath");
+                                } else {
+                                    throw new RuntimeException("Unable to serialize objects of type " + param.getClass()
+                                            + " to bytecode as it has no default constructor");
+                                }
                             }
                         }
                     }

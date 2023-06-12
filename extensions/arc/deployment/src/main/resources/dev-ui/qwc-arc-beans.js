@@ -4,6 +4,7 @@ import { beans } from 'build-time-data';
 import '@vaadin/grid';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
+import 'qui-ide-link';
 
 /**
  * This component shows the Arc Beans
@@ -73,7 +74,9 @@ export class QwcArcBeans extends LitElement {
       ${bean.nonDefaultQualifiers.map(qualifier =>
             html`${this._qualifierRenderer(qualifier)}`
         )}
-      <code>${bean.providerType.name}</code>
+        <qui-ide-link fileName='${bean.providerType.name}'
+                        lineNumber=0><code>${bean.providerType.name}</code></qui-ide-link>
+      
       </vaadin-vertical-layout>`;
     }
 

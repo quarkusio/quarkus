@@ -4,6 +4,7 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import '@vaadin/grid';
 import '@vaadin/vertical-layout';
 import 'qui-badge';
+import 'qui-ide-link';
 
 /**
  * This component shows the Arc Observers
@@ -89,9 +90,8 @@ export class QwcArcObservers extends LitElement {
   }
 
   _sourceRenderer(bean){
-    return html`
-      <code>${bean.declaringClass.name}</code><code class="method">#${bean.methodName}()</code>
-    `;
+    return html`<qui-ide-link fileName='${bean.declaringClass.name}'
+                              lineNumber=0><code>${bean.declaringClass.name}</code><code class="method">#${bean.methodName}()</code></qui-ide-link>`;
   }
 
   _typeRenderer(bean){

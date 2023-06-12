@@ -52,7 +52,11 @@ public interface JsonMapper {
 
                     @Override
                     public <T> T fromValue(Object json, Class<T> target) {
-                        return target.cast(fromValue.apply(json, target));
+                        if (target.isPrimitive()) {
+                            return (T) json;
+                        } else {
+                            return target.cast(fromValue.apply(json, target));
+                        }
                     }
                 };
             }

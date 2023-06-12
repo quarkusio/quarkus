@@ -1540,6 +1540,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                                 }
                             }
                         }
+                        if (isLambda(param.getClass())) {
+                            throw new RuntimeException(
+                                    "Bytecode recording of lambda classes created at build time is not supported - please use a regular class that is present on the runtime classpath");
+                        }
                     }
                 }
                 return out;
@@ -1577,6 +1581,14 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return context.loadDeferred(objectValue);
             }
         };
+    }
+
+    @SuppressWarnings("rawtypes")
+    // there is no real official solution for this (as discussed in https://stackoverflow.com/a/23870800/2504224),
+    // but this way seems to work for all intents and purposes
+    private static boolean isLambda(Class clazz) {
+        return clazz.isSynthetic() && (clazz.getSuperclass() == Object.class) &&
+                (clazz.getInterfaces().length > 0) && clazz.getName().contains("$$Lambda");
     }
 
     /**

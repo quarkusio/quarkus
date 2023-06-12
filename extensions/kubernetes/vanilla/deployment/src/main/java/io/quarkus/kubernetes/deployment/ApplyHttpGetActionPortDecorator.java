@@ -1,23 +1,34 @@
 package io.quarkus.kubernetes.deployment;
 
+import static io.dekorate.ConfigReference.joinProperties;
 import static io.dekorate.utils.Metadata.getMetadata;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.dekorate.ConfigReference;
+import io.dekorate.WithConfigReferences;
 import io.dekorate.kubernetes.decorator.AbstractAddProbeDecorator;
 import io.dekorate.kubernetes.decorator.AddSidecarDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.dekorate.kubernetes.decorator.ResourceProvidingDecorator;
+import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.builder.Builder;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.HTTPGetActionFluent;
 
-public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFluent<?>> {
+public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFluent<?>> implements WithConfigReferences {
+
+    private static final String PATH_ALL_EXPRESSION = "*.spec.containers.";
+    private static final String PATH_DEPLOYMENT_CONTAINER_EXPRESSION = "(metadata.name == %s).spec.template.spec.containers.(name == %s).";
+    private static final String PATH_DEPLOYMENT_EXPRESSION = "(metadata.name == %s).spec.template.spec.containers.";
+    private static final String PATH_CONTAINER_EXPRESSION = "*.spec.containers.(name == %s).";
 
     private final String deployment;
     private final String container;
+    private final String portName;
     private final Integer port;
     private final String scheme;
     private final String probeKind;
@@ -43,12 +54,14 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
     }
 
     public ApplyHttpGetActionPortDecorator(String deployment, String container, Integer port, String probeKind) {
-        this(deployment, container, port, probeKind, port != null && (port == 443 || port == 8443) ? "HTTPS" : "HTTP"); // this is the original convention coming from dekorate
+        this(deployment, container, null, port, probeKind, port != null && (port == 443 || port == 8443) ? "HTTPS" : "HTTP"); // this is the original convention coming from dekorate
     }
 
-    public ApplyHttpGetActionPortDecorator(String deployment, String container, Integer port, String probeKind, String scheme) {
+    public ApplyHttpGetActionPortDecorator(String deployment, String container, String portName, Integer port, String probeKind,
+            String scheme) {
         this.deployment = deployment;
         this.container = container;
+        this.portName = portName;
         this.port = port;
         this.probeKind = probeKind;
         this.scheme = scheme;
@@ -106,5 +119,29 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
     @Override
     public Class<? extends Decorator>[] after() {
         return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class, AbstractAddProbeDecorator.class };
+    }
+
+    @Override
+    public List<ConfigReference> getConfigReferences() {
+        if (portName != null && probeKind != null) {
+            return List.of(buildConfigReference(joinProperties("ports." + portName),
+                    "httpGet.port", port, "The http port to use for the probe."));
+        }
+
+        return Collections.emptyList();
+    }
+
+    private ConfigReference buildConfigReference(String property, String probeField, Object value, String description) {
+        String expression = PATH_ALL_EXPRESSION;
+        if (Strings.isNotNullOrEmpty(deployment) && Strings.isNotNullOrEmpty(container)) {
+            expression = String.format(PATH_DEPLOYMENT_CONTAINER_EXPRESSION, deployment, container);
+        } else if (Strings.isNotNullOrEmpty(deployment)) {
+            expression = String.format(PATH_DEPLOYMENT_EXPRESSION, deployment);
+        } else if (Strings.isNotNullOrEmpty(container)) {
+            expression = String.format(PATH_CONTAINER_EXPRESSION, container);
+        }
+
+        String yamlPath = expression + probeKind + "." + probeField;
+        return new ConfigReference.Builder(property, yamlPath).withDescription(description).withValue(value).build();
     }
 }

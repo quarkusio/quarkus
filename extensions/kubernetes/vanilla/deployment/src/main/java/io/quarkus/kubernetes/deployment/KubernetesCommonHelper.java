@@ -971,16 +971,23 @@ public class KubernetesCommonHelper {
                 .or(() -> portName.map(KubernetesProbePortNameBuildItem::getName))
                 .orElse(HTTP_PORT);
 
-        Integer port = probeConfig.httpActionPort
-                .orElse(ports.stream().filter(p -> httpPortName.equals(p.getName()))
-                        .map(KubernetesPortBuildItem::getPort).findFirst().orElse(DEFAULT_HTTP_PORT));
+        Integer port;
+        PortConfig portFromConfig = portsFromConfig.get(httpPortName);
+        if (probeConfig.httpActionPort.isPresent()) {
+            port = probeConfig.httpActionPort.get();
+        } else if (portFromConfig != null && portFromConfig.containerPort.isPresent()) {
+            port = portFromConfig.containerPort.getAsInt();
+        } else {
+            port = ports.stream().filter(p -> httpPortName.equals(p.getName()))
+                    .map(KubernetesPortBuildItem::getPort).findFirst().orElse(DEFAULT_HTTP_PORT);
+        }
 
         // Resolve scheme property from:
         String scheme;
         if (probeConfig.httpActionScheme.isPresent()) {
             // 1. User in Probe config
             scheme = probeConfig.httpActionScheme.get();
-        } else if (portsFromConfig.containsKey(httpPortName) && portsFromConfig.get(httpPortName).tls) {
+        } else if (portFromConfig != null && portFromConfig.tls) {
             // 2. User in Ports config
             scheme = SCHEME_HTTPS;
         } else if (portName.isPresent()
@@ -993,7 +1000,9 @@ public class KubernetesCommonHelper {
             scheme = port != null && (port == 443 || port == 8443) ? SCHEME_HTTPS : SCHEME_HTTP;
         }
 
-        return new DecoratorBuildItem(target, new ApplyHttpGetActionPortDecorator(name, name, port, probeKind, scheme));
+        // Applying to all deployments to mimic the same logic as the rest of probes in the method createProbeDecorators.
+        return new DecoratorBuildItem(target,
+                new ApplyHttpGetActionPortDecorator(ANY, name, httpPortName, port, probeKind, scheme));
     }
 
     /**

@@ -292,6 +292,11 @@ public class PackageConfig {
         return type.equalsIgnoreCase(PackageConfig.BuiltInType.UBER_JAR.getValue());
     }
 
+    public boolean isNativeOrNativeSources() {
+        return type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE.getValue())
+                || type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE_SOURCES.getValue());
+    }
+
     public String getRunnerSuffix() {
         return addRunnerSuffix ? runnerSuffix : "";
     }

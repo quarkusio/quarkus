@@ -265,7 +265,7 @@ APIs are not configuration aware and do not support the features described in th
 [[profiles]]
 == Profiles
 
-We often need to configure differently our application depending on the target _environment_. For example, the local
+We often need to configure our application differently depending on the target _environment_. For example, the local
 development environment may be different from the production environment.
 
 Configuration Profiles allow for multiple configurations in the same file or separate files and select between them via

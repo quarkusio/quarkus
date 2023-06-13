@@ -298,7 +298,7 @@ public class TestTracingProcessor {
 
         @Override
         protected void configure(TestSupport testSupport) {
-            testSupport.setPatterns(pattern, testSupport.exclude.pattern());
+            testSupport.setPatterns(pattern, testSupport.exclude != null ? testSupport.exclude.pattern() : null);
         }
     }
 
@@ -320,7 +320,7 @@ public class TestTracingProcessor {
 
         @Override
         protected void configure(TestSupport testSupport) {
-            testSupport.setPatterns(testSupport.include.pattern(), pattern);
+            testSupport.setPatterns(testSupport.include != null ? testSupport.include.pattern() : null, pattern);
         }
     }
 

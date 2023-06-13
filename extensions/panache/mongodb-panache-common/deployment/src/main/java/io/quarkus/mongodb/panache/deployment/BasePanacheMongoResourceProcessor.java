@@ -30,11 +30,13 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.bean.JavaBeanUtil;
@@ -76,6 +78,7 @@ public abstract class BasePanacheMongoResourceProcessor {
     public static final String BSON_PACKAGE = "org.bson.";
 
     @BuildStep
+    @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     public void buildImperative(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -94,6 +97,7 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     @BuildStep
+    @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     public void buildReactive(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,

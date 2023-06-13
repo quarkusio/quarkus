@@ -6,12 +6,14 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
 
+@Disabled("https://github.com/quarkusio/quarkus/issues/33963")
 public class LambdaDevServicesContinuousTestingTestCase {
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()

@@ -26,7 +26,7 @@ class OidcPropertiesState extends LitState {
             hideImplicitLoggedIn: false,
             hideImplLoggedOut: false,
             swaggerUiPath: null,
-            graphQlUiPath: null,
+            graphqlUiPath: null,
             oidcProviderName: null,
             oidcApplicationType: null,
             oidcGrantType: null,
@@ -83,7 +83,7 @@ class OidcPropertiesState extends LitState {
             propertiesState.keycloakAdminUrl = response.result.keycloakAdminUrl;
             propertiesState.keycloakRealms = response.result.keycloakRealms;
             propertiesState.swaggerUiPath = response.result.swaggerUiPath;
-            propertiesState.graphQlUiPath = response.result.graphQlUiPath;
+            propertiesState.graphqlUiPath = response.result.graphqlUiPath;
 
             return {
                 // logout === true will trigger query params removal
@@ -1103,7 +1103,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     static _navigateToGraphQLUiWithToken(token) {
-        let url = propertiesState.graphQlUiPath;
+        let url = propertiesState.graphqlUiPath;
         const headerJson = '{"authorization": "Bearer ' + token + '"}';
         url += '/?' + encodeURIComponent('headers') + '=' + encodeURIComponent(headerJson);
         window.open(url, '_blank').focus();

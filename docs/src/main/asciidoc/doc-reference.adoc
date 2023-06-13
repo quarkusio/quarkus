@@ -21,12 +21,12 @@ The following links provide background on AsciiDoc syntax and general convention
 
 == Language and grammar
 
-Write clear, concise, and consistent technical information in US English. 
-Write for a global audience with localization, translation, inclusivity, and diversity in mind. 
+Write clear, concise, and consistent technical information in US English.
+Write for a global audience with localization, translation, inclusivity, and diversity in mind.
 Try to use the following grammar styles:
 
 * link:https://developers.google.com/style/tense?hl=en[Present tense]
-* link:https://developers.google.com/style/voice?hl=en[Active voice] 
+* link:https://developers.google.com/style/voice?hl=en[Active voice]
 * link:https://developers.google.com/style/person?hl=en[Second person (you)]
 * link:https://developers.google.com/style/tone?hl=en[A conversational tone]
 * link:https://developers.google.com/style/pronouns?hl=en[Gender neutral language]
@@ -85,7 +85,7 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 * State what task the user will complete, with emphasis on the key topic or demonstrated activity
 * Be action-oriented or task-oriented, rather than feature-oriented
 * Be led by the needs of the user in learning mode.
-* Finish the implied sentence: "In this tutorial, you will ..." 
+* Finish the implied sentence: "In this tutorial, you will ..."
 |Create a Quarkus application in JVM mode by using the quick start example
 |Creating an App
 |===
@@ -107,7 +107,7 @@ AsciiDoc output to HTML:: AsciiDoc processing creates HTML files in `docs/target
 
 === Templates
 
-Create new documentation files with the appropriate template for the content type: 
+Create new documentation files with the appropriate template for the content type:
 
 Concepts:: Use `docs/src/main/asciidoc/_templates/template-concept.adoc`
 How-To Guides:: Use `docs/src/main/asciidoc/_templates/template-howto.adoc`
@@ -136,7 +136,7 @@ Suffix:: The file name should reflect the document type:
 [[document-header]]
 === Document header
 
-Each document should define a header for document-scoped attributes. 
+Each document should define a header for document-scoped attributes.
 Minimally, each document should define and id and a title, and include common attributes (`_attributes.adoc`).
 
 [source,asciidoc]
@@ -156,9 +156,9 @@ Minimally, each document should define and id and a title, and include common at
 ==== Other common document header attributes
 
 `:extension-status: preview`:: Use this attribute to flag special types of content. Valid values: `experimental`, `preview`, `stable` (not usually used), and `deprecated`.
-`:summary: <text>`:: Use the summary to provide a concise (26 words or less) description of the document. 
-The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>. 
-If not present, the first sentence of the abstract is automatically used to generate the tile summary. 
+`:summary: <text>`:: Use the summary to provide a concise (26 words or less) description of the document.
+The value of this attribute is used in tiles or other descriptions on the website and is not required in newer diataxis-styled docs, as outlined in <<abstracts-preamble>>.
+If not present, the first sentence of the abstract is automatically used to generate the tile summary.
 
 IMPORTANT: Take care with whitespace when working with document-scoped attributes.
 The document header ends with the first blank line.
@@ -177,14 +177,14 @@ Try to write the abstract by using the following guidelines:
 ** "This document.."
 ** "This tutorial..."
 ** "The following..."
-* *Brief:* Is no more than three sentences long. 
+* *Brief:* Is no more than three sentences long.
 
 [IMPORTANT]
 ====
 Ensure that the first sentence explains the value and some benefits of the content in 26 words or less.
 ====
 
-If the first sentence is too long or can not be simplified to fit on the website tile, you can define a ``:summary:`` attribute in the document header attributes to serve that purpose. 
+If the first sentence is too long or can not be simplified to fit on the website tile, you can define a ``:summary:`` attribute in the document header attributes to serve that purpose.
 For more information, see <<doc-header-optional>>.
 
 === Semantic line breaks
@@ -198,7 +198,7 @@ Start a new line at the end of each sentence, and split sentences themselves at 
 
 Section titles should be written in sentence case rather than title case.
 
-All documents should start with a Title (a `= Level 0` heading), and should 
+All documents should start with a Title (a `= Level 0` heading), and should
 be broken into subsections where appropriate
 (`== Level 1` to `====== Level 5`)
 without skipping any levels.
@@ -305,7 +305,7 @@ xref:<name-of-the-file>.adoc[Human-readable label]
 ----
 For more details about anchored IDs, see the xref:doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors] section.
 
-=== Reference source code 
+=== Reference source code
 
 There are many ways to include source code and examples in documentation.
 
@@ -343,7 +343,7 @@ Content copied in this way is referenced by the `\{code-examples}` source attrib
 +
 `telemetry-micrometer-tutorial-example-resource.java`.
 
-* The source and target file names are declared in `docs/src/main/asciidoc/telemetry-examples.yaml`: 
+* The source and target file names are declared in `docs/src/main/asciidoc/telemetry-examples.yaml`:
 +
 [source,yaml]
 ----
@@ -355,12 +355,12 @@ examples:
 * Snippets from this source file are then referenced with the following path:
 +
 `\{code-examples}/telemetry-micrometer-tutorial-example-resource.java`.
-* The source file contains the following comment: 
+* The source file contains the following comment:
 [source,java]
 ----
 // Source: {{source}}
 ----
-* The copied file contains this comment instead: 
+* The copied file contains this comment instead:
 [source,java]
 ----
 // Source: integration-tests/micrometer-prometheus/src/main/java/io/quarkus/doc/micrometer/ExampleResource.java
@@ -371,7 +371,7 @@ examples:
 [[categories]]
 === Categories
 
-Quarkus documentation is grouped into the following categories. 
+Quarkus documentation is grouped into the following categories.
 
 .Categories
 [cols="<m,<2",options="header"]
@@ -382,7 +382,7 @@ Quarkus documentation is grouped into the following categories.
 | business-automation | Business automation integrations
 | cloud | Integrations and support for cloud services
 | command-line | Command Line Applications
-| compatibility | Compatibility with other languages and frameworks 
+| compatibility | Compatibility with other languages and frameworks
 | contributing | Guidance and references to help you contribute to Quarkus.
 | core | Information about how the Quarkus works
 | data | Topics related to using data sources with Quarkus
@@ -392,7 +392,6 @@ Quarkus documentation is grouped into the following categories.
 | miscellaneous | Miscellaneous
 | native | Everything related to native executables
 | observability | Extensions and integrations for runtime and application observability
-| reactive | Extensions that support reactive technologies and techniques
 | security | Security
 | serialization | Serialization
 | tooling | Tooling
@@ -410,7 +409,7 @@ Tag your content to improve findability by adding at least one category to the c
 === Quarkus documentation variables
 
 The following variables externalize key information that can change over time. References
-to such information should use the variable inside of curly brackets, `{}`. 
+to such information should use the variable inside of curly brackets, `{}`.
 
 The complete list of externalized variables for use is given in the following table:
 

@@ -270,7 +270,6 @@ public class YamlMetadataGenerator {
         miscellaneous("miscellaneous", "Miscellaneous"),
         native_docs("native", "Native"),
         observability("observability", "Observability"),
-        reactive("reactive", "Reactive"),
         security("security", "Security"),
         serialization("serialization", "Serialization"),
         tooling("tooling", "Tooling"),

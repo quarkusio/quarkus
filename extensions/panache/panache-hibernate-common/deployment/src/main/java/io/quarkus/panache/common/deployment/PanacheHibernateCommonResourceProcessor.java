@@ -56,7 +56,7 @@ public final class PanacheHibernateCommonResourceProcessor {
         MetamodelInfo modelInfo = new MetamodelInfo();
 
         // Technically we wouldn't need to process embeddables, but we don't have an easy way to exclude them.
-        for (String entityClassName : candidatesForFieldAccess.get().getAllModelClassNames()) {
+        for (String entityClassName : candidatesForFieldAccess.get().getManagedClassNames()) {
             ClassInfo entityClass = index.getIndex().getClassByName(DotName.createSimple(entityClassName));
             if (entityClass == null) {
                 // Probably a synthetic entity, such as Envers' DefaultRevisionEntity.

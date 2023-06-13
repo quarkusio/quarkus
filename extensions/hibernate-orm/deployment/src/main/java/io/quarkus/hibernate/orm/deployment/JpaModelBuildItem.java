@@ -22,17 +22,24 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
 
     private final Set<String> allModelPackageNames = new TreeSet<>();
     private final Set<String> entityClassNames = new TreeSet<>();
+    private final Set<String> managedClassNames = new TreeSet<>();
     private final Set<DotName> potentialCdiBeanClassNames = new TreeSet<>();
     private final Set<String> allModelClassNames = new TreeSet<>();
     private final Map<String, List<RecordableXmlMapping>> xmlMappingsByPU = new HashMap<>();
 
     public JpaModelBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
-            Set<DotName> potentialCdiBeanClassNames, Set<String> allModelClassNames,
+            Set<String> managedClassNames, Set<DotName> potentialCdiBeanClassNames,
             Map<String, List<RecordableXmlMapping>> xmlMappingsByPU) {
         this.allModelPackageNames.addAll(allModelPackageNames);
         this.entityClassNames.addAll(entityClassNames);
+        this.managedClassNames.addAll(managedClassNames);
         this.potentialCdiBeanClassNames.addAll(potentialCdiBeanClassNames);
-        this.allModelClassNames.addAll(allModelClassNames);
+        this.allModelClassNames.addAll(managedClassNames);
+        // Converters need to be in the list of model types in order for @Converter#autoApply to work,
+        // but they don't need reflection enabled.
+        for (DotName potentialCdiBeanClassName : potentialCdiBeanClassNames) {
+            this.allModelClassNames.add(potentialCdiBeanClassName.toString());
+        }
         this.xmlMappingsByPU.putAll(xmlMappingsByPU);
     }
 
@@ -48,6 +55,13 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
      */
     public Set<String> getEntityClassNames() {
         return entityClassNames;
+    }
+
+    /**
+     * @return the list of managed class names: entities, mapped super classes and embeddables only.
+     */
+    public Set<String> getManagedClassNames() {
+        return managedClassNames;
     }
 
     /**

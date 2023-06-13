@@ -351,27 +351,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _renderProvider() {
-        const content = this._content();
-        if (propertiesState.keycloakAdminUrl) {
-            return html `
-                    <vaadin-horizontal-layout
-                            theme="spacing padding"
-                            style="align-items: center"
-                    >
-                        ${content}
-                        <vaadin-button class="keycloak-btn" theme="tertiary"
-                                       @click=${() => QwcOidcProvider._goToKeycloakUrl()}>
-                            <vaadin-icon icon="font-awesome-solid:key" slot="prefix" class="btn-icon"></vaadin-icon>
-                            Keycloak Admin
-                        </vaadin-button>
-                    </vaadin-horizontal-layout>
-                `;
-        }
-
-        return content;
-    }
-
-    _content() {
         if (QwcOidcProvider._isServiceOrHybridApp()) {
             switch (propertiesState.oidcGrantType) {
                 case 'password':
@@ -931,10 +910,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             result += characters.charAt(Math.floor(Math.random() * charactersLength));
         }
         return result;
-    }
-
-    static _goToKeycloakUrl() {
-        window.open(propertiesState.keycloakAdminUrl, '_blank').focus();
     }
 
     static _areTokensInUrl() {

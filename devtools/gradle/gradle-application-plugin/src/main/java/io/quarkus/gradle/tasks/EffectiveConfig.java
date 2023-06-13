@@ -116,6 +116,7 @@ final class EffectiveConfig {
     @VisibleForTesting
     static SmallRyeConfig buildConfig(String profile, List<ConfigSource> configSources) {
         return ConfigUtils.emptyConfigBuilder()
+                .setAddDiscoveredSecretKeysHandlers(false)
                 .withSources(configSources)
                 .withProfile(profile)
                 .build();

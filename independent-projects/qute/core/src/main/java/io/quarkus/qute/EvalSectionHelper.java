@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.Futures.evaluateParams;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +24,7 @@ public class EvalSectionHelper implements SectionHelper {
     @Override
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         CompletableFuture<ResultNode> result = new CompletableFuture<>();
-        evaluateParams(parameters, context.resolutionContext()).whenComplete((evaluatedParams, t1) -> {
+        context.evaluate(parameters).whenComplete((evaluatedParams, t1) -> {
             if (t1 != null) {
                 result.completeExceptionally(t1);
             } else {

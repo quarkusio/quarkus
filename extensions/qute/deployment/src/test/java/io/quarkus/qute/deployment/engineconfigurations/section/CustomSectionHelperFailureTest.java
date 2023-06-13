@@ -7,6 +7,7 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.qute.TemplateException;
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -18,9 +19,9 @@ public class CustomSectionHelperFailureTest {
                     .addAsResource(new StringAsset("{#custom bar=1 /}"), "templates/bar.html"))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
-                if (rootCause instanceof IllegalStateException) {
+                if (rootCause instanceof TemplateException) {
                     assertTrue(rootCause.getMessage().contains(
-                            "Foo param not found"));
+                            "mandatory section parameters not declared"));
                 } else {
                     fail(t);
                 }

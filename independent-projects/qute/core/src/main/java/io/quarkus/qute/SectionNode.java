@@ -208,6 +208,11 @@ class SectionNode implements TemplateNode {
         }
 
         @Override
+        public CompletionStage<Map<String, Object>> evaluate(Map<String, Expression> parameters) {
+            return Futures.evaluateParams(parameters, resolutionContext);
+        }
+
+        @Override
         public CompletionStage<ResultNode> execute(SectionBlock block, ResolutionContext context) {
             if (block == null) {
                 // Use the main block

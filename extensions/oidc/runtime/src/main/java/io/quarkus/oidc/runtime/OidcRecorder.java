@@ -140,7 +140,7 @@ public class OidcRecorder {
                         throw new OIDCException(t);
                     }
                 })
-                .await().indefinitely();
+                .await().atMost(oidcConfig.getConnectionTimeout());
     }
 
     private static Throwable logTenantConfigContextFailure(Throwable t, String tenantId) {

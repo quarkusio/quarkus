@@ -88,6 +88,7 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gizmo.ClassOutput;
@@ -830,7 +831,8 @@ public class QuteProcessor {
             BeanDiscoveryFinishedBuildItem beanDiscovery,
             List<CheckedTemplateBuildItem> checkedTemplates,
             List<TemplateDataBuildItem> templateData,
-            QuteConfig config) {
+            QuteConfig config,
+            PackageConfig packageConfig) {
 
         long start = System.nanoTime();
 
@@ -887,6 +889,14 @@ public class QuteProcessor {
             // Maps an expression generated id to the last match of an expression (i.e. the type of the last part)
             Map<Integer, MatchResult> generatedIdsToMatches = new HashMap<>();
 
+            // Register all param declarations as targets of implicit value resolvers
+            for (ParameterDeclaration paramDeclaration : templateAnalysis.parameterDeclarations) {
+                Type type = TypeInfos.resolveTypeFromTypeInfo(paramDeclaration.getTypeInfo());
+                if (type != null) {
+                    implicitClassToMembersUsed.put(type.name(), new HashSet<>());
+                }
+            }
+
             // Iterate over all top-level expressions found in the template
             for (Expression expression : templateAnalysis.expressions) {
                 if (expression.isLiteral()) {
@@ -916,15 +926,21 @@ public class QuteProcessor {
         // ==========================================================================
         // Register implicit value resolvers for classes collected during validation
         // ==========================================================================
+        boolean isNonNativeBuild = !packageConfig.isNativeOrNativeSources();
         for (Entry<DotName, Set<String>> entry : implicitClassToMembersUsed.entrySet()) {
-            if (entry.getValue().isEmpty()) {
-                // No members
+            if (entry.getValue().isEmpty() && isNonNativeBuild) {
+                // No members used - skip the generation for non-native builds
                 continue;
             }
             ClassInfo clazz = index.getClassByName(entry.getKey());
             if (clazz != null) {
-                implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz,
-                        new TemplateDataBuilder().addIgnore(buildIgnorePattern(entry.getValue())).build()));
+                TemplateDataBuilder builder = new TemplateDataBuilder();
+                if (isNonNativeBuild) {
+                    // Optimize the generated value resolvers
+                    // I.e. only fields/methods used in templates are considered and all other members are ignored
+                    builder.addIgnore(buildIgnorePattern(entry.getValue()));
+                }
+                implicitClasses.produce(new ImplicitValueResolverBuildItem(clazz, builder.build()));
             }
         }
     }
@@ -1790,7 +1806,8 @@ public class QuteProcessor {
                 continue;
             }
             if (uncontrolled.containsKey(implicitClassName)) {
-                LOGGER.debugf("Implicit value resolver for %d ignored: %s declared on %s", uncontrolled.get(implicitClassName),
+                LOGGER.debugf("Implicit value resolver for %s ignored: %s declared on %s", implicitClassName,
+                        uncontrolled.get(implicitClassName),
                         uncontrolled.get(implicitClassName).target());
                 continue;
             }

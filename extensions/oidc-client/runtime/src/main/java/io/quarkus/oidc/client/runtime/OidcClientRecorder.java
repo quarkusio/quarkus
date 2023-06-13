@@ -87,7 +87,7 @@ public class OidcClientRecorder {
 
     protected static OidcClient createOidcClient(OidcClientConfig oidcConfig, String oidcClientId,
             TlsConfig tlsConfig, Supplier<Vertx> vertx) {
-        return createOidcClientUni(oidcConfig, oidcClientId, tlsConfig, vertx).await().indefinitely();
+        return createOidcClientUni(oidcConfig, oidcClientId, tlsConfig, vertx).await().atMost(oidcConfig.connectionTimeout);
     }
 
     protected static Uni<OidcClient> createOidcClientUni(OidcClientConfig oidcConfig, String oidcClientId,

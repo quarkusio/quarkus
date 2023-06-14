@@ -529,7 +529,6 @@ An access token is only required if the endpoint needs to:
 
 In such cases, use the `quarkus.oidc.token-state-manager.strategy` property to configure the token state strategy as follows:
  
-[Attributes]
 |===
 |To... |Set the property to ... 
   

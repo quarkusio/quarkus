@@ -24,6 +24,26 @@ public interface SectionHelper {
     public interface SectionResolutionContext {
 
         /**
+         * Evaluates the given expressions and returns the map of expression keys to evaluated values.
+         *
+         * @param expressions
+         * @return the map of expression keys to evaluated values
+         * @see #evaluate(Expression)
+         */
+        CompletionStage<Map<String, Object>> evaluate(Map<String, Expression> expressions);
+
+        /**
+         * Evaluates a single expression.
+         *
+         * @param expression
+         * @return the evaluated value
+         * @see #evaluate(Map)
+         */
+        default CompletionStage<Object> evaluate(Expression expression) {
+            return resolutionContext().evaluate(expression);
+        }
+
+        /**
          *
          * @return the current resolution context
          */

@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.Futures.evaluateParams;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +49,7 @@ public class IncludeSectionHelper implements SectionHelper {
             return root.resolve(resolutionContext, t.isFragment() ? FRAGMENT_PARAMS : null);
         } else {
             CompletableFuture<ResultNode> result = new CompletableFuture<>();
-            evaluateParams(parameters, context.resolutionContext()).whenComplete((evaluatedParams, t1) -> {
+            context.evaluate(parameters).whenComplete((evaluatedParams, t1) -> {
                 if (t1 != null) {
                     result.completeExceptionally(t1);
                 } else {

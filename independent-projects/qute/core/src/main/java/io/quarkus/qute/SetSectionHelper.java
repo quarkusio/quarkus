@@ -1,7 +1,5 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.Futures.evaluateParams;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +39,7 @@ public class SetSectionHelper implements SectionHelper {
     public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
         CompletableFuture<ResultNode> result = new CompletableFuture<>();
         if (defaultKeys.isEmpty()) {
-            evaluateParams(parameters, context.resolutionContext()).whenComplete((r, t) -> {
+            context.evaluate(parameters).whenComplete((r, t) -> {
                 if (t != null) {
                     result.completeExceptionally(t);
                 } else {
@@ -57,7 +55,7 @@ public class SetSectionHelper implements SectionHelper {
             });
         } else {
             // First evaluate the keys
-            evaluateParams(defaultKeys, context.resolutionContext()).whenComplete((r, t) -> {
+            context.evaluate(defaultKeys).whenComplete((r, t) -> {
                 if (t != null) {
                     result.completeExceptionally(t);
                 } else {
@@ -80,7 +78,7 @@ public class SetSectionHelper implements SectionHelper {
                         });
                     } else {
                         // Evaluate the default values
-                        evaluateParams(toEval, context.resolutionContext()).whenComplete((r2, t2) -> {
+                        context.evaluate(toEval).whenComplete((r2, t2) -> {
                             if (t2 != null) {
                                 result.completeExceptionally(t2);
                             } else {

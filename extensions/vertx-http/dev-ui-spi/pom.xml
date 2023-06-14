@@ -7,15 +7,26 @@
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
-    
+
     <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
     <name>Quarkus - Vert.x - HTTP - Dev UI SPI</name>
-    
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
     </dependencies>
-    
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <proc>none</proc>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -58,6 +58,9 @@
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${version.compiler.plugin}</version>
+                    <configuration>
+                        <proc>none</proc>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>

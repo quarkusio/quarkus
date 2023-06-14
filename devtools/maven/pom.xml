@@ -206,6 +206,13 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <proc>none</proc>
+                </configuration>
+            </plugin>
             <!-- Jansi is shaded to workaround a classloading issue on Windows, see https://github.com/quarkusio/quarkus/issues/19673 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

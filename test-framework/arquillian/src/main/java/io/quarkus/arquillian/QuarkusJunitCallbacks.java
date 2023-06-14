@@ -23,7 +23,9 @@ abstract class QuarkusJunitCallbacks {
             collectCallbacks(testInstance.getClass(), befores, (Class<? extends Annotation>) testInstance.getClass()
                     .getClassLoader().loadClass(className));
             for (Method before : befores) {
-                before.invoke(testInstance);
+                if (before.canAccess(testInstance) && before.getParameters().length == 0) {
+                    before.invoke(testInstance);
+                }
             }
         }
     }
@@ -35,7 +37,9 @@ abstract class QuarkusJunitCallbacks {
             collectCallbacks(testInstance.getClass(), afters, (Class<? extends Annotation>) testInstance.getClass()
                     .getClassLoader().loadClass(className));
             for (Method after : afters) {
-                after.invoke(testInstance);
+                if (after.canAccess(testInstance) && after.getParameters().length == 0) {
+                    after.invoke(testInstance);
+                }
             }
         }
     }

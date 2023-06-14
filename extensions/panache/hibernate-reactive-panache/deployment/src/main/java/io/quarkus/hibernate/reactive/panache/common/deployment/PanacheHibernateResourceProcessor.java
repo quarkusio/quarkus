@@ -18,6 +18,7 @@ import org.objectweb.asm.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -90,6 +91,7 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
+    @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     void build(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<PanacheEntityClassBuildItem> entityClasses,

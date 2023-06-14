@@ -18,6 +18,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 
+import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -88,6 +89,7 @@ public final class PanacheHibernateCommonResourceProcessor {
 
     @BuildStep
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
+    @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     void replaceFieldAccesses(CombinedIndexBuildItem index,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Optional<HibernateMetamodelForFieldAccessBuildItem> modelInfoBuildItem,

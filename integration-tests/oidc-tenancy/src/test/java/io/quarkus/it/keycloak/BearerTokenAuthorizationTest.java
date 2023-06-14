@@ -173,6 +173,7 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testHybridWebApp() throws IOException {
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
         try (final WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/tenants/tenant-hybrid/api/user");
             assertNotNull(getStateCookie(webClient, "tenant-hybrid-webapp"));
@@ -184,6 +185,7 @@ public class BearerTokenAuthorizationTest {
             assertEquals("alice:web-app", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("1"));
     }
 
     @Test

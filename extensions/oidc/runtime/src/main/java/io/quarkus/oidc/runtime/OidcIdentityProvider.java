@@ -123,6 +123,19 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         }
                     });
         } else {
+            final Uni<TokenVerificationResult> primaryTokenUni;
+            if (isInternalIdToken(request)) {
+                if (vertxContext.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
+                    // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
+                    primaryTokenUni = Uni.createFrom()
+                            .item(new TokenVerificationResult(OidcUtils.decodeJwtContent(request.getToken().getToken()), null));
+                } else {
+                    primaryTokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
+                }
+            } else {
+                primaryTokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken(), isIdToken(request), null);
+            }
+
             // Verify Code Flow access token first if it is available and has to be verified.
             // It may be refreshed if it has or has nearly expired
             Uni<TokenVerificationResult> codeAccessTokenUni = verifyCodeFlowAccessTokenUni(vertxContext, request,
@@ -143,7 +156,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                 }
                                 vertxContext.put(CODE_ACCESS_TOKEN_RESULT, codeAccessTokenResult);
                             }
-                            return getUserInfoAndCreateIdentity(vertxContext, request, resolvedContext);
+                            return getUserInfoAndCreateIdentity(primaryTokenUni, vertxContext, request, resolvedContext);
                         }
                     });
 
@@ -168,12 +181,16 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             vertxContext.put(CODE_ACCESS_TOKEN_RESULT, codeAccessToken);
                         }
 
-                        return createSecurityIdentityWithOidcServer(vertxContext, request, resolvedContext, userInfo);
+                        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken(),
+                                false, userInfo);
+
+                        return createSecurityIdentityWithOidcServer(tokenUni, vertxContext, request, resolvedContext, userInfo);
                     }
                 });
     }
 
-    private Uni<SecurityIdentity> getUserInfoAndCreateIdentity(RoutingContext vertxContext, TokenAuthenticationRequest request,
+    private Uni<SecurityIdentity> getUserInfoAndCreateIdentity(Uni<TokenVerificationResult> tokenUni,
+            RoutingContext vertxContext, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
 
         Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)
@@ -187,7 +204,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         if (t != null) {
                             return Uni.createFrom().failure(new AuthenticationFailedException(t));
                         }
-                        return createSecurityIdentityWithOidcServer(vertxContext, request, resolvedContext, userInfo);
+                        return createSecurityIdentityWithOidcServer(tokenUni, vertxContext, request, resolvedContext, userInfo);
                     }
                 });
     }
@@ -205,20 +222,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return false;
     }
 
-    private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(RoutingContext vertxContext,
-            TokenAuthenticationRequest request, TenantConfigContext resolvedContext, final UserInfo userInfo) {
-        Uni<TokenVerificationResult> tokenUni = null;
-        if (isInternalIdToken(request)) {
-            if (vertxContext.get(NEW_AUTHENTICATION) == Boolean.TRUE) {
-                // No need to verify it in this case as 'CodeAuthenticationMechanism' has just created it
-                tokenUni = Uni.createFrom()
-                        .item(new TokenVerificationResult(OidcUtils.decodeJwtContent(request.getToken().getToken()), null));
-            } else {
-                tokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
-            }
-        } else {
-            tokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken(), isIdToken(request), userInfo);
-        }
+    private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(Uni<TokenVerificationResult> tokenUni,
+            RoutingContext vertxContext, TokenAuthenticationRequest request, TenantConfigContext resolvedContext,
+            final UserInfo userInfo) {
 
         return tokenUni.onItemOrFailure()
                 .transformToUni(new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {

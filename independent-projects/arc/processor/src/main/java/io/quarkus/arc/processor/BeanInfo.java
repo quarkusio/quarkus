@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -335,23 +336,41 @@ public class BeanInfo implements InjectionTargetInfo {
     Set<MethodInfo> getDecoratedMethods(DecoratorInfo decorator) {
         Set<MethodInfo> decorated = new HashSet<>();
         for (Entry<MethodInfo, DecorationInfo> entry : decoratedMethods.entrySet()) {
-            if (entry.getValue().decorators.contains(decorator)) {
+            if (entry.getValue().contains(decorator)) {
                 decorated.add(entry.getKey());
             }
         }
         return decorated;
     }
 
+    MethodInfo getDecoratedMethod(MethodInfo decoratorMethod, DecoratorInfo decorator) {
+        for (Entry<MethodInfo, DecorationInfo> e : decoratedMethods.entrySet()) {
+            for (DecoratorMethod dm : e.getValue().decoratorMethods) {
+                if (dm.decorator.equals(decorator) && dm.method.equals(decoratorMethod)) {
+                    return e.getKey();
+                }
+            }
+        }
+        return null;
+    }
+
     // Returns a map of method descriptor -> next decorator in the chain
     // e.g. foo() -> BravoDecorator
-    Map<MethodDescriptor, DecoratorInfo> getNextDecorators(DecoratorInfo decorator) {
-        Map<MethodDescriptor, DecoratorInfo> next = new HashMap<>();
+    Map<MethodDescriptor, DecoratorMethod> getNextDecorators(DecoratorInfo decorator) {
+        Map<MethodDescriptor, DecoratorMethod> next = new HashMap<>();
         for (Entry<MethodInfo, DecorationInfo> entry : decoratedMethods.entrySet()) {
-            List<DecoratorInfo> decorators = entry.getValue().decorators;
-            int index = decorators.indexOf(decorator);
+            List<DecoratorMethod> decoratorMethods = entry.getValue().decoratorMethods;
+            int index = -1;
+            for (ListIterator<DecoratorMethod> it = decoratorMethods.listIterator(); it.hasNext();) {
+                DecoratorMethod dm = it.next();
+                if (dm.decorator.equals(decorator)) {
+                    index = it.previousIndex();
+                    break;
+                }
+            }
             if (index != -1) {
-                if (index != (decorators.size() - 1)) {
-                    next.put(MethodDescriptor.of(entry.getKey()), decorators.get(index + 1));
+                if (index != (decoratorMethods.size() - 1)) {
+                    next.put(MethodDescriptor.of(entry.getKey()), decoratorMethods.get(index + 1));
                 }
             }
         }
@@ -441,9 +460,9 @@ public class BeanInfo implements InjectionTargetInfo {
         }
         List<DecoratorInfo> bound = new ArrayList<>();
         for (DecorationInfo decoration : decoratedMethods.values()) {
-            for (DecoratorInfo decorator : decoration.decorators) {
-                if (!bound.contains(decorator)) {
-                    bound.add(decorator);
+            for (DecoratorMethod dm : decoration.decoratorMethods) {
+                if (!bound.contains(dm.decorator)) {
+                    bound.add(dm.decorator);
                 }
             }
         }
@@ -677,7 +696,7 @@ public class BeanInfo implements InjectionTargetInfo {
                         beanDeployment.getBeanArchiveIndex(), beanDeployment.getObserverAndProducerMethods(),
                         beanDeployment.getAnnotationStore()));
 
-        Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>(candidates.size());
+        Map<MethodInfo, DecorationInfo> decoratedMethods = new HashMap<>();
         for (Entry<MethodKey, DecorationInfo> entry : candidates.entrySet()) {
             decoratedMethods.put(entry.getKey().method, entry.getValue());
         }
@@ -691,9 +710,10 @@ public class BeanInfo implements InjectionTargetInfo {
             if (skipPredicate.test(method)) {
                 continue;
             }
-            List<DecoratorInfo> matching = findMatchingDecorators(method, boundDecorators);
-            if (!matching.isEmpty()) {
-                decoratedMethods.computeIfAbsent(new MethodKey(method), key -> new DecorationInfo(matching));
+            List<DecoratorMethod> matching = findMatchingDecorators(method, boundDecorators);
+            MethodKey key = new MethodKey(method);
+            if (!matching.isEmpty() && !decoratedMethods.containsKey(key)) {
+                decoratedMethods.put(key, new DecorationInfo(matching));
             }
         }
         skipPredicate.methodsProcessed();
@@ -705,12 +725,11 @@ public class BeanInfo implements InjectionTargetInfo {
         }
     }
 
-    private List<DecoratorInfo> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
+    private List<DecoratorMethod> findMatchingDecorators(MethodInfo method, List<DecoratorInfo> decorators) {
         List<Type> methodParams = method.parameterTypes();
-        List<DecoratorInfo> matching = new ArrayList<>(decorators.size());
+        List<DecoratorMethod> matching = new ArrayList<>(decorators.size());
         for (DecoratorInfo decorator : decorators) {
             for (Type decoratedType : decorator.getDecoratedTypes()) {
-                // Converter<String>
                 ClassInfo decoratedTypeClass = decorator.getDeployment().getBeanArchiveIndex()
                         .getClassByName(decoratedType.name());
                 if (decoratedTypeClass == null) {
@@ -735,13 +754,20 @@ public class BeanInfo implements InjectionTargetInfo {
                             decoratedMethod,
                             beanDeployment.getBeanArchiveIndex());
                     for (int i = 0; i < methodParams.size(); i++) {
-                        if (!beanDeployment.getDelegateInjectionPointResolver().matches(decoratedMethodParams.get(i),
-                                methodParams.get(i))) {
-                            matches = false;
+                        BeanResolver resolver = beanDeployment.getDelegateInjectionPointResolver();
+                        Type decoratedParam = decoratedMethodParams.get(i);
+                        if (decoratedParam.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
+                            if (!resolver.matchTypeArguments(decoratedParam, methodParams.get(i))) {
+                                matches = false;
+                            }
+                        } else {
+                            if (!resolver.matches(decoratedParam, methodParams.get(i))) {
+                                matches = false;
+                            }
                         }
                     }
                     if (matches) {
-                        matching.add(decorator);
+                        matching.add(new DecoratorMethod(decorator, decoratedMethod));
                     }
                 }
             }
@@ -922,14 +948,39 @@ public class BeanInfo implements InjectionTargetInfo {
 
     static class DecorationInfo {
 
-        final List<DecoratorInfo> decorators;
+        final List<DecoratorMethod> decoratorMethods;
 
-        public DecorationInfo(List<DecoratorInfo> decorators) {
-            this.decorators = decorators;
+        public DecorationInfo(List<DecoratorMethod> decoratorMethods) {
+            this.decoratorMethods = decoratorMethods;
         }
 
         boolean isEmpty() {
-            return decorators.isEmpty();
+            return decoratorMethods.isEmpty();
+        }
+
+        boolean contains(DecoratorInfo decorator) {
+            for (DecoratorMethod dm : decoratorMethods) {
+                if (dm.decorator.equals(decorator)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        DecoratorMethod firstDecoratorMethod() {
+            return decoratorMethods.get(0);
+        }
+
+    }
+
+    static class DecoratorMethod {
+
+        final DecoratorInfo decorator;
+        final MethodInfo method;
+
+        public DecoratorMethod(DecoratorInfo decorator, MethodInfo method) {
+            this.decorator = Objects.requireNonNull(decorator);
+            this.method = Objects.requireNonNull(method);
         }
 
     }

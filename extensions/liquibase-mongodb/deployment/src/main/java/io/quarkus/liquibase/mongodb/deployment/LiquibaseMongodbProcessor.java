@@ -22,8 +22,8 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -245,7 +245,7 @@ class LiquibaseMongodbProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Consume(BeanContainerBuildItem.class)
     ServiceStartBuildItem startLiquibase(LiquibaseMongodbRecorder recorder,
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem) {
         // will actually run the actions at runtime

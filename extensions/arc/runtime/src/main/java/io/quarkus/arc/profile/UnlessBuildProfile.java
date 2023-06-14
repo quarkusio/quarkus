@@ -15,21 +15,21 @@ import java.lang.annotation.Target;
  *    Enabled when "dev" profile is <b>not</b> active:
  *
  *    &#064;ApplicationScoped
- *    &#064;IfBuildProfile("dev")
+ *    &#064;UnlessBuildProfile("dev")
  *    public class NotDevBean {
  *    }
  *
  *    Enabled when both "build" and "dev" profiles are <b>not</b> active:
  *
  *    &#064;ApplicationScoped
- *    &#064;IfBuildProfile(allOf = {"build", "dev"})
+ *    &#064;UnlessBuildProfile(allOf = {"build", "dev"})
  *    public class NotBuildDevBean {
  *    }
  *
  *    Enabled if either "build" or "dev" profile is <b>not</b> active:
  *
  *    &#064;ApplicationScoped
- *    &#064;IfBuildProfile(anyOf = {"build", "dev"})
+ *    &#064;UnlessBuildProfile(anyOf = {"build", "dev"})
  *    public class NotBuildDevBean {
  *    }
  *
@@ -37,7 +37,7 @@ import java.lang.annotation.Target;
  *    <b>not</b> active:
  *
  *    &#064;ApplicationScoped
- *    &#064;IfBuildProfile(allOf = {"build", "dev"}, anyOf = {"test", "prod"})
+ *    &#064;UnlessBuildProfile(allOf = {"build", "dev"}, anyOf = {"test", "prod"})
  *    public class NotBuildDevBean {
  *    }
  * </pre>

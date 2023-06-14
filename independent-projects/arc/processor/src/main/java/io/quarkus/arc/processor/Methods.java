@@ -134,7 +134,7 @@ final class Methods {
     }
 
     static boolean skipForDelegateSubclass(MethodInfo method) {
-        if (Modifier.isStatic(method.flags())) {
+        if (Modifier.isStatic(method.flags()) || method.isSynthetic() || isDefault(method)) {
             return true;
         }
         if (IGNORED_METHODS.contains(method.name())) {
@@ -145,6 +145,12 @@ final class Methods {
             return true;
         }
         return false;
+    }
+
+    static boolean isDefault(MethodInfo method) {
+        // Default methods are public non-abstract instance methods declared in an interface
+        return ((method.flags() & (Modifier.ABSTRACT | Modifier.PUBLIC | Modifier.STATIC)) == Modifier.PUBLIC)
+                && method.declaringClass().isInterface();
     }
 
     static boolean isObjectToString(MethodInfo method) {

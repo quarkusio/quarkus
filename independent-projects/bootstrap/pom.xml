@@ -46,12 +46,12 @@
         <!-- Dependency versions -->
         <assertj.version>3.24.2</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jboss-logging.version>3.5.0.Final</jboss-logging.version>
+        <jboss-logging.version>3.5.1.Final</jboss-logging.version>
         <junit.jupiter.version>5.9.3</junit.jupiter.version>
-        <maven-core.version>3.9.1</maven-core.version><!-- Keep in sync with sisu.version -->
+        <maven-core.version>3.9.2</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.3.5</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.7.1</maven-plugin-annotations.version>
-        <maven-resolver.version>1.9.7</maven-resolver.version>
+        <maven-resolver.version>1.9.10</maven-resolver.version>
         <maven-shared-utils.version>3.3.4</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
         <maven-wagon.version>3.5.3</maven-wagon.version>
         <httpcore.version>4.4.16</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.4.3 brings in 4.4.13 and 4.4.14) -->
@@ -75,7 +75,7 @@
         <plexus-cipher.version>1.7</plexus-cipher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>
         <smallrye-common.version>2.1.0</smallrye-common.version>
-        <smallrye-beanbag.version>1.1.0</smallrye-beanbag.version>
+        <smallrye-beanbag.version>1.3.2</smallrye-beanbag.version>
         <gradle-tooling.version>8.1.1</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>
         <org-crac.version>0.1.3</org-crac.version>

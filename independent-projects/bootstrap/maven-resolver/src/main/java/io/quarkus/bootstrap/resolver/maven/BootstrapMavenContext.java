@@ -43,6 +43,8 @@ import org.apache.maven.settings.building.SettingsBuildingException;
 import org.apache.maven.settings.building.SettingsBuildingResult;
 import org.apache.maven.settings.building.SettingsProblem;
 import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
+import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecryptionResult;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -116,6 +118,7 @@ public class BootstrapMavenContext {
     private boolean preferPomsFromWorkspace;
     private Boolean effectiveModelBuilder;
     private Boolean wsModuleParentHierarchy;
+    private SettingsDecrypter settingsDecrypter;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -273,6 +276,10 @@ public class BootstrapMavenContext {
 
     public List<RemoteRepository> getRemotePluginRepositories() throws BootstrapMavenException {
         return remotePluginRepos == null ? remotePluginRepos = resolveRemotePluginRepos() : remotePluginRepos;
+    }
+
+    private SettingsDecrypter getSettingsDecrypter() {
+        return settingsDecrypter == null ? settingsDecrypter = newSettingsDecrypter() : settingsDecrypter;
     }
 
     public Settings getEffectiveSettings() throws BootstrapMavenException {
@@ -441,10 +448,10 @@ public class BootstrapMavenContext {
             }
         }
 
-        final DefaultSettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
+        final SettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
         decrypt.setProxies(settings.getProxies());
         decrypt.setServers(settings.getServers());
-        final SettingsDecryptionResult decrypted = new SettingsDecrypterImpl().decrypt(decrypt);
+        final SettingsDecryptionResult decrypted = getSettingsDecrypter().decrypt(decrypt);
         if (!decrypted.getProblems().isEmpty() && log.isDebugEnabled()) {
             // this is how maven handles these
             for (SettingsProblem p : decrypted.getProblems()) {
@@ -748,6 +755,11 @@ public class BootstrapMavenContext {
         return remoteRepoManager;
     }
 
+    private SettingsDecrypter newSettingsDecrypter() {
+        initRepoSystemAndManager();
+        return settingsDecrypter;
+    }
+
     private void initRepoSystemAndManager() {
         final MavenFactory factory = configureMavenFactory();
         if (repoSystem == null) {
@@ -755,6 +767,9 @@ public class BootstrapMavenContext {
         }
         if (remoteRepoManager == null) {
             remoteRepoManager = factory.getContainer().requireBean(RemoteRepositoryManager.class);
+        }
+        if (settingsDecrypter == null) {
+            settingsDecrypter = factory.getContainer().requireBean(SettingsDecrypter.class);
         }
     }
 

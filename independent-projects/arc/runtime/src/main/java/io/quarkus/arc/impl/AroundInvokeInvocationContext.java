@@ -20,10 +20,6 @@ import io.quarkus.arc.ArcInvocationContext;
  * <p>
  * Note that context data and method parameters are mutable and are not guarded/synchronized. We expect them to be modified
  * before or after dispatch. If modified before and after dispatch an unpredictable behavior may occur.
- * <p>
- * Note that {@link #getParameters()} only reflects modifications of the current interceptor. If an interceptor with higher
- * priority in the same chain calls {@link #setParameters(Object[])} then the changes are not reflected.
- *
  */
 class AroundInvokeInvocationContext extends AbstractInvocationContext {
 
@@ -71,7 +67,7 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
             if (currentPosition < metadata.chain.size()) {
                 // Invoke the next interceptor in the chain
                 return metadata.chain.get(currentPosition)
-                        .invoke(new NextAroundInvokeInvocationContext(currentPosition + 1, parameters));
+                        .invoke(new NextAroundInvokeInvocationContext(currentPosition + 1));
             } else {
                 // Invoke the target method
                 return metadata.aroundInvokeForward.apply(target, this);
@@ -91,11 +87,9 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
     class NextAroundInvokeInvocationContext implements ArcInvocationContext {
 
         private final int position;
-        protected Object[] parameters;
 
-        public NextAroundInvokeInvocationContext(int position, Object[] parameters) {
+        public NextAroundInvokeInvocationContext(int position) {
             this.position = position;
-            this.parameters = parameters;
         }
 
         @Override
@@ -125,13 +119,12 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
 
         @Override
         public Object[] getParameters() {
-            return parameters;
+            return AroundInvokeInvocationContext.this.getParameters();
         }
 
         @Override
         public void setParameters(Object[] params) {
-            validateParameters(metadata.method, params);
-            this.parameters = params;
+            AroundInvokeInvocationContext.this.setParameters(params);
         }
 
         @Override

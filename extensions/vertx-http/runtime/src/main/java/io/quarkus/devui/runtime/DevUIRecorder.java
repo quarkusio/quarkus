@@ -17,6 +17,7 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
@@ -98,8 +99,14 @@ public class DevUIRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext rc) {
-                // 308 because we also want to redirect other HTTP Methods (and not only GET).
-                rc.response().putHeader("Location", contextRoot + "dev-ui").setStatusCode(308).end();
+                // Initially we were using 308 (MOVED PERMANENTLY) because we also want to redirect other HTTP Methods
+                // (and not only GET).
+                // However, it caused issues with browser caches and prevented users to have applications using Quarkus 2
+                // and Quarkus 3 at the same time. So, we decided to switch to FOUND (302)
+                // See https://github.com/quarkusio/quarkus/issues/33658 for more context.
+                rc.response()
+                        .putHeader("Location", contextRoot + "dev-ui")
+                        .setStatusCode(HttpResponseStatus.FOUND.code()).end();
             }
         };
     }

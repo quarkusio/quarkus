@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Priority;
@@ -22,6 +23,7 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.impl.ArcContainerImpl;
@@ -32,10 +34,9 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
     @RegisterExtension
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(HasObserver.class, Foo.class, FooAlternative.class, HasName.class, UnusedProducers.class,
-                    InjectedViaInstance.class, InjectedViaInstanceWithWildcard.class,
-                    InjectedViaProvider.class, Excluded.class,
-                    UsedProducers.class,
-                    UnusedProducerButInjected.class, UsedViaInstanceWithUnusedProducer.class, UsesBeanViaInstance.class)
+                    InjectedViaInstance.class, InjectedViaInstanceWithWildcard.class, InjectedViaProvider.class, Excluded.class,
+                    UsedProducers.class, UnusedProducerButInjected.class, UsedViaInstanceWithUnusedProducer.class,
+                    UsesBeanViaInstance.class, UsedViaAllList.class)
             .removeUnusedBeans(true)
             .addRemovalExclusion(b -> b.getBeanClass().toString().equals(Excluded.class.getName()))
             .build();
@@ -67,6 +68,7 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
         assertFalse(ArcContainerImpl.instance().getRemovedBeans().isEmpty());
         assertNotPresent(UnusedBean.class);
         assertNotPresent(OnlyInjectedInUnusedBean.class);
+        assertPresent(UsedViaAllList.class);
     }
 
     @Dependent
@@ -197,6 +199,10 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
 
         @Inject
         Instance<UsedViaInstanceWithUnusedProducer> instance;
+
+        @Inject
+        @All
+        List<UsedViaAllList> list;
     }
 
     @Singleton
@@ -209,6 +215,11 @@ public class RemoveUnusedBeansTest extends RemoveUnusedComponentsTest {
 
     @Singleton
     static class OnlyInjectedInUnusedBean {
+
+    }
+
+    @Singleton
+    static class UsedViaAllList {
 
     }
 

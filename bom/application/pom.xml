@@ -57,17 +57,17 @@
         <microprofile-openapi.version>3.1</microprofile-openapi.version>
         <smallrye-common.version>2.1.0</smallrye-common.version>
         <smallrye-config.version>3.2.1</smallrye-config.version>
-        <smallrye-health.version>4.0.1</smallrye-health.version>
+        <smallrye-health.version>4.0.2</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.3.4</smallrye-open-api.version>
-        <smallrye-graphql.version>2.2.0</smallrye-graphql.version>
+        <smallrye-graphql.version>2.2.1</smallrye-graphql.version>
         <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>6.2.3</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.2.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.0</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.4.1</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>3.4.2</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.5.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.2.0</smallrye-stork.version>
         <jakarta.activation.version>2.1.2</jakarta.activation.version>
@@ -119,7 +119,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.1.0.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.0.Final</jboss-threads.version>
-        <vertx.version>4.4.2</vertx.version>
+        <vertx.version>4.4.3</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -127,7 +127,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.1.214</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.6.0</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.1.3</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.1.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>12.2.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -141,10 +141,10 @@
         <infinispan.version>14.0.9.Final</infinispan.version>
         <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.92.Final</netty.version>
+        <netty.version>4.1.93.Final</netty.version>
         <brotli4j.version>1.11.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
-        <jboss-logging.version>3.5.0.Final</jboss-logging.version>
+        <jboss-logging.version>3.5.1.Final</jboss-logging.version>
         <mutiny.version>2.1.0</mutiny.version>
         <kafka3.version>3.4.0</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
@@ -331,6 +331,12 @@
                 <version>${vertx.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <dependency>
+                <!-- Override the dependency on the vertx-jdbc-client, because of https://github.com/vert-x3/vertx-jdbc-client/pull/306 -->
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-jdbc-client</artifactId>
+                <version>${vertx.version}.1</version>
             </dependency>
 
             <!-- gRPC dependencies, imported as a BOM -->
@@ -4750,6 +4756,11 @@
                 <version>${jna.version}</version>
             </dependency>
             <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna-platform</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-component-annotations</artifactId>
                 <version>${plexus-component-annotations.version}</version>
@@ -4851,6 +4862,11 @@
             <dependency>
                 <groupId>org.glassfish.jaxb</groupId>
                 <artifactId>jaxb-core</artifactId>
+                <version>${jaxb-runtime.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jaxb</groupId>
+                <artifactId>txw2</artifactId>
                 <version>${jaxb-runtime.version}</version>
             </dependency>
             <dependency>

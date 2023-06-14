@@ -88,6 +88,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
+import io.quarkus.utilities.JavaBinFinder;
 
 /**
  * This build step builds both the thin jars and uber jars.
@@ -1681,7 +1682,7 @@ public class JarResultBuildStep {
                     int dotIndex = jarToDecompile.getFileName().toString().indexOf('.');
                     String fileName = jarToDecompile.getFileName().toString().substring(0, dotIndex);
                     ProcessBuilder processBuilder = new ProcessBuilder(
-                            Arrays.asList("java", "-jar", decompilerJar.toAbsolutePath().toString(),
+                            Arrays.asList(JavaBinFinder.findBin(), "-jar", decompilerJar.toAbsolutePath().toString(),
                                     jarToDecompile.toAbsolutePath().toString(),
                                     context.decompiledOutputDir.resolve(fileName).toAbsolutePath().toString()));
                     if (log.isDebugEnabled()) {

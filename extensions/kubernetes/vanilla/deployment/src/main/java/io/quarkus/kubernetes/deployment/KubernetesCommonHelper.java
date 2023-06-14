@@ -4,6 +4,7 @@ package io.quarkus.kubernetes.deployment;
 import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.distinct;
 import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_HTTP_PORT;
 import static io.quarkus.kubernetes.deployment.Constants.HTTP_PORT;
+import static io.quarkus.kubernetes.deployment.Constants.KNATIVE;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_BUILD_TIMESTAMP;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_COMMIT_ID;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS_ANNOTATIONS_VCS_URL;
@@ -977,7 +978,9 @@ public class KubernetesCommonHelper {
         List<DecoratorBuildItem> result = new ArrayList<>();
         createLivenessProbe(name, target, livenessProbe, livenessPath).ifPresent(d -> result.add(d));
         createReadinessProbe(name, target, readinessProbe, readinessPath).ifPresent(d -> result.add(d));
-        createStartupProbe(name, target, startupProbe, startupPath).ifPresent(d -> result.add(d));
+        if (!KNATIVE.equals(target)) { // see https://github.com/quarkusio/quarkus/issues/33944
+            createStartupProbe(name, target, startupProbe, startupPath).ifPresent(d -> result.add(d));
+        }
         return result;
     }
 

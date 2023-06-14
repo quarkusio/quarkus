@@ -146,6 +146,14 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
         handler.handle(item);
     }
 
+    private void clearEncoder() {
+        if (encoder == null) {
+            return;
+        }
+        encoder.cleanFiles();
+        encoder = null;
+    }
+
     @Override
     public void run() {
         if (Vertx.currentContext() != context) {
@@ -161,7 +169,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                     } else if (chunk == LastHttpContent.EMPTY_LAST_CONTENT || encoder.isEndOfInput()) {
                         ended = true;
                         request = null;
-                        encoder = null;
+                        clearEncoder();
                         pending.write(InboundBuffer.END_SENTINEL);
                     } else {
                         ByteBuf content = chunk.content();
@@ -179,7 +187,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                 ByteBuf content = request.content();
                 Buffer buffer = Buffer.buffer(content);
                 request = null;
-                encoder = null;
+                clearEncoder();
                 pending.write(buffer);
                 ended = true;
                 pending.write(InboundBuffer.END_SENTINEL);
@@ -194,7 +202,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
     private void handleError(Throwable e) {
         ended = true;
         request = null;
-        encoder = null;
+        clearEncoder();
         pending.write(e);
     }
 

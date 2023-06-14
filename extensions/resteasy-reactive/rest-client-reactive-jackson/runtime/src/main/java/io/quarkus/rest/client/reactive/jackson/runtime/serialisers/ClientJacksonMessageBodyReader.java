@@ -13,11 +13,14 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
+import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 
 import com.fasterxml.jackson.core.JsonParseException;
@@ -42,7 +45,13 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         try {
-            return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
+            if (entityStream instanceof EmptyInputStream) {
+                return null;
+            }
+            ObjectReader reader = getEffectiveReader(type, mediaType);
+            return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
+                    .readValue(entityStream);
+
         } catch (JsonParseException e) {
             log.debug("Server returned invalid json data", e);
             throw new ClientWebApplicationException(e, Response.Status.OK);
@@ -56,23 +65,44 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
         this.context = requestContext;
     }
 
-    @Override
-    protected ObjectReader getEffectiveReader() {
-        if (context == null) {
-            // no context injected when reader is not running within a rest client context
-            return super.getEffectiveReader();
+    private ObjectReader getEffectiveReader(Class<Object> type, MediaType responseMediaType) {
+        ObjectMapper effectiveMapper = getObjectMapperFromContext(type, responseMediaType);
+        if (effectiveMapper == null) {
+            return getEffectiveReader();
         }
 
-        ObjectMapper objectMapper = context.getConfiguration().getFromContext(ObjectMapper.class);
-        if (objectMapper == null) {
-            return super.getEffectiveReader();
-        }
-
-        return contextResolverMap.computeIfAbsent(objectMapper, new Function<>() {
+        return contextResolverMap.computeIfAbsent(effectiveMapper, new Function<>() {
             @Override
             public ObjectReader apply(ObjectMapper objectMapper) {
                 return objectMapper.reader();
             }
         });
+    }
+
+    private ObjectMapper getObjectMapperFromContext(Class<Object> type, MediaType responseMediaType) {
+        Providers providers = getProviders();
+        if (providers == null) {
+            return null;
+        }
+
+        ContextResolver<ObjectMapper> contextResolver = providers.getContextResolver(ObjectMapper.class,
+                responseMediaType);
+        if (contextResolver == null) {
+            // TODO: not sure if this is correct, but Jackson does this as well...
+            contextResolver = providers.getContextResolver(ObjectMapper.class, null);
+        }
+        if (contextResolver != null) {
+            return contextResolver.getContext(type);
+        }
+
+        return null;
+    }
+
+    private Providers getProviders() {
+        if (context != null && context.getClientRequestContext() != null) {
+            return context.getClientRequestContext().getProviders();
+        }
+
+        return null;
     }
 }

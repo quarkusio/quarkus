@@ -54,6 +54,7 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.DefaultMismatchedInp
 import io.quarkus.resteasy.reactive.jackson.runtime.mappers.NativeInvalidDefinitionExceptionMapper;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.SecurityCustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.BasicServerJacksonMessageBodyWriter;
+import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.FullyFeaturedServerJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.ServerJacksonMessageBodyReader;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.vertx.VertxJsonArrayMessageBodyReader;
@@ -122,6 +123,7 @@ public class ResteasyReactiveJacksonProcessor {
         // make these beans to they can get instantiated with the Quarkus CDI configured ObjectMapper object
         return AdditionalBeanBuildItem.builder()
                 .addBeanClass(ServerJacksonMessageBodyReader.class.getName())
+                .addBeanClass(FullyFeaturedServerJacksonMessageBodyReader.class)
                 .addBeanClass(BasicServerJacksonMessageBodyWriter.class)
                 // This will not be needed in most cases, but it will not be involved in serialization
                 // just because it's a bean.
@@ -141,7 +143,9 @@ public class ResteasyReactiveJacksonProcessor {
 
         additionalReaders
                 .produce(
-                        new MessageBodyReaderBuildItem.Builder(ServerJacksonMessageBodyReader.class.getName(),
+                        new MessageBodyReaderBuildItem.Builder(
+                                getJacksonMessageBodyReader(
+                                        hasObjectMapperContextResolver || specialJacksonFeaturesUsed),
                                 Object.class.getName())
                                 .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
                                 .setBuiltin(true).setRuntimeType(RuntimeType.SERVER).build());
@@ -192,6 +196,11 @@ public class ResteasyReactiveJacksonProcessor {
     private String getJacksonMessageBodyWriter(boolean needsFullFeatureSet) {
         return needsFullFeatureSet ? FullyFeaturedServerJacksonMessageBodyWriter.class.getName()
                 : BasicServerJacksonMessageBodyWriter.class.getName();
+    }
+
+    private String getJacksonMessageBodyReader(boolean needsFullFeatureSet) {
+        return needsFullFeatureSet ? FullyFeaturedServerJacksonMessageBodyReader.class.getName()
+                : ServerJacksonMessageBodyReader.class.getName();
     }
 
     @Record(ExecutionTime.STATIC_INIT)

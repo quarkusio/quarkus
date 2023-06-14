@@ -159,7 +159,7 @@ oc new-app --name=greeting <project>/openshift-quickstart:1.0.0-SNAPSHOT <2>
 oc get svc
 oc expose svc/greeting <3>
 oc get routes <4>
-curl http://<route>/greeting <5>
+curl http://<route>/hello <5>
 ----
 <1> Lists the image streams created. The image stream of our application should be tagged as <project>/openshift-quickstart:1.0.0-SNAPSHOT.
 <2> Create a new application from the image source.

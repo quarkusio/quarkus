@@ -2,11 +2,11 @@ package io.quarkus.maven;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.execution.MavenSession;
@@ -135,7 +135,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * The context of the execution of the plugin.
      */
     @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
-    private MojoExecution mojoExecution;
+    MojoExecution mojoExecution;
 
     /**
      * Application bootstrap provider ID. This parameter is not supposed to be configured by the user.
@@ -217,7 +217,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * @return list of extra dependencies that should be enforced on the application
      */
     protected List<Dependency> forcedDependencies(LaunchMode mode) {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @Deprecated(forRemoval = true)
@@ -288,5 +288,9 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected CuratedApplication bootstrapApplication(LaunchMode mode) throws MojoExecutionException {
         return bootstrapProvider.bootstrapApplication(this, mode);
+    }
+
+    protected Properties getBuildSystemProperties(boolean quarkusOnly) throws MojoExecutionException {
+        return bootstrapProvider.bootstrapper(this).getBuildSystemProperties(this, quarkusOnly);
     }
 }

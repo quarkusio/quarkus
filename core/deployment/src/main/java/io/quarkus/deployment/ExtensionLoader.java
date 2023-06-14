@@ -82,7 +82,6 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.ConfigMappingUtils;
-import io.quarkus.deployment.configuration.DefaultValuesConfigurationSource;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.ObjectLoader;
@@ -99,16 +98,10 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
-import io.smallrye.config.KeyMap;
-import io.smallrye.config.KeyMapBackedConfigSource;
-import io.smallrye.config.NameIterator;
-import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * Utility class to load build steps, runtime recorders, and configuration roots from a given extension class.
@@ -120,7 +113,6 @@ public final class ExtensionLoader {
 
     private static final Logger loadLog = Logger.getLogger("io.quarkus.deployment");
     private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
-    private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
     @SuppressWarnings("unchecked")
     private static final Class<? extends BooleanSupplier>[] EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY = new Class[0];
 
@@ -142,46 +134,9 @@ public final class ExtensionLoader {
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
             ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType)
             throws IOException, ClassNotFoundException {
-        // populate with all known types
-        List<Class<?>> roots = new ArrayList<>();
-        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, CONFIG_ROOTS_LIST)) {
-            final ConfigRoot annotation = clazz.getAnnotation(ConfigRoot.class);
-            if (annotation == null) {
-                cfgLog.warnf("Ignoring configuration root %s because it has no annotation", clazz);
-            } else {
-                roots.add(clazz);
-            }
-        }
 
-        final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(roots);
-
-        // now prepare & load the build configuration
-        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
-
-        final DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(
-                reader.getBuildTimePatternMap());
-        final DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(
-                reader.getBuildTimeRunTimePatternMap());
-        final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-        final Map<String, String> platformProperties = appModel.getPlatformProperties();
-        if (platformProperties.isEmpty()) {
-            builder.withSources(ds1, ds2, pcs);
-        } else {
-            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
-            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
-                props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
-            }
-            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
-                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-                    Integer.MIN_VALUE + 1000, props);
-            builder.withSources(ds1, ds2, platformConfigSource, pcs);
-        }
-
-        for (ConfigClassWithPrefix mapping : reader.getBuildTimeVisibleMappings()) {
-            builder.withMapping(mapping.getKlass(), mapping.getPrefix());
-        }
-        final SmallRyeConfig src = builder.build();
+        final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
+        final SmallRyeConfig src = reader.initConfiguration(launchMode, buildSystemProps, appModel.getPlatformProperties());
 
         // install globally
         QuarkusConfigFactory.setConfig(src);

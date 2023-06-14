@@ -16,31 +16,28 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.util.ClassPathUtils;
-import io.smallrye.config.KeyMap;
-import io.smallrye.config.KeyMapBackedConfigSource;
-import io.smallrye.config.NameIterator;
-import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SysPropConfigSource;
 
 /**
  * A set of methods to initialize and execute {@link CodeGenProvider}s.
  */
 public class CodeGenerator {
+
+    private static final Logger log = Logger.getLogger(CodeGenerator.class);
 
     private static final List<String> CONFIG_SOURCE_FACTORY_INTERFACES = List.of(
             "META-INF/services/io.smallrye.config.ConfigSourceFactory",
@@ -160,7 +157,7 @@ public class CodeGenerator {
      * @param deploymentClassLoader deployment classloader
      * @param data code gen
      * @param appModel app model
-     * @param properties custom code generation properties
+     * @param config config instance
      * @param test whether the sources are generated for production code or tests
      * @return true if sources have been created
      * @throws CodeGenException on failure
@@ -207,13 +204,13 @@ public class CodeGenerator {
                     bannedConfigFactories.put(factoryImpl, new byte[0]);
                 } else {
                     final StringJoiner joiner = new StringJoiner(System.lineSeparator());
-                    allFactories.forEach(f -> joiner.add(f));
+                    allFactories.forEach(joiner::add);
                     allowedConfigFactories.put(factoryImpl, joiner.toString().getBytes());
                 }
             }
 
             // we don't want to load config source factories/providers from the current module because they haven't been compiled yet
-            QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
+            final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
                     deploymentClassLoader, false);
             if (!allowedConfigFactories.isEmpty()) {
                 configClBuilder.addElement(new MemoryClassPathElement(allowedConfigFactories, true));
@@ -224,26 +221,10 @@ public class CodeGenerator {
             deploymentClassLoader = configClBuilder.build();
         }
         try {
-            final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode)
-                    .forClassLoader(deploymentClassLoader);
-            final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-            final SysPropConfigSource spcs = new SysPropConfigSource();
-
-            final Map<String, String> platformProperties = appModel.getPlatformProperties();
-            if (platformProperties.isEmpty()) {
-                builder.withSources(pcs, spcs);
-            } else {
-                final KeyMap<String> props = new KeyMap<>(platformProperties.size());
-                for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
-                    props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
-                }
-                final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
-                        // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-                        // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-                        Integer.MIN_VALUE + 1000, props);
-                builder.withSources(platformConfigSource, pcs, spcs);
-            }
-            return builder.build();
+            return new BuildTimeConfigurationReader(deploymentClassLoader).initConfiguration(launchMode, buildSystemProps,
+                    appModel.getPlatformProperties());
+        } catch (Exception e) {
+            throw new CodeGenException("Failed to initialize application configuration", e);
         } finally {
             if (!appModuleConfigFactories.isEmpty()) {
                 deploymentClassLoader.close();

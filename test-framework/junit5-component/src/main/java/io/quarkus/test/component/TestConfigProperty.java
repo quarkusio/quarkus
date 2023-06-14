@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 import io.quarkus.test.component.TestConfigProperty.TestConfigProperties;
 
 /**
- * Set a configuration property for the test.
+ * Set the value of a configuration property for a {@code io.quarkus.test.component.QuarkusComponentTest}.
  *
  * @see QuarkusComponentTest
  * @see QuarkusComponentTestExtension#configProperty(String, String)

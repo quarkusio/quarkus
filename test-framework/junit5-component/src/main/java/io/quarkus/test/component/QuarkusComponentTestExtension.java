@@ -124,6 +124,9 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  * configuration properties via the {@link #configProperty(String, String)} method. If you only need to use the default values
  * for missing config properties, then the {@link #useDefaultConfigProperties()}
  * might come in useful.
+ *
+ * @see InjectMock
+ * @see TestConfigProperty
  */
 @Experimental("This feature is experimental and the API may change in the future")
 public class QuarkusComponentTestExtension
@@ -195,7 +198,7 @@ public class QuarkusComponentTestExtension
     }
 
     /**
-     * Use the default values for missing config properties. By default, if missing config property results in a test failure.
+     * Use the default values for missing config properties. By default, a missing config property results in a test failure.
      * <p>
      * For primitives the default values as defined in the JLS are used. For any other type {@code null} is injected.
      *
@@ -246,10 +249,14 @@ public class QuarkusComponentTestExtension
             }
         }
         // All fields annotated with @Inject represent component classes
-        for (Field field : testClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Inject.class) && !resolvesToBuiltinBean(field.getType())) {
-                componentClasses.add(field.getType());
+        Class<?> current = testClass;
+        while (current != null) {
+            for (Field field : current.getDeclaredFields()) {
+                if (field.isAnnotationPresent(Inject.class) && !resolvesToBuiltinBean(field.getType())) {
+                    componentClasses.add(field.getType());
+                }
             }
+            current = current.getSuperclass();
         }
 
         TestConfigProperty[] testConfigProperties = testClass.getAnnotationsByType(TestConfigProperty.class);
@@ -761,13 +768,17 @@ public class QuarkusComponentTestExtension
             injectAnnotations = List.of(Inject.class, InjectMock.class);
         }
         List<FieldInjector> injectedFields = new ArrayList<>();
-        for (Field field : testClass.getDeclaredFields()) {
-            for (Class<? extends Annotation> annotation : injectAnnotations) {
-                if (field.isAnnotationPresent(annotation)) {
-                    injectedFields.add(new FieldInjector(field, testInstance));
-                    break;
+        Class<?> current = testClass;
+        while (current.getSuperclass() != null) {
+            for (Field field : current.getDeclaredFields()) {
+                for (Class<? extends Annotation> annotation : injectAnnotations) {
+                    if (field.isAnnotationPresent(annotation)) {
+                        injectedFields.add(new FieldInjector(field, testInstance));
+                        break;
+                    }
                 }
             }
+            current = current.getSuperclass();
         }
         return injectedFields;
     }

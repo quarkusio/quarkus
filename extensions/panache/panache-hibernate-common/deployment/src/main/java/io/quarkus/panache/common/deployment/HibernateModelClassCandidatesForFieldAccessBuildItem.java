@@ -5,13 +5,13 @@ import java.util.Set;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class HibernateModelClassCandidatesForFieldAccessBuildItem extends SimpleBuildItem {
-    private final Set<String> allModelClassNames;
+    private final Set<String> managedClassNames;
 
-    public HibernateModelClassCandidatesForFieldAccessBuildItem(Set<String> allModelClassNames) {
-        this.allModelClassNames = allModelClassNames;
+    public HibernateModelClassCandidatesForFieldAccessBuildItem(Set<String> managedClassNames) {
+        this.managedClassNames = managedClassNames;
     }
 
-    public Set<String> getAllModelClassNames() {
-        return allModelClassNames;
+    public Set<String> getManagedClassNames() {
+        return managedClassNames;
     }
 }

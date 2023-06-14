@@ -3,11 +3,10 @@
 ****
 [source,bash,subs=attributes+]
 ----
-ifdef::create-cli-group-id[]
-ifdef::create-cli-extensions[]
+ifdef::create-cli-extensions,create-cli-stream[]
 quarkus create cli {create-cli-group-id}:{create-cli-artifact-id} \
 endif::[]
-ifndef::create-cli-extensions[]
+ifndef::create-cli-extensions,create-cli-stream[]
 ifndef::create-cli-code[]
 quarkus create cli {create-cli-group-id}:{create-cli-artifact-id} \
 endif::[]
@@ -15,17 +14,16 @@ ifdef::create-cli-code[]
 quarkus create cli {create-cli-group-id}:{create-cli-artifact-id}
 endif::[]
 endif::[]
-endif::[]
-ifndef::create-cli-group-id[]
+ifdef::create-cli-stream[]
 ifdef::create-cli-extensions[]
-quarkus create cli org.acme:{create-cli-artifact-id} \
+    --stream={create-cli-stream} \
 endif::[]
 ifndef::create-cli-extensions[]
 ifndef::create-cli-code[]
-quarkus create cli org.acme:{create-cli-artifact-id} \
+    --stream={create-cli-stream} \
 endif::[]
 ifdef::create-cli-code[]
-quarkus create cli org.acme:{create-cli-artifact-id}
+    --stream={create-cli-stream}
 endif::[]
 endif::[]
 endif::[]
@@ -61,9 +59,10 @@ _For more information about how to install the Quarkus CLI and use it, please re
 [source,bash,subs=attributes+]
 ----
 mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
-ifdef::create-cli-group-id[]
-    -DprojectGroupId={create-cli-group-id} \
+ifdef::create-cli-stream[]
+    -DplatformVersion={quarkus-version} \
 endif::[]
+    -DprojectGroupId={create-cli-group-id} \
 ifndef::create-cli-group-id[]
     -DprojectGroupId=org.acme \
 endif::[]

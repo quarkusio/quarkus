@@ -116,14 +116,14 @@ So unless you've used the `quarkus.openshift.route.expose` config property to ex
 ----
 oc expose svc/greeting <1>
 oc get routes <2>
-curl http://<route>/greeting <3>
+curl http://<route>/hello <3>
 ----
 <1> Expose the service.
 <2> Get the list of exposed routes.
 <3> Access your application.
 
 [[control_application_config]]
-=== Configure the OpenShift Application Manually 
+=== Configure the OpenShift Application Manually
 
 If you need more control over the deployment configuration you can build the container image first and then configure the OpenShift application manually.
 
@@ -146,7 +146,7 @@ During the build you may find the `Caused by: javax.net.ssl.SSLHandshakeExceptio
 quarkus.kubernetes-client.trust-certs=true
 ----
 
-For more information, see link:https://quarkus.io/guides/deploying-to-kubernetes#client-connection-configuration[deploying to kubernetes].
+For more information, see link:https://quarkus.io/guides/deploying-to-kubernetes#client-connection-configuration[deploying to Kubernetes].
 ====
 
 Once the build is done we can create a new application from the relevant `ImageStream`.
@@ -176,7 +176,7 @@ Out of the box the OpenShift extension is configured to use xref:container-image
 - xref:container-image.adoc#docker[container-image-docker]
 - xref:container-image.adoc#jib[container-image-jib]
 
-When a non-s2i container image extension is used, an `ImageStream` is created that is pointing to an external `dockerImageRepository`. The image is built and pushed to the registry and the `ImageStream` populates the tags that are available in the `dockerImageRepository`. 
+When a non-s2i container image extension is used, an `ImageStream` is created that is pointing to an external `dockerImageRepository`. The image is built and pushed to the registry and the `ImageStream` populates the tags that are available in the `dockerImageRepository`.
 
 To select which extension will be used for building the image:
 

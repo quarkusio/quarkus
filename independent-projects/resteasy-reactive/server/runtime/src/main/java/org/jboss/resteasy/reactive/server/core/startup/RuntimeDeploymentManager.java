@@ -104,17 +104,31 @@ public class RuntimeDeploymentManager {
                         return info.getFactoryCreator().apply(aClass).createInstance();
                     }
                 });
+
+        // sanitise the prefix for our usage to make it either an empty string, or something which starts with a / and does not
+        // end with one
+        String prefix = rootPath;
+        if (prefix != null) {
+            prefix = sanitizePathPrefix(prefix);
+        } else {
+            prefix = "";
+        }
+        if ((applicationPath != null) && !applicationPath.isEmpty()) {
+            prefix = prefix + sanitizePathPrefix(applicationPath);
+        }
+        // to use it inside lambdas
+        String finalPrefix = prefix;
+
         List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = new ArrayList<>();
         RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
                 virtualExecutorSupplier,
                 interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler, requestContextFactory.isDefaultBlocking());
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
         possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
+        Map<String, List<String>> disabledEndpoints = new HashMap<>();
         for (int i = 0; i < possibleSubResource.size(); i++) {
             ResourceClass clazz = possibleSubResource.get(i);
-            if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
-                continue;
-            }
+
             Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>> templates = new HashMap<>();
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (int j = 0; j < clazz.getMethods().size(); j++) {
@@ -127,6 +141,24 @@ public class RuntimeDeploymentManager {
             }
             Map<String, RequestMapper<RuntimeResource>> mappersByMethod = new RuntimeMappingDeployment(templates)
                     .buildClassMapper();
+            mappersByMethod.forEach((method, mapper) -> {
+                for (RequestMapper.RequestPath<RuntimeResource> path : mapper.getTemplates()) {
+                    if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
+                        String templateWithoutSlash = path.template.template.startsWith("/")
+                                ? path.template.template.substring(1)
+                                : path.template.template;
+                        String fullPath = clazz.getPath().endsWith("/") ? finalPrefix + clazz.getPath() + templateWithoutSlash
+                                : finalPrefix + clazz.getPath() + "/" + templateWithoutSlash;
+                        if (!disabledEndpoints.containsKey(fullPath)) {
+                            disabledEndpoints.put(fullPath, new ArrayList<>());
+                        }
+                        disabledEndpoints.get(fullPath).add(method);
+                    }
+                }
+            });
+            if ((clazz.getIsDisabled() != null) && clazz.getIsDisabled().get()) {
+                continue;
+            }
             resourceLocatorHandler.addResource(loadClass(clazz.getClassName()), mappersByMethod);
         }
 
@@ -172,17 +204,6 @@ public class RuntimeDeploymentManager {
             abortHandlingChain.addAll(interceptorDeployment.getGlobalResponseInterceptorHandlers());
         }
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
-        // sanitise the prefix for our usage to make it either an empty string, or something which starts with a / and does not
-        // end with one
-        String prefix = rootPath;
-        if (prefix != null) {
-            prefix = sanitizePathPrefix(prefix);
-        } else {
-            prefix = "";
-        }
-        if ((applicationPath != null) && !applicationPath.isEmpty()) {
-            prefix = prefix + sanitizePathPrefix(applicationPath);
-        }
 
         //pre matching interceptors are run first
         List<ServerRestHandler> preMatchHandlers = new ArrayList<>();
@@ -210,7 +231,8 @@ public class RuntimeDeploymentManager {
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404(), info.getResteasyReactiveConfig());
+                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404(), info.getResteasyReactiveConfig(),
+                disabledEndpoints);
     }
 
     private void forEachMapperEntry(MappersKey key,

@@ -21,6 +21,7 @@ public abstract class PageBuilder<T> {
     protected String componentLink;
     protected Map<String, String> metadata = new HashMap<>();
     protected boolean embed = true; // default
+    protected boolean includeInSubMenu = true; // default
     protected boolean internalComponent = false; // default
     protected String namespace = null;
     protected String namespaceLabel = null;
@@ -128,6 +129,7 @@ public abstract class PageBuilder<T> {
                 componentLink,
                 metadata,
                 embed,
+                includeInSubMenu,
                 internalComponent,
                 namespace,
                 namespaceLabel,

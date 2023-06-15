@@ -19,16 +19,20 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
+import io.quarkus.reactive.datasource.runtime.ConnectOptionsSupplier;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveRuntimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.oracle.client.OraclePoolCreator;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.oracleclient.OracleConnectOptions;
 import io.vertx.oracleclient.OraclePool;
 import io.vertx.sqlclient.PoolOptions;
+import io.vertx.sqlclient.impl.Utils;
 
 @SuppressWarnings("deprecation")
 @Recorder
@@ -44,7 +48,7 @@ public class OraclePoolRecorder {
             DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig,
             ShutdownContext shutdown) {
 
-        OraclePool oraclePool = initialize(vertx.getValue(),
+        OraclePool oraclePool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
                 dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
@@ -59,7 +63,7 @@ public class OraclePoolRecorder {
         return new RuntimeValue<>(io.vertx.mutiny.oracleclient.OraclePool.newInstance(oraclePool.getValue()));
     }
 
-    private OraclePool initialize(Vertx vertx,
+    private OraclePool initialize(VertxInternal vertx,
             Integer eventLoopCount,
             String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -67,15 +71,27 @@ public class OraclePoolRecorder {
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveOracleConfig);
-        OracleConnectOptions oracleConnectOptions = toOracleConnectOptions(dataSourceRuntimeConfig,
+        OracleConnectOptions oracleConnectOptions = toOracleConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveOracleConfig);
-        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with oracle.
-        // and the client_name as tag.
-        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
-        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
-        oracleConnectOptions.setMetricsName("oracle|" + dataSourceName);
+        Supplier<Future<OracleConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(oracleConnectOptions),
+                dataSourceRuntimeConfig);
+        return createPool(vertx, poolOptions, oracleConnectOptions, dataSourceName, databasesSupplier);
+    }
 
-        return createPool(vertx, poolOptions, oracleConnectOptions, dataSourceName);
+    private Supplier<Future<OracleConnectOptions>> toDatabasesSupplier(Vertx vertx,
+            List<OracleConnectOptions> oracleConnectOptions,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+        Supplier<Future<OracleConnectOptions>> supplier;
+        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, oracleConnectOptions,
+                    OracleConnectOptions::new);
+        } else {
+            supplier = Utils.roundRobinSupplier(oracleConnectOptions);
+        }
+        return supplier;
     }
 
     private PoolOptions toPoolOptions(Integer eventLoopCount,
@@ -108,7 +124,7 @@ public class OraclePoolRecorder {
         return poolOptions;
     }
 
-    private OracleConnectOptions toOracleConnectOptions(DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private OracleConnectOptions toOracleConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
         OracleConnectOptions oracleConnectOptions;
@@ -154,11 +170,17 @@ public class OraclePoolRecorder {
 
         dataSourceReactiveRuntimeConfig.additionalProperties.forEach(oracleConnectOptions::addProperty);
 
+        // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with oracle.
+        // and the client_name as tag.
+        // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
+        // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
+        oracleConnectOptions.setMetricsName("oracle|" + dataSourceName);
+
         return oracleConnectOptions;
     }
 
     private OraclePool createPool(Vertx vertx, PoolOptions poolOptions, OracleConnectOptions oracleConnectOptions,
-            String dataSourceName) {
+            String dataSourceName, Supplier<Future<OracleConnectOptions>> databases) {
         Instance<OraclePoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
             instance = Arc.container().select(OraclePoolCreator.class);
@@ -170,7 +192,7 @@ public class OraclePoolRecorder {
             OraclePoolCreator.Input input = new DefaultInput(vertx, poolOptions, oracleConnectOptions);
             return instance.get().create(input);
         }
-        return OraclePool.pool(vertx, oracleConnectOptions, poolOptions);
+        return OraclePool.pool(vertx, databases, poolOptions);
     }
 
     private static class DefaultInput implements OraclePoolCreator.Input {

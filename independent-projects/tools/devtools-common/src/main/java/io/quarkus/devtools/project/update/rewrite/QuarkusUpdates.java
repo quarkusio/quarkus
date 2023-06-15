@@ -1,4 +1,4 @@
-package io.quarkus.devtools.project.update;
+package io.quarkus.devtools.project.update.rewrite;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -6,9 +6,9 @@ import java.nio.file.Path;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.update.QuarkusUpdatesRepository.FetchResult;
-import io.quarkus.devtools.project.update.operations.UpdatePropertyOperation;
-import io.quarkus.devtools.project.update.operations.UpgradeGradlePluginOperation;
+import io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.FetchResult;
+import io.quarkus.devtools.project.update.rewrite.operations.UpdatePropertyOperation;
+import io.quarkus.devtools.project.update.rewrite.operations.UpgradeGradlePluginOperation;
 
 public final class QuarkusUpdates {
 

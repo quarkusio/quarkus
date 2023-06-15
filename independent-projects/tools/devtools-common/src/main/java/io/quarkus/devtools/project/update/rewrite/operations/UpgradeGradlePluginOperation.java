@@ -1,9 +1,9 @@
-package io.quarkus.devtools.project.update.operations;
+package io.quarkus.devtools.project.update.rewrite.operations;
 
 import java.util.Map;
 
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.update.RewriteOperation;
+import io.quarkus.devtools.project.update.rewrite.RewriteOperation;
 
 public class UpgradeGradlePluginOperation implements RewriteOperation {
 

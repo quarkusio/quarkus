@@ -6,10 +6,11 @@ import jakarta.persistence.EntityManager
 class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
     override fun createPanacheQuery(
         em: EntityManager,
-        query: String,
+        hqlQuery: String,
+        originalQuery: String?,
         orderBy: String?,
         paramsArrayOrMap: Any?
-    ) = PanacheQueryImpl<Any>(em, query, orderBy, paramsArrayOrMap)
+    ) = PanacheQueryImpl<Any>(em, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>) = query.list()
 

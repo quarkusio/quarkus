@@ -936,12 +936,15 @@ public class CodeFlowTest {
 
             final String decryptSecret = "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU";
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-tokens");
+            assertEquals("strict", idTokenCookie.getSameSite());
             checkSingleTokenCookie(idTokenCookie, "ID", decryptSecret);
 
             Cookie atTokenCookie = getSessionAtCookie(page.getWebClient(), "tenant-split-tokens");
+            assertEquals("strict", atTokenCookie.getSameSite());
             checkSingleTokenCookie(atTokenCookie, "Bearer", decryptSecret);
 
             Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-tokens");
+            assertEquals("strict", rtTokenCookie.getSameSite());
             checkSingleTokenCookie(rtTokenCookie, "Refresh", decryptSecret);
 
             // verify all the cookies are cleared after the session timeout
@@ -1021,11 +1024,6 @@ public class CodeFlowTest {
 
             webClient.getCookieManager().clearCookies();
         }
-    }
-
-    private void checkSingleTokenCookie(Cookie tokenCookie, String type) {
-        checkSingleTokenCookie(tokenCookie, type, null);
-
     }
 
     private void checkSingleTokenCookie(Cookie tokenCookie, String type, String decryptSecret) {

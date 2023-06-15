@@ -27,7 +27,8 @@ public class KubernetesWithHealthAndJibTest {
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
-            .withConfigurationResource("kubernetes-with-health-and-jib.properties")
+            .overrideConfigKey("quarkus.http.port", "9000")
+            .overrideConfigKey("quarkus.container-image.name", "with-health-and-jib")
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-smallrye-health", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-container-image-jib", Version.getVersion())));
@@ -45,7 +46,7 @@ public class KubernetesWithHealthAndJibTest {
                 .deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
         assertThat(kubernetesList.get(0)).isInstanceOfSatisfying(Deployment.class, d -> {
             assertThat(d.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo("with-health-and-jib");
+                assertThat(m.getName()).isEqualTo("health-and-jib");
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {

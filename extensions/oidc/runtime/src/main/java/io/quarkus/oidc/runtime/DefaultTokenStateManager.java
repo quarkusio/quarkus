@@ -39,13 +39,13 @@ public class DefaultTokenStateManager implements TokenStateManager {
                         oidcConfig,
                         getAccessTokenCookieName(oidcConfig),
                         encryptToken(tokens.getAccessToken(), routingContext, oidcConfig),
-                        routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
+                        routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM), true);
                 if (tokens.getRefreshToken() != null) {
                     CodeAuthenticationMechanism.createCookie(routingContext,
                             oidcConfig,
                             getRefreshTokenCookieName(oidcConfig),
                             encryptToken(tokens.getRefreshToken(), routingContext, oidcConfig),
-                            routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM));
+                            routingContext.get(CodeAuthenticationMechanism.SESSION_MAX_AGE_PARAM), true);
                 }
             }
         } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {

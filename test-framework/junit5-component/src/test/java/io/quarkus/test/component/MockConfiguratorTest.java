@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.beans.Charlie;
 import io.quarkus.test.component.beans.MyComponent;
 
@@ -24,7 +25,7 @@ public class MockConfiguratorTest {
     @Inject
     MyComponent myComponent;
 
-    @ConfigureMock
+    @InjectMock
     Charlie charlie;
 
     @Test

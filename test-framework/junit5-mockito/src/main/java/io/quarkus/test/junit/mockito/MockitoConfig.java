@@ -5,20 +5,22 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import io.quarkus.test.InjectMock;
+
 /**
- * When used on a field of a test class, the field becomes a Mockito mock,
- * that is then used to mock the normal scoped bean which the field represents.
+ * This annotation can be used to configure a Mockito mock injected in a field of a test class that is annotated with
+ * {@link InjectMock}. This annotation is only supported in a {@code io.quarkus.test.QuarkusTest}.
  *
- * @deprecated Use {@link io.quarkus.test.InjectMock} and {@link MockitoConfig} instead.
+ * @see InjectMock
  */
-@Deprecated(since = "3.2", forRemoval = true)
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface InjectMock {
+public @interface MockitoConfig {
 
     /**
      * If true, then Quarkus will change the scope of the target {@code Singleton} bean to {@code ApplicationScoped}
      * to make it mockable.
+     * <p>
      * This is an advanced setting and should only be used if you don't rely on the differences between {@code Singleton}
      * and {@code ApplicationScoped} beans (for example it is invalid to read fields of {@code ApplicationScoped} beans
      * as a proxy stands in place of the actual implementation)

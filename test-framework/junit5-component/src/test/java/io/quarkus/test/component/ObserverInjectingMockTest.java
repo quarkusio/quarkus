@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.beans.Delta;
 import io.quarkus.test.component.beans.MyComponent;
 
@@ -21,7 +22,7 @@ public class ObserverInjectingMockTest {
     @Inject
     Event<Boolean> event;
 
-    @ConfigureMock
+    @InjectMock
     Delta delta;
 
     @Test

@@ -285,8 +285,11 @@ public interface NativeConfig {
 
     /**
      * If full stack traces are enabled in the resulting image
+     *
+     * @deprecated GraalVM 23.1+ will always build with full stack traces.
      */
     @WithDefault("true")
+    @Deprecated
     boolean fullStackTraces();
 
     /**

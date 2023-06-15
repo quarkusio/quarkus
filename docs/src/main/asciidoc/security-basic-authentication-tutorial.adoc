@@ -1,6 +1,7 @@
 [id="security-basic-authentication-tutorial"]
 = Secure a Quarkus application with Basic authentication and Jakarta Persistence
 include::_attributes.adoc[]
+:diataxis-type: tutorial
 :categories: security,getting-started
 
 Secure your Quarkus application endpoints by combining the built-in Quarkus xref:security-basic-authentication-concept.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).

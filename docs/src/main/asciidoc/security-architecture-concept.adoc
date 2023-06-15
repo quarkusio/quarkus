@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="security-architecture-concept"]
 = Quarkus Security architecture
 include::_attributes.adoc[]
+:diataxis-type: concept
 :categories: security
 
 The Quarkus Security architecture provides several built-in authentication mechanisms and is highly customizable.

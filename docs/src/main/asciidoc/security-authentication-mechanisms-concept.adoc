@@ -1,6 +1,7 @@
 [id="security-authentication-mechanisms-concept"]
 = Authentication mechanisms in Quarkus
 include::_attributes.adoc[]
+:diataxis-type: concept
 :categories: security,web
 
 The Quarkus Security framework supports multiple authentication mechanisms, which you can use to secure your applications.

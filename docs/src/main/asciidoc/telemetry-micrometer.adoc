@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id=telemetry-micrometer]
 = Micrometer Metrics
 include::_attributes.adoc[]
+:diataxis-type: reference
 :categories: observability
 :summary: Use Micrometer to collect metrics produced by Quarkus, its extensions, and your application.
 :base-units: https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/BaseUnits.java

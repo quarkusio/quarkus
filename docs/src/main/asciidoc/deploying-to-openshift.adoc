@@ -115,7 +115,7 @@ So unless you've used the `quarkus.openshift.route.expose` config property to ex
 .Expose The Service - OpenShift CLI Example
 [source,bash,subs=attributes+]
 ----
-oc expose svc/greeting <1>
+oc expose svc/openshift-quickstart <1>
 oc get routes <2>
 curl http://<route>/hello <3>
 ----

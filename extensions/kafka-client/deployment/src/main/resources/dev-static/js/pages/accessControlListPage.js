@@ -17,12 +17,12 @@ export default class AccessControlListPage {
         const req = {
             action: "getAclInfo"
         };
+
         toggleSpinner(this.containerId);
+
         doPost(req, (data) => {
-            setTimeout(() => {
-                this.updateInfo(data);
-                toggleSpinner(this.containerId);
-            }, 2000);
+            this.updateInfo(data);
+            toggleSpinner(this.containerId);
         }, data => {
             errorPopUp("Error getting Kafka ACL info: ", data);
         });
@@ -40,7 +40,7 @@ export default class AccessControlListPage {
             const e = acls[i];
             let tableRow = $("<tr/>");
             tableRow.append(createTableItem(e.operation));
-            tableRow.append(createTableItem(e.prinipal));
+            tableRow.append(createTableItem(e.principal));
             tableRow.append(createTableItem(e.perm));
             tableRow.append(createTableItem(e.pattern));
             aclTable.append(tableRow);

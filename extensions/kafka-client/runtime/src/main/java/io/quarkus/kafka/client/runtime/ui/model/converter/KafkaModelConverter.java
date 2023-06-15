@@ -1,8 +1,13 @@
 package io.quarkus.kafka.client.runtime.ui.model.converter;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.utils.Bytes;
 
 import io.quarkus.kafka.client.runtime.ui.model.response.KafkaMessage;
@@ -15,6 +20,12 @@ public class KafkaModelConverter {
                 message.offset(),
                 message.timestamp(),
                 Optional.ofNullable(message.key()).map(Bytes::toString).orElse(null),
-                Optional.ofNullable(message.value()).map(Bytes::toString).orElse(null));
+                Optional.ofNullable(message.value()).map(Bytes::toString).orElse(null),
+                headers(message));
+    }
+
+    private static Map<String, String> headers(ConsumerRecord<Bytes, Bytes> message) {
+        return StreamSupport.stream(message.headers().spliterator(), false)
+                .collect(Collectors.toMap(Header::key, header -> new String(header.value(), StandardCharsets.UTF_8)));
     }
 }

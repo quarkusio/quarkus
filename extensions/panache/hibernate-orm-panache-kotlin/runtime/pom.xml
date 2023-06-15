@@ -154,7 +154,7 @@
                         <annotationProcessorPath>
                             <groupId>org.hibernate.orm</groupId>
                             <artifactId>hibernate-jpamodelgen</artifactId>
-                            <version>6.2.4.Final</version>
+                            <version>${version.hibernate-jpamodelgen}</version>
                         </annotationProcessorPath>
                         <annotationProcessorPath>
                             <groupId>io.quarkus</groupId>
@@ -164,7 +164,7 @@
                         <annotationProcessorPath>
                             <groupId>org.eclipse.sisu</groupId>
                             <artifactId>org.eclipse.sisu.inject</artifactId>
-                            <version>0.3.5</version>
+                            <version>${version.sisu.inject}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <annotationProcessors>

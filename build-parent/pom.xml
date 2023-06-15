@@ -179,6 +179,11 @@
         <gcf-invoker.version>1.1.1</gcf-invoker.version>
         <!-- Jakarta JMS API -->
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
+
+        <!-- version used in annotation processor paths -->
+        <version.sisu.inject>0.3.5</version.sisu.inject>
+        <version.hibernate-jpamodelgen>6.2.4.Final</version.hibernate-jpamodelgen>
+        <version.stork-configuration-generator>2.2.0</version.stork-configuration-generator>
     </properties>
 
     <dependencyManagement>

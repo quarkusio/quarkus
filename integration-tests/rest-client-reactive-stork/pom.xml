@@ -129,7 +129,7 @@
                         <annotationProcessorPath>
                             <groupId>io.smallrye.stork</groupId>
                             <artifactId>stork-configuration-generator</artifactId>
-                            <version>2.2.0</version>
+                            <version>${version.stork-configuration-generator}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>
                 </configuration>

@@ -261,16 +261,9 @@ min-width: 100%;
                         </div>
                         <div class="tab-pane fade" id="headers-list-tab-pane" role="tabpanel"
                              aria-labelledby="headers-list-tab">
-                            <div class="input-group top-margin">
-                                <span class="input-group-text">1.</span>
-                                <input type="text" class="form-control" placeholder="Key"/>
-                                <input type="text" class="form-control" placeholder="Value"/>
-                                <span class="input-group-text" id="basic-addon1">
-                                    <i class="bi bi-trash"></i>
-                                </span>
-                            </div>
+
                             <div class="d-flex justify-content-end top-margin">
-                                <button type="button" class="btn btn-light" id="add-header-btn">Add</button>
+                                <button type="button" class="btn btn-light" id="add-msg-header-btn">Add</button>
                             </div>
                         </div>
                     </div>
@@ -380,7 +373,7 @@ min-width: 100%;
 
     <div class="col-md-10 content-holder" style="background-color:#ffffff;">
         <div id="topics-page" class="flex-column">
-            <div class="card d-flex flex-fill top-margin">
+            <div class="card d-flex flex-fill">
                 <table class="table table-hover pointer" id="topics-table">
                     <thead class="thead-dark">
                         <tr>
@@ -400,7 +393,7 @@ min-width: 100%;
             </button>
         </div>
         <div id="topic-messages-page" class="flex-column">
-            <div id="topic-msg-content" class="card flex-fill top-margin">
+            <div id="topic-msg-content" class="card flex-fill">
                 <div class="page d-flex align-content-center justify-content-center">
                     <div id="msg-table-holder" class="align-items-start">
                         <table class="table" id="msg-table">
@@ -445,7 +438,7 @@ min-width: 100%;
             </button>
         </div>
         <div id="consumer-groups-page">
-            <div class="card flex-fill top-margin">
+            <div class="card flex-fill">
                 <table class="table table-hover" id="consumer-groups-table">
                     <thead class="thead-dark">
                         <tr>
@@ -464,7 +457,7 @@ min-width: 100%;
         </div>
         <div id="consumer-groups-details-page">
             <div class="card flex-fill">
-                <table class="table table-hover top-margin" id="consumer-group-details-table">
+                <table class="table table-hover" id="consumer-group-details-table">
                     <thead class="thead-dark">
                         <tr>
                             <th scope="col"></th>
@@ -479,7 +472,23 @@ min-width: 100%;
                 </table>
             </div>
         </div>
-        <div id="nodes-page" class="flex-column top-margin">
+        <div id="access-control-list-page" class="flex-column">
+            <div class="card d-flex flex-fill">
+                <table class="table table-hover" id="acl-table">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th scope="col">Operation</th>
+                            <th scope="col">Principal</th>
+                            <th scope="col">Permission</th>
+                            <th scope="col">Resource Pattern</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="nodes-page" class="flex-column">
             <div class="card d-flex flex-fill">
                 <div class="card-body">
                     <b>Kafka cluster id:&nbsp;</b><span id="cluster-id"></span><br>

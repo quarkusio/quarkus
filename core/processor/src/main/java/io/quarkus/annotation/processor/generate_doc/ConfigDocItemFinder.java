@@ -271,7 +271,7 @@ class ConfigDocItemFinder {
                     if (!typeArguments.isEmpty()) {
                         // FIXME: this is super dodgy: we should check the type!!
                         if (typeArguments.size() == 2) {
-                            type = typeArguments.get(1).toString();
+                            type = getType(typeArguments.get(1));
                             if (isConfigGroup(type)) {
                                 name += String.format(NAMED_MAP_CONFIG_ITEM_FORMAT, configDocMapKey);
                                 List<ConfigDocItem> groupConfigItems = readConfigGroupItems(configPhase, rootName, name, type,
@@ -354,8 +354,6 @@ class ConfigDocItemFinder {
                     }
                 }
 
-                final String configDescription = javaDocParser.parseConfigDescription(rawJavaDoc);
-
                 configDocKey.setKey(name);
                 configDocKey.setType(type);
                 configDocKey.setList(list);
@@ -365,7 +363,7 @@ class ConfigDocItemFinder {
                 configDocKey.setConfigPhase(configPhase);
                 configDocKey.setDefaultValue(defaultValue);
                 configDocKey.setDocMapKey(configDocMapKey);
-                configDocKey.setConfigDoc(configDescription);
+                configDocKey.setConfigDoc(javaDocParser.parseConfigDescription(rawJavaDoc));
                 configDocKey.setAcceptedValues(acceptedValues);
                 configDocKey.setJavaDocSiteLink(getJavaDocSiteLink(type));
                 ConfigDocItem configDocItem = new ConfigDocItem();
@@ -413,6 +411,11 @@ class ConfigDocItemFinder {
 
         // A ConfigMapping method
         if (enclosedElement.getKind().equals(ElementKind.METHOD)) {
+            ExecutableElement method = (ExecutableElement) enclosedElement;
+            // Skip toString method, because mappings can include it and generate it
+            if (method.getSimpleName().contentEquals("toString") && method.getParameters().size() == 0) {
+                return false;
+            }
             Element enclosingElement = enclosedElement.getEnclosingElement();
             return enclosingElement.getModifiers().contains(ABSTRACT) && enclosedElement.getModifiers().contains(ABSTRACT);
         }
@@ -438,7 +441,7 @@ class ConfigDocItemFinder {
             return simpleTypeToString(typeArguments.get(0));
         }
 
-        return typeMirror.toString();
+        return getType(typeMirror);
     }
 
     private List<String> extractEnumValues(TypeMirror realTypeMirror, boolean useHyphenatedEnumValue, String javaDocKey) {

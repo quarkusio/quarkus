@@ -1,5 +1,6 @@
 package io.quarkus.annotation.processor;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_GROUP;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_MAPPING;
 import static javax.lang.model.util.ElementFilter.constructorsIn;
 import static javax.lang.model.util.ElementFilter.fieldsIn;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -545,9 +547,53 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private void processMethodConfigMapping(ExecutableElement method, Properties javadocProps, String className) {
         if (method.getModifiers().contains(Modifier.ABSTRACT)) {
-            final String docComment = getRequiredJavadoc(method);
+            // Skip toString method, because mappings can include it and generate it
+            if (method.getSimpleName().contentEquals("toString") && method.getParameters().size() == 0) {
+                return;
+            }
+
+            String docComment = getRequiredJavadoc(method);
             javadocProps.put(className + Constants.DOT + method.getSimpleName().toString(), docComment);
+
+            // Find groups without annotation
+            TypeMirror returnType = method.getReturnType();
+            if (TypeKind.DECLARED.equals(returnType.getKind())) {
+                DeclaredType declaredType = (DeclaredType) returnType;
+                if (!isAnnotationPresent(declaredType.asElement(), ANNOTATION_CONFIG_GROUP)) {
+                    TypeElement type = unwrapConfigGroup(returnType);
+                    if (type != null && ElementKind.INTERFACE.equals(type.getKind())) {
+                        recordMappingJavadoc(type);
+                        configDocItemScanner.addConfigGroups(type);
+                    }
+                }
+            }
         }
+    }
+
+    private TypeElement unwrapConfigGroup(TypeMirror typeMirror) {
+        if (typeMirror == null) {
+            return null;
+        }
+
+        DeclaredType declaredType = (DeclaredType) typeMirror;
+        String name = declaredType.asElement().toString();
+        List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
+        if (typeArguments.size() == 0) {
+            if (!name.startsWith("java.")) {
+                return (TypeElement) declaredType.asElement();
+            }
+        } else if (typeArguments.size() == 1) {
+            if (name.equals(Optional.class.getName()) ||
+                    name.equals(List.class.getName()) ||
+                    name.equals(Set.class.getName())) {
+                return unwrapConfigGroup(typeArguments.get(0));
+            }
+        } else if (typeArguments.size() == 2) {
+            if (name.equals(Map.class.getName())) {
+                return unwrapConfigGroup(typeArguments.get(1));
+            }
+        }
+        return null;
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {

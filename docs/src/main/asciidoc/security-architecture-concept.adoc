@@ -8,7 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 
-The Quarkus Security architecture provides several built-in authentication mechanisms. The `HttpAuthenticationMechanism` interface is the main entry mechanism for securing HTTP applications in Quarkus. Quarkus Security is also highly customizable.
+The Quarkus Security architecture provides several built-in authentication mechanisms and is highly customizable.
+The primary mechanism for securing HTTP applications in Quarkus is the `HttpAuthenticationMechanism` interface.
 
 == Overview of the Quarkus Security architecture
 
@@ -16,9 +17,9 @@ When a client sends an HTTP request, Quarkus Security orchestrates security auth
 
 The sequential security validation process results in one of three outcomes:
 
-* The HTTP request is authenticated and authorized and access to the Quarkus application is granted
-* The HTTP request authentication fails and the requester receives a challenge
-* The HTTP request authorization fails and the requester's access to the Quarkus applicaton is denied
+* The HTTP request gets authenticated and authorized and access to the Quarkus application gets granted.
+* The HTTP request authentication fails and the requester receives a challenge.
+* The HTTP request authorization fails and the requester gets denied access to the Quarkus application.
 
 The following diagram steps through the detailed process flow of the Quarkus Security architecture:
 
@@ -38,7 +39,7 @@ You can inject a `SecurityIdentity` instance for every authenticated resource to
 
 In other contexts, it is possible to have other parallel representations of the same information or parts of it, for example, `SecurityContext` for Jakarta REST or `JsonWebToken` for JSON Web Tokens (JWT).
 
-For more information, see xref:security-identity-providers-concept.adoc[Identity providers].
+For more information, see the Quarkus xref:security-identity-providers-concept.adoc[Identity providers] guide.
 
 === `SecurityIdentityAugmentor`
 Because Quarkus Security is customizable, for example, you can add authorization roles to `SecurityIdentity`, you can register and prioritize one or more custom security augmentors.
@@ -49,13 +50,13 @@ For more information, see the xref:security-customization.adoc#security-identity
 
 == Supported authentication mechanisms
 
-To learn more about security authentication in Quarkus and the supported mechanisms and protocols, see xref:security-authentication-mechanisms-concept.adoc[Authentication mechanisms in Quarkus].
+To learn more about security authentication in Quarkus and the supported mechanisms and protocols, see the Quarkus xref:security-authentication-mechanisms-concept.adoc[Authentication mechanisms in Quarkus] guide.
 
 == Proactive authentication
 
 Proactive authentication is enabled in Quarkus by default.
-The request is always authenticated if an incoming request has a credential, even if the target page does not require authentication
-For more information, see xref:security-proactive-authentication-concept.adoc[Proactive authentication].
+The request is always authenticated if an incoming request has a credential, even if the target page does not require authentication.
+For more information, see the Quarkus xref:security-proactive-authentication-concept.adoc[Proactive authentication] guide.
 
 == Quarkus Security customization
 
@@ -66,11 +67,11 @@ You can customize the following core security components of Quarkus:
 * `IdentityProvider`
 * `SecurityidentityAugmentor`
 
-For more information about customizing Quarkus Security, including reactive security and how to register a security provider, see xref:security-customization.adoc[Security customization].
+For more information about customizing Quarkus Security, including reactive security and how to register a security provider, see the Quarkus link:{url-quarkusio-guides}security-customization[Security tips and tricks] guide.
 
 == References
 
 * xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Other supported authentication mechanisms]
 * xref:security-identity-providers-concept.adoc[Identity providers]
 * xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]

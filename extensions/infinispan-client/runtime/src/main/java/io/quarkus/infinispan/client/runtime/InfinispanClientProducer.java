@@ -409,7 +409,7 @@ public class InfinispanClientProducer {
     }
 
     public CounterManager getNamedCounterManager(String clientName) {
-        RemoteCacheManager cacheManager = remoteCacheManagers.get(clientName);
+        RemoteCacheManager cacheManager = getNamedRemoteCacheManager(clientName);
         return RemoteCounterManagerFactory.asCounterManager(cacheManager);
     }
 

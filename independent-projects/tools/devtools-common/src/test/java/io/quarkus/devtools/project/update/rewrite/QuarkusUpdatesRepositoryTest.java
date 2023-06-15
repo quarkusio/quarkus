@@ -1,6 +1,6 @@
-package io.quarkus.devtools.project.update;
+package io.quarkus.devtools.project.update.rewrite;
 
-import static io.quarkus.devtools.project.update.QuarkusUpdatesRepository.shouldApplyRecipe;
+import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.shouldApplyRecipe;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.params.ParameterizedTest;

@@ -1,4 +1,4 @@
-package io.quarkus.devtools.project.update;
+package io.quarkus.devtools.project.update.rewrite;
 
 public class QuarkusUpdateException extends Exception {
 

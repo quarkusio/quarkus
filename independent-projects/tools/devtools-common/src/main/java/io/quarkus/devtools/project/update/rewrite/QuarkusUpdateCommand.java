@@ -1,6 +1,6 @@
-package io.quarkus.devtools.project.update;
+package io.quarkus.devtools.project.update.rewrite;
 
-import static io.quarkus.devtools.project.update.QuarkusUpdateRecipe.RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS;
+import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdateRecipe.RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS;
 
 import java.io.BufferedReader;
 import java.io.File;

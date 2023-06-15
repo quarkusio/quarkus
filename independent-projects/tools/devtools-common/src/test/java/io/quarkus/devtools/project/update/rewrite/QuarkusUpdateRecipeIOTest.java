@@ -1,4 +1,4 @@
-package io.quarkus.devtools.project.update;
+package io.quarkus.devtools.project.update.rewrite;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -6,8 +6,8 @@ import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.project.update.operations.UpdateManagedDependencyVersionOperation;
-import io.quarkus.devtools.project.update.operations.UpdatePropertyOperation;
+import io.quarkus.devtools.project.update.rewrite.operations.UpdateManagedDependencyVersionOperation;
+import io.quarkus.devtools.project.update.rewrite.operations.UpdatePropertyOperation;
 
 class QuarkusUpdateRecipeIOTest {
 

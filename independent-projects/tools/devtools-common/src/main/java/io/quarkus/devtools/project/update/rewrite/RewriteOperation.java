@@ -1,4 +1,4 @@
-package io.quarkus.devtools.project.update;
+package io.quarkus.devtools.project.update.rewrite;
 
 import java.util.Map;
 

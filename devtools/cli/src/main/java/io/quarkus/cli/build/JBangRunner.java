@@ -2,9 +2,7 @@ package io.quarkus.cli.build;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 import io.quarkus.cli.common.BuildOptions;
@@ -117,7 +115,38 @@ public class JBangRunner implements BuildSystemRunner {
     public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions,
             List<String> params) {
-        throw new UnsupportedOperationException("Not there yet. ;)");
+        ArrayDeque<String> args = new ArrayDeque<>();
+        List<String> jvmArgs = new ArrayList<>();
+
+        if (!devMode) {
+            throw new IllegalStateException("test mode not supported with jbang - yet");
+        }
+
+        // setMavenProperties(args, false);
+
+        //if (commonOptions.clean) {
+        // always run fresh when asking in devmode to ensure it gets built with devmode enabled
+        args.add("--fresh");
+        //}
+
+        args.add("run");
+        args.add("-Dquarkus.dev");
+
+        if (commonOptions.offline) {
+            args.add("--offline");
+        }
+
+        //TODO: handle debug? jbang suspends by default
+        // debugOptions.addDebugArguments(args, jvmArgs);
+        propertiesOptions.flattenJvmArgs(jvmArgs, args);
+
+        // Add any other unmatched arguments
+        paramsToQuarkusArgs(params, args);
+
+        args.add(getMainPath());
+
+        BuildCommandArgs buildCommandArgs = prependExecutable(args);
+        return Collections.singletonList(() -> buildCommandArgs);
     }
 
     @Override

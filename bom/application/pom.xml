@@ -37,7 +37,7 @@
         <opentracing-kafka.version>0.1.15</opentracing-kafka.version>
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.25.0</opentelemetry.version>
-        <opentelemetry-alpha.version>1.25.0-alpha</opentelemetry-alpha.version>
+        <opentelemetry-alpha.version>1.27.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>5.0.2.Final</quarkus-http.version>
         <micrometer.version>1.11.0</micrometer.version><!-- keep in sync with hdrhistogram -->

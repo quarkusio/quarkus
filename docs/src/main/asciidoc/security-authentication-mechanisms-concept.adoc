@@ -180,7 +180,7 @@ The Bearer authentication mechanism extracts the token from the HTTP Authorizati
 The Authorization Code Flow mechanism redirects the user to an OIDC provider to authenticate the user's identity.
 After the user is redirected back to Quarkus, the mechanism completes the authentication process by exchanging the provided code that was granted for the ID, access, and refresh tokens.
 
-You can verify ID and access JSON Web Key (JWK) tokens by using the refreshable JWK set or introspect them remotely.
+You can verify ID and access JSON Web Token (JWT) tokens by using the refreshable JSON Web Key (JWK) set or introspect them remotely.
 However, opaque, also known as binary tokens, can only be introspected remotely.
 
 [NOTE]

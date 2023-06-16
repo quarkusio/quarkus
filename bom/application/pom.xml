@@ -148,7 +148,7 @@
         <mutiny.version>2.2.0</mutiny.version>
         <kafka3.version>3.4.0</kafka3.version>
         <lz4.version>1.8.0</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
-        <snappy.version>1.1.8.4</snappy.version>
+        <snappy.version>1.1.10.1</snappy.version>
         <strimzi-test-container.version>0.100.0</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.13.10</scala.version>

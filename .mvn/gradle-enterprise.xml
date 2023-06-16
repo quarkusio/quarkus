@@ -8,7 +8,12 @@
         mvn gradle-enterprise:provision-access-key 
         https://docs.gradle.com/enterprise/maven-extension/#publishing_based_on_criteria
          -->
-        <publish>ALWAYS</publish>
+        <!-- only publish test runs when failure (no option to completely avoid it)-->
+        <publish>#{basedir.contains('test-classes') ? 'ON_FAILURE' : 'ALWAYS'}</publish>
+        <!-- tag which builds are tests vs real -->
+        <tags>
+          <tag>#{basedir.contains('test-classes') ? 'TEST-BUILD' : 'MAIN-BUILD'}</tag>
+        </tags>
         <obfuscation>
           <!-- Don't share ip addresses-->
           <ipAddresses>#{{'0.0.0.0'}}</ipAddresses>

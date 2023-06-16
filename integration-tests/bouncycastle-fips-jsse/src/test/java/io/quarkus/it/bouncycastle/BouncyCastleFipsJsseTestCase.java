@@ -108,12 +108,12 @@ public class BouncyCastleFipsJsseTestCase {
                             while ((line = reader.readLine()) != null) {
                                 sbLog.append(line).append("/r/n");
                                 if (!checkServerPassed && line.contains("ProvTlsServer")
-                                        && (line.contains("Server selected protocol version: TLSv1.2")
-                                                || line.contains("Server selected protocol version: TLSv1.3"))) {
+                                        && (line.contains("selected protocol version: TLSv1.2")
+                                                || line.contains("selected protocol version: TLSv1.3"))) {
                                     checkServerPassed = true;
                                 } else if (!checkClientPassed && line.contains("ProvTlsClient")
-                                        && (line.contains("Client notified of selected protocol version: TLSv1.2")
-                                                || line.contains("Client notified of selected protocol version: TLSv1.3"))) {
+                                        && (line.contains("notified of selected protocol version: TLSv1.2")
+                                                || line.contains("notified of selected protocol version: TLSv1.3"))) {
                                     checkClientPassed = true;
                                 }
                                 if (checkClientPassed && checkServerPassed) {

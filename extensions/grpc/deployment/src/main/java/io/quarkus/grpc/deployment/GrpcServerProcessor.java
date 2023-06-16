@@ -505,9 +505,7 @@ public class GrpcServerProcessor {
                     .orElse(true);
             if (useSeparateServer) {
                 // Only expose the named port "grpc" if the gRPC server is exposed using a separate server.
-                int port = ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
-                        .orElse(9000);
-                return new KubernetesPortBuildItem(port, "grpc");
+                return KubernetesPortBuildItem.fromRuntimeConfiguration("grpc", "quarkus.grpc.server.port", 9000, true);
             }
         }
         return null;

@@ -378,7 +378,6 @@ public class OpenshiftProcessor {
         }
 
         printMessageAboutPortsThatCantChange(OPENSHIFT, ports, config);
-
         return result;
     }
 

@@ -22,7 +22,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.dekorate.kubernetes.config.Annotation;
@@ -97,6 +99,7 @@ import io.quarkus.kubernetes.spi.KubernetesProbePortNameBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
+import io.quarkus.kubernetes.spi.Property;
 import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
 
@@ -161,9 +164,16 @@ public class KubernetesCommonHelper {
     public static Map<String, Port> combinePorts(List<KubernetesPortBuildItem> ports,
             PlatformConfiguration config) {
         Map<String, Port> allPorts = new HashMap<>();
-        allPorts.putAll(verifyPorts(ports).entrySet().stream()
+        Map<String, Port> activePorts = new HashMap<>();
+
+        allPorts.putAll(ports.stream()
+                .map(p -> new PortBuilder().withName(p.getName()).withContainerPort(p.getPort()).build())
+                .collect(Collectors.toMap(Port::getName, Function.identity(), (first, second) -> first))); //prevent dublicate keys
+
+        activePorts.putAll(verifyPorts(ports)
+                .entrySet().stream()
                 .map(e -> new PortBuilder().withName(e.getKey()).withContainerPort(e.getValue()).build())
-                .collect(Collectors.toMap(Port::getName, p -> p)));
+                .collect(Collectors.toMap(Port::getName, Function.identity(), (first, second) -> first))); //prevent dublicate keys
 
         config.getPorts().entrySet().forEach(e -> {
             String name = e.getKey();
@@ -183,31 +193,30 @@ public class KubernetesCommonHelper {
                             .withPath(Strings.isNotNullOrEmpty(configuredPort.getPath()) ? configuredPort.getPath()
                                     : buildItemPort.getPath())
                             .build();
-
-            // Special handling for ports with mapped configuration. We look up the container port from the Quarkus configuration.
-            if (combinedPort.getContainerPort() == null) {
-                Integer containerPort = RuntimePropertiesUtil.getPortNumberFromRuntime(name);
-                if (containerPort != null) {
-                    combinedPort = new PortBuilder(combinedPort)
-                            .withContainerPort(containerPort)
-                            .build();
-                }
-            }
-
-            allPorts.put(name, combinedPort);
+            activePorts.put(name, combinedPort);
         });
-        return allPorts;
+        return activePorts;
     }
 
     /**
      * Creates the configurator build items.
      */
     public static void printMessageAboutPortsThatCantChange(String target, List<KubernetesPortBuildItem> ports,
-            PlatformConfiguration config) {
-        Collection<Port> allPorts = combinePorts(ports, config).values();
-        for (Port port : allPorts) {
-            RuntimePropertiesUtil.printTraceIfRuntimePropertyIsSet(target, port);
-        }
+            PlatformConfiguration configuration) {
+        ports.stream().forEach(port -> {
+            boolean enabled = port.isEnabled() || configuration.getPorts().containsKey(port.getName());
+            if (enabled) {
+                String name = "quarkus." + target + ".ports." + port.getName() + ".container-port";
+                Optional<Integer> value = Optional.ofNullable(configuration.getPorts().get(port.getName()))
+                        .map(p -> p.containerPort)
+                        .filter(OptionalInt::isPresent)
+                        .map(OptionalInt::getAsInt);
+                Property<Integer> kubernetesPortProperty = new Property(name, Integer.class, value, null, false);
+                PropertyUtil.printMessages(String.format("The container port %s", port.getName()), target,
+                        kubernetesPortProperty,
+                        port.getSource());
+            }
+        });
     }
 
     /**
@@ -1078,15 +1087,18 @@ public class KubernetesCommonHelper {
         final Map<String, Integer> result = new HashMap<>();
         final Set<Integer> usedPorts = new HashSet<>();
         for (KubernetesPortBuildItem entry : kubernetesPortBuildItems) {
+            if (!entry.isEnabled()) {
+                continue;
+            }
             final String name = entry.getName();
             if (result.containsKey(name)) {
                 throw new IllegalArgumentException(
-                        "All Kubernetes ports must have unique names - " + name + "has been used multiple times");
+                        "All Kubernetes ports must have unique names - " + name + " has been used multiple times");
             }
             final Integer port = entry.getPort();
             if (usedPorts.contains(port)) {
                 throw new IllegalArgumentException(
-                        "All Kubernetes ports must be unique - " + port + "has been used multiple times");
+                        "All Kubernetes ports must be unique - " + port + " has been used multiple times");
             }
             result.put(name, port);
             usedPorts.add(port);

@@ -2,8 +2,11 @@ package io.quarkus.devtools.project.update;
 
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
+import java.util.stream.Stream;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 
 public class ProjectExtensionsUpdateInfo {
     final Map<String, List<ExtensionUpdateInfo>> versionedManagedExtensions;
@@ -34,6 +37,13 @@ public class ProjectExtensionsUpdateInfo {
 
     public Map<String, List<ExtensionUpdateInfo>> getNonPlatformExtensions() {
         return nonPlatformExtensions;
+    }
+
+    public OptionalInt getMinJavaVersion() {
+        return Stream.concat(getVersionedManagedExtensions().values().stream(), getNonPlatformExtensions().values().stream())
+                .flatMap(List::stream)
+                .mapToInt(e -> ExtensionProcessor.getMinimumJavaVersion(e.getRecommendedMetadata()))
+                .max();
     }
 
     public boolean isEmpty() {

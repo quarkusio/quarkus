@@ -1,15 +1,15 @@
-package io.quarkus.devtools.commands;
+package io.quarkus.devtools.project;
 
-import static io.quarkus.devtools.commands.CreateProjectHelper.DETECT_JAVA_RUNTIME_VERSION;
-import static io.quarkus.devtools.commands.CreateProjectHelper.computeJavaVersion;
-import static io.quarkus.devtools.commands.CreateProjectHelper.determineBestJavaLtsVersion;
-import static io.quarkus.devtools.commands.SourceType.JAVA;
-import static io.quarkus.devtools.commands.SourceType.KOTLIN;
+import static io.quarkus.devtools.project.JavaVersion.DETECT_JAVA_RUNTIME_VERSION;
+import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
+import static io.quarkus.devtools.project.JavaVersion.determineBestJavaLtsVersion;
+import static io.quarkus.devtools.project.SourceType.JAVA;
+import static io.quarkus.devtools.project.SourceType.KOTLIN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-class CreateProjectHelperTest {
+class JavaVersionTest {
 
     @Test
     public void givenJavaVersion17ShouldReturn17() {

@@ -43,10 +43,10 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
+        invocation.log().info("Detected project Java version: %s", invocation.getQuarkusProject().getJavaVersion());
         final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
         final ExtensionCatalog targetCatalog = invocation.getValue(UpdateProject.TARGET_CATALOG);
         final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
-
         final boolean perModule = invocation.getValue(UpdateProject.PER_MODULE, false);
         final ProjectState currentState = resolveProjectState(appModel,
                 invocation.getQuarkusProject().getExtensionsCatalog());
@@ -68,7 +68,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     currentState,
                     recommendedState);
 
-            logUpdates(currentState, recommendedState, platformUpdateInfo, extensionsUpdateInfo, false, perModule,
+            logUpdates(invocation.getQuarkusProject(), currentState, recommendedState, platformUpdateInfo, extensionsUpdateInfo,
+                    false, perModule,
                     quarkusProject.log());
             final boolean noRewrite = invocation.getValue(UpdateProject.NO_REWRITE, false);
 
@@ -80,7 +81,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                         buildTool,
                         projectQuarkusPlatformBom.getVersion(),
                         targetPlatformVersion,
-                        kotlinVersion);
+                        kotlinVersion,
+                        extensionsUpdateInfo.getMinJavaVersion());
                 Path recipe = null;
                 try {
                     recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
@@ -131,7 +133,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
         return null;
     }
 
-    private static void logUpdates(ProjectState currentState, ProjectState recommendedState,
+    private static void logUpdates(QuarkusProject project, ProjectState currentState, ProjectState recommendedState,
             ProjectPlatformUpdateInfo platformUpdateInfo,
             ProjectExtensionsUpdateInfo extensionsUpdateInfo, boolean recommendState,
             boolean perModule, MessageWriter log) {
@@ -152,7 +154,6 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             ProjectInfoCommandHandler.logState(recommendedState, perModule, false, log);
             return;
         }
-
         if (platformUpdateInfo.isPlatformUpdatesAvailable()) {
             log.info("Recommended Quarkus platform BOM updates:");
             if (!platformUpdateInfo.getImportVersionUpdates().isEmpty()) {
@@ -234,6 +235,13 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     }
                 }
                 log.info("");
+            }
+        }
+        if (extensionsUpdateInfo.getMinJavaVersion().isPresent()) {
+            final int extensionsMinJavaVersion = extensionsUpdateInfo.getMinJavaVersion().getAsInt();
+            if (extensionsMinJavaVersion > project.getJavaVersion().getAsInt()) {
+                log.warn("We detected that some of the updated extensions require an update of the Java version to: ",
+                        extensionsMinJavaVersion);
             }
         }
     }

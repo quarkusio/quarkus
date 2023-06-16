@@ -20,13 +20,13 @@ import io.quarkus.devtools.codestarts.CodestartProjectDefinition;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartProjectInput;
-import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.CatalogKey;
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -232,7 +232,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
     private void checkMinimumJavaVersion(String javaVersionString, List<Extension> extensions) throws QuarkusCommandException {
         final List<Extension> incompatibleExtensions = new ArrayList<>();
-        final int javaVersion = javaVersionString == null ? CreateProjectHelper.DEFAULT_JAVA_VERSION
+        final int javaVersion = javaVersionString == null ? JavaVersion.DEFAULT_JAVA_VERSION
                 : Integer.parseInt(javaVersionString);
         for (Extension extension : extensions) {
             Integer extMinJavaVersion = getMinimumJavaVersion(extension);

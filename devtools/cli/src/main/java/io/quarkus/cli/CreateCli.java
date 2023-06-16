@@ -12,7 +12,7 @@ import io.quarkus.cli.create.TargetBuildToolGroup;
 import io.quarkus.cli.create.TargetGAVGroup;
 import io.quarkus.cli.create.TargetLanguageGroup;
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
-import io.quarkus.devtools.commands.SourceType;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.handlers.CreateJBangProjectCommandHandler;
 import io.quarkus.devtools.commands.handlers.CreateProjectCommandHandler;

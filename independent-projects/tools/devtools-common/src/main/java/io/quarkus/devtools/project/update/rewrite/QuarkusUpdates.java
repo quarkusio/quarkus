@@ -2,6 +2,7 @@ package io.quarkus.devtools.project.update.rewrite;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.OptionalInt;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -52,20 +53,24 @@ public final class QuarkusUpdates {
 
     public static class ProjectUpdateRequest {
 
-        public BuildTool buildTool;
-        public String currentVersion;
-        public String targetVersion;
-        public String kotlinVersion;
+        public final BuildTool buildTool;
+        public final String currentVersion;
+        public final String targetVersion;
+        public final String kotlinVersion;
+        public final OptionalInt minJavaVersion;
 
-        public ProjectUpdateRequest(String currentVersion, String targetVersion, String kotlinVersion) {
-            this(BuildTool.MAVEN, currentVersion, targetVersion, kotlinVersion);
+        public ProjectUpdateRequest(String currentVersion, String targetVersion, String kotlinVersion,
+                OptionalInt minJavaVersion) {
+            this(BuildTool.MAVEN, currentVersion, targetVersion, kotlinVersion, minJavaVersion);
         }
 
-        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion, String kotlinVersion) {
+        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion, String kotlinVersion,
+                OptionalInt minJavaVersion) {
             this.buildTool = buildTool;
             this.currentVersion = currentVersion;
             this.targetVersion = targetVersion;
             this.kotlinVersion = kotlinVersion;
+            this.minJavaVersion = minJavaVersion;
         }
     }
 }

@@ -36,6 +36,7 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
@@ -339,6 +340,120 @@ public class JarRunnerIT extends MojoTestBase {
 
             // Test that bean is not resolvable
             assertThat(response.get()).isEqualTo("2");
+        } finally {
+            process.destroy();
+        }
+    }
+
+    @Test
+    @Timeout(80) // windows might need more time
+    public void reaugmentationWithRemovedArtifactsUsingSystemProperties() throws Exception {
+        File testDir = initProject("projects/extension-removed-resources",
+                "projects/extension-removed-artifacts-reaugmentation");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        // The default build
+        MavenProcessInvocationResult result = running
+                .execute(List.of("package", "-DskipTests", "-Dquarkus.package.type=mutable-jar"), Map.of());
+        await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        testDir = testDir.toPath().resolve("runner").toFile();
+
+        Path runJar = testDir.toPath().toAbsolutePath().resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
+        assertThat(runJar).exists();
+
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        Process process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/words/runtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
+
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/words/buildtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment and exclude html-extra
+        process = doLaunch(runJar, output,
+                List.of("-Dquarkus.class-loading.removed-artifacts=org.acme:acme-subatomic-provider",
+                        "-Dquarkus.launch.rebuild=true"))
+                .start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/words/runtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("supersonic");
+
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/words/buildtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("supersonic");
+        } finally {
+            process.destroy();
+        }
+
+        // re-augment with the original dependencies
+        process = doLaunch(runJar, output, List.of("-Dquarkus.launch.rebuild=true")).start();
+        try {
+            assertThat(process.waitFor()).isEqualTo(0);
+        } finally {
+            process.destroy();
+        }
+
+        process = doLaunch(runJar, output).start();
+        try {
+            AtomicReference<String> response = new AtomicReference<>();
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/words/runtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
+
+            await()
+                    .pollDelay(1, TimeUnit.SECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> {
+                        String ret = DevModeTestUtils.getHttpResponse("/words/buildtime", false);
+                        response.set(ret);
+                        return true;
+                    });
+            assertThat(response.get()).isEqualTo("subatomic,supersonic");
         } finally {
             process.destroy();
         }

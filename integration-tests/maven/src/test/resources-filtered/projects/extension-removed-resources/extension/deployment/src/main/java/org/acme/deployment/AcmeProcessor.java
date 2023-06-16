@@ -2,10 +2,17 @@ package org.acme.deployment;
 
 import java.util.Set;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
-import io.quarkus.maven.dependency.ArtifactKey;
+
+import org.acme.AcmeRecorder;
+import org.acme.RecordedWords;
+import org.acme.WordProvider;
 
 class AcmeProcessor {
 
@@ -14,5 +21,17 @@ class AcmeProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE);
+    }
+
+    @BuildStep
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(RecordedWords.class).build());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void recordWords(AcmeRecorder recorder, BeanContainerBuildItem beanContainer) {
+        recorder.recordWords(beanContainer.getValue(), WordProvider.loadAndSortWords(), Thread.currentThread().getContextClassLoader().getName());
     }
 }

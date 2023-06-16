@@ -185,7 +185,7 @@ However, opaque, also known as binary tokens, can only be introspected remotely.
 
 [NOTE]
 ====
-Using the Quarkus OIDC extension, both Bearer Token and Authorization Code Flow mechanisms use xref:smallrye-jwt-authentication[SmallRye JWT authentication] to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
+Using the Quarkus OIDC extension, both Bearer and Authorization Code Flow authentication mechanisms use xref:smallrye-jwt-authentication[SmallRye JWT authentication] to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
 ====
 
 ==== Additional Quarkus resources for OIDC authentication

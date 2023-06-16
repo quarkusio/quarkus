@@ -44,13 +44,21 @@ public class Injection {
     private static final Logger LOGGER = Logger.getLogger(Injection.class);
 
     static Injection forSyntheticBean(Iterable<TypeAndQualifiers> injectionPoints) {
-        List<InjectionPointInfo> ips = new ArrayList<>();
+        return forSynthetic(injectionPoints, BeanType.SYNTHETIC_BEAN);
+    }
+
+    static Injection forSyntheticInterceptor(Iterable<TypeAndQualifiers> injectionPoints) {
+        return forSynthetic(injectionPoints, BeanType.SYNTHETIC_INTERCEPTOR);
+    }
+
+    private static Injection forSynthetic(Iterable<TypeAndQualifiers> injectionPoints, BeanType beanType) {
+        List<InjectionPointInfo> ret = new ArrayList<>();
         for (TypeAndQualifiers injectionPoint : injectionPoints) {
-            InjectionPointInfo injectionPointInfo = InjectionPointInfo.fromSyntheticInjectionPoint(injectionPoint);
-            validateInjections(injectionPointInfo, BeanType.SYNTHETIC_BEAN);
-            ips.add(injectionPointInfo);
+            InjectionPointInfo ip = InjectionPointInfo.fromSyntheticInjectionPoint(injectionPoint);
+            validateInjections(ip, beanType);
+            ret.add(ip);
         }
-        return new Injection(null, ips);
+        return new Injection(null, ret);
     }
 
     private static void validateInjections(InjectionPointInfo injectionPointInfo, BeanType beanType) {
@@ -78,7 +86,8 @@ public class Injection {
             // declaring the injection point
             if (injectionPointInfo.getRequiredType().name().equals(DotNames.BEAN)
                     && injectionPointInfo.getRequiredType().kind() == Type.Kind.PARAMETERIZED_TYPE
-                    && injectionPointInfo.getRequiredType().asParameterizedType().arguments().size() == 1) {
+                    && injectionPointInfo.getRequiredType().asParameterizedType().arguments().size() == 1
+                    && injectionPointInfo.hasDefaultedQualifier()) {
                 Type actualType = injectionPointInfo.getRequiredType().asParameterizedType().arguments().get(0);
                 AnnotationTarget ipTarget = injectionPointInfo.getTarget();
                 DotName expectedType = null;
@@ -255,6 +264,7 @@ public class Injection {
         PRODUCER_METHOD,
         SYNTHETIC_BEAN,
         INTERCEPTOR,
+        SYNTHETIC_INTERCEPTOR,
         DECORATOR
     }
 

@@ -7,6 +7,7 @@ import org.bson.BsonTimestamp;
 
 import com.mongodb.client.model.Collation;
 import com.mongodb.client.model.changestream.FullDocument;
+import com.mongodb.client.model.changestream.FullDocumentBeforeChange;
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
 
 /**
@@ -15,6 +16,7 @@ import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
 public class ChangeStreamOptions {
 
     private FullDocument fullDocument;
+    private FullDocumentBeforeChange fullDocumentBeforeChange;
     private BsonDocument resumeToken;
     private BsonDocument startAfterResumeToken;
     private BsonTimestamp startAtOperationTime;
@@ -30,6 +32,17 @@ public class ChangeStreamOptions {
      */
     public ChangeStreamOptions fullDocument(FullDocument fullDocument) {
         this.fullDocument = fullDocument;
+        return this;
+    }
+
+    /**
+     * Sets the fullDocumentBeforeChange value.
+     *
+     * @param fullDocumentBeforeChange the fullDocumentBeforeChange
+     * @return this
+     */
+    public ChangeStreamOptions fullDocumentBeforeChange(FullDocumentBeforeChange fullDocumentBeforeChange) {
+        this.fullDocumentBeforeChange = fullDocumentBeforeChange;
         return this;
     }
 
@@ -113,6 +126,9 @@ public class ChangeStreamOptions {
         }
         if (fullDocument != null) {
             publisher = publisher.fullDocument(fullDocument);
+        }
+        if (fullDocumentBeforeChange != null) {
+            publisher = publisher.fullDocumentBeforeChange(fullDocumentBeforeChange);
         }
         if (resumeToken != null) {
             publisher = publisher.resumeAfter(resumeToken);

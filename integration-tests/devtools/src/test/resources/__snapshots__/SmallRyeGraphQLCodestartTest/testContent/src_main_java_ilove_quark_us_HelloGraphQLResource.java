@@ -13,4 +13,8 @@ public class HelloGraphQLResource {
     public String sayHello(@DefaultValue("World") String name) {
         return "Hello " + name;
     }
+
+    // Use in IDE: Starts the app for development. Not used in production.
+    public static void main(String... args) { io.quarkus.runtime.Quarkus.run(args); }
+
 }

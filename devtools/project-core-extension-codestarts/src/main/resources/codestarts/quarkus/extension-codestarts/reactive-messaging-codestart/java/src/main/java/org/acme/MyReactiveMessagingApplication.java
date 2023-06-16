@@ -40,4 +40,8 @@ public class MyReactiveMessagingApplication {
     public void sink(String word) {
         System.out.println(">> " + word);
     }
+
+    // Use in IDE: Starts the app for development. Not used in production.
+    public static void main(String... args) { io.quarkus.runtime.Quarkus.run(args); }
+
 }

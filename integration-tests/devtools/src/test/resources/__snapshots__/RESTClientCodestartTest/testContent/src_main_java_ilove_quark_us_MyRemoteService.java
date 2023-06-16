@@ -34,4 +34,8 @@ public interface MyRemoteService {
         public String shortName;
         public List<String> keywords;
     }
+
+    // Use in IDE: Starts the app for development. Not used in production.
+    public static void main(String... args) { io.quarkus.runtime.Quarkus.run(args); }
+
 }

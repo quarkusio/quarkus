@@ -18,6 +18,16 @@
       <groupId>org.acme</groupId>
       <artifactId>acme-resources</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.acme</groupId>
+      <artifactId>acme-supersonic-provider</artifactId>
+      <version>\${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.acme</groupId>
+      <artifactId>acme-subatomic-provider</artifactId>
+      <version>\${project.version}</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

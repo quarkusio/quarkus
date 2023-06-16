@@ -239,7 +239,7 @@ For more information, see the xref:security-openid-connect-client.adoc[OpenID Co
 [[smallrye-jwt-authentication]]
 === SmallRye JWT authentication
 
-The `quarkus-smallrye-jwt` extension provides a MicroProfile JSON Web Token (JWT) 1.2.1 implementation and multiple options to verify signed and encrypted `JWT` tokens.
+The `quarkus-smallrye-jwt` extension provides a MicroProfile JSON Web Token (JWT) 2.1 implementation and multiple options to verify signed and encrypted `JWT` tokens.
 It represents them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
 `quarkus-smallrye-jwt` is an alternative to the `quarkus-oidc` Bearer authentication mechanism and verifies only `JWT` tokens by using either Privacy Enhanced Mail (PEM) keys or the refreshable `JWK` key set.

@@ -1,0 +1,14 @@
+<project>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>src/aws</directory>
+        <targetPath>${project.build.directory}/aws</targetPath>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+  </build>
+</project>

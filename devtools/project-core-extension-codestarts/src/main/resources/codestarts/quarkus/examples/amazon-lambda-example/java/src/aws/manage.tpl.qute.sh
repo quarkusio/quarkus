@@ -4,35 +4,35 @@ function cmd_create() {
   echo Creating function
   set -x
   aws lambda create-function \
-    --function-name ${FUNCTION_NAME} \
-    --zip-file ${ZIP_FILE} \
-    --handler ${HANDLER} \
-    --runtime ${RUNTIME} \
-    --role ${LAMBDA_ROLE_ARN} \
+    --function-name $\{FUNCTION_NAME} \
+    --zip-file $\{ZIP_FILE} \
+    --handler $\{HANDLER} \
+    --runtime $\{RUNTIME} \
+    --role $\{LAMBDA_ROLE_ARN} \
     --timeout 15 \
     --memory-size 256 \
-    ${LAMBDA_META}
-# Enable and move this param above ${LAMBDA_META}, if using AWS X-Ray
+    $\{LAMBDA_META}
+# Enable and move this param above $\{LAMBDA_META}, if using AWS X-Ray
 #    --tracing-config Mode=Active \
 }
 
 function cmd_delete() {
   echo Deleting function
   set -x
-  aws lambda delete-function --function-name ${FUNCTION_NAME}
+  aws lambda delete-function --function-name $\{FUNCTION_NAME}
 }
 
 function cmd_invoke() {
   echo Invoking function
 
   inputFormat=""
-  if [ $(aws --version | awk '{print substr($1,9)}' | cut -c1-1) -ge 2 ]; then inputFormat="--cli-binary-format raw-in-base64-out"; fi
+  if [ $(aws --version | awk '\{print substr($1,9)}' | cut -c1-1) -ge 2 ]; then inputFormat="--cli-binary-format raw-in-base64-out"; fi
 
   set -x
 
   aws lambda invoke response.txt \
-    ${inputFormat} \
-    --function-name ${FUNCTION_NAME} \
+    $\{inputFormat} \
+    --function-name $\{FUNCTION_NAME} \
     --payload file://payload.json \
     --log-type Tail \
     --query 'LogResult' \
@@ -45,14 +45,14 @@ function cmd_update() {
   echo Updating function
   set -x
   aws lambda update-function-code \
-    --function-name ${FUNCTION_NAME} \
-    --zip-file ${ZIP_FILE}
+    --function-name $\{FUNCTION_NAME} \
+    --zip-file $\{ZIP_FILE}
 }
 
 FUNCTION_NAME=QuarkusAwsLambdaDemo
 HANDLER=io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
-RUNTIME=java${maven.compiler.release}
-ZIP_FILE=fileb://${project.build.directory}/function.zip
+RUNTIME=java$\{maven.compiler.release}
+ZIP_FILE=fileb://$\{project.build.directory}/function.zip
 
 function usage() {
   [ "_$1" == "_" ] && echo -e "\nUsage (JVM): \n$0 [create|delete|invoke]\ne.g.: $0 invoke"
@@ -71,9 +71,9 @@ fi
 if [ "$1" == "native" ]
 then
   RUNTIME=provided
-  ZIP_FILE=fileb://${projec.build.directory}/function.zip
+  ZIP_FILE=fileb://$\{projec.build.directory}/function.zip
   FUNCTION_NAME=QuarkusAwsLambdaDemoNative
-  LAMBDA_META="--environment Variables={DISABLE_SIGNAL_HANDLERS=true}"
+  LAMBDA_META="--environment Variables=\{DISABLE_SIGNAL_HANDLERS=true}"
   shift
 fi
 

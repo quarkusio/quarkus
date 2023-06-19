@@ -87,7 +87,8 @@ final class ExtensionMapBuilder {
         }
 
         public ExtensionUpdateInfo build() {
-            return new ExtensionUpdateInfo(currentDep, currentDep.getCatalogMetadata(), resolveRecommendedDep());
+            final TopExtensionDependency effectiveRecommendedDep = resolveRecommendedDep();
+            return new ExtensionUpdateInfo(currentDep, effectiveRecommendedDep.getCatalogMetadata(), effectiveRecommendedDep);
         }
 
         public TopExtensionDependency resolveRecommendedDep() {

@@ -20,9 +20,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.devtools.commands.CreateProject;
-import io.quarkus.devtools.project.SourceType;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {

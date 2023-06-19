@@ -18,7 +18,7 @@ public class UpdateManagedDependencyVersionOperation implements RewriteOperation
     }
 
     @Override
-    public Map<String, Object> toMap(BuildTool buildTool) {
+    public Map<String, Object> single(BuildTool buildTool) {
         switch (buildTool) {
             case MAVEN:
                 return Map.of("org.openrewrite.maven.ChangeManagedDependencyGroupIdAndArtifactId",

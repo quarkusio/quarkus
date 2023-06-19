@@ -2,12 +2,13 @@ package io.quarkus.devtools.project.update.rewrite;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.OptionalInt;
+import java.util.Optional;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.FetchResult;
+import io.quarkus.devtools.project.update.rewrite.operations.UpdateJavaVersionOperation;
 import io.quarkus.devtools.project.update.rewrite.operations.UpdatePropertyOperation;
 import io.quarkus.devtools.project.update.rewrite.operations.UpgradeGradlePluginOperation;
 
@@ -25,7 +26,10 @@ public final class QuarkusUpdates {
                 request.targetVersion);
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
                 .buildTool(request.buildTool);
-
+        if (request.updateJavaVersion.isPresent()) {
+            final String javaVersion = request.updateJavaVersion.get().toString();
+            recipe.addOperation(new UpdateJavaVersionOperation(javaVersion));
+        }
         switch (request.buildTool) {
             case MAVEN:
                 recipe.addOperation(new UpdatePropertyOperation("quarkus.platform.version", request.targetVersion))
@@ -57,20 +61,20 @@ public final class QuarkusUpdates {
         public final String currentVersion;
         public final String targetVersion;
         public final String kotlinVersion;
-        public final OptionalInt minJavaVersion;
+        public final Optional<Integer> updateJavaVersion;
 
         public ProjectUpdateRequest(String currentVersion, String targetVersion, String kotlinVersion,
-                OptionalInt minJavaVersion) {
-            this(BuildTool.MAVEN, currentVersion, targetVersion, kotlinVersion, minJavaVersion);
+                Optional<Integer> updateJavaVersion) {
+            this(BuildTool.MAVEN, currentVersion, targetVersion, kotlinVersion, updateJavaVersion);
         }
 
         public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion, String kotlinVersion,
-                OptionalInt minJavaVersion) {
+                Optional<Integer> updateJavaVersion) {
             this.buildTool = buildTool;
             this.currentVersion = currentVersion;
             this.targetVersion = targetVersion;
             this.kotlinVersion = kotlinVersion;
-            this.minJavaVersion = minJavaVersion;
+            this.updateJavaVersion = updateJavaVersion;
         }
     }
 }

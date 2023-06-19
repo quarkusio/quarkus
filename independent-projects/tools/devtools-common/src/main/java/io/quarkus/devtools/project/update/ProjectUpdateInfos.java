@@ -43,9 +43,10 @@ public final class ProjectUpdateInfos {
                 info.setRecommendedDep(dep);
             }
         }
+        final Map<String, List<ExtensionUpdateInfo>> managedExtensions = new LinkedHashMap<>(0);
         final Map<String, List<ExtensionUpdateInfo>> versionedManagedExtensions = new LinkedHashMap<>(0);
-        final Map<String, List<ArtifactCoords>> removedExtensions = new LinkedHashMap<>(0);
-        final Map<String, List<ArtifactCoords>> addedExtensions = new LinkedHashMap<>(0);
+        final Map<String, List<ExtensionUpdateInfo>> removedExtensions = new LinkedHashMap<>(0);
+        final Map<String, List<ExtensionUpdateInfo>> addedExtensions = new LinkedHashMap<>(0);
         final Map<String, List<ExtensionUpdateInfo>> nonPlatformExtensionUpdates = new LinkedHashMap<>();
         for (ExtensionUpdateInfoBuilder infoBuilder : extensionInfo.values()) {
             final ExtensionUpdateInfo info = infoBuilder.build();
@@ -55,14 +56,14 @@ public final class ProjectUpdateInfos {
             if (!info.getCurrentDep().getKey().equals(info.getRecommendedDependency().getKey())) {
                 if (info.getCurrentDep().isPlatformExtension()) {
                     removedExtensions.computeIfAbsent(info.getCurrentDep().getProviderKey(), k -> new ArrayList<>())
-                            .add(info.getCurrentDep().getArtifact());
+                            .add(new ExtensionUpdateInfo(info.getCurrentDep(), null, null));
                 } else {
                     nonPlatformExtensionUpdates.computeIfAbsent(info.getCurrentDep().getProviderKey(), k -> new ArrayList<>())
                             .add(info);
                 }
                 if (info.getRecommendedDependency().isPlatformExtension()) {
                     addedExtensions.computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>())
-                            .add(info.getRecommendedDependency().getArtifact());
+                            .add(new ExtensionUpdateInfo(null, info.getRecommendedMetadata(), info.getRecommendedDependency()));
                 } else {
                     nonPlatformExtensionUpdates
                             .computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>())
@@ -73,13 +74,18 @@ public final class ProjectUpdateInfos {
                     versionedManagedExtensions
                             .computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>())
                             .add(info);
+                } else {
+                    managedExtensions
+                            .computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>())
+                            .add(info);
                 }
             } else if (!info.getCurrentDep().getVersion().equals(info.getRecommendedDependency().getVersion())) {
                 nonPlatformExtensionUpdates
                         .computeIfAbsent(info.getRecommendedDependency().getProviderKey(), k -> new ArrayList<>()).add(info);
             }
         }
-        return new ProjectExtensionsUpdateInfo(versionedManagedExtensions, removedExtensions, addedExtensions,
+        return new ProjectExtensionsUpdateInfo(managedExtensions, versionedManagedExtensions, removedExtensions,
+                addedExtensions,
                 nonPlatformExtensionUpdates);
     }
 

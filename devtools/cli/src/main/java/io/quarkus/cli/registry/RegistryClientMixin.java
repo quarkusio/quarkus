@@ -9,6 +9,7 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -62,7 +63,7 @@ public class RegistryClientMixin {
                     + "Use the maven/gradle plugins when working with Quarkus 1.x projects.");
         }
         catalog = CreateProjectHelper.completeCatalog(catalog, extensions, QuarkusProjectHelper.artifactResolver());
-        return QuarkusProjectHelper.getProject(projectRoot, catalog, buildTool, log);
+        return QuarkusProjectHelper.getProject(projectRoot, catalog, buildTool, JavaVersion.NA, log);
     }
 
     ExtensionCatalog getExtensionCatalog(TargetQuarkusPlatformGroup targetVersion, OutputOptionMixin log)

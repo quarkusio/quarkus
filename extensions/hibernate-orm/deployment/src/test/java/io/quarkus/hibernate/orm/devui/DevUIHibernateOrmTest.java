@@ -22,6 +22,7 @@ public abstract class DevUIHibernateOrmTest extends DevUIJsonRPCTest {
     private int expectedNumberOfPersistenceUnits = 1;
 
     public DevUIHibernateOrmTest(String expectedPersistenceUnitName, String expectedTableName, String expectedClassName) {
+        super("io.quarkus.quarkus-hibernate-orm");
         this.expectedPersistenceUnitName = expectedPersistenceUnitName;
         this.expectedTableName = expectedTableName;
         this.expectedClassName = expectedClassName;
@@ -29,6 +30,7 @@ public abstract class DevUIHibernateOrmTest extends DevUIJsonRPCTest {
 
     public DevUIHibernateOrmTest(int expectedNumberOfEntityTypes,
             int expectedNumberOfPersistenceUnits) {
+        super("io.quarkus.quarkus-hibernate-orm");
         this.expectedNumberOfEntityTypes = expectedNumberOfEntityTypes;
         this.expectedNumberOfPersistenceUnits = expectedNumberOfPersistenceUnits;
     }
@@ -100,10 +102,4 @@ public abstract class DevUIHibernateOrmTest extends DevUIJsonRPCTest {
         Assertions.assertTrue(getNumberOfNamedQueriesResponse.isInt());
         Assertions.assertEquals(0, getNumberOfNamedQueriesResponse.asInt());
     }
-
-    @Override
-    protected String getNamespace() {
-        return "io.quarkus.quarkus-hibernate-orm";
-    }
-
 }

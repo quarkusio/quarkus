@@ -40,6 +40,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- test dependencies -->
         <dependency>

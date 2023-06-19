@@ -14,8 +14,8 @@
     <description>Components common to the RESTEasy server and the REST Client</description>
     <dependencies>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

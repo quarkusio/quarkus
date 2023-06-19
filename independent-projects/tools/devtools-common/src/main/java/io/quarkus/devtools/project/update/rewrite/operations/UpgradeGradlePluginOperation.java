@@ -7,8 +7,8 @@ import io.quarkus.devtools.project.update.rewrite.RewriteOperation;
 
 public class UpgradeGradlePluginOperation implements RewriteOperation {
 
-    public String pluginIdPattern;
-    public String newVersion;
+    private final String pluginIdPattern;
+    private final String newVersion;
 
     public UpgradeGradlePluginOperation(String pluginIdPattern, String newVersion) {
         this.pluginIdPattern = pluginIdPattern;
@@ -16,7 +16,7 @@ public class UpgradeGradlePluginOperation implements RewriteOperation {
     }
 
     @Override
-    public Map<String, Object> toMap(BuildTool buildTool) {
+    public Map<String, Object> single(BuildTool buildTool) {
         switch (buildTool) {
             case GRADLE:
                 return Map.of(

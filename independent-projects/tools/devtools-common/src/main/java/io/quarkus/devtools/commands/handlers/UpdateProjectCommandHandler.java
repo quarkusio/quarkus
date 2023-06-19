@@ -11,6 +11,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.devtools.commands.UpdateProject;
@@ -76,13 +78,20 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             if (!noRewrite) {
                 final BuildTool buildTool = quarkusProject.getExtensionManager().getBuildTool();
                 String kotlinVersion = getMetadata(targetCatalog, "project", "properties", "kotlin-version");
-
+                final OptionalInt minJavaVersion = extensionsUpdateInfo.getMinJavaVersion();
+                final Optional<Integer> updateJavaVersion;
+                if (minJavaVersion.isPresent()
+                        && minJavaVersion.getAsInt() > invocation.getQuarkusProject().getJavaVersion().getAsInt()) {
+                    updateJavaVersion = Optional.of(minJavaVersion.getAsInt());
+                } else {
+                    updateJavaVersion = Optional.empty();
+                }
                 QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
                         buildTool,
                         projectQuarkusPlatformBom.getVersion(),
                         targetPlatformVersion,
                         kotlinVersion,
-                        extensionsUpdateInfo.getMinJavaVersion());
+                        updateJavaVersion);
                 Path recipe = null;
                 try {
                     recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
@@ -91,6 +100,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     final QuarkusUpdatesRepository.FetchResult fetchResult = QuarkusUpdates.createRecipe(invocation.log(),
                             recipe,
                             QuarkusProjectHelper.artifactResolver(), buildTool, updateRecipesVersion, request);
+                    invocation.log().info("OpenRewrite recipe generated: %s", recipe);
                     final String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,
                             fetchResult.getRewritePluginVersion());
                     final boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
@@ -108,15 +118,6 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                     throw new QuarkusCommandException("Error while generating the project update script", e);
                 } catch (QuarkusUpdateException e) {
                     throw new QuarkusCommandException("Error while running the project update script", e);
-                } finally {
-                    if (recipe != null) {
-                        try {
-                            Files.deleteIfExists(recipe);
-                        } catch (IOException e) {
-                            // ignore
-                        }
-                    }
-
                 }
             }
         }
@@ -180,11 +181,17 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             log.info("");
         }
 
-        if (extensionsUpdateInfo.isEmpty()) {
-            if (!platformUpdateInfo.isPlatformUpdatesAvailable()) {
-                log.info("The project is up-to-date");
-            }
+        if (extensionsUpdateInfo.isUpToDate() && !platformUpdateInfo.isPlatformUpdatesAvailable()) {
+            log.info("The project is up-to-date");
             return;
+        }
+
+        if (extensionsUpdateInfo.getMinJavaVersion().isPresent()) {
+            final Integer extensionsMinJavaVersion = extensionsUpdateInfo.getMinJavaVersion().getAsInt();
+            if (extensionsMinJavaVersion > project.getJavaVersion().getAsInt()) {
+                log.warn("We detected that some of the updated extensions require an update of the Java version to: %s",
+                        extensionsMinJavaVersion);
+            }
         }
 
         for (PlatformInfo platform : platformUpdateInfo.getPlatformImports().values()) {
@@ -203,14 +210,15 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 sb.append(" -> remove version (managed)");
                 log.info(sb.toString());
             }
-            for (ArtifactCoords e : extensionsUpdateInfo.getAddedExtensions().getOrDefault(provider, Collections.emptyList())) {
+            for (ExtensionUpdateInfo i : extensionsUpdateInfo.getAddedExtensions().getOrDefault(provider,
+                    Collections.emptyList())) {
                 log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, UpdateProjectCommandHandler.ADD,
-                        e.getKey().toGacString()));
+                        i.getRecommendedDependency().getKey().toGacString()));
             }
-            for (ArtifactCoords e : extensionsUpdateInfo.getRemovedExtensions().getOrDefault(provider,
+            for (ExtensionUpdateInfo i : extensionsUpdateInfo.getRemovedExtensions().getOrDefault(provider,
                     Collections.emptyList())) {
                 log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, UpdateProjectCommandHandler.REMOVE,
-                        e.getKey().toGacString()));
+                        i.getCurrentDep().getKey().toGacString()));
             }
             log.info("");
         }
@@ -237,13 +245,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 log.info("");
             }
         }
-        if (extensionsUpdateInfo.getMinJavaVersion().isPresent()) {
-            final int extensionsMinJavaVersion = extensionsUpdateInfo.getMinJavaVersion().getAsInt();
-            if (extensionsMinJavaVersion > project.getJavaVersion().getAsInt()) {
-                log.warn("We detected that some of the updated extensions require an update of the Java version to: ",
-                        extensionsMinJavaVersion);
-            }
-        }
+
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

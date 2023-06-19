@@ -47,7 +47,7 @@ public class QuarkusUpdateRecipeIO {
         q.putAll(QuarkusUpdateRecipe.QUARKUS_RECIPE);
         List<Object> recipeList = new ArrayList<>();
         for (RewriteOperation o : recipe.getOperations()) {
-            recipeList.add(o.toMap(recipe.getBuildTool()));
+            recipeList.addAll(o.multi(recipe.getBuildTool()));
         }
         recipeList.addAll(recipe.getOtherRecipeNames());
         q.put(QuarkusUpdateRecipe.RECIPE_LIST_KEY, recipeList);

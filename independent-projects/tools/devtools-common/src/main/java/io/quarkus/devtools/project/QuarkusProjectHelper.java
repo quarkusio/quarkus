@@ -110,6 +110,10 @@ public class QuarkusProjectHelper {
         return getProject(projectDir, catalog, buildTool, javaVersion, messageWriter());
     }
 
+    public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool) {
+        return getProject(projectDir, catalog, buildTool, JavaVersion.NA, messageWriter());
+    }
+
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
             JavaVersion javaVersion,
             MessageWriter log) {

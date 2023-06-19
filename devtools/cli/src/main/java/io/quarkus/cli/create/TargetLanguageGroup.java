@@ -5,9 +5,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.devtools.project.SourceType;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.JavaVersion;
+import io.quarkus.devtools.project.SourceType;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParameterException;

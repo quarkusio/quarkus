@@ -33,9 +33,10 @@ public abstract class DevUIJsonRPCTest {
     private final JsonFactory factory = mapper.getFactory();
     private final Random random = new Random();
 
-    protected abstract String getNamespace();
+    private final String namespace;
 
-    public DevUIJsonRPCTest() {
+    public DevUIJsonRPCTest(String namespace) {
+        this.namespace = namespace;
         String testUrl = ConfigProvider.getConfig().getValue("test.url", String.class);
         String nonApplicationRoot = ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
@@ -100,7 +101,7 @@ public abstract class DevUIJsonRPCTest {
 
         request.put("jsonrpc", "2.0");
         request.put("id", id);
-        request.put("method", getNamespace() + "." + methodName);
+        request.put("method", this.namespace + "." + methodName);
         ObjectNode jsonParams = mapper.createObjectNode();
         if (params != null && !params.isEmpty()) {
             for (Map.Entry<String, String> p : params.entrySet()) {
@@ -122,7 +123,7 @@ public abstract class DevUIJsonRPCTest {
         }
 
         @OnMessage
-        void message(String msg) {
+        public void message(String msg) {
             MESSAGES.add(msg);
         }
     }

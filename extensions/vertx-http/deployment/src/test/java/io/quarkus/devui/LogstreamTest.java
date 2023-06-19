@@ -18,6 +18,10 @@ public class LogstreamTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withEmptyApplication();
 
+    public LogstreamTest() {
+        super("devui-logstream");
+    }
+
     @Test
     public void testHistory() throws Exception {
         JsonNode historyResponse = super.executeJsonRPCMethod("history");
@@ -46,11 +50,6 @@ public class LogstreamTest extends DevUIJsonRPCTest {
                         "levelValue", "DEBUG"));
         Assertions.assertNotNull(updateLogLevelResponse);
         Assertions.assertEquals("DEBUG", updateLogLevelResponse.get("effectiveLevel").asText());
-    }
-
-    @Override
-    protected String getNamespace() {
-        return "devui-logstream";
     }
 
     private boolean hasStartedLine(Iterator<JsonNode> elements) {

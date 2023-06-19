@@ -17,6 +17,10 @@ public class ConfigurationTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withEmptyApplication();
 
+    public ConfigurationTest() {
+        super("devui-configuration");
+    }
+
     @Test
     public void testLogstreamHistory() throws Exception {
 
@@ -30,10 +34,5 @@ public class ConfigurationTest extends DevUIJsonRPCTest {
         JsonNode allPropertiesResponse = super.executeJsonRPCMethod("getAllValues");
         String applicationName = allPropertiesResponse.get("quarkus.application.name").asText();
         Assertions.assertEquals("changedByTest", applicationName);
-    }
-
-    @Override
-    protected String getNamespace() {
-        return "devui-configuration";
     }
 }

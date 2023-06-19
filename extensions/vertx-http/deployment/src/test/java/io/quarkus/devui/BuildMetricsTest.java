@@ -14,6 +14,10 @@ public class BuildMetricsTest extends DevUIJsonRPCTest {
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
+    public BuildMetricsTest() {
+        super("devui-build-metrics");
+    }
+
     @Test
     public void testGetBuildStepsMetrics() throws Exception {
         JsonNode buildStepsMetricsResponse = super.executeJsonRPCMethod("getBuildStepsMetrics");
@@ -25,10 +29,5 @@ public class BuildMetricsTest extends DevUIJsonRPCTest {
         boolean dependencyGraphsIncluded = buildStepsMetricsResponse.get("dependencyGraphs").isObject();
         Assertions.assertTrue(dependencyGraphsIncluded);
 
-    }
-
-    @Override
-    protected String getNamespace() {
-        return "devui-build-metrics";
     }
 }

@@ -43,6 +43,9 @@
     </dependencies>
   </dependencyManagement>
   <modules>
+    <module>service-loader</module>
+    <module>supersonic-provider</module>
+    <module>subatomic-provider</module>
     <module>resources</module>
     <module>extension</module>
     <module>runner</module>

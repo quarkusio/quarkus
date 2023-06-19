@@ -19,6 +19,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathCollection;
 
 public class ConfiguredClassLoading implements Serializable {
@@ -61,6 +62,7 @@ public class ConfiguredClassLoading implements Serializable {
 
         public ConfiguredClassLoading build() {
 
+            final String profilePrefix = getProfilePrefix(mode);
             for (Path path : applicationRoot) {
                 Path props = path.resolve("application.properties");
                 if (Files.exists(props)) {
@@ -71,29 +73,19 @@ public class ConfiguredClassLoading implements Serializable {
                         throw new RuntimeException("Failed to load bootstrap classloading config from application.properties",
                                 e);
                     }
-                    collectArtifactKeys(p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, mode)),
-                            parentFirstArtifacts);
-                    collectArtifactKeys(p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, mode)),
-                            reloadableArtifacts);
-                    collectArtifactKeys(p.getProperty(selectKey("quarkus.class-loading.removed-artifacts", p, mode)),
-                            removedArtifacts);
-                    collectRemovedResources("quarkus.class-loading.removed-resources.", p);
-
-                    if (!flatTestClassPath && mode == Mode.TEST) {
-                        final String s = p.getProperty(selectKey("quarkus.test.flat-class-path", p, mode));
-                        if (s != null) {
-                            flatTestClassPath = Boolean.parseBoolean(s);
-                        }
-                    }
+                    readProperties(profilePrefix, p);
                 }
             }
 
+            // this is to be able to support exclusion of artifacts from build classpath configured using system properties
+            readProperties(profilePrefix, System.getProperties());
+
             if (appModel != null) {
-                appModel.getDependencies().forEach(d -> {
+                for (ResolvedDependency d : appModel.getDependencies()) {
                     if (d.isClassLoaderParentFirst()) {
                         parentFirstArtifacts.add(d.getKey());
                     }
-                });
+                }
 
                 if (mode == Mode.TEST) {
                     final WorkspaceModule module = appModel.getApplicationModule();
@@ -128,15 +120,31 @@ public class ConfiguredClassLoading implements Serializable {
             return ConfiguredClassLoading.this;
         }
 
-        private void collectRemovedResources(String baseConfigKey, Properties properties) {
+        private void readProperties(String profilePrefix, Properties p) {
+            collectArtifactKeys(p.getProperty(selectKey("quarkus.class-loading.parent-first-artifacts", p, profilePrefix)),
+                    parentFirstArtifacts);
+            collectArtifactKeys(p.getProperty(selectKey("quarkus.class-loading.reloadable-artifacts", p, profilePrefix)),
+                    reloadableArtifacts);
+            collectArtifactKeys(p.getProperty(selectKey("quarkus.class-loading.removed-artifacts", p, profilePrefix)),
+                    removedArtifacts);
+            collectRemovedResources("quarkus.class-loading.removed-resources.", p, profilePrefix);
+
+            if (!flatTestClassPath && mode == Mode.TEST) {
+                final String s = p.getProperty(selectKey("quarkus.test.flat-class-path", p, profilePrefix));
+                if (s != null) {
+                    flatTestClassPath = Boolean.parseBoolean(s);
+                }
+            }
+        }
+
+        private void collectRemovedResources(String baseConfigKey, Properties properties, String profilePrefix) {
             Properties profileProps = new Properties();
-            String profile = BootstrapProfile.getActiveProfile(mode);
             for (Map.Entry<Object, Object> i : properties.entrySet()) {
                 String key = i.getKey().toString();
                 if (key.startsWith("%")) {
                     continue;
                 }
-                String profileKey = "%" + profile + "." + key;
+                final String profileKey = profilePrefix + key;
                 if (properties.containsKey(profileKey)) {
                     profileProps.put(key, properties.getProperty(profileKey));
                 } else {
@@ -160,13 +168,16 @@ public class ConfiguredClassLoading implements Serializable {
             }
         }
 
-        private String selectKey(String base, Properties p, Mode mode) {
-            String profile = BootstrapProfile.getActiveProfile(mode);
-            String profileKey = "%" + profile + "." + base;
+        private String selectKey(String base, Properties p, String profilePrefix) {
+            final String profileKey = profilePrefix + base;
             if (p.containsKey(profileKey)) {
                 return profileKey;
             }
             return base;
+        }
+
+        private String getProfilePrefix(Mode mode) {
+            return "%" + BootstrapProfile.getActiveProfile(mode) + ".";
         }
 
         private void collectArtifactKeys(String config, Collection<ArtifactKey> keys) {

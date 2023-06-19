@@ -9,20 +9,20 @@ class NativeConfigTest {
     @Test
     public void testBuilderImageProperlyDetected() {
         assertThat(createConfig("graalvm").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
-                .contains("java17");
+                .contains("jdk-17");
         assertThat(createConfig("GraalVM").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
-                .contains("java17");
+                .contains("jdk-17");
         assertThat(createConfig("GraalVM").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
-                .contains("java17");
+                .contains("jdk-17");
         assertThat(createConfig("GRAALVM").builderImage().getEffectiveImage()).contains("ubi-quarkus-graalvmce-builder-image")
-                .contains("java17");
+                .contains("jdk-17");
 
         assertThat(createConfig("mandrel").builderImage().getEffectiveImage()).contains("ubi-quarkus-mandrel-builder-image")
-                .contains("java17");
+                .contains("jdk-17");
         assertThat(createConfig("Mandrel").builderImage().getEffectiveImage()).contains("ubi-quarkus-mandrel-builder-image")
-                .contains("java17");
+                .contains("jdk-17");
         assertThat(createConfig("MANDREL").builderImage().getEffectiveImage()).contains("ubi-quarkus-mandrel-builder-image")
-                .contains("java17");
+                .contains("jdk-17");
 
         assertThat(createConfig("aRandomString").builderImage().getEffectiveImage()).isEqualTo("aRandomString");
     }

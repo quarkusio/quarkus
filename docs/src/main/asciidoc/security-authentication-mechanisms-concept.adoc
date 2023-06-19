@@ -29,7 +29,7 @@ The following table maps specific authentication requirements to a supported mec
 
 |Username and password |xref:security-basic-authentication-concept.adoc[Basic], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
 
-|Bearer access token |xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+|Bearer access token |xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
 
 |Single sign-on (SSO) |xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
 
@@ -175,8 +175,8 @@ For more information, see the  xref:security-webauthn-concept.adoc[Secure a Quar
 OpenID Connect (OIDC) is an identity layer that works on top of the OAuth 2.0 protocol.
 OIDC enables client applications to verify the identity of a user based on the authentication performed by the OIDC provider and retrieve basic information about that user.
 
-The Quarkus `quarkus-oidc` extension provides a reactive, interoperable, multitenant-enabled OIDC adapter that supports Bearer and Authorization Code Flow authentication mechanisms.
-The Bearer authentication mechanism extracts the token from the HTTP Authorization header.
+The Quarkus `quarkus-oidc` extension provides a reactive, interoperable, multitenant-enabled OIDC adapter that supports Bearer token and Authorization Code Flow authentication mechanisms.
+The Bearer token authentication mechanism extracts the token from the HTTP Authorization header.
 The Authorization Code Flow mechanism redirects the user to an OIDC provider to authenticate the user's identity.
 After the user is redirected back to Quarkus, the mechanism completes the authentication process by exchanging the provided code that was granted for the ID, access, and refresh tokens.
 
@@ -185,7 +185,7 @@ However, opaque, also known as binary tokens, can only be introspected remotely.
 
 [NOTE]
 ====
-Using the Quarkus OIDC extension, both Bearer and Authorization Code Flow authentication mechanisms use xref:smallrye-jwt-authentication[SmallRye JWT authentication] to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
+Using the Quarkus OIDC extension, both the Bearer token and Authorization Code Flow authentication mechanisms use xref:smallrye-jwt-authentication[SmallRye JWT authentication] to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
 ====
 
 ==== Additional Quarkus resources for OIDC authentication
@@ -195,10 +195,10 @@ For more information about OIDC authentication and authorization methods that yo
 [options="header"]
 |====
 |OIDC topic |Quarkus information resource
-|Bearer authentication mechanism |xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication]
-|Authorization code flow authentication mechanism |xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect (OIDC) authorization code flow mechanism]
-|Multiple tenants that can support bearer token or authorization code flow mechanisms |xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
-|Securing Quarkus with commonly-used OpenID Connect providers |xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
+|Bearer token authentication mechanism|xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication]
+|Authorization Code Flow authentication mechanism|xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect (OIDC) Authorization Code Flow mechanism]
+|Multiple tenants that can support the Bearer token authentication or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
+|Securing Quarkus with commonly-used OpenID Connect providers|xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 |Using Keycloak to centralize authorization |xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
 |Configuring Keycloak programmatically |xref:security-keycloak-admin-client.adoc[Using the Keycloak admin client]
 |====
@@ -230,7 +230,7 @@ In this scenario, you do not need to protect your Quarkus endpoint by using the 
 ====
 
 The `quarkus-oidc-token-propagation` extension requires the `quarkus-oidc` extension.
-It provides Jakarta REST `TokenCredentialRequestFilter`, which sets the OpenID Connect Bearer or Authorization Code Flow access token as the `Bearer` scheme value of the HTTP `Authorization` header.
+It provides Jakarta REST `TokenCredentialRequestFilter`, which sets the OpenID Connect Bearer token or Authorization Code Flow access token as the `Bearer` scheme value of the HTTP `Authorization` header.
 This filter can be registered with MicroProfile REST client implementations injected into the current Quarkus endpoint, which must be protected by using the Quarkus OIDC adapter.
 This filter can propagate the access token to the downstream services.
 
@@ -250,7 +250,7 @@ For more information, see the  xref:security-jwt.adoc[Using JWT RBAC] guide.
 [[oauth2-authentication]]
 === OAuth2 authentication
 
-`quarkus-elytron-security-oauth2` provides an alternative to the `quarkus-oidc` Bearer authentication mechanism.
+`quarkus-elytron-security-oauth2` provides an alternative to the Quarkus `quarkus-oidc` Bearer authentication mechanism extension.
 `quarkus-elytron-security-oauth2` is based on `Elytron` and is primarily intended for introspecting opaque tokens remotely.
 For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] guide.
 
@@ -327,11 +327,11 @@ s|JWT as a cookie support ^|No ^|Yes ^|Yes
 == Combining authentication mechanisms
 
 If different sources provide the user credentials, you can combine authentication mechanisms.
-For example, you can combine built-in `Basic` and `quarkus-oidc` `Bearer` authentication mechanisms.
+For example, you can combine the built-in Basic and the Quarkus `quarkus-oidc` Bearer token authentication mechanisms.
 
 [IMPORTANT]
 ====
-You cannot combine the `quarkus-oidc` `Bearer` and `smallrye-jwt` authentication mechanisms because both mechanisms attempt to verify the token extracted from the HTTP `Authorization Bearer` scheme.
+You cannot combine the Quarkus `quarkus-oidc` Bearer token and `smallrye-jwt` authentication mechanisms because both mechanisms attempt to verify the token extracted from the HTTP Bearer token authentication scheme.
 ====
 
 === Path-specific authentication mechanisms

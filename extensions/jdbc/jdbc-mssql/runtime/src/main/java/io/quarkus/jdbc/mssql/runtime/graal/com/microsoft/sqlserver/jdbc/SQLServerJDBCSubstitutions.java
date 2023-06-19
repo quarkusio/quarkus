@@ -9,7 +9,6 @@ import javax.net.ssl.KeyManager;
 import com.microsoft.sqlserver.jdbc.SQLServerException;
 import com.microsoft.sqlserver.jdbc.SQLServerStatement;
 import com.microsoft.sqlserver.jdbc.SqlAuthenticationToken;
-import com.oracle.svm.core.AlwaysInline;
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -87,7 +86,6 @@ final class SQLServerFMTQuery {
 final class DisableFMTRemove {
 
     @Substitute
-    @AlwaysInline("We need this to be constant folded")
     public final boolean getUseFmtOnly() throws SQLServerException {
         return false;//Important for this to be disabled via a constant
     }

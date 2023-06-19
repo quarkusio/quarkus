@@ -16,7 +16,7 @@ public class MockSharedForClassHierarchyTest {
     static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(Component.class).mock(Foo.class)
             .createMockitoMock(foo -> {
                 Mockito.when(foo.ping()).thenReturn(11);
-            });
+            }).ignoreNestedClasses();
 
     @Inject
     Component component;

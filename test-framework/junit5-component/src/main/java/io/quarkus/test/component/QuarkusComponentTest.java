@@ -43,4 +43,11 @@ public @interface QuarkusComponentTest {
      * @see QuarkusComponentTestExtension#useDefaultConfigProperties()
      */
     boolean useDefaultConfigProperties() default false;
+
+    /**
+     * If set to {@code true} then all static nested classes are considered additional components under test.
+     *
+     * @see #value()
+     */
+    boolean addNestedClassesAsComponents() default true;
 }

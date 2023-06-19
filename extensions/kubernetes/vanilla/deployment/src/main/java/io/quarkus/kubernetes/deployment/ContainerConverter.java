@@ -15,6 +15,7 @@ public class ContainerConverter {
     private static ContainerBuilder convert(String name, ContainerConfig c) {
         ContainerBuilder b = new ContainerBuilder();
         b.withName(name);
+        b.withImagePullPolicy(c.imagePullPolicy);
         c.image.ifPresent(b::withImage);
         c.workingDir.ifPresent(b::withWorkingDir);
         c.command.ifPresent(w -> b.withCommand(w.toArray(new String[0])));

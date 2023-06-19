@@ -89,7 +89,7 @@
                 <artifactId>gradle-enterprise-maven-extension</artifactId>
                 <configuration>
                     <gradleEnterprise>
-                    <plugins>
+                    <plugins combine.children="append">
                         <plugin>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <inputs>

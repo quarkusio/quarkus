@@ -36,8 +36,7 @@ kubernetesYml.withInputStream { stream ->
     assert container.name == "postgres"
     assert container.ports.find{p -> p.protocol = "TCP"}.containerPort == 5432
 
-    //Most probably this (the handling of QUARKUS_CONTAINER_IMAGE_TAG) is something that we need to change, but until then this is needed.
-    String version = System.getenv("QUARKUS_CONTAINER_IMAGE_TAG") != null ? System.getenv("QUARKUS_CONTAINER_IMAGE_TAG") : "0.1-SNAPSHOT"
+    String version = "0.1-SNAPSHOT"
 
     //Check that it created the application's Deployment with right labels and selector
     Deployment deployment = list.items.find{r -> r.kind == "Deployment" && r.metadata.name == "minikube-with-existing-manifest"}

@@ -13,8 +13,7 @@ kubernetesYml.withInputStream { stream ->
     KubernetesList list = Serialization.unmarshalAsList(stream)
     assert list != null
 
-    //Most probably this (the handling of QUARKUS_CONTAINER_IMAGE_TAG) is something that we need to change, but until then this is needed.
-    String version = System.getenv("QUARKUS_CONTAINER_IMAGE_TAG") != null ? System.getenv("QUARKUS_CONTAINER_IMAGE_TAG") : "0.1-SNAPSHOT"
+    String version = "0.1-SNAPSHOT"
 
     Deployment deployment = list.items.find{r -> r.kind == "Deployment" && r.metadata.name == "kubernetes-with-existing-selectorless-manifest"}
     assert deployment != null

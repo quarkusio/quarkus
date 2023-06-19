@@ -87,7 +87,9 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
         @Override
         public void close() throws IOException {
-            this.closeable.close();
+            if (this.closeable != null) {
+                this.closeable.close();
+            }
         }
 
         public DevServicesResultBuildItem toBuildItem() {

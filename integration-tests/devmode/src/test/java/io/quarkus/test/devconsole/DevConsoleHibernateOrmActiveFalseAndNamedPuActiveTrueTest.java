@@ -52,27 +52,4 @@ public class DevConsoleHibernateOrmActiveFalseAndNamedPuActiveTrueTest {
                 .statusCode(200)
                 .body(Matchers.containsString("No named queries were found."));
     }
-
-    @Test
-    public void testPages() {
-        // TODO #31970 restore tests of the page's content as we used to do for the old Dev UI
-
-        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/persistence-units")
-                .then()
-                .statusCode(200);
-        //      .body(Matchers.not(Matchers.containsString("&lt;default&gt;")))
-        //      .body(Matchers.containsString("namedpu"));
-
-        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/managed-entities")
-                .then()
-                .statusCode(200);
-        //      .body(Matchers.not(Matchers.containsString(MyEntity.class.getName())))
-        //      .body(Matchers.containsString(MyNamedPuEntity.class.getName()));
-
-        RestAssured.get("q/dev-v1/io.quarkus.quarkus-hibernate-orm/named-queries")
-                .then()
-                .statusCode(200);
-        //      .body(Matchers.containsString("No named queries were found."));
-    }
-
 }

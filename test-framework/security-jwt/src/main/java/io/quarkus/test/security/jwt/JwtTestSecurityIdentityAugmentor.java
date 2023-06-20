@@ -12,6 +12,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -63,7 +64,7 @@ public class JwtTestSecurityIdentityAugmentor implements TestSecurityIdentityAug
                 if (jwtSecurity != null && jwtSecurity.claims() != null) {
                     for (Claim claim : jwtSecurity.claims()) {
                         if (claim.key().equals(claimName)) {
-                            return convertClaimValue(claim);
+                            return (T) wrapValue(claim, convertClaimValue(claim));
                         }
                     }
                 }
@@ -90,6 +91,30 @@ public class JwtTestSecurityIdentityAugmentor implements TestSecurityIdentityAug
             }
         }
         return null;
+    }
+
+    private Object wrapValue(Claim claim, Object convertedClaimValue) {
+        Claims claimType = getClaimType(claim.key());
+        if (Claims.UNKNOWN == claimType) {
+            if (convertedClaimValue instanceof Long) {
+                return Json.createValue((Long) convertedClaimValue);
+            } else if (convertedClaimValue instanceof Integer) {
+                return Json.createValue((Integer) convertedClaimValue);
+            } else if (convertedClaimValue instanceof Boolean) {
+                return (Boolean) convertedClaimValue ? JsonValue.TRUE : JsonValue.FALSE;
+            }
+        }
+        return convertedClaimValue;
+    }
+
+    protected Claims getClaimType(String claimName) {
+        Claims claimType;
+        try {
+            claimType = Claims.valueOf(claimName);
+        } catch (IllegalArgumentException e) {
+            claimType = Claims.UNKNOWN;
+        }
+        return claimType;
     }
 
     @SuppressWarnings("unchecked")

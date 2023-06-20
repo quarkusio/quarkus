@@ -52,7 +52,8 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
             RunningInvoker running = new RunningInvoker(testDir, false);
 
             MavenProcessInvocationResult result = running
-                    .execute(Arrays.asList("package", "-DskipTests"), Collections.emptyMap());
+                    .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.analytics.disabled=true"),
+                            Collections.emptyMap());
 
             await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
             assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");

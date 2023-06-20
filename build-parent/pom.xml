@@ -179,6 +179,10 @@
         <gcf-invoker.version>1.1.1</gcf-invoker.version>
         <!-- Jakarta JMS API -->
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
+
+        <!-- Quarkus Analytics -->
+        <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
+        <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
     </properties>
 
     <dependencyManagement>
@@ -430,6 +434,26 @@
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${compiler-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>properties-maven-plugin</artifactId>
+                    <version>${properties-maven-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>set-system-properties</goal>
+                            </goals>
+                            <configuration>
+                                <properties>
+                                    <property>
+                                        <name>quarkus.analytics.disabled</name>
+                                        <value>${quarkus.analytics.disabled}</value>
+                                    </property>
+                                </properties>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>

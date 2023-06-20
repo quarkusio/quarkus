@@ -1,7 +1,9 @@
 package io.quarkus.maven;
 
+import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
+import static java.util.Collections.*;
 import static java.util.function.Predicate.not;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -99,6 +102,7 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.CompilerOptions;
 import io.quarkus.maven.components.MavenVersionEnforcer;
+import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -347,6 +351,9 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
     MojoExecution mojoExecution;
 
+    @Component
+    BuildAnalyticsProvider analyticsProvider;
+
     /**
      * console attributes, used to restore the console state
      */
@@ -402,6 +409,19 @@ public class DevMojo extends AbstractMojo {
         }
 
         saveTerminalState();
+
+        analyticsProvider.buildAnalyticsUserInput((String prompt) -> {
+            try {
+                final AtomicReference<String> userInput = new AtomicReference<>("");
+                final Prompter prompter = new Prompter();
+                prompter.addPrompt(prompt, input -> userInput.set(input));
+                prompter.collectInput();
+                return userInput.get();
+            } catch (IOException e) {
+                getLog().debug("Failed to collect user input for analytics", e);
+                return "";
+            }
+        });
 
         try {
 
@@ -1182,7 +1202,7 @@ public class DevMojo extends AbstractMojo {
         if (argsString != null) {
             builder.applicationArgs(argsString);
         }
-
+        analyticsProvider.sendAnalytics(DEV_MODE, appModel, emptyMap(), buildDir);
         return builder.build();
     }
 

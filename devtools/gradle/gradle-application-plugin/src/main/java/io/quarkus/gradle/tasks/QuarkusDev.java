@@ -1,5 +1,9 @@
 package io.quarkus.gradle.tasks;
 
+import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRADLE_VERSION;
+import static io.quarkus.analytics.dto.segment.TrackEventType.*;
+import static java.util.Collections.*;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.inject.Inject;
 
@@ -52,6 +57,8 @@ import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
 import org.gradle.util.GradleVersion;
 
+import io.quarkus.analytics.AnalyticsService;
+import io.quarkus.analytics.config.FileLocationsImpl;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.ConfiguredClassLoading;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -63,6 +70,7 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
+import io.quarkus.gradle.Prompter;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dsl.CompilerOption;
 import io.quarkus.gradle.dsl.CompilerOptions;
@@ -314,9 +322,23 @@ public abstract class QuarkusDev extends QuarkusTask {
                     "this should not happen as build should have been executed first. " +
                     "Does the project have any source files?");
         }
+        AnalyticsService analyticsService = new AnalyticsService(FileLocationsImpl.INSTANCE,
+                new GradleMessageWriter(getLogger()));
+        analyticsService.buildAnalyticsUserInput((String prompt) -> {
+            try {
+                final AtomicReference<String> userInput = new AtomicReference<>("");
+                final Prompter prompter = new Prompter();
+                prompter.addPrompt(prompt, input -> userInput.set(input));
+                prompter.collectInput();
+                return userInput.get();
+            } catch (IOException e) {
+                getLogger().debug("Failed to collect user input for analytics", e);
+                return "";
+            }
+        });
 
         try {
-            QuarkusDevModeLauncher runner = newLauncher();
+            QuarkusDevModeLauncher runner = newLauncher(analyticsService);
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
                 getProject().exec(action -> {
@@ -337,6 +359,8 @@ public abstract class QuarkusDev extends QuarkusTask {
 
         } catch (Exception e) {
             throw new GradleException("Failed to run", e);
+        } finally {
+            analyticsService.close();
         }
     }
 
@@ -364,7 +388,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         return false;
     }
 
-    private QuarkusDevModeLauncher newLauncher() throws Exception {
+    private QuarkusDevModeLauncher newLauncher(final AnalyticsService analyticsService) throws Exception {
         final Project project = getProject();
         final JavaPluginExtension javaPluginExtension = project.getExtensions().getByType(JavaPluginExtension.class);
 
@@ -420,6 +444,13 @@ public abstract class QuarkusDev extends QuarkusTask {
         builder.sourceEncoding(getSourceEncoding());
 
         final ApplicationModel appModel = extension().getApplicationModel(LaunchMode.DEVELOPMENT);
+
+        analyticsService.sendAnalytics(
+                DEV_MODE,
+                appModel,
+                Map.of(GRADLE_VERSION, getProject().getGradle().getGradleVersion()),
+                getProject().getBuildDir().getAbsoluteFile());
+
         final Set<ArtifactKey> projectDependencies = new HashSet<>();
         for (ResolvedDependency localDep : DependenciesFilter.getReloadableModules(appModel)) {
             addLocalProject(localDep, builder, projectDependencies, appModel.getAppArtifact().getWorkspaceModule().getId()

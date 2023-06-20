@@ -21,7 +21,7 @@ import io.quarkus.utilities.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
     private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.package.",
-            "quarkus.application.", "quarkus.gradle-worker.");
+            "quarkus.application.", "quarkus.gradle-worker.", "quarkus.analytics.");
 
     private final transient QuarkusPluginExtension extension;
     protected final File projectDir;

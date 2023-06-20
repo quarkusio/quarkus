@@ -25,6 +25,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.repository.RemoteRepository;
 
+import io.quarkus.analytics.dto.segment.TrackEventType;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -43,6 +44,9 @@ public class BuildMojo extends QuarkusBootstrapMojo {
 
     @Component
     MavenProjectHelper projectHelper;
+
+    @Component
+    BuildAnalyticsProvider analyticsProvider;
 
     /**
      * The project's remote repositories to use for the resolution of plugins and their dependencies.
@@ -65,6 +69,9 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     @Deprecated
     @Parameter(property = "skipOriginalJarRename")
     boolean skipOriginalJarRename;
+
+    @Parameter(defaultValue = "${project.build.directory}", readonly = true)
+    File buildDirectory;
 
     /**
      * The list of system properties defined for the plugin.
@@ -131,7 +138,11 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
                 AugmentAction action = curatedApplication.createAugmentor();
                 AugmentResult result = action.createProductionApplication();
-
+                analyticsProvider.sendAnalytics(
+                        TrackEventType.BUILD,
+                        curatedApplication.getApplicationModel(),
+                        result.getGraalVMInfo(),
+                        buildDirectory);
                 Artifact original = mavenProject().getArtifact();
                 if (result.getJar() != null) {
 

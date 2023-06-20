@@ -50,11 +50,19 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
 
     public BuildResult runGradleWrapper(boolean expectError, File projectDir, String... args)
             throws IOException, InterruptedException {
+        return runGradleWrapper(expectError, projectDir, true, args);
+    }
+
+    public BuildResult runGradleWrapper(boolean expectError, File projectDir, boolean skipAnalytics, String... args)
+            throws IOException, InterruptedException {
         setupTestCommand();
         List<String> command = new ArrayList<>();
         command.add(getGradleWrapperCommand());
         addSystemProperties(command);
         command.add("-Dorg.gradle.console=plain");
+        if (skipAnalytics) {
+            command.add("-Dquarkus.analytics.disabled=true");
+        }
         if (configurationCacheEnable) {
             command.add("--configuration-cache");
         }

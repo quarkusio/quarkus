@@ -15,4 +15,6 @@ public interface QuarkusParams extends WorkParameters {
     Property<String> getBaseName();
 
     Property<ApplicationModel> getAppModel();
+
+    Property<String> getGradleVersion();
 }

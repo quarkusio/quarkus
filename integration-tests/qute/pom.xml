@@ -8,7 +8,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    
+
     <artifactId>quarkus-integration-test-qute</artifactId>
     <name>Quarkus - Integration Tests - Qute</name>
     <description>Qute integration test module</description>
@@ -113,6 +113,7 @@
                     <source>11</source>
                     <target>11</target>
                     <parameters>true</parameters>
+                    <proc>none</proc>
                 </configuration>
             </plugin>
             <plugin>

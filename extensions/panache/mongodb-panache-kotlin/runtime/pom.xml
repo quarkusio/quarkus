@@ -131,7 +131,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <compilerArgument>-proc:none</compilerArgument>
+                    <proc>none</proc>
                 </configuration>
                 <executions>
                     <!-- Replacing default-compile as it is treated specially by maven -->

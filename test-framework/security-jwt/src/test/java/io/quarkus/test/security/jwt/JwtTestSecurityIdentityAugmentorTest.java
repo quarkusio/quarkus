@@ -1,7 +1,6 @@
 package io.quarkus.test.security.jwt;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.annotation.Annotation;
@@ -9,7 +8,9 @@ import java.security.Principal;
 import java.util.Set;
 
 import jakarta.json.JsonArray;
+import jakarta.json.JsonNumber;
 import jakarta.json.JsonObject;
+import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -57,10 +58,10 @@ public class JwtTestSecurityIdentityAugmentorTest {
         assertEquals(123456788, jwt.getIssuedAtTime());
         assertEquals(123456787, (Long) jwt.getClaim(Claims.nbf.name()));
         assertEquals(123456786, (Long) jwt.getClaim(Claims.auth_time.name()));
-        assertEquals(123456785, (Long) jwt.getClaim("customlong"));
+        assertEquals(123456785, ((JsonNumber) jwt.getClaim("customlong")).longValue());
         assertEquals("user@gmail.com", jwt.getClaim(Claims.email));
         assertTrue((Boolean) jwt.getClaim(Claims.email_verified.name()));
-        assertFalse((Boolean) jwt.getClaim("email_checked"));
+        assertEquals(JsonValue.FALSE, jwt.getClaim("email_checked"));
 
         JsonArray array = jwt.getClaim("jsonarray_claim");
         assertEquals("1", array.getString(0));

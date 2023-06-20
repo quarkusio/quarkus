@@ -7,6 +7,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.nio.file.Files;
@@ -65,6 +66,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanArchives;
@@ -151,6 +153,7 @@ public class QuarkusComponentTestExtension
     private final List<Class<?>> additionalComponentClasses;
     private final List<MockBeanConfiguratorImpl<?>> mockConfigurators;
     private final AtomicBoolean useDefaultConfigProperties = new AtomicBoolean();
+    private final AtomicBoolean addNestedClassesAsComponents = new AtomicBoolean(true);
 
     // Used for declarative registration
     public QuarkusComponentTestExtension() {
@@ -209,6 +212,19 @@ public class QuarkusComponentTestExtension
         return this;
     }
 
+    /**
+     * Ignore the static nested classes declared on the test class.
+     * <p>
+     * By default, all static nested classes declared on the test class are added to the set of additional components under
+     * test.
+     *
+     * @return the extension
+     */
+    public QuarkusComponentTestExtension ignoreNestedClasses() {
+        this.addNestedClassesAsComponents.set(false);
+        return this;
+    }
+
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
         long start = System.nanoTime();
@@ -247,6 +263,7 @@ public class QuarkusComponentTestExtension
             if (testAnnotation.useDefaultConfigProperties()) {
                 this.useDefaultConfigProperties.set(true);
             }
+            this.addNestedClassesAsComponents.set(testAnnotation.addNestedClassesAsComponents());
         }
         // All fields annotated with @Inject represent component classes
         Class<?> current = testClass;
@@ -257,6 +274,14 @@ public class QuarkusComponentTestExtension
                 }
             }
             current = current.getSuperclass();
+        }
+        // All static nested classes declared on the test class are components
+        if (this.addNestedClassesAsComponents.get()) {
+            for (Class<?> declaredClass : testClass.getDeclaredClasses()) {
+                if (Modifier.isStatic(declaredClass.getModifiers())) {
+                    componentClasses.add(declaredClass);
+                }
+            }
         }
 
         TestConfigProperty[] testConfigProperties = testClass.getAnnotationsByType(TestConfigProperty.class);
@@ -468,7 +493,13 @@ public class QuarkusComponentTestExtension
             BeanProcessor.Builder builder = BeanProcessor.builder()
                     .setName(testClass.getName().replace('.', '_'))
                     .addRemovalExclusion(b -> {
-                        // Do not remove beans injected in the test class
+                        // Do not remove beans:
+                        // 1. Injected in the test class
+                        // 2. Annotated with @Unremovable
+                        if (b.getTarget().isPresent()
+                                && b.getTarget().get().hasDeclaredAnnotation(Unremovable.class)) {
+                            return true;
+                        }
                         for (Field injectionPoint : testClassInjectionPoints) {
                             if (beanResolver.get().matches(b, Types.jandexType(injectionPoint.getGenericType()),
                                     getQualifiers(injectionPoint, qualifiers))) {

@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +25,7 @@ import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -383,6 +385,9 @@ public class ArcProcessor {
                 builder.addExcludeType(predicate);
             }
         }
+        if (launchModeBuildItem.getLaunchMode() == LaunchMode.TEST) {
+            builder.addExcludeType(createQuarkusComponentTestExcludePredicate(index));
+        }
 
         for (SuppressConditionGeneratorBuildItem generator : suppressConditionGenerators) {
             builder.addSuppressConditionGenerator(generator.getGenerator());
@@ -729,6 +734,39 @@ public class ArcProcessor {
         if (config.contextPropagation.enabled) {
             threadContextProvider.produce(new ThreadContextProviderBuildItem(ArcContextProvider.class));
         }
+    }
+
+    Predicate<ClassInfo> createQuarkusComponentTestExcludePredicate(IndexView index) {
+        // Exlude static nested classed declared on a QuarkusComponentTest:
+        // 1. Test class annotated with @QuarkusComponentTest
+        // 2. Test class with a static field of a type QuarkusComponentTestExtension
+        DotName quarkusComponentTest = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTest");
+        DotName quarkusComponentTestExtension = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTestExtension");
+        return new Predicate<ClassInfo>() {
+
+            @Override
+            public boolean test(ClassInfo clazz) {
+                if (clazz.nestingType() == NestingType.INNER
+                        && Modifier.isStatic(clazz.flags())) {
+                    DotName enclosingClassName = clazz.enclosingClass();
+                    ClassInfo enclosingClass = index.getClassByName(enclosingClassName);
+                    if (enclosingClass != null) {
+                        if (enclosingClass.hasDeclaredAnnotation(quarkusComponentTest)) {
+                            return true;
+                        } else {
+                            for (FieldInfo field : enclosingClass.fields()) {
+                                if (!field.isSynthetic()
+                                        && Modifier.isStatic(field.flags())
+                                        && field.type().name().equals(quarkusComponentTestExtension)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        };
     }
 
     private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {

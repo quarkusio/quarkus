@@ -57,6 +57,7 @@ public class KubernetesWithInitContainerResourceLimitsTest {
                                 assertThat(r.getLimits().get("cpu")).isEqualTo(new Quantity("500m"));
                                 assertThat(r.getLimits().get("memory")).isEqualTo(new Quantity("128Mi"));
                             });
+                            assertThat(c.getImagePullPolicy()).isEqualTo("Always");
                         });
 
                     });

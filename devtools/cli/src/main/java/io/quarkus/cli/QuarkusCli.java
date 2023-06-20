@@ -88,12 +88,19 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         //When running tests the cli should not prompt for user input.
         boolean interactiveMode = Arrays.stream(args).noneMatch(arg -> arg.equals("--cli-test"));
         Optional<String> testDir = Arrays.stream(args).dropWhile(arg -> !arg.equals("--cli-test-dir")).skip(1).findFirst();
-        PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
-        PluginManager pluginManager = pluginManager(output, testDir, interactiveMode);
-        pluginManager.syncIfNeeded();
-        Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
-        pluginCommandFactory.populateCommands(cmd, plugins);
+        boolean helpCommand = Arrays.stream(args).anyMatch(arg -> arg.equals("--help"));
         try {
+            boolean existingCommand = checkMissingCommand(cmd, args).isEmpty();
+            // If the command already exists and is not a help command (that lists subcommands), then just execute
+            // without dealing with plugins
+            if (existingCommand && !helpCommand) {
+                return cmd.execute(args);
+            }
+            PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);
+            PluginManager pluginManager = pluginManager(output, testDir, interactiveMode);
+            pluginManager.syncIfNeeded();
+            Map<String, Plugin> plugins = new HashMap<>(pluginManager.getInstalledPlugins());
+            pluginCommandFactory.populateCommands(cmd, plugins);
             Optional<String> missing = checkMissingCommand(cmd, args);
             missing.ifPresent(m -> {
                 try {

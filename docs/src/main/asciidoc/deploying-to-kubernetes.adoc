@@ -960,7 +960,25 @@ quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.role-name=
 <1> In this example, the cluster role "my-cluster-role" will be generated with the specified policy rules.
 <2> The name of the ClusterRole resource to use. Role resources are namespace-based and hence not allowed in ClusterRoleBinding resources.
 
-=== Deploying to Minikube
+=== Deploying to local Kubernetes
+
+When deploying to local Kubernetes environments, users often perform minor changes to their manifests that simplify the development process.
+The most common changes are:
+
+- Setting `imagePullPolicy` to `IfNotPresent`
+- Using `NodePort` as `Service` type
+
+Quarkus provides extensions that among others set these options by default.
+Such extensions are:
+
+- quarkus-minikube
+- quarkus-kind
+
+If the list of extensions does not match the tool you are using (e.g. Docker Desktop, microk8s etc) then it is suggested to use the `quarkus-minikube` extension.
+as its defaults should be reasonable for most environments.
+
+
+==== Deploying to Minikube
 
 https://github.com/kubernetes/minikube[Minikube] is quite popular when a Kubernetes cluster is needed for development purposes. To make the deployment to Minikube
 experience as frictionless as possible, Quarkus provides the `quarkus-minikube` extension. This extension can be added to a project like so:
@@ -1008,7 +1026,7 @@ only. When deploying to production, consider using the vanilla Kubernetes manife
 NOTE: If the assumptions the Minikube extension makes don't fit your workflow, nothing prevents you from using the regular Kubernetes extension to generate Kubernetes manifests
 and apply those to your Minikube cluster.
 
-=== Deploying to Kind
+==== Deploying to Kind
 https://kind.sigs.k8s.io/[Kind] is another popular tool used as a Kubernetes cluster for development purposes. To make the deployment to Kind
 experience as frictionless as possible, Quarkus provides the `quarkus-kind` extension. This extension can be added to a project like so:
 

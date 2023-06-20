@@ -8,7 +8,7 @@ include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Learn how to get your extension contribute features to the Dev UI (v1).
 
-[IMPORTANT]
+[NOTE]
 .Dev UI v1
 ====
 This guide covers the Dev UI v1, which has been replaced in Quarkus 3.

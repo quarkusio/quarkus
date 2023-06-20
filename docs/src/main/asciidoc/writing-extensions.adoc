@@ -1581,7 +1581,7 @@ Instead, Quarkus extensions can make use of various xref:cdi-reference.adoc[Buil
 
 === Quarkus Dev UI
 
-You can make your extension support the xref:dev-ui.adoc[Quarkus Dev UI] for a greater developer experience.
+You can make your extension support the xref:dev-ui-v2.adoc[Quarkus Dev UI] for a greater developer experience.
 
 === Extension-defined endpoints
 

@@ -44,6 +44,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -375,6 +376,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                                     "Class '" + parameterTypeElement.getQualifiedName()
                                             + "' is annotated with @Recorder and therefore cannot be made as a final class.");
+                        } else if (getPackageName(clazz).equals(getPackageName(parameterTypeElement))) {
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING,
+                                    "Build step class '" + clazz.getQualifiedName()
+                                            + "' and recorder '" + parameterTypeElement
+                                            + "' share the same package. This is highly discouraged as it can lead to unexpected results.");
                         }
                         hasRecorder = true;
                         break;
@@ -388,6 +394,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                         + "' which is annotated with '@Record' does not contain a method parameter whose type is annotated with '@Recorder'.");
             }
         }
+    }
+
+    private Name getPackageName(TypeElement clazz) {
+        return processingEnv.getElementUtils().getPackageOf(clazz).getQualifiedName();
     }
 
     private StringBuilder getRelativeBinaryName(TypeElement te, StringBuilder b) {

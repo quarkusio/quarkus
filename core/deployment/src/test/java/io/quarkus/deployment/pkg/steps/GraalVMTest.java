@@ -27,10 +27,41 @@ public class GraalVMTest {
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
                         + "GraalVM Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
                         + "Substrate VM Mandrel-23.0.0-dev (build 17.0.6+10, serial gc)").split("\\n"))));
+        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+                Version.of(Stream.of(("native-image 17.0.7 2023-04-18\n"
+                        + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
+                        + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)").split("\\n"))));
+        // should also work when the image is not around and we have to download it
+        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+                Version.of(
+                        Stream.of(("Unable to find image 'quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17' locally\n"
+                                + "jdk-17: Pulling from quarkus/ubi-quarkus-mandrel-builder-image\n"
+                                + "a49367d57626: Already exists\n"
+                                + "3a83b3d8356a: Already exists\n"
+                                + "d8dd24f2bc88: Already exists\n"
+                                + "99bd64fd6c37: Already exists\n"
+                                + "7a13281b4a63: Already exists\n"
+                                + "ae3db351551e: Already exists\n"
+                                + "eee108cfab2c: Already exists\n"
+                                + "d38abde1651d: Already exists\n"
+                                + "cac4ef5d11c0: Already exists\n"
+                                + "89e5b13e9084: Already exists\n"
+                                + "68897e59054c: Already exists\n"
+                                + "774633828afc: Already exists\n"
+                                + "6708d473f3dc: Already exists\n"
+                                + "4f4fb700ef54: Already exists\n"
+                                + "4f4fb700ef54: Already exists\n"
+                                + "Digest: sha256:2833f8ed2cdfcbdf88134a46b5ab7e4dfee8f7cbde60f819f86e59eb73c2491c\n"
+                                + "Status: Downloaded newer image for quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17\n"
+                                + "native-image 17.0.7 2023-04-18\n"
+                                + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
+                                + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)")
+                                .split("\\n"))));
         assertVersion(org.graalvm.home.Version.create(23, 0), ORACLE,
                 Version.of(Stream.of(("native-image 20 2023-03-21\n"
                         + "GraalVM Runtime Environment GraalVM CE (build 20+34-jvmci-23.0-b10)\n"
                         + "Substrate VM GraalVM CE (build 20+34, serial gc)").split("\\n"))));
+
         // Older version parsing
         assertVersion(org.graalvm.home.Version.create(20, 1), ORACLE,
                 Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));

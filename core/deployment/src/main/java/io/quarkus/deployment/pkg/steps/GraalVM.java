@@ -1,8 +1,5 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -200,17 +197,20 @@ public final class GraalVM {
             return this.version.compareTo(o.version);
         }
 
-        static Version of(Stream<String> lines) {
-            List<String> linesList = toList(lines); // relies on ordering of the stream
-            if (linesList.size() == 3) {
+        static Version of(Stream<String> output) {
+            List<String> lines = output
+                    .dropWhile(l -> !l.startsWith("GraalVM") && !l.startsWith("native-image"))
+                    .collect(Collectors.toUnmodifiableList());
+
+            if (lines.size() == 3) {
                 // Attempt to parse the new 3-line version scheme first.
-                Version v = VersionParseHelper.parse(linesList);
+                Version v = VersionParseHelper.parse(lines);
                 if (v != VersionParseHelper.UNKNOWN_VERSION) {
                     return v;
                 }
-            } else if (linesList.size() == 1) {
+            } else if (lines.size() == 1) {
                 // Old, single line version parsing logic
-                final String line = linesList.get(0);
+                final String line = lines.get(0);
                 final Matcher oldVersMatcher = OLD_VERS_PATTERN.matcher(line);
                 if (oldVersMatcher.find()) {
                     // GraalVM/Mandrel old, single line, version scheme:
@@ -235,12 +235,6 @@ public final class GraalVM {
             }
 
             return UNVERSIONED;
-        }
-
-        // For JDK 11 source level compatibility. stream.toList() API is JDK 16+
-        @SuppressWarnings("unchecked")
-        private static <T> List<T> toList(Stream<String> stream) {
-            return (List<T>) Collections.unmodifiableList(new ArrayList<>(Arrays.asList(stream.toArray())));
         }
 
         private static boolean isMandrel(String s) {

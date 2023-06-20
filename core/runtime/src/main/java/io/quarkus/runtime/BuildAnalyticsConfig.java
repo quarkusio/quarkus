@@ -30,5 +30,5 @@ public class BuildAnalyticsConfig {
      * The Timeout to send the build time analytics to segment.
      */
     @ConfigItem(defaultValue = "3000")
-    public Optional<Integer> timeout;
+    public Integer timeout;
 }

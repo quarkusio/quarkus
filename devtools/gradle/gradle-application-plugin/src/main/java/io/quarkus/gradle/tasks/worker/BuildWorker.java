@@ -100,35 +100,35 @@ public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
     }
 
     private static class Slf4JMessageWriter implements MessageWriter {
-        private final Logger LOGGER;
+        private final Logger logger;
 
         public Slf4JMessageWriter(final Logger logger) {
-            this.LOGGER = logger;
+            this.logger = logger;
         }
 
         @Override
         public void info(String msg) {
-            this.LOGGER.info(msg);
+            this.logger.info(msg);
         }
 
         @Override
         public void error(String msg) {
-            this.LOGGER.error(msg);
+            this.logger.error(msg);
         }
 
         @Override
         public boolean isDebugEnabled() {
-            return this.LOGGER.isDebugEnabled();
+            return this.logger.isDebugEnabled();
         }
 
         @Override
         public void debug(String msg) {
-            this.LOGGER.debug(msg);
+            this.logger.debug(msg);
         }
 
         @Override
         public void warn(String msg) {
-            this.LOGGER.warn(msg);
+            this.logger.warn(msg);
         }
     }
 }

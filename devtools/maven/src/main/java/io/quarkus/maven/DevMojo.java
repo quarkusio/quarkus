@@ -3,7 +3,7 @@ package io.quarkus.maven;
 import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
 import static io.smallrye.common.expression.Expression.Flag.LENIENT_SYNTAX;
 import static io.smallrye.common.expression.Expression.Flag.NO_TRIM;
-import static java.util.Collections.*;
+import static java.util.Collections.emptyMap;
 import static java.util.function.Predicate.not;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;

@@ -13,8 +13,6 @@ import org.aesh.terminal.tty.Signal;
 
 /**
  * Prompt implementation.
- *
- * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
 public class Prompter {
 

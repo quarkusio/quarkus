@@ -16,13 +16,13 @@ import io.quarkus.devui.tests.DevUIJsonRPCTest;
  * All tests test the same api call, with different configuration and different expected results
  * This abstract class reduce the code in each test
  */
-public abstract class DevUIHibernateOrmTest extends DevUIJsonRPCTest {
+public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
 
     private final String expectedPersistenceUnitName;
     private final String expectedTableName;
     private final String expectedClassName;
 
-    public DevUIHibernateOrmTest(String expectedPersistenceUnitName, String expectedTableName,
+    public AbstractDevUIHibernateOrmTest(String expectedPersistenceUnitName, String expectedTableName,
             String expectedClassName) {
         super("io.quarkus.quarkus-hibernate-orm");
         this.expectedPersistenceUnitName = expectedPersistenceUnitName;

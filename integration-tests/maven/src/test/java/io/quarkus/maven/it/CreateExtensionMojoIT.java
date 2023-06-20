@@ -151,7 +151,6 @@ public class CreateExtensionMojoIT extends QuarkusPlatformAwareMojoTestBase {
         request.setShowErrors(true);
         request.setProperties(params);
         disableBuildScanPublication(request);
-
         File log = new File(testDir.getParent(), "build-create-extension-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

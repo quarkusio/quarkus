@@ -136,7 +136,6 @@ public class RunningInvoker extends MavenProcessInvoker {
         request.setOutputHandler(outStreamHandler);
         request.setErrorHandler(errStreamHandler);
         request.addArg("-Dscan=false");
-
         this.result = (MavenProcessInvocationResult) execute(request);
         return result;
     }

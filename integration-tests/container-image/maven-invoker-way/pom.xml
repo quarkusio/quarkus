@@ -107,6 +107,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <mavenOpts>-Dscan=false</mavenOpts>
                     <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                     <cloneClean>true</cloneClean>
                     <preBuildHookScript>setup</preBuildHookScript>

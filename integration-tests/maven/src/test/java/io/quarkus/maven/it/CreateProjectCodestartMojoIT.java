@@ -58,7 +58,6 @@ public class CreateProjectCodestartMojoIT extends QuarkusPlatformAwareMojoTestBa
         request.setDebug(false);
         request.setShowErrors(true);
         disableBuildScanPublication(request);
-
         File log = new File(testDir, "install-extension-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);

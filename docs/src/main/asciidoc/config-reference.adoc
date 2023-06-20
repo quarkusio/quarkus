@@ -532,6 +532,9 @@ A secret configuration may be expressed as `${handler::value}`, where the `handl
 [source,properties]
 ----
 my.secret=${aes-gcm-nopadding::DJNrZ6LfpupFv6QbXyXhvzD8eVDnDa_kTliQBpuzTobDZxlg}
+
+# the encryption key required to decode the secret. It can be set in any source.
+smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key=somearbitrarycrazystringthatdoesnotmatter
 ----
 
 A lookup to `my.secret` will use the `SecretKeysHandler` name `aes-gcm-nopadding` to decode the value
@@ -539,6 +542,12 @@ A lookup to `my.secret` will use the `SecretKeysHandler` name `aes-gcm-nopadding
 
 For more information, please check SmallRye Config
 link:https://smallrye.io/smallrye-config/Main/config/secret-keys/[Secret Keys] documentation.
+
+[WARNING]
+====
+SmallRye Config may provide handlers not fully supported by Quarkus. Currently, only `smallrye-config-crypto` is
+supported.
+====
 
 == Accessing a generating UUID
 

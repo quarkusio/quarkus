@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.hibernate.orm.devui.namedpu.MyNamedPuEntity;
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends DevUIHibernateOrmTest {
+public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends AbstractDevUIHibernateOrmTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()

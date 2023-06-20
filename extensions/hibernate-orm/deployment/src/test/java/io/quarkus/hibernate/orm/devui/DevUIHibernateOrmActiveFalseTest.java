@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevUIHibernateOrmActiveFalseTest extends DevUIHibernateOrmTest {
+public class DevUIHibernateOrmActiveFalseTest extends AbstractDevUIHibernateOrmTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
@@ -18,7 +18,7 @@ public class DevUIHibernateOrmActiveFalseTest extends DevUIHibernateOrmTest {
                     .addClasses(MyEntity.class));
 
     public DevUIHibernateOrmActiveFalseTest() {
-        super(0, 0);
+        super(null, null, null);
     }
 
 }

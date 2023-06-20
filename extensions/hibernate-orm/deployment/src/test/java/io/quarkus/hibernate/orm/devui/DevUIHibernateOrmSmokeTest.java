@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 
-public class DevUIHibernateOrmSmokeTest extends DevUIHibernateOrmTest {
+public class DevUIHibernateOrmSmokeTest extends AbstractDevUIHibernateOrmTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()

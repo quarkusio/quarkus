@@ -299,6 +299,8 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         request.setPomFile(projectPath);
 
         request.setGoals(Collections.singletonList("install"));
+        request.addArg("-Dscan=false");
+
         Invoker invoker = new DefaultInvoker();
 
         // This is a bit ugly, but bake in knowledge about where we are in the hierarchy to find maven

@@ -88,6 +88,8 @@ public class ScalaCreateMavenProjectIT extends QuarkusPlatformAwareMojoTestBase 
         request.setGoals(Collections.singletonList(
                 getMavenPluginGroupId() + ":" + getMavenPluginArtifactId() + ":" + getMavenPluginVersion() + ":create"));
         request.setProperties(params);
+        disableBuildScanPublication(request);
+
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
         final PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.INFO);

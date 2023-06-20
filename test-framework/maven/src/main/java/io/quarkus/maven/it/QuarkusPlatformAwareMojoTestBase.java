@@ -2,6 +2,8 @@ package io.quarkus.maven.it;
 
 import java.util.Properties;
 
+import org.apache.maven.shared.invoker.InvocationRequest;
+
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.RegistryResolutionException;
@@ -56,5 +58,9 @@ public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
 
     protected String getBomVersion() {
         return getPlatformDescriptor().getBom().getVersion();
+    }
+
+    protected void disableBuildScanPublication(InvocationRequest request) {
+        request.addArg("-Dscan=false");
     }
 }

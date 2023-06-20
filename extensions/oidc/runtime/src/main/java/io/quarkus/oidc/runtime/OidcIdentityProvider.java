@@ -447,7 +447,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 .recoverWithUni(f -> introspectTokenUni(resolvedContext, token));
     }
 
-    private Uni<TokenVerificationResult> introspectTokenUni(TenantConfigContext resolvedContext, String token) {
+    private Uni<TokenVerificationResult> introspectTokenUni(TenantConfigContext resolvedContext, final String token) {
         TokenIntrospectionCache tokenIntrospectionCache = tenantResolver.getTokenIntrospectionCache();
         Uni<TokenIntrospection> tokenIntrospectionUni = tokenIntrospectionCache == null ? null
                 : tokenIntrospectionCache
@@ -456,7 +456,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token);
         } else {
             tokenIntrospectionUni = tokenIntrospectionUni.onItem().ifNull()
-                    .switchTo(newTokenIntrospectionUni(resolvedContext, token));
+                    .switchTo(new Supplier<Uni<? extends TokenIntrospection>>() {
+                        @Override
+                        public Uni<TokenIntrospection> get() {
+                            return newTokenIntrospectionUni(resolvedContext, token);
+                        }
+                    });
         }
         return tokenIntrospectionUni.onItem().transform(t -> new TokenVerificationResult(null, t));
     }
@@ -501,10 +506,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         }
 
         LOG.debug("Requesting UserInfo");
-        String accessToken = vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
-        if (accessToken == null) {
-            accessToken = request.getToken().getToken();
-        }
+        String contextAccessToken = vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
+        final String accessToken = contextAccessToken != null ? contextAccessToken : request.getToken().getToken();
 
         UserInfoCache userInfoCache = tenantResolver.getUserInfoCache();
         Uni<UserInfo> userInfoUni = userInfoCache == null ? null
@@ -513,7 +516,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             userInfoUni = newUserInfoUni(resolvedContext, accessToken);
         } else {
             userInfoUni = userInfoUni.onItem().ifNull()
-                    .switchTo(newUserInfoUni(resolvedContext, accessToken));
+                    .switchTo(new Supplier<Uni<? extends UserInfo>>() {
+                        @Override
+                        public Uni<UserInfo> get() {
+                            return newUserInfoUni(resolvedContext, accessToken);
+                        }
+                    });
         }
         return userInfoUni;
     }

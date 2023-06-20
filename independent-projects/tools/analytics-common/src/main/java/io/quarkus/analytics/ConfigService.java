@@ -37,7 +37,7 @@ public class ConfigService {
             + "********************************************************************************************************"
             + NEW_LINE
             + "* Please help improve Quarkus!" + NEW_LINE
-            + "* Learn more: https://quarkus.io/usage-policy/" + NEW_LINE
+            + "* Learn more: https://quarkus.io/usage/" + NEW_LINE
             + "* Do you agree to contribute anonymous build time data to the Quarkus community? (y/n) " + NEW_LINE;
     private static final int DEFAULT_REFRESH_HOURS = 12;
 

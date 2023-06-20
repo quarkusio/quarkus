@@ -411,8 +411,13 @@ public class OpenshiftProcessor {
                 deployResource(client, i);
                 LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName());
             }
-            OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
-
+            try {
+                OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
+            } catch (KubernetesClientException e) {
+                //User may not have permission to get / list `ImageStreamTag` or this step may fail for any reason.
+                //As this is not an integral part of the build we should catch and log.
+                LOG.debug("Waiting for ImageStream tag failed. Ignoring.");
+            }
         } catch (KubernetesClientException e) {
             KubernetesClientErrorHandler.handle(e);
         }

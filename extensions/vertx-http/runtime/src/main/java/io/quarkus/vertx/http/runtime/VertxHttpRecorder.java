@@ -10,10 +10,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.*;
@@ -1023,7 +1021,7 @@ public class VertxHttpRecorder {
         private final LaunchMode launchMode;
         private volatile boolean clearHttpProperty = false;
         private volatile boolean clearHttpsProperty = false;
-        private volatile Map<String, String> portPropertiesToRestore;
+        private volatile PortSystemProperties portSystemProperties;
         private final HttpConfiguration.InsecureRequests insecureRequests;
         private final HttpConfiguration quarkusConfig;
         private final AtomicInteger connectionCount;
@@ -1188,31 +1186,8 @@ public class VertxHttpRecorder {
                                     actualHttpPort = actualPort;
                                     schema = "http";
                                 }
-                                portPropertiesToRestore = new HashMap<>();
-                                String portPropertyValue = String.valueOf(actualPort);
-                                //we always set the .port property, even if we are in test mode, so this will always
-                                //reflect the current port
-                                String portPropertyName = "quarkus." + schema + ".port";
-                                String prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
-                                if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
-                                    portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
-                                }
-                                if (launchMode == LaunchMode.TEST) {
-                                    //we also set the test-port property in a test
-                                    String testPropName = "quarkus." + schema + ".test-port";
-                                    String prevTestPropPrevValue = System.setProperty(testPropName, portPropertyValue);
-                                    if (!Objects.equals(prevTestPropPrevValue, portPropertyValue)) {
-                                        portPropertiesToRestore.put(testPropName, prevTestPropPrevValue);
-                                    }
-                                }
-                                if (launchMode.isDevOrTest()) {
-                                    // set the profile property as well to make sure we don't have any inconsistencies
-                                    portPropertyName = propertyWithProfilePrefix(portPropertyName);
-                                    prevPortPropertyValue = System.setProperty(portPropertyName, portPropertyValue);
-                                    if (!Objects.equals(prevPortPropertyValue, portPropertyValue)) {
-                                        portPropertiesToRestore.put(portPropertyName, prevPortPropertyValue);
-                                    }
-                                }
+                                portSystemProperties = new PortSystemProperties();
+                                portSystemProperties.set(schema, actualPort, launchMode);
                             }
                             startFuture.complete(null);
                         }
@@ -1256,14 +1231,8 @@ public class VertxHttpRecorder {
                             System.clearProperty(propertyWithProfilePrefix(portPropertyName));
                         }
                     }
-                    if (portPropertiesToRestore != null) {
-                        for (Map.Entry<String, String> entry : portPropertiesToRestore.entrySet()) {
-                            if (entry.getValue() == null) {
-                                System.clearProperty(entry.getKey());
-                            } else {
-                                System.setProperty(entry.getKey(), entry.getValue());
-                            }
-                        }
+                    if (portSystemProperties != null) {
+                        portSystemProperties.restore();
                     }
 
                     stopFuture.complete();

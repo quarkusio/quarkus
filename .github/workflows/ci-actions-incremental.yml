@@ -143,7 +143,7 @@ jobs:
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
-          key: q2maven-${{ steps.get-date.outputs.date }}
+          key: q2maven-2.13-${{ steps.get-date.outputs.date }}
       - name: Prepare Jakarta artifacts
         if: github.ref_name == 'jakarta-rewrite'
         shell: bash
@@ -500,7 +500,6 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
-          cache: 'gradle'
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
         if: "!startsWith(matrix.java.os-name, 'windows')"

@@ -39,4 +39,10 @@ public class DevServicesBuildTimeConfig {
     @ConfigItem
     public Map<String, String> properties;
 
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
+
 }

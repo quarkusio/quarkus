@@ -233,6 +233,7 @@ public class DevServicesKafkaProcessor {
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             useSharedNetwork, config.redpanda);
                     timeout.ifPresent(redpanda::withStartupTimeout);
+                    redpanda.withEnv(config.containerEnv);
                     redpanda.start();
 
                     return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
@@ -252,6 +253,7 @@ public class DevServicesKafkaProcessor {
                         strimzi.withPort(config.fixedExposedPort);
                     }
                     timeout.ifPresent(strimzi::withStartupTimeout);
+                    strimzi.withEnv(config.containerEnv);
 
                     strimzi.start();
                     return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
@@ -264,6 +266,7 @@ public class DevServicesKafkaProcessor {
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             useSharedNetwork);
                     timeout.ifPresent(kafkaNative::withStartupTimeout);
+                    kafkaNative.withEnv(config.containerEnv);
                     kafkaNative.start();
 
                     return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
@@ -314,6 +317,7 @@ public class DevServicesKafkaProcessor {
         private final String serviceName;
         private final Map<String, Integer> topicPartitions;
         private final Duration topicPartitionsTimeout;
+        private final Map<String, String> containerEnv;
 
         private final KafkaDevServicesBuildTimeConfig.Provider provider;
 
@@ -328,6 +332,7 @@ public class DevServicesKafkaProcessor {
             this.serviceName = config.serviceName;
             this.topicPartitions = config.topicPartitions;
             this.topicPartitionsTimeout = config.topicPartitionsTimeout;
+            this.containerEnv = config.containerEnv;
 
             this.redpanda = config.redpanda;
         }
@@ -344,12 +349,13 @@ public class DevServicesKafkaProcessor {
             return devServicesEnabled == that.devServicesEnabled
                     && Objects.equals(provider, that.provider)
                     && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
+                    && Objects.equals(containerEnv, that.containerEnv);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, provider, imageName, fixedExposedPort);
+            return Objects.hash(devServicesEnabled, provider, imageName, fixedExposedPort, containerEnv);
         }
     }
 

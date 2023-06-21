@@ -276,6 +276,7 @@ public class DevServicesDatasourceProcessor {
         try {
             DevServicesDatasourceContainerConfig containerConfig = new DevServicesDatasourceContainerConfig(
                     dataSourceBuildTimeConfig.devservices.imageName,
+                    dataSourceBuildTimeConfig.devservices.containerEnv,
                     dataSourceBuildTimeConfig.devservices.containerProperties,
                     dataSourceBuildTimeConfig.devservices.properties,
                     dataSourceBuildTimeConfig.devservices.port,

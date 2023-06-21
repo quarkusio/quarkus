@@ -36,6 +36,7 @@ public class MariaDBDevServicesProcessor {
     DevServicesDatasourceProviderBuildItem setupMariaDB(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MARIADB, new DevServicesDatasourceProvider() {
+            @SuppressWarnings("unchecked")
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
                     Optional<String> datasourceName, DevServicesDatasourceContainerConfig containerConfig,
@@ -55,6 +56,8 @@ public class MariaDBDevServicesProcessor {
                         .withReuse(true);
                 Labels.addDataSourceLabel(container, datasourceName);
                 Volumes.addVolumes(container, containerConfig.getVolumes());
+
+                container.withEnv(containerConfig.getContainerEnv());
 
                 if (containerConfig.getContainerProperties().containsKey(MY_CNF_CONFIG_OVERRIDE_PARAM_NAME)) {
                     container.withConfigurationOverride(

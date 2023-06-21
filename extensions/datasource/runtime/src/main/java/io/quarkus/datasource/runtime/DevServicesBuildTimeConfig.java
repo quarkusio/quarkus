@@ -29,6 +29,12 @@ public class DevServicesBuildTimeConfig {
     public Optional<String> imageName;
 
     /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
+
+    /**
      * Generic properties that are passed for additional container configuration.
      * <p>
      * Properties defined here are database specific and are interpreted specifically in each database dev service

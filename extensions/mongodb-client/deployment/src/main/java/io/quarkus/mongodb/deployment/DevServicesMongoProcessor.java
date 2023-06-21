@@ -168,6 +168,7 @@ public class DevServicesMongoProcessor {
             mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort, useSharedNetwork);
         }
         timeout.ifPresent(mongoDBContainer::withStartupTimeout);
+        mongoDBContainer.withEnv(capturedProperties.containerEnv);
         mongoDBContainer.start();
         Optional<String> databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database", String.class);
         String effectiveURL = databaseName.map(mongoDBContainer::getReplicaSetUrl).orElse(mongoDBContainer.getReplicaSetUrl());
@@ -209,7 +210,7 @@ public class DevServicesMongoProcessor {
         boolean devServicesEnabled = devServicesConfig.enabled.orElse(true);
         return new CapturedProperties(databaseName, connectionString, devServicesEnabled,
                 devServicesConfig.imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mongo")),
-                devServicesConfig.port.orElse(null), devServicesConfig.properties);
+                devServicesConfig.port.orElse(null), devServicesConfig.properties, devServicesConfig.containerEnv);
     }
 
     private static final class CapturedProperties {
@@ -219,15 +220,17 @@ public class DevServicesMongoProcessor {
         private final String imageName;
         private final Integer fixedExposedPort;
         private final Map<String, String> connectionProperties;
+        private final Map<String, String> containerEnv;
 
         public CapturedProperties(String database, String connectionString, boolean devServicesEnabled, String imageName,
-                Integer fixedExposedPort, Map<String, String> connectionProperties) {
+                Integer fixedExposedPort, Map<String, String> connectionProperties, Map<String, String> containerEnv) {
             this.database = database;
             this.connectionString = connectionString;
             this.devServicesEnabled = devServicesEnabled;
             this.imageName = imageName;
             this.fixedExposedPort = fixedExposedPort;
             this.connectionProperties = connectionProperties;
+            this.containerEnv = containerEnv;
         }
 
         @Override
@@ -240,13 +243,14 @@ public class DevServicesMongoProcessor {
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(database, that.database)
                     && Objects.equals(connectionString, that.connectionString) && Objects.equals(imageName, that.imageName)
                     && Objects.equals(fixedExposedPort, that.fixedExposedPort)
-                    && Objects.equals(connectionProperties, that.connectionProperties);
+                    && Objects.equals(connectionProperties, that.connectionProperties)
+                    && Objects.equals(containerEnv, that.containerEnv);
         }
 
         @Override
         public int hashCode() {
             return Objects.hash(database, connectionString, devServicesEnabled, imageName, fixedExposedPort,
-                    connectionProperties);
+                    connectionProperties, containerEnv);
         }
     }
 

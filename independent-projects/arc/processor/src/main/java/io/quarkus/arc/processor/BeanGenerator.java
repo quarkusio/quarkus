@@ -126,7 +126,9 @@ public class BeanGenerator extends AbstractGenerator {
      * @return a collection of resources
      */
     Collection<Resource> generate(BeanInfo bean) {
-        if (bean.getTarget().isPresent()) {
+        if (bean.isSynthetic()) {
+            return generateSyntheticBean(bean);
+        } else {
             AnnotationTarget target = bean.getTarget().get();
             switch (target.kind()) {
                 case CLASS:
@@ -138,9 +140,6 @@ public class BeanGenerator extends AbstractGenerator {
                 default:
                     throw new IllegalArgumentException("Unsupported bean type");
             }
-        } else {
-            // Synthetic beans
-            return generateSyntheticBean(bean);
         }
     }
 

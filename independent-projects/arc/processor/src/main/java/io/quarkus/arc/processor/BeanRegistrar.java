@@ -2,6 +2,8 @@ package io.quarkus.arc.processor;
 
 import java.util.Collection;
 
+import jakarta.enterprise.inject.spi.InterceptionType;
+
 import org.jboss.jandex.DotName;
 
 /**
@@ -38,6 +40,15 @@ public interface BeanRegistrar extends BuildExtension {
         default <T> BeanConfigurator<T> configure(Class<?> beanClass) {
             return configure(DotName.createSimple(beanClass.getName()));
         }
+
+        /**
+         * Configure a new synthetic interceptor. The interceptor is not added to the deployment unless the
+         * {@link InterceptorConfigurator#creator(Class)} method is called.
+         *
+         * @param interceptionType
+         * @return a new synthetic interceptor configurator
+         */
+        InterceptorConfigurator configureInterceptor(InterceptionType interceptionType);
 
         /**
          * The returned stream contains all non-synthetic beans (beans derived from classes) and beans

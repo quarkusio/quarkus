@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -143,13 +144,16 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
     @Override
     public String connected(WebSocket webSocket) {
         String remote = webSocket.remoteAddress().toString();
-        webSockets.computeIfAbsent(remote, k -> {
-            LongAdder count = new LongAdder();
-            Gauge.builder(config.getHttpClientWebSocketConnectionsName(), count::longValue)
-                    .description("The number of active web socket connections")
-                    .tags(tags.and("address", remote))
-                    .register(registry);
-            return count;
+        webSockets.computeIfAbsent(remote, new Function<>() {
+            @Override
+            public LongAdder apply(String s) {
+                LongAdder count = new LongAdder();
+                Gauge.builder(config.getHttpClientWebSocketConnectionsName(), count::longValue)
+                        .description("The number of active web socket connections")
+                        .tags(tags.and("address", remote))
+                        .register(registry);
+                return count;
+            }
         }).increment();
         return remote;
     }

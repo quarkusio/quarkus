@@ -124,8 +124,7 @@ public class UpxCompressionBuildStep {
             String gid = getLinuxID("-gr");
             if (uid != null && gid != null && !uid.isEmpty() && !gid.isEmpty()) {
                 Collections.addAll(commandLine, "--user", uid + ":" + gid);
-                if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN
-                        && containerRuntime.isRootless()) {
+                if (containerRuntime == ContainerRuntimeUtil.ContainerRuntime.PODMAN) {
                     // Needed to avoid AccessDeniedExceptions
                     commandLine.add("--userns=keep-id");
                 }

@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 [NOTE]
 .Dev UI v2
 ====
-This guide covers the Dev UI v2, which is the default from Quarkus 3 onwards.
+This guide covers the Dev UI v2, which is the default from Quarkus 3 onwards. Read xref:dev-ui.adoc[Dev UI v1] for Quarkus 2.x.
 ====
 
 This guide covers the Quarkus Dev UI for xref:building-my-first-extension.adoc[extension authors].

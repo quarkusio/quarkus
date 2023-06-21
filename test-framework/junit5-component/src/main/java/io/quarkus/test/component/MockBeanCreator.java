@@ -12,13 +12,15 @@ import io.quarkus.arc.SyntheticCreationalContext;
 
 public class MockBeanCreator implements BeanCreator<Object> {
 
+    static final String CREATE_KEY = "createKey";
+
     private static final Logger LOG = Logger.getLogger(MockBeanCreator.class);
 
     private static final Map<String, Function<SyntheticCreationalContext<?>, ?>> createFunctions = new HashMap<>();
 
     @Override
     public Object create(SyntheticCreationalContext<Object> context) {
-        Object createKey = context.getParams().get("createKey");
+        Object createKey = context.getParams().get(CREATE_KEY);
         if (createKey != null) {
             Function<SyntheticCreationalContext<?>, ?> createFun = createFunctions.get(createKey.toString());
             if (createFun != null) {

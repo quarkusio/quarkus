@@ -271,7 +271,8 @@ public final class LauncherUtil {
         @Override
         public void run() {
             if (!ensureProcessOutputFileExists()) {
-                unableToDetermineData("Log file '" + processOutput.toAbsolutePath() + "' was not created.");
+                unableToDetermineData("Log file '" + processOutput.toAbsolutePath() + "' was not created. "
+                        + "Check if the options quarkus.log.level and quarkus.log.file.level are at least INFO (or more verbose).");
                 return;
             }
 
@@ -311,7 +312,8 @@ public final class LauncherUtil {
                                 dataDetermined(null, null); // no http, all is null
                             } else {
                                 unableToDetermineData("Waited " + waitTime.getSeconds() + " seconds for " + processOutput
-                                        + " to contain info about the listening port and protocol but no such info was found");
+                                        + " to contain info about the listening port and protocol but no such info was found. "
+                                        + "Check if the options quarkus.log.level and quarkus.log.file.level are at least INFO (or more verbose).");
                             }
                             return;
                         }

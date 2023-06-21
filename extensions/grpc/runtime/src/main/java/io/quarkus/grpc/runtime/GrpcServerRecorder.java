@@ -1,6 +1,7 @@
 package io.quarkus.grpc.runtime;
 
 import static io.quarkus.grpc.runtime.GrpcSslUtils.applySslOptions;
+import static io.quarkus.grpc.runtime.GrpcTestPortUtils.testPort;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +58,7 @@ import io.quarkus.runtime.QuarkusBindException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.PortSystemProperties;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
@@ -226,7 +228,7 @@ public class GrpcServerRecorder {
 
     private void postStartup(GrpcServerConfiguration configuration, GrpcBuilderProvider<?> provider, boolean test) {
         initHealthStorage();
-        int port = test ? configuration.testPort : configuration.port;
+        int port = test ? testPort(configuration) : configuration.port;
         String msg = "Started ";
         if (provider != null)
             msg += provider.serverInfo(configuration.host, port, configuration);
@@ -555,6 +557,7 @@ public class GrpcServerRecorder {
         private final GrpcBuilderProvider provider;
         private final LaunchMode launchMode;
         private final Map<String, List<String>> blockingMethodsPerService;
+        private volatile PortSystemProperties portSystemProperties;
 
         private Server grpcServer;
 
@@ -591,6 +594,11 @@ public class GrpcServerRecorder {
                         }
                         startPromise.fail(effectiveCause);
                     } else {
+                        int actualPort = grpcServer.getPort();
+                        if (actualPort != portToServer.getKey()) {
+                            portSystemProperties = new PortSystemProperties();
+                            portSystemProperties.set("grpc.server", actualPort, launchMode);
+                        }
                         startPromise.complete();
                         grpcVerticleCount.incrementAndGet();
                     }
@@ -600,6 +608,11 @@ public class GrpcServerRecorder {
                 vertx.executeBlocking((Handler<Promise<Void>>) event -> {
                     try {
                         grpcServer.start();
+                        int actualPort = grpcServer.getPort();
+                        if (actualPort != portToServer.getKey()) {
+                            portSystemProperties = new PortSystemProperties();
+                            portSystemProperties.set("grpc.server", actualPort, launchMode);
+                        }
                         startPromise.complete();
                     } catch (Exception e) {
                         LOGGER.error("Unable to start gRPC server", e);
@@ -623,6 +636,9 @@ public class GrpcServerRecorder {
                         stopPromise.complete();
                         grpcVerticleCount.decrementAndGet();
                     }
+                    if (portSystemProperties != null) {
+                        portSystemProperties.restore();
+                    }
                 });
             } else {
                 try {
@@ -635,6 +651,10 @@ public class GrpcServerRecorder {
                 } catch (Exception e) {
                     LOGGER.errorf(e, "Unable to stop the gRPC server gracefully");
                     stopPromise.fail(e);
+                } finally {
+                    if (portSystemProperties != null) {
+                        portSystemProperties.restore();
+                    }
                 }
             }
         }

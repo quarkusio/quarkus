@@ -31,6 +31,8 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jsonp</artifactId>
+            <scope>compile</scope>
+            <optional>true</optional> 
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.jwt</groupId>

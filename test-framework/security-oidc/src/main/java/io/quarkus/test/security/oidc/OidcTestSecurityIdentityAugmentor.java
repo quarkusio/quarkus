@@ -43,16 +43,13 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
             Claims.auth_time.name(), longConverter,
             Claims.email_verified.name(), booleanConverter);
 
-    private static Map<Class<?>, Converter<?>> converters = Map.of(
-            String.class, new StringConverter(),
-            Integer.class, intConverter,
-            int.class, intConverter,
-            Long.class, longConverter,
-            long.class, longConverter,
-            Boolean.class, booleanConverter,
-            boolean.class, booleanConverter,
-            JsonArray.class, new JsonArrayConverter(),
-            jakarta.json.JsonObject.class, new JsonObjectConverter());
+    private static Map<Claim.Type, Converter<?>> converters = Map.of(
+            Claim.Type.STRING, new StringConverter(),
+            Claim.Type.INTEGER, intConverter,
+            Claim.Type.LONG, longConverter,
+            Claim.Type.BOOLEAN, booleanConverter,
+            Claim.Type.JSONARRAY, new JsonArrayConverter(),
+            Claim.Type.JSONOBJECT, new JsonObjectConverter());
 
     private Optional<String> issuer;
     private PrivateKey privateKey;
@@ -172,12 +169,12 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
 
     @SuppressWarnings("unchecked")
     private <T> T convertClaimValue(Claim claim) {
-        if (claim.type() != Object.class) {
+        if (claim.type() != Claim.Type.UNKNOWN) {
             Converter<?> converter = converters.get(claim.type());
             if (converter != null) {
                 return (T) converter.convert(claim.value());
             } else {
-                throw new RuntimeException("Unsupported claim type: " + claim.type().getName());
+                throw new RuntimeException("Unsupported claim type: " + claim.type().name());
             }
         } else if (standardClaimConverteres.containsKey(claim.key())) {
             Converter<?> converter = standardClaimConverteres.get(claim.key());

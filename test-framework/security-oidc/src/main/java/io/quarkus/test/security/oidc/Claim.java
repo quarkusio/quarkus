@@ -17,9 +17,21 @@ public @interface Claim {
      */
     String value();
 
+    enum Type {
+        LONG,
+        INTEGER,
+        BOOLEAN,
+        STRING,
+        JSONARRAY,
+        JSONOBJECT,
+        UNKNOWN
+    }
+
     /**
-     * Claim value type, the value will be converted to String if this type is set to Object.class.
-     * Supported types: String, Integer, int, Long, long, Boolean, boolean, jakarta.json.JsonArray, jakarta.json.JsonObject.
+     * Claim value type.
+     * If this type is set to {@link Type#UNKNOWN} then the value will be converted to String unless the claim
+     * is a standard claim such as `exp` (expiry), `iat` (issued at), `nbf` (not before), `auth_time` (authentication time)
+     * whose value will be converted to Long or `email_verified` whose value will be converted to Boolean.
      */
-    Class<?> type() default Object.class;
+    Type type() default Type.UNKNOWN;
 }

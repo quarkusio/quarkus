@@ -13,6 +13,7 @@ import java.util.OptionalInt;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.dekorate.kubernetes.config.DeploymentStrategy;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.kubernetes.spi.DeployStrategy;
@@ -127,6 +128,20 @@ public class KubernetesConfig implements PlatformConfiguration {
      */
     @ConfigItem(defaultValue = "1")
     Integer replicas;
+
+    /**
+     * Specifies the deployment strategy.
+     */
+    @ConfigItem(defaultValue = "None")
+    DeploymentStrategy strategy;
+
+    /**
+     * Specifies rolling update configuration.
+     * The configuration is applied when DeploymentStrategy == RollingUpdate, or
+     * when explicit configuration has been provided. In the later case RollingUpdate is assumed.
+     */
+    @ConfigItem
+    RollingUpdateConfig rollingUpdate;
 
     /**
      * The type of service that will be generated for the application

@@ -22,8 +22,9 @@ public class CustomResolversTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(CustomValueResolver.class, CustomNamespaceResolver.class)
-                    .addAsResource(new StringAsset("{bool.foo}::{custom:bar}"), "templates/foo.html"));
+            .withApplicationRoot(
+                    root -> root.addClasses(CustomValueResolver.class, CustomNamespaceResolver.class, ResolverBase.class)
+                            .addAsResource(new StringAsset("{bool.foo}::{custom:bar}"), "templates/foo.html"));
 
     @Inject
     Template foo;
@@ -34,7 +35,7 @@ public class CustomResolversTest {
     }
 
     @EngineConfiguration
-    static class CustomValueResolver implements ValueResolver {
+    static class CustomValueResolver extends ResolverBase {
 
         @Override
         public boolean appliesTo(EvalContext context) {
@@ -45,6 +46,10 @@ public class CustomResolversTest {
         public CompletionStage<Object> resolve(EvalContext context) {
             return CompletableFuture.completedStage("foo");
         }
+
+    }
+
+    static abstract class ResolverBase implements ValueResolver {
 
     }
 

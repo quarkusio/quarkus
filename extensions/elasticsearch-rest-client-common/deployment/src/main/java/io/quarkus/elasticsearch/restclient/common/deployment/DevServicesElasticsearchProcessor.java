@@ -207,6 +207,8 @@ public class DevServicesElasticsearchProcessor {
                 container.setPortBindings(List.of(config.port.get() + ":" + config.port.get()));
             }
             timeout.ifPresent(container::withStartupTimeout);
+
+            container.withEnv(config.containerEnv);
             container.addEnv("ES_JAVA_OPTS", config.javaOpts);
             // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
             container.addEnv("xpack.security.enabled", "false");

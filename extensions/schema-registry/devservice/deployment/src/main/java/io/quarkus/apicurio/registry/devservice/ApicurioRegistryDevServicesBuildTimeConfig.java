@@ -1,5 +1,6 @@
 package io.quarkus.apicurio.registry.devservice;
 
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -60,5 +61,11 @@ public class ApicurioRegistryDevServicesBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "apicurio-registry")
     public String serviceName;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
 
 }

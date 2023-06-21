@@ -210,6 +210,7 @@ public class InfinispanDevServiceProcessor {
                     launchMode,
                     useSharedNetwork);
             timeout.ifPresent(infinispanContainer::withStartupTimeout);
+            infinispanContainer.withEnv(devServicesConfig.containerEnv);
             infinispanContainer.start();
 
             return getRunningDevService(clientName, infinispanContainer.getContainerId(), infinispanContainer::close,

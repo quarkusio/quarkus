@@ -369,6 +369,7 @@ public class KeycloakDevServicesProcessor {
                     errors);
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
+            oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv);
             oidcContainer.start();
 
             String internalUrl = startURL(oidcContainer.getHost(), oidcContainer.getPort(), oidcContainer.keycloakX);

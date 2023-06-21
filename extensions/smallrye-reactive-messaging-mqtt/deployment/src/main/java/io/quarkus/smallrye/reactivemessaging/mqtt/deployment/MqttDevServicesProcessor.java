@@ -163,6 +163,7 @@ public class MqttDevServicesProcessor {
 
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
+            container.withEnv(config.containerEnv);
             container.start();
             return getRunningDevService(
                     container.getContainerId(),
@@ -230,6 +231,7 @@ public class MqttDevServicesProcessor {
         private final Integer fixedExposedPort;
         private final boolean shared;
         private final String serviceName;
+        private final Map<String, String> containerEnv;
 
         public MqttDevServiceCfg(MqttDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
@@ -237,6 +239,7 @@ public class MqttDevServicesProcessor {
             this.fixedExposedPort = devServicesConfig.port.orElse(0);
             this.shared = devServicesConfig.shared;
             this.serviceName = devServicesConfig.serviceName;
+            this.containerEnv = devServicesConfig.containerEnv;
         }
 
         @Override
@@ -249,12 +252,13 @@ public class MqttDevServicesProcessor {
             }
             MqttDevServiceCfg that = (MqttDevServiceCfg) o;
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
+                    && Objects.equals(containerEnv, that.containerEnv);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort);
+            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort, containerEnv);
         }
     }
 

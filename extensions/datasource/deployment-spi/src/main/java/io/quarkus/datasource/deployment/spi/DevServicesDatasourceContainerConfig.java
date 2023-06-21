@@ -7,6 +7,7 @@ import java.util.OptionalInt;
 public class DevServicesDatasourceContainerConfig {
 
     private final Optional<String> imageName;
+    private final Map<String, String> containerEnv;
     private final Map<String, String> containerProperties;
     private final Map<String, String> additionalJdbcUrlProperties;
     private final OptionalInt fixedExposedPort;
@@ -18,6 +19,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Map<String, String> volumes;
 
     public DevServicesDatasourceContainerConfig(Optional<String> imageName,
+            Map<String, String> containerEnv,
             Map<String, String> containerProperties,
             Map<String, String> additionalJdbcUrlProperties,
             OptionalInt port,
@@ -28,6 +30,7 @@ public class DevServicesDatasourceContainerConfig {
             Optional<String> initScriptPath,
             Map<String, String> volumes) {
         this.imageName = imageName;
+        this.containerEnv = containerEnv;
         this.containerProperties = containerProperties;
         this.additionalJdbcUrlProperties = additionalJdbcUrlProperties;
         this.fixedExposedPort = port;
@@ -41,6 +44,10 @@ public class DevServicesDatasourceContainerConfig {
 
     public Optional<String> getImageName() {
         return imageName;
+    }
+
+    public Map<String, String> getContainerEnv() {
+        return containerEnv;
     }
 
     public Map<String, String> getContainerProperties() {

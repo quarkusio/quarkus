@@ -117,6 +117,12 @@ public class KafkaDevServicesBuildTimeConfig {
     public Duration topicPartitionsTimeout;
 
     /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
+
+    /**
      * Allows configuring the Red Panda broker.
      */
     @ConfigItem

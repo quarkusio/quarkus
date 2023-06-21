@@ -39,13 +39,13 @@
         {
             "category": "Data6",
             "timeout": 90,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Data7",
-            "timeout": 65,
-            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mysql",
+            "timeout": 80,
+            "test-modules": "reactive-oracle-client, reactive-mysql-client, reactive-db2-client, hibernate-reactive-db2, hibernate-reactive-mysql, hibernate-reactive-panache, hibernate-reactive-panache-kotlin",
             "os-name": "ubuntu-latest"
         },
         {
@@ -110,7 +110,7 @@
         },
         {
             "category": "Misc3",
-            "timeout": 65,
+            "timeout": 75,
             "test-modules": "kubernetes-client, openshift-client, kubernetes-service-binding-jdbc, smallrye-config, smallrye-graphql, smallrye-graphql-client, smallrye-metrics, smallrye-opentracing",
             "os-name": "ubuntu-latest"
         },

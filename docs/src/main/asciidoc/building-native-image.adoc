@@ -906,11 +906,11 @@ include at build time.
 
 |jvmstat
 |Adds jvmstat support
-|GraalVM 22.3 Mandrel 22.3
+|GraalVM 22.3, GraalVM CE 17.0.7 Mandrel 22.3 Mandrel 23.0 (17.0.7)
 
 |heapdump
 |Adds support for generating heap dumps
-|GraalVM 22.3 Mandrel 22.3
+|GraalVM 22.3, GraalVM CE 17.0.7 Mandrel 22.3 Mandrel 23.0 (17.0.7)
 
 |jmxclient
 |Adds support for connections to JMX servers.
@@ -918,11 +918,11 @@ include at build time.
 
 |jmxserver
 |Adds support for accepting connections from JMX clients.
-|GraalVM for JDK 17/20 Mandrel 23.0
+|GraalVM for JDK 17/20 Mandrel 23.0 (17.0.7)
 
 |all
 |Adds all monitoring options.
-|GraalVM 22.3 Mandrel 22.3
+|GraalVM 22.3, GraalVM CE 17.0.7 Mandrel 22.3 Mandrel 23.0 (17.0.7)
 |===
 
 Please see the Quarkus Native Reference Guide for more detailed information on these monitoring options.

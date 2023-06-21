@@ -37,7 +37,8 @@ import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.coordination.common.spi.CoordinationStrategy;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
-import org.hibernate.search.util.common.reflect.spi.ValueReadHandleFactory;
+import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
+import org.hibernate.search.util.common.reflect.spi.ValueHandleFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
@@ -47,6 +48,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchBackendRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.mapping.QuarkusHibernateOrmSearchMappingConfigurer;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -192,6 +194,10 @@ public class HibernateSearchElasticsearchRecorder {
                             FailureHandler.class, persistenceUnitName, null, null));
 
             addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.MAPPING_CONFIGURER,
+                    new QuarkusHibernateOrmSearchMappingConfigurer());
+
+            addConfig(propertyCollector,
                     HibernateOrmMapperSettings.COORDINATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             buildTimeConfig == null ? Optional.empty() : buildTimeConfig.coordination().strategy(),
@@ -227,7 +233,7 @@ public class HibernateSearchElasticsearchRecorder {
                 BiConsumer<String, Object> propertyCollector) {
             HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
                     // MethodHandles don't work at all in GraalVM 20 and below, and seem unreliable on GraalVM 21
-                    .valueReadHandleFactory(ValueReadHandleFactory.usingJavaLangReflect())
+                    .valueReadHandleFactory(ValueHandleFactory.usingJavaLangReflect())
                     .build();
             booter.preBoot(propertyCollector);
 
@@ -352,6 +358,12 @@ public class HibernateSearchElasticsearchRecorder {
                         runtimeConfig.multiTenancy().tenantIds());
             }
 
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.INDEXING_PLAN_SYNCHRONIZATION_STRATEGY,
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                            runtimeConfig == null ? Optional.empty()
+                                    : runtimeConfig.indexing().plan().synchronization().strategy(),
+                            IndexingPlanSynchronizationStrategy.class, persistenceUnitName, null, null));
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(

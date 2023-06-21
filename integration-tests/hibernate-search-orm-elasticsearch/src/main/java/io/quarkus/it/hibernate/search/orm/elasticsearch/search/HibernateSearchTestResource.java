@@ -54,8 +54,7 @@ public class HibernateSearchTestResource {
         assertEquals("John Irving", person.get(1).getName());
 
         person = searchSession.search(Person.class)
-                .where(f -> f.nested().objectField("address").nest(
-                        f.match().field("address.city").matching("london")))
+                .where(f -> f.match().field("address.city").matching("london"))
                 .sort(f -> f.field("name_sort"))
                 .fetchHits(20);
 

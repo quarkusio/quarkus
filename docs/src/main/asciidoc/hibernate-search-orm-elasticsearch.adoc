@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Hibernate Search guide
-:hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.1/reference/en-US/html_single/
+:hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.2/reference/en-US/html_single/
 include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate Search allows you to index your entities in an Elasticsearch cluster and easily offer full text search in all your Hibernate ORM-based applications.
@@ -566,7 +566,7 @@ quarkus.datasource.db-kind=postgresql <2>
 quarkus.hibernate-orm.sql-load-script=import.sql <3>
 
 quarkus.hibernate-search-orm.elasticsearch.version=7 <4>
-quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy=sync <5>
+quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync <5>
 
 %prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <6>
 %prod.quarkus.datasource.username=quarkus_test
@@ -701,7 +701,7 @@ quarkus.hibernate-search-orm.elasticsearch.version=opensearch:1.2
 All other configuration options and APIs are exactly the same as with Elasticsearch.
 
 You can find more information about compatible distributions and versions of Elasticsearch in
-link:{hibernate-search-doc-prefix}#getting-started-compatibility[this section of Hibernate Search's reference documentation].
+link:{hibernate-search-doc-prefix}#compatibility[this section of Hibernate Search's reference documentation].
 
 [[multiple-persistence-units]]
 == Multiple persistence units
@@ -849,7 +849,7 @@ If you disable automatic schema creation by setting `quarkus.hibernate-search-or
 you will have to create the schema manually at some point before your application starts persisting/updating entities
 and executing search requests.
 
-See link:{hibernate-search-doc-prefix}#mapper-orm-schema-management-manager[this section of the reference documentation]
+See link:{hibernate-search-doc-prefix}#schema-management-manager[this section of the reference documentation]
 for more information.
 ====
 
@@ -876,7 +876,7 @@ These limitations are the result of Hibernate Search not coordinating between th
 In order to get rid of these limitations, you can
 link:{hibernate-search-doc-prefix}#architecture-examples-outbox-polling-elasticsearch[use the `outbox-polling` coordination strategy].
 This strategy creates an outbox table in the database to push entity change events to,
-and relies on a background processor to consume these events and perform automatic indexing.
+and relies on a background processor to consume these events and perform indexing.
 
 To enable the `outbox-polling` coordination strategy, an additional extension is required:
 
@@ -910,7 +910,7 @@ However, there is one key difference: index updates are necessarily asynchronous
 they are guaranteed to happen _eventually_, but not immediately.
 
 This means in particular that the configuration property
-link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy[`quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy`]
+link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy[`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`]
 cannot be set when using the `outbox-polling` coordination strategy:
 Hibernate Search will always behave as if this property was set to `write-sync` (the default).
 
@@ -976,7 +976,7 @@ For example `class:com.mycompany.MyClass`.
 * An arbitrary string referencing a built-in implementation.
 Available values are detailed in the documentation of each configuration property,
 such as `async`/`read-sync`/`write-sync`/`sync` for
-<<quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy,`quarkus.hibernate-search-orm.automatic-indexing.synchronization.strategy`>>.
+<<quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy,`quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy`>>.
 
 Other formats are also accepted, but are only useful for advanced use cases.
 See link:{hibernate-search-doc-prefix}#configuration-bean-reference-parsing[this section of Hibernate Search's reference documentation]

@@ -7,7 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :categories: analytics
 :summary: This guide presents what build analytics is and how to configure it.
 
-The Quarkus team has limited knowledge, from Maven download numbers, of the remarkable growth of Quarkus and the number of users reporting issues/concerns. Still, we need more insight into the platforms, operating system, java combinations, and build tools our users employ.
+The Quarkus team has limited knowledge, from Maven download numbers, of the remarkable growth of Quarkus and the number of users reporting issues/concerns. Still, we need more insight into the platforms, operating system, Java combinations, and build tools our users employ.
 The build analytics tool aims to provide us with this information.
 
 == How it works
@@ -16,7 +16,7 @@ The build analytics tool aims to provide us with this information.
 
 *All data collected is anonymous*. There is no way to link this data back to an individual or organization. The intent is to learn about general patterns and trends; therefore, only anonymous data is needed.
 
-*Collection is Disabled by default* You will be asked if you want to opt in to data collection the first time you use devMode. The console will wait for a few seconds for your input.
+*Collection is disabled by default* You will be asked if you want to opt in to data collection the first time you use dev mode. The console will wait for a few seconds for your input.
 
 == This is the data being collected
 
@@ -26,7 +26,7 @@ The build analytics tool aims to provide us with this information.
 * Quarkus version
 * Java version
 * GraalVM version
-* Operating system details
+* Operating system details: OS name, OS version and architecture
 * Build system details, such as Maven, Gradle, and so on.
 * If a CI system was detected
 * Country and timezone

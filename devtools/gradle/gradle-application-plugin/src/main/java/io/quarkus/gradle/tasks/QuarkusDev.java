@@ -1,8 +1,7 @@
 package io.quarkus.gradle.tasks;
 
 import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRADLE_VERSION;
-import static io.quarkus.analytics.dto.segment.TrackEventType.*;
-import static java.util.Collections.*;
+import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
 
 import java.io.BufferedWriter;
 import java.io.File;

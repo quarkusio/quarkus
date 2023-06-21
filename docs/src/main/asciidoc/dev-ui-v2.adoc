@@ -474,7 +474,10 @@ Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui
 
 Card component to display contents in a card
 
-`import 'qui-card';`
+[source,javascript]
+----
+import 'qui-card';
+----
 
 [source,html]
 ----
@@ -493,7 +496,10 @@ Badge UI Component based on the https://vaadin.com/docs/latest/components/badge[
 
 image::dev-ui-qui-badge-v2.png[alt=Dev UI Badge,role="center"]
 
-`import 'qui-badge';`
+[source,javascript]
+----
+import 'qui-badge';
+----
 
 You can use any combination of small, primary, pill, with icon and clickable with any level of `default`, `success`, `warning`, `error`, `contrast` or set your own colours.
 
@@ -597,13 +603,16 @@ https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d73
 
 ====== Alert
 
-Alerts is modelled around the Bootstrap alerts. See <a href="https://getbootstrap.com/docs/4.0/components/alerts/">https://getbootstrap.com/docs/4.0/components/alerts/</a> for more info.
+Alerts is modelled around the Bootstrap alerts. Click https://getbootstrap.com/docs/4.0/components/alerts[here] for more info.
 
 Also see Notification controller below as an alternative.
 
 image::dev-ui-qui-alert-v2.png[alt=Dev UI Alert,role="center"]
 
-`import 'qui-alert';`
+[source,javascript]
+----
+import 'qui-alert';
+----
 
 [source,html]
 ----
@@ -672,7 +681,10 @@ Display a code block. This component is aware of the theme and will use the corr
 
 image::dev-ui-qui-code-block-v2.png[alt=Dev UI Code Block,role="center"]
 
-`import 'qui-code-block';`
+[source,javascript]
+----
+import 'qui-code-block';
+----
 
 [source,html]
 ----
@@ -704,7 +716,10 @@ https://github.com/quarkusio/quarkus/blob/95c54fa46a6b6f31d69477234486d9359a2a3a
 
 Creates a link to a resource (like a Java source file) that can be opened in the user's IDE (if we could detect the IDE).
 
-`import 'qui-ide-link';`
+[source,javascript]
+----
+import 'qui-ide-link';
+----
 
 [source,html]
 ----
@@ -736,7 +751,10 @@ Example usage:
 
 image::dev-ui-controller-notifier.gif[alt=Dev UI Notifier,role="center"]
 
-`import { notifier } from 'notifier';`
+[source,javascript]
+----
+import { notifier } from 'notifier';
+----
 
 [source,html]
 ----
@@ -752,9 +770,7 @@ _info(position = null){
 
 You can find all the valid positions https://vaadin.com/docs/latest/components/notification/#position[here].
 
-
 https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d7389ab5168fea65/deployment/src/main/resources/dev-ui/qwc-jokes-vaadin.js#L374[Example code]
-
 
 ====== Storage
 
@@ -762,10 +778,12 @@ An easy way to access the local storage in a safe way. This will store values in
 
 Local storage is useful to remember user preferences or state. Example, the footer remembers the state (open/close) and the size when open of the bottom drawer.
 
-`import { StorageController } from 'storage-controller';`
-
 [source,javascript]
 ----
+import { StorageController } from 'storage-controller';
+
+// ...
+
 storageControl = new StorageController(this); // Passing in this will scope the storage to your extension
 
 // ...
@@ -775,7 +793,6 @@ const storedHeight = this.storageControl.get("height"); // Get some value
 // ...
 
 this.storageControl.set('height', 123); // Set some val
-
 ----
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-footer.js[Example code]
@@ -788,10 +805,12 @@ See <<Add a log file>>.
 
 image::dev-ui-log-control-v2.png[alt=Dev UI Log control,role="center"]
 
-`import { LogController } from 'log-controller';`
-
 [source,javascript]
 ----
+import { LogController } from 'log-controller';
+
+// ...
+
 logControl = new LogController(this); // Passing in this will scope the control to your extension
 
 // ...
@@ -813,8 +832,6 @@ this.logControl
                 }).done();
 ----
 
-
-
 https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-server-log.js[Example code]
 
 ====== Router
@@ -828,7 +845,7 @@ See the https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev
 
 This controller allows you to fetch or stream runtime data. (vs. <<Build time data>> discussed earlier). There are two parts to getting data during runtime. The Java side in the runtime module, and then the usage in the web component.
 
-======= Java part
+*Java part*
 
 This code is responsible for making data available to display on the UI.
 
@@ -884,17 +901,20 @@ public JsonArray getAll() { // <2>
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main/java/io/quarkus/cache/runtime/devconsole/CacheJsonRPCService.java[Example code]
 
-======= Webcomponent (Javascript) part
+*Webcomponent (Javascript) part*
 
 Now you can use the JsonRPC controller to access the `getAll` method (and any other methods in you JsonRPC Service) 
 
-`import { JsonRpc } from 'jsonrpc';`
-
 [source,javascript]
 ----
+import { JsonRpc } from 'jsonrpc';
+
+// ...
+
 jsonRpc = new JsonRpc(this); // Passing in this will scope the rpc calls to your extension
 
 // ...
+
 /**
   * Called when displayed
   */
@@ -907,7 +927,6 @@ connectedCallback() {
         });
     });
 }
-
 ----
 
 <1> Note the method `getAll` corresponds to the method in your Java Service. This method returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise] with the JsonRPC result.
@@ -1039,7 +1058,10 @@ cardPageBuildItem.setCustomCard("qwc-mycustom-card.js");
 
 On the Javascript side, you have access to all the pages (in case you want to create links)
 
-`import { pages } from 'build-time-data';`
+[source,javascript]
+----
+import { pages } from 'build-time-data';
+----
 
 And the following properties will be passes in:
 
@@ -1151,7 +1173,6 @@ If you added Build time data, for example:
 ----
 cardPageBuildItem.addBuildTimeData("somekey", somevalue);
 ----
-
 
 To test that your build time data is generated correctly you can add a test that extends `DevUIBuildTimeDataTest`.
 

@@ -168,7 +168,7 @@
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
         <jboss-logmanager.version>1.1.1</jboss-logmanager.version>
-        <flyway.version>9.17.0</flyway.version>
+        <flyway.version>9.20.0</flyway.version>
         <yasson.version>3.0.3</yasson.version>
         <liquibase.version>4.20.0</liquibase.version>
         <snakeyaml.version>2.0</snakeyaml.version>
@@ -6250,6 +6250,11 @@
             <dependency>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-database-oracle</artifactId>
                 <version>${flyway.version}</version>
             </dependency>
             <dependency>

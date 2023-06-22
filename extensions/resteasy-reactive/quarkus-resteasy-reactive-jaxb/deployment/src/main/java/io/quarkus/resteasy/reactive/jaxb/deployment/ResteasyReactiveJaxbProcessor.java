@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.jaxb.deployment;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_RESPONSE;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
@@ -19,7 +22,10 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.model.MethodParameter;
+import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
@@ -87,6 +93,13 @@ public class ResteasyReactiveJaxbProcessor {
             if (effectiveReturnType != null) {
                 // When using "application/xml", the return type needs to be registered
                 if (producesXml(resourceInfo)) {
+                    if (!isTypeCompatibleWithJaxb(methodInfo.returnType())) {
+                        throw new DeploymentException(
+                                "Cannot directly return collections or arrays using JAXB. You need to wrap it "
+                                        + "into a root element class. Problematic method is '"
+                                        + entry.getActualClassInfo().name() + "." + methodInfo.name() + "'");
+                    }
+
                     classesInfo.add(effectiveReturnType);
                 }
 
@@ -100,8 +113,16 @@ public class ResteasyReactiveJaxbProcessor {
             boolean consumesXml = consumesXml(resourceInfo);
             boolean consumesMultipart = consumesMultipart(resourceInfo);
             if (consumesXml || consumesMultipart) {
-                for (Type parameter : methodInfo.parameterTypes()) {
-                    ClassInfo effectiveParameter = getEffectiveClassInfo(parameter, indexView);
+                for (MethodParameterInfo parameter : methodInfo.parameters()) {
+                    if (isParameterBody(parameter, resourceInfo) && !isTypeCompatibleWithJaxb(parameter.type())) {
+                        throw new DeploymentException(
+                                "Cannot handle collections or arrays as parameters using JAXB. You need to wrap it "
+                                        + "into a root element class. Problematic parameter is '" + parameter.name()
+                                        + "' in the method '" + entry.getActualClassInfo().name() + "." + methodInfo.name()
+                                        + "'");
+                    }
+
+                    ClassInfo effectiveParameter = getEffectiveClassInfo(parameter.type(), indexView);
                     if (effectiveParameter != null) {
                         if (consumesXml) {
                             classesInfo.add(effectiveParameter);
@@ -154,23 +175,16 @@ public class ResteasyReactiveJaxbProcessor {
         }
 
         Type effectiveType = type;
-        if (effectiveType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
-                effectiveType.name().equals(ResteasyReactiveDotNames.UNI) ||
-                effectiveType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
-                effectiveType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
-                effectiveType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
-                effectiveType.name().equals(ResteasyReactiveDotNames.MULTI)) {
+        if (isContainerType(effectiveType)) {
             if (effectiveType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                 return null;
             }
 
             effectiveType = type.asParameterizedType().arguments().get(0);
         }
-        if (effectiveType.name().equals(ResteasyReactiveDotNames.SET) ||
-                effectiveType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
-                effectiveType.name().equals(ResteasyReactiveDotNames.LIST)) {
+        if (isCollectionType(effectiveType)) {
             effectiveType = effectiveType.asParameterizedType().arguments().get(0);
-        } else if (effectiveType.name().equals(ResteasyReactiveDotNames.MAP)) {
+        } else if (isMapType(effectiveType)) {
             effectiveType = effectiveType.asParameterizedType().arguments().get(1);
         }
 
@@ -219,5 +233,54 @@ public class ResteasyReactiveJaxbProcessor {
         }
 
         return classes;
+    }
+
+    private boolean isParameterBody(MethodParameterInfo parameter, ResourceMethod resourceInfo) {
+        for (MethodParameter parameterInfo : resourceInfo.getParameters()) {
+            if (parameterInfo.name != null && parameterInfo.name.equals(parameter.name())) {
+                return parameterInfo.parameterType == ParameterType.BODY;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isCollectionType(Type type) {
+        return type.name().equals(ResteasyReactiveDotNames.SET) ||
+                type.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
+                type.name().equals(ResteasyReactiveDotNames.LIST);
+    }
+
+    private boolean isMapType(Type type) {
+        return type.name().equals(ResteasyReactiveDotNames.MAP);
+    }
+
+    private boolean isContainerType(Type type) {
+        return type.name().equals(REST_RESPONSE) ||
+                type.name().equals(ResteasyReactiveDotNames.UNI) ||
+                type.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
+                type.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
+                type.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
+                type.name().equals(ResteasyReactiveDotNames.MULTI);
+    }
+
+    private boolean isTypeCompatibleWithJaxb(Type type) {
+        if (type.kind() == Type.Kind.PRIMITIVE) {
+            return true;
+        }
+
+        if (type.kind() == Type.Kind.ARRAY || isCollectionType(type) || isMapType(type)) {
+            return false;
+        }
+
+        if (isContainerType(type)) {
+            if (type.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return true;
+            }
+
+            return isTypeCompatibleWithJaxb(type.asParameterizedType().arguments().get(0));
+        }
+
+        return true;
     }
 }

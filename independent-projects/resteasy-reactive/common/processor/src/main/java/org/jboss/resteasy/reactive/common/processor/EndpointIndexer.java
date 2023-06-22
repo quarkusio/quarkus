@@ -1334,6 +1334,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (field) {
                     return builder;
                 }
+                builder.setName(sourceName);
                 builder.setType(ParameterType.BODY);
             }
         }

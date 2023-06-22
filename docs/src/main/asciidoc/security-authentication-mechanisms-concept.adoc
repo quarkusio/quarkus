@@ -17,8 +17,8 @@ Before you choose an authentication mechanism for securing your Quarkus applicat
 Some supported authentication mechanisms are built into Quarkus, while others require you to add an extension.
 All of these mechanisms are detailed in the following sections:
 
-* xref:built-in-authentication-mechanisms[Built-in authentication mechanisms]
-* xref:other-supported-authentication-mechanisms[Other supported authentication mechanisms]
+* <<built-in-authentication-mechanisms>>
+* <<other-supported-authentication-mechanisms>>
 
 The following table maps specific authentication requirements to a supported mechanism that you can use in Quarkus:
 
@@ -27,20 +27,20 @@ The following table maps specific authentication requirements to a supported mec
 |====
 |Authentication requirement |Authentication mechanism
 
-|Username and password |xref:security-basic-authentication-concept.adoc[Basic], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
+|Username and password |xref:security-basic-authentication-concept.adoc[Basic], <<form-auth>>
 
 |Bearer access token |xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
 
-|Single sign-on (SSO) |xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], xref:security-authentication-mechanisms-concept.adoc#form-auth[Form]
+|Single sign-on (SSO) |xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], <<form-auth>>
 
-|Client certificate |xref:security-authentication-mechanisms-concept.adoc#mutual-tls[mutual TLS (mTLS)]
+|Client certificate |<<mutual-tls>>
 
 |WebAuthn |xref:security-webauthn-concept.adoc[WebAuthn]
 
 |Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
 |====
 
-For more information, see the following xref:table[Token authentication mechanism comparison] table.
+For more information, see the following <<table>> table.
 
 [[built-in-authentication-mechanisms]]
 == Built-in authentication mechanisms
@@ -48,8 +48,8 @@ For more information, see the following xref:table[Token authentication mechanis
 Quarkus Security provides the following built-in authentication support:
 
 * xref:security-basic-authentication-concept.adoc[Basic authentication]
-* xref:form-auth[Form-based authentication]
-* xref:mutual-tls[mutual TLS authentication]
+* <<form-auth>>
+* <<mutual-tls>>
 
 === Basic authentication
 
@@ -157,10 +157,10 @@ For more information about customizing `SecurityIdentity`, see the link:{url-qua
 
 Quarkus Security also supports the following authentication mechanisms through extensions:
 
-* xref:webauthn-authentication[WebAuthn authentication]
-* xref:openid-connect-authentication[OpenID Connect authentication]
-* xref:smallrye-jwt-authentication[SmallRye JWT authentication]
-* xref:oauth2-authentication[OAuth2 authentication]
+* <<webauthn-authentication>>
+* <<openid-connect-authentication>>
+* <<smallrye-jwt-authentication>>
+* <<oauth2-authentication>>
 
 [[webauthn-authentication]]
 === WebAuthn authentication
@@ -185,7 +185,7 @@ However, opaque, also known as binary tokens, can only be introspected remotely.
 
 [NOTE]
 ====
-Using the Quarkus OIDC extension, both the Bearer token and Authorization Code Flow authentication mechanisms use xref:smallrye-jwt-authentication[SmallRye JWT authentication] to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
+Using the Quarkus OIDC extension, both the Bearer token and Authorization Code Flow authentication mechanisms use <<smallrye-jwt-authentication>> to represent JWT tokens as MicroProfile JWT `org.eclipse.microprofile.jwt.JsonWebToken`.
 ====
 
 ==== Additional Quarkus resources for OIDC authentication

@@ -74,6 +74,10 @@ public class ClientCallingResource {
             rc.response().end("Hello World!");
         });
 
+        router.get("/correlation").handler(rc -> {
+            rc.response().end(rc.request().getHeader(CorrelationIdClient.CORRELATION_ID_HEADER_NAME));
+        });
+
         router.post("/call-client-with-global-client-logger").blockingHandler(rc -> {
             String url = rc.body().asString();
             ClientWithClientLogger client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))

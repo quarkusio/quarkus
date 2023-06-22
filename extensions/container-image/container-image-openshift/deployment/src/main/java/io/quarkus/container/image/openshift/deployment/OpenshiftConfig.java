@@ -124,6 +124,12 @@ public class OpenshiftConfig {
     public Logger.Level buildLogLevel;
 
     /**
+     * The image push secret to use for pushing to external registries.
+     * (see: https://cloud.redhat.com/blog/pushing-application-images-to-an-external-registry)
+     **/
+    public Optional<String> imagePushSecret;
+
+    /**
      * Check if baseJvmImage is the default
      *
      * @returns true if baseJvmImage is the default

@@ -78,12 +78,12 @@ public class ContainerImageProcessor {
             ImageReference imageReference = ImageReference.parse(containerImageConfig.image.get());
             String repository = imageReference.getRepository();
             if (singleSegmentImageRequest.isPresent() && imageReference.getRepository().contains("/")
-                    && StringUtil.isNullOrEmpty(imageReference.getRegistry())) {
+                    && imageReference.getRegistry().filter(StringUtil::isNullOrEmpty).isPresent()) {
                 log.warn("A single segment image is preferred, but a local multi segment has been provided: "
                         + containerImageConfig.image.get());
             }
-            containerImage.produce(new ContainerImageInfoBuildItem(Optional.of(imageReference.getRegistry()),
-                    repository,
+            containerImage.produce(new ContainerImageInfoBuildItem(imageReference.getRegistry(),
+                    containerImageConfig.username, containerImageConfig.password, repository,
                     imageReference.getTag(), containerImageConfig.additionalTags.orElse(Collections.emptyList())));
             return;
         }
@@ -114,6 +114,7 @@ public class ContainerImageProcessor {
         }
 
         containerImage.produce(new ContainerImageInfoBuildItem(Optional.ofNullable(registry),
+                containerImageConfig.username, containerImageConfig.password,
                 effectiveGroup,
                 effectiveName, effectiveTag,
                 containerImageConfig.additionalTags.orElse(Collections.emptyList())));

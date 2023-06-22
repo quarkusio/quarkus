@@ -801,7 +801,9 @@ SearchMapping searchMapping;
 
 == Building a native executable
 
-You can build a native executable with the usual command `./mvnw package -Pnative`.
+You can build a native executable with the usual command:
+
+include::{includes}/devtools/build-native.adoc[]
 
 [NOTE]
 ====

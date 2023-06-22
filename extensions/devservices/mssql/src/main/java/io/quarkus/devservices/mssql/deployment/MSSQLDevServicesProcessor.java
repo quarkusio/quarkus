@@ -27,6 +27,11 @@ public class MSSQLDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(MSSQLDevServicesProcessor.class);
 
+    /**
+     * Using SA doesn't work with all collations so let's use the lowercase version instead.
+     */
+    private static final String DEFAULT_USERNAME = "sa";
+
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
@@ -63,7 +68,7 @@ public class MSSQLDevServicesProcessor {
                 return new RunningDevServicesDatasource(container.getContainerId(),
                         container.getEffectiveJdbcUrl(),
                         container.getReactiveUrl(),
-                        container.getUsername(),
+                        DEFAULT_USERNAME,
                         container.getPassword(),
                         new ContainerShutdownCloseable(container, "Microsoft SQL Server"));
             }

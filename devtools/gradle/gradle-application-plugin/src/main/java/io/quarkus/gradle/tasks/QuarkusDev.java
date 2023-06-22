@@ -5,6 +5,7 @@ import static io.quarkus.analytics.dto.segment.TrackEventType.DEV_MODE;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -17,8 +18,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.inject.Inject;
 
@@ -69,7 +70,6 @@ import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeMain;
 import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
-import io.quarkus.gradle.Prompter;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.dsl.CompilerOption;
 import io.quarkus.gradle.dsl.CompilerOptions;
@@ -324,14 +324,16 @@ public abstract class QuarkusDev extends QuarkusTask {
         AnalyticsService analyticsService = new AnalyticsService(FileLocationsImpl.INSTANCE,
                 new GradleMessageWriter(getLogger()));
         analyticsService.buildAnalyticsUserInput((String prompt) -> {
-            try {
-                final AtomicReference<String> userInput = new AtomicReference<>("");
-                final Prompter prompter = new Prompter();
-                prompter.addPrompt(prompt, input -> userInput.set(input));
-                prompter.collectInput();
-                return userInput.get();
-            } catch (IOException e) {
-                getLogger().debug("Failed to collect user input for analytics", e);
+            System.out.print(prompt);
+            try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
+                @Override
+                public void close() throws IOException {
+                    //don't close System.in!
+                }
+            })) {
+                return scanner.nextLine();
+            } catch (Exception e) {
+                getLogger().warn("Failed to collect user input for analytics", e);
                 return "";
             }
         });

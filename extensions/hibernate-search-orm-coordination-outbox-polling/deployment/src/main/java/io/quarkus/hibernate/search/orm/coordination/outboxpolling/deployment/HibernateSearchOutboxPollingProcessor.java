@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
+import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRecorder;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem;
@@ -43,6 +44,7 @@ class HibernateSearchOutboxPollingProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setStaticConfig(HibernateSearchOutboxPollingRecorder recorder,
+            HibernateSearchOutboxPollingBuildTimeConfig buildTimeConfig,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateSearchIntegrationStaticConfiguredBuildItem> staticConfigured) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
@@ -51,7 +53,8 @@ class HibernateSearchOutboxPollingProcessor {
             }
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
             staticConfigured.produce(new HibernateSearchIntegrationStaticConfiguredBuildItem(
-                    HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING, puName, null)
+                    HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING, puName,
+                    recorder.createStaticInitListener(buildTimeConfig, puName))
                     // Additional entities such as Agent and OutboxEvent are defined through XML
                     // (because there's no other way).
                     .setXmlMappingRequired(true));

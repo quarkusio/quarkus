@@ -5,6 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Hibernate Search guide
 :hibernate-search-doc-prefix: https://docs.jboss.org/hibernate/search/6.2/reference/en-US/html_single/
+:hibernate-orm-doc-prefix: https://docs.jboss.org/hibernate/orm/6.2/userguide/html_single/Hibernate_User_Guide.html
 include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate Search allows you to index your entities in an Elasticsearch cluster and easily offer full text search in all your Hibernate ORM-based applications.
@@ -895,6 +896,24 @@ and intend to xref:hibernate-orm.adoc#dev-mode[let Hibernate ORM generate your d
 then no worries: the entities required by Hibernate Search will be included in the generated schema.
 * Otherwise, you must
 link:{hibernate-search-doc-prefix}#coordination-outbox-polling-schema[manually alter your schema to add the necessary tables/sequences].
+
+[NOTE]
+====
+The database schema Hibernate Search will expect for outbox-polling coordination
+may be customized through the following configuration properties:
+
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.catalog[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.catalog`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.schema[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.schema`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.table[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.table`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-gen-strategy`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-type[`quarkus.hibernate-search-orm.coordination.entity.mapping.agent.uuid-type`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.catalog[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.catalog`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.schema[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.schema`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.table[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.table`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-gen-strategy[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-gen-strategy`]
+* link:#quarkus-hibernate-search-orm-coordination-outboxpolling_quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-type[`quarkus.hibernate-search-orm.coordination.entity.mapping.outbox-event.uuid-type`]
+
+====
 
 Once you are done with the above, you're ready to use Hibernate Search with an outbox.
 Don't change any code, and just start your application:

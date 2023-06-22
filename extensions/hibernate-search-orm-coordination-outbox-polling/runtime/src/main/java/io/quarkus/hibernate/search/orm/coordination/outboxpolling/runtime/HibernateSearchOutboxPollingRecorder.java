@@ -6,15 +6,27 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.search.mapper.orm.coordination.outboxpolling.cfg.HibernateOrmMapperOutboxPollingSettings;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
+import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.orm.coordination.outboxpolling.runtime.HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit.AgentsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateSearchOutboxPollingRecorder {
+
+    public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
+            HibernateSearchOutboxPollingBuildTimeConfig buildTimeConfig, String persistenceUnitName) {
+        HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit puConfig = PersistenceUnitUtil
+                .isDefaultPersistenceUnit(persistenceUnitName)
+                        ? buildTimeConfig.defaultPersistenceUnit()
+                        : buildTimeConfig.persistenceUnits().get(persistenceUnitName);
+        return new StaticInitListener(puConfig);
+    }
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchOutboxPollingRuntimeConfig runtimeConfig, String persistenceUnitName) {
@@ -23,6 +35,67 @@ public class HibernateSearchOutboxPollingRecorder {
                         ? runtimeConfig.defaultPersistenceUnit()
                         : runtimeConfig.persistenceUnits().get(persistenceUnitName);
         return new RuntimeInitListener(puConfig);
+    }
+
+    private static final class StaticInitListener
+            implements HibernateOrmIntegrationStaticInitListener {
+
+        private final HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit buildTimeConfig;
+
+        private StaticInitListener(HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit buildTimeConfig) {
+            this.buildTimeConfig = buildTimeConfig;
+        }
+
+        @Override
+        public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
+                BiConsumer<String, Object> propertyCollector) {
+            // Nothing to do
+        }
+
+        @Override
+        public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
+            if (buildTimeConfig == null) {
+                return;
+            }
+
+            contributeCoordinationBuildTimeProperties(propertyCollector, buildTimeConfig.coordination());
+        }
+
+        private void contributeCoordinationBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
+                HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit.CoordinationConfig config) {
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_AGENT_CATALOG,
+                    config.entityMapping().agent().catalog());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_AGENT_SCHEMA,
+                    config.entityMapping().agent().schema());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_AGENT_TABLE,
+                    config.entityMapping().agent().table());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_AGENT_UUID_GEN_STRATEGY,
+                    config.entityMapping().agent().uuidGenStrategy());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_AGENT_UUID_TYPE,
+                    config.entityMapping().agent().uuidType());
+
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_OUTBOXEVENT_CATALOG,
+                    config.entityMapping().outboxEvent().catalog());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_OUTBOXEVENT_SCHEMA,
+                    config.entityMapping().outboxEvent().schema());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_OUTBOXEVENT_TABLE,
+                    config.entityMapping().outboxEvent().table());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_OUTBOXEVENT_UUID_GEN_STRATEGY,
+                    config.entityMapping().outboxEvent().uuidGenStrategy());
+            addCoordinationConfig(propertyCollector,
+                    HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.ENTITY_MAPPING_OUTBOXEVENT_UUID_TYPE,
+                    config.entityMapping().outboxEvent().uuidType());
+        }
+
     }
 
     private static final class RuntimeInitListener

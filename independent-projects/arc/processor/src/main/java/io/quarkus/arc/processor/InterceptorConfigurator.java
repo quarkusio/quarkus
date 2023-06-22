@@ -11,6 +11,7 @@ import jakarta.enterprise.inject.spi.InterceptionType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InterceptorCreator;
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
@@ -24,6 +25,7 @@ public final class InterceptorConfigurator extends ConfiguratorBase<InterceptorC
     final InterceptionType type;
     final Set<TypeAndQualifiers> injectionPoints;
     final Set<AnnotationInstance> bindings;
+    String identifier;
     int priority;
 
     InterceptorConfigurator(BeanDeployment beanDeployment, InterceptionType type) {
@@ -36,6 +38,19 @@ public final class InterceptorConfigurator extends ConfiguratorBase<InterceptorC
 
     public InterceptorConfigurator priority(int priority) {
         this.priority = priority;
+        return this;
+    }
+
+    /**
+     * The identifier becomes a part of the {@link InterceptorInfo#getIdentifier()} and
+     * {@link InjectableInterceptor#getIdentifier()}. An identifier can be used to register multiple synthetic interceptors with
+     * the same {@link InterceptorCreator} class.
+     *
+     * @param identifier
+     * @return self
+     */
+    public InterceptorConfigurator identifier(String identifier) {
+        this.identifier = identifier;
         return this;
     }
 
@@ -53,7 +68,7 @@ public final class InterceptorConfigurator extends ConfiguratorBase<InterceptorC
 
     public void creator(Class<? extends InterceptorCreator> creatorClass) {
         beanDeployment.addSyntheticInterceptor(new InterceptorInfo(creatorClass, beanDeployment, bindings,
-                List.of(Injection.forSyntheticInterceptor(injectionPoints)), priority, type, params));
+                List.of(Injection.forSyntheticInterceptor(injectionPoints)), priority, type, params, identifier));
     }
 
 }

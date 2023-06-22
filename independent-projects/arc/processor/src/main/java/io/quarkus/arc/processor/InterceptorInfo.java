@@ -50,7 +50,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     InterceptorInfo(Class<? extends InterceptorCreator> creatorClass, BeanDeployment beanDeployment,
             Set<AnnotationInstance> bindings, List<Injection> injections, int priority, InterceptionType interceptionType,
-            Map<String, Object> params) {
+            Map<String, Object> params, String identifier) {
         super(null, ClassType.create(InterceptFunction.class), null, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Sets.singletonHashSet(Type.create(DotName.OBJECT_NAME, Kind.CLASS)), new HashSet<>(), injections, null,
                 null, false,
@@ -64,7 +64,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                             creatorClass.getName() + "#create() must not return null");
                     mc.returnValue(ret);
                 },
-                null, params, true, false, null, priority, creatorClass.getName());
+                null, params, true, false, null, priority, creatorClass.getName() + (identifier != null ? identifier : ""));
         this.bindings = bindings;
         this.interceptionType = interceptionType;
         this.creatorClass = creatorClass;

@@ -1416,6 +1416,13 @@ public class BeanDeployment {
     }
 
     void addSyntheticInterceptor(InterceptorInfo interceptor) {
+        for (InterceptorInfo i : interceptors) {
+            if (i.getIdentifier().equals(interceptor.getIdentifier())) {
+                throw new IllegalStateException(
+                        "A synthetic interceptor with identifier " + interceptor.getIdentifier() + " is already registered: "
+                                + i);
+            }
+        }
         interceptors.add(interceptor);
     }
 

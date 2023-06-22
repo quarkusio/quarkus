@@ -47,11 +47,12 @@ public class SyntheticInterceptorTest {
         InstanceHandle<MyBean> handle = Arc.container().instance(MyBean.class);
         assertEquals("ok", handle.get().ping());
         handle.destroy();
-        assertEquals(4, EVENTS.size());
+        assertEquals(5, EVENTS.size());
         assertEquals(TestAroundConstruct.class.getName(), EVENTS.get(0));
         assertEquals(TestPostConstruct.class.getName(), EVENTS.get(1));
-        assertEquals(TestAroundInvoke.class.getName(), EVENTS.get(2));
-        assertEquals(TestPreDestroy.class.getName(), EVENTS.get(3));
+        assertEquals(TestPostConstruct.class.getName(), EVENTS.get(2));
+        assertEquals(TestAroundInvoke.class.getName(), EVENTS.get(3));
+        assertEquals(TestPreDestroy.class.getName(), EVENTS.get(4));
     }
 
     @SimpleBinding
@@ -153,6 +154,13 @@ public class SyntheticInterceptorTest {
                     .bindings(AnnotationInstance.builder(SimpleBinding.class).build())
                     .addInjectionPoint(ParameterizedType.create(Bean.class, WildcardType.UNBOUNDED),
                             AnnotationInstance.builder(Intercepted.class).build())
+                    .creator(TestPostConstruct.class);
+
+            context.configureInterceptor(InterceptionType.POST_CONSTRUCT)
+                    .bindings(AnnotationInstance.builder(SimpleBinding.class).build())
+                    .addInjectionPoint(ParameterizedType.create(Bean.class, WildcardType.UNBOUNDED),
+                            AnnotationInstance.builder(Intercepted.class).build())
+                    .identifier("foo")
                     .creator(TestPostConstruct.class);
 
             context.configureInterceptor(InterceptionType.PRE_DESTROY)

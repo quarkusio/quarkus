@@ -12,6 +12,16 @@ public final class HibernateSearchOutboxPollingConfigUtil {
     private HibernateSearchOutboxPollingConfigUtil() {
     }
 
+    public static <T> void addCoordinationConfig(BiConsumer<String, Object> propertyCollector,
+            String configPath, T value) {
+        addCoordinationConfig(propertyCollector, null, configPath, value);
+    }
+
+    public static void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String configPath,
+            Optional<?> value) {
+        addCoordinationConfig(propertyCollector, null, configPath, value);
+    }
+
     public static <T> void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId,
             String configPath, T value) {
         String key = HibernateOrmMapperOutboxPollingSettings.coordinationKey(tenantId, configPath);

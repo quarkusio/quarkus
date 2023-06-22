@@ -50,6 +50,6 @@ public class TenantLogout {
         if (!postLogoutState.equals(cookie.getValue())) {
             throw new InternalServerErrorException("'state' query parameter is not equal to the q_post_logout cookie value");
         }
-        return "You were logged out";
+        return "You were logged out, please login again";
     }
 }

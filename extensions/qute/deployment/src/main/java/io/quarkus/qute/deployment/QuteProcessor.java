@@ -464,6 +464,7 @@ public class QuteProcessor {
             TemplateFilePathsBuildItem filePaths, List<CheckedTemplateBuildItem> checkedTemplates,
             List<MessageBundleMethodBuildItem> messageBundleMethods, List<TemplateGlobalBuildItem> globals, QuteConfig config,
             Optional<EngineConfigurationsBuildItem> engineConfigurations,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
             BuildProducer<CheckedFragmentValidationBuildItem> checkedFragmentValidations) {
         long start = System.nanoTime();
 
@@ -490,7 +491,8 @@ public class QuteProcessor {
         // Register additional section factories
         if (engineConfigurations.isPresent()) {
             Collection<ClassInfo> sectionFactories = engineConfigurations.get().getConfigurations().stream()
-                    .filter(c -> isImplementorOf(c, Names.SECTION_HELPER_FACTORY)).collect(Collectors.toList());
+                    .filter(c -> Types.isImplementorOf(c, Names.SECTION_HELPER_FACTORY, beanArchiveIndex.getIndex()))
+                    .collect(Collectors.toList());
             // Use the deployment class loader - it can load application classes; it's non-persistent and isolated
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
             for (ClassInfo factoryClass : sectionFactories) {
@@ -2078,11 +2080,11 @@ public class QuteProcessor {
         // Collect TemplateLocators annotated with io.quarkus.qute.Locate
         for (AnnotationInstance locate : beanArchiveIndex.getIndex().getAnnotations(Names.LOCATE)) {
             AnnotationTarget locateTarget = locate.target();
-            if (isTargetClass(locateTarget)) {
-                if (isNotTemplateLocatorImpl(locateTarget)) {
-                    reportFoundInvalidTarget(validationErrors, locateTarget);
-                } else {
+            if (locateTarget.kind() == Kind.CLASS) {
+                if (Types.isImplementorOf(locateTarget.asClass(), Names.TEMPLATE_LOCATOR, beanArchiveIndex.getIndex())) {
                     addLocationRegExToLocators(locationPatterns, locate.value(), locateTarget, validationErrors);
+                } else {
+                    reportFoundInvalidTarget(validationErrors, locateTarget);
                 }
             }
         }
@@ -2090,14 +2092,14 @@ public class QuteProcessor {
         // Collect TemplateLocators annotated with multiple 'io.quarkus.qute.Locate'
         for (AnnotationInstance locates : beanArchiveIndex.getIndex().getAnnotations(Names.LOCATES)) {
             AnnotationTarget locatesTarget = locates.target();
-            if (isTargetClass(locatesTarget)) {
-                if (isNotTemplateLocatorImpl(locatesTarget)) {
-                    reportFoundInvalidTarget(validationErrors, locatesTarget);
-                } else {
+            if (locatesTarget.kind() == Kind.CLASS) {
+                if (Types.isImplementorOf(locatesTarget.asClass(), Names.TEMPLATE_LOCATOR, beanArchiveIndex.getIndex())) {
                     // locates.value() is array of 'io.quarkus.qute.Locate'
                     for (AnnotationInstance locate : locates.value().asNestedArray()) {
                         addLocationRegExToLocators(locationPatterns, locate.value(), locatesTarget, validationErrors);
                     }
+                } else {
+                    reportFoundInvalidTarget(validationErrors, locatesTarget);
                 }
             }
         }
@@ -2111,9 +2113,16 @@ public class QuteProcessor {
             BuildProducer<EngineConfigurationsBuildItem> engineConfig,
             BuildProducer<ValidationErrorBuildItem> validationErrors) {
 
-        List<ClassInfo> engineConfigClasses = new ArrayList<>();
+        Collection<AnnotationInstance> engineConfigAnnotations = beanArchiveIndex.getIndex()
+                .getAnnotations(Names.ENGINE_CONFIGURATION);
+        if (engineConfigAnnotations.isEmpty()) {
+            return;
+        }
 
-        for (AnnotationInstance annotation : beanArchiveIndex.getIndex().getAnnotations(Names.ENGINE_CONFIGURATION)) {
+        List<ClassInfo> engineConfigClasses = new ArrayList<>();
+        IndexView index = beanArchiveIndex.getIndex();
+
+        for (AnnotationInstance annotation : engineConfigAnnotations) {
             AnnotationTarget target = annotation.target();
             if (target.kind() == Kind.CLASS) {
                 ClassInfo targetClass = target.asClass();
@@ -2125,7 +2134,7 @@ public class QuteProcessor {
                                     new TemplateException(String.format(
                                             "Only top-level and static nested classes may be annotated with @%s: %s",
                                             EngineConfiguration.class.getSimpleName(), targetClass.name()))));
-                } else if (isImplementorOf(targetClass, Names.SECTION_HELPER_FACTORY)) {
+                } else if (Types.isImplementorOf(targetClass, Names.SECTION_HELPER_FACTORY, index)) {
                     if (targetClass.hasNoArgsConstructor()) {
                         engineConfigClasses.add(targetClass);
                     } else {
@@ -2135,8 +2144,8 @@ public class QuteProcessor {
                                                 "A class annotated with @%s that also implements io.quarkus.qute.SectionHelperFactory must declare a no-args constructor: %s",
                                                 EngineConfiguration.class.getSimpleName(), targetClass.name()))));
                     }
-                } else if (isImplementorOf(targetClass, Names.VALUE_RESOLVER)
-                        || isImplementorOf(targetClass, Names.NAMESPACE_RESOLVER)) {
+                } else if (Types.isImplementorOf(targetClass, Names.VALUE_RESOLVER, index)
+                        || Types.isImplementorOf(targetClass, Names.NAMESPACE_RESOLVER, index)) {
                     engineConfigClasses.add(targetClass);
                 } else {
                     validationErrors.produce(
@@ -2151,10 +2160,7 @@ public class QuteProcessor {
                 }
             }
         }
-
-        if (!engineConfigClasses.isEmpty()) {
-            engineConfig.produce(new EngineConfigurationsBuildItem(engineConfigClasses));
-        }
+        engineConfig.produce(new EngineConfigurationsBuildItem(engineConfigClasses));
     }
 
     private void addLocationRegExToLocators(Collection<Pattern> locationToLocators,
@@ -2179,30 +2185,6 @@ public class QuteProcessor {
                         new TemplateException(String.format(
                                 "Classes annotated with 'io.quarkus.qute.Locate' must implement 'io.quarkus.qute.TemplateLocator': %s",
                                 locateTarget.asClass().name().toString()))));
-    }
-
-    private boolean isTargetClass(AnnotationTarget locateTarget) {
-        return locateTarget.kind() == Kind.CLASS;
-    }
-
-    private boolean isNotTemplateLocatorImpl(AnnotationTarget locateTarget) {
-        boolean targetImplTemplateLocator = false;
-        for (DotName interfaceName : locateTarget.asClass().interfaceNames()) {
-            if (interfaceName.equals(Names.TEMPLATE_LOCATOR)) {
-                targetImplTemplateLocator = true;
-                break;
-            }
-        }
-        return !targetImplTemplateLocator;
-    }
-
-    private static boolean isImplementorOf(ClassInfo target, DotName interfaceName) {
-        for (DotName name : target.asClass().interfaceNames()) {
-            if (name.equals(interfaceName)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @BuildStep

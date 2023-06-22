@@ -1,5 +1,6 @@
 package io.quarkus.it.hibernate.search.orm.elasticsearch.search;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
@@ -64,6 +65,25 @@ public class HibernateSearchTestResource {
         assertEquals(4 + 2000, searchSession.search(Person.class)
                 .where(f -> f.matchAll())
                 .fetchTotalHitCount());
+
+        return "OK";
+    }
+
+    @GET
+    @Path("/search-projection")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testSearchWithProjection() {
+        SearchSession searchSession = Search.session(entityManager);
+
+        assertThat(searchSession.search(Person.class)
+                .select(PersonDTO.class)
+                .where(f -> f.match().field("name").matching("john"))
+                .sort(f -> f.field("name_sort"))
+                .fetchHits(20))
+                .usingRecursiveFieldByFieldElementComparator()
+                .containsExactly(
+                        new PersonDTO(4, "John Grisham", new AddressDTO("Oxford")),
+                        new PersonDTO(1, "John Irving", new AddressDTO("Burlington")));
 
         return "OK";
     }

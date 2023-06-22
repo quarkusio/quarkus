@@ -58,10 +58,21 @@ public class HibernateSearchElasticsearchRecorder {
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
             String persistenceUnitName, HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
+            Set<String> rootAnnotationMappedClassNames,
             List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+        Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        for (String className : rootAnnotationMappedClassNames) {
+            try {
+                rootAnnotationMappedClasses.add(Class.forName(className, true, tccl));
+            } catch (Exception e) {
+                throw new IllegalStateException("Could not initialize mapped class " + className, e);
+            }
+        }
         return new HibernateSearchIntegrationStaticInitListener(persistenceUnitName,
                 buildTimeConfig.getPersistenceUnitConfig(persistenceUnitName),
-                backendAndIndexNamesForSearchExtensions, integrationStaticInitListeners);
+                backendAndIndexNamesForSearchExtensions, rootAnnotationMappedClasses,
+                integrationStaticInitListeners);
     }
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitInactiveListener() {
@@ -173,15 +184,18 @@ public class HibernateSearchElasticsearchRecorder {
         private final String persistenceUnitName;
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
         private final Map<String, Set<String>> backendAndIndexNamesForSearchExtensions;
+        private final Set<Class<?>> rootAnnotationMappedClasses;
         private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
 
         private HibernateSearchIntegrationStaticInitListener(String persistenceUnitName,
                 HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
                 Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
+                Set<Class<?>> rootAnnotationMappedClasses,
                 List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
             this.persistenceUnitName = persistenceUnitName;
             this.buildTimeConfig = buildTimeConfig;
             this.backendAndIndexNamesForSearchExtensions = backendAndIndexNamesForSearchExtensions;
+            this.rootAnnotationMappedClasses = rootAnnotationMappedClasses;
             this.integrationStaticInitListeners = integrationStaticInitListeners;
         }
 
@@ -195,7 +209,7 @@ public class HibernateSearchElasticsearchRecorder {
 
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.MAPPING_CONFIGURER,
-                    new QuarkusHibernateOrmSearchMappingConfigurer());
+                    new QuarkusHibernateOrmSearchMappingConfigurer(rootAnnotationMappedClasses));
 
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.COORDINATION_STRATEGY,

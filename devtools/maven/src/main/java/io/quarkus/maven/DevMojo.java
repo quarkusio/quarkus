@@ -15,6 +15,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,8 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -102,7 +103,6 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.CompilerOptions;
 import io.quarkus.maven.components.MavenVersionEnforcer;
-import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -411,14 +411,16 @@ public class DevMojo extends AbstractMojo {
         saveTerminalState();
 
         analyticsProvider.buildAnalyticsUserInput((String prompt) -> {
-            try {
-                final AtomicReference<String> userInput = new AtomicReference<>("");
-                final Prompter prompter = new Prompter();
-                prompter.addPrompt(prompt, input -> userInput.set(input));
-                prompter.collectInput();
-                return userInput.get();
-            } catch (IOException e) {
-                getLog().debug("Failed to collect user input for analytics", e);
+            System.out.print(prompt);
+            try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
+                @Override
+                public void close() throws IOException {
+                    //don't close System.in!
+                }
+            })) {
+                return scanner.nextLine();
+            } catch (Exception e) {
+                getLog().warn("Failed to collect user input for analytics", e);
                 return "";
             }
         });

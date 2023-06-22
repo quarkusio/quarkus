@@ -17,7 +17,7 @@ public class InterceptorMethodCreator implements InterceptorCreator {
     public InterceptFunction create(SyntheticCreationalContext<Object> context) {
         Object createKey = context.getParams().get(CREATE_KEY);
         if (createKey != null) {
-            Function<SyntheticCreationalContext<?>, InterceptFunction> createFun = createFunctions.get(createKey.toString());
+            Function<SyntheticCreationalContext<?>, InterceptFunction> createFun = createFunctions.get(createKey);
             if (createFun != null) {
                 return createFun.apply(context);
             }

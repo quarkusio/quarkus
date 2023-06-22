@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
@@ -453,8 +454,8 @@ public class QuarkusComponentTestExtension
         return ret;
     }
 
-    private ClassLoader initArcContainer(ExtensionContext context, Collection<Class<?>> componentClasses) {
-        Class<?> testClass = context.getRequiredTestClass();
+    private ClassLoader initArcContainer(ExtensionContext extensionContext, Collection<Class<?>> componentClasses) {
+        Class<?> testClass = extensionContext.getRequiredTestClass();
         // Collect all test class injection points to define a bean removal exclusion
         List<Field> testClassInjectionPoints = findInjectFields(testClass);
 
@@ -584,7 +585,7 @@ public class QuarkusComponentTestExtension
                 });
             }
 
-            context.getRoot().getStore(NAMESPACE).put(KEY_GENERATED_RESOURCES, generatedResources);
+            extensionContext.getRoot().getStore(NAMESPACE).put(KEY_GENERATED_RESOURCES, generatedResources);
 
             builder.addAnnotationTransformer(AnnotationsTransformer.appliedToField().whenContainsAny(qualifiers)
                     .whenContainsNone(DotName.createSimple(Inject.class)).thenTransform(t -> t.add(Inject.class)));
@@ -695,53 +696,7 @@ public class QuarkusComponentTestExtension
                             unsatisfiedInjectionPoints.size());
 
                     // Find all methods annotated with interceptor annotations and register them as synthetic interceptors
-                    for (Method method : findMethods(testClass,
-                            List.of(AroundInvoke.class, PostConstruct.class, PreDestroy.class, AroundConstruct.class))) {
-                        Set<Annotation> bindings = findBindings(method, interceptorBindings);
-                        if (bindings.isEmpty()) {
-                            throw new IllegalStateException("No bindings declared on a test interceptor method: " + method);
-                        }
-                        validateTestInterceptorMethod(method);
-                        String key = UUID.randomUUID().toString();
-                        InterceptorMethodCreator.registerCreate(key, ctx -> {
-                            return ic -> {
-                                Object instance = null;
-                                if (!Modifier.isStatic(method.getModifiers())) {
-                                    // ExtentionContext.getTestInstance() does not work
-                                    Object testInstance = context.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCE,
-                                            Object.class);
-                                    if (testInstance == null) {
-                                        throw new IllegalStateException("Test instance not available");
-                                    }
-                                    instance = testInstance;
-                                    if (!method.canAccess(instance)) {
-                                        method.setAccessible(true);
-                                    }
-                                }
-                                return method.invoke(instance, ic);
-                            };
-                        });
-                        InterceptionType interceptionType;
-                        if (method.isAnnotationPresent(AroundInvoke.class)) {
-                            interceptionType = InterceptionType.AROUND_INVOKE;
-                        } else if (method.isAnnotationPresent(PostConstruct.class)) {
-                            interceptionType = InterceptionType.POST_CONSTRUCT;
-                        } else if (method.isAnnotationPresent(PreDestroy.class)) {
-                            interceptionType = InterceptionType.PRE_DESTROY;
-                        } else if (method.isAnnotationPresent(AroundConstruct.class)) {
-                            interceptionType = InterceptionType.AROUND_CONSTRUCT;
-                        } else {
-                            // This should never happen
-                            throw new IllegalStateException("No interceptor annotation declared on: " + method);
-                        }
-                        registrationContext.configureInterceptor(interceptionType)
-                                .identifier(key)
-                                .bindings(bindings.stream().map(Annotations::jandexAnnotation)
-                                        .toArray(AnnotationInstance[]::new))
-                                .param(InterceptorMethodCreator.CREATE_KEY, key)
-                                .creator(InterceptorMethodCreator.class);
-                        ;
-                    }
+                    processTestInterceptorMethods(testClass, extensionContext, registrationContext, interceptorBindings);
                 }
             });
 
@@ -798,6 +753,62 @@ public class QuarkusComponentTestExtension
             }
         }
         return oldTccl;
+    }
+
+    private void processTestInterceptorMethods(Class<?> testClass, ExtensionContext extensionContext,
+            BeanRegistrar.RegistrationContext registrationContext, Set<String> interceptorBindings) {
+        for (Method method : findMethods(testClass,
+                List.of(AroundInvoke.class, PostConstruct.class, PreDestroy.class, AroundConstruct.class))) {
+            Set<Annotation> bindings = findBindings(method, interceptorBindings);
+            if (bindings.isEmpty()) {
+                throw new IllegalStateException("No bindings declared on a test interceptor method: " + method);
+            }
+            validateTestInterceptorMethod(method);
+            String key = UUID.randomUUID().toString();
+            InterceptorMethodCreator.registerCreate(key, ctx -> {
+                return ic -> {
+                    Object instance = null;
+                    if (!Modifier.isStatic(method.getModifiers())) {
+                        // ExtentionContext.getTestInstance() does not work
+                        Object testInstance = extensionContext.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCE,
+                                Object.class);
+                        if (testInstance == null) {
+                            throw new IllegalStateException("Test instance not available");
+                        }
+                        instance = testInstance;
+                        if (!method.canAccess(instance)) {
+                            method.setAccessible(true);
+                        }
+                    }
+                    return method.invoke(instance, ic);
+                };
+            });
+            InterceptionType interceptionType;
+            if (method.isAnnotationPresent(AroundInvoke.class)) {
+                interceptionType = InterceptionType.AROUND_INVOKE;
+            } else if (method.isAnnotationPresent(PostConstruct.class)) {
+                interceptionType = InterceptionType.POST_CONSTRUCT;
+            } else if (method.isAnnotationPresent(PreDestroy.class)) {
+                interceptionType = InterceptionType.PRE_DESTROY;
+            } else if (method.isAnnotationPresent(AroundConstruct.class)) {
+                interceptionType = InterceptionType.AROUND_CONSTRUCT;
+            } else {
+                // This should never happen
+                throw new IllegalStateException("No interceptor annotation declared on: " + method);
+            }
+            int priority = 1;
+            Priority priorityAnnotation = method.getAnnotation(Priority.class);
+            if (priorityAnnotation != null) {
+                priority = priorityAnnotation.value();
+            }
+            registrationContext.configureInterceptor(interceptionType)
+                    .identifier(key)
+                    .priority(priority)
+                    .bindings(bindings.stream().map(Annotations::jandexAnnotation)
+                            .toArray(AnnotationInstance[]::new))
+                    .param(InterceptorMethodCreator.CREATE_KEY, key)
+                    .creator(InterceptorMethodCreator.class);
+        }
     }
 
     private void validateTestInterceptorMethod(Method method) {

@@ -12,6 +12,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Inject;
@@ -46,12 +47,14 @@ public class InterceptorMethodsTest {
     public void testPing() {
         EVENTS.clear();
         Mockito.when(charlie.ping()).thenReturn("ok");
-        assertEquals("ok", theComponent.ping());
+        assertEquals("OK", theComponent.ping());
         Arc.container().getActiveContext(ApplicationScoped.class).destroy(theComponent.getBean());
+        assertEquals(5, EVENTS.size());
         assertEquals("ac", EVENTS.get(0));
         assertEquals("pc", EVENTS.get(1));
-        assertEquals("ai", EVENTS.get(2));
-        assertEquals("pd", EVENTS.get(3));
+        assertEquals("ai2", EVENTS.get(2));
+        assertEquals("ai1", EVENTS.get(3));
+        assertEquals("pd", EVENTS.get(4));
     }
 
     @SimpleBinding
@@ -79,11 +82,20 @@ public class InterceptorMethodsTest {
 
     }
 
+    @Priority(20)
     @SimpleBinding
     @AroundInvoke
-    Object aroundInvoke(InvocationContext context) throws Exception {
-        EVENTS.add("ai");
+    Object aroundInvoke1(InvocationContext context) throws Exception {
+        EVENTS.add("ai1");
         return Boolean.parseBoolean(context.proceed().toString()) ? charlie.ping() : "false";
+    }
+
+    // default priority is 1
+    @SimpleBinding
+    @AroundInvoke
+    Object aroundInvoke2(InvocationContext context) throws Exception {
+        EVENTS.add("ai2");
+        return context.proceed().toString().toUpperCase();
     }
 
     @SimpleBinding

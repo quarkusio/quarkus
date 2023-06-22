@@ -22,7 +22,7 @@ public class MockBeanCreator implements BeanCreator<Object> {
     public Object create(SyntheticCreationalContext<Object> context) {
         Object createKey = context.getParams().get(CREATE_KEY);
         if (createKey != null) {
-            Function<SyntheticCreationalContext<?>, ?> createFun = createFunctions.get(createKey.toString());
+            Function<SyntheticCreationalContext<?>, ?> createFun = createFunctions.get(createKey);
             if (createFun != null) {
                 return createFun.apply(context);
             } else {

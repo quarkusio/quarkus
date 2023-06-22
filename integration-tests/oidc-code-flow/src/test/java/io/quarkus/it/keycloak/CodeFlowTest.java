@@ -444,7 +444,7 @@ public class CodeFlowTest {
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout/logout");
-            assertTrue(page.asNormalizedText().contains("You were logged out"));
+            assertTrue(page.asNormalizedText().contains("You were logged out, please login again"));
             assertNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout");

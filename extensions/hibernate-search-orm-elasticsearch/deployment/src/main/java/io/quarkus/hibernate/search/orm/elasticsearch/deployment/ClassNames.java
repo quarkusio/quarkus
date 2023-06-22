@@ -9,4 +9,9 @@ class ClassNames {
     static final DotName INDEXED = DotName
             .createSimple("org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed");
 
+    static final DotName ROOT_MAPPING = DotName
+            .createSimple("org.hibernate.search.mapper.pojo.mapping.definition.annotation.processing.RootMapping");
+    static final DotName PROJECTION_CONSTRUCTOR = DotName
+            .createSimple("org.hibernate.search.mapper.pojo.mapping.definition.annotation.ProjectionConstructor");
+
 }

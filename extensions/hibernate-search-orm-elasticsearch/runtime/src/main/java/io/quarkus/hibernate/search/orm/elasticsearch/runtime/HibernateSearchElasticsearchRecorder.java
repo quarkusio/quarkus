@@ -286,7 +286,7 @@ public class HibernateSearchElasticsearchRecorder {
             // Settings that may default to a @SearchExtension-annotated-bean
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
-                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                    HibernateSearchBeanUtil.multiExtensionBeanReferencesFor(
                             indexConfig == null ? Optional.empty() : indexConfig.analysis().configurer(),
                             ElasticsearchAnalysisConfigurer.class, persistenceUnitName, backendName, indexName));
         }

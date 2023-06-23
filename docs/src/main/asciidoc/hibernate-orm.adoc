@@ -171,7 +171,7 @@ so at your application entry point boundaries like your REST endpoint controller
 [[hibernate-dialect-supported-databases]]
 ==== Supported databases
 
-For xref:datasource.adoc#default-datasource[supported databases],
+For xref:datasource.adoc#extensions-and-database-drivers-reference[supported databases],
 the link:{hibernate-orm-docs-url}#database-dialect[Hibernate ORM dialect]
 does not need to be set explicitly:
 it is selected automatically based on the datasource.

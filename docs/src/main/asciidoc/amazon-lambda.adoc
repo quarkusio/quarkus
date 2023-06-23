@@ -229,7 +229,7 @@ sh target/manage.sh update
 == Deploy to AWS Lambda Custom (native) Runtime
 
 If you want a lower memory footprint and faster initialization times for your lambda, you can compile your Java
-code to a native executable.  Just make sure to rebuild your project with the `-Pnative` switch.
+code to a native executable.  Just make sure to rebuild your project with the `-Dnative` switch.
 
 For Linux hosts, execute:
 

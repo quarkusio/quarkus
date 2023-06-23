@@ -198,7 +198,7 @@ mvn clean package\
   -Dquarkus.container-image.group=registry.heroku.com/$APP_NAME\
   -Dquarkus.container-image.name=web\
   -Dquarkus.container-image.tag=latest\
-  -Pnative\
+  -Dnative\
   -Dquarkus.native.container-build=true
 ----
 

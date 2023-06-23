@@ -368,7 +368,7 @@ Then, open http://localhost:8080/hello/quarkus in a browser, and you should get 
 == Packaging the application
 
 Like any other Quarkus applications, you can package it with: `mvn package`.
-You can also package the application into a native executable with: `mvn package -Pnative`.
+You can also package the application into a native executable with: `mvn package -Dnative`.
 
 [[protobuf-maven-plugin]]
 == Generating Java files from proto with protobuf-maven-plugin

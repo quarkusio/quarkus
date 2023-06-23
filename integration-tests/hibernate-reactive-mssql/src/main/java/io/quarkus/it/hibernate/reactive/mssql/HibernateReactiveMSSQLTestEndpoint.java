@@ -1,19 +1,18 @@
-package io.quarkus.it.hibernate.reactive.postgresql;
-
-import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
+package io.quarkus.it.hibernate.reactive.mssql;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.pgclient.PgPool;
+import io.vertx.mutiny.mssqlclient.MSSQLPool;
 import io.vertx.mutiny.sqlclient.Row;
 import io.vertx.mutiny.sqlclient.RowSet;
 import io.vertx.mutiny.sqlclient.Tuple;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
-@Path("/alternative-tests")
-public class HibernateReactiveTestEndpointAlternative {
+@Path("/tests")
+public class HibernateReactiveMSSQLTestEndpoint {
 
     @Inject
     Mutiny.SessionFactory sessionFactory;
@@ -21,7 +20,7 @@ public class HibernateReactiveTestEndpointAlternative {
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
     @Inject
-    PgPool pgPool;
+    MSSQLPool mssqlPool;
 
     @GET
     @Path("/reactiveFindMutiny")
@@ -43,7 +42,7 @@ public class HibernateReactiveTestEndpointAlternative {
     public Uni<String> reactiveRemoveTransientEntity() {
         return populateDB()
                 .chain(() -> selectNameFromId(5))
-                .onItem().transform(name -> {
+                .map(name -> {
                     if (name == null) {
                         throw new AssertionError("Database was not populated properly");
                     }
@@ -60,8 +59,7 @@ public class HibernateReactiveTestEndpointAlternative {
     @Path("/reactiveRemoveManagedEntity")
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
-                .chain(() -> sessionFactory
-                        .withTransaction(s -> s.find(GuineaPig.class, 5).chain(s::remove)))
+                .chain(() -> sessionFactory.withTransaction(s -> s.find(GuineaPig.class, 5).chain(s::remove)))
                 .chain(() -> selectNameFromId(5))
                 .onItem().ifNotNull().transform(result -> result)
                 .onItem().ifNull().continueWith("OK");
@@ -72,23 +70,23 @@ public class HibernateReactiveTestEndpointAlternative {
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
         return populateDB()
-                .chain(() -> sessionFactory.withTransaction(s -> s.find(GuineaPig.class, 5).onItem().transform(pig -> {
-                    if (NEW_NAME.equals(pig.getName())) {
-                        throw new AssertionError("Pig already had name " + NEW_NAME);
-                    }
-                    pig.setName(NEW_NAME);
-                    return pig;
-                })))
+                .chain(() -> sessionFactory.withTransaction(s -> s.find(GuineaPig.class, 5)
+                        .invoke(pig -> {
+                            if (NEW_NAME.equals(pig.getName())) {
+                                throw new AssertionError("Pig already had name " + NEW_NAME);
+                            }
+                            pig.setName(NEW_NAME);
+                        })))
                 .chain(() -> selectNameFromId(5));
     }
 
     private Uni<RowSet<Row>> populateDB() {
-        return pgPool.query("DELETE FROM Pig").execute()
-                .chain(() -> pgPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
+        return mssqlPool.query("DELETE FROM Pig").execute()
+                .flatMap(junk -> mssqlPool.preparedQuery("INSERT INTO Pig (id, name) VALUES (5, 'Aloi')").execute());
     }
 
     private Uni<String> selectNameFromId(Integer id) {
-        return pgPool.preparedQuery("SELECT name FROM Pig WHERE id = $1").execute(Tuple.of(id)).map(rowSet -> {
+        return mssqlPool.preparedQuery("SELECT name FROM Pig WHERE id = ?").execute(Tuple.of(id)).map(rowSet -> {
             if (rowSet.size() == 1) {
                 return rowSet.iterator().next().getString(0);
             } else if (rowSet.size() > 1) {

@@ -7,10 +7,9 @@ import org.mockito.Mockito;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.PlatformImports;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.DependencyFlags;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
 public abstract class AnalyticsServiceTestBase {
@@ -19,26 +18,12 @@ public abstract class AnalyticsServiceTestBase {
         ApplicationModel applicationModel = Mockito.mock(ApplicationModel.class);
 
         PlatformImports platforms = Mockito.mock(PlatformImports.class);
-        WorkspaceModule module = Mockito.mock(WorkspaceModule.class);
+        ResolvedDependency appArtifact = Mockito.mock(ResolvedDependency.class);
 
-        Mockito.when(applicationModel.getApplicationModule()).thenReturn(module);
-        Mockito.when(applicationModel.getApplicationModule().getId())
-                .thenReturn(new WorkspaceModuleId() {
-                    @Override
-                    public String getGroupId() {
-                        return "build-group-id"; // the artifact being built
-                    }
-
-                    @Override
-                    public String getArtifactId() {
-                        return "build-artifact-id";
-                    }
-
-                    @Override
-                    public String getVersion() {
-                        return "1.0.0-TEST";
-                    }
-                });
+        Mockito.when(applicationModel.getAppArtifact()).thenReturn(appArtifact);
+        Mockito.when(appArtifact.getGroupId()).thenReturn("build-group-id");
+        Mockito.when(appArtifact.getArtifactId()).thenReturn("build-artifact-id");
+        Mockito.when(appArtifact.getVersion()).thenReturn("1.0.0-TEST");
         Mockito.when(applicationModel.getPlatforms()).thenReturn(platforms);
         Mockito.when(platforms.getImportedPlatformBoms())
                 .thenReturn(List.of(ArtifactCoords.of(

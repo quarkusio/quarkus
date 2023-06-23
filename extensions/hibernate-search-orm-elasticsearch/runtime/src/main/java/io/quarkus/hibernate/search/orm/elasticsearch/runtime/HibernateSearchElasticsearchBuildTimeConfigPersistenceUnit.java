@@ -209,7 +209,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * this strategy will create an index named `myindex`, and will not use any alias.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
          * for more information.
          *
          * [NOTE]

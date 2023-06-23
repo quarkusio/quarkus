@@ -525,7 +525,7 @@ If your delete query does not start with `delete`, we support the following addi
 - `<query>` will expand to `delete from EntityName where <query>`
 
 NOTE: You can also write your queries in plain
-link:https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#hql[HQL]:
+link:{hibernate-orm-docs-url}#hql[HQL]:
 
 [source,java]
 ----
@@ -617,7 +617,7 @@ You can use it to restrict which fields will be returned by the database.
 
 Hibernate will use **DTO projection** and generate a SELECT clause with the attributes from the projection class.
 This is also called **dynamic instantiation** or **constructor expression**, more info can be found on the Hibernate guide:
-link:https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html#hql-select-clause[hql select clause]
+link:{hibernate-orm-docs-url}#hql-select-clause[hql select clause]
 
 The projection class needs to be a valid Java Bean and have a constructor that contains all its attributes, this constructor will be used to
 instantiate the projection DTO instead of using the entity class. This must be the only constructor of the class.

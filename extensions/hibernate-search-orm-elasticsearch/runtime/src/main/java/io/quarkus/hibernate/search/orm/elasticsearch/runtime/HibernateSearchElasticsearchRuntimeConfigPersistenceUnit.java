@@ -353,7 +353,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * to a custom implementations of `IndexingPlanSynchronizationStrategy`.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#indexing-plan-synchronization[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#indexing-plan-synchronization[this section of the reference documentation]
          * for more information.
          *
          * [NOTE]

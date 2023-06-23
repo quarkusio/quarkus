@@ -1,4 +1,4 @@
-package io.quarkus.kubernetes.client.deployment;
+package io.quarkus.openshift.client.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -13,15 +13,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.openshift.client.OpenShiftClient;
 import io.quarkus.kubernetes.client.KubernetesClientObjectMapper;
 import io.quarkus.kubernetes.client.KubernetesClientObjectMapperCustomizer;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class KubernetesClientObjectMapperCDITest {
+public class OpenShiftClientObjectMapperCDITest {
 
     @Inject
-    KubernetesClient kubernetesClient;
+    OpenShiftClient client;
 
     @Inject
     @KubernetesClientObjectMapper
@@ -35,7 +35,7 @@ public class KubernetesClientObjectMapperCDITest {
 
     @Test
     public void kubernetesClientUsesCustomizedObjectMapper() {
-        final var result = kubernetesClient.getKubernetesSerialization()
+        final var result = client.getKubernetesSerialization()
                 .unmarshal("{\"quarkusName\":\"the-name\"}", ObjectMeta.class);
         assertEquals("the-name", result.getName());
     }

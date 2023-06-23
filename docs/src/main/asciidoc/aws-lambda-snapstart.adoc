@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Amazon Lambda SnapStart Configuration
+= AWS Lambda SnapStart Configuration
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This document explains how to optimize your AWS Lambda application for SnapStart
@@ -17,7 +17,7 @@ Please check the AWS documentation to verify the eligibility of your AWS region.
 
 == Enabling / Disabling SnapStart Optimizations
 
-If you use the Quarkus Amazon Lambda extension, SnapStart optimizations are automatically enabled.
+If you use the Quarkus AWS Lambda extension, SnapStart optimizations are automatically enabled.
 However, you can enable/disable it explicitly using:
 
 [source, properties]

@@ -47,7 +47,7 @@ class AnalyticsServicePromptTest extends AnalyticsServiceTestBase {
         Optional<LocalConfig> localConfig = FileUtils.read(LocalConfig.class, fileLocations.getLocalConfigFile(),
                 MessageWriter.info());
         assertTrue(localConfig.isPresent());
-        assertTrue(localConfig.get().isActive());
+        assertFalse(localConfig.get().isDisabled());
     }
 
     @Test
@@ -61,7 +61,7 @@ class AnalyticsServicePromptTest extends AnalyticsServiceTestBase {
         Optional<LocalConfig> localConfig = FileUtils.read(LocalConfig.class, fileLocations.getLocalConfigFile(),
                 MessageWriter.info());
         assertTrue(localConfig.isPresent());
-        assertFalse(localConfig.get().isActive());
+        assertTrue(localConfig.get().isDisabled());
     }
 
     @Test

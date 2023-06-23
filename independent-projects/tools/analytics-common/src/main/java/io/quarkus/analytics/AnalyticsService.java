@@ -60,6 +60,7 @@ import io.quarkus.analytics.dto.segment.TrackEventType;
 import io.quarkus.analytics.dto.segment.TrackProperties;
 import io.quarkus.analytics.rest.RestClient;
 import io.quarkus.analytics.util.FileUtils;
+import io.quarkus.analytics.util.PropertyUtils;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -122,7 +123,7 @@ public class AnalyticsService implements AutoCloseable {
         try {
             // complete all. Normally, the queue should have only 1 element.
             CompletableFuture.allOf(postFutures.toArray(new CompletableFuture[0])).get(
-                    Integer.getInteger("quarkus.analytics.timeout", DEFAULT_TIMEOUT),
+                    PropertyUtils.getProperty("quarkus.analytics.timeout", DEFAULT_TIMEOUT),
                     TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled() && !postFutures.isEmpty()) {
                 log.debug("[Quarkus build analytics] Build analytics sent successfully. Sent event can be seen at .../target/" +

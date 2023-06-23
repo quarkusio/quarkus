@@ -15,10 +15,10 @@ public class FileLocationsImpl implements FileLocations {
             ".redhat");
 
     private static final Path UUID_FILE = RED_HAT.resolve("anonymousId");
-    private static final Path REMOTE_CONFIG_FILE = RED_HAT.resolve("com.redhat.devtools.quarkus.remoteconfig");
+    private static final Path REMOTE_CONFIG_FILE = RED_HAT.resolve("io.quarkus.analytics.remoteconfig");
     private static final Path LAST_REMOTE_CONFIG_TRY_FILE = RED_HAT.resolve(
-            "com.redhat.devtools.quarkus.analytics.lasttry");
-    private static final Path LOCAL_CONFIG_FILE = RED_HAT.resolve("com.redhat.devtools.quarkus.localconfig");
+            "io.quarkus.analytics.lasttry");
+    private static final Path LOCAL_CONFIG_FILE = RED_HAT.resolve("io.quarkus.analytics.localconfig");
     private static final String BUILD_ANALYTICS_EVENT_FILE_NAME = "build-analytics-event.json";
 
     // singleton

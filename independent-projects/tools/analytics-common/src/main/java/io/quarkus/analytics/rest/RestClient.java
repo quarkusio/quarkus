@@ -1,5 +1,6 @@
 package io.quarkus.analytics.rest;
 
+import static io.quarkus.analytics.util.PropertyUtils.getProperty;
 import static io.quarkus.analytics.util.StringUtils.getObjectMapper;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -64,11 +65,11 @@ public class RestClient implements ConfigClient, SegmentClient {
 
     private final URI segmentTraceUri;
 
-    private final int timeoutMs = Integer.getInteger("quarkus.analytics.timeout", DEFAULT_TIMEOUT);
+    private final int timeoutMs = getProperty("quarkus.analytics.timeout", DEFAULT_TIMEOUT);
 
     public RestClient(MessageWriter log) {
         this.log = log;
-        final String segmentBaseUri = System.getProperty("quarkus.analytics.uri.base", "https://api.segment.io/");
+        final String segmentBaseUri = getProperty("quarkus.analytics.uri.base", "https://api.segment.io/");
         this.segmentIdentityUri = getUri(segmentBaseUri + IDENTITY_ENDPOINT);
         this.segmentTraceUri = getUri(segmentBaseUri + TRACK_ENDPOINT);
     }

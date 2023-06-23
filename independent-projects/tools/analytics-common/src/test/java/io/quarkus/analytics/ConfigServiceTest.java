@@ -40,7 +40,7 @@ class ConfigServiceTest {
     }
 
     @Test
-    void activeWithConfig() throws IOException {
+    void activeWithRemoteConfig() throws IOException {
         ConfigService configService = createConfigService();
 
         long lastModified = fileLocations.getRemoteConfigFile().toFile().lastModified();
@@ -63,7 +63,7 @@ class ConfigServiceTest {
     @Test
     void inactiveUserAnsweredNo() throws IOException {
         deleteLocalConfigFile();
-        FileUtils.append("{\"active\":false}", fileLocations.getLocalConfigFile());
+        FileUtils.append("{\"disabled\":true}", fileLocations.getLocalConfigFile());
 
         ConfigService configService = createConfigService();
 
@@ -72,7 +72,7 @@ class ConfigServiceTest {
     }
 
     @Test
-    void activeWithoutConfig() throws IOException {
+    void activeConfig() throws IOException {
         RemoteConfig remoteConfig = RemoteConfig.builder()
                 .active(true)
                 .denyQuarkusVersions(Collections.emptyList())

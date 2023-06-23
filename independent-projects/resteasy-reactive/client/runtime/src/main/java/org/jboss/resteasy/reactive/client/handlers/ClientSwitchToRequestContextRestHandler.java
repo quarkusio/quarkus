@@ -6,6 +6,7 @@ import org.jboss.resteasy.reactive.client.impl.ClientRequestContextImpl;
 import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -29,10 +30,12 @@ public class ClientSwitchToRequestContextRestHandler implements ClientRestHandle
             requestContext.resume(new Executor() {
                 @Override
                 public void execute(Runnable command) {
+                    // This is necessary to propagate the Smallrye context which is required for OpenTelemetry
+                    Runnable decorated = Infrastructure.decorate(command);
                     captured.runOnContext(new Handler<Void>() {
                         @Override
                         public void handle(Void unused) {
-                            command.run();
+                            decorated.run();
                         }
                     });
                 }

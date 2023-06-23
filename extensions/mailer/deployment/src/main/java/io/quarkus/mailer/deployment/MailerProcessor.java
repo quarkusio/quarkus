@@ -100,7 +100,10 @@ public class MailerProcessor {
                 .filter(i -> SUPPORTED_INJECTION_TYPES.contains(i.getRequiredType().name()))
                 .collect(Collectors.toList());
 
-        boolean hasDefaultMailer = mailerInjectionPoints.stream().anyMatch(i -> i.hasDefaultedQualifier())
+        boolean hasDefaultMailer = mailerInjectionPoints.stream()
+                .anyMatch(i -> i.hasDefaultedQualifier() ||
+                // we inject a MailTemplate and it is not named
+                        (MAIL_TEMPLATE.equals(i.getType().name()) && i.getRequiredQualifier(MAILER_NAME) == null))
                 || !index.getIndex().getAnnotations(CheckedTemplate.class).isEmpty();
 
         Set<String> namedMailers = mailerInjectionPoints.stream()

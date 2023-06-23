@@ -14,7 +14,9 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.BufferImpl;
 
 @Provider
 public class ServerVertxBufferMessageBodyWriter implements ServerMessageBodyWriter<Buffer> {
@@ -35,6 +37,23 @@ public class ServerVertxBufferMessageBodyWriter implements ServerMessageBodyWrit
 
     @Override
     public void writeResponse(Buffer buffer, Type genericType, ServerRequestContext context) throws WebApplicationException {
+        // optimization to avoid slicing the Netty buffer by using Buffer::getByteBuf
+        if (buffer instanceof BufferImpl) {
+            var vertxBuffer = (BufferImpl) buffer;
+            var nettyBuffer = (ByteBuf) vertxBuffer.byteBuf();
+            // it shouldn't be null but better safe than sorry
+            if (nettyBuffer != null && nettyBuffer.hasArray()) {
+                writeSharedArrayRange(nettyBuffer, context);
+                return;
+            }
+        }
         context.serverResponse().end(buffer.getBytes());
+    }
+
+    private static void writeSharedArrayRange(ByteBuf nettyBuffer, ServerRequestContext context) {
+        byte[] array = nettyBuffer.array();
+        final int offset = nettyBuffer.arrayOffset() + nettyBuffer.readerIndex();
+        final int length = nettyBuffer.readableBytes();
+        context.serverResponse().endShared(array, offset, length);
     }
 }

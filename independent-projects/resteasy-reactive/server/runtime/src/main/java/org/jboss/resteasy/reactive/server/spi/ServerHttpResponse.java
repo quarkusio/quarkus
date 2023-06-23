@@ -15,6 +15,12 @@ public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse
 
     boolean headWritten();
 
+    /**
+     * This method should be used to handoff a data which {@link ServerHttpResponse} cannot retain
+     * because owned by/shared with the caller.
+     */
+    ServerHttpResponse endShared(byte[] data, int offset, int length);
+
     ServerHttpResponse end(byte[] data);
 
     ServerHttpResponse end(String data);

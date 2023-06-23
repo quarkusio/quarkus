@@ -360,9 +360,16 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     @Override
-    public ServerHttpResponse end(byte[] data) {
-        response.end(Buffer.buffer(data), null);
+    public ServerHttpResponse endShared(byte[] data, int offset, int length) {
+        var buffer = Buffer.buffer(length);
+        buffer.appendBytes(data, offset, length);
+        response.end(buffer, null);
         return this;
+    }
+
+    @Override
+    public ServerHttpResponse end(byte[] data) {
+        return endShared(data, 0, data.length);
     }
 
     @Override

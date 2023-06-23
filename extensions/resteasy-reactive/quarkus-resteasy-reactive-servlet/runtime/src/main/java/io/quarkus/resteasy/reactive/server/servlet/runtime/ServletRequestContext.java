@@ -5,12 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +56,6 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     final HttpServletResponse response;
     AsyncContext asyncContext;
     ServletWriteListener writeListener;
-    ServletReadListener readListener;
     byte[] asyncWriteData;
     boolean closed;
     Consumer<Throwable> asyncWriteHandler;
@@ -360,17 +354,16 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         return response.isCommitted();
     }
 
-    @Override
-    public ServerHttpResponse end(byte[] data) {
+    private ServerHttpResponse end(final byte[] data, final int offset, final int length, final boolean shared) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             try {
-                response.getOutputStream().write(data);
+                response.getOutputStream().write(data, offset, length);
                 response.getOutputStream().close();
             } catch (IOException e) {
                 log.debug("IoException writing response", e);
             }
         } else {
-            write(data, new Consumer<Throwable>() {
+            write(data, offset, length, shared, new Consumer<Throwable>() {
                 @Override
                 public void accept(Throwable throwable) {
                     try {
@@ -382,6 +375,16 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
             });
         }
         return this;
+    }
+
+    @Override
+    public ServerHttpResponse endShared(final byte[] data, final int offset, final int length) {
+        return end(data, offset, length, true);
+    }
+
+    @Override
+    public ServerHttpResponse end(byte[] data) {
+        return end(data, 0, data.length, false);
     }
 
     @Override
@@ -446,12 +449,18 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public ServerHttpResponse write(byte[] data, Consumer<Throwable> asyncResultHandler) {
+        // data is not shared, hence can be just used as it is, without any copy
+        return write(data, 0, data.length, false, asyncResultHandler);
+    }
+
+    private ServerHttpResponse write(byte[] data, int offset, int length, boolean shared,
+            Consumer<Throwable> asyncResultHandler) {
         if (asyncWriteData != null) {
             asyncResultHandler.accept(new IllegalStateException("Cannot write before data has all been written"));
         }
         if (asyncContext == null) {
             try {
-                response.getOutputStream().write(data);
+                response.getOutputStream().write(data, offset, length);
                 asyncResultHandler.accept(null);
             } catch (IOException e) {
                 asyncResultHandler.accept(e);
@@ -461,7 +470,10 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
                 if (asyncWriteData != null) {
                     throw new IllegalStateException("Cannot write more than one piece of async data at a time");
                 }
-                asyncWriteData = data;
+                // perform a copy only if data is shared or if it's a range to avoid adding new offset/length fields
+                // if data is not shared, is often copied via Arrays::copyOf ie is not a ranged copy!
+                asyncWriteData = (shared || (offset != 0 && length != data.length)) ? Arrays.copyOfRange(data, offset, length)
+                        : data;
                 asyncWriteHandler = asyncResultHandler;
                 if (writeListener == null) {
                     try {

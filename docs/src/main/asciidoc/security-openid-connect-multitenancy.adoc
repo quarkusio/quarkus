@@ -12,9 +12,9 @@ This guide demonstrates how your OpenID Connect (OIDC) application can support m
 
 When serving multiple customers from the same application (e.g.: SaaS), each customer is a tenant. By enabling multi-tenancy support to your applications you are allowed to also support distinct authentication policies for each tenant even though if that means authenticating against different OpenID Providers, such as Keycloak and Google.
 
-Please read the xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication] guide if you need to authorize a tenant using Bearer Token Authorization.
+Please read the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer authentication] guide if you need to authorize a tenant using Bearer Token Authorization.
 
-If you need to authenticate and authorize a tenant using OpenID Connect Authorization Code Flow, read the xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications] guide.
+If you need to authenticate and authorize a tenant using OpenID Connect Authorization Code Flow, read the xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications] guide.
 
 Also see the xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties] reference guide.
 
@@ -588,7 +588,7 @@ annotation per tenant ID other than default:
 
 [NOTE]
 ====
-Proactive HTTP authentication must be disabled (`quarkus.http.auth.proactive=false`) for this to work. For more information, see xref:security-proactive-authentication-concept.adoc[Proactive authentication].
+Proactive HTTP authentication must be disabled (`quarkus.http.auth.proactive=false`) for this to work. For more information, see xref:security-proactive-authentication.adoc[Proactive authentication].
 ====
 
 [source,java]
@@ -753,4 +753,4 @@ Note that tenant specific configurations can also be disabled, for example: `qua
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * https://developers.google.com/identity/protocols/OpenIDConnect[Google OpenID Connect]
-* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-overview.adoc[Quarkus Security overview]

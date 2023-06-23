@@ -20,15 +20,18 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.dekorate.kubernetes.config.DeploymentStrategy;
 import io.dekorate.kubernetes.config.EnvBuilder;
 import io.dekorate.kubernetes.config.IngressBuilder;
 import io.dekorate.kubernetes.config.IngressRuleBuilder;
 import io.dekorate.kubernetes.config.Port;
+import io.dekorate.kubernetes.config.RollingUpdateBuilder;
 import io.dekorate.kubernetes.decorator.AddAnnotationDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressRuleDecorator;
 import io.dekorate.kubernetes.decorator.AddIngressTlsDecorator;
 import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
+import io.dekorate.kubernetes.decorator.ApplyDeploymentStrategyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyImagePullPolicyDecorator;
 import io.dekorate.kubernetes.decorator.ApplyReplicasToDeploymentDecorator;
 import io.dekorate.kubernetes.decorator.ApplyReplicasToStatefulSetDecorator;
@@ -285,6 +288,15 @@ public class VanillaKubernetesProcessor {
                         || !config.ingress.expose
                         || !config.ingress.targetPort.equals(MANAGEMENT_PORT_NAME))) {
             result.add(new DecoratorBuildItem(KUBERNETES, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+        }
+
+        // Handle deployment strategy
+        if (config.strategy != DeploymentStrategy.None) {
+            result.add(new DecoratorBuildItem(KUBERNETES,
+                    new ApplyDeploymentStrategyDecorator(name, config.strategy, new RollingUpdateBuilder()
+                            .withMaxSurge(config.rollingUpdate.maxSurge)
+                            .withMaxUnavailable(config.rollingUpdate.maxUnavailable)
+                            .build())));
         }
 
         return result;

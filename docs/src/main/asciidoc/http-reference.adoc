@@ -24,12 +24,14 @@ Servlet filter, otherwise it will run directly on top of Vert.x with no Servlet 
 
 == Serving Static Resources
 
-To serve static resources you must place them in the `META-INF/resources` directory of your application. This location
+=== From the application jar
+
+To serve static resources from the application jar, you must place them in the `META-INF/resources` directory of your application. This location
 was chosen as it is the standard location for resources in `jar` files as defined by the Servlet spec. Even though
 Quarkus can be used without Servlet, following this convention allows existing code that places its resources in this
 location to function correctly.
 
-=== WebJar Locator Support
+=== From WebJars
 
 If you are using webjars, like the following JQuery one:
 
@@ -66,6 +68,33 @@ To use it, add the following to your project's dependencies:
 .build.gradle
 ----
 implementation("io.quarkus:quarkus-webjars-locator")
+----
+
+=== From a local directory
+
+Static resources can be served from a local directory by installing an additional route in the Vert.x router.
+
+For instance, to serve resources from the `static/` directory relative to the current path at http://localhost:8080/static/,
+you can install the following route:
+
+[source,java]
+----
+package org.acme;
+
+import io.quarkus.runtime.StartupEvent;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.StaticHandler;
+import jakarta.enterprise.event.Observes;
+
+
+public class StaticResources {
+
+    void installRoute(@Observes StartupEvent startupEvent, Router router) {
+        router.route()
+                .path("/static/*")
+                .handler(StaticHandler.create("static/"));
+    }
+}
 ----
 
 === HTTP Compression

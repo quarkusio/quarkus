@@ -3,14 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Amazon Lambda with RESTEasy Reactive, Undertow, or Reactive Routes
+= AWS Lambda with RESTEasy Reactive, Undertow, or Reactive Routes
 :extension-status: preview
 include::_attributes.adoc[]
 :categories: cloud
-:summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as an Amazon Lambda.
+:summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as an AWS Lambda.
 :devtools-no-gradle:
 
-With Quarkus you can deploy your favorite Java HTTP frameworks as Amazon Lambda's using either the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html[AWS Gateway HTTP API]
+With Quarkus you can deploy your favorite Java HTTP frameworks as AWS Lambda's using either the https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api.html[AWS Gateway HTTP API]
 or https://docs.aws.amazon.com/apigateway/latest/developerguide/apigateway-rest-api.html[AWS Gateway REST API].  This means that you can deploy your microservices written with RESTEasy Reactive (our Jakarta REST implementation),
 Undertow (servlet), Reactive Routes, xref:funqy-http.adoc[Funqy HTTP] or any other Quarkus HTTP framework as an AWS Lambda.
 
@@ -35,7 +35,7 @@ include::{includes}/prerequisites.adoc[]
 == Getting Started
 
 This guide walks you through generating an example Java project via a Maven archetype.  Later on, it walks through the structure
-of the project so you can adapt any existing projects you have to use Amazon Lambda.
+of the project so you can adapt any existing projects you have to use AWS Lambda.
 
 == Installing AWS bits
 
@@ -170,7 +170,7 @@ quarkus.lambda.mock-event-server.test-port=8083
 
 A port value of zero will result in a randomly assigned port.
 
-== Simulate Amazon Lambda Deployment with SAM CLI
+== Simulate AWS Lambda Deployment with SAM CLI
 
 The AWS SAM CLI allows you to run your lambda's locally on your laptop in a simulated Lambda environment.  This requires Docker to be installed.
 After you have built your Maven project, execute this command:
@@ -269,7 +269,7 @@ you'll see this:
             DISABLE_SIGNAL_HANDLERS: true
 ----
 
-This environment variable resolves some incompatibilities between Quarkus and the Amazon Lambda Custom Runtime environment.
+This environment variable resolves some incompatibilities between Quarkus and the AWS Lambda Custom Runtime environment.
 
 Finally, there is one specific thing for AWS Gateway REST API deployments.
 That API assumes that HTTP response bodies are text unless you explicitly tell it which media types are

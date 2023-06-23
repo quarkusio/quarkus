@@ -987,7 +987,7 @@ Note that you can't access the injected `JsonWebToken` in the public methods if 
 To <<jwt-parser,parse and verify JsonWebToken with JWTParser>>, use `smallrye-jwt` instead of `quarkus-smallrye-jwt` directly for the following situations:
 
 * You work with Quarkus extensions that do not support `HTTP`, such as `Quarkus GRPC`.
-* You provide an extension-specific `HTTP`, the support of which conflicts with the support of those offered by `quarkus-smallrye-jwt` and `Vert.x HTTP`, such as `Quarkus Amazon Lambda`.
+* You provide an extension-specific `HTTP`, the support of which conflicts with the support of those offered by `quarkus-smallrye-jwt` and `Vert.x HTTP`, such as `Quarkus AWS Lambda`.
 
 Start with adding the `smallrye-jwt` dependency:
 

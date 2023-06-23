@@ -3,14 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Funqy Amazon Lambda Binding
+= Funqy AWS Lambda Binding
 :extension-status: preview
 :devtools-no-gradle:
 include::_attributes.adoc[]
 :categories: cloud
-:summary: This guide explains Funqy's Amazon Lambda binding.
+:summary: This guide explains Funqy's AWS Lambda binding.
 
-The guide walks through quickstart code to show you how you can deploy Funqy functions to Amazon Lambda.
+The guide walks through quickstart code to show you how you can deploy Funqy functions to AWS Lambda.
 
 Funqy functions can be deployed using the AWS Lambda Java Runtime, or you can build a native executable and use
 Lambda Custom Runtime if you want a smaller memory footprint and faster cold boot startup time.
@@ -26,7 +26,7 @@ include::{includes}/prerequisites.adoc[]
 * https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html[AWS CLI]
 * https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html[AWS SAM CLI], for local testing
 
-NOTE: Funqy Amazon Lambdas build off of our xref:amazon-lambda.adoc[Quarkus Amazon Lambda support].
+NOTE: Funqy AWS Lambdas build off of our xref:aws-lambda.adoc[Quarkus AWS Lambda support].
 
 == Installing AWS bits
 
@@ -47,7 +47,7 @@ environments and AWS Lambda is one of them.  The Java code is actually the same 
 [[choose]]
 == Choose Your Function
 
-Only one Funqy function can be exported per Amazon Lambda deployment.  If you have multiple functions defined
+Only one Funqy function can be exported per AWS Lambda deployment.  If you have multiple functions defined
 within your project, then you will need to choose the function within your Quarkus `application.properties`:
 
 [source,properties,subs=attributes+]
@@ -57,7 +57,7 @@ quarkus.funqy.export=greet
 
 You can see how the quickstart has done it within its own {quickstarts-tree-url}/funqy-quickstarts/funqy-amazon-lambda-quickstart/src/main/resources/application.properties[application.properties].
 
-Alternatively, you can set the `QUARKUS_FUNQY_EXPORT` environment variable when you create the Amazon Lambda using the `aws` cli.
+Alternatively, you can set the `QUARKUS_FUNQY_EXPORT` environment variable when you create the AWS Lambda using the `aws` cli.
 
 == Deploy to AWS Lambda Java Runtime
 
@@ -230,7 +230,7 @@ as a dependency.  The extension automatically generates everything you might nee
 
 == Integration Testing
 
-Funqy Amazon Lambda support leverages the Quarkus AWS Lambda test framework so that you can unit tests your Funqy functions.
+Funqy AWS Lambda support leverages the Quarkus AWS Lambda test framework so that you can unit tests your Funqy functions.
 This is true for both JVM and native modes.
 This test framework provides similar functionality to the SAM CLI, without the overhead of Docker.
 

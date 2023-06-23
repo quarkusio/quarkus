@@ -8,7 +8,6 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
-:orm-doc-url-prefix: https://docs.jboss.org/hibernate/orm/6.2/userguide/html_single/Hibernate_User_Guide.html
 
 Hibernate ORM is the de facto standard Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
@@ -173,7 +172,7 @@ so at your application entry point boundaries like your REST endpoint controller
 ==== Supported databases
 
 For xref:datasource.adoc#default-datasource[supported databases],
-the link:{orm-doc-url-prefix}##database-dialect[Hibernate ORM dialect]
+the link:{hibernate-orm-docs-url}#database-dialect[Hibernate ORM dialect]
 does not need to be set explicitly:
 it is selected automatically based on the datasource.
 
@@ -215,7 +214,7 @@ If the database cannot be reached, a warning will be logged but startup will pro
 
 If xref:datasource.adoc#other-databases[your database does not have a corresponding Quarkus extension],
 or if the defaults do not match your needs for some reason,
-you will need to set the link:{orm-doc-url-prefix}##database-dialect[Hibernate ORM dialect] explicitly:
+you will need to set the link:{hibernate-orm-docs-url}#database-dialect[Hibernate ORM dialect] explicitly:
 
 [source,properties]
 .`{config-file}` with an explicit `dialect`
@@ -524,7 +523,7 @@ difference is that you would specify your Hibernate ORM configuration in `META-I
 ----
 
 When using the `persistence.xml` configuration you are configuring Hibernate ORM directly,
-so in this case the appropriate reference is the link:{orm-doc-url-prefix}#configurations[documentation on hibernate.org].
+so in this case the appropriate reference is the link:{hibernate-orm-docs-url}#configurations[documentation on hibernate.org].
 
 Please remember these are not the same property names as the ones used in the Quarkus `{config-file}`, nor will
 the same defaults be applied.
@@ -914,9 +913,9 @@ Jump over to xref:datasource.adoc[Quarkus - Datasources] for all details.
 [[multitenancy]]
 == Multitenancy
 
-"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{orm-doc-url-prefix}#multitenacy[Hibernate User Guide]).
+"The term multitenancy, in general, is applied to software development to indicate an architecture in which a single running instance of an application simultaneously serves multiple clients (tenants). This is highly common in SaaS solutions. Isolating information (data, customizations, etc.) pertaining to the various tenants is a particular challenge in these systems. This includes the data owned by each tenant stored in the database" (link:{hibernate-orm-docs-url}#multitenacy[Hibernate User Guide]).
 
-Quarkus currently supports the link:{orm-doc-url-prefix}#multitenacy-separate-database[separate database] approach, the link:{orm-doc-url-prefix}#multitenacy-separate-schema[separate schema] approach and the link:{orm-doc-url-prefix}#multitenacy-discriminator[discriminator] approach.
+Quarkus currently supports the link:{hibernate-orm-docs-url}#multitenacy-separate-database[separate database] approach, the link:{hibernate-orm-docs-url}#multitenacy-separate-schema[separate schema] approach and the link:{hibernate-orm-docs-url}#multitenacy-discriminator[discriminator] approach.
 
 To see multitenancy in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 
@@ -1179,7 +1178,7 @@ Your custom connection resolver would allow for example to read tenant informati
 [[interceptors]]
 == Interceptors
 
-You can assign an link:{orm-doc-url-prefix}#events-interceptors[`org.hibernate.Interceptor`]
+You can assign an link:{hibernate-orm-docs-url}#events-interceptors[`org.hibernate.Interceptor`]
 to your `SessionFactory` by simply defining a CDI bean with the appropriate qualifier:
 
 [source,java]

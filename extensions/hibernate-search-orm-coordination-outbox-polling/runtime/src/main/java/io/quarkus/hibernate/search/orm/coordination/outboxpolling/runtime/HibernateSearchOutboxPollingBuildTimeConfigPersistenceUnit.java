@@ -86,7 +86,7 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
          * The name of the Hibernate ORM basic type used for representing an UUID in the agent table.
          *
          * Refer to
-         * link:{hibernate-orm-doc-prefix}#basic-legacy-provided[this section of the Hibernate ORM documentation]
+         * link:{hibernate-orm-docs-url}#basic-legacy-provided[this section of the Hibernate ORM documentation]
          * to see the list of available UUID representations provided by Hibernate ORM.
          *
          * A user defined type can also be supplied.
@@ -145,7 +145,7 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
          * The name of the Hibernate ORM basic type used for representing an UUID in the outbox event table.
          *
          * Refer to
-         * link:{hibernate-orm-doc-prefix}#basic-legacy-provided[this section of the Hibernate ORM documentation]
+         * link:{hibernate-orm-docs-url}#basic-legacy-provided[this section of the Hibernate ORM documentation]
          * to see the list of available UUID representations provided by Hibernate ORM.
          *
          * A user defined type can also be supplied.

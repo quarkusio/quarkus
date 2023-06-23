@@ -35,6 +35,10 @@
         <generated-dir>${project.basedir}/../target/asciidoc/generated</generated-dir>
         <code-examples-dir>${generated-dir}/examples</code-examples-dir>
         <vale.image>docker.io/jdkato/vale:v2.15.5</vale.image>
+
+        <!-- Keep these in sync with the full versions in bom/application/pom.xml -->
+        <hibernate-orm.version-for-documentation>6.2</hibernate-orm.version-for-documentation>
+        <hibernate-search.version-for-documentation>6.2</hibernate-search.version-for-documentation>
     </properties>
 
     <name>Quarkus - Documentation</name>

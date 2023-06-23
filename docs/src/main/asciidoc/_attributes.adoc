@@ -24,6 +24,8 @@
 :grpc-version: ${grpc.version}
 :protoc-version: ${protoc.version}
 :gcf-invoker-version: ${gcf-invoker.version}
+:hibernate-orm-version: ${hibernate-orm.version-for-documentation}
+:hibernate-search-version: ${hibernate-search.version-for-documentation}
 // .
 :quarkus-home-url: ${quarkus-home-url}
 :quarkus-org-url: https://github.com/quarkusio
@@ -45,6 +47,9 @@
 :quickstarts-archive-url: ${quickstarts-base-url}/archive/main.zip
 :quickstarts-blob-url: ${quickstarts-base-url}/blob/main
 :quickstarts-tree-url: ${quickstarts-base-url}/tree/main
+// .
+:hibernate-orm-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version}/userguide/html_single/Hibernate_User_Guide.html
+:hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version}/reference/en-US/html_single/
 // .
 :amazon-services-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html
 :config-consul-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html

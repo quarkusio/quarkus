@@ -175,7 +175,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 }
 ----
 
-Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms-concept.adoc#mutual-TLS-authentication[mutual TLS (mTLS) authentication] request to add more roles:
+Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms.adoc#mutual-TLS-authentication[mutual TLS (mTLS) authentication] request to add more roles:
 
 [source,java]
 ----
@@ -620,7 +620,7 @@ xref:context-propagation.adoc[Context Propagation Guide].
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
-* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
-* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-identity-providers.adoc[Identity providers]

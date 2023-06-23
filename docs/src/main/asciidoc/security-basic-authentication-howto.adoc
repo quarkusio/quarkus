@@ -4,7 +4,7 @@ include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: security
 
-Enable xref:security-basic-authentication-concept.adoc[Basic authentication] for your Quarkus project and allow users to authenticate with a username and password.
+Enable xref:security-basic-authentication.adoc[Basic authentication] for your Quarkus project and allow users to authenticate with a username and password.
 
 == Prerequisites
 
@@ -47,7 +47,7 @@ To walk through how to configure Basic authentication together with Jakarta Pers
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-identity-providers-concept.adoc[Identity Providers]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-identity-providers.adoc[Identity Providers]
 * xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties]
-* xref:security-basic-authentication-concept.adoc[Basic authentication] 
+* xref:security-basic-authentication.adoc[Basic authentication] 

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="security-webauthn-concept"]
+[id="security-webauthn"]
 = Using Security with WebAuthn
 :extension-status: preview
 
@@ -1306,4 +1306,4 @@ include::{generated-dir}/config/quarkus-security-webauthn.adoc[opts=optional, le
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-overview.adoc[Quarkus Security overview]

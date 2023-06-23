@@ -306,7 +306,7 @@ This returns `non-null` for a secured endpoint.
 <5> The `/subject/denied` endpoint declares the `@DenyAll` annotation, disallowing all direct access to it as a REST method, regardless of the user calling it.
 The method is still invokable internally by other methods in this class.
 
-CAUTION: If you plan to use standard security annotations on the IO thread, review the information in the Quarkus xref:security-proactive-authentication-concept.adoc[Proactive Authentication] guide.
+CAUTION: If you plan to use standard security annotations on the IO thread, review the information in xref:security-proactive-authentication.adoc[Proactive Authentication].
 
 The `@RolesAllowed` annotation value supports xref:config-reference.adoc#property-expressions[property expressions] including default values and nested property expressions.
 Configuration properties used with the annotation are resolved at runtime.
@@ -475,7 +475,7 @@ Both resource methods `createOrUpdate` have equal authorization requirements.
 By default, string-based permission is performed by `io.quarkus.security.StringPermission`.
 <5> Permissions are not beans, therefore the only way to obtain bean instances is programmatically by using `Arc.container()`.
 
-CAUTION: If you plan to use `@PermissionsAllowed` on the IO thread, review the information in xref:security-proactive-authentication-concept.adoc[Proactive Authentication].
+CAUTION: If you plan to use the `@PermissionsAllowed` on the IO thread, review the information in xref:security-proactive-authentication.adoc[Proactive Authentication].
 
 NOTE: `@PermissionsAllowed` is not repeatable on the class level due to a limitation with Quarkus interceptors.
 For more information, see the xref:cdi-reference.adoc#repeatable-interceptor-bindings[Repeatable interceptor bindings] section of the Quarkus "CDI reference" guide.
@@ -715,8 +715,8 @@ CAUTION: Annotation permissions do not work with the custom xref:security-custom
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-architecture-concept.adoc[Quarkus Security architecture]
-* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Other supported authentication mechanisms]
-* xref:security-basic-authentication-concept.adoc[Basic authentication]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-basic-authentication.adoc[Basic authentication]
 * xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]

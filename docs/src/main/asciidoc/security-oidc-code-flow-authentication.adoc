@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :categories: security,web
 :toclevels: 4
 
-To protect your web applications, you can use the industry-standard authorization code flow mechanism provided by the Quarkus OpenID Connect (OIDC) extension.
+To protect your web applications, you can use the industry-standard OpenID Connect (OIDC) Authorization Code Flow mechanism provided by the Quarkus OIDC extension.
 
 == Overview of the OIDC authorization code flow mechanism
 
@@ -42,7 +42,8 @@ See also the xref:security-oidc-configuration-properties-reference.adoc[OIDC con
 
 To learn about how you can protect web applications by using the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 
-If you want to protect your applications by using Bearer Token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer authentication].
+If you want to protect service applications by using OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer authentication].
+
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
 == Using the authorization code flow mechanism

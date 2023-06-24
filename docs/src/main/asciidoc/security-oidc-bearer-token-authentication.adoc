@@ -43,8 +43,11 @@ image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer authentica
 If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications].
 Also, if you use Keycloak and bearer tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
 
-For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
+To learn about how you can protect service applications by using OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication-tutorial.adoc[OIDC Bearer authentication tutorial].
 
+If you want to protect web applications by using OIDC authorization code flow authentication, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC authorization code flow authentication].
+
+For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
 === Accessing JWT claims
 

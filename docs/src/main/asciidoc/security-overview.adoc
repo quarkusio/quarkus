@@ -1,4 +1,4 @@
-[id="security-overview-concept"]
+[id="security-overview"]
 = Quarkus Security overview
 include::_attributes.adoc[]
 :diataxis-type: concept
@@ -6,21 +6,21 @@ include::_attributes.adoc[]
 
 Quarkus Security is a framework that provides the architecture, multiple authentication and authorization mechanisms, and other tools for you to build secure and production-quality Java applications.
 
-Before building security into your Quarkus applications, learn about the xref:security-architecture-concept.adoc[Quarkus Security architecture] and the different authentication mechanisms and features that you can use.
+Before building security into your Quarkus applications, learn about the xref:security-architecture.adoc[Quarkus Security architecture] and the different authentication mechanisms and features that you can use.
 
 == Key features of Quarkus Security
 
 The Quarkus Security framework provides built-in security authentication mechanisms for Basic, Form-based, and mutual TLS (mTLS) authentication.
-You can also use other well-known xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[authentication mechanisms], such as OpenID Connect (OIDC) and WebAuthn.
+You can also use other well-known xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[authentication mechanisms], such as OpenID Connect (OIDC) and WebAuthn.
 
-Authentication mechanisms depend on xref:security-identity-providers-concept.adoc[Identity providers] to verify the authentication credentials and map them to a `SecurityIdentity` instance, which has the username, roles, original authentication credentials, and other attributes.
+Authentication mechanisms depend on xref:security-identity-providers.adoc[Identity providers] to verify the authentication credentials and map them to a `SecurityIdentity` instance, which has the username, roles, original authentication credentials, and other attributes.
 
 {project-name} also includes built-in security to allow for role-based access control (RBAC) based on the common security annotations @RolesAllowed, @DenyAll, @PermitAll on REST endpoints, and CDI beans.
 For more information, see the Quarkus xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints] guide.
 
 Quarkus Security also supports the following features:
 
-* xref:security-proactive-authentication-concept.adoc[Proactive authentication]
+* xref:security-proactive-authentication.adoc[Proactive authentication]
 * xref:http-reference.adoc#ssl[Secure connections with SSL/TLS]
 * <<cross-origin-resource-sharing>>
 * <<csrf-prevention>>
@@ -28,17 +28,17 @@ Quarkus Security also supports the following features:
 * <<secrets-engines>>
 * <<rest-data-panache>>
 * <<secure-serialization>>
-* xref:security-vulnerability-detection-concept.adoc[Security vulnerability detection and National Vulnerability Database (NVD) registration]
+* xref:security-vulnerability-detection.adoc[Security vulnerability detection and National Vulnerability Database (NVD) registration]
 
 Quarkus Security is also highly customizable.
 For more information, see the Quarkus xref:security-customization.adoc[Security tips and tricks] guide.
 
 == Getting started with Quarkus Security
 
-To get started with security in Quarkus, consider combining the Quarkus built-in xref:security-basic-authentication-concept.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
+To get started with security in Quarkus, consider combining the Quarkus built-in xref:security-basic-authentication.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
 Complete the steps in the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication] tutorial.
 
-After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect (OIDC) authorization code flow mechanism].
+After successfully securing your Quarkus application with Basic authentication, you can increase the security further by adding more advanced authentication mechanisms, for example, the xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) authorization code flow mechanism].
 
 == Quarkus Security testing
 
@@ -86,7 +86,7 @@ For more information, see the xref:rest-data-panache.adoc#securing-endpoints[Sec
 == Security vulnerability detection
 
 Most Quarkus tags get reported in the US link:https://nvd.nist.gov[National Vulnerability Database (NVD)].
-For information about security vulnerabilities, see the xref:security-vulnerability-detection-concept.adoc[Security vulnerability detection and reporting in Quarkus] guide.
+For information about security vulnerabilities, see the xref:security-vulnerability-detection.adoc[Security vulnerability detection and reporting in Quarkus] guide.
 
 == References
 

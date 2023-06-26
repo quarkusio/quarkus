@@ -3,7 +3,7 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="security-proactive-authentication-concept"]
+[id="security-proactive-authentication"]
 = Proactive authentication
 include::_attributes.adoc[]
 :diataxis-type: concept
@@ -152,7 +152,7 @@ public class AuthenticationFailedExceptionHandler {
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
-* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
-* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-identity-providers.adoc[Identity providers]

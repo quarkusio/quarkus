@@ -1,4 +1,4 @@
-[id="security-authentication-mechanisms-concept"]
+[id="security-authentication-mechanisms"]
 = Authentication mechanisms in Quarkus
 include::_attributes.adoc[]
 :diataxis-type: concept
@@ -27,15 +27,15 @@ The following table maps specific authentication requirements to a supported mec
 |====
 |Authentication requirement |Authentication mechanism
 
-|Username and password |xref:security-basic-authentication-concept.adoc[Basic], <<form-auth>>
+|Username and password |xref:security-basic-authentication.adoc[Basic], <<form-auth>>
 
-|Bearer access token |xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
+|Bearer access token |xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication], xref:security-jwt.adoc[JWT], xref:security-oauth2.adoc[OAuth2]
 
-|Single sign-on (SSO) |xref:security-oidc-code-flow-authentication-concept.adoc[OIDC Code Flow], <<form-auth>>
+|Single sign-on (SSO) |xref:security-oidc-code-flow-authentication.adoc[OIDC Code Flow], <<form-auth>>
 
 |Client certificate |<<mutual-tls>>
 
-|WebAuthn |xref:security-webauthn-concept.adoc[WebAuthn]
+|WebAuthn |xref:security-webauthn.adoc[WebAuthn]
 
 |Kerberos ticket |link:https://quarkiverse.github.io/quarkiverse-docs/quarkus-kerberos/dev/index.html[Kerberos]
 |====
@@ -47,7 +47,7 @@ For more information, see the following <<table>> table.
 
 Quarkus Security provides the following built-in authentication support:
 
-* xref:security-basic-authentication-concept.adoc[Basic authentication]
+* xref:security-basic-authentication.adoc[Basic authentication]
 * <<form-auth>>
 * <<mutual-tls>>
 
@@ -56,11 +56,11 @@ Quarkus Security provides the following built-in authentication support:
 You can secure your Quarkus application endpoints with the built-in HTTP Basic authentication mechanism.
 For more information, see the following documentation:
 
-* xref:security-basic-authentication-concept.adoc[Basic authentication]
+* xref:security-basic-authentication.adoc[Basic authentication]
 ** xref:security-basic-authentication-howto.adoc[Enable Basic authentication]
-* xref:security-jpa-concept.adoc[Quarkus Security with Jakarta Persistence]
+* xref:security-jpa.adoc[Quarkus Security with Jakarta Persistence]
 ** xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
-* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-identity-providers.adoc[Identity providers]
 
 [[form-auth]]
 === Form-based authentication
@@ -167,7 +167,7 @@ Quarkus Security also supports the following authentication mechanisms through e
 
 https://webauthn.guide/[WebAuthn] is an authentication mechanism that replaces passwords.
 When you write a service for registering new users, or logging them in, instead of asking for a password, you can use WebAuthn, which replaces the password.
-For more information, see the  xref:security-webauthn-concept.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism] guide.
+For more information, see the  xref:security-webauthn.adoc[Secure a Quarkus application by using the WebAuthn authentication mechanism] guide.
 
 [[openid-connect-authentication]]
 === OpenID Connect authentication
@@ -195,8 +195,8 @@ For more information about OIDC authentication and authorization methods that yo
 [options="header"]
 |====
 |OIDC topic |Quarkus information resource
-|Bearer token authentication mechanism|xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication]
-|Authorization Code Flow authentication mechanism|xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect (OIDC) Authorization Code Flow mechanism]
+|Bearer token authentication mechanism|xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
+|Authorization Code Flow authentication mechanism|xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) Authorization Code Flow mechanism]
 |Multiple tenants that can support the Bearer token authentication or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
 |Securing Quarkus with commonly-used OpenID Connect providers|xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 |Using Keycloak to centralize authorization |xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]
@@ -358,11 +358,11 @@ Ensure that the value of the `auth-mechanism` property matches the authenticatio
 
 Proactive authentication is enabled in Quarkus by default.
 This means that if an incoming request has a credential, the request will always be authenticated, even if the target page does not require authentication.
-For more information, see the Quarkus xref:security-proactive-authentication-concept.adoc[Proactive authentication] guide.
+For more information, see the Quarkus xref:security-proactive-authentication.adoc[Proactive authentication] guide.
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-architecture-concept.adoc[Quarkus Security architecture]
-* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-architecture.adoc[Quarkus Security architecture]
+* xref:security-identity-providers.adoc[Identity providers]
 * xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]

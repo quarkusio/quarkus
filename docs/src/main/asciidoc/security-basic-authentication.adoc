@@ -1,4 +1,4 @@
-[id="security-basic-authentication-concept"]
+[id="security-basic-authentication"]
 = Basic authentication
 include::_attributes.adoc[]
 :diataxis-type: concept
@@ -66,8 +66,8 @@ For more information, see xref:security-authorize-web-endpoints-reference.adoc[A
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
-* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
-* xref:security-identity-providers-concept.adoc[Identity providers]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-identity-providers.adoc[Identity providers]
 * xref:security-authorize-web-endpoints-reference.adoc[Authorization of web endpoints]

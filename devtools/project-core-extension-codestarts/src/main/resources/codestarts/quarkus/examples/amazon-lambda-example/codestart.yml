@@ -12,3 +12,5 @@ language:
       - io.quarkus:quarkus-amazon-lambda
     test-dependencies:
       - io.rest-assured:rest-assured
+output-strategy:
+  "*.sh": executable

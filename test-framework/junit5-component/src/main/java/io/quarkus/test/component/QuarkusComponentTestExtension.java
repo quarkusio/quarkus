@@ -32,13 +32,20 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.InvocationContext;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -145,6 +152,7 @@ public class QuarkusComponentTestExtension
     private static final String KEY_OLD_CONFIG_PROVIDER_RESOLVER = "oldConfigProviderResolver";
     private static final String KEY_GENERATED_RESOURCES = "generatedResources";
     private static final String KEY_INJECTED_FIELDS = "injectedFields";
+    private static final String KEY_TEST_INSTANCE = "testInstance";
     private static final String KEY_CONFIG = "config";
 
     private static final String TARGET_TEST_CLASSES = "target/test-classes";
@@ -232,6 +240,7 @@ public class QuarkusComponentTestExtension
         // Inject test class fields
         context.getRoot().getStore(NAMESPACE).put(KEY_INJECTED_FIELDS,
                 injectFields(context.getRequiredTestClass(), testInstance));
+        context.getRoot().getStore(NAMESPACE).put(KEY_TEST_INSTANCE, testInstance);
 
         LOG.debugf("postProcessTestInstance: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
@@ -328,6 +337,7 @@ public class QuarkusComponentTestExtension
         }
         MockBeanCreator.clear();
         ConfigBeanCreator.clear();
+        InterceptorMethodCreator.clear();
 
         SmallRyeConfig config = context.getRoot().getStore(NAMESPACE).get(KEY_CONFIG, SmallRyeConfig.class);
         ConfigProviderResolver.instance().releaseConfig(config);
@@ -417,7 +427,7 @@ public class QuarkusComponentTestExtension
                 }
                 String key = UUID.randomUUID().toString();
                 MockBeanCreator.registerCreate(key, cast(mock.create));
-                configurator.creator(MockBeanCreator.class).param("createKey", key).done();
+                configurator.creator(MockBeanCreator.class).param(MockBeanCreator.CREATE_KEY, key).done();
             }
         };
     }
@@ -444,15 +454,10 @@ public class QuarkusComponentTestExtension
         return ret;
     }
 
-    private ClassLoader initArcContainer(ExtensionContext context, Collection<Class<?>> componentClasses) {
-        Class<?> testClass = context.getRequiredTestClass();
+    private ClassLoader initArcContainer(ExtensionContext extensionContext, Collection<Class<?>> componentClasses) {
+        Class<?> testClass = extensionContext.getRequiredTestClass();
         // Collect all test class injection points to define a bean removal exclusion
-        List<Field> testClassInjectionPoints = new ArrayList<>();
-        for (Field field : testClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Inject.class)) {
-                testClassInjectionPoints.add(field);
-            }
-        }
+        List<Field> testClassInjectionPoints = findInjectFields(testClass);
 
         if (componentClasses.isEmpty()) {
             throw new IllegalStateException("No component classes to test");
@@ -488,6 +493,7 @@ public class QuarkusComponentTestExtension
 
             // These are populated after BeanProcessor.registerCustomContexts() is called
             List<DotName> qualifiers = new ArrayList<>();
+            Set<String> interceptorBindings = new HashSet<>();
             AtomicReference<BeanResolver> beanResolver = new AtomicReference<>();
 
             BeanProcessor.Builder builder = BeanProcessor.builder()
@@ -549,7 +555,6 @@ public class QuarkusComponentTestExtension
                 String testPath = testClass.getClassLoader().getResource(testClass.getName().replace(".", "/") + ".class")
                         .getFile();
                 int targetClassesIndex = testPath.indexOf(TARGET_TEST_CLASSES);
-                // NOTE: continuous testing is not supported at the moment
                 if (targetClassesIndex == -1) {
                     throw new IllegalStateException("Invalid test path: " + testPath);
                 }
@@ -580,7 +585,7 @@ public class QuarkusComponentTestExtension
                 });
             }
 
-            context.getRoot().getStore(NAMESPACE).put(KEY_GENERATED_RESOURCES, generatedResources);
+            extensionContext.getRoot().getStore(NAMESPACE).put(KEY_GENERATED_RESOURCES, generatedResources);
 
             builder.addAnnotationTransformer(AnnotationsTransformer.appliedToField().whenContainsAny(qualifiers)
                     .whenContainsNone(DotName.createSimple(Inject.class)).thenTransform(t -> t.add(Inject.class)));
@@ -591,10 +596,10 @@ public class QuarkusComponentTestExtension
             builder.addBeanRegistrar(new BeanRegistrar() {
 
                 @Override
-                public void register(RegistrationContext context) {
+                public void register(RegistrationContext registrationContext) {
                     long start = System.nanoTime();
-                    List<BeanInfo> beans = context.beans().collect();
-                    BeanDeployment beanDeployment = context.get(Key.DEPLOYMENT);
+                    List<BeanInfo> beans = registrationContext.beans().collect();
+                    BeanDeployment beanDeployment = registrationContext.get(Key.DEPLOYMENT);
                     Set<TypeAndQualifiers> unsatisfiedInjectionPoints = new HashSet<>();
                     boolean configInjectionPoint = false;
                     Set<TypeAndQualifiers> configPropertyInjectionPoints = new HashSet<>();
@@ -604,7 +609,7 @@ public class QuarkusComponentTestExtension
                     // Analyze injection points
                     // - find Config and @ConfigProperty injection points
                     // - find unsatisfied injection points
-                    for (InjectionPointInfo injectionPoint : context.getInjectionPoints()) {
+                    for (InjectionPointInfo injectionPoint : registrationContext.getInjectionPoints()) {
                         BuiltinBean builtin = BuiltinBean.resolve(injectionPoint);
                         if (builtin != null && builtin != BuiltinBean.INSTANCE && builtin != BuiltinBean.LIST) {
                             continue;
@@ -620,27 +625,41 @@ public class QuarkusComponentTestExtension
                             continue;
                         }
                         Type requiredType = injectionPoint.getRequiredType();
-                        Set<AnnotationInstance> qualifiers = injectionPoint.getRequiredQualifiers();
+                        Set<AnnotationInstance> requiredQualifiers = injectionPoint.getRequiredQualifiers();
                         if (builtin == BuiltinBean.LIST) {
                             // @All List<Delta> -> Delta
                             requiredType = requiredType.asParameterizedType().arguments().get(0);
-                            qualifiers = new HashSet<>(qualifiers);
-                            qualifiers.removeIf(q -> q.name().equals(DotNames.ALL));
+                            requiredQualifiers = new HashSet<>(requiredQualifiers);
+                            requiredQualifiers.removeIf(q -> q.name().equals(DotNames.ALL));
+                            if (requiredQualifiers.isEmpty()) {
+                                requiredQualifiers.add(AnnotationInstance.builder(DotNames.DEFAULT).build());
+                            }
                         }
-                        if (isSatisfied(requiredType, qualifiers, injectionPoint, beans, beanDeployment)) {
+                        if (isSatisfied(requiredType, requiredQualifiers, injectionPoint, beans, beanDeployment)) {
                             continue;
                         }
                         if (requiredType.kind() == Kind.PRIMITIVE || requiredType.kind() == Kind.ARRAY) {
                             throw new IllegalStateException(
                                     "Found an unmockable unsatisfied injection point: " + injectionPoint.getTargetInfo());
                         }
-                        unsatisfiedInjectionPoints.add(new TypeAndQualifiers(requiredType, qualifiers));
+                        unsatisfiedInjectionPoints.add(new TypeAndQualifiers(requiredType, requiredQualifiers));
                         LOG.debugf("Unsatisfied injection point found: %s", injectionPoint.getTargetInfo());
+                    }
+
+                    // Make sure that all @InjectMock fields are also considered unsatisfied dependencies
+                    // This means that a mock is created even if no component declares this dependency
+                    for (Field field : findFields(testClass, List.of(InjectMock.class))) {
+                        Set<AnnotationInstance> requiredQualifiers = getQualifiers(field, qualifiers);
+                        if (requiredQualifiers.isEmpty()) {
+                            requiredQualifiers = Set.of(AnnotationInstance.builder(DotNames.DEFAULT).build());
+                        }
+                        unsatisfiedInjectionPoints
+                                .add(new TypeAndQualifiers(Types.jandexType(field.getGenericType()), requiredQualifiers));
                     }
 
                     for (TypeAndQualifiers unsatisfied : unsatisfiedInjectionPoints) {
                         ClassInfo implementationClass = computingIndex.getClassByName(unsatisfied.type.name());
-                        BeanConfigurator<Object> configurator = context.configure(implementationClass.name())
+                        BeanConfigurator<Object> configurator = registrationContext.configure(implementationClass.name())
                                 .scope(Singleton.class)
                                 .addType(unsatisfied.type);
                         unsatisfied.qualifiers.forEach(configurator::addQualifier);
@@ -652,14 +671,14 @@ public class QuarkusComponentTestExtension
                     }
 
                     if (configInjectionPoint) {
-                        context.configure(Config.class)
+                        registrationContext.configure(Config.class)
                                 .addType(Config.class)
                                 .creator(ConfigBeanCreator.class)
                                 .done();
                     }
 
                     if (!configPropertyInjectionPoints.isEmpty()) {
-                        BeanConfigurator<Object> configPropertyConfigurator = context.configure(Object.class)
+                        BeanConfigurator<Object> configPropertyConfigurator = registrationContext.configure(Object.class)
                                 .identifier("configProperty")
                                 .addQualifier(ConfigProperty.class)
                                 .param("useDefaultConfigProperties", useDefaultConfigProperties.get())
@@ -672,8 +691,12 @@ public class QuarkusComponentTestExtension
                     }
 
                     LOG.debugf("Test injection points analyzed in %s ms [found: %s, mocked: %s]",
-                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start), context.getInjectionPoints().size(),
+                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start),
+                            registrationContext.getInjectionPoints().size(),
                             unsatisfiedInjectionPoints.size());
+
+                    // Find all methods annotated with interceptor annotations and register them as synthetic interceptors
+                    processTestInterceptorMethods(testClass, extensionContext, registrationContext, interceptorBindings);
                 }
             });
 
@@ -694,6 +717,9 @@ public class QuarkusComponentTestExtension
                 // Populate the list of qualifiers used to simulate quarkus auto injection
                 ContextRegistrar.RegistrationContext registrationContext = beanProcessor.registerCustomContexts();
                 qualifiers.addAll(registrationContext.get(Key.QUALIFIERS).keySet());
+                for (DotName binding : registrationContext.get(Key.INTERCEPTOR_BINDINGS).keySet()) {
+                    interceptorBindings.add(binding.toString());
+                }
                 beanResolver.set(registrationContext.get(Key.DEPLOYMENT).getBeanResolver());
                 beanProcessor.registerScopes();
                 beanProcessor.registerBeans();
@@ -727,6 +753,76 @@ public class QuarkusComponentTestExtension
             }
         }
         return oldTccl;
+    }
+
+    private void processTestInterceptorMethods(Class<?> testClass, ExtensionContext extensionContext,
+            BeanRegistrar.RegistrationContext registrationContext, Set<String> interceptorBindings) {
+        for (Method method : findMethods(testClass,
+                List.of(AroundInvoke.class, PostConstruct.class, PreDestroy.class, AroundConstruct.class))) {
+            Set<Annotation> bindings = findBindings(method, interceptorBindings);
+            if (bindings.isEmpty()) {
+                throw new IllegalStateException("No bindings declared on a test interceptor method: " + method);
+            }
+            validateTestInterceptorMethod(method);
+            String key = UUID.randomUUID().toString();
+            InterceptorMethodCreator.registerCreate(key, ctx -> {
+                return ic -> {
+                    Object instance = null;
+                    if (!Modifier.isStatic(method.getModifiers())) {
+                        // ExtentionContext.getTestInstance() does not work
+                        Object testInstance = extensionContext.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCE,
+                                Object.class);
+                        if (testInstance == null) {
+                            throw new IllegalStateException("Test instance not available");
+                        }
+                        instance = testInstance;
+                        if (!method.canAccess(instance)) {
+                            method.setAccessible(true);
+                        }
+                    }
+                    return method.invoke(instance, ic);
+                };
+            });
+            InterceptionType interceptionType;
+            if (method.isAnnotationPresent(AroundInvoke.class)) {
+                interceptionType = InterceptionType.AROUND_INVOKE;
+            } else if (method.isAnnotationPresent(PostConstruct.class)) {
+                interceptionType = InterceptionType.POST_CONSTRUCT;
+            } else if (method.isAnnotationPresent(PreDestroy.class)) {
+                interceptionType = InterceptionType.PRE_DESTROY;
+            } else if (method.isAnnotationPresent(AroundConstruct.class)) {
+                interceptionType = InterceptionType.AROUND_CONSTRUCT;
+            } else {
+                // This should never happen
+                throw new IllegalStateException("No interceptor annotation declared on: " + method);
+            }
+            int priority = 1;
+            Priority priorityAnnotation = method.getAnnotation(Priority.class);
+            if (priorityAnnotation != null) {
+                priority = priorityAnnotation.value();
+            }
+            registrationContext.configureInterceptor(interceptionType)
+                    .identifier(key)
+                    .priority(priority)
+                    .bindings(bindings.stream().map(Annotations::jandexAnnotation)
+                            .toArray(AnnotationInstance[]::new))
+                    .param(InterceptorMethodCreator.CREATE_KEY, key)
+                    .creator(InterceptorMethodCreator.class);
+        }
+    }
+
+    private void validateTestInterceptorMethod(Method method) {
+        Parameter[] params = method.getParameters();
+        if (params.length != 1 || !InvocationContext.class.isAssignableFrom(params[0].getType())) {
+            throw new IllegalStateException("A test interceptor method must declare exactly one InvocationContext parameter:"
+                    + Arrays.toString(params));
+        }
+
+    }
+
+    private Set<Annotation> findBindings(Method method, Set<String> bindings) {
+        return Arrays.stream(method.getAnnotations()).filter(a -> bindings.contains(a.annotationType().getName()))
+                .collect(Collectors.toSet());
     }
 
     private void indexComponentClass(Indexer indexer, Class<?> componentClass) {
@@ -791,6 +887,14 @@ public class QuarkusComponentTestExtension
     }
 
     private List<FieldInjector> injectFields(Class<?> testClass, Object testInstance) throws Exception {
+        List<FieldInjector> injectedFields = new ArrayList<>();
+        for (Field field : findInjectFields(testClass)) {
+            injectedFields.add(new FieldInjector(field, testInstance));
+        }
+        return injectedFields;
+    }
+
+    private List<Field> findInjectFields(Class<?> testClass) {
         List<Class<? extends Annotation>> injectAnnotations;
         Class<? extends Annotation> deprecatedInjectMock = loadDeprecatedInjectMock();
         if (deprecatedInjectMock != null) {
@@ -798,20 +902,41 @@ public class QuarkusComponentTestExtension
         } else {
             injectAnnotations = List.of(Inject.class, InjectMock.class);
         }
-        List<FieldInjector> injectedFields = new ArrayList<>();
+        return findFields(testClass, injectAnnotations);
+    }
+
+    private List<Field> findFields(Class<?> testClass, List<Class<? extends Annotation>> annotations) {
+        List<Field> fields = new ArrayList<>();
         Class<?> current = testClass;
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
-                for (Class<? extends Annotation> annotation : injectAnnotations) {
+                for (Class<? extends Annotation> annotation : annotations) {
                     if (field.isAnnotationPresent(annotation)) {
-                        injectedFields.add(new FieldInjector(field, testInstance));
+                        fields.add(field);
                         break;
                     }
                 }
             }
             current = current.getSuperclass();
         }
-        return injectedFields;
+        return fields;
+    }
+
+    private List<Method> findMethods(Class<?> testClass, List<Class<? extends Annotation>> annotations) {
+        List<Method> methods = new ArrayList<>();
+        Class<?> current = testClass;
+        while (current.getSuperclass() != null) {
+            for (Method method : current.getDeclaredMethods()) {
+                for (Class<? extends Annotation> annotation : annotations) {
+                    if (method.isAnnotationPresent(annotation)) {
+                        methods.add(method);
+                        break;
+                    }
+                }
+            }
+            current = current.getSuperclass();
+        }
+        return methods;
     }
 
     static class FieldInjector {
@@ -851,7 +976,10 @@ public class QuarkusComponentTestExtension
                                         handle.getBean()));
                     }
                 } else {
-                    if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
+                    if (!handle.isAvailable()) {
+                        throw new IllegalStateException(String
+                                .format("The injected field %s expects a mocked bean; but obtained null", field));
+                    } else if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
                         throw new IllegalStateException(String
                                 .format("The injected field %s expects a mocked bean; but obtained: %s", field,
                                         handle.getBean()));
@@ -861,7 +989,10 @@ public class QuarkusComponentTestExtension
                 unsetHandles = List.of(handle);
             }
 
-            field.setAccessible(true);
+            if (!field.canAccess(testInstance)) {
+                field.setAccessible(true);
+            }
+
             field.set(testInstance, injectedInstance);
         }
 
@@ -875,7 +1006,6 @@ public class QuarkusComponentTestExtension
                     }
                 }
             }
-            field.setAccessible(true);
             field.set(testInstance, null);
         }
 

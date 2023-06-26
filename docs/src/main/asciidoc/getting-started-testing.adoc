@@ -1573,8 +1573,8 @@ public class FooTest {
 }
 ----
 <1> The `QuarkusComponentTest` annotation registers the JUnit extension.
-<2> Set a configuration property for the test.
-<3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`.
+<2> Sets a configuration property for the test.
+<3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`. Furthermore, the static nested classes declared on the test class are components too.
 <4> The test also injects `Charlie`, a dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
 <5> We can leverage the Mockito API in a test method to configure the behavior.
 
@@ -1609,7 +1609,7 @@ public class FooTest {
     }
 }
 ----
-<1> The `QuarkusComponentTestExtension` is configured in a static field.
+<1> The `QuarkusComponentTestExtension` is configured in a static field of the test class.
 
 === Lifecycle
 
@@ -1639,3 +1639,97 @@ You can use the mock configurator API via the `QuarkusComponentTestExtension#moc
 A dedicated `SmallRyeConfig` is registered during the `before all` test phase.
 Moreover, it's possible to set the configuration properties via the `QuarkusComponentTestExtension#configProperty(String, String)` method or the `@TestConfigProperty` annotation.
 If you only need to use the default values for missing config properties, then the `QuarkusComponentTestExtension#useDefaultConfigProperties()` or `@QuarkusComponentTest#useDefaultConfigProperties()` might come in useful.
+
+=== Mocking CDI Interceptors
+
+If a tested component class declares an interceptor binding then you might need to mock the interception too.
+There are two ways to accomplish this task.
+First, you can define an interceptor class as a static nested class of the test class.
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusComponentTest
+public class FooTest {
+
+    @Inject
+    Foo foo;
+
+    @Test
+    public void testPing() {
+        assertEquals("OK", foo.ping());
+    }
+    
+    @ApplicationScoped
+    static class Foo {
+       
+       @SimpleBinding <1>
+       String ping() {
+         return "ok";
+       }
+    
+    }
+    
+    @SimpleBinding
+    @Interceptor
+    static class SimpleInterceptor { <2>
+
+        @AroundInvoke
+        Object aroundInvoke(InvocationContext context) throws Exception {
+            return context.proceed().toString().toUpperCase();
+        }
+
+    }
+}
+----
+<1> `@SimpleBinding` is an interceptor binding.
+<2> The interceptor class is automatically considered a tested component.
+
+NOTE: Static nested classed declared on a test class that is annotated with `@QuarkusComponentTest` are excluded from bean discovery when running a `@QuarkusTest` in order to prevent unintentional CDI conflicts.
+
+Furthermore, you can also declare a "test interceptor method" directly on the test class.
+This method is then invoked in the relevant interception phase.
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusComponentTest
+public class FooTest {
+
+    @Inject
+    Foo foo;
+
+    @Test
+    public void testPing() {
+        assertEquals("OK", foo.ping());
+    }
+
+    @SimpleBinding <1>
+    @AroundInvoke <2>
+    Object aroundInvoke(InvocationContext context) throws Exception {
+       return context.proceed().toString().toUpperCase();
+    }
+
+    @ApplicationScoped
+    static class Foo {
+       
+       @SimpleBinding <1>
+       String ping() {
+         return "ok";
+       }
+    
+    }
+}
+----
+<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types. 
+<2> Defines the interception type.

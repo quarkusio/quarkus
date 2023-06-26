@@ -362,16 +362,21 @@ NOTE: The `event` object represents the transaction ID, and defines `toString()`
 TIP: In listener methods, you can access more information about the transaction in progress by accessing the `TransactionManager`,
 which is a CDI bean and can be ``@Inject``ed.
 
-== Configuring transaction log to be stored in a DataSource
+[[jdbcstore]]
+== Support for storing Quarkus transaction logs in a database
 
-The Narayana project has the capability to store the transaction logs into a JDBC Datasource; this should be our recommendation for users needing transaction recovery capabilities, especially when running in volatile containers.
+Transaction management can be configured to store transaction logs in a database by using a JDBC datasource.
 
-To enable this capability, you need to set `quarkus.transaction-manager.object-store.type` to `jdbc` explicitly. Also, you can specify a datasource name to be used for the transaction log storage by setting `quarkus.transaction-manager.object-store.datasource`. It will use the default datasource configuration if not specified.
+Database storage of transaction logs generally performs worse than filesystem storage, but may be necessary in cloud environments lacking persistent storage, for example, if your application container cannot use persistent volumes.
 
-If you enable `quarkus.transaction-manager.object-store.create-table`, the transaction log table will be created automatically if it does not exist.
+To enable this capability, explicitly set `quarkus.transaction-manager.object-store.type` to `jdbc`.
 
-NOTE: When enabling this capability, the transaction node identifier must be set through `quarkus.transaction-manager.node-name`.
+You can also specify the datasource name for the transaction log storage by setting `quarkus.transaction-manager.object-store.datasource`.
+If no configuration is provided, Quarkus uses the xref:datasource.adoc#dev-services[default datasource].
 
+When the `quarkus.transaction-manager.object-store.create-table` configuration is enabled, the transaction log table gets automatically created if it does not already exist.
+
+NOTE: To work around the known issue of Agroal having a different view on running transaction checks, set the datasource transaction type to `disabled`.
 
 == Why always having a transaction manager?
 

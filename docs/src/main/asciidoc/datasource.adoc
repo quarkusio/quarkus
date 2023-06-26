@@ -110,6 +110,7 @@ quarkus.datasource.reactive.max-size=20
 ----
 <1> This configuration value is only required if there is more than one Reactive driver extension on the classpath.
 
+[[configure-datasources]]
 == Configure datasources
 
 The following section describes the configuration for single or multiple datasources.
@@ -431,7 +432,9 @@ You can override this by setting the `transactions` configuration property:
 * `quarkus.datasource.jdbc.transactions` for default unnamend datasource
 * `quarkus.datasource._<datasource-name>_.jdbc.transactions` for named datasource
 
-See the <<configuration-reference,Configuration Reference>> section below.
+For more information, see the <<configuration-reference,Configuration reference>> section below.
+
+To facilitate the storage of transaction logs in a database by using JDBC, see xref:transaction.adoc#jdbcstore[Configuring transaction logs to be stored in a datasource] section of the xref:transaction.adoc[Using transactions in Quarkus] guide.
 
 ==== Named datasources
 

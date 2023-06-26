@@ -42,7 +42,7 @@ See also the xref:security-oidc-configuration-properties-reference.adoc[OIDC con
 
 To learn about how you can protect web applications by using the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
 
-If you want to protect service applications by using OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer authentication].
+If you want to protect service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
 
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
@@ -439,7 +439,7 @@ This is done by ensuring tokens are trustable.
 [[token-verification-introspection]]
 ==== Token verification and introspection
 
-The verification process of OIDC authorization code flow tokens follows the bearer authentication token verification and introspection logic. For more information, see the xref:security-oidc-bearer-token-authentication.adoc#token-verification-introspection[Token Verification And Introspection] section of the "Quarkus OpenID Connect (OIDC) Bearer authentication" guide.
+The verification process of OIDC authorization code flow tokens follows the Bearer token authentication token verification and introspection logic. For more information, see the xref:security-oidc-bearer-token-authentication.adoc#token-verification-introspection[Token Verification And Introspection] section of the "Quarkus OpenID Connect (OIDC) Bearer token authentication" guide.
 
 [NOTE]
 --
@@ -885,7 +885,7 @@ For GitHub, since it does not have an introspection endpoint, requesting the Use
 ====
 Requiring <<user-info,UserInfo>> involves making a remote call on every request.
 Therefore, you might want to consider caching `UserInfo` data.
-For more information, see the xref:security-oidc-bearer-token-authentication.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer authentication" guide.
+For more information, see the xref:security-oidc-bearer-token-authentication.adoc#token-introspection-userinfo-cache[Token Introspection and UserInfo cache] section of the "OpenID Connect (OIDC) Bearer token authentication" guide.
 
 Alternatively, you may want to request that `UserInfo` is embedded into the internal generated `IdToken` with the `quarkus.oidc.cache-user-info-in-idtoken=true` property - the advantage of this approach is that by default no cached `UserInfo` state will be kept with the endpoint - instead it will be stored in a session cookie. You may also want to consider encrypting `IdToken` in this case if `UserInfo` contains sensitive data. For more information, see <<token-state-manager,Encrypt tokens with TokenStateManager>>.
 ====
@@ -1067,7 +1067,7 @@ This section discusses these considerations.
 
 === Single-page applications
 
-You can check if implementing single-page applications (SPAs) the way it is suggested in the xref:security-oidc-bearer-token-authentication.adoc#single-page-applications[Single-page applications] section of the "OpenID Connect (OIDC) Bearer authentication" guide meets your requirements.
+You can check if implementing single-page applications (SPAs) the way it is suggested in the xref:security-oidc-bearer-token-authentication.adoc#single-page-applications[Single-page applications] section of the "OpenID Connect (OIDC) Bearer token authentication" guide meets your requirements.
 
 If you prefer to use SPAs and JavaScript APIs such as `Fetch` or `XMLHttpRequest`(XHR) with Quarkus web applications, be aware that OpenID Connect providers might not support cross-origin resource sharing (CORS) for authorization endpoints where the users are authenticated after a redirect from Quarkus. 
 This will lead to authentication failures if the Quarkus application and the OpenID Connect provider are hosted on different HTTP domains, ports, or both.

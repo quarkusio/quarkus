@@ -11,7 +11,7 @@ To learn more about the OIDC authorization code flow mechanism, see xref:securit
 To learn about how well-known social providers such as Google, GitHub, Microsoft, Twitter, Apple, Facebook, and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
 See also, xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus].
 
-If you want to protect your service applications by using OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication].
+If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication].
 
 == Prerequisites
 
@@ -252,7 +252,7 @@ For more information about writing the integration tests that depend on `Dev Ser
 
 Congratulations!
 You have learned how to set up and use the OIDC authorization code flow mechanism to protect and test application HTTP endpoints.
-After you have completed this tutorial, explore xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer authentication] and xref:security-authentication-mechanisms.adoc[other authentication mechanisms].
+After you have completed this tutorial, explore xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] and xref:security-authentication-mechanisms.adoc[other authentication mechanisms].
 
 == References
 * xref:security-overview.adoc[Quarkus Security overview]

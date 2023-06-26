@@ -4,26 +4,26 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-oidc-bearer-token-authentication"]
-= OpenID Connect (OIDC) Bearer authentication
+= OpenID Connect (OIDC) Bearer token authentication
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
 
-Secure HTTP access to Jakarta REST (formerly known as JAX-RS) endpoints in your application with Bearer authentication by using the Quarkus OpenID Connect (OIDC) extension.
+Secure HTTP access to Jakarta REST (formerly known as JAX-RS) endpoints in your application with Bearer token authentication by using the Quarkus OpenID Connect (OIDC) extension.
 
-== Overview of the Bearer authentication mechanism in Quarkus
+== Overview of the Bearer token authentication mechanism in Quarkus
 
-Quarkus supports the Bearer authentication mechanism through the Quarkus OpenID Connect (OIDC) extension.
+Quarkus supports the Bearer token authentication mechanism through the Quarkus OpenID Connect (OIDC) extension.
 
 The bearer tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
-Bearer authentication is the process of authorizing HTTP requests based on the existence and validity of a bearer token.
+Bearer token authentication is the process of authorizing HTTP requests based on the existence and validity of a bearer token.
 The bearer token provides information about the subject of the call, which is used to determine whether or not an HTTP resource can be accessed.
 
-The following diagrams outline the Bearer authentication mechanism in Quarkus:
+The following diagrams outline the Bearer token authentication mechanism in Quarkus:
 
-.Bearer authentication mechanism in Quarkus with Single-page application
-image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer authentication, width="60%", align=center]
+.Bearer token authentication mechanism in Quarkus with Single-page application
+image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer token authentication, width="60%", align=center]
 
 1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
 2. The Quarkus user accesses the Single-page application.
@@ -32,8 +32,8 @@ image::security-bearer-token-authorization-mechanism-1.png[alt=Bearer authentica
 5. The Quarkus service verifies the bearer access token signature using the verification keys, checks the token expiry date and other claims, allows the request to proceed if the token is valid, and returns the service response to the Single-page application.
 6. The Single-page application returns the same data to the Quarkus user.
 
-.Bearer authentication mechanism in Quarkus with Java or command line client
-image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer authentication, width="60%", align=center]
+.Bearer token authentication mechanism in Quarkus with Java or command line client
+image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer token authentication, width="60%", align=center]
 
 1. The Quarkus service retrieves verification keys from the OpenID Connect provider. The verification keys are used to verify the bearer access token signatures.
 2. The Client uses `client_credentials` that requires client ID and secret or password grant, which also requires client ID, secret, user name, and password to retrieve the access token from the OpenID Connect provider.
@@ -43,7 +43,7 @@ image::security-bearer-token-authorization-mechanism-2.png[alt=Bearer authentica
 If you need to authenticate and authorize the users using OpenID Connect Authorization Code Flow, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications].
 Also, if you use Keycloak and bearer tokens, see xref:security-keycloak-authorization.adoc[Using Keycloak to Centralize Authorization].
 
-To learn about how you can protect service applications by using OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication-tutorial.adoc[OIDC Bearer authentication tutorial].
+To learn about how you can protect service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication-tutorial.adoc[OIDC Bearer token authentication tutorial].
 
 If you want to protect web applications by using OIDC authorization code flow authentication, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC authorization code flow authentication].
 
@@ -915,8 +915,8 @@ Note Quarkus `web-app` applications always require `quarkus.oidc.client-id` prop
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
-* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer authentication]
-* xref:security-protect-service-applications-by-using-oidc-bearer-authentication-how-to.adoc[Protect service applications by using OIDC Bearer authentication]
+* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]
+* xref:security-protect-service-applications-by-using-oidc-bearer-authentication-how-to.adoc[Protect service applications by using OIDC Bearer token authentication]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]

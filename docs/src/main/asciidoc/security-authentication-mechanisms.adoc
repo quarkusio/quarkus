@@ -242,7 +242,7 @@ For more information, see the xref:security-openid-connect-client.adoc[OpenID Co
 The `quarkus-smallrye-jwt` extension provides a MicroProfile JSON Web Token (JWT) 2.1 implementation and multiple options to verify signed and encrypted `JWT` tokens.
 It represents them as `org.eclipse.microprofile.jwt.JsonWebToken`.
 
-`quarkus-smallrye-jwt` is an alternative to the `quarkus-oidc` Bearer authentication mechanism and verifies only `JWT` tokens by using either Privacy Enhanced Mail (PEM) keys or the refreshable `JWK` key set.
+`quarkus-smallrye-jwt` is an alternative to the `quarkus-oidc` Bearer token authentication mechanism and verifies only `JWT` tokens by using either Privacy Enhanced Mail (PEM) keys or the refreshable `JWK` key set.
 `quarkus-smallrye-jwt` also provides the JWT generation API, which you can use to easily create `signed`, `inner-signed`, and `encrypted` `JWT` tokens.
 
 For more information, see the  xref:security-jwt.adoc[Using JWT RBAC] guide.
@@ -250,7 +250,7 @@ For more information, see the  xref:security-jwt.adoc[Using JWT RBAC] guide.
 [[oauth2-authentication]]
 === OAuth2 authentication
 
-`quarkus-elytron-security-oauth2` provides an alternative to the Quarkus `quarkus-oidc` Bearer authentication mechanism extension.
+`quarkus-elytron-security-oauth2` provides an alternative to the Quarkus `quarkus-oidc` Bearer token authentication mechanism extension.
 `quarkus-elytron-security-oauth2` is based on `Elytron` and is primarily intended for introspecting opaque tokens remotely.
 For more information, see the Quarkus xref:security-oauth2.adoc[Using OAuth2] guide.
 

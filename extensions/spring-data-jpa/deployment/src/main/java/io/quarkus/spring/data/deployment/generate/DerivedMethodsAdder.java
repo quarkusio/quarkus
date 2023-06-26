@@ -185,7 +185,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                         if (Modifier.isInterface(resultClassInfo.flags())) {
                             // Find the implementation name, and use that for subsequent query result generation
                             customResultTypeName = customResultTypeImplNames.computeIfAbsent(customResultTypeName,
-                                    k -> createSimpleInterfaceImpl(resultType.name()));
+                                    k -> createSimpleInterfaceImpl(k, entityClassInfo.name()));
 
                             // Remember the parameters for this usage of the custom type, we'll deal with it later
                             customResultTypes.computeIfAbsent(customResultTypeName,

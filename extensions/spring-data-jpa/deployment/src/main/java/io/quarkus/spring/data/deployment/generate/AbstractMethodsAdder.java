@@ -317,7 +317,7 @@ public abstract class AbstractMethodsAdder {
         return t;
     }
 
-    protected DotName createSimpleInterfaceImpl(DotName ifaceName) {
+    protected DotName createSimpleInterfaceImpl(DotName ifaceName, DotName entityName) {
         String fullName = ifaceName.toString();
 
         // package name: must be in the same package as the interface
@@ -329,7 +329,7 @@ public abstract class AbstractMethodsAdder {
 
         return DotName.createSimple(packageName
                 + (ifaceName.isInner() ? ifaceName.local() : ifaceName.withoutPackagePrefix()) + "_"
-                + HashUtil.sha1(ifaceName.toString()));
+                + HashUtil.sha1(ifaceName.toString()) + "_" + HashUtil.sha1(entityName.toString()));
     }
 
     protected DotName getPrimitiveTypeName(DotName returnTypeName) {

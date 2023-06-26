@@ -11,7 +11,6 @@ include::_attributes.adoc[]
 IMPORTANT: The content of this guide and been revised and split into additional topics. Please check the
 <<additional-information,Additional Information>> section.
 
-:toc:
 
 Hardcoded values in your code are a _no-go_ (even if we all did it at some point ;-)).
 In this guide, we will learn how to configure a Quarkus application.

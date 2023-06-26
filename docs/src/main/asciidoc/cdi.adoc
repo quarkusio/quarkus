@@ -10,7 +10,6 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
 
 In this guide we're going to describe the basic principles of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 

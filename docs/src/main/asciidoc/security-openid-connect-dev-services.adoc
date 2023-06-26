@@ -413,6 +413,6 @@ This document refers to the `http://localhost:8080/q/dev-v1` Dev UI URL in sever
 * xref:dev-ui.adoc[Dev UI]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * https://openid.net/connect/[OpenID Connect]
-* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer authentication]
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 * xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
 * xref:security-overview.adoc[Quarkus Security overview]

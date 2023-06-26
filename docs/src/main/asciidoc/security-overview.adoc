@@ -92,4 +92,4 @@ For information about security vulnerabilities, see the xref:security-vulnerabil
 
 * xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
 * xref:security-oidc-code-flow-authentication-tutorial.adoc[Protect a web application by using OIDC authorization code flow]
-* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC bearer authentication]
+* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OIDC Bearer token authentication]

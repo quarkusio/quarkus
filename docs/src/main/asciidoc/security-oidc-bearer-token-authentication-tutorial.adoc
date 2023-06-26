@@ -14,6 +14,8 @@ The bearer tokens are issued by OIDC and OAuth 2.0 compliant authorization serve
 
 To better understand OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer authentication].
 
+If you want to protect web applications by using OIDC Authorization Code Flow authentication, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC authorization code flow authentication].
+
 == Prerequisites
 
 :prerequisites-docker:

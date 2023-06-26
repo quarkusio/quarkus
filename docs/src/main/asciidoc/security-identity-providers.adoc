@@ -1,6 +1,5 @@
 ////
-This document is maintained in the main Quarkus repository
-and pull requests should be submitted there:
+This document is maintained in the main Quarkus repository, and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-identity-providers"]
@@ -9,18 +8,18 @@ include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security
 
-In the Quarkus Security framework, identity providers play a key role in authentication and authorization, providing services for storing and verifying user identities.
-The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance used during user authentication to verify and authorize access requests, making your Quarkus application secure.
+In the Quarkus Security framework, identity providers play a crucial role in authentication and authorization, providing services for storing and verifying user identities.
+The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance, which gets used during user authentication to verify and authorize access requests, making your Quarkus application more secure.
 
 [[identity-providers]]
 `IdentityProvider` converts the authentication credentials provided by `HttpAuthenticationMechanism` to a `SecurityIdentity` instance.
 
-Some extensions, for example, `OIDC`, `OAuth2`, and `SmallRye JWT` have inline `IdentityProvider` implementations specific to the supported authentication flow.
+Some extensions, for example, `OIDC`, `OAuth2`, and `SmallRye JWT`, have inline `IdentityProvider` implementations specific to the supported authentication flow.
 For example, `quarkus-oidc` uses its own `IdentityProvider` to convert a token to a `SecurityIdentity` instance.
 
-If you use Basic or form-based authentication, you must add an `IdentityProvider` instance that can convert a username and password to a `SecurityIdentity` instance.
+If you use Basic or form-based authentication, you must add an `IdentityProvider` instance to convert a username and password to a `SecurityIdentity` instance.
 
-To get started with security in Quarkus, we recommend you combine the Quarkus built-in Basic HTTP authentication with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
+To get started with security in Quarkus, consider combining the Quarkus built-in Basic HTTP authentication with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
 
 For more information about Basic authentication, its mechanisms, and related identity providers, see the following resources:
 

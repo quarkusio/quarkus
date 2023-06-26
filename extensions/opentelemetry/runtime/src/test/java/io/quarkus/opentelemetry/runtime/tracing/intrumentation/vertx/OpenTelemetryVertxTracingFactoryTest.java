@@ -51,6 +51,19 @@ class OpenTelemetryVertxTracingFactoryTest {
     }
 
     @Test
+    void testSendNullRequest() {
+        assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().sendRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null));
+        assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().getDelegate());
+    }
+
+    @Test
     void testReceiveRequest() {
         assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().receiveRequest(
                 null,
@@ -58,6 +71,19 @@ class OpenTelemetryVertxTracingFactoryTest {
                 TracingPolicy.IGNORE,
                 createRequest(),
                 "GET",
+                null,
+                null));
+        assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().getDelegate());
+    }
+
+    @Test
+    void testReceiveNullRequest() {
+        assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().receiveRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null));
         assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().getDelegate());
@@ -75,12 +101,34 @@ class OpenTelemetryVertxTracingFactoryTest {
     }
 
     @Test
+    void testSendNullResponse() {
+        assertDoesNotThrow(() -> openTelemetryVertxTracingFactory.getVertxTracerDelegator().sendResponse(
+                null,
+                null,
+                null,
+                null,
+                null));
+        assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().getDelegate());
+    }
+
+    @Test
     void testReceiveResponse() {
         assertDoesNotThrow(() -> openTelemetryVertxTracingFactory.getVertxTracerDelegator().receiveResponse(
                 null,
                 createResponse(),
                 null,
                 new Exception("test"),
+                null));
+        assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().getDelegate());
+    }
+
+    @Test
+    void testReceiveNullResponse() {
+        assertDoesNotThrow(() -> openTelemetryVertxTracingFactory.getVertxTracerDelegator().receiveResponse(
+                null,
+                null,
+                null,
+                null,
                 null));
         assertNull(openTelemetryVertxTracingFactory.getVertxTracerDelegator().getDelegate());
     }

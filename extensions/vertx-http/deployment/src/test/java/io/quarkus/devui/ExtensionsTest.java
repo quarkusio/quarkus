@@ -31,8 +31,6 @@ public class ExtensionsTest extends DevUIBuildTimeDataTest {
         Assertions.assertNotNull(inactiveExtensions);
         Assertions.assertTrue(inactiveExtensions.isArray());
 
-        log.info(extensionsResponse.toPrettyString());
-
     }
 
 }

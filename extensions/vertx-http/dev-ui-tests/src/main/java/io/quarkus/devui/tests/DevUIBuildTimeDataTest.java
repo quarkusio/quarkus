@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -33,13 +35,26 @@ public abstract class DevUIBuildTimeDataTest {
         this.uri = URI.create(testUrl + nonApplicationRoot + "/dev-ui/" + namespace + "-data.js");
     }
 
+    public List<String> getAllKeys() throws IOException {
+        String data = readDataFromUrl();
+        String[] kvs = data.split(CONST);
+        List<String> l = new ArrayList<>();
+        for (String kv : kvs) {
+            String k = kv.split(EQUALS)[0];
+            if (!k.startsWith("// Generated") && !k.isBlank()) {
+                l.add(k.trim());
+            }
+        }
+        return l;
+    }
+
     public JsonNode getBuildTimeData(String key) throws Exception {
 
         String data = readDataFromUrl();
         String[] kvs = data.split(CONST);
 
         for (String kv : kvs) {
-            if (kv.startsWith(key + SPACE + EQUALS + SPACE + OPEN_CURLY_BRACKET)) {
+            if (kv.startsWith(key + SPACE + EQUALS + SPACE)) {
                 String json = kv.substring(kv.indexOf(EQUALS) + 1).trim();
                 log.debug("json = " + json);
                 return toJsonNode(json);
@@ -69,5 +84,4 @@ public abstract class DevUIBuildTimeDataTest {
     private static final String CONST = "export const ";
     private static final String SPACE = " ";
     private static final String EQUALS = "=";
-    private static final String OPEN_CURLY_BRACKET = "{";
 }

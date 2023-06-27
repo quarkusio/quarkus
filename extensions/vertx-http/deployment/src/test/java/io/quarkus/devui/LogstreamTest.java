@@ -50,6 +50,14 @@ public class LogstreamTest extends DevUIJsonRPCTest {
                         "levelValue", "DEBUG"));
         Assertions.assertNotNull(updateLogLevelResponse);
         Assertions.assertEquals("DEBUG", updateLogLevelResponse.get("effectiveLevel").asText());
+
+        // Restore the level
+        JsonNode restoreLogLevelResponse = super.executeJsonRPCMethod("updateLogLevel",
+                Map.of("loggerName", "io.quarkus",
+                        "levelValue", "INFO"));
+        Assertions.assertNotNull(restoreLogLevelResponse);
+        Assertions.assertEquals("INFO", restoreLogLevelResponse.get("effectiveLevel").asText());
+
     }
 
     private boolean hasStartedLine(Iterator<JsonNode> elements) {

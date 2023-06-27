@@ -22,7 +22,7 @@ public class ConfigurationTest extends DevUIJsonRPCTest {
     }
 
     @Test
-    public void testLogstreamHistory() throws Exception {
+    public void testConfigurationUpdate() throws Exception {
 
         JsonNode updatePropertyResponse = super.executeJsonRPCMethod("updateProperty",
                 Map.of(

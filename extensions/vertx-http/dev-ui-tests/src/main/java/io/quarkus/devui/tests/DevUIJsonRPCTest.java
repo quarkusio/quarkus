@@ -7,21 +7,21 @@ import java.util.Random;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.websocket.ClientEndpoint;
-import jakarta.websocket.ContainerProvider;
-import jakarta.websocket.OnMessage;
-import jakarta.websocket.OnOpen;
-import jakarta.websocket.Session;
-
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.junit.jupiter.api.Assertions;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketConnectOptions;
 
 public abstract class DevUIJsonRPCTest {
 
@@ -51,20 +51,49 @@ public abstract class DevUIJsonRPCTest {
     }
 
     public JsonNode executeJsonRPCMethod(String methodName, Map<String, String> params) throws Exception {
-        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(Client.class, uri)) {
-            Assertions.assertEquals("CONNECT", MESSAGES.poll(10, TimeUnit.SECONDS));
+        int id = random.nextInt(Integer.MAX_VALUE);
+        String request = createJsonRPCRequest(id, methodName, params);
+        log.info("request = " + request);
 
-            int id = random.nextInt(Integer.MAX_VALUE);
+        Vertx vertx = Vertx.vertx();
 
-            String request = createJsonRPCRequest(id, methodName, params);
-            log.debug("request = " + request);
-            session.getAsyncRemote().sendText(request);
+        HttpClientOptions options = new HttpClientOptions()
+                .setDefaultHost(uri.getHost())
+                .setDefaultPort(uri.getPort());
 
-            JsonNode response = parseJsonRPCResponse(id);
-            log.debug("response = " + response.toPrettyString());
+        HttpClient client = vertx.createHttpClient(options);
 
-            return response;
-        }
+        WebSocketConnectOptions socketOptions = new WebSocketConnectOptions()
+                .setHost(uri.getHost())
+                .setPort(uri.getPort())
+                .setURI(uri.getPath());
+
+        client.webSocket(socketOptions, ar -> {
+            if (ar.succeeded()) {
+                WebSocket socket = ar.result();
+                Buffer accumulatedBuffer = Buffer.buffer();
+
+                socket.frameHandler((e) -> {
+                    Buffer b = accumulatedBuffer.appendBuffer(e.binaryData());
+                    if (e.isFinal()) {
+                        MESSAGES.add(b.toString());
+                    }
+                });
+
+                socket.writeTextMessage(request);
+
+                socket.closeHandler(v -> {
+                    vertx.close();
+                });
+            } else {
+                vertx.close();
+            }
+        });
+
+        JsonNode response = parseJsonRPCResponse(id);
+        log.info("response = " + response.toPrettyString());
+        vertx.close();
+        return response;
     }
 
     protected JsonNode toJsonNode(String json) {
@@ -86,7 +115,18 @@ public abstract class DevUIJsonRPCTest {
         if (jsonResponse.isObject()) {
             int responseId = jsonResponse.get("id").asInt();
             if (responseId == id) {
-                return jsonResponse.get("result").get("object");
+
+                JsonNode result = jsonResponse.get("result");
+                JsonNode error = jsonResponse.get("error");
+
+                if (result != null) {
+                    return result.get("object");
+                } else if (error != null) {
+                    String errorMessage = error.get("message").asText();
+                    throw new RuntimeException(errorMessage);
+                } else {
+                    throw new RuntimeException("No result from json-rpc backend \n " + jsonResponse.toPrettyString());
+                }
             }
         }
 
@@ -113,19 +153,5 @@ public abstract class DevUIJsonRPCTest {
     }
 
     private static final LinkedBlockingDeque<String> MESSAGES = new LinkedBlockingDeque<>();
-
-    @ClientEndpoint
-    public static class Client {
-
-        @OnOpen
-        public void open(Session session) {
-            MESSAGES.add("CONNECT");
-        }
-
-        @OnMessage
-        public void message(String msg) {
-            MESSAGES.add(msg);
-        }
-    }
 
 }

@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.devui;
+package io.quarkus.test.devui;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,6 +16,6 @@ public class DevUIHibernateOrmSmokeTest extends AbstractDevUIHibernateOrmTest {
                     .addClasses(MyEntity.class));
 
     public DevUIHibernateOrmSmokeTest() {
-        super("<default>", "MyEntity", "io.quarkus.hibernate.orm.devui.MyEntity");
+        super("<default>", "MyEntity", "io.quarkus.test.devui.MyEntity");
     }
 }

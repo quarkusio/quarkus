@@ -172,4 +172,10 @@ public class RabbitMQDevServicesBuildTimeConfig {
      */
     @ConfigItem
     public Map<String, Binding> bindings;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
 }

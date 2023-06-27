@@ -178,6 +178,7 @@ public class DevServicesRedisProcessor {
             QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port,
                     launchMode == DEVELOPMENT ? devServicesConfig.serviceName : null, useSharedNetwork);
             timeout.ifPresent(redisContainer::withStartupTimeout);
+            redisContainer.withEnv(devServicesConfig.containerEnv);
             redisContainer.start();
             String redisHost = REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
             return new RunningDevService(Feature.REDIS_CLIENT.getName(), redisContainer.getContainerId(),

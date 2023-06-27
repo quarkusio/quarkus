@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.amqp.deployment;
 
+import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -69,5 +70,11 @@ public class AmqpDevServicesBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "amqp")
     public String serviceName;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
 
 }

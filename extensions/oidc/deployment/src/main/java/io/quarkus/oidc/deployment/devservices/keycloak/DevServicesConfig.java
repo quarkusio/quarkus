@@ -200,6 +200,12 @@ public class DevServicesConfig {
     @ConfigItem
     public OptionalInt port;
 
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -216,11 +222,12 @@ public class DevServicesConfig {
                 && Objects.equals(realmName, that.realmName)
                 && Objects.equals(users, that.users)
                 && Objects.equals(javaOpts, that.javaOpts)
-                && Objects.equals(roles, that.roles);
+                && Objects.equals(roles, that.roles)
+                && Objects.equals(containerEnv, that.containerEnv);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles);
+        return Objects.hash(enabled, imageName, port, realmPath, realmName, users, roles, containerEnv);
     }
 }

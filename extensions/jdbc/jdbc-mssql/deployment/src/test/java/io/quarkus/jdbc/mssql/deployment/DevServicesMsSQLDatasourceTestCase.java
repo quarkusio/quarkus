@@ -41,7 +41,7 @@ public class DevServicesMsSQLDatasourceTestCase {
     public void testDatasource() throws Exception {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:sqlserver:"));
-        assertEquals("SA", configuration.connectionFactoryConfiguration().principal().getName());
+        assertEquals("sa", configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(20, configuration.maxSize());
         assertThat(configuration.exceptionSorter()).isInstanceOf(MSSQLExceptionSorter.class);
 

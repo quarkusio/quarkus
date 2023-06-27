@@ -138,6 +138,17 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     private MojoExecution mojoExecution;
 
     /**
+     * Application bootstrap provider ID. This parameter is not supposed to be configured by the user.
+     * To be able to re-use an application bootstrapped in one phase in a later phase, there needs to be a way
+     * to identify the correct instance of the bootstrapped application (in case there are more than one) in each Mojo.
+     * A bootstrap ID serves this purpose. This parameter is is set in {@link DevMojo} invoking {@code generate-code}
+     * and {@code generate-code-tests} goals. If this parameter is not configured, a Mojo execution ID will be used
+     * as the bootstrap ID.
+     */
+    @Parameter(required = false)
+    String bootstrapId;
+
+    /**
      * Whether to close the bootstrapped applications after the execution
      */
     @Parameter(property = "quarkusCloseBootstrappedApp")
@@ -160,7 +171,12 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
                 if (closeBootstrappedApp) {
                     bootstrapProvider.bootstrapper(this).close();
                 }
-            } else if (!bootstrapSessionListener.isEnabled()) {
+            } else if (!bootstrapSessionListener.isEnabled()
+                    // we may end up here when running 'compile quarkus:dev'
+                    // even if the session listener is disabled we still don't want to close the provider
+                    // because there might have been a Maven profile activated which we won't take into account
+                    // when re-bootstrapping in DevMojo
+                    && !mavenSession().getGoals().contains("quarkus:dev")) {
                 bootstrapProvider.bootstrapper(this).close();
             }
         }
@@ -204,10 +220,12 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return Collections.emptyList();
     }
 
+    @Deprecated(forRemoval = true)
     protected RepositorySystem repositorySystem() {
         return bootstrapProvider.repositorySystem();
     }
 
+    @Deprecated(forRemoval = true)
     protected RemoteRepositoryManager remoteRepositoryManager() {
         return bootstrapProvider.remoteRepositoryManager();
     }
@@ -256,8 +274,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return properties;
     }
 
-    protected String executionId() {
-        return mojoExecution.getExecutionId();
+    protected String bootstrapId() {
+        return bootstrapId == null ? mojoExecution.getExecutionId() : bootstrapId;
     }
 
     protected ArtifactKey projectId() {

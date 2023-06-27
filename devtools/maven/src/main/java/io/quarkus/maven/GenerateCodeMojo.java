@@ -58,7 +58,15 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             Consumer<Path> sourceRegistrar,
             boolean test) throws MojoFailureException, MojoExecutionException {
 
-        final LaunchMode launchMode = test ? LaunchMode.TEST : LaunchMode.valueOf(mode);
+        final LaunchMode launchMode;
+        if (test) {
+            launchMode = LaunchMode.TEST;
+        } else if (mavenSession().getGoals().contains("quarkus:dev")) {
+            // if the command was 'compile quarkus:dev' then we'll end up with prod launch mode but we want dev
+            launchMode = LaunchMode.DEVELOPMENT;
+        } else {
+            launchMode = LaunchMode.valueOf(mode);
+        }
         if (getLog().isDebugEnabled()) {
             getLog().debug("Bootstrapping Quarkus application in mode " + launchMode);
         }

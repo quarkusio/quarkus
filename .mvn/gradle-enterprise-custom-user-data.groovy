@@ -1,4 +1,16 @@
 
+// Configure build scan publication
+boolean publish = true
+if(session?.getRequest()?.getBaseDirectory() != null) {
+    def testBuildPaths = [ '/target/codestart-test/', '/target/it/', '/target/test-classes/', '/target/test-project/']
+    publish = testBuildPaths.every {testBuildPath -> !session.getRequest().getBaseDirectory().contains(testBuildPath) }
+    if(!publish) {
+        // do not publish a build scan for test builds
+        log.debug("Disabling build scan publication for " + session.getRequest().getBaseDirectory())
+    }
+}
+buildScan.publishAlwaysIf(publish)
+buildScan.publishIfAuthenticated()
 
 // Add mvn command line
 def mvnCommand = ''
@@ -14,8 +26,8 @@ if (System.env.GITHUB_ACTIONS) {
     buildScan.value('gh-ref-name', System.env.GITHUB_REF_NAME)
     buildScan.value('gh-actor', System.env.GITHUB_ACTOR)
     buildScan.value('gh-workflow', System.env.GITHUB_WORKFLOW)
-    
-   
+
+
     def prnumber = System.env.PULL_REQUEST_NUMBER
     if (prnumber != null) {
         buildScan.value('gh-pr', prnumber)

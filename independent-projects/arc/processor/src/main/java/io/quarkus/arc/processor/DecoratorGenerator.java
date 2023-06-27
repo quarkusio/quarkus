@@ -167,9 +167,13 @@ public class DecoratorGenerator extends BeanGenerator {
         // Constructor
         MethodInfo decoratorConstructor = decoratorClass.firstMethod(Methods.INIT);
         MethodCreator constructor = decoratorImplCreator.getMethodCreator(Methods.INIT, "V",
-                decoratorConstructor.parameterTypes().toArray());
+                decoratorConstructor.parameterTypes().stream().map(it -> it.name().toString()).toArray());
+        ResultHandle[] constructorArgs = new ResultHandle[decoratorConstructor.parametersCount()];
+        for (int i = 0; i < decoratorConstructor.parametersCount(); i++) {
+            constructorArgs[i] = constructor.getMethodParam(i);
+        }
         // Invoke super()
-        constructor.invokeSpecialMethod(decoratorConstructor, constructor.getThis());
+        constructor.invokeSpecialMethod(decoratorConstructor, constructor.getThis(), constructorArgs);
         // Set the delegate field
         constructor.writeInstanceField(delegateField.getFieldDescriptor(), constructor.getThis(),
                 constructor.invokeStaticMethod(MethodDescriptors.DECORATOR_DELEGATE_PROVIDER_GET));

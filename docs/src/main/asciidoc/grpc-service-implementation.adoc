@@ -271,6 +271,23 @@ public class MyInterceptor implements ServerInterceptor {
 }
 ----
 
+It's also possible to annotate a producer method as a global interceptor:
+
+[source, java]
+----
+import io.quarkus.grpc.GlobalInterceptor;
+
+import jakarta.enterprise.inject.Produces;
+
+public class MyProducer {
+    @GlobalInterceptor
+    @Produces
+    public MyInterceptor myInterceptor() {
+        return new MyInterceptor();
+    }
+}
+----
+
 TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html[ServerInterceptor JavaDoc] to properly implement your interceptor.
 
 To apply an interceptor to all exposed services, annotate it with `@io.quarkus.grpc.GlobalInterceptor`.

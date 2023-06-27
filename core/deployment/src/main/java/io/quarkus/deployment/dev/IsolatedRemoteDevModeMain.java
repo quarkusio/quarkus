@@ -92,7 +92,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 AugmentResult start = augmentAction.createProductionApplication();
                 if (!start.getJar().getType().equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue())) {
                     throw new RuntimeException(
-                            "remote-dev can only be used with mutable applications i.e, " +
+                            "remote-dev can only be used with mutable applications i.e. " +
                                     "using the mutable-jar package type");
                 }
                 //now extract the artifacts, to mirror the remote side

@@ -1,4 +1,4 @@
-package org.jboss.resteasy.reactive.common.processor;
+package org.jboss.resteasy.reactive.common;
 
 public enum BlockingDefault {
     /**

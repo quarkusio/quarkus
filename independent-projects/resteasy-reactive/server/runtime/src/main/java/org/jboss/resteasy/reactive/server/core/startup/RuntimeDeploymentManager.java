@@ -210,7 +210,8 @@ public class RuntimeDeploymentManager {
                 abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404(), info.getResteasyReactiveConfig());
+                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isResumeOn404(), info.getResteasyReactiveConfig(),
+                info.getApplicationBlockingDefault(), runtimeResourceDeployment.getBlockingHandler());
     }
 
     private void forEachMapperEntry(MappersKey key,

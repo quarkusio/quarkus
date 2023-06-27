@@ -16,15 +16,15 @@ export default class NodesPage {
         const req = {
             action: "getInfo"
         };
+
+        toggleSpinner(this.containerId);
+
         doPost(req, (data) => {
-            setTimeout(() => {
-                this.updateInfo(data);
-                toggleSpinner(this.containerId);
-            }, 2000);
+            this.updateInfo(data);
+            toggleSpinner(this.containerId);
         }, data => {
             errorPopUp("Error getting Kafka info: ", data);
         });
-        toggleSpinner(this.containerId);
     }
 
     updateInfo(data) {

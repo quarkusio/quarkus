@@ -65,16 +65,11 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
 
         List<Extension> extensionsToAdd = computeRequiredExtensions(invocation.getExtensionsCatalog(), extensionsQuery,
                 invocation.log());
-        final List<ExtensionCatalog> extensionOrigins;
         ExtensionCatalog mainCatalog = invocation.getExtensionsCatalog(); // legacy platform initialization
+
         final String javaVersion = invocation.getStringValue(JAVA_VERSION);
-        try {
-            checkMinimumJavaVersion(javaVersion, extensionsToAdd);
-            extensionOrigins = getExtensionOrigins(mainCatalog, extensionsToAdd);
-        } catch (QuarkusCommandException e) {
-            invocation.log().error(e.getLocalizedMessage());
-            return QuarkusCommandOutcome.failure();
-        }
+        checkMinimumJavaVersion(javaVersion, extensionsToAdd);
+        final List<ExtensionCatalog> extensionOrigins = getExtensionOrigins(mainCatalog, extensionsToAdd);
 
         final List<ArtifactCoords> platformBoms = new ArrayList<>(Math.max(extensionOrigins.size(), 1));
         if (extensionOrigins.size() > 0) {

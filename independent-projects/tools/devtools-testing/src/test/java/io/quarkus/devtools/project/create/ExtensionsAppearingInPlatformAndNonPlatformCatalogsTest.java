@@ -1,6 +1,7 @@
 package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
@@ -222,7 +224,8 @@ public class ExtensionsAppearingInPlatformAndNonPlatformCatalogsTest extends Mul
     @Test
     public void attemptCreateWithIncompatibleExtensions() throws Exception {
         final Path projectDir = newProjectDir("create-with-incompatible-extensions");
-        assertThat(createProject(projectDir, Arrays.asList("acme-bar", "other-five-one")).isSuccess()).isFalse();
+        assertThatExceptionOfType(QuarkusCommandException.class)
+                .isThrownBy(() -> createProject(projectDir, Arrays.asList("acme-bar", "other-five-one")));
     }
 
     @Test

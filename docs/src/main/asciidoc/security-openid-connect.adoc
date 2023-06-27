@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: security
 :summary: This guide demonstrates how your Quarkus application can use Keycloak to protect your JAX-RS applications using bearer token authorization, where these tokens are issued by a Keycloak server.
-:toc:
 
 You can use the Quarkus OpenID Connect (OIDC) extension to secure your JAX-RS applications using Bearer Token Authorization. 
 The Bearer Tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as https://www.keycloak.org[Keycloak]. 

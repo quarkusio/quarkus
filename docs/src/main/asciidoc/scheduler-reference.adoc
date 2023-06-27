@@ -10,7 +10,6 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
 
 Modern applications often need to run specific tasks periodically.
 There are two scheduler extensions in Quarkus.

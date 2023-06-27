@@ -10,7 +10,6 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
 
 This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Kafka.
 

@@ -10,7 +10,6 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
 
 With config mappings it is possible to group multiple configuration properties in a single interface that
 share the same prefix.

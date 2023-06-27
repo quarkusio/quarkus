@@ -10,7 +10,6 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
 
 IMPORTANT: The content of this guide has been revised and split into additional topics. Please check the <<additional-information,Additional Information>> section.
 

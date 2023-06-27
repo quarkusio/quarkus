@@ -40,6 +40,18 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
     @Override
     public boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod) {
+        return hasSupportedAnnotation(originalTestClass, originalTestMethod)
+                && hasSupportedParams(originalTestMethod);
+    }
+
+    private boolean hasSupportedParams(Method originalTestMethod) {
+        return originalTestMethod.getParameterCount() == 0
+                || (originalTestMethod.getParameterCount() == 1
+                        // we need to use the class name to avoid ClassLoader issues
+                        && originalTestMethod.getParameterTypes()[0].getName().equals(UniAsserter.class.getName()));
+    }
+
+    protected boolean hasSupportedAnnotation(Class<?> originalTestClass, Method originalTestMethod) {
         return hasAnnotation(RunOnVertxContext.class, originalTestMethod.getAnnotations())
                 || hasAnnotation(RunOnVertxContext.class, originalTestClass.getAnnotations())
                 || hasAnnotation(TestReactiveTransaction.class, originalTestMethod.getAnnotations())
@@ -47,7 +59,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
     }
 
     // we need to use the class name to avoid ClassLoader issues
-    private boolean hasAnnotation(Class<? extends Annotation> annotation, Annotation[] annotations) {
+    protected boolean hasAnnotation(Class<? extends Annotation> annotation, Annotation[] annotations) {
         return hasAnnotation(annotation.getName(), annotations);
     }
 
@@ -89,7 +101,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         } else {
             var handler = new RunTestMethodOnVertxBlockingContextHandler(actualTestInstance, actualTestMethod,
                     actualTestMethodArgs, uniAsserter);
-            cf = ((CompletableFuture) context.executeBlocking(handler).toCompletionStage());
+            cf = ((CompletableFuture<Object>) context.executeBlocking(handler).toCompletionStage());
         }
 
         try {

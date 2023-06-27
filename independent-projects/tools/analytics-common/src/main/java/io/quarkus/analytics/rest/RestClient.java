@@ -34,9 +34,8 @@ public class RestClient implements ConfigClient, SegmentClient {
     public static final int DEFAULT_TIMEOUT = 3000;// milliseconds
     static final String IDENTITY_ENDPOINT = "v1/identify";
     static final String TRACK_ENDPOINT = "v1/track";
-    static final URI CONFIG_URI = getUri(
-            "https://raw.githubusercontent.com/brunobat/tests/main/03656937-19FD-4C83-9066-C76631D445EA");//FIXME config location
-    private static final String AUTH_HEADER = getAuthHeader("SGGi49IwHoDEpE4NVBEHJDZ4uyzeoI4M"); //FIXME dev key
+    static final URI CONFIG_URI = getUri("https://quarkus.io/assets/json/03656937-19FD-4C83-9066-C76631D445EA.json");
+    private static final String AUTH_HEADER = getAuthHeader("WdCBreXheGC541sGjMMvUknY8c6lLxy5");
     private static final int SEGMENT_POST_RESPONSE_CODE = 200; // sad but true
 
     static URI getUri(final String uri) {

@@ -1,10 +1,10 @@
-package io.quarkus.hibernate.orm.devui;
+package io.quarkus.test.devui;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.devui.namedpu.MyNamedPuEntity;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.devui.namedpu.MyNamedPuEntity;
 
 public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends AbstractDevUIHibernateOrmTest {
 
@@ -18,16 +18,16 @@ public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends Abstra
                             // Hibernate ORM is inactive for the default PU
                             + "quarkus.hibernate-orm.active=false\n"
                             + "quarkus.hibernate-orm.datasource=<default>\n"
-                            + "quarkus.hibernate-orm.packages=io.quarkus.test.devconsole\n"
+                            + "quarkus.hibernate-orm.packages=io.quarkus.test.devui\n"
                             // ... but it's (implicitly) active for a named PU
                             + "quarkus.hibernate-orm.\"namedpu\".datasource=nameddatasource\n"
-                            + "quarkus.hibernate-orm.\"namedpu\".packages=io.quarkus.hibernate.orm.devui.namedpu\n"),
+                            + "quarkus.hibernate-orm.\"namedpu\".packages=io.quarkus.test.devui.namedpu\n"),
                     "application.properties")
                     .addClasses(MyEntity.class)
                     .addClasses(MyNamedPuEntity.class));
 
     public DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest() {
-        super("namedpu", "MyNamedPuEntity", "io.quarkus.hibernate.orm.devui.namedpu.MyNamedPuEntity");
+        super("namedpu", "MyNamedPuEntity", "io.quarkus.test.devui.namedpu.MyNamedPuEntity");
     }
 
 }

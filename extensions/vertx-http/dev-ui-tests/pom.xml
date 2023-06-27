@@ -12,18 +12,17 @@
     <name>Quarkus - Vert.x - HTTP - Dev UI Tests</name>
     
     <dependencies>
-        <!-- Can't test the Dev UI without quarkus-vertx-http -->
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http</artifactId>
+            <artifactId>quarkus-vertx-http-deployment-spi</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-websockets-client-deployment</artifactId>
         </dependency>
     </dependencies>
     

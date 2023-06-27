@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.devui;
+package io.quarkus.test.devui;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.extension.RegisterExtension;

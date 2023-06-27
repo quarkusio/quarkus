@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.devui;
+package io.quarkus.test.devui;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

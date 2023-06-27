@@ -1,10 +1,10 @@
-package io.quarkus.hibernate.search.orm.elasticsearch.test.devui;
+package io.quarkus.test.devui;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.search.orm.elasticsearch.test.devui.namedpu.MyNamedPuEntity;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.devui.namedpu.MyNamedPuIndexedEntity;
 
 public class DevUIHibernateSearchActiveFalseAndNamedPuActiveTrueTest extends AbstractDevUIHibernateSearchTest {
 
@@ -14,22 +14,26 @@ public class DevUIHibernateSearchActiveFalseAndNamedPuActiveTrueTest extends Abs
                     new StringAsset("quarkus.datasource.db-kind=h2\n"
                             + "quarkus.datasource.jdbc.url=jdbc:h2:mem:test\n"
                             + "quarkus.datasource.\"nameddatasource\".db-kind=h2\n"
-                            + "quarkus.datasource.\"nameddatasource\".jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1\n"
+                            + "quarkus.datasource.\"nameddatasource\".jdbc.url=jdbc:h2:mem:test2\n"
                             // Hibernate Search is inactive for the default PU
                             + "quarkus.hibernate-orm.datasource=<default>\n"
-                            + "quarkus.hibernate-orm.packages=io.quarkus.hibernate.search.orm.elasticsearch.test.devui\n"
+                            + "quarkus.hibernate-orm.packages=io.quarkus.test.devui\n"
                             + "quarkus.hibernate-search-orm.active=false\n"
-                            + "quarkus.hibernate-search-orm.elasticsearch.version=7\n"
+                            + "quarkus.hibernate-search-orm.elasticsearch.version=7.10\n"
                             // ... but it's (implicitly) active for a named PU
                             + "quarkus.hibernate-orm.\"namedpu\".datasource=nameddatasource\n"
-                            + "quarkus.hibernate-orm.\"namedpu\".packages=io.quarkus.hibernate.search.orm.elasticsearch.test.devui.namedpu\n"
-                            + "quarkus.hibernate-search-orm.\"namedpu\".elasticsearch.version=7\n"),
+                            + "quarkus.hibernate-orm.\"namedpu\".packages=io.quarkus.test.devui.namedpu\n"
+                            + "quarkus.hibernate-search-orm.\"namedpu\".elasticsearch.version=7.10\n"
+                            // Start Hibernate Search offline for the named PU,
+                            // because we don't have dev services except for the default PU
+                            + "quarkus.hibernate-search-orm.\"namedpu\".schema-management.strategy=none\n"
+                            + "quarkus.hibernate-search-orm.\"namedpu\".elasticsearch.version-check.enabled=false\n"),
                     "application.properties")
-                    .addClasses(MyEntity.class)
-                    .addClasses(MyNamedPuEntity.class));
+                    .addClasses(MyIndexedEntity.class)
+                    .addClasses(MyNamedPuIndexedEntity.class));
 
     public DevUIHibernateSearchActiveFalseAndNamedPuActiveTrueTest() {
-        super("namedpu", "io.quarkus.hibernate.search.orm.elasticsearch.test.devui.namedpu.MyNamedPuEntity");
+        super("namedpu", MyNamedPuIndexedEntity.class.getName());
     }
 
 }

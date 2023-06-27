@@ -90,7 +90,6 @@ export class QwcArcFiredEvents extends LitElement {
                     </vaadin-grid-column>
 
                 </vaadin-grid>`;
-        }
     }
     
     _eventTypeRenderer(event) {

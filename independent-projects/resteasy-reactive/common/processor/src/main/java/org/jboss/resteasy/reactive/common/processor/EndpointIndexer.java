@@ -75,6 +75,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.TRANSACTIONAL;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.UNI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.URI_INFO;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.lang.reflect.Modifier;
@@ -147,8 +148,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             RESOURCE_INFO);
 
     protected static final Set<DotName> SUPPORT_TEMPORAL_PARAMS = Set.of(INSTANT, LOCAL_DATE, LOCAL_TIME, LOCAL_DATE_TIME,
-            OFFSET_TIME,
-            OFFSET_DATE_TIME, ZONED_DATE_TIME);
+            OFFSET_TIME, OFFSET_DATE_TIME, ZONED_DATE_TIME, YEAR);
 
     protected static final Logger log = Logger.getLogger(EndpointIndexer.class);
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};

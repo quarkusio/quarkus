@@ -20,12 +20,12 @@ public class TestFileLocationsImpl implements FileLocations {
     public TestFileLocationsImpl(final boolean skipLocal) throws IOException {
         tempDir = Files.createTempDirectory("temp_test_" + UUID.randomUUID().toString());
         uuidFile = tempDir.resolve("anonymousId");
-        remoteConfigFile = tempDir.resolve("com.redhat.devtools.quarkus.remoteconfig");
-        lastTryFile = tempDir.resolve("com.redhat.devtools.quarkus.analytics.lasttry");
-        localConfigFile = tempDir.resolve("com.redhat.devtools.quarkus.localconfig");
+        remoteConfigFile = tempDir.resolve("io.quarkus.analytics.remoteconfig");
+        lastTryFile = tempDir.resolve("io.quarkus.analytics.lasttry");
+        localConfigFile = tempDir.resolve("io.quarkus.analytics.localconfig");
         if (!skipLocal) {
             Files.createFile(localConfigFile);
-            Files.write(localConfigFile, "{\"active\":true}".getBytes());
+            Files.write(localConfigFile, "{\"disabled\":false}".getBytes());
         }
     }
 

@@ -130,9 +130,9 @@ Analytics configurations are stored at the `.redhat` folder in the user's home d
 
 `anonymousId` is the locally generated anonymous user id.
 
-`com.redhat.devtools.quarkus.localconfig` holds if the user has agreed to send analytics data or not.
+`io.quarkus.analytics.localconfig` holds if the user has agreed to send analytics data or not.
 
-`com.redhat.devtools.quarkus.remoteconfig` cache of the remote configuration that allows to disable analytics globally.
+`io.quarkus.analytics.remoteconfig` cache of the remote configuration that allows to disable analytics globally.
 
 == Show me the code!
 
@@ -146,10 +146,10 @@ The uploaded events are stored under the project's `/target` folder with the nam
 
 If you have opted in and would like to disable build time analytics, you can do so in two ways:
 
-* Globally, by editing the `com.redhat.devtools.quarkus.localconfig` file in the '.redhat' folder of your user’s home directory. Update the file as follows:
+* Globally, by editing the `io.quarkus.analytics.localconfig` file in the '.redhat' folder of your user’s home directory. Update the file as follows:
 [source,json]
 ----
-{"active":false}
+{"disabled":true}
 ----
 
 * Per project, by using the system property `quarkus.analytics.disabled=true` when building the project.

@@ -5,5 +5,5 @@ public interface AnalyticsLocalConfig {
      * @return true if the analytics is enabled
      * @return
      */
-    boolean isActive();
+    boolean isDisabled();
 }

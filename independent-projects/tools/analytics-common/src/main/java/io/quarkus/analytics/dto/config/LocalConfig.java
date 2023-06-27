@@ -3,21 +3,21 @@ package io.quarkus.analytics.dto.config;
 import java.io.Serializable;
 
 public class LocalConfig implements AnalyticsLocalConfig, Serializable {
-    private boolean active;
+    private boolean disabled;
 
-    public LocalConfig(boolean active) {
-        this.active = active;
+    public LocalConfig(boolean disabled) {
+        this.disabled = disabled;
     }
 
     public LocalConfig() {
     }
 
     @Override
-    public boolean isActive() {
-        return active;
+    public boolean isDisabled() {
+        return disabled;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
+    public void setDisabled(boolean disabled) {
+        this.disabled = disabled;
     }
 }

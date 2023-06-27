@@ -60,7 +60,7 @@ export class QwcExtension extends LitElement {
             color: var(--lumo-contrast-70pct);
         }
         
-        .active:hover .config, .active:hover .more, .active:hover .guide {
+        .active:hover .config, .active:hover .more, .active:hover .guide, .active:hover .fav {
             visibility:visible;
         }
 
@@ -68,7 +68,7 @@ export class QwcExtension extends LitElement {
             visibility:visible;
         }
     
-        .guide, .more, .config {
+        .guide, .more, .config, .fav {
             visibility:hidden;
         }
 
@@ -94,12 +94,14 @@ export class QwcExtension extends LitElement {
         unlisted: {type: String},
         builtWith: {type: String},
         providesCapabilities: {},
-        extensionDependencies: {},    
+        extensionDependencies: {}, 
+        favourite: {type: Boolean},   
     };
     
     constructor() {
         super();
         this._dialogOpened = false;
+        this.favourite = false;
     }
 
     render() {
@@ -130,12 +132,29 @@ export class QwcExtension extends LitElement {
     _headerTemplate() {
         return html`<div class="card-header">
                         <div>${this.name}</div>
+                        ${this._headerToolBar()}
+                    </div>
+          `;
+    }
+
+    _headerToolBar(){
+        let favouriteIcon = "font-awesome-regular:star";
+        let favouriteTitle = "Favour this extension";
+        if(this.favourite){
+            favouriteIcon = "font-awesome-solid:star";
+            favouriteTitle = "Unfavour this extension";
+        }
+
+        return html`<div class="headerTools">
+                        ${this.clazz == "active"?
+                            html`<vaadin-icon class="icon fav" icon="${favouriteIcon}" @click="${this._fav}" title="${favouriteTitle}"></vaadin-icon>`:
+                            html``
+                        }
                         ${this.guide?
                             html`<vaadin-icon class="icon guide" icon="font-awesome-solid:book" @click="${this._guide}" title="Go to the ${this.name} guide"></vaadin-icon>`:
                             html``
                         }
-                    </div>
-          `;
+                    </div>`;
     }
 
     _footerTemplate() {
@@ -281,8 +300,16 @@ export class QwcExtension extends LitElement {
         window.open(this.guide, '_blank').focus();
     }
 
-    _configuration(e) {
-        console.log("Show config with filter: " + this.configFilter);
+    _fav(e){
+        const name = this.namespace;
+        if (name) {
+          const options = {
+            detail: {name},
+            bubbles: true,
+            composed: true,
+          };
+          this.dispatchEvent(new CustomEvent('favourite', options));
+        }
     }
 }
 

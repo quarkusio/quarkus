@@ -2235,3 +2235,29 @@ If the amount is not in hundreds, it could be a problem. A possible workaround i
 export JAVA_OPTS=-Djava.security.egd=/dev/urandom
 ----
 The proper solution is to increase the entropy available for the system. That is specific for each OS vendor and virtualization solution though.
+
+=== Work around missing CPU features
+
+When building on recent machines and running your native executable on older machines, you may see the following failure when starting the application:
+
+[source]
+----
+The current machine does not support all of the following CPU features that are required by the image: [CX8, CMOV, FXSR, MMX, SSE, SSE2, SSE3, SSSE3, SSE4_1, SSE4_2, POPCNT, LZCNT, AVX, AVX2, BMI1, BMI2, FMA].
+Please rebuild the executable with an appropriate setting of the -march option.
+----
+
+This error message means that the native compilation used more advanced instruction sets, not supported by the CPU running the application.
+To work around that issue, add the following line to the `application.properties`:
+
+[source, properties]
+----
+quarkus.native.additional-build-args=-march=compatibility
+----
+
+Then, rebuild your native executable.
+This setting forces the native compilation to use an older instruction set, increasing the chance of compatibility.
+
+To explicitly define the target architecture run `native-image -march=list` to get the supported configurations and then set `-march` to one of them, e.g., `quarkus.native.additional-build-args=-march=x86-64-v4`.
+If you are targeting an AMD64 host, `-march=x86-64-v2` would work in most cases.
+
+NOTE: The `march` parameter is only available on GraalVM 23+.

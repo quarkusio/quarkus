@@ -1,6 +1,5 @@
 package io.quarkus.infinispan.client.runtime;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -178,7 +177,20 @@ public class InfinispanClientRuntimeConfig {
      * Configures caches from the client with the provided configuration.
      */
     @ConfigItem
-    public Map<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cache = new HashMap<>();
+    public Map<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cache;
+
+    /**
+     * // @formatter:off
+     * Configures cross site replication from the client with the provided configuration.
+     * This allows automatic failover when a site is down, as well as switching manual with methods like:
+     * <code>
+     *    cacheManager.switchToDefaultCluster();
+     *    cacheManager.switchToCluster('clusterName')
+     * </code>
+     * // @formatter:on
+     */
+    @ConfigItem
+    public Map<String, InfinispanClientRuntimeConfig.BackupClusterConfig> backupCluster;
 
     @ConfigGroup
     public static class RemoteCacheConfig {
@@ -231,6 +243,33 @@ public class InfinispanClientRuntimeConfig {
         // @formatter:on
         @ConfigItem
         public Optional<Boolean> nearCacheUseBloomFilter;
+    }
+
+    @ConfigGroup
+    public static class BackupClusterConfig {
+        // @formatter:off
+        /**
+         * Sets the host name/port to connect to. Each one is separated by a semicolon (eg. hostA:11222;hostB:11222).
+         */
+        // @formatter:on
+        @ConfigItem
+        public String hosts;
+
+        // @formatter:off
+        /**
+         * Sets client intelligence used by authentication
+         * Available values:
+         * * `BASIC` - Means that the client doesn't handle server topology changes and therefore will only use the list
+         *              of servers supplied at configuration time.
+         * * `TOPOLOGY_AWARE` - Use this provider if you don't want the client to present any certificates to the
+         *              remote TLS host.
+         * * `HASH_DISTRIBUTION_AWARE` - Like `TOPOLOGY_AWARE` but with the additional advantage that each request
+         *              involving keys will be routed to the server who is the primary owner which improves performance
+         *              greatly. This is the default.
+         */
+        // @formatter:on
+        @ConfigItem(defaultValue = "HASH_DISTRIBUTION_AWARE")
+        Optional<String> clientIntelligence;
     }
 
     @Override

@@ -230,7 +230,9 @@ public class CsrfRequestResponseReactiveFilter {
         if (config.cookieDomain.isPresent()) {
             cookie.setDomain(config.cookieDomain.get());
         }
-        routing.response().addCookie(cookie);
+        if (!routing.response().headWritten()) {
+            routing.response().addCookie(cookie);
+        }
     }
 
     private static boolean requestMethodIsSafe(ContainerRequestContext context) {

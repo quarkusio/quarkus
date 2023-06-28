@@ -12,6 +12,7 @@ import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 
 import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.smallrye.openapi.runtime.filter.DisabledRestEndpointsFilter;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -88,6 +89,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
                         if (autoFilter != null) {
                             document.filter(autoFilter);
                         }
+                        document.filter(new DisabledRestEndpointsFilter());
                         document.filter(OpenApiProcessor.getFilter(openApiConfig, cl));
                         document.initialize();
 
@@ -122,6 +124,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
         private OpenApiConfig openApiConfig;
         private OASFilter userFilter;
         private OASFilter autoFilter;
+        private DisabledRestEndpointsFilter disabledEndpointsFilter;
 
         DynamicDocument(Config config, OASFilter autoFilter) {
             ClassLoader cl = OpenApiConstants.classLoader == null ? Thread.currentThread().getContextClassLoader()
@@ -133,6 +136,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
                         this.userFilter = OpenApiProcessor.getFilter(openApiConfig, cl);
                         this.autoFilter = autoFilter;
                         this.generatedOnBuild = OpenApiProcessor.modelFromStaticFile(this.openApiConfig, staticFile);
+                        this.disabledEndpointsFilter = new DisabledRestEndpointsFilter();
                     }
                 }
             } catch (IOException ex) {
@@ -174,6 +178,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
             if (this.autoFilter != null) {
                 document.filter(this.autoFilter);
             }
+            document.filter(this.disabledEndpointsFilter);
             document.filter(this.userFilter);
             document.initialize();
             return document;

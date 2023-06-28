@@ -53,6 +53,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.rest.DisabledRestEndpoints;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.AuthenticationFailedException;
@@ -182,6 +183,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
                 vertxConfig.rootPath);
         Deployment deployment = runtimeDeploymentManager.deploy();
+        DisabledRestEndpoints.set(deployment.getDisabledEndpoints());
         initClassFactory.createInstance().getInstance().init(deployment);
         currentDeployment = deployment;
 

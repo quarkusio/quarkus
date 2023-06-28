@@ -1134,8 +1134,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
             logoutUri.append(AMP).append(configContext.oidcConfig.logout.getPostLogoutUriParam()).append(EQ).append(
-                    buildUri(context, isForceHttps(configContext.oidcConfig),
-                            configContext.oidcConfig.logout.postLogoutPath.get()));
+                    OidcCommonUtils.urlEncode(buildUri(context, isForceHttps(configContext.oidcConfig),
+                            configContext.oidcConfig.logout.postLogoutPath.get())));
             logoutUri.append(AMP).append(OidcConstants.LOGOUT_STATE).append(EQ)
                     .append(generatePostLogoutState(context, configContext));
         }

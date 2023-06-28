@@ -111,11 +111,11 @@ public class QuarkusUpdateCommand {
                 "-e",
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,
                         dryRun ? "dryRun" : "run"),
-                String.format("-D\"plainTextMasks=%s\"", ADDITIONAL_SOURCE_FILES),
-                String.format("-D\"rewrite.configLocation=%s\"", recipe.toAbsolutePath()),
-                String.format("-D\"rewrite.recipeArtifactCoordinates=%s\"", recipesGAV),
-                String.format("-D\"activeRecipes=%s\"", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS),
-                "-D\"rewrite.pomCacheEnabled=false\"" };
+                String.format("-DplainTextMasks=%s", ADDITIONAL_SOURCE_FILES),
+                String.format("-Drewrite.configLocation=%s", recipe.toAbsolutePath()),
+                String.format("-Drewrite.recipeArtifactCoordinates=%s", recipesGAV),
+                String.format("-DactiveRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS),
+                "-Drewrite.pomCacheEnabled=false" };
     }
 
     private static void executeCommand(Path baseDir, String[] command, MessageWriter log) throws QuarkusUpdateException {

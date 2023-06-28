@@ -32,6 +32,15 @@ public class CORSFullConfigHandlerTestCase {
                 .header("Access-Control-Allow-Headers", "X-Custom")
                 .header("Access-Control-Max-Age", "86400");
 
+        given().header("Origin", "http://custom.origin.quarkus")
+                .when()
+                .get("/test").then()
+                .statusCode(200)
+                .header("Access-Control-Allow-Origin", "http://custom.origin.quarkus")
+                .header("Access-Control-Allow-Methods", "GET,PUT,POST")
+                .header("Access-Control-Expose-Headers", "Content-Disposition")
+                .header("Access-Control-Allow-Headers", "X-Custom");
+
         given().header("Origin", "http://www.quarkus.io")
                 .header("Access-Control-Request-Method", "PUT")
                 .when()
@@ -40,6 +49,7 @@ public class CORSFullConfigHandlerTestCase {
                 .header("Access-Control-Allow-Origin", "http://www.quarkus.io")
                 .header("Access-Control-Allow-Methods", "GET,PUT,POST")
                 .header("Access-Control-Expose-Headers", "Content-Disposition");
+
     }
 
     @Test

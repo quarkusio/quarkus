@@ -41,3 +41,4 @@ nb-configuration.xml
 .sdkmanrc
 .envrc
 .jekyll-cache
+.mvn/.gradle-enterprise/

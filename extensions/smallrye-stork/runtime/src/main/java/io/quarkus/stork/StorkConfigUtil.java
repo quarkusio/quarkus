@@ -22,6 +22,9 @@ public class StorkConfigUtil {
             SimpleServiceConfig.SimpleLoadBalancerConfig loadBalancerConfig = new SimpleServiceConfig.SimpleLoadBalancerConfig(
                     serviceConfiguration.loadBalancer.type, serviceConfiguration.loadBalancer.parameters);
             builder.setLoadBalancer(loadBalancerConfig);
+            SimpleServiceConfig.SimpleServiceRegistrarConfig serviceRegistrarConfig = new SimpleServiceConfig.SimpleServiceRegistrarConfig(
+                    serviceConfiguration.serviceRegistrar.type, serviceConfiguration.serviceRegistrar.parameters);
+            builder.setServiceRegistrar(serviceRegistrarConfig);
             storkServicesConfigs.add(builder.build());
         }
         return storkServicesConfigs;

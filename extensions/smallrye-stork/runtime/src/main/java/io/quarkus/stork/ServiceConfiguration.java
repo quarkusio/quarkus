@@ -16,4 +16,10 @@ public class ServiceConfiguration {
      */
     @ConfigItem
     public StorkLoadBalancerConfiguration loadBalancer;
+
+    /**
+     * ServiceRegistrar configuration for the service
+     */
+    @ConfigItem
+    public StorkServiceRegistrarConfiguration serviceRegistrar;
 }

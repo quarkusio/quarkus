@@ -461,8 +461,8 @@ public interface NativeConfig {
     interface Compression {
         /**
          * The compression level in [1, 10].
-         * 10 means <em>best</em>
-         *
+         * 10 means <em>best</em>.
+         * <p>
          * Higher compression level requires more time to compress the executable.
          */
         OptionalInt level();

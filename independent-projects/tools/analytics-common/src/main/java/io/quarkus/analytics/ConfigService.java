@@ -32,13 +32,9 @@ public class ConfigService {
     public static final String QUARKUS_ANALYTICS_PROMPT_TIMEOUT = "quarkus.analytics.prompt.timeout";
     private static final String NEW_LINE = System.lineSeparator();
     public static final String ACCEPTANCE_PROMPT = NEW_LINE
-            + "********************************************************************************************************"
-            + NEW_LINE
-            + "********************************************************************************************************"
-            + NEW_LINE
-            + "********************************************************************************************************"
-            + NEW_LINE
-            + "* Please help improve Quarkus!" + NEW_LINE
+            + "----------------------------" + NEW_LINE
+            + "--- Help improve Quarkus ---" + NEW_LINE
+            + "----------------------------" + NEW_LINE
             + "* Learn more: https://quarkus.io/usage/" + NEW_LINE
             + "* Do you agree to contribute anonymous build time data to the Quarkus community? (y/n) " + NEW_LINE;
     private static final int DEFAULT_REFRESH_HOURS = 12;

@@ -15,7 +15,7 @@ public class OpenApiWithResteasyPathTestCase {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy.path=/foo/bar"),
+                    .addAsResource(new StringAsset("quarkus.resteasy-reactive.path=/foo/bar"),
                             "application.properties"));
 
     @Test

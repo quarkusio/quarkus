@@ -10,12 +10,10 @@ include::_attributes.adoc[]
 :extension-status: "experimental"
 :summary: Learn how to upgrade your projects to the latest version of {project-name}
 
-include::{includes}/extension-status.adoc[]
-
-You can update or upgrade your {project-name} projects to the latest version by using an update command.
+You can update or upgrade your {project-name} projects to the latest version of {project-name} by using an update command.
 
 The update command primarily employs OpenRewrite recipes to automate updates for most project dependencies, source code, and documentation.
-Although these recipes update many migration items, they do not cover all the items detailed in the {quarkus-migration-guide}[Migration Guide] topics.
+Although these recipes update many migration items, they do not cover all the items detailed in the {quarkus-migration-guide}.
 
 Post-update, if expected updates are missing, consider the following reasons:
 
@@ -38,8 +36,8 @@ include::{includes}/prerequisites.adoc[]
 
 . Create a working branch for your project by using your version control system.
 
-. Install the *latest version* of the Quarkus CLI to use in the next step. For more information, see link:https://quarkus.io/guides/cli-tooling#installing-the-cli[Installing the CLI].
-Confirm the version number by using `quarkus -v`.
+. To use the Quarkus CLI in the next step, link:https://quarkus.io/guides/cli-tooling#installing-the-cli[install the latest version of the Quarkus CLI].
+Confirm the version number using `quarkus -v`.
 
 . Go to the project directory and update the project to the latest stream:
 +
@@ -74,7 +72,7 @@ ifdef::devtools-wrapped[+]
 
 . Use a diff tool to inspect all changes.
 
-. Review the {quarkus-migration-guide}[Migration Guide] topics for items that were not updated by the update command.
+. Review the {quarkus-migration-guide} for items that were not updated by the update command.
 If your project has such items, implement the additional steps advised in these topics.
 
 . Ensure the project builds without errors, all tests pass, and the application functions as required before deploying to production.

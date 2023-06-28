@@ -1,8 +1,8 @@
 <gradleEnterprise>
     <server>
-      <url>https://ge.quarkus.io</url>
-      <allowUntrusted>false</allowUntrusted>
-     </server>
+        <url>https://ge.quarkus.io</url>
+        <allowUntrusted>false</allowUntrusted>
+    </server>
     <buildScan>
         <!-- adjust conditions ?
         mvn gradle-enterprise:provision-access-key
@@ -22,8 +22,16 @@
         <backgroundBuildScanUpload>#{env['CI'] == null}</backgroundBuildScanUpload>
     </buildScan>
     <buildCache>
-        <local><enabled>false</enabled></local>
-        <remote><enabled>false</enabled></remote>
+        <local>
+            <enabled>false</enabled>
+        </local>
+        <remote>
+            <server>
+                <url>https://ge.quarkus.io/cache/main/</url>
+                <allowUntrusted>true</allowUntrusted>
+            </server>
+            <enabled>true</enabled>
+            <storeEnabled>#{env['CI'] != null}</storeEnabled>
+        </remote>
     </buildCache>
 </gradleEnterprise>
-

@@ -792,6 +792,11 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }
 
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) == 0) {
+                    // Serial reachability handler is broken in 23.0.0, see https://github.com/oracle/graal/issues/6904
+                    nativeImageArgs.add("-H:+RunReachabilityHandlersConcurrently");
+                }
+
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
                  * quarkus.native.additional-build-args. So if you need a parameter to be overridable through

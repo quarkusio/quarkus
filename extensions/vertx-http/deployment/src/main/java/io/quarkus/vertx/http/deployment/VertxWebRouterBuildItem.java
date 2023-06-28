@@ -32,7 +32,7 @@ public final class VertxWebRouterBuildItem extends SimpleBuildItem {
      *
      * @return RuntimeValue<Router>
      */
-    RuntimeValue<Router> getMainRouter() {
+    public RuntimeValue<Router> getMainRouter() {
         return mainRouter;
     }
 

@@ -325,6 +325,23 @@ public class MyInterceptor implements ClientInterceptor {
 ----
 <1> This interceptor is applied to all injected gRPC clients.
 
+It's also possible to annotate a producer method as a global interceptor:
+
+[source, java]
+----
+import io.quarkus.grpc.GlobalInterceptor;
+
+import jakarta.enterprise.inject.Produces;
+
+public class MyProducer {
+    @GlobalInterceptor
+    @Produces
+    public MyInterceptor myInterceptor() {
+        return new MyInterceptor();
+    }
+}
+----
+
 TIP: Check the https://grpc.github.io/grpc-java/javadoc/io/grpc/ClientInterceptor.html[ClientInterceptor JavaDoc] to properly implement your interceptor.
 
 .`@RegisterClientInterceptor` Example

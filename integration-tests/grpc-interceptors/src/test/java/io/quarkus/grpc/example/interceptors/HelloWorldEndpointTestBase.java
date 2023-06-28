@@ -3,6 +3,8 @@ package io.quarkus.grpc.example.interceptors;
 import static io.restassured.RestAssured.get;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 
 import io.restassured.response.Response;
@@ -12,10 +14,15 @@ class HelloWorldEndpointTestBase {
     @Test
     public void testHelloWorldServiceUsingBlockingStub() {
         Response response = get("/hello/blocking/neo");
-        String intercepted = response.getHeader("intercepted");
         String responseMsg = response.asString();
         assertThat(responseMsg).isEqualTo("Hello neo");
-        assertThat(intercepted).isEqualTo("true");
+
+        Set<String> invoked = Set.of(response.getHeader("interceptors").split(","));
+        assertThat(invoked).containsExactlyInAnyOrder(
+                "io.quarkus.grpc.examples.interceptors.ClientInterceptors$TypeTarget",
+                "io.quarkus.grpc.examples.interceptors.ClientInterceptors$MethodTarget",
+                "io.quarkus.grpc.examples.interceptors.ServerInterceptors$TypeTarget",
+                "io.quarkus.grpc.examples.interceptors.ServerInterceptors$MethodTarget");
 
         ensureThatMetricsAreProduced();
     }

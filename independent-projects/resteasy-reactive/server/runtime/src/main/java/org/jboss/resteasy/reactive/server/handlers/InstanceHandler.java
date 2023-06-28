@@ -10,7 +10,6 @@ public class InstanceHandler implements ServerRestHandler {
      * CDI Manages the lifecycle
      *
      */
-    private volatile Object instance;
     private final BeanFactory<Object> factory;
 
     public InstanceHandler(BeanFactory<Object> factory) {
@@ -19,14 +18,7 @@ public class InstanceHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-        if (instance == null) {
-            synchronized (this) {
-                if (instance == null) {
-                    requestContext.requireCDIRequestScope();
-                    instance = factory.createInstance().getInstance();
-                }
-            }
-        }
-        requestContext.setEndpointInstance(instance);
+        requestContext.requireCDIRequestScope();
+        requestContext.setEndpointInstance(factory.createInstance().getInstance());
     }
 }

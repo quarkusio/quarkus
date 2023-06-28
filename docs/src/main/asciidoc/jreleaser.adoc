@@ -488,7 +488,7 @@ remote resources such as Git repositories. This is how it would look like:
 [source,subs=attributes+]
 ----
 # because we changed the project's version
-./mvnw -Pnative,dist package
+./mvnw -Dnative,dist package
 ./mvnw -Prelease jreleaser:full-release -Djreleaser.select.current.platform -Djreleaser.dry.run=true
 
 [INFO] --- jreleaser-maven-plugin:{jreleaser-version}:full-release (default-cli) @ app ---

@@ -58,7 +58,8 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  */
 public final class JpaJandexScavenger {
 
-    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED, ClassNames.ELEMENT_COLLECTION);
+    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED_ID, ClassNames.EMBEDDED,
+            ClassNames.ELEMENT_COLLECTION);
 
     private static final String XML_MAPPING_DEFAULT_ORM_XML = "META-INF/orm.xml";
     private static final String XML_MAPPING_NO_FILE = "no-file";

@@ -60,6 +60,8 @@ public class OracleDevServicesProcessor {
                 Labels.addDataSourceLabel(container, datasourceName);
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 
+                container.withEnv(containerConfig.getContainerEnv());
+
                 // We need to limit the maximum amount of CPUs being used by the container;
                 // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.
                 // See https://github.com/gvenzl/oci-oracle-xe/issues/64

@@ -2,65 +2,79 @@
 This document is maintained in the main Quarkus repository, and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-[id="update-projects-to-quarkus-3-automatically-howto"]
-= Update projects to the latest version of Quarkus
+[id="update-quarkus"]
+= Update projects to the latest Quarkus version
 include::_attributes.adoc[]
+:diataxis-type: howto
 :categories: core
 :extension-status: "experimental"
-:summary: Update your projects to the latest version of Quarkus
+:summary: Learn how to upgrade your projects to the latest version of {project-name}
 
 include::{includes}/extension-status.adoc[]
 
-You can update your Quarkus projects to the latest version by running an update command.
+You can update or upgrade your {project-name} projects to the latest version by using an update command.
 
-The update command primarily uses OpenRewrite recipes to automate updating most of your project's dependencies, source code, and documentation. These recipes cover many but not all of the items described in the link:https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides].
+The update command primarily employs OpenRewrite recipes to automate updates for most project dependencies, source code, and documentation.
+Although these recipes update many migration items, they do not cover all the items detailed in the {quarkus-migration-guide}[Migration Guide] topics.
 
-After updating a project, if you do not find all the updates you expect, there are two possible reasons:
+Post-update, if expected updates are missing, consider the following reasons:
 
-- The recipe might not cover an item in your project.
-- Your project might use an extension that does not support the latest version of Quarkus yet.
-
-In either case, https://github.com/quarkusio/quarkus/issues[let us know by filing an issue] so we can improve the update command.
+- The recipe might not include a specific item in your project.
+- Your project might use an extension that is incompatible with the latest {project-name} version.
 
 [IMPORTANT]
 ====
-If your project uses Hibernate ORM or Hibernate Reactive, read through the link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[Hibernate ORM 5 to 6 migration] quick reference.
-The following update command only covers a few items in this quick reference.
+For projects that use Hibernate ORM or Hibernate Reactive, review the link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[Hibernate ORM 5 to 6 migration] quick reference.
+The following update command covers only a subset of this guide.
 ====
 
 == Prerequisites
 
-* A project based on Quarkus version 2.13 or later.
-
 :prerequisites-time: 30 minutes
 include::{includes}/prerequisites.adoc[]
+* A project based on {project-name} version 2.13 or later.
 
 == Procedure
 
-. Use your version control system to create a working branch for your project or projects.
+. Create a working branch for your project by using your version control system.
 
-. Optional: To use the Quarkus CLI in the next step, link:https://quarkus.io/guides/cli-tooling#installing-the-cli[install the latest version of the Quarkus CLI]. Use `quarkus -v` to verify the version number.
+. Install the *latest version* of the Quarkus CLI to use in the next step. For more information, see link:https://quarkus.io/guides/cli-tooling#installing-the-cli[Installing the CLI].
+Confirm the version number by using `quarkus -v`.
 
-. Change to the project directory and update the project:
+. Go to the project directory and update the project to the latest stream:
 +
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
-.CLI
-----
-quarkus update <1>
-----
-<1> Updates to the latest stream by default. To specify a stream, use the `stream` option; for example, `--stream=3.0`.
+[role="primary asciidoc-tabs-sync-cli"]
+.Using Quarkus CLI
 +
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
-.Maven
+****
+[source, bash, subs=attributes+]
 ----
-./mvnw {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:update -N <1>
+quarkus update
 ----
-<1> Updates to the latest stream by default. To specify a stream, use the `Dstream` option; for example, `-Dstream=3.0`.
+Optional: To specify a particular stream, use the `stream` option; for example: `--stream=3.0`
+ifndef::devtools-no-maven[]
+ifdef::devtools-wrapped[+]
+****
++
+[role="secondary asciidoc-tabs-sync-maven"]
+.Using Maven
++
+****
+[source, bash, subs=attributes+]
+----
+./mvnw {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:update -N
+----
+Optional: To specify a particular stream, use the `Dstream` option; for example: `-Dstream=3.0`
+endif::[]
+ifndef::devtools-no-gradle[]
+ifdef::devtools-wrapped[+]
+****
 
-. Review the output from the update command for potential instructions and, if needed, perform the indicated tasks.
+. Analyze the update command output for potential instructions and perform the suggested tasks if necessary.
 
-. Review all the changes using a diff tool.
+. Use a diff tool to inspect all changes.
 
-. Review the https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides] for any items not covered by the upgrade command and perform additional steps, if needed.
+. Review the {quarkus-migration-guide}[Migration Guide] topics for items that were not updated by the update command.
+If your project has such items, implement the additional steps advised in these topics.
 
-. Verify that the project builds without errors and that the application passes all tests and works as expected before releasing it to production.
+. Ensure the project builds without errors, all tests pass, and the application functions as required before deploying to production.

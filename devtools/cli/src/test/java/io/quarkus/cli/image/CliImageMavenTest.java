@@ -69,10 +69,11 @@ public class CliImageMavenTest {
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=false"));
 
-        // 4 image push --also-build --dry-run
-        result = CliDriver.execute(project, "image", "push", "--also-build", "--dry-run");
+        // 4 image push --also-build --dry-run --registry=quay.io
+        result = CliDriver.execute(project, "image", "push", "--also-build", "--dry-run", "--registry=quay.io");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.build=true"));
+        assertTrue(result.getStdout().contains("-Dquarkus.container-image.registry=quay.io"));
 
     }
 }

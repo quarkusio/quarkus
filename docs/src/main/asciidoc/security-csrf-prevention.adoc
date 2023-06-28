@@ -291,4 +291,4 @@ include::{generated-dir}/config/quarkus-csrf-reactive.adoc[leveloffset=+1, opts=
 * https://owasp.org/www-community/attacks/csrf[OWASP Cross-Site Request Forgery]
 * xref:resteasy-reactive.adoc[RESTEasy Reactive]
 * xref:qute-reference.adoc[Qute Reference]
-* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-overview.adoc[Quarkus Security overview]

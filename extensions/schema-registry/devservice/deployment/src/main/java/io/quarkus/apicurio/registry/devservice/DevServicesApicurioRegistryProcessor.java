@@ -178,6 +178,7 @@ public class DevServicesApicurioRegistryProcessor {
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
                             useSharedNetwork);
                     timeout.ifPresent(container::withStartupTimeout);
+                    container.withEnv(config.containerEnv);
                     container.start();
 
                     return new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(), container.getContainerId(),
@@ -215,6 +216,7 @@ public class DevServicesApicurioRegistryProcessor {
         private final Integer fixedExposedPort;
         private final boolean shared;
         private final String serviceName;
+        private final Map<String, String> containerEnv;
 
         public ApicurioRegistryDevServiceCfg(ApicurioRegistryDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled.orElse(true);
@@ -222,6 +224,7 @@ public class DevServicesApicurioRegistryProcessor {
             this.fixedExposedPort = config.port.orElse(0);
             this.shared = config.shared;
             this.serviceName = config.serviceName;
+            this.containerEnv = config.containerEnv;
         }
 
         @Override
@@ -237,12 +240,13 @@ public class DevServicesApicurioRegistryProcessor {
                     && Objects.equals(imageName, that.imageName)
                     && Objects.equals(fixedExposedPort, that.fixedExposedPort)
                     && shared == that.shared
-                    && Objects.equals(serviceName, that.serviceName);
+                    && Objects.equals(serviceName, that.serviceName)
+                    && Objects.equals(containerEnv, that.containerEnv);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort, shared, serviceName);
+            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort, shared, serviceName, containerEnv);
         }
     }
 

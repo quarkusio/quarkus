@@ -214,13 +214,13 @@ include::{includes}/devtools/build-native.adoc[]
 ====
 The Microsoft Native Tools for Visual Studio must first be initialized before packaging. You can do this by starting
 the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools. At 
-`x64 Native Tools Command Prompt` you can navigate to your project folder and run `mvnw package -Pnative`.
+`x64 Native Tools Command Prompt` you can navigate to your project folder and run `mvnw package -Dnative`.
 
 Another solution is to write a script to do this for you:
 
 [source,bash]
 ----
-cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && mvn package -Pnative'
+cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && mvn package -Dnative'
 ----
 ====
 
@@ -249,10 +249,10 @@ Compiling fully static binaries is done by statically linking https://musl.libc.
 
 Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file. The reasoning is explained in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
 
-To see the `GreetingResourceIT` run against the native executable, use `./mvnw verify -Pnative`:
+To see the `GreetingResourceIT` run against the native executable, use `./mvnw verify -Dnative`:
 [source,shell,subs=attributes+]
 ----
-$ ./mvnw verify -Pnative
+$ ./mvnw verify -Dnative
 ...
 Finished generating 'getting-started-1.0.0-SNAPSHOT-runner' in 22.0s.
 [INFO] [io.quarkus.deployment.pkg.steps.NativeImageBuildRunner] docker run --env LANG=C --rm --user 1000:1000 -v /home/zakkak/code/quarkus-quickstarts/getting-started/target/getting-started-1.0.0-SNAPSHOT-native-image-source-jar:/project:z --entrypoint /bin/bash quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} -c objcopy --strip-debug getting-started-1.0.0-SNAPSHOT-runner
@@ -281,7 +281,7 @@ __  ____  __  _____   ___  __ ____  ______
 ====
 By default, Quarkus waits for 60 seconds for the native image to start before automatically failing the native tests. This
 duration can be changed using the `quarkus.test.wait-time` system property. For example, to increase the duration
-to 300 seconds, use: `./mvnw verify -Pnative -Dquarkus.test.wait-time=300`.
+to 300 seconds, use: `./mvnw verify -Dnative -Dquarkus.test.wait-time=300`.
 ====
 
 [WARNING]
@@ -295,12 +295,12 @@ By default, integration tests both *build* and *run* the native executable using
 
 You can override the profile the executable *runs* with during the test using the `quarkus.test.native-image-profile` property.
 Either by adding it to `application.properties` or by appending it to the command line:
-`./mvnw verify -Pnative -Dquarkus.test.native-image-profile=test`.
+`./mvnw verify -Dnative -Dquarkus.test.native-image-profile=test`.
 Your `%test.` prefixed properties will be used at the test runtime.
 
 
 You can override the profile the executable is *built* with and *runs* with using the `quarkus-profile=test` property, e.g.
-`./mvnw clean verify -Pnative -Dquarkus-profile=test`. This might come handy if there are test specific resources to be processed,
+`./mvnw clean verify -Dnative -Dquarkus-profile=test`. This might come handy if there are test specific resources to be processed,
 such as importing test data into the database.
 
 [source,properties]
@@ -378,7 +378,7 @@ testing the application in JVM mode, in a container image, and native image.
 === Testing an existing native executable
 
 It is also possible to re-run the tests against a native executable that has already been built. To do this run
-`./mvnw test-compile failsafe:integration-test -Pnative`. This will discover the existing native image and run the tests against it using failsafe.
+`./mvnw test-compile failsafe:integration-test -Dnative`. This will discover the existing native image and run the tests against it using failsafe.
 
 If the process cannot find the native image for some reason, or you want to test a native image that is no longer in the
 target directory you can specify the executable with the `-Dnative.image.path=` system property.
@@ -458,7 +458,7 @@ If one of those extensions is present, then creating a container image for the n
 
 [source,bash]
 ----
-./mvnw package -Pnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
+./mvnw package -Dnative -Dquarkus.native.container-build=true -Dquarkus.container-image.build=true
 ----
 
 * `quarkus.native.container-build=true` allows for creating a Linux executable without GraalVM being installed (and is only necessary if you don't have GraalVM installed locally or your local operating system is not Linux)
@@ -579,7 +579,7 @@ USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
 COPY src /code/src
-RUN ./mvnw package -Pnative
+RUN ./mvnw package -Dnative
 
 ## Stage 2 : create the docker final image
 FROM quay.io/quarkus/quarkus-micro-image:2.0
@@ -695,7 +695,7 @@ Sample multistage Dockerfile for building an image from `scratch`:
 [source,dockerfile,subs=attributes+]
 ----
 ## Stage 1 : build with maven builder image with native capabilities
-FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:{mandrel-flavor} AS build
+FROM quay.io/quarkus/ubi-quarkus-graalvmce-builder-image:{graalvm-flavor} AS build
 USER root
 RUN microdnf install make gcc
 COPY --chown=quarkus:quarkus mvnw /code/mvnw
@@ -714,7 +714,7 @@ USER quarkus
 WORKDIR /code
 RUN ./mvnw -B org.apache.maven.plugins:maven-dependency-plugin:3.1.2:go-offline
 COPY src /code/src
-RUN ./mvnw package -Pnative -DskipTests -Dquarkus.native.additional-build-args="--static","--libc=musl"
+RUN ./mvnw package -Dnative -DskipTests -Dquarkus.native.additional-build-args="--static","--libc=musl"
 
 ## Stage 2 : create the final image
 FROM scratch
@@ -737,7 +737,7 @@ More details on xref:./upx.adoc[UPX Compression documentation].
 In certain circumstances, you may want to build the native image in a separate step.
 For example, in a CI/CD pipeline, you may want to have one step to generate the source that will be used for the native image generation and another step to use these sources to actually build the native executable.
 For this use case, you can set the `quarkus.package.type=native-sources`.
-This will execute the java compilation as if you had started native compilation (`-Pnative`), but stops before triggering the actual call to GraalVM's `native-image`.
+This will execute the java compilation as if you had started native compilation (`-Dnative`), but stops before triggering the actual call to GraalVM's `native-image`.
 
 [source,bash]
 ----

@@ -1,5 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.mqtt.deployment;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -60,4 +61,10 @@ public class MqttDevServicesBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "mqtt")
     public String serviceName;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
 }

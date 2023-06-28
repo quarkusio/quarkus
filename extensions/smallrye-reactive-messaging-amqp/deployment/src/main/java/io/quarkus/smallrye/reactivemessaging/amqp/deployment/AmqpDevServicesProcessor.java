@@ -188,6 +188,7 @@ public class AmqpDevServicesProcessor {
                     useSharedNetwork);
 
             timeout.ifPresent(container::withStartupTimeout);
+            container.withEnv(config.containerEnv);
             container.start();
 
             return getRunningService(container.getContainerId(), container::close, container.getEffectiveHost(),
@@ -245,6 +246,7 @@ public class AmqpDevServicesProcessor {
         private final String extra;
         private final boolean shared;
         private final String serviceName;
+        private final Map<String, String> containerEnv;
 
         public AmqpDevServiceCfg(AmqpDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
@@ -253,7 +255,7 @@ public class AmqpDevServicesProcessor {
             this.extra = devServicesConfig.extraArgs;
             this.shared = devServicesConfig.shared;
             this.serviceName = devServicesConfig.serviceName;
-            ;
+            this.containerEnv = devServicesConfig.containerEnv;
         }
 
         @Override
@@ -266,12 +268,13 @@ public class AmqpDevServicesProcessor {
             }
             AmqpDevServiceCfg that = (AmqpDevServiceCfg) o;
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
+                    && Objects.equals(containerEnv, that.containerEnv);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort);
+            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort, containerEnv);
         }
     }
 

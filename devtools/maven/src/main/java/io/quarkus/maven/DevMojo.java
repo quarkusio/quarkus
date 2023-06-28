@@ -15,6 +15,7 @@ import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
 import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,8 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -102,7 +103,6 @@ import io.quarkus.deployment.dev.QuarkusDevModeLauncher;
 import io.quarkus.maven.MavenDevModeLauncher.Builder;
 import io.quarkus.maven.components.CompilerOptions;
 import io.quarkus.maven.components.MavenVersionEnforcer;
-import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -154,6 +154,8 @@ public class DevMojo extends AbstractMojo {
     private static final String ORG_JBOSS_JANDEX = "org.jboss.jandex";
     private static final String JANDEX_MAVEN_PLUGIN = "jandex-maven-plugin";
     private static final String JANDEX = "jandex";
+
+    private static final String BOOTSTRAP_ID = "DevMojo";
 
     /**
      * The directory for compiled classes.
@@ -391,7 +393,7 @@ public class DevMojo extends AbstractMojo {
         initToolchain();
 
         // we always want to compile if needed, so if it is run from the parent it will compile dependent projects
-        handleAutoCompile();
+        String bootstrapId = handleAutoCompile();
 
         if (enforceBuildGoal) {
             final PluginDescriptor pluginDescr = getPluginDescriptor();
@@ -411,21 +413,22 @@ public class DevMojo extends AbstractMojo {
         saveTerminalState();
 
         analyticsProvider.buildAnalyticsUserInput((String prompt) -> {
-            try {
-                final AtomicReference<String> userInput = new AtomicReference<>("");
-                final Prompter prompter = new Prompter();
-                prompter.addPrompt(prompt, input -> userInput.set(input));
-                prompter.collectInput();
-                return userInput.get();
-            } catch (IOException e) {
-                getLog().debug("Failed to collect user input for analytics", e);
+            System.out.print(prompt);
+            try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
+                @Override
+                public void close() throws IOException {
+                    //don't close System.in!
+                }
+            })) {
+                return scanner.nextLine();
+            } catch (Exception e) {
+                getLog().warn("Failed to collect user input for analytics", e);
                 return "";
             }
         });
 
         try {
-
-            DevModeRunner runner = new DevModeRunner();
+            DevModeRunner runner = new DevModeRunner(bootstrapId);
             Map<Path, Long> pomFiles = readPomFileTimestamps(runner);
             runner.run();
             long nextCheck = System.currentTimeMillis() + 100;
@@ -455,8 +458,8 @@ public class DevMojo extends AbstractMojo {
                         getLog().info("Changes detected to " + changed + ", restarting dev mode");
                         final DevModeRunner newRunner;
                         try {
-                            handleAutoCompile();
-                            newRunner = new DevModeRunner(runner.launcher.getDebugPortOk());
+                            bootstrapId = handleAutoCompile();
+                            newRunner = new DevModeRunner(runner.launcher.getDebugPortOk(), bootstrapId);
                         } catch (Exception e) {
                             getLog().info("Could not load changed pom.xml file, changes not applied", e);
                             continue;
@@ -466,9 +469,7 @@ public class DevMojo extends AbstractMojo {
                         runner = newRunner;
                     }
                 }
-
             }
-
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
@@ -532,7 +533,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private void handleAutoCompile() throws MojoExecutionException {
+    private String handleAutoCompile() throws MojoExecutionException {
 
         List<String> goals = session.getGoals();
         // check for default goal(s) if none were specified explicitly,
@@ -553,7 +554,7 @@ public class DevMojo extends AbstractMojo {
             var i = PRE_DEV_MODE_PHASES.indexOf(goal);
             if (i < 0 || i == PRE_DEV_MODE_PHASES.size() - 1) {
                 // all the necessary goals have already been executed
-                return;
+                return null;
             }
             if (i > latestHandledPhaseIndex) {
                 latestHandledPhaseIndex = i;
@@ -565,6 +566,7 @@ public class DevMojo extends AbstractMojo {
         final Map<String, List<Map.Entry<Plugin, PluginExecution>>> phaseExecutions = new HashMap<>();
         // goals with prefixes on the command line
         final Map<String, Plugin> pluginPrefixes = new HashMap<>();
+        String bootstrapId = BOOTSTRAP_ID;
         for (Plugin p : project.getBuildPlugins()) {
             if (p.getExecutions().isEmpty()) {
                 continue;
@@ -580,6 +582,7 @@ public class DevMojo extends AbstractMojo {
                             // this will schedule it before the compile phase goals
                             phaseExecutions.computeIfAbsent("compile", k -> new ArrayList<>())
                                     .add(0, Map.entry(p, clone));
+                            bootstrapId = e.getId();
                         } else if (goal.equals(QUARKUS_GENERATE_CODE_TESTS_GOAL) && p.getId().equals(quarkusPluginId)) {
                             var clone = e.clone();
                             clone.setGoals(List.of(QUARKUS_GENERATE_CODE_TESTS_GOAL));
@@ -621,6 +624,10 @@ public class DevMojo extends AbstractMojo {
             }
         }
 
+        final Map<String, String> quarkusGoalParams = Map.of(
+                "mode", LaunchMode.DEVELOPMENT.name(),
+                QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false",
+                "bootstrapId", bootstrapId);
         for (int phaseIndex = latestHandledPhaseIndex + 1; phaseIndex < PRE_DEV_MODE_PHASES.size(); ++phaseIndex) {
             var executions = phaseExecutions.get(PRE_DEV_MODE_PHASES.get(phaseIndex));
             if (executions == null) {
@@ -632,10 +639,7 @@ public class DevMojo extends AbstractMojo {
                     if (!executedGoals.contains(goal)) {
                         try {
                             executeGoal(pe.getKey(), pe.getValue().getId(), goal,
-                                    pe.getKey().getId().equals(quarkusPluginId)
-                                            ? Map.of("mode", LaunchMode.DEVELOPMENT.name(),
-                                                    QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP, "false")
-                                            : Map.of());
+                                    pe.getKey().getId().equals(quarkusPluginId) ? quarkusGoalParams : Map.of());
                         } catch (Throwable t) {
                             if (goal.equals("testCompile")) {
                                 getLog().error(
@@ -649,6 +653,7 @@ public class DevMojo extends AbstractMojo {
                 }
             }
         }
+        return bootstrapId;
     }
 
     private String getCurrentGoal() {
@@ -831,11 +836,11 @@ public class DevMojo extends AbstractMojo {
         } else {
             projectDirectory = mavenProject.getBasedir().getPath();
             sourcePaths = mavenProject.getCompileSourceRoots().stream()
-                    .map(Paths::get)
+                    .map(Path::of)
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             testSourcePaths = mavenProject.getTestCompileSourceRoots().stream()
-                    .map(Paths::get)
+                    .map(Path::of)
                     .map(Path::toAbsolutePath)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
             activeProfiles = mavenProject.getActiveProfiles();
@@ -936,12 +941,12 @@ public class DevMojo extends AbstractMojo {
         final QuarkusDevModeLauncher launcher;
         private Process process;
 
-        private DevModeRunner() throws Exception {
-            launcher = newLauncher(null);
+        private DevModeRunner(String bootstrapId) throws Exception {
+            launcher = newLauncher(null, bootstrapId);
         }
 
-        private DevModeRunner(Boolean debugPortOk) throws Exception {
-            launcher = newLauncher(debugPortOk);
+        private DevModeRunner(Boolean debugPortOk, String bootstrapId) throws Exception {
+            launcher = newLauncher(debugPortOk, bootstrapId);
         }
 
         Collection<Path> pomFiles() {
@@ -995,7 +1000,7 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-    private QuarkusDevModeLauncher newLauncher(Boolean debugPortOk) throws Exception {
+    private QuarkusDevModeLauncher newLauncher(Boolean debugPortOk, String bootstrapId) throws Exception {
         String java = null;
         // See if a toolchain is configured
         if (toolchainManager != null) {
@@ -1113,36 +1118,22 @@ public class DevMojo extends AbstractMojo {
         // path to the serialized application model
         final Path appModelLocation = resolveSerializedModelLocation();
 
-        ApplicationModel appModel = bootstrapProvider
-                .getResolvedApplicationModel(QuarkusBootstrapProvider.getProjectId(project), getLaunchModeClasspath());
+        ApplicationModel appModel = bootstrapProvider.getResolvedApplicationModel(
+                QuarkusBootstrapProvider.getProjectId(project), getLaunchModeClasspath(), bootstrapId);
         if (appModel != null) {
             bootstrapProvider.close();
         } else {
             final BootstrapMavenContextConfig<?> mvnConfig = BootstrapMavenContext.config()
                     .setRemoteRepositories(repos)
-                    .setRemoteRepositoryManager(workspaceProvider.getRemoteRepositoryManager())
                     .setWorkspaceDiscovery(true)
                     .setPreferPomsFromWorkspace(true)
                     .setCurrentProject(project.getFile().toString());
 
-            final BootstrapMavenContext mvnCtx;
-            // if a serialized model is found, it may be a reload triggered by a change in a POM
-            // in which case we should not be using the original Maven session initialized with the previous POM version
-            if (Files.exists(appModelLocation)) {
-                Files.delete(appModelLocation);
-                // we can't re-use the repo system because we want to use our interpolating model builder
-                // a use-case where it fails with the original repo system is when dev mode is launched with -Dquarkus.platform.version=xxx
-                // overriding the version of the quarkus-bom in the pom.xml
-                mvnCtx = workspaceProvider.createMavenContext(mvnConfig);
-            } else {
-                // we can re-use the original Maven session and the system
-                mvnConfig.setRepositorySystemSession(repoSession).setRepositorySystem(repoSystem);
-                // there could be Maven extensions manipulating the project versions and models
-                // the ones returned from the Maven API could be different from the original pom.xml files
-                mvnConfig.setProjectModelProvider(QuarkusBootstrapProvider.getProjectMap(session)::get);
-                mvnCtx = new BootstrapMavenContext(mvnConfig);
-            }
-
+            // There are a couple of reasons we don't want to use the original Maven session:
+            // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync any more with the effective POM;
+            // 2) in case there is a local module that has a snapshot version, which is also available in a remote snapshot repository,
+            // the Maven resolver will be checking for newer snapshots in the remote repository and might end up resolving the artifact from there.
+            final BootstrapMavenContext mvnCtx = workspaceProvider.createMavenContext(mvnConfig);
             appModel = new BootstrapAppModelResolver(new MavenArtifactResolver(mvnCtx))
                     .setDevMode(true)
                     .setTest(LaunchMode.TEST.equals(getLaunchModeClasspath()))

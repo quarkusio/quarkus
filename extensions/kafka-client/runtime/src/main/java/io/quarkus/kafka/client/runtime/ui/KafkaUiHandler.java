@@ -13,6 +13,7 @@ import io.quarkus.kafka.client.runtime.ui.model.request.KafkaCreateTopicRequest;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessageCreateRequest;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessagesRequest;
 import io.quarkus.kafka.client.runtime.ui.model.request.KafkaOffsetRequest;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
@@ -55,7 +56,7 @@ public class KafkaUiHandler extends AbstractHttpRequestHandler {
                         message = webUtils.toJson(webUtils.getTopics());
                         break;
                     case "deleteTopic":
-                        res = adminClient.deleteTopic(body.getString("key"));
+                        adminClient.deleteTopic(body.getString("key"));
                         message = "{}";
                         res = true;
                         break;
@@ -95,6 +96,7 @@ public class KafkaUiHandler extends AbstractHttpRequestHandler {
         }
 
         if (res) {
+            event.response().headers().set(HttpHeaders.CONTENT_TYPE, "application/json");
             endResponse(event, OK, message);
         } else {
             message = "ERROR: " + error;

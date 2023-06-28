@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.concurrent.CompletionStage;
 
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassType;
@@ -18,6 +19,8 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.deployment.Types.AssignabilityCheck;
 
 public class TypesTest {
@@ -59,6 +62,19 @@ public class TypesTest {
         assertFalse(assignabilityCheck.isAssignableFrom(byteArrayType, intArrayType));
     }
 
+    @Test
+    public void testIsImplementorOf() throws IOException {
+        Index index = index(MyResolver1.class, MyResolver2.class, MyResolver3.class, MyResolver4.class, CoolResolver.class,
+                BaseResolver.class, String.class);
+
+        assertTrue(Types.isImplementorOf(index.getClassByName(MyResolver1.class), Names.VALUE_RESOLVER, index));
+        assertTrue(Types.isImplementorOf(index.getClassByName(MyResolver2.class), Names.VALUE_RESOLVER, index));
+        assertTrue(Types.isImplementorOf(index.getClassByName(MyResolver3.class), Names.VALUE_RESOLVER, index));
+        assertTrue(Types.isImplementorOf(index.getClassByName(MyResolver4.class), Names.VALUE_RESOLVER, index));
+        assertTrue(Types.isImplementorOf(index.getClassByName(CoolResolver.class), Names.VALUE_RESOLVER, index));
+        assertFalse(Types.isImplementorOf(index.getClassByName(String.class), Names.VALUE_RESOLVER, index));
+    }
+
     private static Index index(Class<?>... classes) throws IOException {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
@@ -68,6 +84,44 @@ public class TypesTest {
             }
         }
         return indexer.complete();
+    }
+
+    public static class MyResolver1 implements ValueResolver {
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return null;
+        }
+
+    }
+
+    public static class MyResolver2 extends BaseResolver {
+
+    }
+
+    public static class BaseResolver implements ValueResolver {
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return null;
+        }
+    }
+
+    public interface CoolResolver extends ValueResolver {
+
+    }
+
+    public static class MyResolver3 implements CoolResolver {
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return null;
+        }
+
+    }
+
+    public static class MyResolver4 extends MyResolver3 {
+
     }
 
 }

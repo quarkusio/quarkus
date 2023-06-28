@@ -101,7 +101,7 @@ public class CreateApp extends BaseCreateCommand {
             return CommandLine.ExitCode.SOFTWARE;
         } catch (Exception e) {
             return output.handleCommandException(e,
-                    "Unable to create project: " + e.getMessage());
+                    "Unable to create project: " + e.getLocalizedMessage());
         }
     }
 

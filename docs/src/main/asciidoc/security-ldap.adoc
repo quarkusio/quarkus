@@ -252,4 +252,4 @@ include::{generated-dir}/config/quarkus-elytron-security-ldap.adoc[opts=optional
 == References
 
 * https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol[LDAP]
-* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-overview.adoc[Quarkus Security overview]

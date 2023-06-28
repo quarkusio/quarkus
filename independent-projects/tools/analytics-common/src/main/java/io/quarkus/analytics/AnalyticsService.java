@@ -60,8 +60,8 @@ import io.quarkus.analytics.dto.segment.TrackEventType;
 import io.quarkus.analytics.dto.segment.TrackProperties;
 import io.quarkus.analytics.rest.RestClient;
 import io.quarkus.analytics.util.FileUtils;
+import io.quarkus.analytics.util.PropertyUtils;
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
@@ -94,7 +94,7 @@ public class AnalyticsService implements AutoCloseable {
 
         if (this.config.isActive() &&
                 this.config.isArtifactActive(
-                        applicationModel.getApplicationModule().getId().getGroupId(),
+                        applicationModel.getAppArtifact().getGroupId(),
                         getQuarkusVersion(applicationModel))) {
 
             final Map<String, Object> context = createContextMap(applicationModel, buildInfo);
@@ -123,7 +123,7 @@ public class AnalyticsService implements AutoCloseable {
         try {
             // complete all. Normally, the queue should have only 1 element.
             CompletableFuture.allOf(postFutures.toArray(new CompletableFuture[0])).get(
-                    Integer.getInteger("quarkus.analytics.timeout", DEFAULT_TIMEOUT),
+                    PropertyUtils.getProperty("quarkus.analytics.timeout", DEFAULT_TIMEOUT),
                     TimeUnit.MILLISECONDS);
             if (log.isDebugEnabled() && !postFutures.isEmpty()) {
                 log.debug("[Quarkus build analytics] Build analytics sent successfully. Sent event can be seen at .../target/" +
@@ -161,7 +161,7 @@ public class AnalyticsService implements AutoCloseable {
 
     Map<String, Object> createContextMap(ApplicationModel applicationModel,
             Map<String, Object> buildInfo) {
-        WorkspaceModuleId moduleId = applicationModel.getApplicationModule().getId();
+        ArtifactCoords moduleId = applicationModel.getAppArtifact();
 
         return new ContextBuilder()
                 .mapPair(PROP_APP)

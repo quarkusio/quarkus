@@ -37,9 +37,11 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.ManifestSection;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
@@ -54,17 +56,19 @@ public class QuarkusBootstrapProvider implements Closeable {
     private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
     private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
 
+    private final QuarkusWorkspaceProvider workspaceProvider;
     private final RepositorySystem repoSystem;
-
     private final RemoteRepositoryManager remoteRepoManager;
 
     private final Cache<String, QuarkusMavenAppBootstrap> appBootstrapProviders = CacheBuilder.newBuilder()
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
 
     @Inject
-    public QuarkusBootstrapProvider(RepositorySystem repoSystem, RemoteRepositoryManager remoteRepoManager) {
+    public QuarkusBootstrapProvider(RepositorySystem repoSystem, RemoteRepositoryManager remoteRepoManager,
+            QuarkusWorkspaceProvider workspaceProvider) {
         this.repoSystem = repoSystem;
         this.remoteRepoManager = remoteRepoManager;
+        this.workspaceProvider = workspaceProvider;
     }
 
     static ArtifactKey getProjectId(MavenProject project) {
@@ -87,17 +91,23 @@ public class QuarkusBootstrapProvider implements Closeable {
         return projectModels;
     }
 
-    public RepositorySystem repositorySystem() {
-        return repoSystem;
+    private static String getBootstrapProviderId(ArtifactKey moduleKey, String bootstrapId) {
+        return bootstrapId == null ? moduleKey.toGacString() : moduleKey.toGacString() + "-" + bootstrapId;
     }
 
+    @Deprecated(forRemoval = true)
+    public RepositorySystem repositorySystem() {
+        return workspaceProvider.getRepositorySystem();
+    }
+
+    @Deprecated(forRemoval = true)
     public RemoteRepositoryManager remoteRepositoryManager() {
         return remoteRepoManager;
     }
 
     public QuarkusMavenAppBootstrap bootstrapper(QuarkusBootstrapMojo mojo) {
         try {
-            return appBootstrapProviders.get(String.format("%s-%s", mojo.projectId(), mojo.executionId()),
+            return appBootstrapProviders.get(getBootstrapProviderId(mojo.projectId(), mojo.bootstrapId()),
                     QuarkusMavenAppBootstrap::new);
         } catch (ExecutionException e) {
             throw new IllegalStateException("Failed to cache a new instance of " + QuarkusMavenAppBootstrap.class.getName(),
@@ -110,11 +120,12 @@ public class QuarkusBootstrapProvider implements Closeable {
         return bootstrapper(mojo).bootstrapApplication(mojo, mode);
     }
 
-    public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode) {
+    public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode, String bootstrapId) {
         if (appBootstrapProviders.size() == 0) {
             return null;
         }
-        final QuarkusMavenAppBootstrap provider = appBootstrapProviders.getIfPresent(projectId + "-null");
+        final QuarkusMavenAppBootstrap provider = appBootstrapProviders
+                .getIfPresent(getBootstrapProviderId(projectId, bootstrapId));
         if (provider == null) {
             return null;
         }
@@ -157,19 +168,22 @@ public class QuarkusBootstrapProvider implements Closeable {
 
         private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode)
                 throws MojoExecutionException {
-            isWorkspaceDiscovery(mojo);
             try {
-                final MavenArtifactResolver.Builder builder = MavenArtifactResolver.builder()
-                        .setCurrentProject(mojo.mavenProject().getFile().toString())
-                        .setPreferPomsFromWorkspace(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
+                if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
+                    return workspaceProvider.createArtifactResolver(
+                            BootstrapMavenContext.config()
+                                    .setCurrentProject(mojo.mavenProject().getFile().toString())
+                                    .setPreferPomsFromWorkspace(true)
+                                    .setProjectModelProvider(getProjectMap(mojo.mavenSession())::get));
+                }
+                // PROD packaging mode with workspace discovery disabled
+                return MavenArtifactResolver.builder()
+                        .setWorkspaceDiscovery(false)
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(mojo.repositorySystemSession())
                         .setRemoteRepositories(mojo.remoteRepositories())
-                        .setRemoteRepositoryManager(remoteRepoManager);
-                if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
-                    builder.setWorkspaceDiscovery(true).setProjectModelProvider(getProjectMap(mojo.mavenSession())::get);
-                }
-                return builder.build();
+                        .setRemoteRepositoryManager(remoteRepoManager)
+                        .build();
             } catch (BootstrapMavenException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus bootstrap Maven artifact resolver", e);
             }

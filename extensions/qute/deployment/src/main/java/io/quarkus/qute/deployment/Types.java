@@ -215,4 +215,27 @@ public final class Types {
         }
     }
 
+    static boolean isImplementorOf(ClassInfo target, DotName interfaceName, IndexView index) {
+        if (target.interfaceNames().contains(interfaceName)) {
+            // Direct implementor
+            return true;
+        }
+        DotName superName = target.superName();
+        if (superName != null && !superName.equals(DotName.OBJECT_NAME)) {
+            ClassInfo superClass = index.getClassByName(superName);
+            if (superClass != null && isImplementorOf(superClass, interfaceName, index)) {
+                // Superclass is implementor
+                return true;
+            }
+        }
+        for (DotName name : target.interfaceNames()) {
+            ClassInfo interfaceClass = index.getClassByName(name);
+            if (interfaceClass != null && isImplementorOf(interfaceClass, interfaceName, index)) {
+                // Superinterface is implementor
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

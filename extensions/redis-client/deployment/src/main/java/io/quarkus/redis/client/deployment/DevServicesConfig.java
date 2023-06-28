@@ -1,5 +1,6 @@
 package io.quarkus.redis.client.deployment;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -63,6 +64,12 @@ public class DevServicesConfig {
     @ConfigItem(defaultValue = "redis")
     public String serviceName;
 
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -74,11 +81,12 @@ public class DevServicesConfig {
                 Objects.equals(imageName, that.imageName) &&
                 Objects.equals(port, that.port) &&
                 Objects.equals(shared, that.shared) &&
-                Objects.equals(serviceName, that.serviceName);
+                Objects.equals(serviceName, that.serviceName) &&
+                Objects.equals(containerEnv, that.containerEnv);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, imageName, port, shared, serviceName);
+        return Objects.hash(enabled, imageName, port, shared, serviceName, containerEnv);
     }
 }

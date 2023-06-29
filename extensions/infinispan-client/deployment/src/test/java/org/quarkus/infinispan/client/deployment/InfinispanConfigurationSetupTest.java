@@ -1,6 +1,7 @@
 package org.quarkus.infinispan.client.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import jakarta.inject.Inject;
 
@@ -29,9 +30,7 @@ public class InfinispanConfigurationSetupTest {
     public void infinispanConnectionConfiguration() {
         assertThat(remoteCacheManager).isNotNull();
         Configuration configuration = remoteCacheManager.getConfiguration();
-        assertThat(configuration.servers().size()).isEqualTo(1);
-        assertThat(configuration.servers().get(0).host()).isEqualTo("cluster1");
-        assertThat(configuration.servers().get(0).port()).isEqualTo(31000);
+        assertThat(configuration.servers()).extracting("host", "port").containsExactly(tuple("cluster1", 31000));
         assertThat(configuration.tracingPropagationEnabled()).isFalse();
         assertThat(configuration.clientIntelligence()).isEqualTo(ClientIntelligence.BASIC);
         assertThat(configuration.security().authentication().enabled()).isTrue();
@@ -44,6 +43,11 @@ public class InfinispanConfigurationSetupTest {
         assertThat(configuration.security().ssl().provider()).isEqualTo("SSL_prov");
         assertThat(configuration.security().ssl().protocol()).isEqualTo("SSL_protocol");
         assertThat(configuration.security().ssl().ciphers()).containsExactlyInAnyOrder("SSL_cipher1", "SSL_cipher2");
+        assertThat(configuration.clusters()).extracting("clusterName", "clientIntelligence")
+                .containsExactly(tuple("bsite", ClientIntelligence.BASIC));
+        assertThat(configuration.clusters()).hasSize(1);
+        assertThat(configuration.clusters().get(0).getCluster()).extracting("host", "port")
+                .containsExactly(tuple("bsite1", 32111));
 
         assertThat(configuration.remoteCaches().get("cache1").configuration()).isEqualTo("<replicated-cache/>");
         assertThat(configuration.remoteCaches().get("cache1").nearCacheBloomFilter()).isTrue();

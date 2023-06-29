@@ -115,6 +115,56 @@ quarkus.infinispan-client.client-intelligence=BASIC <2>
 Use Infinispan Dev Services to run a server and connect without configuration.
 ====
 
+=== Configuring backup clusters in Cross-Site Replication
+In High Availability production deployments, it is common to have multiple Infinispan Clusters that are
+distributed across various Data Centers worldwide. Infinispan offers the capability to connect these clusters and
+configure backups between them. This enables seamless switching between clusters through both automated and manual
+methods using a single connection. To achieve this, it is necessary to configure the client to direct to the backup
+clusters.
+
+[source,properties]
+----
+quarkus.infinispan-client.hosts=host1:11222,host2:3122 <1>
+quarkus.infinispan-client.username=admin
+quarkus.infinispan-client.password=password
+quarkus.infinispan-client.backup-cluster.nyc-site.hosts=nyc1:11222,nyc2:21222,nyc3:31222 <2>
+quarkus.infinispan-client.backup-cluster.nyc-site.client-intelligence=BASIC <3>
+quarkus.infinispan-client.backup-cluster.lon-site.hosts=lon1:11222,lon2:21222,lon3:31222 <4>
+----
+<1> Sets Infinispan Server address list, separated with commas. This is the default cluster.
+<2> Configures a backup site 'nyc-site' with the provided address list
+<3> Configures a backup site 'nyc-site' with the provided client intelligence
+<4> Configures an additional backup site 'lon-site' with the provided address list
+
+Based on the provided configuration, in the event of the default cluster becoming unavailable, the client will
+seamlessly transition to one of the accessible backup clusters.
+Additionally, there is also the option to manually switch the client to an alternate cluster:
+
+[source,java]
+----
+@ApplicationScoped
+public class InfinispanExample {
+    @Inject
+    RemoteCacheManager cacheManager;
+
+    public void doSomething() {
+       cacheManager.switchToCluster("nyc-site"); //<1>
+       cacheManager.switchToCluster("lon-site"); //<2>
+       cacheManager.switchToDefaultCluster(); //<3>
+    }
+}
+----
+<1> The client connects to the 'nyc-site'.
+<2> The client connects to the 'lon-site'.
+<3> The client connects to the default site.
+
+[NOTE]
+====
+Cross-site replication is a powerful feature offered by Infinispan that facilitates data backup between clusters
+situated in geographically diverse data centers, even spanning across various cloud providers.
+Learn more in the link:https://infinispan.org/docs/stable/titles/xsite/xsite.html[Infinispan documentation].
+====
+
 === Default and named connections
 This extension lets you configure a _default_ Infinispan client connections and _named_ ones.
 Named connections are essential to connect to multiple Infinispan clusters.
@@ -163,7 +213,6 @@ the traces from the Infinispan Client to the Server.
 This behavior can be disabled via the property `quarkus.infinispan-client.tracing.propagation.enabled`
 
 === Creating caches from the client
-
 When a cache is accessed from the client, if the cache does not exist in the Infinispan Server and you want
 to create it on first access, use one of the following properties:
 

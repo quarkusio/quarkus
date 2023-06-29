@@ -855,45 +855,34 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 
 Testing reactive Panache entities in a `@QuarkusTest` is slightly more complicated than testing regular Panache entities due to the asynchronous nature of the APIs and the fact that all operations need to run on a Vert.x event loop.
 
-The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVertxContext` annotation and the `io.quarkus.test.vertx.UniAsserter` class which are intended precisely for this purpose. 
+The `quarkus-test-vertx` dependency provides the `@io.quarkus.test.vertx.RunOnVertxContext` annotation and the `io.quarkus.test.vertx.UniAsserter` class which are intended precisely for this purpose.
 The usage is described in the xref:hibernate-reactive.adoc#testing[Hibernate Reactive] guide.
 
-You can also extend the `io.quarkus.test.vertx.UniAsserterInterceptor` to wrap the injected `UniAsserter` and customize the behavior.
-For example, the interceptor can be used to execute the assert methods within a separate database transaction.
+Moreover, the `quarkus-test-hibernate-reactive-panache` dependency provides the `io.quarkus.test.hibernate.reactive.panache.TransactionalUniAsserter` that can be injected as a method parameter of a test method annotated with `@RunOnVertxContext`.
+The `TransactionalUniAsserter` is a `io.quarkus.test.vertx.UniAsserterInterceptor` that wraps each assert method within a separate reactive transaction.
 
-.`UniAsserterInterceptor` Example
+.`TransactionalUniAsserter` Example
 [source,java]
 ----
-import io.quarkus.test.vertx.UniAsserterInterceptor;
+import io.quarkus.test.hibernate.reactive.panache.TransactionalUniAsserter;
 
 @QuarkusTest
 public class SomeTest {
 
-    static class TransactionalUniAsserterInterceptor extends UniAsserterInterceptor {
-
-        public TransactionUniAsserterInterceptor(UniAsserter asserter) {
-            super(asserter);
-        }
-
-        @Override
-        protected <T> Supplier<Uni<T>> transformUni(Supplier<Uni<T>> uniSupplier) {
-            // Assert/execute methods are invoked within a database transaction
-            return () -> Panache.withTransaction(uniSupplier);
-        }
-    }
-
     @Test
     @RunOnVertxContext
-    public void testEntity(UniAsserter asserter) {
-        asserter = new TransactionalUniAsserterInterceptor(asserter); <1>
-        asserter.execute(() -> new MyEntity().persist());
-        asserter.assertEquals(() -> MyEntity.count(), 1l);
-        asserter.execute(() -> MyEntity.deleteAll());
+    public void testEntity(TransactionalUniAsserter asserter) { 
+        asserter.execute(() -> new MyEntity().persist()); <1>
+        asserter.assertEquals(() -> MyEntity.count(), 1l); <2> 
+        asserter.execute(() -> MyEntity.deleteAll()); <3>
     }
 }
 ----
-<1> The `TransactionalUniAsserterInterceptor` wraps the injected `UniAsserter`.
+<1> The first reactive transaction is used to persist the entity.
+<2> The second reactive transaction is used to count the entities.
+<3> The third reactive transaction is used to delete all entities.
 
+Of course, you can also define a custom `UniAsserterInterceptor` to wrap the injected `UniAsserter` and customize the behavior.
 
 == Mocking
 

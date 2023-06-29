@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Used to ensure that entity relationships work correctly
  */
-public interface PostRepository extends IntermediatePostRepository<Post> {
+public interface PostRepository extends IntermediatePostRepository<Object, Post, Object> {
 
     List<Post> findAllByOrganization(String organization);
 

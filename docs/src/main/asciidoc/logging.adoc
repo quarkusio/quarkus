@@ -11,25 +11,20 @@ include::_attributes.adoc[]
 Read about the efficient use of logging API in Quarkus, configuring logging output according to your needs, and using logging adapters to unify the output from other logging APIs.
 
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
-Quarkus supports the JBoss Logging API as well as multiple other logging APIs listed in the upcoming section.
-These APIs seamlessly integrate with JBoss Log Manager.
-
-To configure your logging, you will exclusively work within your `application.properties` file.
-
-[[supported-logging-apis]]
-== Supported logging APIs
-
-Applications and components commonly utilize a logging API to log messages during runtime.
-The underlying implementation of this API is responsible for storing these messages, typically in a file.
-
-With all logs ultimately directed to the JBoss Log Manager, you have the flexibility to utilize any of the featured logging APIs available:
+Quarkus supports the JBoss Logging API as well as multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
+You can use any of the <<logging-apis, following APIs>>:
 
 * link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
 * JDK `java.util.logging` (JUL)
 * link:https://www.slf4j.org/[SLF4J]
 * link:https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
+* link:https://logging.apache.org/log4j/2.x/[Apache Log4j 2]
+* link:https://logging.apache.org/log4j/1.2/[Apache Log4j 1]
 
-NOTE: By leveraging JBoss Logging within your application, you eliminate the need for additional logging dependencies.
+[[jboss-logging]]
+== Use JBoss Logging for application logging
+
+No additional dependencies are needed when using the JBoss Logging API; it is automatically provided.
 
 .An example of using the JBoss Logging API to log a message:
 [source,java]
@@ -56,10 +51,9 @@ public class ExampleResource {
 ----
 
 NOTE: While JBoss Logging routes log messages into JBoss Log Manager directly, one of your libraries might rely on a different logging API.
-In such cases, you need to use a <<logging-adapters,logging adapter>> to ensure that its log messages are routed to JBoss Log Manager as well.
+In such cases, you need to use a <<logging-apis, logging adapter>> to ensure that its log messages are routed to JBoss Log Manager as well.
 
-
-== Methods of obtaining an application logger
+== Get an application logger
 
 In Quarkus, the most common ways to obtain an application logger are by:
 
@@ -67,13 +61,12 @@ In Quarkus, the most common ways to obtain an application logger are by:
 * <<logging-with-panache,Logging with Panache>>
 * <<injection-of-a-configured-logger,Injecting a configured logger>>
 
-
 [[declaring-a-loger-field]]
 === Declaring a logger field
 
 With this classic approach, you use a specific API to obtain a logger instance, store it in a static field of a class, and call logging operations upon this instance.
 
-The same flow can be applied with any of the <<supported-logging-apis,supported logging APIs>>.
+The same flow can be applied with any of the <<logging-apis, supported logging APIs>>.
 
 .An example of storing a logger instance into a static field by using the JBoss Logging API:
 [source,java]
@@ -158,7 +151,7 @@ class SimpleBean {
 NOTE: The logger instances are cached internally. Therefore, when a logger is injected, for example, into a `@RequestScoped` bean, it is shared for all bean instances to avoid possible performance penalties associated with logger instantiation.
 
 
-== Logging levels
+== Use log levels
 
 .Log levels used by Quarkus
 
@@ -205,11 +198,11 @@ FINEST:: Increased debug output compared to `TRACE`, which might have a higher f
 |===
 
 
-== Runtime configuration
+== Configure the log level, category and format
 
 Runtime logging is configured in the `application.properties` file.
 
-Because JBoss Logging is built-in to Quarkus, link:https://quarkus.io/developer-joy/[unified configuration] is provided for all <<supported-logging-apis,supported logging APIs>>.
+Because JBoss Logging is built in to Quarkus, link:https://quarkus.io/developer-joy/[unified configuration] is provided for all <<logging-apis,supported logging APIs>>.
 
 .An example of how you can set the default log level to `INFO` logging and include Hibernate `DEBUG` logs:
 [source, properties]
@@ -533,7 +526,7 @@ quarkus.log.handlers=CONSOLE_MIRROR
 
 To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see the Quarkus xref:centralized-log-management.adoc[Centralized log management] guide.
 
-== How to configure logging for `@QuarkusTest`
+== Configure logging for `@QuarkusTest`
 
 To configure logging for your `@QuarkusTest`, ensure that you configure the `maven-surefire-plugin` accordingly.
 Specifically, you need to set the appropriate `LogManager` by using the `java.util.logging.manager` system property.
@@ -571,12 +564,13 @@ test {
 
 See also <<getting-started-testing.adoc#test-from-ide,Running `@QuarkusTest` from an IDE>>.
 
-[[logging-adapters]]
-== Logging adapters
+[[logging-apis]]
+== Use other logging APIs
 
 Quarkus relies on the JBoss Logging library for all the logging requirements.
 
-Suppose you use libraries that depend on other logging libraries, such as Apache Commons Logging, Log4j, or SLF4J. In that case, you need to exclude them from the dependencies and use one of the JBoss Logging adapters.
+Suppose you use libraries that depend on other logging libraries, such as Apache Commons Logging, Log4j, or SLF4J.
+In that case, you need to exclude them from the dependencies and use one of the JBoss Logging adapters.
 
 This is especially important when building native executables, as you could encounter issues similar to the following when compiling the native executable:
 
@@ -671,6 +665,82 @@ implementation("org.jboss.slf4j:slf4j-jboss-logmanager")
 ----
 
 . Verify whether the logs generated by the added library adhere to the same format as the other Quarkus logs.
+
+=== Use MDC to add contextual log information
+
+Quarkus overrides log MDC (Mapped Diagnostic Context) to improve the compatibility with its reactive core.
+
+==== Adding and reading MDC data
+
+To add data to the MDC and extract it in your log output, you need to:
+
+1. Use the `MDC` class to set the data
+2. Customize the log format to use `%X\{mdc-key\}`
+
+Let's consider the following code:
+
+[source, java]
+.Example with JBoss Logging and `io.quarkus.logging.Log`
+----
+package me.sample;
+
+import io.quarkus.logging.Log;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import org.jboss.logmanager.MDC;
+
+import java.util.UUID;
+
+@Path("/hello/jboss")
+public class GreetingResourceJbossLogging {
+
+    @GET
+    @Path("/test")
+    public String greeting() {
+        MDC.put("request.id", UUID.randomUUID().toString());
+        MDC.put("request.path", "/hello/test");
+        Log.info("request received");
+        return "hello world!";
+    }
+}
+----
+
+If you configure the log format with the following line:
+
+[source, properties]
+----
+quarkus.log.console.format=%d{HH:mm:ss} %-5p request.id=%X{request.id} request.path=%X{request.path} [%c{2.}] (%t) %s%n
+----
+
+You get messages containing the MDC data:
+
+[source, text]
+----
+08:48:13 INFO  request.id=c37a3a36-b7f6-4492-83a1-de41dbc26fe2 request.path=/hello/test [me.sa.GreetingResourceJbossLogging] (executor-thread-1) request received
+----
+
+==== MDC and supported logging APIs
+
+Depending on the API you use, the MDC class is slightly different.
+However, the APIs are very similar:
+
+* log4j 1 - `org.apache.log4j.MDC.put(key, value)`
+* log4j 2 - `org.apache.logging.log4j.ThreadContext.put(key, value)`
+* slf4j - `org.slf4j.MDC.put(key, value)`
+
+==== MDC propagation
+
+Under the hood, Quarkus provides a specific implementation of the MDC provider handling the reactive context.
+Thus, the MDC data is propagated even when using reactive and asynchronous processing.
+
+Consequently, the MDC data is still available:
+
+- after async calls (like a REST client returning a Uni)
+- in the code submitted to the `ManagedExecutor` (`@Inject org.eclipse.microprofile.context.ManagedExecutor executor`)
+- in the code executed using `vertx.executeBlocking()`
+
+NOTE: When available, the MDC data is stored on a _duplicated context_ which is an isolated context for your processing.
+
 
 [[loggingConfigurationReference]]
 == Logging configuration reference

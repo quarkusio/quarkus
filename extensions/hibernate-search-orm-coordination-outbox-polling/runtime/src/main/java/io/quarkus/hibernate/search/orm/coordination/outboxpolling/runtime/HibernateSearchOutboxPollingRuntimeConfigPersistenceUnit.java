@@ -66,7 +66,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * for example to dedicate some nodes to HTTP request processing and other nodes to event processing.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -88,7 +88,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * but will increase the stress on the database when there are no new events.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -118,7 +118,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * but less stress on the database because of less frequent checks of the list of agents.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -145,7 +145,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * because an event processor is incorrectly considered disconnected.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -163,7 +163,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * but will increase memory usage and in extreme cases may lead to ``OutOfMemoryError``s.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -182,7 +182,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * If this happens, set a higher transaction timeout for event processing using this property.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -197,7 +197,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * Use the value `0S` to reprocess failed events as soon as possible, with no delay.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -222,7 +222,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * is necessary.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor-sharding[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor-sharding[this section of the reference documentation]
          * for more information about event processor sharding.
          *
          * @asciidoclet
@@ -246,7 +246,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * by setting `shards.assigned` to a comma-separated list, e.g. `0,3`.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-event-processor-sharding[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-event-processor-sharding[this section of the reference documentation]
          * for more information about event processor sharding.
          *
          * @asciidoclet
@@ -273,7 +273,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * but will reduce the stress on the database while the mass indexer agent is actively waiting.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-mass-indexer[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-mass-indexer[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -301,7 +301,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * but less stress on the database because of less frequent updates of the mass indexer agent's entry in the agent table.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-mass-indexer[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-mass-indexer[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet
@@ -328,7 +328,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
          * because a mass indexer agent is incorrectly considered disconnected.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#coordination-outbox-polling-mass-indexer[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#coordination-outbox-polling-mass-indexer[this section of the reference documentation]
          * for more information.
          *
          * @asciidoclet

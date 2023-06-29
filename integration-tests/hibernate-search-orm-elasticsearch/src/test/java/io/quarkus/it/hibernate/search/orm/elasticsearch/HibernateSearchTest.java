@@ -11,11 +11,15 @@ import io.restassured.RestAssured;
 public class HibernateSearchTest {
 
     @Test
-    public void testSearch() throws Exception {
+    public void testSearch() {
         RestAssured.when().put("/test/hibernate-search/init-data").then()
                 .statusCode(204);
 
         RestAssured.when().get("/test/hibernate-search/search").then()
+                .statusCode(200)
+                .body(is("OK"));
+
+        RestAssured.when().get("/test/hibernate-search/search-projection").then()
                 .statusCode(200)
                 .body(is("OK"));
 

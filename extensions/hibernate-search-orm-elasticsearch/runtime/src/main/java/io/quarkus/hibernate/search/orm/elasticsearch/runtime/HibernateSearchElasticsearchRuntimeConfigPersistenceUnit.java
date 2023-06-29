@@ -67,8 +67,16 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     SearchQueryLoadingConfig queryLoading();
 
     /**
-     * Configuration for the automatic indexing.
+     * Configuration for indexing.
      */
+    IndexingConfig indexing();
+
+    /**
+     * Configuration for automatic indexing.
+     *
+     * @deprecated Use {@link #indexing()} instead.
+     */
+    @Deprecated
     AutomaticIndexingConfig automaticIndexing();
 
     /**
@@ -256,31 +264,41 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface AutomaticIndexingConfig {
+    interface IndexingConfig {
 
         /**
-         * Configuration for synchronization with the index when indexing automatically.
+         * Configuration for indexing plans.
          */
-        AutomaticIndexingSynchronizationConfig synchronization();
+        IndexingPlanConfig plan();
 
-        /**
-         * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
-         *
-         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
-         * indexing.
-         *
-         * @asciidoclet
-         */
-        @WithDefault("true")
-        boolean enableDirtyCheck();
     }
 
+    // Having a dedicated config group class feels a bit unnecessary
+    // because we could just use @WithName("plan.synchronization.strategy")
+    // but that leads to bugs
+    // see https://github.com/quarkusio/quarkus/pull/34251#issuecomment-1611273375
     @ConfigGroup
-    public interface AutomaticIndexingSynchronizationConfig {
+    interface IndexingPlanConfig {
+
+        /**
+         * Configuration for indexing plan synchronization.
+         */
+        IndexingPlanSynchronizationConfig synchronization();
+
+    }
+
+    // Having a dedicated config group class feels a bit unnecessary
+    // because we could just use @WithName("plan.synchronization.strategy")
+    // but that leads to bugs
+    // see https://github.com/quarkusio/quarkus/pull/34251#issuecomment-1611273375
+    @ConfigGroup
+    interface IndexingPlanSynchronizationConfig {
 
         // @formatter:off
         /**
-         * The synchronization strategy to use when indexing automatically.
+         * How to synchronize between application threads and indexing,
+         * in particular when relying on (implicit) listener-triggered indexing on entity change,
+         * but also when using a `SearchIndexingPlan` explicitly.
          *
          * Defines how complete indexing should be before resuming the application thread
          * after a database transaction is committed.
@@ -332,21 +350,62 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * !===
          *
          * This property also accepts a xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference]
-         * to a custom implementations of `AutomaticIndexingSynchronizationStrategy`.
+         * to a custom implementations of `IndexingPlanSynchronizationStrategy`.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#mapper-orm-indexing-automatic-synchronization[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#indexing-plan-synchronization[this section of the reference documentation]
          * for more information.
          *
          * [NOTE]
          * ====
          * Instead of setting this configuration property,
-         * you can simply annotate your custom `AutomaticIndexingSynchronizationStrategy` implementation with `@SearchExtension`
+         * you can simply annotate your custom `IndexingPlanSynchronizationStrategy` implementation with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *
          * @asciidoclet
+         */
+        // @formatter:on
+        @ConfigDocDefault("write-sync")
+        Optional<String> strategy();
+
+    }
+
+    @ConfigGroup
+    @Deprecated
+    public interface AutomaticIndexingConfig {
+
+        /**
+         * Configuration for synchronization with the index when indexing automatically.
+         *
+         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy} instead.
+         */
+        AutomaticIndexingSynchronizationConfig synchronization();
+
+        /**
+         * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
+         * <p>
+         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
+         * indexing.
+         *
+         * @deprecated This property is deprecated with no alternative to replace it.
+         *             In the future, a dirty check will always be performed when considering whether to trigger reindexing.
+         */
+        @WithDefault("true")
+        @Deprecated
+        boolean enableDirtyCheck();
+    }
+
+    @ConfigGroup
+    @Deprecated
+    public interface AutomaticIndexingSynchronizationConfig {
+
+        // @formatter:off
+        /**
+         * The synchronization strategy to use when indexing automatically.
+         *
+         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy} instead.
          */
         // @formatter:on
         @ConfigDocDefault("write-sync")

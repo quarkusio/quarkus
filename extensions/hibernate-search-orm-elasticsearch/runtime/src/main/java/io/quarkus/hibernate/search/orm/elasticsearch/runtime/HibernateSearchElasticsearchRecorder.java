@@ -37,7 +37,8 @@ import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.coordination.common.spi.CoordinationStrategy;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
-import org.hibernate.search.util.common.reflect.spi.ValueReadHandleFactory;
+import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
+import org.hibernate.search.util.common.reflect.spi.ValueHandleFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
@@ -47,6 +48,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElas
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchBackendRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit.ElasticsearchIndexRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
+import io.quarkus.hibernate.search.orm.elasticsearch.runtime.mapping.QuarkusHibernateOrmSearchMappingConfigurer;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -56,10 +58,21 @@ public class HibernateSearchElasticsearchRecorder {
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
             String persistenceUnitName, HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
+            Set<String> rootAnnotationMappedClassNames,
             List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+        Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        for (String className : rootAnnotationMappedClassNames) {
+            try {
+                rootAnnotationMappedClasses.add(Class.forName(className, true, tccl));
+            } catch (Exception e) {
+                throw new IllegalStateException("Could not initialize mapped class " + className, e);
+            }
+        }
         return new HibernateSearchIntegrationStaticInitListener(persistenceUnitName,
                 buildTimeConfig.getPersistenceUnitConfig(persistenceUnitName),
-                backendAndIndexNamesForSearchExtensions, integrationStaticInitListeners);
+                backendAndIndexNamesForSearchExtensions, rootAnnotationMappedClasses,
+                integrationStaticInitListeners);
     }
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitInactiveListener() {
@@ -171,15 +184,18 @@ public class HibernateSearchElasticsearchRecorder {
         private final String persistenceUnitName;
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
         private final Map<String, Set<String>> backendAndIndexNamesForSearchExtensions;
+        private final Set<Class<?>> rootAnnotationMappedClasses;
         private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
 
         private HibernateSearchIntegrationStaticInitListener(String persistenceUnitName,
                 HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
                 Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
+                Set<Class<?>> rootAnnotationMappedClasses,
                 List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
             this.persistenceUnitName = persistenceUnitName;
             this.buildTimeConfig = buildTimeConfig;
             this.backendAndIndexNamesForSearchExtensions = backendAndIndexNamesForSearchExtensions;
+            this.rootAnnotationMappedClasses = rootAnnotationMappedClasses;
             this.integrationStaticInitListeners = integrationStaticInitListeners;
         }
 
@@ -190,6 +206,10 @@ public class HibernateSearchElasticsearchRecorder {
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             buildTimeConfig == null ? Optional.empty() : buildTimeConfig.backgroundFailureHandler(),
                             FailureHandler.class, persistenceUnitName, null, null));
+
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.MAPPING_CONFIGURER,
+                    new QuarkusHibernateOrmSearchMappingConfigurer(rootAnnotationMappedClasses));
 
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.COORDINATION_STRATEGY,
@@ -227,7 +247,7 @@ public class HibernateSearchElasticsearchRecorder {
                 BiConsumer<String, Object> propertyCollector) {
             HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
                     // MethodHandles don't work at all in GraalVM 20 and below, and seem unreliable on GraalVM 21
-                    .valueReadHandleFactory(ValueReadHandleFactory.usingJavaLangReflect())
+                    .valueReadHandleFactory(ValueHandleFactory.usingJavaLangReflect())
                     .build();
             booter.preBoot(propertyCollector);
 
@@ -280,7 +300,7 @@ public class HibernateSearchElasticsearchRecorder {
             // Settings that may default to a @SearchExtension-annotated-bean
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
-                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                    HibernateSearchBeanUtil.multiExtensionBeanReferencesFor(
                             indexConfig == null ? Optional.empty() : indexConfig.analysis().configurer(),
                             ElasticsearchAnalysisConfigurer.class, persistenceUnitName, backendName, indexName));
         }
@@ -352,6 +372,12 @@ public class HibernateSearchElasticsearchRecorder {
                         runtimeConfig.multiTenancy().tenantIds());
             }
 
+            addConfig(propertyCollector,
+                    HibernateOrmMapperSettings.INDEXING_PLAN_SYNCHRONIZATION_STRATEGY,
+                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
+                            runtimeConfig == null ? Optional.empty()
+                                    : runtimeConfig.indexing().plan().synchronization().strategy(),
+                            IndexingPlanSynchronizationStrategy.class, persistenceUnitName, null, null));
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(

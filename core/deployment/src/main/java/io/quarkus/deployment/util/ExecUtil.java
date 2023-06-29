@@ -17,11 +17,11 @@ public class ExecUtil {
 
     private static final Logger LOG = Logger.getLogger(ExecUtil.class);
 
-    private static final Function<InputStream, Runnable> INFO_LOGGING = i -> new HandleOutput(i);
-    private static final Function<InputStream, Runnable> DEBUG_LOGGING = i -> new HandleOutput(i, Logger.Level.DEBUG);
-    private static final Function<InputStream, Runnable> SYSTEM_LOGGING = i -> new HandleOutput(i);
+    public static final Function<InputStream, Runnable> INFO_LOGGING = i -> new HandleOutput(i, Logger.Level.INFO);
+    public static final Function<InputStream, Runnable> DEBUG_LOGGING = i -> new HandleOutput(i, Logger.Level.DEBUG);
+    public static final Function<InputStream, Runnable> SYSTEM_LOGGING = HandleOutput::new;
 
-    private static Function<InputStream, Runnable> SELECTED_LOGGING = INFO_LOGGING;
+    private static final Function<InputStream, Runnable> DEFAULT_LOGGING = INFO_LOGGING;
 
     private static final int PROCESS_CHECK_INTERVAL = 500;
 
@@ -50,23 +50,6 @@ public class ExecUtil {
                 logLevel.ifPresentOrElse(level -> LOG.log(level, "Failed to handle output", e), () -> e.printStackTrace());
             }
         }
-    }
-
-    public static void useInfoLogging() {
-        ExecUtil.SELECTED_LOGGING = INFO_LOGGING;
-    }
-
-    public static void useDebugLogging() {
-        ExecUtil.SELECTED_LOGGING = DEBUG_LOGGING;
-    }
-
-    /**
-     * There are cases where its preferable to just write to System.out.
-     * For example from maven-invoker verify scripts, logging can trigger Stack Overflow.
-     * For such cases its preferable to use this method.
-     */
-    public static void useSystemLogging() {
-        ExecUtil.SELECTED_LOGGING = SYSTEM_LOGGING;
     }
 
     /**
@@ -101,7 +84,7 @@ public class ExecUtil {
      * @return true if commands where executed successfully
      */
     public static boolean exec(File directory, String command, String... args) {
-        return exec(directory, SELECTED_LOGGING, command, args);
+        return exec(directory, DEFAULT_LOGGING, command, args);
     }
 
     /**
@@ -114,7 +97,7 @@ public class ExecUtil {
      * @return true if commands where executed successfully
      */
     public static boolean execWithTimeout(File directory, Duration timeout, String command, String... args) {
-        return execWithTimeout(directory, SELECTED_LOGGING, timeout, command, args);
+        return execWithTimeout(directory, DEFAULT_LOGGING, timeout, command, args);
     }
 
     /**
@@ -131,7 +114,7 @@ public class ExecUtil {
             String... args) {
         try {
             Function<InputStream, Runnable> loggingFunction = outputFilterFunction != null ? outputFilterFunction
-                    : INFO_LOGGING;
+                    : DEFAULT_LOGGING;
             Process process = startProcess(directory, command, args);
             Thread t = new Thread(loggingFunction.apply(process.getInputStream()));
             t.setName("Process stdout");
@@ -160,7 +143,7 @@ public class ExecUtil {
             Duration timeout, String command, String... args) {
         try {
             Function<InputStream, Runnable> loggingFunction = outputFilterFunction != null ? outputFilterFunction
-                    : INFO_LOGGING;
+                    : DEFAULT_LOGGING;
             Process process = startProcess(directory, command, args);
             Thread t = new Thread(loggingFunction.apply(process.getInputStream()));
             t.setName("Process stdout");

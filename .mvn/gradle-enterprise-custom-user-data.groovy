@@ -1,4 +1,4 @@
-
+import groovy.json.JsonSlurper
 
 // Add mvn command line
 def mvnCommand = ''
@@ -17,11 +17,17 @@ if (System.env.GITHUB_ACTIONS) {
     buildScan.value('gh-actor', System.env.GITHUB_ACTOR)
     buildScan.value('gh-workflow', System.env.GITHUB_WORKFLOW)
 
+    if (System.env.GITHUB_EVENT_NAME == "pull_request" && System.env.GITHUB_EVENT_PATH != null) {
+        File eventJsonFile = new File(System.env.GITHUB_EVENT_PATH)
+        if (eventJsonFile.exists()) {
+            def eventJson = new JsonSlurper().parse(eventJsonFile)
+            def prNumber = eventJson.pull_request?.number
 
-    def prnumber = System.env.PULL_REQUEST_NUMBER
-    if (prnumber != null) {
-        buildScan.value('gh-pr', prnumber)
-        buildScan.tag('pr-' + prnumber)
+            if (prNumber != null) {
+                buildScan.value('gh-pr', prNumber)
+                buildScan.tag('pr-' + prNumber)
+            }
+        }
     }
 
     buildScan.buildScanPublished {  publishedBuildScan ->

@@ -53,7 +53,7 @@ public abstract class DevUIJsonRPCTest {
     public JsonNode executeJsonRPCMethod(String methodName, Map<String, String> params) throws Exception {
         int id = random.nextInt(Integer.MAX_VALUE);
         String request = createJsonRPCRequest(id, methodName, params);
-        log.info("request = " + request);
+        log.debug("request = " + request);
 
         Vertx vertx = Vertx.vertx();
 
@@ -91,7 +91,7 @@ public abstract class DevUIJsonRPCTest {
         });
 
         JsonNode response = parseJsonRPCResponse(id);
-        log.info("response = " + response.toPrettyString());
+        log.debug("response = " + response.toPrettyString());
         vertx.close();
         return response;
     }

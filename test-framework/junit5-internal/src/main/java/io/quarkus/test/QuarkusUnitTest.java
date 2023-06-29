@@ -71,7 +71,7 @@ import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.JBossVersion;
-import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -506,6 +506,7 @@ public class QuarkusUnitTest
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.TEST);
         if (beforeAllCustomizer != null) {
@@ -759,7 +760,6 @@ public class QuarkusUnitTest
                 afterAllCustomizer.run();
             }
             ClearCache.clearAnnotationCache();
-            GroovyCacheCleaner.clearGroovyCache();
         }
         if (records != null) {
             assertLogRecords.accept(records);

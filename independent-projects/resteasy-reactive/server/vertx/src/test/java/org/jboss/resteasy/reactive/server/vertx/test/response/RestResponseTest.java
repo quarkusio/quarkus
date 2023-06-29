@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.server.vertx.test.response;
 
+import static org.hamcrest.CoreMatchers.endsWith;
+
 import java.util.function.Supplier;
 
 import org.hamcrest.Matchers;
@@ -99,5 +101,11 @@ public class RestResponseTest {
                 .then().statusCode(200)
                 .and().body(Matchers.equalTo("Uni<RestResponse> request filter"))
                 .and().contentType("text/plain");
+        RestAssured.get("/rest-response-location")
+                .then().statusCode(200)
+                .header("Location", endsWith("/en%2Fus?user=John"));
+        RestAssured.get("/rest-response-content-location")
+                .then().statusCode(200)
+                .header("Content-Location", endsWith("/en%2Fus?user=John"));
     }
 }

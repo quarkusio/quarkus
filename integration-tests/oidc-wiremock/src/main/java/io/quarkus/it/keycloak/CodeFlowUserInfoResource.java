@@ -31,11 +31,9 @@ public class CodeFlowUserInfoResource {
     @GET
     @Path("/code-flow-user-info-only")
     public String access() {
-        int cacheSize = tokenCache.getCacheSize();
-        tokenCache.clearCache();
         return identity.getPrincipal().getName() + ":" + userInfo.getString("preferred_username") + ":" + accessToken.getName()
                 + ", cache size: "
-                + cacheSize;
+                + tokenCache.getCacheSize();
     }
 
     @GET

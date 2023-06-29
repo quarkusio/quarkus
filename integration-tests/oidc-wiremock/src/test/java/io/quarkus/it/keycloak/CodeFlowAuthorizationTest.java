@@ -3,8 +3,10 @@ package io.quarkus.it.keycloak;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -208,9 +210,11 @@ public class CodeFlowAuthorizationTest {
         defineCodeFlowAuthorizationOauth2TokenStub();
 
         doTestCodeFlowUserInfo("code-flow-user-info-only", 300);
+        clearCache();
         doTestCodeFlowUserInfo("code-flow-user-info-github", 360);
+        clearCache();
         doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301);
-
+        clearCache();
         doTestCodeFlowUserInfoCashedInIdToken();
     }
 
@@ -250,6 +254,13 @@ public class CodeFlowAuthorizationTest {
             page = form.getInputByValue("login").click();
 
             assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
+            page = webClient.getPage("http://localhost:8081/" + tenantId);
+            assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
+            page = webClient.getPage("http://localhost:8081/" + tenantId);
+            assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
+
+            wireMockServer.verify(1, getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
+            wireMockServer.resetRequests();
 
             Cookie sessionCookie = getSessionCookie(webClient, tenantId);
             assertNotNull(sessionCookie);

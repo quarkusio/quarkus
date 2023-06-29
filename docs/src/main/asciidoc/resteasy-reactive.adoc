@@ -764,7 +764,7 @@ An example of this could look like:
 package org.acme.rest;
 
 import org.jboss.resteasy.reactive.Header;
-import org.jboss.resteasy.reactive.ResponseHeaders;
+import org.jboss.resteasy.reactive.ResponseHeader;
 import org.jboss.resteasy.reactive.ResponseStatus;
 
 import jakarta.ws.rs.GET;

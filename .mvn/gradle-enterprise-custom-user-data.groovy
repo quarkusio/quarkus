@@ -24,7 +24,7 @@ if (System.env.GITHUB_ACTIONS) {
 
     buildScan.buildScanPublished {  publishedBuildScan ->
         new File(System.env.GITHUB_STEP_SUMMARY).withWriterAppend { out ->
-            out.println("\n[Build scan for '${mavenCommand}' in ${jobName}](${publishedBuildScan.buildScanUri})\n")
+            out.println("\n[Build scan for '${mvnCommand}' in ${jobName}](${publishedBuildScan.buildScanUri})\n")
         }
     }
 }

@@ -261,7 +261,7 @@ public class ExtensionMethodGenerator {
             if (returnsCompletionStage) {
                 ret = result;
             } else {
-                ret = resolve.invokeStaticMethod(Descriptors.COMPLETED_STAGE, result);
+                ret = resolve.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, result);
             }
         } else {
             ret = resolve
@@ -520,7 +520,7 @@ public class ExtensionMethodGenerator {
                                     matchScope.load(param.name));
                         }
                     }
-                    matchScope.returnValue(matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE,
+                    matchScope.returnValue(matchScope.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF,
                             matchScope.invokeStaticMethod(MethodDescriptor.of(method), args)));
                 } else {
                     ResultHandle ret = matchScope.newInstance(MethodDescriptor.ofConstructor(CompletableFuture.class));

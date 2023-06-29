@@ -15,7 +15,7 @@ public final class Results {
 
     public static final CompletedStage<Object> FALSE = CompletedStage.of(false);
     public static final CompletedStage<Object> TRUE = CompletedStage.of(true);
-    public static final CompletedStage<Object> NULL = CompletedStage.of(null);
+    public static final CompletedStage<Object> NULL = CompletedStage.NULL;
 
     private Results() {
     }

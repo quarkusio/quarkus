@@ -33,12 +33,16 @@ public class MyService {
         return name != null;
     }
 
-    public boolean isActive() {
+    public Boolean isActive() {
         return true;
     }
 
     public boolean hasItems() {
         return false;
+    }
+
+    public MyEnum myEnum() {
+        return MyEnum.BAR;
     }
 
     public List<String> getList(int limit, String dummy) {

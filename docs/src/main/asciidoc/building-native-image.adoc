@@ -291,8 +291,8 @@ Either by adding it to `application.properties` or by appending it to the comman
 Your `%test.` prefixed properties will be used at the test runtime.
 
 
-You can override the profile the executable is *built* with and *runs* with using the `quarkus-profile=test` property, e.g.
-`./mvnw clean verify -Dnative -Dquarkus-profile=test`. This might come handy if there are test specific resources to be processed,
+You can override the profile the executable is *built* with and *runs* with using the `quarkus.profile=test` property, e.g.
+`./mvnw clean verify -Dnative -Dquarkus.profile=test`. This might come handy if there are test specific resources to be processed,
 such as importing test data into the database.
 
 [source,properties]
@@ -309,7 +309,7 @@ executable will contain only the `version.txt` resource, no superfluous test dat
 
 [WARNING]
 ====
-The executable built with `-Dquarkus-profile=test` is not suitable for production deployment.
+The executable built with `-Dquarkus.profile=test` is not suitable for production deployment.
 It contains your test resources files and settings. Once the testing is done, the executable would have to be built again,
 using the default, `prod` profile.
 

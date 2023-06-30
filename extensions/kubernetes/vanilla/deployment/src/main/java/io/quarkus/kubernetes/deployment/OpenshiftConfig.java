@@ -58,6 +58,12 @@ public class OpenshiftConfig implements PlatformConfiguration {
     }
 
     /**
+     * Whether the OpenShift extension is enabled and hence the OpenShift manifests are generated or not.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * The OpenShift flavor / version to use.
      * Older versions of OpenShift have minor differences in the labels and fields they support.
      * This option allows users to have their manifests automatically aligned to the OpenShift 'flavor' they use.

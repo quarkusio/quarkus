@@ -75,6 +75,10 @@ public class VanillaKubernetesProcessor {
             KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
+        if (!config.enabled) {
+            return;
+        }
+
         String kind = config.getDeploymentResourceKind(capabilities).kind;
 
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getConfiguredDeploymentTargets();

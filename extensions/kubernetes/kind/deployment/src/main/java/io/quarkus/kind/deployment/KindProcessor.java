@@ -58,6 +58,10 @@ public class KindProcessor {
     public void checkKind(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
+        if (!config.enabled) {
+            return;
+        }
+
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(KIND, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
                         KIND_PRIORITY, true, config.getDeployStrategy()));

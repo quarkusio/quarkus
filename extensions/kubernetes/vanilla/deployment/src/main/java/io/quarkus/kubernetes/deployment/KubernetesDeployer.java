@@ -65,11 +65,14 @@ public class KubernetesDeployer {
 
     @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
     public void selectDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
-            EnabledKubernetesDeploymentTargetsBuildItem targets,
+            Optional<EnabledKubernetesDeploymentTargetsBuildItem> targets,
             Capabilities capabilities,
             ContainerImageConfig containerImageConfig,
             BuildProducer<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             BuildProducer<PreventImplicitContainerImagePushBuildItem> preventImplicitContainerImagePush) {
+        if (targets.isEmpty()) {
+            return;
+        }
 
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);
@@ -81,7 +84,7 @@ public class KubernetesDeployer {
             return;
         }
 
-        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(containerImageInfo, targets,
+        final DeploymentTargetEntry selectedTarget = determineDeploymentTarget(containerImageInfo, targets.get(),
                 containerImageConfig);
         selectedDeploymentTarget.produce(new SelectedKubernetesDeploymentTargetBuildItem(selectedTarget));
         if (MINIKUBE.equals(selectedTarget.getName()) || KIND.equals(selectedTarget.getName())) {

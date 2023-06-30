@@ -37,6 +37,12 @@ public class KubernetesConfig implements PlatformConfiguration {
     }
 
     /**
+     * Whether the Kubernetes extension is enabled and hence the Kubernetes manifests will be generated or not.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * The name of the group this component belongs too
      */
     @ConfigItem

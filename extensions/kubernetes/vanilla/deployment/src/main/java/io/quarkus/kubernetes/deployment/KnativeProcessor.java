@@ -87,8 +87,13 @@ public class KnativeProcessor {
 
     @BuildStep
     public void checkKnative(ApplicationInfoBuildItem applicationInfo, KnativeConfig config,
+            KubernetesConfig kubernetesConfig,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
+        if (!kubernetesConfig.enabled) {
+            return;
+        }
+
         List<String> targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
         boolean knativeEnabled = targets.contains(KNATIVE);
         deploymentTargets.produce(

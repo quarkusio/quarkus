@@ -55,6 +55,10 @@ public class MinikubeProcessor {
     public void checkMinikube(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
+        if (!config.enabled) {
+            return;
+        }
+
         deploymentTargets.produce(
                 new KubernetesDeploymentTargetBuildItem(MINIKUBE, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
                         MINIKUBE_PRIORITY, true, config.getDeployStrategy()));

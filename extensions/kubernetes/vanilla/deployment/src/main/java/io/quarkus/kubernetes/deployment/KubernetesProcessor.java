@@ -70,8 +70,8 @@ class KubernetesProcessor {
     }
 
     @BuildStep
-    public EnabledKubernetesDeploymentTargetsBuildItem enabledKubernetesDeploymentTargets(
-            List<KubernetesDeploymentTargetBuildItem> allDeploymentTargets) {
+    public void enabledKubernetesDeploymentTargets(List<KubernetesDeploymentTargetBuildItem> allDeploymentTargets,
+            BuildProducer<EnabledKubernetesDeploymentTargetsBuildItem> enabledKubernetesDeploymentTargets) {
         List<KubernetesDeploymentTargetBuildItem> mergedDeploymentTargets = mergeList(allDeploymentTargets);
         Collections.sort(mergedDeploymentTargets);
 
@@ -83,7 +83,10 @@ class KubernetesProcessor {
                         deploymentTarget.getDeployStrategy()));
             }
         }
-        return new EnabledKubernetesDeploymentTargetsBuildItem(entries);
+
+        if (!entries.isEmpty()) {
+            enabledKubernetesDeploymentTargets.produce(new EnabledKubernetesDeploymentTargetsBuildItem(entries));
+        }
     }
 
     @BuildStep
@@ -106,7 +109,7 @@ class KubernetesProcessor {
             Capabilities capabilities,
             LaunchModeBuildItem launchMode,
             List<KubernetesPortBuildItem> kubernetesPorts,
-            EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
+            Optional<EnabledKubernetesDeploymentTargetsBuildItem> kubernetesDeploymentTargets,
             List<ConfiguratorBuildItem> configurators,
             List<ConfigurationSupplierBuildItem> configurationSuppliers,
             List<DecoratorBuildItem> decorators,
@@ -114,6 +117,9 @@ class KubernetesProcessor {
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
             BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer) {
+        if (kubernetesDeploymentTargets.isEmpty()) {
+            return;
+        }
 
         List<ConfiguratorBuildItem> allConfigurators = new ArrayList<>(configurators);
         List<ConfigurationSupplierBuildItem> allConfigurationSuppliers = new ArrayList<>(configurationSuppliers);
@@ -127,7 +133,7 @@ class KubernetesProcessor {
         }
 
         Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
-        Set<String> deploymentTargets = kubernetesDeploymentTargets.getEntriesSortedByPriority().stream()
+        Set<String> deploymentTargets = kubernetesDeploymentTargets.get().getEntriesSortedByPriority().stream()
                 .map(DeploymentTargetEntry::getName)
                 .collect(Collectors.toSet());
 

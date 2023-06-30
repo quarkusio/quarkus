@@ -59,11 +59,11 @@ public class ClassNames {
     public static final DotName STATEMENT_INSPECTOR = createConstant("org.hibernate.resource.jdbc.spi.StatementInspector");
 
     public static final List<DotName> GENERATORS = List.of(
-            createConstant("org.hibernate.generator.internal.TenantIdGeneration"),
             createConstant("org.hibernate.generator.internal.CurrentTimestampGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedAlwaysGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedGeneration"),
             createConstant("org.hibernate.generator.internal.SourceGeneration"),
+            createConstant("org.hibernate.generator.internal.TenantIdGeneration"),
             createConstant("org.hibernate.generator.internal.VersionGeneration"),
             createConstant("org.hibernate.id.Assigned"),
             createConstant("org.hibernate.id.ForeignGenerator"),

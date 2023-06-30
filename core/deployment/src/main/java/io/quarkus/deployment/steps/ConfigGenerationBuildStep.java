@@ -10,6 +10,7 @@ import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.URI;
@@ -48,6 +49,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
+import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
@@ -55,6 +57,10 @@ import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBui
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
+import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
+import io.quarkus.deployment.configuration.tracker.ConfigTrackingWriter;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
@@ -440,6 +446,29 @@ public class ConfigGenerationBuildStep {
     void warnDifferentProfileUsedBetweenBuildAndRunTime(ConfigRecorder configRecorder) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         configRecorder.handleNativeProfileChange(config.getProfiles());
+    }
+
+    @BuildStep(onlyIf = IsNormal.class)
+    void persistReadConfigOptions(BuildProducer<ArtifactResultBuildItem> dummy,
+            QuarkusBuildCloseablesBuildItem closeables,
+            LaunchModeBuildItem launchModeBuildItem,
+            BuildSystemTargetBuildItem buildSystemTargetBuildItem,
+            ConfigurationBuildItem configBuildItem,
+            ConfigTrackingConfig configTrackingConfig) {
+        var readOptionsProvider = configBuildItem.getReadResult().getReadOptionsProvider();
+        if (readOptionsProvider != null) {
+            closeables.add(new Closeable() {
+                @Override
+                public void close() throws IOException {
+                    ConfigTrackingWriter.write(
+                            readOptionsProvider.getReadOptions(),
+                            configTrackingConfig,
+                            configBuildItem.getReadResult(),
+                            launchModeBuildItem.getLaunchMode(),
+                            buildSystemTargetBuildItem.getOutputDirectory());
+                }
+            });
+        }
     }
 
     private String appendProfileToFilename(Path path, String activeProfile) {

@@ -336,6 +336,18 @@ public class TestRegistryClientBuilder {
             return this;
         }
 
+        public TestRegistryBuilder enableOfferings(String... offerings) {
+            if (offerings.length > 0) {
+                var extra = config.getExtra();
+                if (extra == null || extra.isEmpty()) {
+                    extra = new HashMap<>();
+                    config.setExtra(extra);
+                }
+                extra.put(Constants.OFFERINGS, List.of(offerings));
+            }
+            return this;
+        }
+
         public TestRegistryClientBuilder clientBuilder() {
             return parent;
         }
@@ -758,6 +770,11 @@ public class TestRegistryClientBuilder {
             }
             d.setVersion(coords.getVersion());
             pom.getDependencyManagement().addDependency(d);
+            return this;
+        }
+
+        public TestPlatformCatalogMemberBuilder setOfferings(String... offerings) {
+            extensions.getMetadata().put(Constants.OFFERINGS, List.of(offerings));
             return this;
         }
 

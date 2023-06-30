@@ -31,4 +31,13 @@ public class PlatformStreamCoords {
                 ", streamId='" + streamId + '\'' +
                 '}';
     }
+
+    /**
+     * Returns a compact string representation of a stream following the format [platform-key:]stream-id
+     *
+     * @return compact string representation of a stream following the format [platform-key:]stream-id
+     */
+    public String toCompactString() {
+        return platformKey == null || platformKey.isEmpty() ? streamId : platformKey + ":" + streamId;
+    }
 }

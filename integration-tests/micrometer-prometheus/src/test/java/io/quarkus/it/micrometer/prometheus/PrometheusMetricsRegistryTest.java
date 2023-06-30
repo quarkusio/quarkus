@@ -1,5 +1,6 @@
 package io.quarkus.it.micrometer.prometheus;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
@@ -44,7 +45,7 @@ class PrometheusMetricsRegistryTest {
     @Test
     @Order(4)
     void testPathParameter() {
-        when().get("/message/item/123").then().statusCode(200);
+        given().header("foo", "bar").when().get("/message/item/123").then().statusCode(200);
     }
 
     @Test
@@ -111,11 +112,13 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString("uri=\"/message\""))
                 .body(containsString("uri=\"/message/item/{id}\""))
                 .body(containsString("outcome=\"SUCCESS\""))
+                .body(containsString("dummy=\"value\""))
+                .body(containsString("foo=\"bar\""))
                 .body(containsString("uri=\"/message/match/{id}/{sub}\""))
                 .body(containsString("uri=\"/message/match/{other}\""))
 
                 .body(containsString(
-                        "http_server_requests_seconds_count{env=\"test\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
+                        "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",foo=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
 
                 // Verify Hibernate Metrics
                 .body(containsString(
@@ -207,7 +210,7 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString("uri=\"/message/match/{other}\""))
 
                 .body(containsString(
-                        "http_server_requests_seconds_count{env=\"test\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
+                        "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",foo=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
 
                 // Verify Hibernate Metrics
                 .body(containsString(

@@ -6,7 +6,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.execution.MavenSession;
@@ -33,6 +35,10 @@ import io.quarkus.runtime.LaunchMode;
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     static final String CLOSE_BOOTSTRAPPED_APP = "closeBootstrappedApp";
+
+    static final String NATIVE_PACKAGE_TYPE = "native";
+    static final String NATIVE_PROFILE_NAME = "native";
+    static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
 
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
@@ -292,5 +298,37 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     protected Properties getBuildSystemProperties(boolean quarkusOnly) throws MojoExecutionException {
         return bootstrapProvider.bootstrapper(this).getBuildSystemProperties(this, quarkusOnly);
+    }
+
+    /**
+     * Essentially what this does is to enable the native package type even if a different package type is set
+     * in application properties. This is done to preserve what users expect to happen when
+     * they execute "mvn package -Dnative" even if quarkus.package.type has been set in application.properties
+     *
+     * @return true if the package type system property was set, otherwise - false
+     */
+    protected boolean setPackageTypeSystemPropertyIfNativeProfileEnabled() {
+        if (!System.getProperties().containsKey(PACKAGE_TYPE_PROP)
+                && isNativeProfileEnabled(mavenProject())) {
+            Object packageTypeProp = mavenProject().getProperties().get(PACKAGE_TYPE_PROP);
+            String packageType = NATIVE_PACKAGE_TYPE;
+            if (packageTypeProp != null) {
+                packageType = packageTypeProp.toString();
+            }
+            System.setProperty(PACKAGE_TYPE_PROP, packageType);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isNativeProfileEnabled(MavenProject mavenProject) {
+        // gotcha: mavenProject.getActiveProfiles() does not always contain all active profiles (sic!),
+        //         but getInjectedProfileIds() does (which has to be "flattened" first)
+        Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream().flatMap(List<String>::stream);
+        if (activeProfileIds.anyMatch(NATIVE_PROFILE_NAME::equalsIgnoreCase)) {
+            return true;
+        }
+        // recurse into parent (if available)
+        return Optional.ofNullable(mavenProject.getParent()).map(this::isNativeProfileEnabled).orElse(false);
     }
 }

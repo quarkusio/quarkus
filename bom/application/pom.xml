@@ -81,7 +81,7 @@
         <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
         <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
-        <jakarta.websocket-api.version>2.1.0</jakarta.websocket-api.version>
+        <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.xml.bind-api.version>4.0.0</jakarta.xml.bind-api.version>
         <jaxb-runtime.version>4.0.3</jaxb-runtime.version>
         <asm.version>9.5</asm.version>

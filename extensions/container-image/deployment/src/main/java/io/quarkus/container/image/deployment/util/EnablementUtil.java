@@ -17,7 +17,9 @@ public class EnablementUtil {
     public static boolean pushContainerImageNeeded(ContainerImageConfig containerImageConfig,
             Optional<ContainerImagePushRequestBuildItem> pushRequest) {
         return containerImageConfig.isPushExplicitlyEnabled()
-                || (pushRequest.isPresent() && !containerImageConfig.isPushExplicitlyDisabled());
+                // Never push an image when build is disabled (it may not even exist).
+                || (pushRequest.isPresent() && !containerImageConfig.isBuildExplicitlyDisabled()
+                        && !containerImageConfig.isPushExplicitlyDisabled());
     }
 
     public static boolean buildOrPushContainerImageNeeded(ContainerImageConfig containerImageConfig,

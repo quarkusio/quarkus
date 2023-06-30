@@ -161,7 +161,8 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }
-                            original.setFile(result.getJar().getOriginalArtifact().toFile());
+                            // unless we point to the renamed file the install plugin will fail
+                            original.setFile(renamedOriginal.toFile());
                         }
                     }
                     if (uberJarWithSuffix) {

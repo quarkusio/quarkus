@@ -26,6 +26,7 @@ public class GeneratedValueResource {
         var entity = new EntityWithGeneratedValues();
         assertThat(entity).satisfies(
                 e -> assertThat(e.id).isNull(),
+                e -> assertThat(e.tenant).isNull(),
                 e -> assertThat(e.creationTimestamp).isNull(),
                 e -> assertThat(e.updateTimestamp).isNull(),
                 e -> assertThat(e.currentTimestamp).isNull(),
@@ -35,6 +36,7 @@ public class GeneratedValueResource {
         em.flush();
         assertThat(entity).satisfies(
                 e -> assertThat(e.id).isNotNull(),
+                e -> assertThat(e.tenant).isNotNull(),
                 e -> assertThat(e.creationTimestamp).isNotNull(),
                 e -> assertThat(e.updateTimestamp).isNotNull(),
                 e -> assertThat(e.currentTimestamp).isNotNull(),

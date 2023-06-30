@@ -124,13 +124,7 @@ class RequestContext implements ManagedContext {
     @Override
     public void activate(ContextState initialState) {
         if (LOG.isTraceEnabled()) {
-            String stack = Arrays.stream(Thread.currentThread().getStackTrace())
-                    .skip(2)
-                    .limit(7)
-                    .map(se -> "\n\t" + se.toString())
-                    .collect(Collectors.joining());
-            LOG.tracef("Activate %s %s\n\t...",
-                    initialState != null ? Integer.toHexString(initialState.hashCode()) : "new", stack);
+            traceActivate(initialState);
         }
         if (initialState == null) {
             currentContext.set(new RequestContextState(new ConcurrentHashMap<>()));
@@ -143,6 +137,16 @@ class RequestContext implements ManagedContext {
                 throw new IllegalArgumentException("Invalid initial state: " + initialState.getClass().getName());
             }
         }
+    }
+
+    private void traceActivate(ContextState initialState) {
+        String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                .skip(2)
+                .limit(7)
+                .map(se -> "\n\t" + se.toString())
+                .collect(Collectors.joining());
+        LOG.tracef("Activate %s %s\n\t...",
+                initialState != null ? Integer.toHexString(initialState.hashCode()) : "new", stack);
     }
 
     @Override
@@ -162,14 +166,18 @@ class RequestContext implements ManagedContext {
     @Override
     public void deactivate() {
         if (LOG.isTraceEnabled()) {
-            String stack = Arrays.stream(Thread.currentThread().getStackTrace())
-                    .skip(2)
-                    .limit(7)
-                    .map(se -> "\n\t" + se.toString())
-                    .collect(Collectors.joining());
-            LOG.tracef("Deactivate%s\n\t...", stack);
+            traceDeactivate();
         }
         currentContext.remove();
+    }
+
+    private static void traceDeactivate() {
+        String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                .skip(2)
+                .limit(7)
+                .map(se -> "\n\t" + se.toString())
+                .collect(Collectors.joining());
+        LOG.tracef("Deactivate%s\n\t...", stack);
     }
 
     @Override
@@ -180,12 +188,7 @@ class RequestContext implements ManagedContext {
     @Override
     public void destroy(ContextState state) {
         if (LOG.isTraceEnabled()) {
-            String stack = Arrays.stream(Thread.currentThread().getStackTrace())
-                    .skip(2)
-                    .limit(7)
-                    .map(se -> "\n\t" + se.toString())
-                    .collect(Collectors.joining());
-            LOG.tracef("Destroy %s%s\n\t...", state != null ? Integer.toHexString(state.hashCode()) : "", stack);
+            traceDestroy(state);
         }
         if (state == null) {
             // nothing to destroy
@@ -208,6 +211,15 @@ class RequestContext implements ManagedContext {
         } else {
             throw new IllegalArgumentException("Invalid state implementation: " + state.getClass().getName());
         }
+    }
+
+    private static void traceDestroy(ContextState state) {
+        String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                .skip(2)
+                .limit(7)
+                .map(se -> "\n\t" + se.toString())
+                .collect(Collectors.joining());
+        LOG.tracef("Destroy %s%s\n\t...", state != null ? Integer.toHexString(state.hashCode()) : "", stack);
     }
 
     private void destroyContextElement(Contextual<?> contextual, ContextInstanceHandle<?> contextInstanceHandle) {
@@ -236,6 +248,14 @@ class RequestContext implements ManagedContext {
 
     static class RequestContextState implements ContextState {
 
+        // Using 0 as default value enable removing an initialization
+        // in the constructor, piggybacking on the default value.
+        // As per https://docs.oracle.com/javase/specs/jls/se8/html/jls-12.html#jls-12.5
+        // the default field values are set before 'this' is accessible, hence
+        // they should be the very first value observable even in presence of
+        // unsafe publication of this object.
+        private static final int VALID = 0;
+        private static final int INVALID = 1;
         private static final VarHandle IS_VALID;
 
         static {
@@ -251,7 +271,6 @@ class RequestContext implements ManagedContext {
 
         RequestContextState(ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> value) {
             this.map = Objects.requireNonNull(value);
-            this.isValid = 1;
         }
 
         @Override
@@ -265,12 +284,12 @@ class RequestContext implements ManagedContext {
          */
         boolean invalidate() {
             // Atomically sets the value just like AtomicBoolean.compareAndSet(boolean, boolean)
-            return IS_VALID.compareAndSet(this, 1, 0);
+            return IS_VALID.compareAndSet(this, VALID, INVALID);
         }
 
         @Override
         public boolean isValid() {
-            return isValid == 1;
+            return isValid == VALID;
         }
 
     }

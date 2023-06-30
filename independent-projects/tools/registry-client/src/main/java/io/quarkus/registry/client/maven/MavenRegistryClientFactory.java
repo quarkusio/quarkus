@@ -6,6 +6,7 @@ import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
@@ -219,6 +220,15 @@ public class MavenRegistryClientFactory implements RegistryClientFactory {
             complete.setQuarkusVersions(descriptor.getQuarkusVersions());
         }
 
+        if (original.getExtra().isEmpty()) {
+            complete.setExtra(descriptor.getExtra());
+        } else if (descriptor.getExtra().isEmpty()) {
+            complete.setExtra(original.getExtra());
+        } else {
+            var extra = new HashMap<>(descriptor.getExtra());
+            extra.putAll(original.getExtra());
+            complete.setExtra(extra);
+        }
         return complete;
     }
 

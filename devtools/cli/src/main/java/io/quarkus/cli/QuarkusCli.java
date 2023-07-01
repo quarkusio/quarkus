@@ -79,6 +79,10 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     @CommandLine.ArgGroup(exclusive = false, validate = false)
     protected PropertiesOptions propertiesOptions = new PropertiesOptions();
 
+    public OutputOptionMixin getOutput() {
+        return output;
+    }
+
     @Override
     public int run(String... args) throws Exception {
         CommandLine cmd = factory == null ? new CommandLine(this) : new CommandLine(this, factory);

@@ -995,7 +995,7 @@ public class PanacheFunctionalityTest {
 }
 ----
 <1> Make sure the test method is run on the Vert.x event loop.
-<2> The injected `UniAsserter` agrument is used to make assertions.
+<2> The injected `UniAsserter` argument is used to make assertions.
 <3> Be sure to call your `verify` and `do*` methods on `PanacheMock` rather than `Mockito`, otherwise you won't know
 what mock object to pass.
 

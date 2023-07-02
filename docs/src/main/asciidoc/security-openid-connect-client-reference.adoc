@@ -137,6 +137,18 @@ quarkus.oidc-client.grant.type=code
 
 and then you can use `OidcClient.accessTokens` method accepting a Map of extra properties and pass the current `code` and `redirect_uri` parameters to exchange the authorization code for the tokens.
 
+`OidcClient` also supports the `urn:openid:params:grant-type:ciba` grant:
+
+[source,properties]
+----
+quarkus.oidc-client.auth-server-url=http://localhost:8180/auth/realms/quarkus/
+quarkus.oidc-client.client-id=quarkus-app
+quarkus.oidc-client.credentials.secret=secret
+quarkus.oidc-client.grant.type=ciba
+----
+
+and then you can use `OidcClient.accessTokens` method accepting a Map of extra properties and pass `auth_req_id` parameter to exchange the authorization code for the tokens.
+
 ==== Grant scopes
 
 You may need to request that a specific set of scopes is associated with an issued access token.

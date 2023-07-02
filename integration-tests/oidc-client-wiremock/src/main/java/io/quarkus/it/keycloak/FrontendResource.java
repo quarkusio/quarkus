@@ -1,11 +1,14 @@
 package io.quarkus.it.keycloak;
 
+import java.util.Map;
+
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -69,5 +72,14 @@ public class FrontendResource {
     @Produces("text/plain")
     public Uni<String> passwordGrantPublicClient() {
         return clients.getClient("password-grant-public-client").getTokens().onItem().transform(t -> t.getAccessToken());
+    }
+
+    @GET
+    @Path("ciba-grant")
+    @Produces("text/plain")
+    public Uni<Response> cibaGrant(@QueryParam("authReqId") String authReqId) {
+        return clients.getClient("ciba-grant").getTokens(Map.of("auth_req_id", authReqId))
+                .onItem().transform(t -> Response.ok(t.getAccessToken()).build())
+                .onFailure(OidcClientException.class).recoverWithItem(t -> Response.status(400).entity(t.getMessage()).build());
     }
 }

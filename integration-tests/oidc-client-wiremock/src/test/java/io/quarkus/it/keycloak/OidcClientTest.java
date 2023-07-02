@@ -20,6 +20,8 @@ import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -27,6 +29,9 @@ import io.restassured.RestAssured;
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class OidcClientTest {
+
+    @InjectWireMock
+    WireMockServer server;
 
     @Test
     public void testEchoAndRefreshTokens() {
@@ -110,6 +115,40 @@ public class OidcClientTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("temp_access_token"));
+    }
+
+    @Test
+    public void testCibaGrant() {
+        RestAssured.given().queryParam("authReqId", "16cdaa49-9591-4b63-b188-703fa3b25031")
+                .when().get("/frontend/ciba-grant")
+                .then()
+                .statusCode(400)
+                .body(equalTo("{\"error\":\"expired_token\"}"));
+
+        server.setScenarioState("auth-device-approval", CibaAuthDeviceApprovalState.PENDING.name());
+
+        RestAssured.given().queryParam("authReqId", "b1493f2f-c25c-40f5-8d69-94e2ad4b06df")
+                .when().get("/frontend/ciba-grant")
+                .then()
+                .statusCode(400)
+                .body(equalTo("{\"error\":\"authorization_pending\"}"));
+
+        server.setScenarioState("auth-device-approval", CibaAuthDeviceApprovalState.DENIED.name());
+
+        RestAssured.given().queryParam("authReqId", "b1493f2f-c25c-40f5-8d69-94e2ad4b06df")
+                .when().get("/frontend/ciba-grant")
+                .then()
+                .statusCode(400)
+                .body(equalTo("{\"error\":\"access_denied\"}"));
+
+        server.setScenarioState("auth-device-approval", CibaAuthDeviceApprovalState.APPROVED.name());
+
+        RestAssured.given().queryParam("authReqId", "b1493f2f-c25c-40f5-8d69-94e2ad4b06df")
+                .when().get("/frontend/ciba-grant")
+                .then()
+                .statusCode(200)
+                .body(equalTo("ciba_access_token"));
+
     }
 
     private void checkLog() {

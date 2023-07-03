@@ -23,7 +23,7 @@ public class PluginManager {
 
     public synchronized static PluginManager get() {
         if (INSTANCE == null) {
-            throw new IllegalStateException("No instance of PluginManager found!");
+            throw new IllegalStateException("No instance of PluginManager found");
         }
         return INSTANCE;
     }
@@ -165,7 +165,7 @@ public class PluginManager {
             Optional<Plugin> userPlugin = state.getUserCatalog().map(PluginCatalog::getPlugins).map(p -> p.get(name));
             return userPlugin.map(p -> {
                 pluginCatalogService.writeCatalog(
-                        state.getUserCatalog().orElseThrow(() -> new IllegalStateException("User catalog should be available!"))
+                        state.getUserCatalog().orElseThrow(() -> new IllegalStateException("User catalog should be available"))
                                 .removePlugin(p));
                 state.invalidateInstalledPlugins();
                 return p;
@@ -174,10 +174,10 @@ public class PluginManager {
 
         if (plugin.isInUserCatalog()) {
             pluginCatalogService.writeCatalog(state.getUserCatalog()
-                    .orElseThrow(() -> new IllegalStateException("User catalog should be available!")).removePlugin(plugin));
+                    .orElseThrow(() -> new IllegalStateException("User catalog should be available")).removePlugin(plugin));
         } else {
             pluginCatalogService.writeCatalog(state.getProjectCatalog()
-                    .orElseThrow(() -> new IllegalStateException("Project catalog should be available!")).removePlugin(plugin));
+                    .orElseThrow(() -> new IllegalStateException("Project catalog should be available")).removePlugin(plugin));
         }
         state.invalidateInstalledPlugins();
         return Optional.of(plugin);
@@ -254,8 +254,8 @@ public class PluginManager {
         Path backupLocation = location.getParent().resolve("quarkus-cli-catalog.json.bkp");
 
         output.warn(
-                "The following plugins found in the catalog: [%s] but no longer available: %s.\n"
-                        + "The unavailable plugin will be purged! A backup of the catalog will be saved at: [%s].",
+                "The following plugins were found in the catalog: [%s] but are no longer available: %s.\n"
+                        + "The unavailable plugins will be purged. A backup of the catalog will be saved at: [%s].",
                 location,
                 unreachable.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.joining(", ", "[", "]")),
                 backupLocation);
@@ -312,7 +312,7 @@ public class PluginManager {
                 .filter(Predicate.not(File::exists))
                 .map(File::toPath)
                 .map(p -> {
-                    output.debug("Project plugin catalog has not been initialized. Initializing!");
+                    output.debug("Project plugin catalog has not been initialized. Initializing.");
                     state.getPluginCatalogService().writeCatalog(new PluginCatalog().withCatalogLocation(p));
                     return true;
                 }).orElse(false);
@@ -323,7 +323,7 @@ public class PluginManager {
 
         PluginCatalog catalog = state.getCombinedCatalog();
         if (PluginUtil.shouldSync(state.getProjectRoot(), catalog)) {
-            output.info("Plugin catalog last updated on: " + catalog.getLastUpdate() + ". Syncing!");
+            output.debug("Plugin catalog last updated on: " + catalog.getLastUpdate() + ". Syncing.");
             return sync();
         }
         return false;

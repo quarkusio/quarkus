@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,15 @@ public class RedisCacheInfoBuilder {
 
                 RedisCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig;
                 RedisCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig.get(cacheInfo.name);
+
+
+                if (namedRuntimeConfig != null && namedRuntimeConfig.computeTimeout.isPresent()) {
+                    cacheInfo.computeTimeout = namedRuntimeConfig.computeTimeout.get();
+                } else if (defaultRuntimeConfig.computeTimeout.isPresent()) {
+                    cacheInfo.computeTimeout = defaultRuntimeConfig.computeTimeout.get();
+                } else {
+                    cacheInfo.computeTimeout = Duration.ofSeconds(10);
+                }
 
                 if (namedRuntimeConfig != null && namedRuntimeConfig.ttl.isPresent()) {
                     cacheInfo.ttl = namedRuntimeConfig.ttl;

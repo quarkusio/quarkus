@@ -8,6 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -123,6 +125,26 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     }
 
     @Override
+    public <K, V> V compute(K key, BiFunction<K, V, V> command) {
+        Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
+        ConcurrentMap<Object, Object> cacheMap = cache.synchronous().asMap();
+        Object previous = cacheMap.get(key);
+        V computed = command.apply(key, cast(NullValueConverter.fromCacheValue(previous)));
+
+        Object computedCacheValue = NullValueConverter.toCacheValue(computed);
+        boolean replaced;
+        if (previous == null) {
+            replaced = cacheMap.putIfAbsent(key, computedCacheValue) == null;
+        } else {
+            replaced = cacheMap.replace(key, previous, computedCacheValue);
+        }
+        if (!replaced) {
+            throw new RuntimeException("Concurrent modification, cache has not been modified");
+        }
+        return computed;
+    }
+
+    @Override
     public <V> CompletableFuture<V> getIfPresent(Object key) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         CompletableFuture<Object> existingCacheValue = cache.getIfPresent(key);
@@ -157,7 +179,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
      * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the
      * {@link CompletableFuture} is immediately completed before being returned.
      *
-     * @param key cache key
+     * @param key         cache key
      * @param valueLoader function used to compute the cache value if {@code key} is not already associated with a value
      * @return a {@link CompletableFuture} holding the cache value
      * @throws CacheException if an exception is thrown during the cache value computation

@@ -8,6 +8,13 @@ import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class RedisCacheRuntimeConfig {
+
+    /**
+     * The timeout for the compute method
+     */
+    @ConfigItem
+    public Optional<Duration> computeTimeout;
+
     /**
      * The default time to live of the item stored in the cache
      */

@@ -11,6 +11,11 @@ public class RedisCacheInfo {
     public String name;
 
     /**
+     * The timeout for the compute method
+     */
+    public Duration computeTimeout;
+
+    /**
      * The default time to live of the item stored in the cache
      */
     public Optional<Duration> ttl = Optional.empty();

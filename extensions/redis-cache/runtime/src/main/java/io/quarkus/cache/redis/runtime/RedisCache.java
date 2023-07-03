@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -27,6 +28,17 @@ public interface RedisCache extends Cache {
         return get(key, type, valueLoader);
     }
 
+    @Override
+    default  <K, V> Uni<V> get(K key, Function<K, V> valueLoader, Duration expiresIn) {
+        Class<V> type = (Class<V>) getDefaultValueType();
+        if (type == null) {
+            throw new UnsupportedOperationException("Cannot use `get` method without a default type configured. " +
+                    "Consider using the `get` method accepting the type or configure the default type for the cache " +
+                    getName());
+        }
+        return get(key, type, valueLoader, expiresIn);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     default <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
@@ -39,6 +51,16 @@ public interface RedisCache extends Cache {
         return getAsync(key, type, valueLoader);
     }
 
+    @Override
+    default  <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader, Duration expiresIn) {
+        Class<V> type = (Class<V>) getDefaultValueType();
+        if (type == null) {
+            throw new UnsupportedOperationException("Cannot use `getAsync` method without a default type configured. " +
+                    "Consider using the `getAsync` method accepting the type or configure the default type for the cache " +
+                    getName());
+        }
+        return getAsync(key, type, valueLoader, expiresIn);
+    }
     /**
      * Allows retrieving a value from the Redis cache.
      *
@@ -51,6 +73,8 @@ public interface RedisCache extends Cache {
      */
     <K, V> Uni<V> get(K key, Class<V> clazz, Function<K, V> valueLoader);
 
+    <K, V> Uni<V> get(K key, Class<V> clazz, Function<K, V> valueLoader, Duration expiresIn);
+
     /**
      * Allows retrieving a value from the Redis cache.
      *
@@ -62,6 +86,7 @@ public interface RedisCache extends Cache {
      * @return the Uni emitting the cached value.
      */
     <K, V> Uni<V> getAsync(K key, Class<V> clazz, Function<K, Uni<V>> valueLoader);
+    <K, V> Uni<V> getAsync(K key, Class<V> clazz, Function<K, Uni<V>> valueLoader, Duration expiresIn);
 
     /**
      * Put a value in the cache.
@@ -82,6 +107,8 @@ public interface RedisCache extends Cache {
     }
 
     <K, V> Uni<Void> put(K key, Supplier<V> supplier);
+
+    <K, V> Uni<Void> put(K key, Supplier<V> supplier, Duration duration);
 
     <K, V> Uni<V> getOrDefault(K key, V defaultValue);
 

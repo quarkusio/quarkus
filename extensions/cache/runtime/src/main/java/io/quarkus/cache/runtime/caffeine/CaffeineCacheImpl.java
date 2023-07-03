@@ -16,6 +16,7 @@ import org.jboss.logging.Logger;
 
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.Policy;
 import com.github.benmanes.caffeine.cache.Policy.FixedExpiration;
 import com.github.benmanes.caffeine.cache.stats.ConcurrentStatsCounter;
@@ -36,27 +37,41 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     private static final Logger LOGGER = Logger.getLogger(CaffeineCacheImpl.class);
 
-    final AsyncCache<Object, Object> cache;
+    final AsyncCache<Object, CacheValue<Object>> cache;
 
     private final CaffeineCacheInfo cacheInfo;
     private final StatsCounter statsCounter;
     private final boolean recordStats;
 
+
     public CaffeineCacheImpl(CaffeineCacheInfo cacheInfo, boolean recordStats) {
         this.cacheInfo = cacheInfo;
-        Caffeine<Object, Object> builder = Caffeine.newBuilder();
+        Caffeine<Object, CacheValue<Object>> builder = (Caffeine) Caffeine.newBuilder();
+        builder.expireAfter(new Expiry<Object, CacheValue<Object>>() {
+            @Override
+            public long expireAfterCreate(Object key, CacheValue<Object> value, long currentTime) {
+                return value.expiresIn != null ? value.expiresIn.toNanos()
+                        : cacheInfo.expireAfterWrite != null ? cacheInfo.expireAfterWrite.toNanos() : Long.MAX_VALUE;
+            }
+
+            @Override
+            public long expireAfterUpdate(Object key, CacheValue<Object> value, long currentTime, long currentDuration) {
+                return value.expiresIn != null ? value.expiresIn.toNanos()
+                        : cacheInfo.expireAfterWrite != null ? cacheInfo.expireAfterWrite.toNanos() : Long.MAX_VALUE;
+            }
+
+            @Override
+            public long expireAfterRead(Object key, CacheValue<Object> value, long currentTime, long currentDuration) {
+                return cacheInfo.expireAfterAccess != null ? cacheInfo.expireAfterAccess.toNanos() : Long.MAX_VALUE;
+            }
+        });
         if (cacheInfo.initialCapacity != null) {
             builder.initialCapacity(cacheInfo.initialCapacity);
         }
         if (cacheInfo.maximumSize != null) {
             builder.maximumSize(cacheInfo.maximumSize);
         }
-        if (cacheInfo.expireAfterWrite != null) {
-            builder.expireAfterWrite(cacheInfo.expireAfterWrite);
-        }
-        if (cacheInfo.expireAfterAccess != null) {
-            builder.expireAfterAccess(cacheInfo.expireAfterAccess);
-        }
+
         this.recordStats = recordStats;
         if (recordStats) {
             LOGGER.tracef("Recording Caffeine stats for cache [%s]", cacheInfo.name);
@@ -81,6 +96,11 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
+        return get(key, valueLoader, null);
+    }
+
+    @Override
+    public <K, V> Uni<V> get(K key, Function<K, V> valueLoader, Duration expiresIn) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         return Uni.createFrom().completionStage(
                 /*
@@ -90,7 +110,10 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                 new Supplier<CompletionStage<V>>() {
                     @Override
                     public CompletionStage<V> get() {
-                        CompletionStage<Object> caffeineValue = getFromCaffeine(key, valueLoader);
+                        CompletionStage<Object> caffeineValue = getFromCaffeine(key, (k) -> CacheValue.builder()
+                                .data(valueLoader.apply(k))
+                                .expiresIn(expiresIn)
+                                .build());
                         return cast(caffeineValue);
                     }
                 });
@@ -98,6 +121,11 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+        return getAsync(key, valueLoader, null);
+    }
+
+    @Override
+    public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader, Duration expiresIn) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         return Uni.createFrom()
                 .completionStage(new Supplier<CompletionStage<V>>() {
@@ -107,15 +135,19 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                         StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
                         @SuppressWarnings("unchecked")
                         CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
-                                new Function<Object, CompletableFuture<Object>>() {
+                                new Function<Object, CompletableFuture<CacheValue<Object>>>() {
                                     @Override
-                                    public CompletableFuture<Object> apply(Object key) {
+                                    public CompletableFuture<CacheValue<Object>> apply(Object key) {
                                         recorder.onValueAbsent();
                                         return valueLoader.apply((K) key)
                                                 .map(TO_CACHE_VALUE)
+                                                .map(x -> CacheValue.builder()
+                                                        .data(x)
+                                                        .expiresIn(expiresIn)
+                                                        .build())
                                                 .subscribeAsCompletionStage();
                                     }
-                                });
+                                }).thenApply(CacheValue::getData);
                         recorder.doRecord(key);
                         return result;
                     }
@@ -125,7 +157,7 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @Override
     public <V> CompletableFuture<V> getIfPresent(Object key) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        CompletableFuture<Object> existingCacheValue = cache.getIfPresent(key);
+        CompletableFuture<CacheValue<Object>> existingCacheValue = cache.getIfPresent(key);
 
         // record metrics, if not null apply casting
         if (existingCacheValue == null) {
@@ -162,17 +194,19 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
      * @return a {@link CompletableFuture} holding the cache value
      * @throws CacheException if an exception is thrown during the cache value computation
      */
-    private <K, V> CompletableFuture<Object> getFromCaffeine(K key, Function<K, V> valueLoader) {
-        CompletableFuture<Object> newCacheValue = new CompletableFuture<>();
-        CompletableFuture<Object> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
+    private <K, V> CompletableFuture<Object> getFromCaffeine(K key, Function<K, CacheValue<V>> valueLoader) {
+        CompletableFuture<CacheValue<Object>> newCacheValue = new CompletableFuture<>();
+        CompletableFuture<CacheValue<Object>> existingCacheValue = cache.asMap().putIfAbsent(key, newCacheValue);
         if (existingCacheValue == null) {
             statsCounter.recordMisses(1);
             try {
-                Object value = valueLoader.apply(key);
-                newCacheValue.complete(NullValueConverter.toCacheValue(value));
+                CacheValue<Object> value = (CacheValue<Object>) valueLoader.apply(key);
+                newCacheValue.complete(value);
             } catch (Throwable t) {
                 cache.asMap().remove(key, newCacheValue);
-                newCacheValue.complete(new CaffeineComputationThrowable(t));
+                newCacheValue.complete(CacheValue.builder()
+                        .data(new CaffeineComputationThrowable(t))
+                        .build());
             }
             return unwrapCacheValueOrThrowable(newCacheValue);
         } else {
@@ -182,20 +216,20 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         }
     }
 
-    private CompletableFuture<Object> unwrapCacheValueOrThrowable(CompletableFuture<Object> cacheValue) {
+    private CompletableFuture<Object> unwrapCacheValueOrThrowable(CompletableFuture<CacheValue<Object>> cacheValue) {
         return cacheValue.thenApply(new Function<>() {
             @Override
-            public Object apply(Object value) {
+            public Object apply(CacheValue<Object> value) {
                 // If there's a throwable encapsulated into a CaffeineComputationThrowable, it must be rethrown.
-                if (value instanceof CaffeineComputationThrowable) {
-                    Throwable cause = ((CaffeineComputationThrowable) value).getCause();
+                if (value.getData() instanceof CaffeineComputationThrowable) {
+                    Throwable cause = ((CaffeineComputationThrowable) value.getData()).getCause();
                     if (cause instanceof RuntimeException) {
                         throw (RuntimeException) cause;
                     } else {
                         throw new CacheException(cause);
                     }
                 } else {
-                    return NullValueConverter.fromCacheValue(value);
+                    return NullValueConverter.fromCacheValue(value.getData());
                 }
             }
         });
@@ -243,36 +277,30 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     @SuppressWarnings("unchecked")
     @Override
     public <V> void put(Object key, CompletableFuture<V> valueFuture) {
-        cache.put(key, (CompletableFuture<Object>) valueFuture);
+        put(key, valueFuture, null);
+    }
+
+    @Override
+    public <V> void put(Object key, CompletableFuture<V> valueFuture, Duration expiresIn) {
+        cache.put(key, (CompletableFuture<CacheValue<Object>>) valueFuture.thenApply(x -> CacheValue.builder()
+                .expiresIn(expiresIn)
+                .data(x)
+                .build()));
     }
 
     @Override
     public void setExpireAfterWrite(Duration duration) {
-        Optional<FixedExpiration<Object, Object>> fixedExpiration = cache.synchronous().policy().expireAfterWrite();
-        if (fixedExpiration.isPresent()) {
-            fixedExpiration.get().setExpiresAfter(duration);
-            cacheInfo.expireAfterWrite = duration;
-        } else {
-            throw new IllegalStateException("The write-based expiration policy can only be changed if the cache was " +
-                    "constructed with an expire-after-write configuration value");
-        }
+        cacheInfo.expireAfterWrite = duration;
     }
 
     @Override
     public void setExpireAfterAccess(Duration duration) {
-        Optional<FixedExpiration<Object, Object>> fixedExpiration = cache.synchronous().policy().expireAfterAccess();
-        if (fixedExpiration.isPresent()) {
-            fixedExpiration.get().setExpiresAfter(duration);
-            cacheInfo.expireAfterAccess = duration;
-        } else {
-            throw new IllegalStateException("The access-based expiration policy can only be changed if the cache was " +
-                    "constructed with an expire-after-access configuration value");
-        }
+        cacheInfo.expireAfterAccess = duration;
     }
 
     @Override
     public void setMaximumSize(long maximumSize) {
-        Optional<Policy.Eviction<Object, Object>> eviction = cache.synchronous().policy().eviction();
+        Optional<Policy.Eviction<Object, CacheValue<Object>>> eviction = cache.synchronous().policy().eviction();
         if (eviction.isPresent()) {
             eviction.get().setMaximum(maximumSize);
             cacheInfo.maximumSize = maximumSize;

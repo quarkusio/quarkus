@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -209,6 +210,18 @@ public class ProgrammaticApiTest {
         try {
             caffeineCache.put("foo", CompletableFuture.completedFuture("bar"));
             assertEquals("bar", caffeineCache.get("foo", Function.identity()).await().indefinitely());
+        } finally {
+            // invalidate to remove side effects in other tests
+            cache.invalidate("foo").await().indefinitely();
+        }
+    }
+
+    @Test
+    public void testPutWithCustomExpiration() {
+        CaffeineCache caffeineCache = cache.as(CaffeineCache.class);
+        try {
+            caffeineCache.put("foo", CompletableFuture.completedFuture("bar"), Duration.ZERO);
+            assertNull(caffeineCache.getIfPresent("foo"));
         } finally {
             // invalidate to remove side effects in other tests
             cache.invalidate("foo").await().indefinitely();

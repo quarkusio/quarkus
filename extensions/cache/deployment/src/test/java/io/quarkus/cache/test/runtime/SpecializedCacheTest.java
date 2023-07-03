@@ -2,6 +2,7 @@ package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -67,7 +68,17 @@ public class SpecializedCacheTest {
         }
 
         @Override
+        public <K, V> Uni<V> get(K key, Function<K, V> valueLoader, Duration expiresIn) {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
         public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
+            throw new UnsupportedOperationException("This method is not tested here");
+        }
+
+        @Override
+        public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader, Duration expiresIn) {
             throw new UnsupportedOperationException("This method is not tested here");
         }
 

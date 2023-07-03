@@ -1,5 +1,6 @@
 package io.quarkus.cache;
 
+import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -42,6 +43,8 @@ public interface Cache {
      */
     <K, V> Uni<V> get(K key, Function<K, V> valueLoader);
 
+    <K, V> Uni<V> get(K key, Function<K, V> valueLoader, Duration expiresIn);
+
     /**
      * Returns a lazy asynchronous action that will emit the cache value identified by {@code key}, obtaining that value from
      * {@code valueLoader} if necessary.
@@ -54,6 +57,8 @@ public interface Cache {
      * @throws NullPointerException if the key is {@code null}
      */
     <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader);
+
+    <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader, Duration expiresIn);
 
     /**
      * Removes the cache entry identified by {@code key} from the cache. If the key does not identify any cache entry, nothing

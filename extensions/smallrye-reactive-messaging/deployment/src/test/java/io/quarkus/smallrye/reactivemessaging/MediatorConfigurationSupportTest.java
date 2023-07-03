@@ -59,8 +59,7 @@ public class MediatorConfigurationSupportTest {
                         m.parametersCount() == 0
                                 ? new QuarkusMediatorConfigurationUtil.AlwaysInvalidIndexGenericTypeAssignable()
                                 : new QuarkusMediatorConfigurationUtil.MethodParamGenericTypeAssignable(m, 0,
-                                        classLoader),
-                        null);
+                                        classLoader));
             }
         }
         fail("Unable to find method " + method);

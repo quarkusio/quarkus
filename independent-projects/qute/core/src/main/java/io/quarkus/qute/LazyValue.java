@@ -1,8 +1,12 @@
 package io.quarkus.qute;
 
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 
 final class LazyValue<T> {
+
+    private static final AtomicReferenceFieldUpdater<LazyValue, Object> VALUE_UPDATER = AtomicReferenceFieldUpdater
+            .newUpdater(LazyValue.class, Object.class, "value");
 
     private final Supplier<T> supplier;
 
@@ -18,10 +22,14 @@ final class LazyValue<T> {
             return valueCopy;
         }
         synchronized (this) {
-            if (value == null) {
-                value = supplier.get();
+            valueCopy = value;
+            if (valueCopy != null) {
+                return valueCopy;
             }
-            return value;
+            valueCopy = supplier.get();
+            // lazySet == setRelease: it ensure safe publication of the instance
+            VALUE_UPDATER.lazySet(this, valueCopy);
+            return valueCopy;
         }
     }
 
@@ -30,8 +38,13 @@ final class LazyValue<T> {
     }
 
     public void clear() {
+        if (value == null) {
+            return;
+        }
         synchronized (this) {
-            value = null;
+            if (value != null) {
+                VALUE_UPDATER.lazySet(this, null);
+            }
         }
     }
 

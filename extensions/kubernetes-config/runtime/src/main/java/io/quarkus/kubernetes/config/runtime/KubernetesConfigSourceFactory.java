@@ -1,57 +1,78 @@
 package io.quarkus.kubernetes.config.runtime;
 
+import static java.util.Collections.emptyList;
+
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
-import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.jboss.logging.Logger;
 
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.quarkus.runtime.configuration.AbstractRawDefaultConfigSource;
+import io.smallrye.config.ConfigSourceContext;
+import io.smallrye.config.ConfigSourceContext.ConfigSourceContextConfigSource;
+import io.smallrye.config.ConfigSourceFactory;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.Converters;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 
-class KubernetesConfigSourceProvider implements ConfigSourceProvider {
+class KubernetesConfigSourceFactory implements ConfigSourceFactory {
 
-    private static final Logger log = Logger.getLogger(KubernetesConfigSourceProvider.class);
+    private static final Logger log = Logger.getLogger(KubernetesConfigSourceFactory.class);
 
-    private final KubernetesConfigSourceConfig config;
-    private final KubernetesConfigBuildTimeConfig buildTimeConfig;
     private final KubernetesClient client;
 
     private final ConfigMapConfigSourceUtil configMapConfigSourceUtil;
     private final SecretConfigSourceUtil secretConfigSourceUtil;
 
     /**
-     * @param config Quarkus runtime Configuration of the extension
-     * @param buildTimeConfig Quarkus build-time Configuration of the extension
-     * @param client A Kubernetes Client that is specific to this extension - it must not be shared with any other parts of the
-     *        application
+     * @param client A Kubernetes Client that is specific to this extension - it must not be shared with any other
+     *        parts of the application
      */
-    public KubernetesConfigSourceProvider(KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
-            KubernetesClient client) {
-        this.config = config;
-        this.buildTimeConfig = buildTimeConfig;
+    public KubernetesConfigSourceFactory(KubernetesClient client) {
         this.client = client;
-
         this.configMapConfigSourceUtil = new ConfigMapConfigSourceUtil();
         this.secretConfigSourceUtil = new SecretConfigSourceUtil();
     }
 
     @Override
-    public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
-        if (config.configMaps.isEmpty() && config.secrets.isEmpty()) {
+    public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context) {
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withSources(new ConfigSourceContextConfigSource(context))
+                .withMapping(KubernetesConfigBuildTimeConfig.class)
+                .withMapping(KubernetesConfigSourceConfig.class)
+                .build();
+
+        KubernetesConfigBuildTimeConfig kubernetesConfigBuildTimeConfig = config
+                .getConfigMapping(KubernetesConfigBuildTimeConfig.class);
+        KubernetesConfigSourceConfig kubernetesConfigSourceConfig = config.getConfigMapping(KubernetesConfigSourceConfig.class);
+
+        if ((!kubernetesConfigSourceConfig.enabled() && !kubernetesConfigBuildTimeConfig.secretsEnabled())
+                || isExplicitlyDisabled(context)) {
+            log.debug(
+                    "No attempt will be made to obtain configuration from the Kubernetes API server because the functionality has been disabled via configuration");
+            return emptyList();
+        }
+
+        return getConfigSources(kubernetesConfigSourceConfig, kubernetesConfigBuildTimeConfig.secretsEnabled());
+    }
+
+    Iterable<ConfigSource> getConfigSources(final KubernetesConfigSourceConfig config, final boolean secrets) {
+        if (config.configMaps().isEmpty() && config.secrets().isEmpty()) {
             log.debug("No ConfigMaps or Secrets were configured for config source lookup");
-            return Collections.emptyList();
+            return emptyList();
         }
 
         List<ConfigSource> result = new ArrayList<>();
-        if (config.enabled && config.configMaps.isPresent()) {
-            result.addAll(getConfigMapConfigSources(config.configMaps.get()));
+        if (config.enabled() && config.configMaps().isPresent()) {
+            result.addAll(getConfigMapConfigSources(config.configMaps().get(), config));
         }
-        if (buildTimeConfig.secretsEnabled && config.secrets.isPresent()) {
-            result.addAll(getSecretConfigSources(config.secrets.get()));
+        if (secrets && config.secrets().isPresent()) {
+            result.addAll(getSecretConfigSources(config.secrets().get(), config));
         }
         try {
             client.close(); // we no longer need the client, so we must close it to avoid resource leaks
@@ -61,7 +82,18 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         return result;
     }
 
-    private List<ConfigSource> getConfigMapConfigSources(List<String> configMapNames) {
+    private boolean isExplicitlyDisabled(ConfigSourceContext context) {
+        ConfigValue configValue = context.getValue("quarkus.kubernetes-config.enabled");
+        if (AbstractRawDefaultConfigSource.NAME.equals(configValue.getConfigSourceName())) {
+            return false;
+        }
+        if (configValue.getValue() != null) {
+            return !Converters.getImplicitConverter(Boolean.class).convert(configValue.getValue());
+        }
+        return false;
+    }
+
+    private List<ConfigSource> getConfigMapConfigSources(List<String> configMapNames, KubernetesConfigSourceConfig config) {
         List<ConfigSource> result = new ArrayList<>(configMapNames.size());
 
         try {
@@ -72,19 +104,17 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                 }
                 ConfigMap configMap;
                 String namespace;
-                if (config.namespace.isPresent()) {
-                    namespace = config.namespace.get();
+                if (config.namespace().isPresent()) {
+                    namespace = config.namespace().get();
                     configMap = client.configMaps().inNamespace(namespace).withName(configMapName).get();
                 } else {
                     namespace = client.getNamespace();
                     configMap = client.configMaps().withName(configMapName).get();
                 }
                 if (configMap == null) {
-                    logMissingOrFail(configMapName, namespace, "ConfigMap", config.failOnMissingConfig);
+                    logMissingOrFail(configMapName, namespace, "ConfigMap", config.failOnMissingConfig());
                 } else {
-                    result.addAll(
-                            configMapConfigSourceUtil.toConfigSources(configMap.getMetadata(), configMap.getData(),
-                                    i));
+                    result.addAll(configMapConfigSourceUtil.toConfigSources(configMap.getMetadata(), configMap.getData(), i));
                     if (log.isDebugEnabled()) {
                         log.debug("Done reading ConfigMap " + configMap.getMetadata().getName());
                     }
@@ -97,7 +127,7 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
         }
     }
 
-    private List<ConfigSource> getSecretConfigSources(List<String> secretNames) {
+    private List<ConfigSource> getSecretConfigSources(List<String> secretNames, KubernetesConfigSourceConfig config) {
         List<ConfigSource> result = new ArrayList<>(secretNames.size());
 
         try {
@@ -108,15 +138,15 @@ class KubernetesConfigSourceProvider implements ConfigSourceProvider {
                 }
                 Secret secret;
                 String namespace;
-                if (config.namespace.isPresent()) {
-                    namespace = config.namespace.get();
+                if (config.namespace().isPresent()) {
+                    namespace = config.namespace().get();
                     secret = client.secrets().inNamespace(namespace).withName(secretName).get();
                 } else {
                     namespace = client.getNamespace();
                     secret = client.secrets().withName(secretName).get();
                 }
                 if (secret == null) {
-                    logMissingOrFail(secretName, namespace, "Secret", config.failOnMissingConfig);
+                    logMissingOrFail(secretName, namespace, "Secret", config.failOnMissingConfig());
                 } else {
                     result.addAll(secretConfigSourceUtil.toConfigSources(secret.getMetadata(), secret.getData(), i));
                     if (log.isDebugEnabled()) {

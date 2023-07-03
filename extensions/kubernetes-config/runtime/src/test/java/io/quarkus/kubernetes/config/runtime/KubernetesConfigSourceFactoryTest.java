@@ -9,7 +9,6 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 
-import org.assertj.core.util.Lists;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -26,29 +25,24 @@ import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
 
-public class KubernetesConfigSourceProviderTest {
+public class KubernetesConfigSourceFactoryTest {
 
     @Test
     public void testEmptyConfigSources() {
         KubernetesConfigSourceConfig config = defaultConfig();
-        config.enabled = true;
+        when(config.enabled()).thenReturn(true);
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
-        KubernetesConfigBuildTimeConfig buildTimeConfig = new KubernetesConfigBuildTimeConfig();
-        buildTimeConfig.secretsEnabled = true;
-        KubernetesConfigSourceProvider kcsp = new KubernetesConfigSourceProvider(config, buildTimeConfig, kubernetesClient);
-        Iterable<ConfigSource> configSources = kcsp.getConfigSources(null);
+        KubernetesConfigSourceFactory kcsp = new KubernetesConfigSourceFactory(kubernetesClient);
+        Iterable<ConfigSource> configSources = kcsp.getConfigSources(config, true);
         assertThat(configSources).isEmpty();
     }
 
     @Test
     public void testRetrieveNamespacedConfigSources() {
         KubernetesConfigSourceConfig config = defaultConfig();
-        config.enabled = true;
-        config.namespace = Optional.of("demo");
-        List<String> configMaps = Lists.list("cm1");
-        config.configMaps = Optional.of(configMaps);
-
-        KubernetesConfigBuildTimeConfig buildTimeConfig = new KubernetesConfigBuildTimeConfig();
+        when(config.enabled()).thenReturn(true);
+        when(config.namespace()).thenReturn(Optional.of("demo"));
+        when(config.configMaps()).thenReturn(Optional.of(List.of("cm1")));
 
         ConfigMap configMap = configMapBuilder("cm1")
                 .addToData("some.key", "someValue").addToData("some.other", "someOtherValue").build();
@@ -56,8 +50,8 @@ public class KubernetesConfigSourceProviderTest {
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
         stubNamespacedConfigMap(kubernetesClient, configMap, "cm1");
 
-        KubernetesConfigSourceProvider kcsp = new KubernetesConfigSourceProvider(config, buildTimeConfig, kubernetesClient);
-        Iterable<ConfigSource> configSources = kcsp.getConfigSources(null);
+        KubernetesConfigSourceFactory kcsp = new KubernetesConfigSourceFactory(kubernetesClient);
+        Iterable<ConfigSource> configSources = kcsp.getConfigSources(config, false);
         assertThat(configSources).isNotEmpty();
         ConfigSource next = configSources.iterator().next();
         assertThat(next.getProperties()).containsKeys("some.key", "some.other");
@@ -66,29 +60,23 @@ public class KubernetesConfigSourceProviderTest {
     @Test
     public void testNamespacedConfigSourcesAbsents() {
         KubernetesConfigSourceConfig config = defaultConfig();
-        config.enabled = true;
-        config.namespace = Optional.of("demo");
-        List<String> configMaps = Lists.list("cm2");
-        config.configMaps = Optional.of(configMaps);
-
-        KubernetesConfigBuildTimeConfig buildTimeConfig = new KubernetesConfigBuildTimeConfig();
+        when(config.enabled()).thenReturn(true);
+        when(config.namespace()).thenReturn(Optional.of("demo"));
+        when(config.configMaps()).thenReturn(Optional.of(List.of("cm2")));
 
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
         stubNamespacedConfigMap(kubernetesClient, null, "cm2");
 
-        KubernetesConfigSourceProvider kcsp = new KubernetesConfigSourceProvider(config, buildTimeConfig, kubernetesClient);
-        Iterable<ConfigSource> configSources = kcsp.getConfigSources(null);
+        KubernetesConfigSourceFactory kcsp = new KubernetesConfigSourceFactory(kubernetesClient);
+        Iterable<ConfigSource> configSources = kcsp.getConfigSources(config, false);
         assertThat(configSources).isEmpty();
     }
 
     @Test
     public void testRetrieveConfigSources() {
         KubernetesConfigSourceConfig config = defaultConfig();
-        config.enabled = true;
-        List<String> configMaps = Lists.list("cm1");
-        config.configMaps = Optional.of(configMaps);
-
-        KubernetesConfigBuildTimeConfig buildTimeConfig = new KubernetesConfigBuildTimeConfig();
+        when(config.enabled()).thenReturn(true);
+        when(config.configMaps()).thenReturn(Optional.of(List.of("cm1")));
 
         ConfigMap configMap = configMapBuilder("cm1")
                 .addToData("some.key", "someValue").addToData("some.other", "someOtherValue").build();
@@ -96,8 +84,8 @@ public class KubernetesConfigSourceProviderTest {
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
         stubConfigMap(kubernetesClient, configMap, "cm1");
 
-        KubernetesConfigSourceProvider kcsp = new KubernetesConfigSourceProvider(config, buildTimeConfig, kubernetesClient);
-        Iterable<ConfigSource> configSources = kcsp.getConfigSources(null);
+        KubernetesConfigSourceFactory kcsp = new KubernetesConfigSourceFactory(kubernetesClient);
+        Iterable<ConfigSource> configSources = kcsp.getConfigSources(config, false);
         assertThat(configSources).isNotEmpty();
         ConfigSource next = configSources.iterator().next();
         assertThat(next.getProperties()).containsKeys("some.key", "some.other");
@@ -106,19 +94,16 @@ public class KubernetesConfigSourceProviderTest {
     @Test
     public void testRetrieveSecretsWithoutConfigEnable() {
         KubernetesConfigSourceConfig config = defaultConfig();
-        KubernetesConfigBuildTimeConfig buildTimeConfig = new KubernetesConfigBuildTimeConfig();
-        buildTimeConfig.secretsEnabled = true;
 
         Secret secret = secretMapBuilder("testOnlySingleMatchingPropertiesData")
                 .addToData("application.properties", encodeValue("key1=value1\nsome.key=someValue")).build();
-        List<String> secrets = Lists.list("cm1");
-        config.secrets = Optional.of(secrets);
+        when(config.secrets()).thenReturn(Optional.of(List.of("cm1")));
 
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
         stubSecrets(kubernetesClient, secret, "cm1");
 
-        KubernetesConfigSourceProvider kcsp = new KubernetesConfigSourceProvider(config, buildTimeConfig, kubernetesClient);
-        Iterable<ConfigSource> configSources = kcsp.getConfigSources(null);
+        KubernetesConfigSourceFactory kcsp = new KubernetesConfigSourceFactory(kubernetesClient);
+        Iterable<ConfigSource> configSources = kcsp.getConfigSources(config, true);
         assertThat(configSources).isNotEmpty();
         ConfigSource next = configSources.iterator().next();
         assertThat(next.getProperties()).containsKeys("key1", "some.key");
@@ -127,17 +112,14 @@ public class KubernetesConfigSourceProviderTest {
     @Test
     public void testConfigSourcesAbsent() {
         KubernetesConfigSourceConfig config = defaultConfig();
-        config.enabled = true;
-        List<String> configMaps = Lists.list("cm2");
-        config.configMaps = Optional.of(configMaps);
-
-        KubernetesConfigBuildTimeConfig buildTimeConfig = new KubernetesConfigBuildTimeConfig();
+        when(config.enabled()).thenReturn(true);
+        when(config.configMaps()).thenReturn(Optional.of(List.of("cm2")));
 
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
         stubConfigMap(kubernetesClient, null, "cm2");
 
-        KubernetesConfigSourceProvider kcsp = new KubernetesConfigSourceProvider(config, buildTimeConfig, kubernetesClient);
-        Iterable<ConfigSource> configSources = kcsp.getConfigSources(null);
+        KubernetesConfigSourceFactory kcsp = new KubernetesConfigSourceFactory(kubernetesClient);
+        Iterable<ConfigSource> configSources = kcsp.getConfigSources(config, false);
         assertThat(configSources).isEmpty();
     }
 
@@ -145,19 +127,16 @@ public class KubernetesConfigSourceProviderTest {
     public void testConfigSourcesAbsentFailOnMissing() {
         try {
             KubernetesConfigSourceConfig config = defaultConfig();
-            config.enabled = true;
-            config.namespace = Optional.of("demo");
-            List<String> configMaps = Lists.list("cm2");
-            config.configMaps = Optional.of(configMaps);
-            config.failOnMissingConfig = true;
-
-            KubernetesConfigBuildTimeConfig buildTimeConfig = new KubernetesConfigBuildTimeConfig();
+            when(config.enabled()).thenReturn(true);
+            when(config.namespace()).thenReturn(Optional.of("demo"));
+            when(config.configMaps()).thenReturn(Optional.of(List.of("cm2")));
+            when(config.failOnMissingConfig()).thenReturn(true);
 
             KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
             stubNamespacedConfigMap(kubernetesClient, null, "cm2");
 
-            KubernetesConfigSourceProvider kcsp = new KubernetesConfigSourceProvider(config, buildTimeConfig, kubernetesClient);
-            Iterable<ConfigSource> configSources = kcsp.getConfigSources(null);
+            KubernetesConfigSourceFactory kcsp = new KubernetesConfigSourceFactory(kubernetesClient);
+            Iterable<ConfigSource> configSources = kcsp.getConfigSources(config, false);
             fail("an exception should be raised");
         } catch (RuntimeException expected) {
         }
@@ -190,7 +169,6 @@ public class KubernetesConfigSourceProviderTest {
         Config kubernetesConfig = mock(Config.class);
         when(kubernetesClient.getConfiguration()).thenReturn(kubernetesConfig);
         when(kubernetesConfig.getMasterUrl()).thenReturn("url");
-
     }
 
     private void stubSecrets(KubernetesClient kubernetesClient, Secret secret, String secretName) {
@@ -203,7 +181,6 @@ public class KubernetesConfigSourceProviderTest {
         Config kubernetesConfig = mock(Config.class);
         when(kubernetesClient.getConfiguration()).thenReturn(kubernetesConfig);
         when(kubernetesConfig.getMasterUrl()).thenReturn("url");
-
     }
 
     private SecretBuilder secretMapBuilder(String name) {
@@ -216,10 +193,12 @@ public class KubernetesConfigSourceProviderTest {
     }
 
     private KubernetesConfigSourceConfig defaultConfig() {
-        KubernetesConfigSourceConfig config = new KubernetesConfigSourceConfig();
-        config.namespace = Optional.empty();
-        config.configMaps = Optional.empty();
-        config.secrets = Optional.empty();
+        KubernetesConfigSourceConfig config = mock(KubernetesConfigSourceConfig.class);
+        when(config.enabled()).thenReturn(false);
+        when(config.failOnMissingConfig()).thenReturn(false);
+        when(config.configMaps()).thenReturn(Optional.empty());
+        when(config.secrets()).thenReturn(Optional.empty());
+        when(config.namespace()).thenReturn(Optional.empty());
         return config;
     }
 

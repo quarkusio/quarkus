@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -75,7 +74,7 @@ public class ServiceBindingProcessor {
 
         String applicationName = applicationInfo.getName();
         //First we add all user provided services
-        config.services.forEach((key, s) -> {
+        config.services().forEach((key, s) -> {
             createRequirementFromConfig(applicationName, key, config).ifPresent(r -> requirements.put(key, r));
         });
 
@@ -88,7 +87,7 @@ public class ServiceBindingProcessor {
                 requirements.putIfAbsent(id, r);
             });
         });
-        return requirements.values().stream().collect(Collectors.toList());
+        return new ArrayList<>(requirements.values());
     }
 
     @BuildStep
@@ -120,8 +119,8 @@ public class ServiceBindingProcessor {
      */
     protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromConfig(String applicationName,
             String serviceId, KubernetesServiceBindingConfig config) {
-        String name = config.services != null && config.services.containsKey(serviceId)
-                ? config.services.get(serviceId).name.orElse(serviceId)
+        String name = config.services() != null && config.services().containsKey(serviceId)
+                ? config.services().get(serviceId).name().orElse(serviceId)
                 : serviceId;
 
         return createRequirementFromConfig(applicationName, serviceId, serviceId, name, config);
@@ -141,17 +140,17 @@ public class ServiceBindingProcessor {
      */
     protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromConfig(String applicationName,
             String defaultsLookupKey, String serviceId, String resourceName, KubernetesServiceBindingConfig config) {
-        if (config.services != null && config.services.containsKey(serviceId)) {
-            ServiceConfig provided = config.services.get(serviceId);
-            String apiVersion = provided.apiVersion.orElseGet(
+        if (config.services() != null && config.services().containsKey(serviceId)) {
+            ServiceConfig provided = config.services().get(serviceId);
+            String apiVersion = provided.apiVersion().orElseGet(
                     () -> getDefaultQualifiedKind(defaultsLookupKey).map(ServiceBindingProcessor::apiVersion).orElse(""));
-            String kind = provided.kind
+            String kind = provided.kind()
                     .orElseGet(() -> getDefaultQualifiedKind(defaultsLookupKey).map(ServiceBindingProcessor::kind)
                             .orElseThrow(() -> new IllegalStateException("Failed to determine bindable service kind.")));
             //When a service is partially or fully configured, use the configured binding or fallback to the application name and service id combination.
             return Optional
-                    .of(new ServiceBindingRequirementBuildItem(provided.binding.orElse(applicationName + "-" + serviceId),
-                            apiVersion, kind, provided.name.orElse(resourceName)));
+                    .of(new ServiceBindingRequirementBuildItem(provided.binding().orElse(applicationName + "-" + serviceId),
+                            apiVersion, kind, provided.name().orElse(resourceName)));
         }
         return Optional.empty();
     }
@@ -168,10 +167,10 @@ public class ServiceBindingProcessor {
     protected static Optional<ServiceBindingRequirementBuildItem> createRequirementFromQualifier(String applicationName,
             KubernetesServiceBindingConfig config, ServiceBindingQualifierBuildItem qualifier) {
 
-        if (config.services != null && config.services.containsKey(qualifier.getId())) {
+        if (config.services() != null && config.services().containsKey(qualifier.getId())) {
             return createRequirementFromConfig(applicationName, qualifier.getKind(), qualifier.getId(), qualifier.getName(),
                     config);
-        } else if (config.services != null && config.services.containsKey(qualifier.getName())) {
+        } else if (config.services() != null && config.services().containsKey(qualifier.getName())) {
             return createRequirementFromConfig(applicationName, qualifier.getKind(), qualifier.getName(), qualifier.getName(),
                     config);
         } else if (DEFAULTS.containsKey(qualifier.getKind())) {

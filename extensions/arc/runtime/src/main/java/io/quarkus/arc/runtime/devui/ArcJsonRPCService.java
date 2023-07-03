@@ -100,6 +100,7 @@ public class ArcJsonRPCService {
 
     private String timeString(LocalDateTime time) {
         String timestamp = time.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME).replace("T", " ");
-        return timestamp.substring(0, timestamp.lastIndexOf("."));
+        int lastIndexOfDot = timestamp.lastIndexOf(".");
+        return lastIndexOfDot > 0 ? timestamp.substring(0, lastIndexOfDot) : timestamp;
     }
 }

@@ -63,6 +63,7 @@ public class ClassNames {
             createConstant("org.hibernate.generator.internal.GeneratedAlwaysGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedGeneration"),
             createConstant("org.hibernate.generator.internal.SourceGeneration"),
+            createConstant("org.hibernate.generator.internal.TenantIdGeneration"),
             createConstant("org.hibernate.generator.internal.VersionGeneration"),
             createConstant("org.hibernate.id.Assigned"),
             createConstant("org.hibernate.id.ForeignGenerator"),

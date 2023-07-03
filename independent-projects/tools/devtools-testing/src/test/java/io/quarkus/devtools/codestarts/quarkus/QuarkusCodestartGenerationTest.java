@@ -327,11 +327,11 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
                 .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
-                .satisfies(checkContains("./mvnw package -Pnative"))
+                .satisfies(checkContains("./mvnw package -Dnative"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
                 .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
-                .satisfies(checkContains("./mvnw package -Pnative"))
+                .satisfies(checkContains("./mvnw package -Dnative"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
                 .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }

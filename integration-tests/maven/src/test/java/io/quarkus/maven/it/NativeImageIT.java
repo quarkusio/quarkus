@@ -35,8 +35,8 @@ public class NativeImageIT extends MojoTestBase {
         final File testDir = initProject("projects/native-image-app", "projects/native-image-app-output");
         final RunningInvoker running = new RunningInvoker(testDir, false);
 
-        // trigger mvn package -Pnative -Dquarkus.ssl.native=true
-        final String[] mvnArgs = new String[] { "package", "-DskipTests", "-Pnative", "-Dquarkus.ssl.native=true" };
+        // trigger mvn package -Dnative -Dquarkus.ssl.native=true
+        final String[] mvnArgs = new String[] { "package", "-DskipTests", "-Dnative", "-Dquarkus.ssl.native=true" };
         final MavenProcessInvocationResult result = running.execute(Arrays.asList(mvnArgs), Collections.emptyMap());
         await().atMost(10, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         final String processLog = running.log();

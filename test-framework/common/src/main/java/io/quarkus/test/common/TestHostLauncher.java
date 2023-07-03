@@ -28,7 +28,7 @@ public class TestHostLauncher implements ArtifactLauncher {
 
     @Override
     public boolean listensOnSsl() {
-        return false;
+        return Boolean.parseBoolean(System.getProperty("quarkus.http.test-ssl-enabled", "false"));
     }
 
     @Override

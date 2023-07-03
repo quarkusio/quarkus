@@ -47,11 +47,11 @@ public class CodeGenerator {
             "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider");
 
     // used by Gradle and Maven
-    public static void initAndRun(QuarkusClassLoader classLoader,
+    public static void initAndRun(QuarkusClassLoader classLoader, Path projectDir,
             PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
             String launchMode, boolean test) throws CodeGenException {
-        final List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
+        final List<CodeGenData> generators = init(classLoader, projectDir, sourceParentDirs, generatedSourcesDir, buildDir,
                 sourceRegistrar);
         if (generators.isEmpty()) {
             return;
@@ -65,6 +65,7 @@ public class CodeGenerator {
     }
 
     private static List<CodeGenData> init(ClassLoader deploymentClassLoader,
+            Path projectDir,
             PathCollection sourceParentDirs,
             Path generatedSourcesDir,
             Path buildDir,
@@ -79,7 +80,8 @@ public class CodeGenerator {
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
                 for (Path sourceParentDir : sourceParentDirs) {
                     result.add(
-                            new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()), buildDir));
+                            new CodeGenData(provider, projectDir, outputDir, sourceParentDir.resolve(provider.inputDirectory()),
+                                    buildDir));
                 }
             }
             return result;
@@ -109,7 +111,8 @@ public class CodeGenerator {
                                 codeGens = new ArrayList<>();
                             }
                             codeGens.add(
-                                    new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()),
+                                    new CodeGenData(provider, Path.of(module.getProjectDirectory()), outputDir,
+                                            sourceParentDir.resolve(provider.inputDirectory()),
                                             Path.of(module.getTargetDir())));
                         }
 
@@ -174,8 +177,8 @@ public class CodeGenerator {
             CodeGenProvider provider = data.provider;
             return provider.shouldRun(data.sourceDir, config)
                     && provider.trigger(
-                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config,
-                                    test));
+                            new CodeGenContext(appModel, data.projectDir, data.outPath, data.buildDir, data.sourceDir,
+                                    data.redirectIO, config, test));
         });
     }
 

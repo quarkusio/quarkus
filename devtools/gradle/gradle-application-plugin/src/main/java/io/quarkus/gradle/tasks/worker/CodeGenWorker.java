@@ -33,6 +33,7 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
         Properties props = buildSystemProperties();
 
         ResolvedDependency appArtifact = params.getAppModel().get().getAppArtifact();
+        Path projectDir = params.getProjectDirectory().getAsFile().get().toPath();
         Path buildDir = params.getTargetDirectory().getAsFile().get().toPath();
         Path generatedSourceDir = params.getOutputPath().get().getAsFile().toPath();
 
@@ -40,6 +41,7 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
         LOGGER.info("Generating Quarkus code for {}", gav);
         LOGGER.info("  launch mode:                  {}", params.getLaunchMode().get());
         LOGGER.info("  base name:                    {}", params.getBaseName().get());
+        LOGGER.info("  project directory:            {}", projectDir);
         LOGGER.info("  generated source directory:   {}", generatedSourceDir);
         LOGGER.info("  build directory:              {}", buildDir);
 
@@ -50,8 +52,8 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
 
             Method initAndRun;
             try {
-                initAndRun = codeGenerator.getMethod(INIT_AND_RUN, QuarkusClassLoader.class, PathCollection.class,
-                        Path.class, Path.class,
+                initAndRun = codeGenerator.getMethod(INIT_AND_RUN, QuarkusClassLoader.class,
+                        Path.class, PathCollection.class, Path.class, Path.class,
                         Consumer.class, ApplicationModel.class, Properties.class, String.class,
                         boolean.class);
             } catch (Exception e) {
@@ -66,6 +68,8 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
             initAndRun.invoke(null,
                     // QuarkusClassLoader classLoader,
                     deploymentClassLoader,
+                    // Path projectDir
+                    projectDir,
                     // PathCollection sourceParentDirs,
                     PathList.from(
                             params.getSourceDirectories().getFiles().stream().map(File::toPath).collect(Collectors.toList())),

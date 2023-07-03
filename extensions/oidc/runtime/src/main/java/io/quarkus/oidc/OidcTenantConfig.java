@@ -915,8 +915,17 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Secret which will be used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
-         * This secret must be set if PKCE is required but no client secret is set.
-         * The length of the secret which will be used to encrypt the code verifier must be 32 characters long.
+         * This secret should be at least 32 characters long.
+         * <p/>
+         * If this secret is not set, the client secret configured with
+         * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` will be checked.
+         * Finally, `quarkus.oidc.credentials.jwt.secret` which can be used for `client_jwt_secret` authentication will be
+         * checked. Client secret will not be used as a PKCE code verifier encryption secret if it is less than 32 characters
+         * long.
+         * </p>
+         * The secret will be auto-generated if it remains uninitialized after checking all of these properties.
+         * <p/>
+         * Error will be reported if the secret length is less than 16 characters.
          */
         @ConfigItem
         public Optional<String> pkceSecret = Optional.empty();

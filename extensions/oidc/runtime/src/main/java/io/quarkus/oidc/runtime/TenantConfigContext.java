@@ -11,7 +11,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
-import io.smallrye.jwt.util.KeyUtils;
 
 public class TenantConfigContext {
     private static final Logger LOG = Logger.getLogger(TenantConfigContext.class);
@@ -54,15 +53,41 @@ public class TenantConfigContext {
 
     private static SecretKey createPkceSecretKey(OidcTenantConfig config) {
         if (config.authentication.pkceRequired.orElse(false)) {
-            String pkceSecret = config.authentication.pkceSecret
-                    .orElse(OidcCommonUtils.clientSecret(config.credentials));
-            if (pkceSecret == null) {
-                throw new RuntimeException("Secret key for encrypting PKCE code verifier is missing");
+            String pkceSecret = null;
+            if (config.authentication.pkceSecret.isPresent()) {
+                pkceSecret = config.authentication.pkceSecret.get();
+            } else {
+                LOG.debug("'quarkus.oidc.token-state-manager.encryption-secret' is not configured, "
+                        + "trying to use the configured client secret");
+                String possiblePkceSecret = fallbackToClientSecret(config);
+                if (possiblePkceSecret != null && possiblePkceSecret.length() < 32) {
+                    LOG.debug("Client secret is less than 32 characters long, the pkce secret will be generated");
+                } else {
+                    pkceSecret = possiblePkceSecret;
+                }
             }
-            if (pkceSecret.length() != 32) {
-                throw new RuntimeException("Secret key for encrypting PKCE code verifier must be 32 characters long");
+            try {
+                if (pkceSecret == null) {
+                    LOG.debug("Secret key for encrypting PKCE code verifier is missing, auto-generating it");
+                    SecretKey key = generateSecretKey();
+                    return key;
+                }
+                byte[] secretBytes = pkceSecret.getBytes(StandardCharsets.UTF_8);
+                if (secretBytes.length < 32) {
+                    String errorMessage = "Secret key for encrypting PKCE code verifier in a state cookie should be at least 32 characters long"
+                            + " for the strongest state cookie encryption to be produced."
+                            + " Please update 'quarkus.oidc.authentication.pkce-secret' or update the configured client secret.";
+                    if (secretBytes.length < 16) {
+                        throw new RuntimeException(
+                                "Secret key for encrypting PKCE code verifier is less than 32 characters long");
+                    } else {
+                        LOG.debug(errorMessage);
+                    }
+                }
+                return new SecretKeySpec(OidcUtils.getSha256Digest(secretBytes), "AES");
+            } catch (Exception ex) {
+                throw new OIDCException(ex);
             }
-            return KeyUtils.createSecretKeyFromSecret(pkceSecret);
         }
         return null;
     }
@@ -75,19 +100,12 @@ public class TenantConfigContext {
             } else {
                 LOG.debug("'quarkus.oidc.token-state-manager.encryption-secret' is not configured, "
                         + "trying to use the configured client secret");
-                encSecret = OidcCommonUtils.clientSecret(config.credentials);
-                if (encSecret == null) {
-                    LOG.debug("Client secret is not configured, "
-                            + "trying to use the configured 'client_jwt_secret' secret");
-                    encSecret = OidcCommonUtils.jwtSecret(config.credentials);
-                }
+                encSecret = fallbackToClientSecret(config);
             }
             try {
                 if (encSecret == null) {
                     LOG.warn("Secret key for encrypting tokens in a session cookie is missing, auto-generating it");
-                    KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
-                    keyGenerator.init(256);
-                    return keyGenerator.generateKey();
+                    return generateSecretKey();
                 }
                 byte[] secretBytes = encSecret.getBytes(StandardCharsets.UTF_8);
                 if (secretBytes.length < 32) {
@@ -109,6 +127,22 @@ public class TenantConfigContext {
             }
         }
         return null;
+    }
+
+    private static String fallbackToClientSecret(OidcTenantConfig config) {
+        String encSecret = OidcCommonUtils.clientSecret(config.credentials);
+        if (encSecret == null) {
+            LOG.debug("Client secret is not configured, "
+                    + "trying to use the configured 'client_jwt_secret' secret");
+            encSecret = OidcCommonUtils.jwtSecret(config.credentials);
+        }
+        return encSecret;
+    }
+
+    private static SecretKey generateSecretKey() throws Exception {
+        KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+        keyGenerator.init(256);
+        return keyGenerator.generateKey();
     }
 
     public OidcTenantConfig getOidcTenantConfig() {

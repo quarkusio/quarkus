@@ -343,6 +343,16 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
 ----
 
+[NOTE]
+====
+Twitter provider requires Proof Key for Code Exchange (PKCE) which is supported by the `quarkus.oidc.provider=twitter` declaration.
+Quarkus has to encrypt the current PKCE code verifier in a state cookie while the authorization code flow with Twitter is in progress and it will
+generate a secure random secret key for encrypting it.
+
+You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.pkce-secret` property but
+note that this secret should be 32 characters long, and an error will be reported if it is less than 16 characters long.
+====
+
 === Spotify
 
 Create a https://developer.spotify.com/documentation/general/guides/authorization/app-settings/[Spotify application]:

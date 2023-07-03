@@ -1,12 +1,24 @@
 package io.quarkus.oidc.test;
 
+import static org.awaitility.Awaitility.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.awaitility.core.ThrowingRunnable;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -107,6 +119,8 @@ public class CodeFlowDevModeTestCase {
 
             webClient.getCookieManager().clearCookies();
         }
+        checkPkceSecretGenerated();
+
     }
 
     private void useTenantConfigResolver() throws IOException, InterruptedException {
@@ -144,4 +158,37 @@ public class CodeFlowDevModeTestCase {
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
         return webClient;
     }
+
+    protected static void checkPkceSecretGenerated() {
+        AtomicBoolean checkPassed = new AtomicBoolean();
+        given().pollInterval(100, TimeUnit.MILLISECONDS)
+                .atMost(10, TimeUnit.SECONDS)
+                .untilAsserted(new ThrowingRunnable() {
+                    @Override
+                    public void run() throws Throwable {
+                        final Path logDirectory = Paths.get(".", "target");
+                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        boolean fileExists = Files.exists(accessLogFilePath);
+                        if (!fileExists) {
+                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
+                            fileExists = Files.exists(accessLogFilePath);
+                        }
+                        assertTrue(fileExists, "quarkus log is missing");
+
+                        try (BufferedReader reader = new BufferedReader(
+                                new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
+                                        StandardCharsets.UTF_8))) {
+                            String line = null;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.contains(
+                                        "Secret key for encrypting PKCE code verifier is missing, auto-generating it")) {
+                                    checkPassed.set(true);
+                                }
+                            }
+                        }
+                    }
+                });
+        assertTrue(checkPassed.get(), "Can not confirm Secret key for encrypting PKCE code verifier has been generated");
+    }
+
 }

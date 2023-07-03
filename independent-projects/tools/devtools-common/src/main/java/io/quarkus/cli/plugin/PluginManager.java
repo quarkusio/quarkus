@@ -312,7 +312,7 @@ public class PluginManager {
                 .filter(Predicate.not(File::exists))
                 .map(File::toPath)
                 .map(p -> {
-                    output.info("Project plugin catalog has not been initialized. Initializing!");
+                    output.debug("Project plugin catalog has not been initialized. Initializing!");
                     state.getPluginCatalogService().writeCatalog(new PluginCatalog().withCatalogLocation(p));
                     return true;
                 }).orElse(false);

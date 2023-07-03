@@ -10,6 +10,7 @@ import static io.smallrye.config.ConfigMappings.ConfigClassWithPrefix.configClas
 import static io.smallrye.config.Expressions.withoutExpansion;
 import static java.util.stream.Collectors.toSet;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -23,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -54,6 +56,8 @@ import io.quarkus.deployment.configuration.type.MinMaxValidated;
 import io.quarkus.deployment.configuration.type.OptionalOf;
 import io.quarkus.deployment.configuration.type.PatternValidated;
 import io.quarkus.deployment.configuration.type.UpperBoundCheckOf;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -69,6 +73,9 @@ import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Converters;
 import io.smallrye.config.EnvConfigSource;
+import io.smallrye.config.KeyMap;
+import io.smallrye.config.KeyMapBackedConfigSource;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -79,6 +86,25 @@ import io.smallrye.config.SysPropConfigSource;
  */
 public final class BuildTimeConfigurationReader {
     private static final Logger log = Logger.getLogger("io.quarkus.config.build");
+
+    private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
+
+    private static List<Class<?>> collectConfigRoots(ClassLoader classLoader) throws IOException, ClassNotFoundException {
+        Assert.checkNotNullParam("classLoader", classLoader);
+        // populate with all known types
+        List<Class<?>> roots = new ArrayList<>();
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, CONFIG_ROOTS_LIST)) {
+            final ConfigRoot annotation = clazz.getAnnotation(ConfigRoot.class);
+            if (annotation == null) {
+                log.warnf("Ignoring configuration root %s because it has no annotation", clazz);
+            } else {
+                roots.add(clazz);
+            }
+        }
+        return roots;
+    }
+
+    final ClassLoader classLoader;
 
     final ConfigPatternMap<Container> buildTimePatternMap;
     final ConfigPatternMap<Container> buildTimeRunTimePatternMap;
@@ -99,12 +125,30 @@ public final class BuildTimeConfigurationReader {
     final Set<String> deprecatedRuntimeProperties;
 
     /**
+     * Initializes a new instance with located configuration root classes on the classpath
+     * of a given classloader.
+     *
+     * @param classLoader class loader to load configuration root classes from
+     * @throws IOException in case a classpath resource couldn't be read
+     * @throws ClassNotFoundException in case a config root class could not be found
+     */
+    public BuildTimeConfigurationReader(ClassLoader classLoader) throws IOException, ClassNotFoundException {
+        this(classLoader, collectConfigRoots(classLoader));
+    }
+
+    /**
      * Construct a new instance.
      *
      * @param configRoots the configuration root class list (must not be {@code null})
      */
     public BuildTimeConfigurationReader(final List<Class<?>> configRoots) {
+        this(null, configRoots);
+    }
+
+    private BuildTimeConfigurationReader(ClassLoader classLoader, final List<Class<?>> configRoots) {
+
         Assert.checkNotNullParam("configRoots", configRoots);
+        this.classLoader = classLoader;
 
         List<RootDefinition> buildTimeRoots = new ArrayList<>();
         List<RootDefinition> buildTimeRunTimeRoots = new ArrayList<>();
@@ -326,6 +370,45 @@ public final class BuildTimeConfigurationReader {
 
     public List<ConfigClassWithPrefix> getBuildTimeVisibleMappings() {
         return buildTimeVisibleMappings;
+    }
+
+    /**
+     * Builds a new configuration instance.
+     *
+     * @param launchMode target launch mode
+     * @param buildSystemProps build system properties to add as a configuration source
+     * @param platformProperties Quarkus platform properties to add as a configuration source
+     * @return configuration instance
+     */
+    public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps,
+            Map<String, String> platformProperties) {
+        // now prepare & load the build configuration
+        final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
+        if (classLoader != null) {
+            builder.forClassLoader(classLoader);
+        }
+
+        final DefaultValuesConfigurationSource ds1 = new DefaultValuesConfigurationSource(getBuildTimePatternMap());
+        final DefaultValuesConfigurationSource ds2 = new DefaultValuesConfigurationSource(getBuildTimeRunTimePatternMap());
+        final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
+        if (platformProperties.isEmpty()) {
+            builder.withSources(ds1, ds2, pcs);
+        } else {
+            final KeyMap<String> props = new KeyMap<>(platformProperties.size());
+            for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
+                props.findOrAdd(new io.smallrye.config.NameIterator(prop.getKey())).putRootValue(prop.getValue());
+            }
+            final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
+                    // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
+                    // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
+                    Integer.MIN_VALUE + 1000, props);
+            builder.withSources(ds1, ds2, platformConfigSource, pcs);
+        }
+
+        for (ConfigClassWithPrefix mapping : getBuildTimeVisibleMappings()) {
+            builder.withMapping(mapping.getKlass(), mapping.getPrefix());
+        }
+        return builder.build();
     }
 
     public ReadResult readConfiguration(final SmallRyeConfig config) {

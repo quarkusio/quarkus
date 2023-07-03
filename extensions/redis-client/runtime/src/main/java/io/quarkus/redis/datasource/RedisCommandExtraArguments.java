@@ -18,7 +18,7 @@ public interface RedisCommandExtraArguments {
      * @param encoder an optional encoder to encode some of the values
      * @return the list of arguments, encoded as a list of String.
      */
-    default <T> List<String> toArgs(Codec<T> encoder) {
+    default List<String> toArgs(Codec encoder) {
         return Collections.emptyList();
     }
 

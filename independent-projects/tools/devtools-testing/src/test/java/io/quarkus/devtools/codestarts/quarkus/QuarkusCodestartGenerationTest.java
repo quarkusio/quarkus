@@ -6,7 +6,6 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.Quarku
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
-import static io.quarkus.devtools.testing.SnapshotTesting.checkNotContains;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
@@ -299,7 +298,7 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))//TODO: make a test for java17
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
-                .satisfies(checkNotContains("ENTRYPOINT"));
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
@@ -307,15 +306,15 @@ class QuarkusCodestartGenerationTest {
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
-                .satisfies(checkNotContains("ENTRYPOINT"));
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./mvnw package -Pnative"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./mvnw package -Pnative"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
     private void checkDockerfilesWithGradle(Path projectDir) {

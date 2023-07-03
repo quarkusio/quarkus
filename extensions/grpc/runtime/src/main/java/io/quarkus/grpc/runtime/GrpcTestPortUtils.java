@@ -1,6 +1,6 @@
 package io.quarkus.grpc.runtime;
 
-import java.util.List;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -36,7 +36,7 @@ public final class GrpcTestPortUtils {
                 || !isDefaultProtocols(ssl.protocols);
     }
 
-    private static boolean isDefaultProtocols(List<String> protocols) {
+    private static boolean isDefaultProtocols(Set<String> protocols) {
         return protocols.size() == 2 && protocols.contains("TLSv1.3") && protocols.contains("TLSv1.2");
     }
 

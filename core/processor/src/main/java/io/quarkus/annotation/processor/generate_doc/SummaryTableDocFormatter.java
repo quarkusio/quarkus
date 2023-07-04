@@ -114,11 +114,19 @@ final class SummaryTableDocFormatter implements DocFormatter {
         String configKeyAnchor = configDocKey.isPassThroughMap() ? getAnchor(key + Constants.DASH + configDocKey.getDocMapKey())
                 : getAnchor(key);
         String anchor = anchorPrefix + configKeyAnchor;
-        writer.append(String.format(TABLE_ROW_FORMAT,
-                configDocKey.getConfigPhase().getIllustration(),
-                anchor,
-                anchor,
-                key,
+
+        StringBuilder keys = new StringBuilder();
+        keys.append(
+                String.format("%s [[%s]]`link:#%s[%s]`\n\n", configDocKey.getConfigPhase().getIllustration(), anchor, anchor,
+                        key));
+        for (String additionalKey : configDocKey.getAdditionalKeys()) {
+            if (!additionalKey.equals(key)) {
+                keys.append(String.format("`link:#%s[%s]`\n\n", anchor, additionalKey));
+            }
+        }
+
+        writer.append(String.format("\n\na|%s\n[.description]\n--\n%s\n--%s|%s %s\n|%s\n",
+                keys,
                 // make sure nobody inserts a table cell separator here
                 doc.replace("|", "\\|"),
                 // if ConfigDocKey is enum, cell style operator must support block elements

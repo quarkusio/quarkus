@@ -76,6 +76,7 @@ public final class MavenConfigDocBuilder extends ConfigDocBuilder {
             final ConfigDocKey configDocKey = new ConfigDocKey();
             configDocKey.setType(type);
             configDocKey.setKey(name);
+            configDocKey.setAdditionalKeys(List.of(name));
             configDocKey.setConfigPhase(ConfigPhase.RUN_TIME);
             configDocKey.setDefaultValue(defaultValue == null ? Constants.EMPTY : defaultValue);
             if (description != null && !description.isBlank()) {

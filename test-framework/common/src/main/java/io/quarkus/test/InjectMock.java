@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  * </ul>
  * The lifecycle and configuration API of the injected mock depends on the type of test being used.
  * <p>
- * Some test types impose additional restrictons and limitations. For example, only beans that have a
+ * Some test types impose additional restrictions and limitations. For example, only beans that have a
  * <a href="https://quarkus.io/guides/cdi#client_proxies">client proxy</a> may be mocked in a
  * {@code io.quarkus.test.junit.QuarkusTest}.
  */

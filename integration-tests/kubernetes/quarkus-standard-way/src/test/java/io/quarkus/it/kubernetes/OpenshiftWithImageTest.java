@@ -20,16 +20,16 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-public class OpenshiftWithDockerAndImageTest {
+public class OpenshiftWithImageTest {
 
-    private static final String APP_NAME = "openshift-with-docker-and-image";
+    private static final String APP_NAME = "openshift-with-image";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName(APP_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .withConfigurationResource(APP_NAME + ".properties")
+            .overrideConfigKey("quarkus.container-image.image", "user/app:2.0")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults
@@ -49,22 +49,21 @@ public class OpenshiftWithDockerAndImageTest {
             });
             assertThat(h).isInstanceOfSatisfying(DeploymentConfig.class, d -> {
                 Container container = d.getSpec().getTemplate().getSpec().getContainers().get(0);
-                assertThat(container.getImage()).isEqualTo("quay.io/user/app:1.0");
+                assertThat(container.getImage()).endsWith("user/app:2.0");
 
                 DeploymentTriggerImageChangeParams imageTriggerParams = d.getSpec().getTriggers().get(0).getImageChangeParams();
                 assertThat(imageTriggerParams.getFrom().getKind()).isEqualTo("ImageStreamTag");
-                assertThat(imageTriggerParams.getFrom().getName()).isEqualTo(APP_NAME + ":1.0");
+                assertThat(imageTriggerParams.getFrom().getName()).isEqualTo(APP_NAME + ":2.0");
             });
         });
 
-        assertThat(openshiftList).filteredOn(h -> "ImageStream".equals(h.getKind())).singleElement().satisfies(h -> {
-            assertThat(h.getMetadata()).satisfies(m -> {
-                assertThat(m.getName()).isEqualTo(APP_NAME);
-            });
-            assertThat(h).isInstanceOfSatisfying(ImageStream.class, i -> {
-                assertThat(i.getSpec().getDockerImageRepository()).isEqualTo("quay.io/user/app");
-            });
-        });
+        assertThat(openshiftList)
+                .filteredOn(h -> "ImageStream".equals(h.getKind()) && h.getMetadata().getName().equals(APP_NAME))
+                .singleElement().satisfies(h -> {
+                    assertThat(h).isInstanceOfSatisfying(ImageStream.class, i -> {
+                        assertThat(i.getSpec().getDockerImageRepository()).isNull();
+                    });
+                });
 
     }
 }

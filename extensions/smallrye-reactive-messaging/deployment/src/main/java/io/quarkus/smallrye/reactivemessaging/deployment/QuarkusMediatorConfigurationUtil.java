@@ -9,6 +9,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.KOTLIN_UNIT;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.TRANSACTIONAL;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.VOID_CLASS;
@@ -33,6 +34,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusParameterDescriptor;
+import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry;
 import io.quarkus.smallrye.reactivemessaging.runtime.TypeInfo;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Blocking;
@@ -178,17 +180,32 @@ public final class QuarkusMediatorConfigurationUtil {
         AnnotationInstance blockingAnnotation = methodInfo.annotation(BLOCKING);
         AnnotationInstance smallryeBlockingAnnotation = methodInfo.annotation(SMALLRYE_BLOCKING);
         AnnotationInstance transactionalAnnotation = methodInfo.annotation(TRANSACTIONAL);
-        if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null) {
+        AnnotationInstance runOnVirtualThreadAnnotation = methodInfo.annotation(RUN_ON_VIRTUAL_THREAD);
+        if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null
+                || runOnVirtualThreadAnnotation != null) {
             mediatorConfigurationSupport.validateBlocking(validationOutput);
             configuration.setBlocking(true);
             if (blockingAnnotation != null) {
                 AnnotationValue ordered = blockingAnnotation.value("ordered");
-                configuration.setBlockingExecutionOrdered(ordered == null || ordered.asBoolean());
+                if (runOnVirtualThreadAnnotation != null) {
+                    if (ordered != null && ordered.asBoolean()) {
+                        throw new ConfigurationException(
+                                "The method `" + methodInfo.name()
+                                        + "` is using `@RunOnVirtualThread` but explicitly set as `@Blocking(ordered = true)`");
+                    }
+                    configuration.setBlockingExecutionOrdered(false);
+                    configuration.setWorkerPoolName(QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER);
+                } else {
+                    configuration.setBlockingExecutionOrdered(ordered == null || ordered.asBoolean());
+                }
                 String poolName;
                 if (blockingAnnotation.value() != null &&
                         !(poolName = blockingAnnotation.value().asString()).equals(Blocking.DEFAULT_WORKER_POOL)) {
                     configuration.setWorkerPoolName(poolName);
                 }
+            } else if (runOnVirtualThreadAnnotation != null) {
+                configuration.setBlockingExecutionOrdered(false);
+                configuration.setWorkerPoolName(QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER);
             } else {
                 configuration.setBlockingExecutionOrdered(true);
             }

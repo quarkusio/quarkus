@@ -10,6 +10,7 @@ import org.eclipse.microprofile.reactive.messaging.spi.IncomingConnectorFactory;
 import org.eclipse.microprofile.reactive.messaging.spi.OutgoingConnectorFactory;
 import org.jboss.jandex.DotName;
 
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.reactive.messaging.MessageConverter;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.annotations.Blocking;
@@ -89,6 +90,7 @@ public final class ReactiveMessagingDotNames {
             .createSimple("io.quarkus.smallrye.reactivemessaging.runtime.kotlin.AbstractSubscribingCoroutineInvoker");
 
     static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
+    static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class.getName());
 
     private ReactiveMessagingDotNames() {
     }

@@ -2,6 +2,7 @@ package io.quarkus.smallrye.reactivemessaging.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.BLOCKING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.TRANSACTIONAL;
 
@@ -49,7 +50,9 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
@@ -88,6 +91,7 @@ public class SmallRyeReactiveMessagingProcessor {
     private static final Logger LOGGER = Logger
             .getLogger("io.quarkus.smallrye-reactive-messaging.deployment.processor");
 
+    static final String DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY = "1024";
     static final String INVOKER_SUFFIX = "_SmallRyeMessagingInvoker";
 
     static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
@@ -108,6 +112,12 @@ public class SmallRyeReactiveMessagingProcessor {
         return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
                 Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class,
                 QuarkusWorkerPoolRegistry.class);
+    }
+
+    @BuildStep
+    void nativeRuntimeInitClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitClasses) {
+        runtimeInitClasses.produce(new RuntimeInitializedClassBuildItem(
+                "io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry$VirtualExecutorSupplier"));
     }
 
     @BuildStep
@@ -221,6 +231,7 @@ public class SmallRyeReactiveMessagingProcessor {
             List<InjectedChannelBuildItem> channelFields,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfig,
             ReactiveMessagingConfiguration conf) {
 
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
@@ -240,17 +251,25 @@ public class SmallRyeReactiveMessagingProcessor {
             BeanInfo bean = mediatorMethod.getBean();
 
             if (methodInfo.hasAnnotation(BLOCKING) || methodInfo.hasAnnotation(SMALLRYE_BLOCKING)
+                    || methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
                     || methodInfo.hasAnnotation(TRANSACTIONAL)) {
                 // Just in case both annotation are used, use @Blocking value.
-                String poolName = Blocking.DEFAULT_WORKER_POOL;
+                String poolName = methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
+                        ? QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER
+                        : Blocking.DEFAULT_WORKER_POOL;
 
                 // If the method is annotated with the SmallRye Reactive Messaging @Blocking, extract the worker pool name if any
                 if (methodInfo.hasAnnotation(ReactiveMessagingDotNames.BLOCKING)) {
                     AnnotationInstance blocking = methodInfo.annotation(ReactiveMessagingDotNames.BLOCKING);
                     poolName = blocking.value() == null ? Blocking.DEFAULT_WORKER_POOL : blocking.value().asString();
                 }
+                if (methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)) {
+                    defaultConfig.produce(new RunTimeConfigurationDefaultBuildItem(
+                            "smallrye.messaging.worker." + poolName + ".max-concurrency",
+                            DEFAULT_VIRTUAL_THREADS_MAX_CONCURRENCY));
+                }
                 workerConfigurations.add(new WorkerConfiguration(methodInfo.declaringClass().toString(),
-                        methodInfo.name(), poolName));
+                        methodInfo.name(), poolName, methodInfo.hasAnnotation(RUN_ON_VIRTUAL_THREAD)));
             }
 
             try {

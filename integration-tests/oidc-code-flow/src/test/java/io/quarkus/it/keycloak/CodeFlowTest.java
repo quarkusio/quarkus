@@ -38,7 +38,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
-import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -358,8 +357,9 @@ public class CodeFlowTest {
     private void verifyCodeVerifier(Cookie stateCookie, String keycloakUrl) throws Exception {
         String encodedState = stateCookie.getValue().split("\\|")[1];
 
-        String codeVerifier = OidcUtils.decryptJson(encodedState,
-                KeyUtils.createSecretKeyFromSecret("eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU")).getString("code_verifier");
+        byte[] secretBytes = "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU".getBytes(StandardCharsets.UTF_8);
+        SecretKey key = new SecretKeySpec(OidcUtils.getSha256Digest(secretBytes), "AES");
+        String codeVerifier = OidcUtils.decryptJson(encodedState, key).getString("code_verifier");
         String codeChallenge = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(OidcUtils.getSha256Digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)));
 

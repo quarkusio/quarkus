@@ -9,10 +9,27 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class RedisCacheRuntimeConfig {
     /**
-     * The default time to live of the item stored in the cache
+     * The default time to live of the item stored in the cache.
+     *
+     * @deprecated Use {@link #expireAfterWrite} instead.
      */
     @ConfigItem
+    @Deprecated
     public Optional<Duration> ttl;
+
+    /**
+     * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
+     * the entry's creation, or the most recent replacement of its value.
+     */
+    @ConfigItem
+    Optional<Duration> expireAfterWrite;
+
+    /**
+     * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
+     * the last access of its value.
+     */
+    @ConfigItem
+    Optional<Duration> expireAfterAccess;
 
     /**
      * the key prefix allowing to identify the keys belonging to the cache.

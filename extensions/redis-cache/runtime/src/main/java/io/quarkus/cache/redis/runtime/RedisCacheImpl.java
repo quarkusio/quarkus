@@ -1,6 +1,7 @@
 package io.quarkus.cache.redis.runtime;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +33,7 @@ import io.vertx.mutiny.redis.client.Response;
  * This class is an internal Quarkus cache implementation using Redis.
  * Do not use it explicitly from your Quarkus application.
  */
-public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
+public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     private static final Map<String, Class<?>> PRIMITIVE_TO_CLASS_MAPPING = Map.of(
             "int", Integer.class,
@@ -48,8 +49,8 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
     private final Redis redis;
 
     private final RedisCacheInfo cacheInfo;
-    private final Class<V> classOfValue;
-    private final Class<K> classOfKey;
+    private final Class<?> classOfValue;
+    private final Class<?> classOfKey;
 
     private final Marshaller marshaller;
 
@@ -70,21 +71,20 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public RedisCacheImpl(RedisCacheInfo cacheInfo, Vertx vertx, Redis redis, Supplier<Boolean> blockingAllowedSupplier) {
         this.vertx = vertx;
         this.cacheInfo = cacheInfo;
         this.blockingAllowedSupplier = blockingAllowedSupplier;
 
         try {
-            this.classOfKey = (Class<K>) loadClass(this.cacheInfo.keyType);
+            this.classOfKey = loadClass(this.cacheInfo.keyType);
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Unable to load the class  " + this.cacheInfo.keyType, e);
         }
 
         if (this.cacheInfo.valueType != null) {
             try {
-                this.classOfValue = (Class<V>) loadClass(this.cacheInfo.valueType);
+                this.classOfValue = loadClass(this.cacheInfo.valueType);
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException("Unable to load the class  " + this.cacheInfo.valueType, e);
             }
@@ -290,7 +290,7 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
                         var req = Request.cmd(Command.DEL);
                         boolean hasAtLEastOneMatch = false;
                         for (String key : listOfKeys) {
-                            K userKey = computeUserKey(key);
+                            Object userKey = computeUserKey(key);
                             if (predicate.test(userKey)) {
                                 hasAtLEastOneMatch = true;
                                 req.arg(marshaller.encode(key));
@@ -315,7 +315,7 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
         }
     }
 
-    K computeUserKey(String key) {
+    Object computeUserKey(String key) {
         String prefix = cacheInfo.prefix != null ? cacheInfo.prefix : "cache:" + getName();
         if (!key.startsWith(prefix + ":")) {
             return null; // Not a key handle by the cache.
@@ -354,21 +354,32 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
                 .replaceWithVoid();
     }
 
-    private static <X> Uni<X> doGet(RedisConnection connection1, byte[] encodedKey1, Class<X> clazz,
+    private <X> Uni<X> doGet(RedisConnection connection, byte[] encoded, Class<X> clazz,
             Marshaller marshaller) {
-        return connection1.send(Request.cmd(Command.GET).arg(encodedKey1))
-                .map(new Function<Response, X>() {
-                    @Override
-                    public X apply(Response r) {
-                        return marshaller.decode(clazz, r);
-                    }
-                });
+        if (cacheInfo.expireAfterAccess.isPresent()) {
+            Duration duration = cacheInfo.expireAfterAccess.get();
+            return connection.send(Request.cmd(Command.GETEX).arg(encoded).arg("EX").arg(duration.toSeconds()))
+                    .map(new Function<Response, X>() {
+                        @Override
+                        public X apply(Response r) {
+                            return marshaller.decode(clazz, r);
+                        }
+                    });
+        } else {
+            return connection.send(Request.cmd(Command.GET).arg(encoded))
+                    .map(new Function<Response, X>() {
+                        @Override
+                        public X apply(Response r) {
+                            return marshaller.decode(clazz, r);
+                        }
+                    });
+        }
     }
 
     private Uni<Void> set(RedisConnection connection, byte[] key, byte[] value) {
         Request request = Request.cmd(Command.SET).arg(key).arg(value);
-        if (cacheInfo.ttl.isPresent()) {
-            request = request.arg("EX").arg(cacheInfo.ttl.get().toSeconds());
+        if (cacheInfo.expireAfterWrite.isPresent()) {
+            request = request.arg("EX").arg(cacheInfo.expireAfterWrite.get().toSeconds());
         }
         return connection.send(request).replaceWithVoid();
     }
@@ -403,7 +414,7 @@ public class RedisCacheImpl<K, V> extends AbstractCache implements RedisCache {
         }
     }
 
-    private static class GetFromConnectionSupplier<V> implements Supplier<Uni<? extends V>> {
+    private class GetFromConnectionSupplier<V> implements Supplier<Uni<? extends V>> {
         private final RedisConnection connection;
         private final Class<V> clazz;
         private final byte[] encodedKey;

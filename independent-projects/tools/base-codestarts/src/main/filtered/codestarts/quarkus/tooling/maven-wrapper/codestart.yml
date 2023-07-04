@@ -6,8 +6,8 @@ language:
   base:
     data:
       maven:
-        version: 3.8.8
-        wrapper-version: 3.2.0
+        version: ${proposed-maven-version}
+        wrapper-version: ${maven-wrapper.version}
     shared-data:
       buildtool:
         cli: ./mvnw

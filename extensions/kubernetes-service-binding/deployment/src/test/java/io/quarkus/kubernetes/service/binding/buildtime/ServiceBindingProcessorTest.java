@@ -5,8 +5,10 @@ import static io.quarkus.kubernetes.service.binding.buildtime.ServiceBindingProc
 import static io.quarkus.kubernetes.service.binding.buildtime.ServiceBindingProcessor.createRequirementFromQualifier;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -17,9 +19,9 @@ import io.quarkus.kubernetes.service.binding.spi.ServiceBindingRequirementBuildI
 class ServiceBindingProcessorTest {
 
     @Test
-    public void testFullyAutomaticPostgresConfiguration() throws Exception {
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app",
-                new KubernetesServiceBindingConfig(),
+    public void testFullyAutomaticPostgresConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config,
                 new ServiceBindingQualifierBuildItem("postgresql", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
@@ -27,18 +29,18 @@ class ServiceBindingProcessorTest {
             assertEquals("PostgresCluster", r.getKind());
             assertEquals("postgresql-default", r.getName());
             assertEquals("app-postgresql-default", r.getBinding());
-
         });
     }
 
     @Test
-    public void testSemiAutomaticPostgresConfiguration() throws Exception {
-        KubernetesServiceBindingConfig userConfig = new KubernetesServiceBindingConfig();
-        userConfig.services = new HashMap<>();
-        userConfig.services.put("postgresql-default",
-                ServiceConfig.createNew().withName("my-postgresql").withBinding("custom-binding"));
+    public void testSemiAutomaticPostgresConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        ServiceConfig serviceConfig = mock(ServiceConfig.class);
+        when(serviceConfig.name()).thenReturn(Optional.of("my-postgresql"));
+        when(serviceConfig.binding()).thenReturn(Optional.of("custom-binding"));
+        when(config.services()).thenReturn(Map.of("postgresql-default", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", userConfig,
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config,
                 new ServiceBindingQualifierBuildItem("postgresql", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
@@ -46,36 +48,32 @@ class ServiceBindingProcessorTest {
             assertEquals("PostgresCluster", r.getKind());
             assertEquals("my-postgresql", r.getName());
             assertEquals("custom-binding", r.getBinding());
-
         });
     }
 
     @Test
-    public void testManualPostgresConfiguration() throws Exception {
-        KubernetesServiceBindingConfig userConfig = new KubernetesServiceBindingConfig();
-        userConfig.services = new HashMap<>();
-        userConfig.services.put("my-postgresql",
-                ServiceConfig.createNew()
-                        .withApiVersion("foo/v1")
-                        .withKind("PostgresDB")
-                        .withBinding("custom-binding"));
+    public void testManualPostgresConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        ServiceConfig serviceConfig = mock(ServiceConfig.class);
+        when(serviceConfig.apiVersion()).thenReturn(Optional.of("foo/v1"));
+        when(serviceConfig.kind()).thenReturn(Optional.of("PostgresDB"));
+        when(serviceConfig.binding()).thenReturn(Optional.of("custom-binding"));
+        when(config.services()).thenReturn(Map.of("my-postgresql", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-postgresql",
-                userConfig);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-postgresql", config);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());
             assertEquals("PostgresDB", r.getKind());
             assertEquals("my-postgresql", r.getName());
             assertEquals("custom-binding", r.getBinding());
-
         });
     }
 
     @Test
-    public void testFullyAutomaticMysqlConfiguration() throws Exception {
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app",
-                new KubernetesServiceBindingConfig(),
+    public void testFullyAutomaticMysqlConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config,
                 new ServiceBindingQualifierBuildItem("mysql", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
@@ -83,55 +81,53 @@ class ServiceBindingProcessorTest {
             assertEquals("PerconaXtraDBCluster", r.getKind());
             assertEquals("mysql-default", r.getName());
             assertEquals("app-mysql-default", r.getBinding());
-
         });
     }
 
     @Test
-    public void testSemiAutomaticMysqlConfiguration() throws Exception {
-        KubernetesServiceBindingConfig userConfig = new KubernetesServiceBindingConfig();
-        userConfig.services = new HashMap<>();
-        userConfig.services.put("mysql-default",
-                ServiceConfig.createNew().withName("my-mysql").withApiVersion("some.group/v1").withKind("Mysql"));
+    public void testSemiAutomaticMysqlConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        ServiceConfig serviceConfig = mock(ServiceConfig.class);
+        when(serviceConfig.name()).thenReturn(Optional.of("my-mysql"));
+        when(serviceConfig.apiVersion()).thenReturn(Optional.of("some.group/v1"));
+        when(serviceConfig.kind()).thenReturn(Optional.of("Mysql"));
+        when(config.services()).thenReturn(Map.of("mysql-default", serviceConfig));
 
         ServiceBindingQualifierBuildItem qualifier = new ServiceBindingQualifierBuildItem("mysql", "default");
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", userConfig, qualifier);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config, qualifier);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("some.group/v1", r.getApiVersion());
             assertEquals("Mysql", r.getKind());
             assertEquals("my-mysql", r.getName());
             assertEquals("app-mysql-default", r.getBinding());
-
         });
     }
 
     @Test
-    public void testManualMysqlConfiguration() throws Exception {
-        KubernetesServiceBindingConfig userConfig = new KubernetesServiceBindingConfig();
-        userConfig.services = new HashMap<>();
-        userConfig.services.put("my-mysql",
-                ServiceConfig.createNew()
-                        .withApiVersion("foo/v1")
-                        .withKind("Bar")
-                        .withName("custom-name")
-                        .withBinding("custom-binding"));
+    public void testManualMysqlConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        ServiceConfig serviceConfig = mock(ServiceConfig.class);
+        when(serviceConfig.apiVersion()).thenReturn(Optional.of("foo/v1"));
+        when(serviceConfig.kind()).thenReturn(Optional.of("Bar"));
+        when(serviceConfig.name()).thenReturn(Optional.of("custom-name"));
+        when(serviceConfig.binding()).thenReturn(Optional.of("custom-binding"));
+        when(config.services()).thenReturn(Map.of("my-mysql", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mysql", userConfig);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mysql", config);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());
             assertEquals("Bar", r.getKind());
             assertEquals("custom-name", r.getName());
             assertEquals("custom-binding", r.getBinding());
-
         });
     }
 
     @Test
-    public void testFullyAutomaticMongoConfiguration() throws Exception {
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app",
-                new KubernetesServiceBindingConfig(),
+    public void testFullyAutomaticMongoConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config,
                 new ServiceBindingQualifierBuildItem("mongodb", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
@@ -139,17 +135,17 @@ class ServiceBindingProcessorTest {
             assertEquals("PerconaServerMongoDB", r.getKind());
             assertEquals("mongodb-default", r.getName());
             assertEquals("app-mongodb-default", r.getBinding());
-
         });
     }
 
     @Test
-    public void testSemiAutomaticMongoConfiguration() throws Exception {
-        KubernetesServiceBindingConfig userConfig = new KubernetesServiceBindingConfig();
-        userConfig.services = new HashMap<>();
-        userConfig.services.put("mongodb-default", ServiceConfig.createNew().withName("my-mongo"));
+    public void testSemiAutomaticMongoConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        ServiceConfig serviceConfig = mock(ServiceConfig.class);
+        when(serviceConfig.name()).thenReturn(Optional.of("my-mongo"));
+        when(config.services()).thenReturn(Map.of("mongodb-default", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", userConfig,
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config,
                 new ServiceBindingQualifierBuildItem("mongodb", "default"));
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
@@ -157,30 +153,26 @@ class ServiceBindingProcessorTest {
             assertEquals("PerconaServerMongoDB", r.getKind());
             assertEquals("my-mongo", r.getName());
             assertEquals("app-mongodb-default", r.getBinding());
-
         });
     }
 
     @Test
-    public void testManualMongoConfiguration() throws Exception {
-        KubernetesServiceBindingConfig userConfig = new KubernetesServiceBindingConfig();
-        userConfig.services = new HashMap<>();
-        userConfig.services.put("my-mongodb",
-                ServiceConfig.createNew()
-                        .withApiVersion("foo/v1")
-                        .withKind("MongoDB")
-                        .withName("custom-name")
-                        .withBinding("custom-binding"));
+    public void testManualMongoConfiguration() {
+        KubernetesServiceBindingConfig config = mock(KubernetesServiceBindingConfig.class);
+        ServiceConfig serviceConfig = mock(ServiceConfig.class);
+        when(serviceConfig.apiVersion()).thenReturn(Optional.of("foo/v1"));
+        when(serviceConfig.kind()).thenReturn(Optional.of("MongoDB"));
+        when(serviceConfig.name()).thenReturn(Optional.of("custom-name"));
+        when(serviceConfig.binding()).thenReturn(Optional.of("custom-binding"));
+        when(config.services()).thenReturn(Map.of("my-mongodb", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mongodb", userConfig);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mongodb", config);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());
             assertEquals("MongoDB", r.getKind());
             assertEquals("custom-name", r.getName());
             assertEquals("custom-binding", r.getBinding());
-
         });
     }
-
 }

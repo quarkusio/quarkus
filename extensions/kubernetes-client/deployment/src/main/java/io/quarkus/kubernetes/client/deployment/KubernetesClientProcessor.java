@@ -118,7 +118,7 @@ public class KubernetesClientProcessor {
         featureProducer.produce(new FeatureBuildItem(Feature.KUBERNETES_CLIENT));
 
         kubernetesClientCapabilityProducer
-                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientConfig.generateRbac));
+                .produce(new KubernetesClientCapabilityBuildItem(kubernetesClientConfig.generateRbac()));
 
         // register fully (and not weakly) for reflection watchers, informers and custom resources
         final Set<DotName> watchedClasses = new HashSet<>();

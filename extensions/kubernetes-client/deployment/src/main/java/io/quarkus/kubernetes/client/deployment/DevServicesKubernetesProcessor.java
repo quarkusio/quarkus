@@ -282,7 +282,7 @@ public class DevServicesKubernetesProcessor {
     }
 
     private KubernetesDevServiceCfg getConfiguration(KubernetesClientBuildConfig cfg) {
-        KubernetesDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        KubernetesDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new KubernetesDevServiceCfg(devServicesConfig);
     }
 
@@ -297,13 +297,13 @@ public class DevServicesKubernetesProcessor {
         public Map<String, String> containerEnv;
 
         public KubernetesDevServiceCfg(KubernetesDevServicesBuildTimeConfig config) {
-            this.devServicesEnabled = config.enabled;
-            this.serviceName = config.serviceName;
-            this.apiVersion = config.apiVersion;
-            this.overrideKubeconfig = config.overrideKubeconfig;
-            this.flavor = config.flavor;
-            this.shared = config.shared;
-            this.containerEnv = config.containerEnv;
+            this.devServicesEnabled = config.enabled();
+            this.serviceName = config.serviceName();
+            this.apiVersion = config.apiVersion();
+            this.overrideKubeconfig = config.overrideKubeconfig();
+            this.flavor = config.flavor();
+            this.shared = config.shared();
+            this.containerEnv = config.containerEnv();
         }
 
         @Override

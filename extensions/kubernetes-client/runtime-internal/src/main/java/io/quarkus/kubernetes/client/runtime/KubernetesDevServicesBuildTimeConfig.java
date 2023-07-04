@@ -3,11 +3,9 @@ package io.quarkus.kubernetes.client.runtime;
 import java.util.Map;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
-@ConfigGroup
-public class KubernetesDevServicesBuildTimeConfig {
+public interface KubernetesDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for Kubernetes should be used. (default to true)
@@ -15,8 +13,8 @@ public class KubernetesDevServicesBuildTimeConfig {
      * If this is true and kubernetes client is not configured then a kubernetes cluster
      * will be started and will be used.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean enabled;
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * The kubernetes api server version to use.
@@ -24,21 +22,20 @@ public class KubernetesDevServicesBuildTimeConfig {
      * If not set, Dev Services for Kubernetes will use the latest supported version of the given flavor.
      * see https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json
      */
-    @ConfigItem
-    public Optional<String> apiVersion;
+    Optional<String> apiVersion();
 
     /**
      * The flavor to use (kind, k3s or api-only). Default to api-only.
      */
-    @ConfigItem(defaultValue = "api-only")
-    public Flavor flavor;
+    @WithDefault("api-only")
+    Flavor flavor();
 
     /**
      * By default, if a kubeconfig is found, Dev Services for Kubernetes will not start.
      * Set this to true to override the kubeconfig config.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean overrideKubeconfig;
+    @WithDefault("false")
+    boolean overrideKubeconfig();
 
     /**
      * Indicates if the Kubernetes cluster managed by Quarkus Dev Services is shared.
@@ -51,8 +48,8 @@ public class KubernetesDevServicesBuildTimeConfig {
      * <p>
      * Container sharing is only used in dev mode.
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean shared;
+    @WithDefault("true")
+    boolean shared();
 
     /**
      * The value of the {@code quarkus-dev-service-kubernetes} label attached to the started container.
@@ -64,16 +61,15 @@ public class KubernetesDevServicesBuildTimeConfig {
      * <p>
      * This property is used when you need multiple shared Kubernetes clusters.
      */
-    @ConfigItem(defaultValue = "kubernetes")
-    public String serviceName;
+    @WithDefault("kubernetes")
+    String serviceName();
 
     /**
      * Environment variables that are passed to the container.
      */
-    @ConfigItem
-    public Map<String, String> containerEnv;
+    Map<String, String> containerEnv();
 
-    public static enum Flavor {
+    enum Flavor {
         /**
          * kind (needs priviledge docker)
          */

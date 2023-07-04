@@ -24,7 +24,14 @@ public class ServerSslConfig {
     public Optional<List<String>> cipherSuites;
 
     /**
-     * The list of protocols to explicitly enable.
+     * Sets the ordered list of enabled SSL/TLS protocols.
+     * <p>
+     * If not set, it defaults to {@code "TLSv1.3, TLSv1.2"}.
+     * The following list of protocols are supported: {@code TLSv1, TLSv1.1, TLSv1.2, TLSv1.3}.
+     * To only enable {@code TLSv1.3}, set the value to {@code to "TLSv1.3"}.
+     * <p>
+     * Note that setting an empty list, and enabling SSL/TLS is invalid.
+     * You must at least have one protocol.
      */
     @DefaultConverter
     @ConfigItem(defaultValue = "TLSv1.3,TLSv1.2")

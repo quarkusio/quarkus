@@ -11,16 +11,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -890,11 +881,7 @@ public class VertxHttpRecorder {
             serverOptions.addEnabledCipherSuite(cipher);
         }
 
-        for (String protocol : sslConfig.protocols) {
-            if (!protocol.isEmpty()) {
-                serverOptions.addEnabledSecureTransportProtocol(protocol);
-            }
-        }
+        serverOptions.setEnabledSecureTransportProtocols(Set.copyOf(sslConfig.protocols));
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
         int sslPort = httpConfiguration.determineSslPort(launchMode);

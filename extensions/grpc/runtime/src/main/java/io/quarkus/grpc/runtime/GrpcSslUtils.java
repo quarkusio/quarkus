@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -114,12 +115,7 @@ public class GrpcSslUtils {
         for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
             options.addEnabledCipherSuite(cipher);
         }
-
-        for (String protocol : sslConfig.protocols) {
-            if (!protocol.isEmpty()) {
-                options.addEnabledSecureTransportProtocol(protocol);
-            }
-        }
+        options.setEnabledSecureTransportProtocols(Set.copyOf(sslConfig.protocols));
         options.setClientAuth(sslConfig.clientAuth);
         return false;
     }

@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.mongodb.runtime;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import jakarta.inject.Inject;
@@ -13,10 +14,11 @@ import liquibase.Liquibase;
 import liquibase.lockservice.LockServiceFactory;
 
 @ApplicationScoped
-@PreStart("liquibase-mongo-init-task")
+@PreStart("liquibase-mongodb-init-task")
 public class LiquibaseMongodbInitTask implements Runnable {
 
     @Inject
+    @Any
     Instance<LiquibaseMongodbFactory> liquibaseFactories;
 
     @Inject

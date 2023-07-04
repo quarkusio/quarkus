@@ -1,6 +1,7 @@
 package io.quarkus.liquibase.runtime;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import jakarta.inject.Inject;
@@ -17,6 +18,7 @@ import liquibase.lockservice.LockServiceFactory;
 public class LiquibaseInitTask implements Runnable {
 
     @Inject
+    @Any
     Instance<LiquibaseFactory> liquibaseFactories;
 
     @Inject

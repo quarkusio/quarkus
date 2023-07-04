@@ -255,9 +255,9 @@ class LiquibaseMongodbProcessor {
     }
 
     @BuildStep
-    public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
+    public InitTaskBuildItem configureInitTask() {
         return InitTaskBuildItem.create()
-                .withName(app.getName() + "-liquibase-mongodb-init")
+                .withName("liquibase-mongodb-init-task")
                 .withTaskEnvVars(
                         Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_LIQUIBASE_MONGODB_ENABLED", "true"))
                 .withAppEnvVars(Map.of("QUARKUS_LIQUIBASE_MONGODB_ENABLED", "false"))

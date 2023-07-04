@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Default;
 
+import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
@@ -46,7 +47,6 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -72,6 +72,7 @@ class FlywayProcessor {
     private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
 
     private static final String FLYWAY_INIT_TASK = "flyway-init-task";
+    private static final String FLYWAY_CONTAINER_BEAN_NAME_PREFIX = "flyway_container_";
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
@@ -187,8 +188,28 @@ class FlywayProcessor {
             if (!hasMigrations) {
                 createPossible = sqlGeneratorBuildItems.stream().anyMatch(s -> s.getDatabaseName().equals(dataSourceName));
             }
-            SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayContainerConfigurator = SyntheticBeanBuildItem
                     .configure(FlywayContainer.class)
+                    .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
+                    .setRuntimeInit()
+                    .unremovable()
+                    .supplier(recorder.flywayContainerSupplier(dataSourceName,
+                            hasMigrations, createPossible));
+
+            if (DataSourceUtil.isDefault(dataSourceName)) {
+                flywayContainerConfigurator.addQualifier(Default.class);
+            } else {
+                String beanName = FLYWAY_CONTAINER_BEAN_NAME_PREFIX + dataSourceName;
+                flywayContainerConfigurator.name(beanName);
+                flywayContainerConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
+                flywayContainerConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName)
+                        .done();
+            }
+
+            syntheticBeanBuildItemBuildProducer.produce(flywayContainerConfigurator.done());
+
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayConfigurator = SyntheticBeanBuildItem
+                    .configure(Flyway.class)
                     .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
                     .setRuntimeInit()
                     .unremovable()
@@ -196,16 +217,16 @@ class FlywayProcessor {
                             hasMigrations, createPossible));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {
-                configurator.addQualifier(Default.class);
+                flywayConfigurator.addQualifier(Default.class);
             } else {
                 String beanName = FLYWAY_BEAN_NAME_PREFIX + dataSourceName;
-                configurator.name(beanName);
-
-                configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
-                configurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();
+                flywayConfigurator.name(beanName);
+                flywayConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
+                flywayConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();
             }
 
-            syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+            syntheticBeanBuildItemBuildProducer.produce(flywayConfigurator.done());
+
         }
     }
 
@@ -225,9 +246,9 @@ class FlywayProcessor {
     }
 
     @BuildStep
-    public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
+    public InitTaskBuildItem configureInitTask() {
         return InitTaskBuildItem.create()
-                .withName(app.getName() + "-flyway-init");
+                .withName("flyway-init-task");
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

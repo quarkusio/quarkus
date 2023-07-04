@@ -42,7 +42,7 @@ public class InitTaskProcessor {
             if (config == null || config.enabled) {
                 generateRoleForJobs = true;
                 jobs.produce(KubernetesJobBuildItem.create(image.getImage())
-                        .withName(task.getName())
+                        .withName(name + "-" + task.getName())
                         .withTarget(target)
                         .withEnvVars(task.getTaskEnvVars())
                         .withCommand(task.getCommand())

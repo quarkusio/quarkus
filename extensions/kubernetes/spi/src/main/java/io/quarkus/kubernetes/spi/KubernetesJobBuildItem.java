@@ -16,6 +16,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class KubernetesJobBuildItem extends MultiBuildItem {
 
     private final String name;
+    private final String qualifiedName;
     private final String target;
     private final String image;
     private final List<String> command;
@@ -25,13 +26,15 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     private final boolean sharedFilesystem;
 
     public static KubernetesJobBuildItem create(String image) {
-        return new KubernetesJobBuildItem("init", null, image, Collections.emptyList(), Collections.emptyList(),
+        return new KubernetesJobBuildItem("init", "init", null, image, Collections.emptyList(), Collections.emptyList(),
                 Collections.emptyMap(), false, false);
     }
 
-    public KubernetesJobBuildItem(String name, String target, String image, List<String> command, List<String> arguments,
+    public KubernetesJobBuildItem(String name, String qualifiedName, String target, String image, List<String> command,
+            List<String> arguments,
             Map<String, String> envVars, boolean sharedEnvironment, boolean sharedFilesystem) {
         this.name = name;
+        this.qualifiedName = qualifiedName;
         this.target = target;
         this.image = image;
         this.command = command;
@@ -46,7 +49,16 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withName(String name) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
+                sharedFilesystem);
+    }
+
+    public String getQualifiedName() {
+        return name;
+    }
+
+    public KubernetesJobBuildItem withQualifiedName(String qualifiedName) {
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 
@@ -55,7 +67,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withTarget(String target) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 
@@ -64,7 +76,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withImage(String image) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 
@@ -73,7 +85,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withCommand(List<String> command) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 
@@ -82,7 +94,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withArguments(List<String> arguments) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 
@@ -91,7 +103,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withEnvVars(Map<String, String> envVars) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 
@@ -107,7 +119,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withSharedEnvironment(boolean sharedEnvironment) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 
@@ -125,7 +137,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem {
     }
 
     public KubernetesJobBuildItem withSharedFilesystem(boolean sharedFilesystem) {
-        return new KubernetesJobBuildItem(name, target, image, command, arguments, envVars, sharedEnvironment,
+        return new KubernetesJobBuildItem(name, qualifiedName, target, image, command, arguments, envVars, sharedEnvironment,
                 sharedFilesystem);
     }
 }

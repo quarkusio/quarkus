@@ -10,6 +10,7 @@ import javax.sql.DataSource;
 
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
+import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.jboss.logging.Logger;
@@ -45,7 +46,8 @@ public class FlywayRecorder {
         FLYWAY_CONTAINERS.clear();
     }
 
-    public Supplier<FlywayContainer> flywaySupplier(String dataSourceName, boolean hasMigrations, boolean createPossible) {
+    public Supplier<FlywayContainer> flywayContainerSupplier(String dataSourceName, boolean hasMigrations,
+            boolean createPossible) {
         DataSource dataSource = DataSources.fromName(dataSourceName);
         if (dataSource instanceof UnconfiguredDataSource) {
             return new Supplier<FlywayContainer>() {
@@ -55,14 +57,41 @@ public class FlywayRecorder {
                 }
             };
         }
-        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
-        FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
-                createPossible);
+
+        FlywayContainerProducer flywayContainerProducer = Arc.container()
+                .instance(FlywayContainerProducer.class).get();
+        FlywayContainer flywayContainer = flywayContainerProducer.createFlyway(dataSource, dataSourceName,
+                hasMigrations, createPossible);
         FLYWAY_CONTAINERS.add(flywayContainer);
+
         return new Supplier<FlywayContainer>() {
             @Override
             public FlywayContainer get() {
                 return flywayContainer;
+            }
+        };
+    }
+
+    public Supplier<Flyway> flywaySupplier(String dataSourceName, boolean hasMigrations, boolean createPossible) {
+        DataSource dataSource = DataSources.fromName(dataSourceName);
+        if (dataSource instanceof UnconfiguredDataSource) {
+            return new Supplier<Flyway>() {
+                @Override
+                public Flyway get() {
+                    throw new UnsatisfiedResolutionException("No datasource present");
+                }
+            };
+        }
+        FlywayContainer flywayContainer = FLYWAY_CONTAINERS.stream().filter(c -> dataSourceName.equals(c.getDataSourceName()))
+                .findFirst()
+                .orElseGet(() -> {
+                    return flywayContainerSupplier(dataSourceName, hasMigrations, createPossible).get();
+                });
+
+        return new Supplier<Flyway>() {
+            @Override
+            public Flyway get() {
+                return flywayContainer.getFlyway();
             }
         };
     }

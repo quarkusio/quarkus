@@ -2,6 +2,7 @@ package io.quarkus.redis.it;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -85,5 +86,32 @@ class QuarkusRedisTest {
         RestAssured.get("/quarkus-redis/import").then()
                 .statusCode(200)
                 .body(Matchers.equalTo("6"));
+    }
+
+    @Test
+    public void testCustomCodec() {
+        String path = "/quarkus-redis/custom-codec/foo";
+        RestAssured.given()
+                .when()
+                .get(path)
+                .then()
+                .statusCode(204); // the key is not set yet
+
+        RestAssured.given()
+                .header("Content-Type", "application/json")
+                .body(new Person("bob", "morane"))
+                .when()
+                .post(path)
+                .then()
+                .statusCode(204);
+
+        var person = RestAssured.given()
+                .when()
+                .get(path)
+                .then()
+                .statusCode(200)
+                .extract().as(Person.class);
+        Assertions.assertEquals(person.firstName, "bob");
+        Assertions.assertEquals(person.lastName, "MORANE");
     }
 }

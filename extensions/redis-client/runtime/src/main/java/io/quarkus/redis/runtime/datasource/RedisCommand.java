@@ -66,7 +66,7 @@ public class RedisCommand {
         return this;
     }
 
-    public RedisCommand putArgs(RedisCommandExtraArguments arguments, Codec<?> codec) {
+    public RedisCommand putArgs(RedisCommandExtraArguments arguments, Codec codec) {
         putAll(arguments.toArgs(codec));
         return this;
     }

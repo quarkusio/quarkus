@@ -12,9 +12,11 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -23,9 +25,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.codecs.Codec;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 
@@ -62,6 +66,15 @@ public class RedisDatasourceProcessor {
 
         for (String name : names) {
             request.produce(new RequestedRedisClientBuildItem(name));
+        }
+    }
+
+    @BuildStep
+    public void makeCodecsUnremovable(CombinedIndexBuildItem index, BuildProducer<AdditionalBeanBuildItem> producer) {
+        producer.produce(AdditionalBeanBuildItem.unremovableOf(Codec.class));
+
+        for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(Codec.class.getName())) {
+            producer.produce(AdditionalBeanBuildItem.unremovableOf(implementor.name().toString()));
         }
     }
 

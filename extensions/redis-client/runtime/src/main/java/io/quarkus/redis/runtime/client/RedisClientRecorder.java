@@ -17,6 +17,8 @@ import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.reactive.ReactiveRedisClient;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.codecs.Codec;
+import io.quarkus.redis.datasource.codecs.Codecs;
 import io.quarkus.redis.runtime.client.config.RedisClientConfig;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
@@ -55,7 +57,17 @@ public class RedisClientRecorder {
         }
 
         this.vertx = Vertx.newInstance(vertx.getValue());
+
+        _registerCodecs();
+
         _initialize(vertx.getValue(), names);
+    }
+
+    private static void _registerCodecs() {
+        Instance<Codec> codecs = CDI.current().select(Codec.class);
+        if (codecs.isResolvable()) {
+            Codecs.register(codecs.stream());
+        }
     }
 
     public void _initialize(io.vertx.core.Vertx vertx, Set<String> names) {

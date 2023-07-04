@@ -21,7 +21,6 @@ Typically, we recommend:
 
 This extension provides imperative and reactive APIs and low-level and high-level (type-safe) clients.
 
-
 == Installation
 
 If you want to use this extension, you need to add the `io.quarkus:quarkus-redis` extension first.
@@ -86,7 +85,6 @@ To help you select the suitable API for you, here are some recommendations:
 * If you have existing Vert.x code, use `io.vertx.redis.client.RedisAPI`
 * If you need to emit custom commands, you can either use the data sources (reactive or imperative) or the `io.vertx.mutiny.redis.client.Redis`.
 
-
 == Default and named clients
 
 This extension lets you configure a _default_ Redis client/data sources or _named_ ones.
@@ -94,7 +92,6 @@ The latter is essential when you need to connect to multiple Redis instances.
 
 The default connection is configured using the `quarkus.redis.*` properties.
 For example, to configure the default Redis client, use:
-
 
 [source,properties]
 ----
@@ -115,7 +112,6 @@ public class RedisExample {
 ----
 
 TIP: In general, you inject a single one; the previous snippet is just an example.
-
 
 _Named_ clients are configured using the `quarkus.redis.<name>.*` properties:
 
@@ -318,6 +314,7 @@ public class MyRedisService {
     }
 }
 ----
+
 <1> Inject the `RedisDataSource` in the constructor
 <2> Creates the `HashCommands` object.
 This object has three type parameters: the type of the key, the type of the field, and the type of the member
@@ -327,10 +324,51 @@ This object has three type parameters: the type of the key, the type of the fiel
 === Serialization and Deserialization
 
 The data source APIs handle the serialization and deserialization automatically.
-When a non-standard type is used, the object is serialized into JSON and deserialized from JSON.
+By default, non-standard types are serialized into JSON and deserialized from JSON.
 In this case, `quarkus-jackson` is used.
 
-To store binary data, use `byte[]`.
+=== Binary
+
+To store or retrieve binary data, use `byte[]`.
+
+=== Custom codec
+
+You can register custom codec by providing a CDI _bean_ implementing the `io.quarkus.redis.datasource.codecs.Codec` interface:
+
+[source,java]
+----
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.redis.datasource.codecs.Codec;
+
+@ApplicationScoped
+public class PersonCodec implements Codec {
+    @Override
+    public boolean canHandle(Type clazz) {
+        return clazz.equals(Person.class);
+    }
+
+    @Override
+    public byte[] encode(Object item) {
+        var p = (Person) item;
+        return (p.firstName + ";" + p.lastName.toUpperCase()).getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public Object decode(byte[] item) {
+        var value = new String(item, StandardCharsets.UTF_8);
+        var segments = value.split(";");
+        return new Person(segments[0], segments[1]);
+    }
+}
+----
+
+The `canHandle` method is called to check if the codec can handle a specific type.
+The parameter received in the `encode` method matches that type.
+The object returned by the `decode` method must also match that type.
 
 === The `value` group
 
@@ -443,6 +481,7 @@ public static class MyRedisCounter {
 
 }
 ----
+
 <1> Retrieve the commands.
 This time we will manipulate `Long` values
 <2> Retrieve the counter associated with the given `key`.
@@ -464,7 +503,7 @@ These features are available from the `pubsub` group.
 
 The following snippets shows how a _cache_ can emit a `Notification` after every `set`, and how a subscriber can receive the notification.
 
-[source, java]
+[source,java]
 ----
 public static final class Notification {
     public String key;
@@ -542,7 +581,7 @@ When that consumer returns, the transaction is _executed_.
 
 The following snippet shows how to create a transaction executing two related _writes_:
 
-[source, java]
+[source,java]
 ----
 @Inject RedisDataSource ds;
 
@@ -560,7 +599,7 @@ The returned `TransactionResult` lets you retrieve the result of each command.
 
 When using the reactive variant of the data source, the passed callback is a `Function<ReactiveTransactionalRedisDataSource, Uni<Void>>`:
 
-[source, java]
+[source,java]
 ----
 @Inject ReactiveRedisDataSource ds;
 
@@ -577,7 +616,7 @@ Transaction execution can be conditioned by _keys_.
 When a passed key gets modified during the execution of a transaction, the transaction is discarded.
 The keys are passed as `String` as a second parameter to the `withTransaction` method:
 
-[source, java]
+[source,java]
 ----
 TransactionResult result = ds.withTransaction(tx -> {
     TransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
@@ -608,7 +647,7 @@ EXEC
 
 For example, if you need to update a value in a hash only if the field exists, you will use the following API:
 
-[source, java]
+[source,java]
 ----
 OptimisticLockingTransactionResult<Boolean> result = blocking.withTransaction(ds -> {
     // The pre-transaction block:
@@ -641,7 +680,7 @@ The transaction is aborted if the pre-transaction block throws an exception (or 
 
 To execute a custom command, or a command not supported by the API, use the following approach:
 
-[source, java]
+[source,java]
 ----
 @Inject ReactiveRedisDataSource ds;
 
@@ -667,7 +706,7 @@ On startup, you can configure the Redis client to preload data into the Redis da
 
 Specify the _load script_ you want to load using:
 
-[source, properties]
+[source,properties]
 ----
 quarkus.redis.load-script=import.redis # import.redis is the default in dev mode, no-file is the default in production mode
 quarkus.redis.my-redis.load-script=actors.redis, movies.redis
@@ -682,7 +721,7 @@ In the case of a list, the data is imported in the list order (for example, firs
 
 The `.redis` file follows a _one command per line_ format:
 
-[source, text]
+[source,text]
 ----
 # Line starting with # and -- are ignored, as well as empty lines
 
@@ -701,7 +740,7 @@ Quarkus batches all the commands from a single file and sends all the commands.
 The loading process fails if there is any error, but the previous instructions may have been executed.
 To avoid that, you can wrap your command into a Redis _transaction_:
 
-[source, text]
+[source,text]
 ----
 -- Run inside a transaction
 MULTI
@@ -725,7 +764,7 @@ You can force to import even if there is data using the `quarkus.redis.load-only
 As mentioned above, in dev and test modes, Quarkus tries to import data by looking for the `src/main/resources/import.redis`.
 This behavior is disabled in _prod_ mode, and if you want to import even in production, add:
 
-[source, properties]
+[source,properties]
 ----
 %prod.quarkus.redis.load-script=import.redis
 ----
@@ -772,8 +811,8 @@ public class ExampleRedisHostProvider implements RedisHostsProvider {
 ----
 
 The host provider can be used to configure the redis client like shown below
-[source,properties,indent=0]
 
+[source,properties,indent=0]
 ----
 quarkus.redis.hosts-provider-name=hosts-provider
 ----
@@ -783,7 +822,7 @@ quarkus.redis.hosts-provider-name=hosts-provider
 You can expose a bean implementing the `io.quarkus.redis.client.RedisOptionsCustomizer` interface to customize the Redis client options.
 The bean is called for each configured Redis client:
 
-[source, java]
+[source,java]
 ----
 @ApplicationScoped
 public static class MyExampleCustomizer implements RedisOptionsCustomizer {
@@ -800,7 +839,6 @@ public static class MyExampleCustomizer implements RedisOptionsCustomizer {
 }
 ----
 
-
 === Dev Services
 
 See xref:redis-dev-services.adoc[Redis Dev Service].
@@ -814,7 +852,7 @@ Micrometer collects the metrics of all the Redis clients implemented by the appl
 
 As an example, if you export the metrics to Prometheus, you will get:
 
-[source, text]
+[source,text]
 ----
 # HELP redis_commands_duration_seconds The duration of the operations (commands of batches
 # TYPE redis_commands_duration_seconds summary
@@ -871,7 +909,7 @@ The metrics contain both the Redis connection pool metrics (`redis_pool_*`) and 
 
 To disable the Redis client metrics when `quarkus-micrometer` is used, add the following property to the application configuration:
 
-[source, properties]
+[source,properties]
 ----
 quarkus.micrometer.binder.redis.enabled=false
 ----
@@ -879,4 +917,4 @@ quarkus.micrometer.binder.redis.enabled=false
 [[redis-configuration-reference]]
 == Configuration reference
 
-include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional,leveloffset=+1]

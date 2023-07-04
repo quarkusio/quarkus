@@ -372,7 +372,7 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     @Override
-    public <T> List<String> toArgs(Codec<T> encoder) {
+    public List<String> toArgs(Codec encoder) {
         List<String> list = new ArrayList<>();
 
         if (nocontent) {

@@ -22,7 +22,7 @@ import io.vertx.redis.client.ResponseType;
 
 public class Marshaller {
 
-    private static final Map<Class<?>, Codec<?>> DEFAULT_CODECS;
+    private static final Map<Class<?>, Codec> DEFAULT_CODECS;
 
     static {
         DEFAULT_CODECS = Map.of(
@@ -31,7 +31,7 @@ public class Marshaller {
                 Double.class, Codecs.DoubleCodec.INSTANCE);
     }
 
-    Map<Class<?>, Codec<?>> codecs = new ConcurrentHashMap<>();
+    Map<Class<?>, Codec> codecs = new ConcurrentHashMap<>();
 
     public Marshaller(Class<?>... hints) {
         addAll(hints);
@@ -48,7 +48,6 @@ public class Marshaller {
         codecs.computeIfAbsent(hint, h -> Codecs.getDefaultCodecFor(hint));
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public byte[] encode(Object o) {
         if (o instanceof String) {
             return ((String) o).getBytes(StandardCharsets.UTF_8);
@@ -58,11 +57,6 @@ public class Marshaller {
         }
         Class<?> clazz = o.getClass();
         Codec codec = codec(clazz);
-        if (codec == null) {
-            // Default to JSON.
-            codec = new Codecs.JsonCodec<>(clazz);
-            codecs.put(clazz, codec);
-        }
         return codec.encode(o);
     }
 
@@ -77,10 +71,11 @@ public class Marshaller {
         return result;
     }
 
-    Codec<?> codec(Class<?> clazz) {
-        Codec<?> codec = codecs.get(clazz);
+    Codec codec(Class<?> clazz) {
+        Codec codec = codecs.get(clazz);
         if (codec == null) {
-            codec = DEFAULT_CODECS.get(clazz);
+            codec = Codecs.getDefaultCodecFor(clazz);
+            codecs.put(clazz, codec);
         }
         return codec;
     }
@@ -100,7 +95,7 @@ public class Marshaller {
         if (r == null) {
             return null;
         }
-        Codec<?> codec = codec(clazz);
+        Codec codec = codec(clazz);
         return (T) codec.decode(r);
     }
 

@@ -93,7 +93,7 @@ class HibernateSearchElasticsearchProcessor {
                 index);
 
         Map<String, HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit> configByPU = buildTimeConfig
-                .getAllPersistenceUnitConfigsAsMap();
+                .persistenceUnits();
 
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             Collection<AnnotationInstance> indexedAnnotationsForPU = new ArrayList<>();
@@ -293,7 +293,7 @@ class HibernateSearchElasticsearchProcessor {
 
         Set<String> propertyKeysWithNoVersion = new LinkedHashSet<>();
         Map<String, ElasticsearchBackendBuildTimeConfig> backends = buildTimeConfig != null
-                ? buildTimeConfig.getAllBackendConfigsAsMap()
+                ? buildTimeConfig.backends()
                 : Collections.emptyMap();
 
         Set<String> allBackendNames = new LinkedHashSet<>(configuredPersistenceUnit.getBackendNamesForIndexedEntities());
@@ -379,13 +379,15 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class)
     DevservicesElasticsearchBuildItem devServices(HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig) {
-        if (buildTimeConfig.defaultPersistenceUnit() == null) {
+        var defaultPUConfig = buildTimeConfig.persistenceUnits().get(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+        if (defaultPUConfig == null) {
             // Currently we only start dev-services for the default backend of the default persistence unit.
             // See https://github.com/quarkusio/quarkus/issues/24011
             return null;
         }
-        if (buildTimeConfig.defaultPersistenceUnit().defaultBackend() == null
-                || !buildTimeConfig.defaultPersistenceUnit().defaultBackend().version().isPresent()) {
+        var defaultPUDefaultBackendConfig = defaultPUConfig.backends().get(null);
+        if (defaultPUDefaultBackendConfig == null
+                || !defaultPUDefaultBackendConfig.version().isPresent()) {
             // If the version is not set, the default backend is not in use.
             return null;
         }
@@ -395,7 +397,7 @@ class HibernateSearchElasticsearchProcessor {
             // If Hibernate Search is deactivated, we don't want to trigger dev services.
             return null;
         }
-        ElasticsearchVersion version = buildTimeConfig.defaultPersistenceUnit().defaultBackend().version().get();
+        ElasticsearchVersion version = defaultPUDefaultBackendConfig.version().get();
         String hostsPropertyKey = backendPropertyKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, null, null,
                 "hosts");
         return new DevservicesElasticsearchBuildItem(hostsPropertyKey,

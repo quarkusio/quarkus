@@ -70,7 +70,7 @@ public class HibernateSearchElasticsearchRecorder {
             }
         }
         return new HibernateSearchIntegrationStaticInitListener(persistenceUnitName,
-                buildTimeConfig.getPersistenceUnitConfig(persistenceUnitName),
+                buildTimeConfig.persistenceUnits().get(persistenceUnitName),
                 backendAndIndexNamesForSearchExtensions, rootAnnotationMappedClasses,
                 integrationStaticInitListeners);
     }
@@ -83,14 +83,14 @@ public class HibernateSearchElasticsearchRecorder {
             HibernateSearchElasticsearchRuntimeConfig runtimeConfig, String persistenceUnitName,
             Map<String, Set<String>> backendAndIndexNamesForSearchExtensions,
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
-        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimeConfig.getAllPersistenceUnitConfigsAsMap()
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimeConfig.persistenceUnits()
                 .get(persistenceUnitName);
         return new HibernateSearchIntegrationRuntimeInitListener(persistenceUnitName, puConfig,
                 backendAndIndexNamesForSearchExtensions, integrationRuntimeInitListeners);
     }
 
     public void checkNoExplicitActiveTrue(HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
-        for (var entry : runtimeConfig.getAllPersistenceUnitConfigsAsMap().entrySet()) {
+        for (var entry : runtimeConfig.persistenceUnits().entrySet()) {
             var config = entry.getValue();
             if (config.active().orElse(false)) {
                 var puName = entry.getKey();
@@ -120,7 +120,7 @@ public class HibernateSearchElasticsearchRecorder {
             @Override
             public SearchMapping get() {
                 HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
-                        .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
+                        .persistenceUnits().get(persistenceUnitName);
                 if (puRuntimeConfig != null && !puRuntimeConfig.active().orElse(true)) {
                     throw new IllegalStateException(
                             "Cannot retrieve the SearchMapping for persistence unit " + persistenceUnitName
@@ -144,7 +144,7 @@ public class HibernateSearchElasticsearchRecorder {
             @Override
             public SearchSession get() {
                 HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
-                        .getAllPersistenceUnitConfigsAsMap().get(persistenceUnitName);
+                        .persistenceUnits().get(persistenceUnitName);
                 if (puRuntimeConfig != null && !puRuntimeConfig.active().orElse(true)) {
                     throw new IllegalStateException(
                             "Cannot retrieve the SearchSession for persistence unit " + persistenceUnitName
@@ -223,7 +223,7 @@ public class HibernateSearchElasticsearchRecorder {
             // (Well maybe not for backends, but... let's keep it simple.)
             Map<String, ElasticsearchBackendBuildTimeConfig> backendConfigs = buildTimeConfig == null
                     ? Collections.emptyMap()
-                    : buildTimeConfig.getAllBackendConfigsAsMap();
+                    : buildTimeConfig.backends();
             Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
             mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
             for (Entry<String, ElasticsearchBackendBuildTimeConfig> entry : backendConfigs.entrySet()) {
@@ -391,7 +391,7 @@ public class HibernateSearchElasticsearchRecorder {
             // (Well maybe not for backends, but... let's keep it simple.)
             Map<String, ElasticsearchBackendRuntimeConfig> backendConfigs = runtimeConfig == null
                     ? Collections.emptyMap()
-                    : runtimeConfig.getAllBackendConfigsAsMap();
+                    : runtimeConfig.backends();
             Map<String, Set<String>> backendAndIndexNames = new LinkedHashMap<>();
             mergeInto(backendAndIndexNames, backendAndIndexNamesForSearchExtensions);
             for (Entry<String, ElasticsearchBackendRuntimeConfig> entry : backendConfigs.entrySet()) {

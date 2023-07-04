@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,6 +20,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigGroup
 public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
@@ -41,18 +41,13 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     Optional<Boolean> active();
 
     /**
-     * Default backend
+     * Configuration for backends.
      */
-    @WithName("elasticsearch")
     @ConfigDocSection
-    ElasticsearchBackendRuntimeConfig defaultBackend();
-
-    /**
-     * Named backends
-     */
     @WithName("elasticsearch")
-    @ConfigDocSection
-    ElasticsearchNamedBackendsRuntimeConfig namedBackends();
+    @WithUnnamedKey // The default backend has the null key
+    @ConfigDocMapKey("backend-name")
+    Map<String, ElasticsearchBackendRuntimeConfig> backends();
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -84,30 +79,8 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      */
     MultiTenancyConfig multiTenancy();
 
-    default Map<String, ElasticsearchBackendRuntimeConfig> getAllBackendConfigsAsMap() {
-        Map<String, ElasticsearchBackendRuntimeConfig> map = new LinkedHashMap<>();
-        if (defaultBackend() != null) {
-            map.put(null, defaultBackend());
-        }
-        if (namedBackends() != null) {
-            map.putAll(namedBackends().backends());
-        }
-        return map;
-    }
-
     @ConfigGroup
-    public interface ElasticsearchNamedBackendsRuntimeConfig {
-
-        /**
-         * Named backends
-         */
-        @ConfigDocMapKey("backend-name")
-        Map<String, ElasticsearchBackendRuntimeConfig> backends();
-
-    }
-
-    @ConfigGroup
-    public interface ElasticsearchBackendRuntimeConfig {
+    interface ElasticsearchBackendRuntimeConfig {
         /**
          * The list of hosts of the Elasticsearch servers.
          */
@@ -193,13 +166,14 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         ElasticsearchIndexRuntimeConfig indexDefaults();
 
         /**
-         * Per-index specific configuration.
+         * Per-index configuration overrides.
          */
+        @ConfigDocSection
         @ConfigDocMapKey("index-name")
         Map<String, ElasticsearchIndexRuntimeConfig> indexes();
     }
 
-    public enum ElasticsearchClientProtocol {
+    enum ElasticsearchClientProtocol {
         /**
          * Use clear-text HTTP, with SSL/TLS disabled.
          */
@@ -234,7 +208,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface ElasticsearchIndexRuntimeConfig {
+    interface ElasticsearchIndexRuntimeConfig {
         /**
          * Configuration for the schema management of the indexes.
          */
@@ -247,7 +221,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface DiscoveryConfig {
+    interface DiscoveryConfig {
 
         /**
          * Defines if automatic discovery is enabled.
@@ -374,7 +348,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
     @ConfigGroup
     @Deprecated
-    public interface AutomaticIndexingConfig {
+    interface AutomaticIndexingConfig {
 
         /**
          * Configuration for synchronization with the index when indexing automatically.
@@ -399,7 +373,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
     @ConfigGroup
     @Deprecated
-    public interface AutomaticIndexingSynchronizationConfig {
+    interface AutomaticIndexingSynchronizationConfig {
 
         // @formatter:off
         /**
@@ -413,7 +387,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface SearchQueryLoadingConfig {
+    interface SearchQueryLoadingConfig {
 
         /**
          * Configuration for cache lookup when loading entities during the execution of a search query.
@@ -438,7 +412,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface SchemaManagementConfig {
+    interface SchemaManagementConfig {
 
         // @formatter:off
         /**
@@ -508,7 +482,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface ThreadPoolConfig {
+    interface ThreadPoolConfig {
         /**
          * The size of the thread pool assigned to the backend.
          *
@@ -534,7 +508,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     // We can't set actual default values in this section,
     // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
-    public interface ElasticsearchIndexSchemaManagementConfig {
+    interface ElasticsearchIndexSchemaManagementConfig {
         /**
          * The minimal https://www.elastic.co/guide/en/elasticsearch/reference/7.17/cluster-health.html[Elasticsearch cluster
          * status] required on startup.
@@ -556,7 +530,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     // We can't set actual default values in this section,
     // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
-    public interface ElasticsearchIndexIndexingConfig {
+    interface ElasticsearchIndexIndexingConfig {
         /**
          * The number of indexing queues assigned to each index.
          *
@@ -608,7 +582,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface MultiTenancyConfig {
+    interface MultiTenancyConfig {
 
         /**
          * An exhaustive list of all tenant identifiers that may be used by the application when multi-tenancy is enabled.

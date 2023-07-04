@@ -21,17 +21,16 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
     CoordinationConfig coordination();
 
     @ConfigGroup
-    public interface CoordinationConfig {
+    interface CoordinationConfig {
 
         /**
-         * Default config
+         * Default configuration.
          */
-        @ConfigDocSection
         @WithParentName
         AgentsConfig defaults();
 
         /**
-         * Per-tenant config
+         * Per-tenant configuration overrides.
          */
         @ConfigDocSection
         @ConfigDocMapKey("tenant-id")
@@ -40,7 +39,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface AgentsConfig {
+    interface AgentsConfig {
 
         /**
          * Configuration for the event processor agent.
@@ -55,7 +54,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface EventProcessorConfig {
+    interface EventProcessorConfig {
 
         // @formatter:off
         /**
@@ -209,7 +208,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface EventProcessorShardsConfig {
+    interface EventProcessorShardsConfig {
 
         // @formatter:off
         /**
@@ -257,7 +256,7 @@ public interface HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface MassIndexerConfig {
+    interface MassIndexerConfig {
 
         // @formatter:off
         /**

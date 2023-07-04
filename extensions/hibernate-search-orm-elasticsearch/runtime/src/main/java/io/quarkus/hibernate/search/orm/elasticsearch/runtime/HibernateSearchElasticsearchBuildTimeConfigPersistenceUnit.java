@@ -1,6 +1,5 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,23 +12,19 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigGroup
 public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
 
     /**
-     * Default backend
+     * Configuration for backends.
      */
     @ConfigDocSection
     @WithName("elasticsearch")
-    ElasticsearchBackendBuildTimeConfig defaultBackend();
-
-    /**
-     * Named backends
-     */
-    @ConfigDocSection
-    @WithName("elasticsearch")
-    ElasticsearchNamedBackendsBuildTimeConfig namedBackends();
+    @WithUnnamedKey // The default backend has the null key
+    @ConfigDocMapKey("backend-name")
+    Map<String, ElasticsearchBackendBuildTimeConfig> backends();
 
     /**
      * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to a component
@@ -55,30 +50,8 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      */
     CoordinationConfig coordination();
 
-    default Map<String, ElasticsearchBackendBuildTimeConfig> getAllBackendConfigsAsMap() {
-        Map<String, ElasticsearchBackendBuildTimeConfig> map = new LinkedHashMap<>();
-        if (defaultBackend() != null) {
-            map.put(null, defaultBackend());
-        }
-        if (namedBackends() != null) {
-            map.putAll(namedBackends().backends());
-        }
-        return map;
-    }
-
     @ConfigGroup
-    public interface ElasticsearchNamedBackendsBuildTimeConfig {
-
-        /**
-         * Named backends
-         */
-        @ConfigDocMapKey("backend-name")
-        public Map<String, ElasticsearchBackendBuildTimeConfig> backends();
-
-    }
-
-    @ConfigGroup
-    public interface ElasticsearchBackendBuildTimeConfig {
+    interface ElasticsearchBackendBuildTimeConfig {
         /**
          * The version of Elasticsearch used in the cluster.
          *
@@ -107,14 +80,15 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
         ElasticsearchIndexBuildTimeConfig indexDefaults();
 
         /**
-         * Per-index specific configuration.
+         * Per-index configuration overrides.
          */
+        @ConfigDocSection
         @ConfigDocMapKey("index-name")
         Map<String, ElasticsearchIndexBuildTimeConfig> indexes();
     }
 
     @ConfigGroup
-    public interface ElasticsearchIndexBuildTimeConfig {
+    interface ElasticsearchIndexBuildTimeConfig {
         /**
          * Configuration for automatic creation and validation of the Elasticsearch schema:
          * indexes, their mapping, their settings.
@@ -128,7 +102,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface SchemaManagementConfig {
+    interface SchemaManagementConfig {
 
         // @formatter:off
         /**
@@ -190,7 +164,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface LayoutConfig {
+    interface LayoutConfig {
         /**
          * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
          * used to configure layout (e.g. index names, index aliases).
@@ -226,7 +200,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface CoordinationConfig {
+    interface CoordinationConfig {
 
         /**
          * The strategy to use for coordinating between threads or even separate instances of the application,

@@ -1,7 +1,6 @@
 package io.quarkus.redis.datasource.stream;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.ReactiveTransactionalRedisCommands;
@@ -614,4 +613,62 @@ public interface ReactiveTransactionalStreamCommands<K, F, V> extends ReactiveTr
      *         otherwise. In the case of failure, the transaction is discarded.
      */
     Uni<Void> xtrim(K key, XTrimArgs args);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/xpending">XPENDING</a>.
+     * Summary: The XPENDING command is the interface to inspect the list of pending messages, and is as thus a very
+     * important command in order to observe and understand what is happening with a streams consumer groups: what
+     * clients are active, what messages are pending to be consumed, or to see if there are idle messages.
+     * <p>
+     * Group: stream
+     * Requires Redis 5.0.0+
+     * <p>
+     * This variant of xpending uses the <em>summary</em> form.
+     *
+     * @param key the key
+     * @param group the group
+     * @return A {@link io.smallrye.mutiny.Uni} emitting the xpending summary
+     */
+    Uni<Void> xpending(K key, String group);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/xpending">XPENDING</a>.
+     * Summary: The XPENDING command is the interface to inspect the list of pending messages, and is as thus a very
+     * important command in order to observe and understand what is happening with a streams consumer groups: what
+     * clients are active, what messages are pending to be consumed, or to see if there are idle messages.
+     * <p>
+     * Group: stream
+     * Requires Redis 5.0.0+
+     * <p>
+     * This variant of xpending uses the <em>extended</em> form.
+     *
+     * @param key the key
+     * @param group the group
+     * @param range the range
+     * @param count the number of message to include
+     * @return A {@link io.smallrye.mutiny.Uni} emitting the list of pending messages
+     */
+    Uni<Void> xpending(K key, String group, StreamRange range, int count);
+
+    /**
+     * Execute the command <a href="https://redis.io/commands/xpending">XPENDING</a>.
+     * Summary: The XPENDING command is the interface to inspect the list of pending messages, and is as thus a very
+     * important command in order to observe and understand what is happening with a streams consumer groups: what
+     * clients are active, what messages are pending to be consumed, or to see if there are idle messages.
+     * <p>
+     * Group: stream
+     * Requires Redis 5.0.0+
+     * <p>
+     * This variant of xpending uses the <em>extended</em> form.
+     * <p>
+     * If the extra parameter include the name of the consumer, the produced list will only contain 0 or 1 item.
+     *
+     * @param key the key
+     * @param group the group
+     * @param range the range
+     * @param count the number of message to include
+     * @param args the extra argument (idle and consumer)
+     * @return A {@link io.smallrye.mutiny.Uni} emitting the list of pending messages
+     */
+    Uni<Void> xpending(K key, String group, StreamRange range, int count, XPendingArgs args);
 }

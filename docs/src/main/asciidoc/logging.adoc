@@ -3,12 +3,13 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="logging"]
 = Logging configuration
 include::_attributes.adoc[]
 :categories: core,getting-started
 :diataxis-type: reference
 
-Read about the efficient use of logging API in Quarkus, configuring logging output according to your needs, and using logging adapters to unify the output from other logging APIs.
+Read about the use of logging API in Quarkus, configuring logging output, and using logging adapters to unify the output from other logging APIs.
 
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
 Quarkus supports the JBoss Logging API as well as multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
@@ -728,6 +729,7 @@ However, the APIs are very similar:
 * log4j 2 - `org.apache.logging.log4j.ThreadContext.put(key, value)`
 * slf4j - `org.slf4j.MDC.put(key, value)`
 
+[[mdc-propagation]]
 ==== MDC propagation
 
 Under the hood, Quarkus provides a specific implementation of the MDC provider handling the reactive context.

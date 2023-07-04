@@ -18,6 +18,7 @@ import jakarta.inject.Singleton;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -32,6 +33,7 @@ import io.quarkus.security.credential.PasswordCredential;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -66,7 +68,30 @@ public class GrpcAuthTest {
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         AtomicInteger resultCount = new AtomicInteger();
         client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
-                .subscribe().with(e -> resultCount.incrementAndGet());
+                .subscribe().with(e -> {
+                    if (!e.getIsOnEventLoop()) {
+                        Assertions.fail("Secured method should be run on event loop");
+                    }
+                    resultCount.incrementAndGet();
+                });
+
+        await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> resultCount.get() == 1);
+    }
+
+    @Test
+    void shouldSecureBlockingUniEndpoint() {
+        Metadata headers = new Metadata();
+        headers.put(AUTHORIZATION, "Basic " + JOHN_BASIC_CREDS);
+        SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
+        AtomicInteger resultCount = new AtomicInteger();
+        client.unaryCallBlocking(Security.Container.newBuilder().setText("woo-hoo").build())
+                .subscribe().with(e -> {
+                    if (e.getIsOnEventLoop()) {
+                        Assertions.fail("Secured method annotated with @Blocking should be executed on worker thread");
+                    }
+                    resultCount.incrementAndGet();
+                });
 
         await().atMost(10, TimeUnit.SECONDS)
                 .until(() -> resultCount.get() == 1);
@@ -86,6 +111,22 @@ public class GrpcAuthTest {
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
+    }
+
+    @Test
+    void shouldSecureBlockingMultiEndpoint() {
+        Metadata headers = new Metadata();
+        headers.put(AUTHORIZATION, "Basic " + PAUL_BASIC_CREDS);
+        SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
+        List<Boolean> results = new CopyOnWriteArrayList<>();
+        client.streamCallBlocking(Multi.createBy().repeating()
+                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
+                .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
+
+        await().atMost(10, TimeUnit.SECONDS)
+                .until(() -> results.size() == 5);
+
+        assertThat(results.stream().filter(e -> e)).isEmpty();
     }
 
     @Test
@@ -139,6 +180,22 @@ public class GrpcAuthTest {
                     .atMost(5);
         }
 
+        @Blocking
+        @Override
+        @RolesAllowed("employees")
+        public Uni<Security.ThreadInfo> unaryCallBlocking(Security.Container request) {
+            return Uni.createFrom()
+                    .item(newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build());
+        }
+
+        @Blocking
+        @Override
+        @RolesAllowed("interns")
+        public Multi<Security.ThreadInfo> streamCallBlocking(Multi<Security.Container> request) {
+            return Multi.createBy()
+                    .repeating().supplier(() -> newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build())
+                    .atMost(5);
+        }
     }
 
     @Singleton

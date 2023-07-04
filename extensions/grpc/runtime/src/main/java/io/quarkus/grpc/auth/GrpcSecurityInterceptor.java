@@ -2,7 +2,9 @@ package io.quarkus.grpc.auth;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 import jakarta.enterprise.inject.Instance;
@@ -42,6 +44,9 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     private final AuthExceptionHandlerProvider exceptionHandlerProvider;
     private final List<GrpcSecurityMechanism> securityMechanisms;
 
+    private final Map<String, List<String>> serviceToBlockingMethods = new HashMap<>();
+    private boolean hasBlockingMethods = false;
+
     @Inject
     public GrpcSecurityInterceptor(
             CurrentIdentityAssociation identityAssociation,
@@ -79,13 +84,25 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                     Context context = Vertx.currentContext();
                     boolean onEventLoopThread = Context.isOnEventLoopThread();
 
+                    final boolean isBlockingMethod;
+                    if (hasBlockingMethods) {
+                        var methods = serviceToBlockingMethods.get(serverCall.getMethodDescriptor().getServiceName());
+                        if (methods != null) {
+                            isBlockingMethod = methods.contains(serverCall.getMethodDescriptor().getFullMethodName());
+                        } else {
+                            isBlockingMethod = false;
+                        }
+                    } else {
+                        isBlockingMethod = false;
+                    }
+
                     if (authenticationRequest != null) {
                         Uni<SecurityIdentity> auth = identityProviderManager
                                 .authenticate(authenticationRequest)
                                 .emitOn(new Executor() {
                                     @Override
                                     public void execute(Runnable command) {
-                                        if (onEventLoopThread) {
+                                        if (onEventLoopThread && !isBlockingMethod) {
                                             context.runOnContext(new Handler<>() {
                                                 @Override
                                                 public void handle(Void event) {
@@ -118,5 +135,10 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     @Override
     public int getPriority() {
         return Integer.MAX_VALUE - 100;
+    }
+
+    void init(Map<String, List<String>> serviceToBlockingMethods) {
+        this.serviceToBlockingMethods.putAll(serviceToBlockingMethods);
+        this.hasBlockingMethods = true;
     }
 }

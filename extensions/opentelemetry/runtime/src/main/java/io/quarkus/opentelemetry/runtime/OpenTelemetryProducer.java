@@ -154,10 +154,12 @@ public class OpenTelemetryProducer {
                 if (configValue.getValue() != null) {
                     NameIterator name = new NameIterator(propertyName);
                     name.next();
-                    oTelConfigs.put(name.getName().substring(name.getPosition() + 1), configValue.getValue());
+                    String propertyValue = OpenTelemetryUtil.normalizeProperty(propertyName, configValue.getValue());
+                    oTelConfigs.put(name.getName().substring(name.getPosition() + 1), propertyValue);
                 }
             }
         }
         return oTelConfigs;
     }
+
 }

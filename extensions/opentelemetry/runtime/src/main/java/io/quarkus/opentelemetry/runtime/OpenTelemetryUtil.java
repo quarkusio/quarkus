@@ -1,14 +1,14 @@
 package io.quarkus.opentelemetry.runtime;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
+import java.util.function.Function;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.sdk.trace.ReadableSpan;
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.quarkus.vertx.core.runtime.VertxMDC;
 
 public final class OpenTelemetryUtil {
@@ -16,6 +16,18 @@ public final class OpenTelemetryUtil {
     public static final String SPAN_ID = "spanId";
     public static final String SAMPLED = "sampled";
     public static final String PARENT_ID = "parentId";
+    public static final Map<String, Function<String, String>> OTEL_PROPERTIES_NORMALIZABLE = Map.of(
+            "quarkus.otel.bsp.schedule.delay",
+            OpenTelemetryUtil::normalizeDuration,
+            "quarkus.otel.bsp.export.timeout",
+            OpenTelemetryUtil::normalizeDuration,
+            "quarkus.otel.exporter.otlp.traces.timeout",
+            OpenTelemetryUtil::normalizeDuration);
+
+    static String normalizeDuration(String propertyValue) {
+        Duration duration = DurationConverter.parseDuration(propertyValue);
+        return Long.toString(duration.toMillis()).concat("ms");
+    };
 
     private OpenTelemetryUtil() {
     }
@@ -83,5 +95,14 @@ public final class OpenTelemetryUtil {
         vertxMDC.remove(SPAN_ID, vertxContext);
         vertxMDC.remove(PARENT_ID, vertxContext);
         vertxMDC.remove(SAMPLED, vertxContext);
+    }
+
+    public static String normalizeProperty(String propertyName, String propertyValue) {
+        Function<String, String> converter = OpenTelemetryUtil.OTEL_PROPERTIES_NORMALIZABLE.get(propertyName);
+        if (converter == null) {
+            return propertyValue;
+        } else {
+            return converter.apply(propertyValue);
+        }
     }
 }

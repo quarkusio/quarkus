@@ -67,8 +67,7 @@ class FlywayCreator {
 
                 configure.dataSource(jdbcUrl, flywayRuntimeConfig.username.get(),
                         flywayRuntimeConfig.password.get());
-            } else {
-
+            } else if (dataSource != null) {
                 configure.dataSource(dataSource);
             }
         }

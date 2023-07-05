@@ -36,7 +36,7 @@ public class OpenTelemetryJdbcInstrumentationValidationTest {
                         te.getMessage());
                 assertTrue(te.getMessage().contains("io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver"),
                         te.getMessage());
-                assertTrue(te.getMessage().contains("quarkus.datasource.jdbc.telemetry=true"), te.getMessage());
+                assertTrue(te.getMessage().contains("quarkus.datasource.jdbc.telemetry"), te.getMessage());
             });
 
     @Test

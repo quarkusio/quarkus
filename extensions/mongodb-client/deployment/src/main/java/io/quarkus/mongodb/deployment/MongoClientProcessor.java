@@ -431,5 +431,6 @@ public class MongoClientProcessor {
     @BuildStep
     void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
         runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(ObjectId.class.getName()));
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("com.mongodb.internal.dns.DefaultDnsResolver"));
     }
 }

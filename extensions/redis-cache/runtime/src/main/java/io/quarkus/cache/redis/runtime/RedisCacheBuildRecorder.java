@@ -51,7 +51,7 @@ public class RedisCacheBuildRecorder {
                                 if (LOGGER.isDebugEnabled()) {
                                     LOGGER.debugf(
                                             "Building Redis cache [%s] with [ttl=%s], [prefix=%s], [classOfItems=%s]",
-                                            cacheInfo.name, cacheInfo.ttl, cacheInfo.prefix,
+                                            cacheInfo.name, cacheInfo.expireAfterAccess, cacheInfo.prefix,
                                             cacheInfo.valueType);
                                 }
 

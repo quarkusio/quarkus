@@ -3,10 +3,14 @@ package io.quarkus.cache.redis.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.AfterEach;
@@ -34,22 +38,22 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "foo";
         info.valueType = String.class.getName();
-        info.ttl = Optional.of(Duration.ofSeconds(2));
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
         var r = redis.send(Request.cmd(Command.GET).arg("cache:foo:" + k)).await().indefinitely();
         assertThat(r).isNotNull();
     }
 
     @Test
-    public void testPutInTheCacheWithOptimisitcLocking() {
+    public void testPutInTheCacheWithOptimisticLocking() {
         String k = UUID.randomUUID().toString();
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "foo";
         info.valueType = String.class.getName();
-        info.ttl = Optional.of(Duration.ofSeconds(2));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
         info.useOptimisticLocking = true;
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
         var r = redis.send(Request.cmd(Command.GET).arg("cache:foo:" + k)).await().indefinitely();
         assertThat(r).isNotNull();
@@ -60,8 +64,8 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         String k = UUID.randomUUID().toString();
         RedisCacheInfo info = new RedisCacheInfo();
         info.valueType = String.class.getName();
-        info.ttl = Optional.of(Duration.ofSeconds(1));
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(1));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
         var x = cache.get(k, String::toUpperCase).await().indefinitely();
         assertEquals(x, "hello");
@@ -69,11 +73,32 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     }
 
     @Test
+    public void testExpireAfterReadAndWrite() throws InterruptedException {
+        String k = UUID.randomUUID().toString();
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.valueType = String.class.getName();
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(1));
+        info.expireAfterAccess = Optional.of(Duration.ofSeconds(1));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+        assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
+        var x = cache.get(k, String::toUpperCase).await().indefinitely();
+        assertEquals(x, "hello");
+        for (int i = 0; i < 3; i++) {
+            x = cache.get(k, String::toUpperCase).await().indefinitely();
+            assertEquals(x, "hello");
+            Thread.sleep(500);
+        }
+        await().until(() -> redis.send(Request.cmd(Command.GET).arg("cache:foo:" + k)).await().indefinitely() == null);
+        await().until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
+    }
+
+    @Test
     public void testManualInvalidation() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.valueType = String.class.getName();
-        info.ttl = Optional.of(Duration.ofSeconds(10));
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         cache.get("foo", s -> "hello").await().indefinitely();
         var x = cache.get("foo", String::toUpperCase).await().indefinitely();
         assertEquals(x, "hello");
@@ -114,9 +139,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     @Test
     public void testGetOrNull() {
         RedisCacheInfo info = new RedisCacheInfo();
-        info.ttl = Optional.of(Duration.ofSeconds(10));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
         info.valueType = Person.class.getName();
-        RedisCacheImpl<String, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         Person person = cache.getOrNull("foo", Person.class).await().indefinitely();
         assertThat(person).isNull();
         assertThatTheKeyDoesNotExist("cache:foo");
@@ -134,9 +159,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     @Test
     public void testGetOrDefault() {
         RedisCacheInfo info = new RedisCacheInfo();
-        info.ttl = Optional.of(Duration.ofSeconds(10));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
         info.valueType = Person.class.getName();
-        RedisCacheImpl<String, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         Person person = cache.getOrDefault("foo", new Person("bar", "BAR")).await().indefinitely();
         assertThat(person).isNotNull()
                 .satisfies(p -> {
@@ -160,9 +185,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     @Test
     public void testCacheNullValue() {
         RedisCacheInfo info = new RedisCacheInfo();
-        info.ttl = Optional.of(Duration.ofSeconds(10));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
         info.valueType = Person.class.getName();
-        RedisCacheImpl<String, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         // with custom key
         double key = 122334545.0;
@@ -174,11 +199,11 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     @Test
     public void testExceptionInValueLoader() {
         RedisCacheInfo info = new RedisCacheInfo();
-        info.ttl = Optional.of(Duration.ofSeconds(10));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
         info.valueType = Person.class.getName();
         info.keyType = Double.class.getName();
         info.name = "foo";
-        RedisCacheImpl<Double, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         // with custom key and exception
         Double key = 122334545.0;
@@ -197,10 +222,10 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     @Test
     public void testPutShouldPopulateCache() {
         RedisCacheInfo info = new RedisCacheInfo();
-        info.ttl = Optional.of(Duration.ofSeconds(10));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
         info.valueType = Person.class.getName();
         info.keyType = Integer.class.getName();
-        RedisCacheImpl<Integer, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         cache.put(1, new Person("luke", "skywalker")).await().indefinitely();
         assertThat(cache.get(1, x -> new Person("1", "1")).await().indefinitely()).isEqualTo(new Person("luke", "skywalker"));
@@ -213,11 +238,11 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     @Test
     public void testPutShouldPopulateCacheWithOptimisticLocking() {
         RedisCacheInfo info = new RedisCacheInfo();
-        info.ttl = Optional.of(Duration.ofSeconds(10));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
         info.valueType = Person.class.getName();
         info.keyType = Integer.class.getName();
         info.useOptimisticLocking = true;
-        RedisCacheImpl<Integer, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         cache.put(1, new Person("luke", "skywalker")).await().indefinitely();
         assertThat(cache.get(1, x -> new Person("1", "1")).await().indefinitely()).isEqualTo(new Person("luke", "skywalker"));
@@ -233,8 +258,8 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "foo";
         info.valueType = String.class.getName();
-        info.ttl = Optional.of(Duration.ofSeconds(1));
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(1));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         for (int i = 0; i < 1000; i++) {
             String val = "hello-" + i;
@@ -258,9 +283,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "foo";
         info.valueType = String.class.getName();
-        info.ttl = Optional.of(Duration.ofSeconds(1));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(1));
         info.useOptimisticLocking = true;
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         for (int i = 0; i < 1000; i++) {
             String val = "hello-" + i;
@@ -282,8 +307,8 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testWithMissingDefaultType() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "missing-default-cache";
-        info.ttl = Optional.of(Duration.ofSeconds(10));
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         assertThatThrownBy(() -> cache.get("test", x -> "value").await().indefinitely())
                 .isInstanceOf(UnsupportedOperationException.class);
@@ -304,9 +329,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testAsyncGetWithDefaultType() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "star-wars";
-        info.ttl = Optional.of(Duration.ofSeconds(2));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
         info.valueType = Person.class.getName();
-        RedisCacheImpl<String, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         assertThat(cache
                 .getAsync("test",
@@ -334,10 +359,10 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testAsyncGetWithDefaultTypeWithOptimisticLocking() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "star-wars";
-        info.ttl = Optional.of(Duration.ofSeconds(2));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
         info.valueType = Person.class.getName();
         info.useOptimisticLocking = true;
-        RedisCacheImpl<String, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         assertThat(cache
                 .getAsync("test",
@@ -365,9 +390,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testPut() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "put";
-        info.ttl = Optional.of(Duration.ofSeconds(2));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
         info.valueType = Person.class.getName();
-        RedisCacheImpl<String, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         Person luke = new Person("luke", "skywalker");
         Person leia = new Person("leia", "organa");
@@ -384,9 +409,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testPutWithSupplier() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "put";
-        info.ttl = Optional.of(Duration.ofSeconds(2));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
         info.valueType = Person.class.getName();
-        RedisCacheImpl<String, Person> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         Person luke = new Person("luke", "skywalker");
         Person leia = new Person("leia", "organa");
@@ -403,10 +428,10 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testInitializationWithAnUnknownClass() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "put";
-        info.ttl = Optional.of(Duration.ofSeconds(2));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
         info.valueType = Person.class.getPackage().getName() + ".Missing";
 
-        assertThatThrownBy(() -> new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED))
+        assertThatThrownBy(() -> new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -414,9 +439,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testGetDefaultKey() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "test-default-key";
-        info.ttl = Optional.of(Duration.ofSeconds(2));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
 
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         assertThat(cache.getDefaultKey()).isEqualTo("default-cache-key");
 
         assertThat(cache.getDefaultValueType()).isNull();
@@ -426,9 +451,9 @@ class RedisCacheImplTest extends RedisCacheTestBase {
     void testInvalidation() {
         RedisCacheInfo info = new RedisCacheInfo();
         info.name = "test-invalidation";
-        info.ttl = Optional.of(Duration.ofSeconds(10));
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
 
-        RedisCacheImpl<String, String> cache = new RedisCacheImpl<>(info, vertx, redis, BLOCKING_ALLOWED);
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         redis.send(Request.cmd(Command.SET).arg("key6").arg("my-value")).await().indefinitely();
 

@@ -134,14 +134,6 @@
                 <version>${maven-core.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.sonatype.plexus</groupId>
-                        <artifactId>plexus-sec-dispatcher</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.sonatype.plexus</groupId>
-                        <artifactId>plexus-cipher</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-api</artifactId>
                     </exclusion>

@@ -6,6 +6,8 @@ option java_package = "com.example.security";
 service SecuredService {
   rpc unaryCall(Container) returns (ThreadInfo);
   rpc streamCall(stream Container) returns (stream ThreadInfo);
+  rpc unaryCallBlocking(Container) returns (ThreadInfo);
+  rpc streamCallBlocking(stream Container) returns (stream ThreadInfo);
 }
 
 message ThreadInfo {

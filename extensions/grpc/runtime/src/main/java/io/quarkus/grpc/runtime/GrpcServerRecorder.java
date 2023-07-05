@@ -376,6 +376,10 @@ public class GrpcServerRecorder {
         }
 
         public String getImplementationClassName() {
+            return getImplementationClassName(service);
+        }
+
+        public static String getImplementationClassName(BindableService service) {
             if (service instanceof Subclass) {
                 // All intercepted services are represented by a generated subclass
                 return service.getClass().getSuperclass().getName();

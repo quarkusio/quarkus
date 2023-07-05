@@ -6,7 +6,7 @@
 #
 # Before building the container image run:
 #
-# ./mvnw package -Pnative
+# ./mvnw package -Dnative
 #
 # Then, build the image with:
 #

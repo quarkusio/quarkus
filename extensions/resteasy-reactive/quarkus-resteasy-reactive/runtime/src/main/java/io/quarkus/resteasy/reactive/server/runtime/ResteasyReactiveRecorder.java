@@ -65,6 +65,8 @@ import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.DefaultAuthFailureHandler;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -106,15 +108,39 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
          * change --release, --source, --target flags and to enable previews.
          * Since we try to load the "Loom-preview" classes/methods at runtime, the application can even be compiled
          * using java 11 and executed with a loom-compliant JDK.
+         * <p>
+         * IMPORTANT: we still need to use a duplicated context to have all the propagation working.
+         * Thus, the context is captured and applied/terminated in the virtual thread.
          */
         @Override
         public Executor get() {
             if (current == null) {
                 try {
-                    current = (Executor) Executors.class.getMethod("newVirtualThreadPerTaskExecutor")
+                    var virtual = (Executor) Executors.class.getMethod("newVirtualThreadPerTaskExecutor")
                             .invoke(this);
+                    current = new Executor() {
+                        @Override
+                        public void execute(Runnable command) {
+                            var context = Vertx.currentContext();
+                            if (!(context instanceof ContextInternal)) {
+                                virtual.execute(command);
+                            } else {
+                                virtual.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        final var previousContext = ((ContextInternal) context).beginDispatch();
+                                        try {
+                                            command.run();
+                                        } finally {
+                                            ((ContextInternal) context).endDispatch(previousContext);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    };
                 } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-                    System.err.println(e);
+                    logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
                     //quite ugly but works
                     logger.warnf("You weren't able to create an executor that spawns virtual threads, the default" +
                             " blocking executor will be used, please check that your JDK is compatible with " +

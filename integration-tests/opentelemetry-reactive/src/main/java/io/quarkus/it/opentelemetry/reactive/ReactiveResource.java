@@ -51,4 +51,18 @@ public class ReactiveResource {
         return Uni.createFrom().item("Hello " + body).onItem().delayIt().by(Duration.ofSeconds(2))
                 .eventually((Runnable) span::end);
     }
+
+    @Path("blockingException")
+    @GET
+    public String blockingException() {
+        throw new RuntimeException("dummy");
+    }
+
+    @Path("reactiveException")
+    @GET
+    public Uni<String> reactiveException() {
+        return Uni.createFrom().item(() -> {
+            throw new RuntimeException("dummy2");
+        });
+    }
 }

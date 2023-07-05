@@ -94,6 +94,7 @@ import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
+import org.jboss.resteasy.reactive.server.model.DelegatingServerRestHandler;
 import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
@@ -109,6 +110,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMetho
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
@@ -180,6 +182,7 @@ import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.HandlerConfigurationProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
@@ -1098,6 +1101,7 @@ public class ResteasyReactiveProcessor {
             HttpBuildTimeConfig vertxConfig,
             SetupEndpointsResultBuildItem setupEndpointsResult,
             ServerSerialisersBuildItem serverSerialisersBuildItem,
+            List<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItems,
             List<DynamicFeatureBuildItem> dynamicFeatures,
             List<JaxrsFeatureBuildItem> features,
             Optional<RequestContextFactoryBuildItem> requestContextFactoryBuildItem,
@@ -1212,6 +1216,7 @@ public class ResteasyReactiveProcessor {
                 .setFactoryCreator(recorder.factoryCreator(beanContainerBuildItem.getValue()))
                 .setDynamicFeatures(dynamicFeats)
                 .setSerialisers(serialisers)
+                .setPreExceptionMapperHandler(determinePreExceptionMapperHandler(preExceptionMapperHandlerBuildItems))
                 .setApplicationPath(applicationPath)
                 .setGlobalHandlerCustomizers(Collections.singletonList(new SecurityContextOverrideHandler.Customizer())) //TODO: should be pluggable
                 .setResourceClasses(resourceClasses)
@@ -1280,6 +1285,19 @@ public class ResteasyReactiveProcessor {
                     RouteBuildItem.builder().orderedRoute(matchPath, order)
                             .handler(handler).build());
         }
+    }
+
+    private ServerRestHandler determinePreExceptionMapperHandler(
+            List<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItems) {
+        if ((preExceptionMapperHandlerBuildItems == null) || preExceptionMapperHandlerBuildItems.isEmpty()) {
+            return null;
+        }
+        if (preExceptionMapperHandlerBuildItems.size() == 1) {
+            return preExceptionMapperHandlerBuildItems.get(0).getHandler();
+        }
+        Collections.sort(preExceptionMapperHandlerBuildItems);
+        return new DelegatingServerRestHandler(preExceptionMapperHandlerBuildItems.stream()
+                .map(PreExceptionMapperHandlerBuildItem::getHandler).collect(toList()));
     }
 
     private static boolean notFoundCustomExMapper(String builtInExSignature, String builtInMapperSignature,

@@ -15,6 +15,7 @@ import org.jboss.resteasy.reactive.server.model.DynamicFeatures;
 import org.jboss.resteasy.reactive.server.model.Features;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
+import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class DeploymentInfo {
@@ -25,6 +26,8 @@ public class DeploymentInfo {
     private Features features;
     private DynamicFeatures dynamicFeatures;
     private ServerSerialisers serialisers;
+
+    private ServerRestHandler preExceptionMapperHandler;
     private List<ResourceClass> resourceClasses;
     private List<ResourceClass> locatableResourceClasses;
     private ParamConverterProviders paramConverterProviders;
@@ -88,6 +91,15 @@ public class DeploymentInfo {
 
     public DeploymentInfo setSerialisers(ServerSerialisers serialisers) {
         this.serialisers = serialisers;
+        return this;
+    }
+
+    public ServerRestHandler getPreExceptionMapperHandler() {
+        return preExceptionMapperHandler;
+    }
+
+    public DeploymentInfo setPreExceptionMapperHandler(ServerRestHandler preExceptionMapperHandler) {
+        this.preExceptionMapperHandler = preExceptionMapperHandler;
         return this;
     }
 

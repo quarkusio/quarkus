@@ -197,7 +197,8 @@ public class RuntimeResourceDeployment {
         //setup reader and writer interceptors first
         ServerRestHandler interceptorHandler = interceptorDeployment.setupInterceptorHandler();
         //we want interceptors in the abort handler chain
-        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(3 + (interceptorHandler != null ? 1 : 0));
+        List<ServerRestHandler> abortHandlingChain = new ArrayList<>(
+                3 + (interceptorHandler != null ? 1 : 0) + (info.getPreExceptionMapperHandler() != null ? 1 : 0));
 
         List<ServerRestHandler> handlers = new ArrayList<>(HANDLERS_CAPACITY);
         // we add null as the first item to make sure that subsequent items are added in the proper positions
@@ -486,6 +487,9 @@ public class RuntimeResourceDeployment {
             // when class level exception mapper are used, we need to make sure that an instance of resource class exists
             // so we can invoke it
             abortHandlingChain.add(instanceHandler);
+        }
+        if (info.getPreExceptionMapperHandler() != null) {
+            abortHandlingChain.add(info.getPreExceptionMapperHandler());
         }
         abortHandlingChain.add(ExceptionHandler.INSTANCE);
         abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);

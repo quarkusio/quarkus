@@ -11,10 +11,11 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class JacocoConfig {
 
     /**
-     * The jacoco data file
+     * The jacoco data file. By default this will be target/jacoco-quarkus.exec.
+     * The path can be relative (to the module) or absolute.
      */
-    @ConfigItem(defaultValue = "jacoco-quarkus.exec")
-    public String dataFile;
+    @ConfigItem
+    public Optional<String> dataFile;
 
     /**
      * Whether to reuse ({@code true}) or delete ({@code false}) the jacoco
@@ -82,8 +83,9 @@ public class JacocoConfig {
     public Optional<List<String>> excludes;
 
     /**
-     * The location of the report files.
+     * The location of the report files. By default this will be target/jacoco-report.
+     * The path can be relative (to the module) or absolute.
      */
-    @ConfigItem(defaultValue = "jacoco-report")
-    public String reportLocation;
+    @ConfigItem
+    public Optional<String> reportLocation;
 }

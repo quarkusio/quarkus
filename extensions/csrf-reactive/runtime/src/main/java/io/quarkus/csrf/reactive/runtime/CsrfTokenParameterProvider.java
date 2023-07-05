@@ -21,9 +21,13 @@ public class CsrfTokenParameterProvider {
     RoutingContext context;
 
     private final String csrfFormFieldName;
+    private final String csrfCookieName;
+    private final String csrfHeaderName;
 
     public CsrfTokenParameterProvider(CsrfReactiveConfig config) {
         this.csrfFormFieldName = config.formFieldName;
+        this.csrfCookieName = config.cookieName;
+        this.csrfHeaderName = config.tokenHeaderName;
     }
 
     /**
@@ -47,5 +51,19 @@ public class CsrfTokenParameterProvider {
      */
     public String getParameterName() {
         return csrfFormFieldName;
+    }
+
+    /**
+     * Gets the CSRF cookie name.
+     */
+    public String getCookieName() {
+        return csrfCookieName;
+    }
+
+    /**
+     * Gets the CSRF header name.
+     */
+    public String getHeaderName() {
+        return csrfHeaderName;
     }
 }

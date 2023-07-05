@@ -9,10 +9,10 @@ include::_attributes.adoc[]
 
 https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
 
-Quarkus Security provides a CSRF prevention feature which implements a https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie technique]. This techninque requires that the CSRF token is never directly exposed to scripts executed on the client-side. In this extension, the CSRF token is:
+Quarkus Security provides a CSRF prevention feature which implements https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html#double-submit-cookie[Double Submit Cookie] and [CSRF Request Header] techniques.
 
-* sent as `HTTPOnly` cookie to the client, and
-* directly embedded in a hidden form input of server-side rendered forms, which are transmitted to and used by the client.
+`Double Submit Cookie` technique requires that the CSRF token sent as `HTTPOnly`, optionally signed, cookie to the client, and
+directly embedded in a hidden form input of server-side rendered HTML forms, or submitted as a request header value.
 
 The extension consists of a xref:resteasy-reactive.adoc[RESTEasy Reactive] server filter which creates and verifies CSRF tokens in `application/x-www-form-urlencoded` and `multipart/form-data` forms and a Qute HTML form parameter provider which supports the xref:qute-reference.adoc#injecting-beans-directly-in-templates[injection of CSRF tokens in Qute templates].
 
@@ -137,6 +137,40 @@ You can get `HMAC` signatures created for the generated CSRF tokens and have the
 quarkus.csrf-reactive.token-signature-key=AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow
 ----
 
+== CSRF Request Header
+
+If HTML `form` tags are not used and you need to pass CSRF token as a header, then inject the header name and token, for example, into HTMX:
+
+[source,html]
+----
+<body hx-headers='{"{inject:csrf.headerName}":"{inject:csrf.token}"}'> <1>
+</body>
+----
+<1> This expression is used to inject a CSRF token header and token. This token will be verified by the CSRF filter against a CSRF cookie.
+
+Default header name is `X-CSRF-TOKEN`, you can customize it with `quarkus.csrf-reactive.token-header-name`, for example:
+
+[source,properties]
+----
+quarkus.csrf-reactive.token-header-name=CUSTOM-X-CSRF-TOKEN
+----
+
+If you need to access the CSRF cookie from JavaScript in order to pass its value as a header, use `{inject:csrf.cookieName}` and `{inject:csrf.headerName}` to inject the cookie name which has to be read as a CSRF header value and allow accessing this cookie:
+
+[source,properties]
+----
+quarkus.csrf-reactive.cookie-http-only=false
+----
+
+== Cross-origin resource sharing
+
+[NOTE]
+====
+If you would like to enforce CSRF prevention in a Cross-origin environment, please avoid supporting all Origins.
+
+Restrict supported Origins to trusted Origins only, see xref:http-reference.adoc#cors-filter[Cross-origin resource sharing] for more information.
+====
+
 == Restrict CSRF token verification
 
 Your Jakarta REST endpoint may accept not only HTTP POST requests with `application/x-www-form-urlencoded` or `multipart/form-data` payloads but also payloads with other media types, either on the same or different URL paths, and therefore you would like to avoid verifying the CSRF token in such cases, for example:
@@ -221,6 +255,7 @@ As you can see a CSRF token verification will be required at the `/service/user`
 quarkus.csrf-reactive.create-token-path=/service/user
 
 # If `/service/user` path accepts not only `application/x-www-form-urlencoded` payloads but also other ones such as JSON then allow them
+# Setting this property is not necessary when the token is submitted as a header value
 quarkus.csrf-reactive.require-form-url-encoded=false
 ----
 
@@ -291,4 +326,5 @@ include::{generated-dir}/config/quarkus-csrf-reactive.adoc[leveloffset=+1, opts=
 * https://owasp.org/www-community/attacks/csrf[OWASP Cross-Site Request Forgery]
 * xref:resteasy-reactive.adoc[RESTEasy Reactive]
 * xref:qute-reference.adoc[Qute Reference]
+* xref:http-reference.adoc#cors-filter[Cross-origin resource sharing]
 * xref:security-overview.adoc[Quarkus Security overview]

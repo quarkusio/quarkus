@@ -97,6 +97,15 @@ public class CsrfRequestResponseReactiveFilter {
         } else if (config.verifyToken) {
             // unsafe HTTP method, token is required
 
+            // Check the header first
+            String csrfTokenInHeader = requestContext.getHeaderString(config.tokenHeaderName);
+            if (csrfTokenInHeader != null) {
+                LOG.debugf("CSRF token found in the token header");
+                verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenInHeader);
+                return;
+            }
+
+            // Check the form field
             MediaType mediaType = requestContext.getMediaType();
             if (!isMatchingMediaType(mediaType, MediaType.APPLICATION_FORM_URLENCODED_TYPE)
                     && !isMatchingMediaType(mediaType, MediaType.MULTIPART_FORM_DATA_TYPE)) {
@@ -117,35 +126,42 @@ public class CsrfRequestResponseReactiveFilter {
                 return;
             }
 
-            if (cookieToken == null) {
-                LOG.debug("CSRF cookie is not found");
-                requestContext.abortWith(badClientRequest());
-                return;
-            }
-
             ResteasyReactiveRequestContext rrContext = (ResteasyReactiveRequestContext) requestContext
                     .getServerRequestContext();
             String csrfToken = (String) rrContext.getFormParameter(config.formFieldName, true, false);
-            if (csrfToken == null) {
-                LOG.debug("CSRF token is not found");
-                requestContext.abortWith(badClientRequest());
-                return;
-            } else {
-                String expectedCookieTokenValue = config.tokenSignatureKey.isPresent()
-                        ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey.get())
-                        : csrfToken;
-                if (!cookieToken.equals(expectedCookieTokenValue)) {
-                    LOG.debug("CSRF token value is wrong");
-                    requestContext.abortWith(badClientRequest());
-                    return;
-                } else {
-                    routing.put(CSRF_TOKEN_VERIFIED, true);
-                    return;
-                }
-            }
+            LOG.debugf("CSRF token found in the form parameter");
+            verifyCsrfToken(requestContext, routing, config, cookieToken, csrfToken);
+            return;
+
         } else if (cookieToken == null) {
             LOG.debug("CSRF token is not found");
             requestContext.abortWith(badClientRequest());
+        }
+    }
+
+    private void verifyCsrfToken(ResteasyReactiveContainerRequestContext requestContext, RoutingContext routing,
+            CsrfReactiveConfig config, String cookieToken, String csrfToken) {
+        if (cookieToken == null) {
+            LOG.debug("CSRF cookie is not found");
+            requestContext.abortWith(badClientRequest());
+            return;
+        }
+        if (csrfToken == null) {
+            LOG.debug("CSRF token is not found");
+            requestContext.abortWith(badClientRequest());
+            return;
+        } else {
+            String expectedCookieTokenValue = config.tokenSignatureKey.isPresent()
+                    ? CsrfTokenUtils.signCsrfToken(csrfToken, config.tokenSignatureKey.get())
+                    : csrfToken;
+            if (!cookieToken.equals(expectedCookieTokenValue)) {
+                LOG.debug("CSRF token value is wrong");
+                requestContext.abortWith(badClientRequest());
+                return;
+            } else {
+                routing.put(CSRF_TOKEN_VERIFIED, true);
+                return;
+            }
         }
     }
 
@@ -233,7 +249,7 @@ public class CsrfRequestResponseReactiveFilter {
     private void createCookie(String csrfToken, RoutingContext routing, CsrfReactiveConfig config) {
 
         ServerCookie cookie = new CookieImpl(config.cookieName, csrfToken);
-        cookie.setHttpOnly(true);
+        cookie.setHttpOnly(config.cookieHttpOnly);
         cookie.setSecure(config.cookieForceSecure || routing.request().isSSL());
         cookie.setMaxAge(config.cookieMaxAge.toSeconds());
         cookie.setPath(config.cookiePath);

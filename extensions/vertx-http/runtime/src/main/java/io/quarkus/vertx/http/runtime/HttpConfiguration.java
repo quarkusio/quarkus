@@ -45,6 +45,13 @@ public class HttpConfiguration {
     public String host;
 
     /**
+     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running and
+     * listening on the host specified by this property.
+     */
+    @ConfigItem
+    public Optional<String> testHost;
+
+    /**
      * Enable listening to host:port
      */
     @ConfigItem(defaultValue = "true")
@@ -61,6 +68,13 @@ public class HttpConfiguration {
      */
     @ConfigItem(defaultValue = "8444")
     public int testSslPort;
+
+    /**
+     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running
+     * to configure the test to use SSL.
+     */
+    @ConfigItem
+    public Optional<Boolean> testSslEnabled;
 
     /**
      * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled}

@@ -5,11 +5,13 @@ import java.util.function.BooleanSupplier;
 import jakarta.interceptor.Interceptor;
 
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
@@ -32,6 +34,11 @@ public class VertxBinderProcessor {
         public boolean getAsBoolean() {
             return METRIC_OPTIONS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder.vertx);
         }
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem unremoveableAdditionalHttpServerMetrics() {
+        return UnremovableBeanBuildItem.beanTypes(HttpServerMetricsTagsContributor.class);
     }
 
     @BuildStep

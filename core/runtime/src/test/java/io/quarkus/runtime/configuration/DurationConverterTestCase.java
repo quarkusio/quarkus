@@ -68,4 +68,18 @@ public class DurationConverterTestCase {
         Duration actualDuration = durationConverter.convert("2s");
         assertEquals(expectedDuration, actualDuration);
     }
+
+    @Test
+    public void testValuesWithMultipleUnits() {
+        Duration expectedDuration = Duration.ofSeconds(150);
+        Duration actualDuration = durationConverter.convert("2m30s");
+        assertEquals(expectedDuration, actualDuration);
+    }
+
+    @Test
+    public void testValuesWithMultipleUnitsSigned() {
+        Duration expectedDuration = Duration.ofSeconds(90);
+        Duration actualDuration = durationConverter.convert("+2m-30s");
+        assertEquals(expectedDuration, actualDuration);
+    }
 }

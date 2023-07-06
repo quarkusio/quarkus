@@ -48,6 +48,9 @@ import io.quarkus.micrometer.runtime.ClockProvider;
 import io.quarkus.micrometer.runtime.CompositeRegistryCreator;
 import io.quarkus.micrometer.runtime.MeterFilterConstraint;
 import io.quarkus.micrometer.runtime.MeterFilterConstraints;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizer;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraints;
 import io.quarkus.micrometer.runtime.MicrometerCounted;
 import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
@@ -62,6 +65,7 @@ public class MicrometerProcessor {
     private static final DotName METER_REGISTRY = DotName.createSimple(MeterRegistry.class.getName());
     private static final DotName METER_BINDER = DotName.createSimple(MeterBinder.class.getName());
     private static final DotName METER_FILTER = DotName.createSimple(MeterFilter.class.getName());
+    private static final DotName METER_REGISTRY_CUSTOMIZER = DotName.createSimple(MeterRegistryCustomizer.class.getName());
     private static final DotName NAMING_CONVENTION = DotName.createSimple(NamingConvention.class.getName());
 
     private static final DotName COUNTED_ANNOTATION = DotName.createSimple(Counted.class.getName());
@@ -105,12 +109,15 @@ public class MicrometerProcessor {
                 .setUnremovable()
                 .addBeanClass(ClockProvider.class)
                 .addBeanClass(CompositeRegistryCreator.class)
+                .addBeanClass(MeterRegistryCustomizer.class)
                 .build());
 
         // Add annotations and associated interceptors
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(MeterFilterConstraint.class)
                 .addBeanClass(MeterFilterConstraints.class)
+                .addBeanClass(MeterRegistryCustomizerConstraint.class)
+                .addBeanClass(MeterRegistryCustomizerConstraints.class)
                 .addBeanClass(TIMED_ANNOTATION.toString())
                 .addBeanClass(TIMED_INTERCEPTOR.toString())
                 .addBeanClass(COUNTED_ANNOTATION.toString())
@@ -136,7 +143,8 @@ public class MicrometerProcessor {
                         "org.HdrHistogram.ConcurrentHistogram")
                 .build());
 
-        return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, NAMING_CONVENTION);
+        return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, METER_REGISTRY_CUSTOMIZER,
+                NAMING_CONVENTION);
     }
 
     @BuildStep

@@ -2,32 +2,19 @@
 This document is maintained in the main Quarkus repository, and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-// meta:assemblies/assembly_configuring-your-quarkus-applications-using-a-yaml-file.adoc
 [id="config-yaml"]
 = Configure Quarkus applications by using a YAML file
 include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: core
-:summary: Use `application.yaml` instead of `application.properties`.
-:context: config-yaml-howto
+:summary: Optionally, you can configure your application properties with an `application.yaml` file instead of the default `application.properties` file.
 
-Optionally, you can configure properties for your application with a YAML-formatted file, `application.yaml`, instead of the default `application.properties` file.
-
-// meta:include::modules/con_overview-quarkus-configuration.adoc[leveloffset=+1]
-[id="con_overview_{context}"]
+[id="overview"]
 == Overview
 
-To configure properties in `application.yaml`, you define nested elements by using indentation and key-value pairs.
+This guide introduces the use of a YAML configuration file, `application.yaml`, as an alternative to the traditional `application.properties` file for application configuration. Functionality remains consistent across both formats.
 
-To make writing `application.yaml` easier, you can and paste snippets from some YAML configuration examples into your `application.yaml` file.
-
-You can set up _configuration profiles_  so that your application uses different values when you run it in production, development, test, or custom modes.
-
-Instead of hard coding property values, you can use _property expressions_ to resolve the values at compile time or run time.
-
-// WAS include::modules/proc_adding-yaml-configuration-support.adoc[leveloffset=+1]
-// meta:include::modules/proc_enabling_yaml_configuration.adoc[leveloffset=+1]
-[id="proc_enabling-yaml-configuration_{context}"]
+[id="proc_enabling-yaml-configuration"]
 == Enabling YAML configuration
 
 To enable support for a `application.yaml` file, add the `quarkus-config-yaml` extension to the `pom.xml` or `build.gradle` file in your project.
@@ -70,11 +57,10 @@ TIP: You can use the `yml` or `yaml` file extension.
 +
 NOTE: If both files are present, the values of properties in `application.yaml` override any duplicate properties in `application.properties`.
 
-// meta:include::modules/proc_using-nested-object-configuration-with-yaml.adoc[leveloffset=+2]
-[id="proc_using-nested-object-configuration-with-yaml_{context}"]
-== Using nested object configuration with YAML
+[id="proc_using-object-configuration-with-yaml"]
+== Using object configuration with YAML
 
-In the YAML configuration file, you can define a nested element inside an existing element to set configuration properties for your {project-name} application.
+In the YAML configuration file, you can define an element inside an existing element to set configuration properties for your {project-name} application.
 
 .Prerequisites
 
@@ -90,7 +76,7 @@ include::{includes}/prerequisites.adoc[]
 
 . Open the `src/main/resources/application.yaml` configuration file.
 
-. Add nested configuration properties to your `application.yaml` file.
+. Add configuration properties to your `application.yaml` file.
 +
 .Example configuration properties
 [source,yaml]
@@ -169,8 +155,6 @@ YAML does not support using tabs for indentation.
 
 === Additional examples of configuration properties
 
-
-
 [source, yaml]
 ----
 quarkus:
@@ -206,36 +190,35 @@ app:
               plain-text: true
 ----
 
-// CREATE include::modules/proc_using-configuration-profiles-with-yaml.adoc[leveloffset=+2]
-[id="proc_using-configuration-profiles-with-yaml_{context}"]
+[id="proc_using-configuration-profiles-with-yaml"]
 == Using configuration profiles with YAML
 
-You can use xref:config-reference.adoc#profiles[profiles] in YAML.
+As you can see in the previous snippet, you can use xref:config-reference.adoc#profiles[profiles] in YAML. The profile
+key requires double quotes: `"%test"`. This is because YAML does not support keys starting with `%`.
 
-Because YAML does not support names that start with `%`, you must enclose the names of the profiles' configuration keys between double quotes.
+Everything under the `"%test"` key is only enabled when the `test` profile is active. For example, in the previous
+snippet it disables OIDC (`quarkus.oidc.enabled: false`), whereas without the `test` profile, it would be enabled.
 
-For example, in `application.yaml`, you must use `"%dev"` or `"%test"` as the configuration keys to identify properties that you want your Quarkus project to use when you build and run it using the development or test profiles.
+As for the Java Properties format, you can define your own profile:
 
-.Example `application.yaml` with `prod` and `dev` profiles
 [source, yaml]
 ----
 quarkus:
   http:
     port: 8081
 
-"%dev":
+"%staging":
     quarkus:
         http:
           port: 8082
 ----
 
-With the preceding example, if you don't specify a profile, Quarkus runs the `prod` profile by default, and the HTTP port number is `8081`.
-If you enable the `dev` profile, the HTTP port number is `8082`.
+If you enable the `staging` profile, the HTTP port will be 8082, whereas it would be 8081 otherwise.
 
-The YAML configuration also supports profile-aware files.
-In this case, you keep the default `prod` properties in `application.yaml` and move the profile-specific properties to a separate file that you name `application-{profile}.yaml`; for example:
+The YAML configuration also support profile aware files. In this case, properties for a specific profile may reside in
+an `application-{profile}.yaml` named file. The previous example may be expressed as:
 
-.`application.yaml`
+.application.yaml
 [source, yaml]
 ----
 quarkus:
@@ -243,7 +226,7 @@ quarkus:
     port: 8081
 ----
 
-.`application-dev.yaml`
+.application-staging.yaml
 [source, yaml]
 ----
 quarkus:
@@ -251,47 +234,7 @@ quarkus:
     port: 8082
 ----
 
-// meta:include::modules/proc_setting-custom-configuration-profiles-with-yaml.adoc[leveloffset=+2]
-[id="proc_setting-custom-configuration-profiles-with-yaml_{context}"]
-== Setting custom configuration profiles with YAML
-
-With {project-name}, you can set configuration properties and values specific to your application's different configuration profiles.
-You can start your application with a specific profile to access a particular configuration.
-This procedure shows how you can configure a specific profile in YAML format.
-
-[TIP]
-====
-In YAML, you must place all strings that begin with a special character inside quotation marks.
-====
-
-.Prerequisites
-
-include::{includes}/prerequisites.adoc[]
-* A {project-name} Maven project configured to use a PostgreSQL data source with a JDBC data source driver.
-* The `quarkus-jdbc-postgresql` and `quarkus-config-yaml` extension as dependencies in your project's `pom.xml` or `build.gradle` file.
-
-.Procedure
-
-. Open the `src/main/resources/application.yaml` configuration file.
-
-. To add a profile-specific configuration, enclose the profile's configuration key between double quotes, and then list the key-value pairs.
-+
-.`src/main/resources/application.yaml`
-[source,yaml]
-----
-"%dev":
-  # Properties that configure the JDBC data source driver of your PostgreSQL data source
-  quarkus:
-    datasource:
-      url: jdbc:postgresql://localhost:5432/some-database
-      driver: org.postgresql.Driver
-      username: quarkus
-      password: quarkus
-----
-
-// WAS meta:include::modules/con_property-expressions.adoc[leveloffset=+1]
-// NEW meta:include::modules/proc_using-property-expressions.adoc[leveloffset=+1]
-[id="con_property-expressions_{context}"]
+[id="con_property-expressions"]
 == Using property expressions in a YAML file
 
 Property expressions are similar to variables: instead of hardcoding a property value, you can use a property expression.
@@ -309,7 +252,6 @@ If the value of a property in an expression cannot be resolved, and you did not 
 
 Property expressions have the `${property_name}` format.
 
-// DELETE meta:include::modules/ref_example-usage-of-property-expressions-using-a-yaml-file.adoc[leveloffset=+2]
 .Example property expressions in `application.yaml`
 
 This section shows examples of using property expressions to achieve flexibility when configuring your {project-name} application.
@@ -330,17 +272,15 @@ display:
 
 [NOTE]
 ====
-You can reference nested properties by using the `.` (dot) separator, as in `{x.factor}`.
+You can reference properties by using the `.` (dot) separator, as in `{x.factor}`.
 ====
 
 .Additional resources
 
-* For more information about property expressions, see xref:con_property-expressions_{context}[Property expressions].
+* For more information about property expressions, see xref:con_property-expressions[Property expressions].
 // * For an example of property expressions using a properties file, see link:{URL_CONFIGURATION_QUARKUS}#ref_example-usage-of-property-expressions_quarkus-configuration-guide[Example usage of property expressions]. // TBD update and enable this ^ link later when this guide becomes available
 
-// DELETE meta:include::modules/con_external-application-yaml-file-for-configuring-properties-at-runtime.adoc[leveloffset=+1]
-// CREATE meta:include::modules/proc_configure-properties-at-run-time-external-yaml.adoc[leveloffset=+1]
-[id="proc_configure-properties-at-run-time-external-yaml_{context}"]
+[id="proc_configure-properties-at-run-time-external-yaml"]
 == Configure properties at run time
 
 To configure properties at run time, you can create an external configuration file by placing an `application.yaml` file in the `config` directory.
@@ -367,10 +307,9 @@ include::{includes}/prerequisites.adoc[]
 
 .Additional resources
 
-* xref:proc_enabling-yaml-configuration_{context}[Enabling YAML configuration].
+* xref:proc_enabling-yaml-configuration[Enabling YAML configuration].
 
-//include::modules/proc_managing-configuration-key-conflicts.adoc[leveloffset=+1]
-[id="proc_managing-configuration-key-conflicts_{context}"]
+[id="proc_managing-configuration-key-conflicts"]
 == Managing configuration key conflicts
 
 Structured formats such as YAML only support a subset of the possible configuration namespace.

@@ -198,6 +198,9 @@ public class RuntimeDeploymentManager {
         if (interceptorDeployment.getGlobalInterceptorHandler() != null) {
             abortHandlingChain.add(interceptorDeployment.getGlobalInterceptorHandler());
         }
+        if (info.getPreExceptionMapperHandler() != null) {
+            abortHandlingChain.add(info.getPreExceptionMapperHandler());
+        }
         abortHandlingChain.add(new ExceptionHandler());
         abortHandlingChain.add(ResponseHandler.NO_CUSTOMIZER_INSTANCE);
         if (!interceptors.getContainerResponseFilters().getGlobalResourceInterceptors().isEmpty()) {

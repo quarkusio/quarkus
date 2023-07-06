@@ -85,8 +85,17 @@ public class BackChannelLogoutHandler {
                                                 .verifyLogoutJwtToken(encodedLogoutToken);
 
                                         if (verifyLogoutTokenClaims(result)) {
-                                            resolver.getBackChannelLogoutTokens().put(oidcTenantConfig.tenantId.get(),
-                                                    result);
+                                            String key = result.localVerificationResult
+                                                    .getString(oidcTenantConfig.logout.backchannel.logoutTokenKey);
+                                            BackChannelLogoutTokenCache tokens = resolver
+                                                    .getBackChannelLogoutTokens().get(oidcTenantConfig.tenantId.get());
+                                            if (tokens == null) {
+                                                tokens = new BackChannelLogoutTokenCache(oidcTenantConfig, context.vertx());
+                                                resolver.getBackChannelLogoutTokens().put(oidcTenantConfig.tenantId.get(),
+                                                        tokens);
+                                            }
+                                            tokens.addTokenVerification(key, result);
+
                                             if (resolver.isSecurityEventObserved()) {
                                                 resolver.getSecurityEvent().fire(
                                                         new SecurityEvent(Type.OIDC_BACKCHANNEL_LOGOUT_INITIATED,
@@ -122,15 +131,15 @@ public class BackChannelLogoutHandler {
                 LOG.debug("Back channel logout token does not have a valid 'events' claim");
                 return false;
             }
-            if (!result.localVerificationResult.containsKey(Claims.sub.name())
-                    && !result.localVerificationResult.containsKey(OidcConstants.BACK_CHANNEL_LOGOUT_SID_CLAIM)) {
-                LOG.debug("Back channel logout token does not have 'sub' or 'sid' claim");
+            if (!result.localVerificationResult.containsKey(oidcTenantConfig.logout.backchannel.logoutTokenKey)) {
+                LOG.debugf("Back channel logout token does not have %s", oidcTenantConfig.logout.backchannel.logoutTokenKey);
                 return false;
             }
             if (result.localVerificationResult.containsKey(Claims.nonce.name())) {
                 LOG.debug("Back channel logout token must not contain 'nonce' claim");
                 return false;
             }
+
             return true;
         }
 

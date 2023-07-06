@@ -121,16 +121,27 @@ export class HibernateSearchOrmElasticsearchIndexedEntitiesComponent extends Lit
                 const msg = response.result;
                 if (msg === "started") {
                     notifier.showInfoMessage("Requested reindexing of " + selected.length
-                            + " entity types for persistence unit '" + puName + "'.");
+                            + " entity types for persistence unit '" + this._escapeHTML(puName) + "'.");
                 } else if (msg === "success") {
                     notifier.showSuccessMessage("Successfully reindexed " + selected.length
-                            + " entity types for persistence unit '" + puName + "'.");
+                            + " entity types for persistence unit '" + this._escapeHTML(puName) + "'.");
                 } else {
                     notifier.showErrorMessage("An error occurred while reindexing " + selected.length
-                            + " entity types for persistence unit '" + puName + "':\n" + msg);
+                            + " entity types for persistence unit '" + this._escapeHTML(puName) + "':\n" + msg);
                 }
             });
     }
 
+    _escapeHTML(text) {
+        var fn=function(char) {
+            var replacementMap = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;'
+            };
+            return replacementMap[char] || char;
+        }
+        return text.replace(/[&<>]/g, fn);
+    }
 }
 customElements.define('hibernate-search-orm-elasticsearch-indexed-entity-types', HibernateSearchOrmElasticsearchIndexedEntitiesComponent);

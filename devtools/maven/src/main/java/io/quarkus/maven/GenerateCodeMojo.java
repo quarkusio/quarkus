@@ -16,6 +16,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -37,7 +38,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
     @Override
     protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
-        if (mavenProject().getPackaging().equals("pom")) {
+        if (mavenProject().getPackaging().equals(ArtifactCoords.TYPE_POM)) {
             getLog().info("Type of the artifact is POM, skipping build goal");
             return false;
         }
@@ -86,7 +87,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                     boolean.class);
             initAndRun.invoke(null, deploymentClassLoader, sourceParents,
                     generatedSourcesDir(test), buildDir().toPath(),
-                    sourceRegistrar, curatedApplication.getApplicationModel(), mavenProject().getProperties(),
+                    sourceRegistrar, curatedApplication.getApplicationModel(), getBuildSystemProperties(false),
                     launchMode.name(),
                     test);
         } catch (Exception any) {

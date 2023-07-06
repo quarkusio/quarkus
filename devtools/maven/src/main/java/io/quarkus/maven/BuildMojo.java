@@ -66,9 +66,19 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     @Parameter(defaultValue = "false", property = "quarkus.build.skip")
     boolean skip = false;
 
+    /**
+     * When the building an Uber JAR, the default JAR is renamed by adding {@code .original} suffix.
+     * Enabling this property will disable the renaming of the original JAR.
+     */
     @Deprecated
     @Parameter(property = "skipOriginalJarRename")
     boolean skipOriginalJarRename;
+
+    /**
+     * Whether to replace the original JAR with the Uber runner JAR as the main project artifact
+     */
+    @Parameter(property = "attachRunnerAsMainArtifact", required = false)
+    boolean attachRunnerAsMainArtifact;
 
     @Parameter(defaultValue = "${project.build.directory}", readonly = true)
     File buildDirectory;
@@ -161,11 +171,12 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }
-                            original.setFile(result.getJar().getOriginalArtifact().toFile());
+                            // unless we point to the renamed file the install plugin will fail
+                            original.setFile(renamedOriginal.toFile());
                         }
                     }
                     if (uberJarWithSuffix) {
-                        if (result.getJar().getClassifier().isEmpty()) {
+                        if (attachRunnerAsMainArtifact || result.getJar().getClassifier().isEmpty()) {
                             original.setFile(result.getJar().getPath().toFile());
                         } else {
                             projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),

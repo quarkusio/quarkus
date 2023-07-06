@@ -5,12 +5,14 @@ import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_URL;
+import static io.quarkus.it.opentelemetry.reactive.Utils.getExceptionEventData;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentId;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.stream.Collectors.toSet;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,6 +53,35 @@ public class OpenTelemetryReactiveTest {
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
+    }
+
+    @Test
+    void blockingException() {
+        given()
+                .when()
+                .get("/reactive/blockingException")
+                .then()
+                .statusCode(500);
+
+        assertExceptionRecorded();
+    }
+
+    @Test
+    void reactiveException() {
+        given()
+                .when()
+                .get("/reactive/reactiveException")
+                .then()
+                .statusCode(500);
+
+        assertExceptionRecorded();
+    }
+
+    private static void assertExceptionRecorded() {
+        await().atMost(5, TimeUnit.SECONDS).until(() -> getExceptionEventData().size() == 1);
+        assertThat(getExceptionEventData()).singleElement().satisfies(s -> {
+            assertThat(s).contains("dummy");
+        });
     }
 
     @Test

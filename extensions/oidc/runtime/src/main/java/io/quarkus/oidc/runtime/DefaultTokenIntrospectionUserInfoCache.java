@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntUnaryOperator;
 
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -168,19 +167,5 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
         public CacheEntry(UserInfo userInfo) {
             this.userInfo = userInfo;
         }
-    }
-
-    private static class IncrementOperator implements IntUnaryOperator {
-        int maxSize;
-
-        IncrementOperator(int maxSize) {
-            this.maxSize = maxSize;
-        }
-
-        @Override
-        public int applyAsInt(int n) {
-            return n < maxSize ? n + 1 : n;
-        }
-
     }
 }

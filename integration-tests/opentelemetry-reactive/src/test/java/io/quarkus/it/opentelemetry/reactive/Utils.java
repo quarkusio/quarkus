@@ -21,6 +21,11 @@ public final class Utils {
         });
     }
 
+    public static List<String> getExceptionEventData() {
+        return when().get("/exportExceptionMessages").body().as(new TypeRef<>() {
+        });
+    }
+
     public static Map<String, Object> getSpanByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
             Object parentSpanId) {
         List<Map<String, Object>> span = getSpansByKindAndParentId(spans, kind, parentSpanId);

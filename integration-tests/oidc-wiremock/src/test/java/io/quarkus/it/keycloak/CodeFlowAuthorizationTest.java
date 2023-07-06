@@ -144,9 +144,25 @@ public class CodeFlowAuthorizationTest {
             // Session is still active
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
-            // request a back channel logout
+            // ID token subject is `123456`
+            // request a back channel logout for some other subject
             RestAssured.given()
-                    .when().contentType(ContentType.URLENC).body("logout_token=" + OidcWiremockTestResource.getLogoutToken())
+                    .when().contentType(ContentType.URLENC)
+                    .body("logout_token=" + OidcWiremockTestResource.getLogoutToken("789"))
+                    .post("/back-channel-logout")
+                    .then()
+                    .statusCode(200);
+
+            // No logout:
+            page = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            assertEquals("alice", page.getBody().asNormalizedText());
+            // Session is still active
+            assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
+
+            // request a back channel logout for the same subject
+            RestAssured.given()
+                    .when().contentType(ContentType.URLENC).body("logout_token="
+                            + OidcWiremockTestResource.getLogoutToken("123456"))
                     .post("/back-channel-logout")
                     .then()
                     .statusCode(200);

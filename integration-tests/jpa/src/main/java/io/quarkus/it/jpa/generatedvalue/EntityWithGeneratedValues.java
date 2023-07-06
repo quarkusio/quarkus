@@ -11,6 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.CurrentTimestamp;
 import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.GeneratedColumn;
+import org.hibernate.annotations.TenantId;
 import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
@@ -18,6 +19,9 @@ public class EntityWithGeneratedValues {
     @Id
     @GeneratedValue
     public Integer id;
+
+    @TenantId
+    public String tenant;
 
     @CreationTimestamp
     public Instant creationTimestamp;

@@ -51,6 +51,11 @@
   <profiles>
     <profile>
       <id>native</id>
+      <activation>
+        <property>
+          <name>native</name>
+        </property>
+      </activation>
       <properties>
         <quarkus.package.type>native</quarkus.package.type>
       </properties>

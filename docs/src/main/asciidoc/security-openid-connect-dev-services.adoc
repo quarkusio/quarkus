@@ -13,10 +13,10 @@ It also describes Dev UI for all OpenID Connect providers which have already bee
 
 == Introduction
 
-Quarkus introduces an experimental `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode and when the integration tests are running in test mode, but only when no `quarkus.oidc.auth-server-url` property is configured.
+Quarkus provides `Dev Services For Keycloak` feature which is enabled by default when the `quarkus-oidc` extension is started in dev mode and when the integration tests are running in test mode, but only when no `quarkus.oidc.auth-server-url` property is configured.
 It starts a Keycloak container for both the dev and/or test modes and initializes them by registering the existing Keycloak realm or creating a new realm with the client and users for you to start developing your Quarkus application secured by Keycloak immediately. It will restart the container when the `application.properties` or the realm file changes have been detected.
 
-Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev-v1[/q/dev-v1] complements this feature with a Dev UI page which helps to acquire the tokens from Keycloak and test your Quarkus application.
+Additionally, xref:dev-ui.adoc[Dev UI] available at http://localhost:8080/q/dev[/q/dev] complements this feature with a Dev UI page which helps to acquire the tokens from Keycloak and test your Quarkus application.
 
 If `quarkus.oidc.auth-server-url` is already set then a generic OpenID Connect Dev Console which can be used with all OpenID Connect providers will be activated, please see <<dev-ui-all-oidc-providers,Dev UI for all OpenID Connect Providers>> for more information.
 
@@ -46,7 +46,7 @@ include::{includes}/devtools/dev.adoc[]
 
 [source,shell]
 ----
-2021-08-27 18:42:43,530 INFO  [io.qua.dev.com.ContainerLocator] (build-15) Dev Services container found: 48fee151a31ddfe32c39965be8f61108587b25ed2f66cdc18bb926d9e2e570c5 (quay.io/keycloak/keycloak:14.0.0). Connecting to: 0.0.0.0:32797.
+2021-08-27 18:42:43,530 INFO  [io.qua.dev.com.ContainerLocator] (build-15) Dev Services container found: 48fee151a31ddfe32c39965be8f61108587b25ed2f66cdc18bb926d9e2e570c5 (quay.io/keycloak/keycloak:21.0.2). Connecting to: 0.0.0.0:32797.
 2021-08-27 18:42:43,600 INFO  [io.qua.oid.dep.dev.key.KeycloakDevServicesProcessor] (build-15) Dev Services for Keycloak started.
 ...
 ----
@@ -58,7 +58,7 @@ It is possible that the Keycloak container does not become ready before the defa
 
 Note that you can disable sharing the containers with `quarkus.keycloak.devservices.shared=false`.
 
-Now open the main link:http://localhost:8080/q/dev-v1[Dev UI (v1) page], and you will see the `OpenID Connect Card` linking to a Keycloak page:
+Now open the main link:http://localhost:8080/q/dev[Dev UI page], and you will see the `OpenID Connect Card` linking to a Keycloak page:
 
 image::dev-ui-oidc-keycloak-card.png[alt=Dev UI OpenID Connect Card,role="center"]
 
@@ -133,7 +133,7 @@ You may need to register a redirect URI for the authorization code flow initiate
 
 If Keycloak does enforce it then you will see an authentication error informing you that the `redirect_uri` value is wrong.
 
-In this case select the `Keycloak Admin` option in the right top corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with and add `http://localhost:8080/q/dev-v1/io.quarkus.quarkus-oidc/provider` to `Valid Redirect URIs`. If you used `-Dquarkus.http.port` when starting Quarkus then change `8080` to the value of `quarkus.http.port`
+In this case select the `Keycloak Admin` option in the right top corner, login as `admin:admin`, select the test realm and the client which Dev UI for Keycloak is configured with and add `http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider` to `Valid Redirect URIs`. If you used `-Dquarkus.http.port` when starting Quarkus then change `8080` to the value of `quarkus.http.port`
 
 If the container is shared between multiple applications running on different ports then you will need to register `redirect_uri` values for each of these applications.
 
@@ -285,9 +285,19 @@ If `quarkus.oidc.auth-server-url` is already set then a generic OpenID Connect D
 [[dev-ui-all-oidc-providers]]
 == Dev UI for all OpenID Connect Providers
 
-If `quarkus.oidc.auth-server-url` points to an already started OpenID Connect provider (which can be Keycloak or other provider), `quarkus.oidc.auth-server-url` is set to `service` (which is a default value) and at least `quarkus.oidc.client-id` is set then `Dev UI for all OpenID Connect Providers` will be activated.
+If `quarkus.oidc.auth-server-url` points to an already started OpenID Connect provider (which can be Keycloak or other provider), `quarkus.oidc.auth-server-url` is set to `service` (which is a default value) or `hybrid` and at least `quarkus.oidc.client-id` is set then `Dev UI for all OpenID Connect Providers` will be activated.
 
 Setting `quarkus.oidc.credentials.secret` will mostly likely be required for Keycloak and other providers for the authorization code flow initiated from Dev UI to complete, unless the client identified with `quarkus.oidc.client-id` is configured as a public client in your OpenID Connect provider's administration console.
+
+For example, you can use Dev UI to test Google authentication with this configuration:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.application-type=hybrid
+quarkus.oidc.client-id=${google-client-id}
+quarkus.oidc.credentials.secret=${google-client-secret}
+----
 
 Run:
 
@@ -298,11 +308,11 @@ And you will see the following message:
 [source,shell]
 ----
 ...
-2021-09-07 15:53:42,697 INFO  [io.qua.oid.dep.dev.OidcDevConsoleProcessor] (build-41) OIDC Dev Console: discovering the provider metadata at http://localhost:8180/realms/quarkus/.well-known/openid-configuration
+2021-09-07 15:53:42,697 INFO  [io.qua.oid.dep.dev.OidcDevConsoleProcessor] (build-41) OIDC Dev Console: discovering the provider metadata at https://accounts.google.com/.well-known/openid-configuration
 ...
 ----
 
-If the provider metadata discovery has been successful then, after you open the main link:http://localhost:8080/q/dev-v1[Dev UI page], you will see the `OpenID Connect Card` page linking to `Dev Console`:
+If the provider metadata discovery has been successful then, after you open the main link:http://localhost:8080/q/dev[Dev UI page], you will see the following `OpenID Connect Card` referencing a `Google` provider:
 
 image::dev-ui-oidc-devconsole-card.png[alt=Generic Dev UI OpenID Connect Card,role="center"]
 

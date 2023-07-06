@@ -278,6 +278,14 @@ class VertxHttpProcessor {
             }
         }
 
+        /**
+         * To create mainrouter when `${quarkus.http.root-path}` is not {@literal /}
+         * Refer https://github.com/quarkusio/quarkus/issues/34261
+         */
+        if (!httpBuildTimeConfig.rootPath.equals("/") && !mainRouterCreated) {
+            mainRouter = recorder.initializeRouter(vertx.getVertx());
+        }
+
         if (frameworkRouterCreated) {
             if (redirectRoutes.size() > 0) {
                 recorder.setNonApplicationRedirectHandler(nonApplicationRootPath.getNonApplicationRootPath(),

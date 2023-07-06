@@ -371,6 +371,17 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .sign("privateKey.jwk");
     }
 
+    public static String getLogoutToken(String sub) {
+        return Jwt.issuer(TOKEN_ISSUER)
+                .audience(TOKEN_AUDIENCE)
+                .subject(sub)
+                .claim("events", createEventsClaim())
+                .claim("sid", "session-id")
+                .jws()
+                .keyId("1")
+                .sign("privateKey.jwk");
+    }
+
     private static JsonObject createEventsClaim() {
         return Json.createObjectBuilder().add("http://schemas.openid.net/event/backchannel-logout",
                 Json.createObjectBuilder().build()).build();

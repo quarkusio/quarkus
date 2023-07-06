@@ -64,7 +64,7 @@ public class DefaultTenantConfigResolver {
 
     private volatile boolean securityEventObserved;
 
-    private ConcurrentHashMap<String, TokenVerificationResult> backChannelLogoutTokens = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, BackChannelLogoutTokenCache> backChannelLogoutTokens = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void verifyResolvers() {
@@ -232,7 +232,7 @@ public class DefaultTenantConfigResolver {
         return enableHttpForwardedPrefix;
     }
 
-    public Map<String, TokenVerificationResult> getBackChannelLogoutTokens() {
+    public Map<String, BackChannelLogoutTokenCache> getBackChannelLogoutTokens() {
         return backChannelLogoutTokens;
     }
 

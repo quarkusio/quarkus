@@ -31,6 +31,14 @@
                 <groupId>org.apache.maven.resolver</groupId>
                 <artifactId>maven-resolver-connector-basic</artifactId>
               </exclusion>
+              <exclusion>
+                  <groupId>org.apache.maven.resolver</groupId>
+                  <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.apache.maven.wagon</groupId>
+                  <artifactId>*</artifactId>
+              </exclusion>
             </exclusions>
         </dependency>
         <dependency>

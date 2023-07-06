@@ -97,10 +97,12 @@
         <commons-lang3.version>3.12.0</commons-lang3.version>
         <commons-codec.version>1.16.0</commons-codec.version>
         <classmate.version>1.5.1</classmate.version>
-        <hibernate-orm.version>6.2.5.Final</hibernate-orm.version> <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below): -->
+        <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below),
+             as well as hibernate-orm.version-for-documentation in docs/pom.xml -->
+        <hibernate-orm.version>6.2.6.Final</hibernate-orm.version>
         <bytebuddy.version>1.12.18</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
-        <hibernate-reactive.version>2.0.1.Final</hibernate-reactive.version>
+        <hibernate-reactive.version>2.0.2.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <hibernate-search.version>6.1.7.Final</hibernate-search.version>
         <narayana.version>6.0.1.Final</narayana.version>
@@ -138,7 +140,7 @@
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.9.3</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.9.Final</infinispan.version>
+        <infinispan.version>14.0.11.Final</infinispan.version>
         <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.94.Final</netty.version>
@@ -160,7 +162,6 @@
         <kotlin.version>1.8.22</kotlin.version>
         <kotlin.coroutine.version>1.7.1</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
-        <kotlin.coroutine.version>1.6.4</kotlin.coroutine.version>
         <kotlin-serialization.version>1.5.1</kotlin-serialization.version>
         <dekorate.version>3.7.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>

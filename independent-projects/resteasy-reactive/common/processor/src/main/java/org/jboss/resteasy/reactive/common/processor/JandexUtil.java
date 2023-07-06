@@ -373,6 +373,20 @@ public final class JandexUtil {
      * @throws RuntimeException if one of the superclasses is not indexed.
      */
     public static boolean isImplementorOf(IndexView index, ClassInfo info, DotName name) {
+        return isImplementorOf(index, info, name, Collections.emptySet());
+    }
+
+    /**
+     * Returns true if the given Jandex ClassInfo is a subclass of or inherits the given <tt>name</tt>.
+     *
+     * @param index the index to use to look up super classes.
+     * @param info the ClassInfo we want to check.
+     * @param name the name of the superclass or interface we want to find.
+     * @param additionalIgnoredSuperClasses return false if the class has any of these as a superclass.
+     * @throws RuntimeException if one of the superclasses is not indexed.
+     */
+    public static boolean isImplementorOf(IndexView index, ClassInfo info, DotName name,
+            Set<DotName> additionalIgnoredSuperClasses) {
         // Check interfaces
         List<DotName> interfaceNames = info.interfaceNames();
         for (DotName interfaceName : interfaceNames) {
@@ -382,7 +396,9 @@ public final class JandexUtil {
         }
 
         // Check direct hierarchy
-        if (info.superName().equals(DOTNAME_OBJECT) || info.superName().equals(DOTNAME_RECORD)) {
+        DotName superDotName = info.superName();
+        if (superDotName.equals(DOTNAME_OBJECT) || superDotName.equals(DOTNAME_RECORD)
+                || additionalIgnoredSuperClasses.contains(superDotName)) {
             return false;
         }
         if (info.superName().equals(name)) {
@@ -393,10 +409,10 @@ public final class JandexUtil {
         Type superType = info.superClassType();
         ClassInfo superClass = index.getClassByName(superType.name());
         if (superClass == null) {
-            // this can happens if the parent is not inside the Jandex index
+            // this can happen if the parent is not inside the Jandex index
             throw new RuntimeException("The class " + superType.name() + " is not inside the Jandex index");
         }
-        return isImplementorOf(index, superClass, name);
+        return isImplementorOf(index, superClass, name, additionalIgnoredSuperClasses);
     }
 
 }

@@ -15,6 +15,7 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.*;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.BLOCKING;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REQUEST_SCOPED;
 import static org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner.BUILTIN_HTTP_ANNOTATIONS_TO_METHOD;
@@ -523,7 +524,7 @@ class RestClientReactiveProcessor {
         for (AnnotationInstance registerBlockingClass : registerBlockingClasses) {
             AnnotationTarget target = registerBlockingClass.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS
-                    && isImplementorOf(index, target.asClass(), RESPONSE_EXCEPTION_MAPPER)) {
+                    && isImplementorOf(index, target.asClass(), RESPONSE_EXCEPTION_MAPPER, Set.of(APPLICATION))) {
                 // Watch for @Blocking annotations in classes that implements ResponseExceptionMapper:
                 blockingClassNames.add(target.asClass().toString());
             } else if (target.kind() == AnnotationTarget.Kind.METHOD

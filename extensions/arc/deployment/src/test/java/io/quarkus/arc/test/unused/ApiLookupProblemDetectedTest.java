@@ -31,7 +31,7 @@ public class ApiLookupProblemDetectedTest {
                 Formatter fmt = new PatternFormatter("%m");
                 String message = fmt.format(warning);
                 assertTrue(message.contains(
-                        "Stack frame: io.quarkus.arc.test.unused.ApiLookupProblemDetectedTest.testWarning"),
+                        "Stack frame: runtime//io.quarkus.arc.test.unused.ApiLookupProblemDetectedTest.testWarning"),
                         message);
                 assertTrue(message.contains(
                         "Required type: class io.quarkus.arc.test.unused.ApiLookupProblemDetectedTest$Alpha"),

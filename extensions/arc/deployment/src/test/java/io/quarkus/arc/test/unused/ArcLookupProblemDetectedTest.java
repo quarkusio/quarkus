@@ -32,7 +32,7 @@ public class ArcLookupProblemDetectedTest {
                 Formatter fmt = new PatternFormatter("%m");
                 String message = fmt.format(warning);
                 assertTrue(message.contains(
-                        "Stack frame: io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest"),
+                        "Stack frame: runtime//io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest"),
                         message);
                 assertTrue(message.contains(
                         "Required type: class io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest$Alpha"),

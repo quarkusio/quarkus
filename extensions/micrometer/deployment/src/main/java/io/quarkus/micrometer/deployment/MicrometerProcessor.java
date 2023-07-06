@@ -32,6 +32,7 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -163,12 +164,11 @@ public class MicrometerProcessor {
     }
 
     @BuildStep
+    @Consume(BeanContainerBuildItem.class)
     @Record(ExecutionTime.STATIC_INIT)
     RootMeterRegistryBuildItem createRootRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        // BeanContainerBuildItem is present to indicate we call this after Arc is initialized
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
         RuntimeValue<MeterRegistry> registry = recorder.createRootRegistry(config,
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
@@ -177,11 +177,10 @@ public class MicrometerProcessor {
     }
 
     @BuildStep
+    @Consume(RootMeterRegistryBuildItem.class)
     @Record(ExecutionTime.STATIC_INIT)
     void registerExtensionMetrics(MicrometerRecorder recorder,
-            RootMeterRegistryBuildItem rootMeterRegistryBuildItem,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems) {
-        // RootMeterRegistryBuildItem is present to indicate we call this after the root registry has been initialized
 
         for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
             if (item != null && item.executionTime() == ExecutionTime.STATIC_INIT) {
@@ -191,15 +190,14 @@ public class MicrometerProcessor {
     }
 
     @BuildStep
+    @Consume(RootMeterRegistryBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureRegistry(MicrometerRecorder recorder,
             MicrometerConfig config,
-            RootMeterRegistryBuildItem rootMeterRegistryBuildItem,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
             List<MicrometerRegistryProviderBuildItem> providerClasses,
             ShutdownContextBuildItem shutdownContextBuildItem) {
-        // RootMeterRegistryBuildItem is present to indicate we call this after the root registry has been initialized
 
         Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {

@@ -12,6 +12,8 @@ import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.Quarkus;
@@ -20,6 +22,7 @@ import io.quarkus.runtime.annotations.PreStart;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.init.InitRuntimeConfig;
 import io.quarkus.runtime.util.PatternUtil;
+import io.quarkus.runtime.util.StringUtil;
 
 /**
  * A {@link Recorder} that deals with initialization tasks.
@@ -30,6 +33,7 @@ import io.quarkus.runtime.util.PatternUtil;
 public class InitTaskRecorder {
 
     private static final String QUARKUS_INIT_AND_EXIT = "quarkus.init-and-exit";
+    private static final String UNAMED = "";
     private final RuntimeValue<InitRuntimeConfig> config;
 
     public InitTaskRecorder(RuntimeValue<InitRuntimeConfig> config) {
@@ -47,6 +51,14 @@ public class InitTaskRecorder {
 
         BeanManager beanManager = Arc.container().beanManager();
         Set<Bean<?>> beans = beanManager.getBeans(Runnable.class, PreStart.Literal.forName(taskName));
+        if (beans.isEmpty()) {
+            // If no bean found, then let's check task with no explicit name.
+            // Such tasks by convention are named after the bearing class.
+            beans = beanManager.getBeans(Runnable.class, PreStart.Literal.forName(UNAMED));
+            beans = beans.stream()
+                    .filter(b -> beanToTaskName(b).equalsIgnoreCase(taskName))
+                    .collect(Collectors.toSet());
+        }
         for (Bean<?> bean : beans) {
             Bean<Runnable> runnableBean = (Bean<Runnable>) bean;
             CreationalContext<Runnable> ctx = beanManager.createCreationalContext(runnableBean);
@@ -84,5 +96,10 @@ public class InitTaskRecorder {
             System.err.println(waitErrorMessage);
         }
         throw supplier.get();
+    }
+
+    private static String beanToTaskName(Bean<?> bean) {
+        //Get class name, strip prefix of generated runnables and hyphenate
+        return StringUtil.hyphenate(bean.getBeanClass().getSimpleName().replaceAll("_GeneratedRunnable", ""));
     }
 }

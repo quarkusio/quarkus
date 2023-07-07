@@ -37,6 +37,7 @@ class JaxRsResourceImplementor {
 
     private static final Logger LOGGER = Logger.getLogger(JaxRsResourceImplementor.class);
     private static final String OPENAPI_TAG_ANNOTATION = "org.eclipse.microprofile.openapi.annotations.tags.Tag";
+    private static final String WITH_SESSION_ON_DEMAND_ANNOTATION = "io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand";
 
     private final List<MethodImplementor> methodImplementors;
 
@@ -106,6 +107,9 @@ class JaxRsResourceImplementor {
             for (AnnotationInstance classAnnotation : resourceProperties.getClassAnnotations()) {
                 classCreator.addAnnotation(classAnnotation);
             }
+        }
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+            classCreator.addAnnotation(WITH_SESSION_ON_DEMAND_ANNOTATION);
         }
     }
 

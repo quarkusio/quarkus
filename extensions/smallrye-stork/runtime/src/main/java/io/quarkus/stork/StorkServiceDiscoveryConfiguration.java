@@ -3,25 +3,24 @@ package io.quarkus.stork;
 import java.util.Map;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithParentName;
 
 @ConfigGroup
-public class StorkServiceDiscoveryConfiguration {
+public interface StorkServiceDiscoveryConfiguration {
 
     /**
      * Configures the service discovery type, e.g. "consul".
      * ServiceDiscoveryProvider for the type has to be available
      *
      */
-    @ConfigItem
-    public String type;
+    String type();
 
     /**
      * ServiceDiscovery parameters.
      * Check the documentation of the selected service discovery type for available parameters.
      *
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, String> params;
+    @WithParentName
+    Map<String, String> params();
 
 }

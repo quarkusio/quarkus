@@ -66,7 +66,7 @@ public class KubernetesWithFlywayInitTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo("init");
+                            assertThat(container.getName()).isEqualTo("wait-for-kubernetes-with-flyway-flyway-init-task");
                             assertThat(container.getImage()).isEqualTo("groundnuty/k8s-wait-for:no-root-v1.7");
                         });
 
@@ -77,16 +77,13 @@ public class KubernetesWithFlywayInitTest {
                                         assertThat(env.getValue()).isEqualTo("true");
                                     });
                         });
-                        assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo("wait-for-flyway-init-task");
-                        });
                     });
                 });
             });
         });
 
         Optional<Job> job = kubernetesList.stream()
-                .filter(j -> "Job".equals(j.getKind()) && (NAME + "-flyway-init").equals(j.getMetadata().getName()))
+                .filter(j -> "Job".equals(j.getKind()) && (NAME + "-flyway-init-task").equals(j.getMetadata().getName()))
                 .map(j -> (Job) j)
                 .findAny();
         assertTrue(job.isPresent());
@@ -98,11 +95,7 @@ public class KubernetesWithFlywayInitTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getRestartPolicy()).isEqualTo("OnFailure");
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo(NAME + "-flyway-init");
-                            assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))
-                                    .singleElement().satisfies(env -> {
-                                        assertThat(env.getValue()).isEqualTo("true");
-                                    });
+                            assertThat(container.getName()).isEqualTo(NAME + "-flyway-init-task");
                             assertThat(container.getEnv())
                                     .filteredOn(env -> "QUARKUS_INIT_AND_EXIT".equals(env.getName())).singleElement()
                                     .satisfies(env -> {

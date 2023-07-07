@@ -698,7 +698,7 @@ public class UriBuilderTest {
             Boolean pass = true;
             String name = "name";
             StringBuffer sb = new StringBuffer();
-            String expected_value = "http://localhost:8080?name=x%3D&name=y?&name=x+y&name=%26";
+            String expected_value = "http://localhost:8080?name=x%3D&name=y%3F&name=x+y&name=%26";
             URI uri;
 
             try {

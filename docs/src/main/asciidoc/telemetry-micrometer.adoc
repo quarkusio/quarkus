@@ -519,8 +519,12 @@ For example, setting
 By default, the  metrics are exported using the Prometheus format `application/openmetrics-text`,
 you can revert to the former format by specifying the `Accept` request header to `text/plain` (`curl -H "Accept: text/plain" localhost:8080/q/metrics/`).
 
+== Customizing Micrometer
+
+Quarkus provides a variety of way to customize Micrometer.
+
 [[meter-filter]]
-== Use `MeterFilter` to customize emitted tags and metrics
+=== Use `MeterFilter` to customize emitted tags and metrics
 
 Micrometer uses `MeterFilter` instances to customize the metrics emitted by `MeterRegistry` instances.
 The Micrometer extension will detect `MeterFilter` CDI beans and use them when initializing `MeterRegistry`
@@ -579,6 +583,15 @@ to all `MeterRegistry` instances.
 An application configuration property is also injected and used as a tag value.
 Additional examples of MeterFilters can be found in the
 link:https://micrometer.io/docs/concepts[official documentation].
+
+=== Use `HttpServerMetricsTagsContributor` for server HTTP requests
+
+By providing CDI beans that implement `io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor`, user code can contribute arbitrary tags based on the details of HTTP request
+
+=== Use `MeterRegistryCustomizer` for arbitrary customizations to meter registries
+
+By providing CDI beans that implement `io.quarkus.micrometer.runtime.MeterRegistryCustomizer` user code has the change to change the configuration of any `MeterRegistry` that has been activated.
+Unless an implementation is annotated with `@io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint`, the customization applies to all `MeterRegistry` instances.
 
 [[annotations]]
 == Does Micrometer support annotations?

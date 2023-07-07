@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.runtime;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -66,25 +67,14 @@ public class MicrometerRecorder {
         BeanManager beanManager = Arc.container().beanManager();
 
         Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(registryClasses.size());
-
-        // Find global/common registry configuration
         List<MeterFilter> globalFilters = new ArrayList<>();
-        Instance<MeterFilter> globalFilterInstance = beanManager.createInstance()
-                .select(MeterFilter.class, Default.Literal.INSTANCE);
-        populateListWithMeterFilters(globalFilterInstance, globalFilters);
-        log.debugf("Discovered global MeterFilters : %s", globalFilters);
+        populateMeterFilters(registryClasses, beanManager, classMeterFilters, globalFilters);
 
-        // Find MeterFilters for specific registry classes, i.e.:
-        // @MeterFilterConstraint(applyTo = DatadogMeterRegistry.class) Instance<MeterFilter> filters
-        log.debugf("Configuring Micrometer registries : %s", registryClasses);
-        for (Class<? extends MeterRegistry> typeClass : registryClasses) {
-            Instance<MeterFilter> classFilterInstance = beanManager.createInstance()
-                    .select(MeterFilter.class, new MeterFilterConstraint.Literal(typeClass));
-            List<MeterFilter> classFilters = classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>());
-
-            populateListWithMeterFilters(classFilterInstance, classFilters);
-            log.debugf("Discovered MeterFilters for %s: %s", typeClass, classFilters);
-        }
+        Map<Class<? extends MeterRegistry>, List<MeterRegistryCustomizer>> classMeterRegistryCustomizers = new HashMap<>(
+                registryClasses.size());
+        List<MeterRegistryCustomizer> globalMeterRegistryCustomizers = new ArrayList<>();
+        populateMeterRegistryCustomizers(registryClasses, beanManager, classMeterRegistryCustomizers,
+                globalMeterRegistryCustomizers);
 
         // Find and configure MeterRegistry beans (includes runtime config)
         Set<Bean<?>> beans = new HashSet<>(beanManager.getBeans(MeterRegistry.class, Any.Literal.INSTANCE));
@@ -92,6 +82,7 @@ public class MicrometerRecorder {
 
         // Apply global filters to the global registry
         applyMeterFilters(Metrics.globalRegistry, globalFilters);
+        applyMeterRegistryCustomizers(Metrics.globalRegistry, globalMeterRegistryCustomizers);
 
         for (Bean<?> i : beans) {
             MeterRegistry registry = (MeterRegistry) beanManager
@@ -100,8 +91,17 @@ public class MicrometerRecorder {
             // Add & configure non-root registries
             if (registry != Metrics.globalRegistry && registry != null) {
                 applyMeterFilters(registry, globalFilters);
-                applyMeterFilters(registry, classMeterFilters.get(registry.getClass()));
-                log.debugf("Adding configured registry %s", registry.getClass(), registry);
+                Class<?> registryClass = registry.getClass();
+                applyMeterFilters(registry, classMeterFilters.get(registryClass));
+
+                var classSpecificCustomizers = classMeterRegistryCustomizers.get(registryClass);
+                var newList = new ArrayList<MeterRegistryCustomizer>(
+                        globalMeterRegistryCustomizers.size() + classSpecificCustomizers.size());
+                newList.addAll(globalMeterRegistryCustomizers);
+                newList.addAll(classSpecificCustomizers);
+                applyMeterRegistryCustomizers(registry, newList);
+
+                log.debugf("Adding configured registry %s", registryClass, registry);
                 Metrics.globalRegistry.add(registry);
             }
         }
@@ -152,9 +152,53 @@ public class MicrometerRecorder {
         });
     }
 
-    void populateListWithMeterFilters(Instance<MeterFilter> filterInstance, List<MeterFilter> meterFilters) {
+    private void populateMeterFilters(Set<Class<? extends MeterRegistry>> registryClasses, BeanManager beanManager,
+            Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters,
+            List<MeterFilter> globalFilters) {
+        // Find global/common registry configuration
+        Instance<MeterFilter> globalFilterInstance = beanManager.createInstance()
+                .select(MeterFilter.class, Default.Literal.INSTANCE);
+        populateList(globalFilterInstance, globalFilters);
+        log.debugf("Discovered global MeterFilters : %s", globalFilters);
+
+        // Find MeterFilters for specific registry classes, i.e.:
+        // @MeterFilterConstraint(applyTo = DatadogMeterRegistry.class) Instance<MeterFilter> filters
+        for (Class<? extends MeterRegistry> typeClass : registryClasses) {
+            Instance<MeterFilter> classFilterInstance = beanManager.createInstance()
+                    .select(MeterFilter.class, new MeterFilterConstraint.Literal(typeClass));
+            List<MeterFilter> classFilters = classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>());
+
+            populateList(classFilterInstance, classFilters);
+            log.debugf("Discovered MeterFilters for %s: %s", typeClass, classFilters);
+        }
+    }
+
+    private void populateMeterRegistryCustomizers(Set<Class<? extends MeterRegistry>> registryClasses, BeanManager beanManager,
+            Map<Class<? extends MeterRegistry>, List<MeterRegistryCustomizer>> classMeterRegistryCustomizers,
+            List<MeterRegistryCustomizer> globalMeterRegistryCustomizers) {
+        // Find global/common registry configuration
+        Instance<MeterRegistryCustomizer> globalFilterInstance = beanManager.createInstance()
+                .select(MeterRegistryCustomizer.class, Default.Literal.INSTANCE);
+        populateList(globalFilterInstance, globalMeterRegistryCustomizers);
+        log.debugf("Discovered global MeterRegistryCustomizer : %s", globalMeterRegistryCustomizers);
+
+        // Find MeterRegistryCustomizers for specific registry classes, i.e.:
+        // @MeterRegistryCustomizerConstraint(applyTo = DatadogMeterRegistryCustomizer.class) Instance<MeterRegistryCustomizer> customizers
+        log.debugf("Configuring Micrometer registries : %s", registryClasses);
+        for (Class<? extends MeterRegistry> typeClass : registryClasses) {
+            Instance<MeterRegistryCustomizer> classFilterInstance = beanManager.createInstance()
+                    .select(MeterRegistryCustomizer.class, new MeterRegistryCustomizerConstraint.Literal(typeClass));
+            List<MeterRegistryCustomizer> classFilters = classMeterRegistryCustomizers.computeIfAbsent(typeClass,
+                    k -> new ArrayList<>());
+
+            populateList(classFilterInstance, classFilters);
+            log.debugf("Discovered MeterRegistryCustomizer for %s: %s", typeClass, classFilters);
+        }
+    }
+
+    private <T> void populateList(Instance<T> filterInstance, List<T> meterFilters) {
         if (!filterInstance.isUnsatisfied()) {
-            for (MeterFilter filter : filterInstance) {
+            for (T filter : filterInstance) {
                 // @Produces methods can return null, and those will turn up here.
                 if (filter != null) {
                     meterFilters.add(filter);
@@ -163,10 +207,19 @@ public class MicrometerRecorder {
         }
     }
 
-    void applyMeterFilters(MeterRegistry registry, List<MeterFilter> filters) {
+    private void applyMeterFilters(MeterRegistry registry, List<MeterFilter> filters) {
         if (filters != null) {
             for (MeterFilter meterFilter : filters) {
                 registry.config().meterFilter(meterFilter);
+            }
+        }
+    }
+
+    private void applyMeterRegistryCustomizers(MeterRegistry registry, List<MeterRegistryCustomizer> customizers) {
+        if ((customizers != null) && !customizers.isEmpty()) {
+            Collections.sort(customizers);
+            for (MeterRegistryCustomizer customizer : customizers) {
+                customizer.customize(registry);
             }
         }
     }

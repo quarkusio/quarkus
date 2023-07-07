@@ -105,7 +105,7 @@
         <hibernate-reactive.version>2.0.4.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <!-- When updating, align hibernate-search.version-for-documentation in docs/pom.xml -->
-        <hibernate-search.version>6.2.0.CR1</hibernate-search.version>
+        <hibernate-search.version>6.2.0.Final</hibernate-search.version>
         <narayana.version>6.0.1.Final</narayana.version>
         <agroal.version>2.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>

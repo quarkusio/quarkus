@@ -1,4 +1,16 @@
 
+// Configure build scan publication
+boolean publish = true
+if(session?.getRequest()?.getBaseDirectory() != null) {
+    def testBuildPaths = [ '/target/codestart-test/', '/target/it/', '/target/test-classes/', '/target/test-project/']
+    publish = testBuildPaths.every {testBuildPath -> !session.getRequest().getBaseDirectory().contains(testBuildPath) }
+    if(!publish) {
+        // do not publish a build scan for test builds
+        log.debug("Disabling build scan publication for " + session.getRequest().getBaseDirectory())
+    }
+}
+buildScan.publishAlwaysIf(publish)
+buildScan.publishIfAuthenticated()
 
 // Add mvn command line
 def mvnCommand = ''

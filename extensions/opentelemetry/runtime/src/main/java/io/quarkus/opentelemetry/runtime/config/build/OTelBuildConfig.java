@@ -29,7 +29,7 @@ public interface OTelBuildConfig {
      * Defaults to <code>true</code>.
      */
     @Deprecated // TODO only use runtime (soon)
-    @WithDefault("true")
+    @WithDefault("${quarkus.opentelemetry.enabled:true}")
     boolean enabled();
 
     /**

@@ -347,7 +347,6 @@
                 <module>devmode</module>
                 <module>ide-launcher</module>
                 <module>elasticsearch-rest-client</module>
-                <module>elasticsearch-rest-high-level-client</module>
                 <module>elasticsearch-java-client</module>
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>

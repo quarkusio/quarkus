@@ -652,19 +652,6 @@
     "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client::jar:2.0.3.Final",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
-    "name" : "Elasticsearch REST High Level Client",
-    "description" : "Connect to an Elasticsearch cluster using the REST high level client",
-    "metadata" : {
-      "keywords" : [ "elasticsearch", "full text", "search" ],
-      "guide" : "https://quarkus.io/guides/elasticsearch",
-      "categories" : [ "data" ],
-      "status" : "preview",
-      "built-with-quarkus-core" : "2.0.3.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-elasticsearch-rest-client", "io.quarkus:quarkus-arc" ]
-    },
-    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar:2.0.3.Final",
-    "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
-  }, {
     "name" : "Elytron Security Common",
     "description" : "Common components to secure your applications via Elytron",
     "metadata" : {
@@ -4043,7 +4030,7 @@
       "categories" : [ "integration" ],
       "status" : [ "stable" ],
       "built-with-quarkus-core" : "2.0.0.Final",
-      "extension-dependencies" : [ "io.quarkus:quarkus-elasticsearch-rest-client::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-elasticsearch-rest-client-common::jar", "io.quarkus:quarkus-apache-httpclient::jar", "io.quarkus:quarkus-arc::jar", "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar", "org.apache.camel.quarkus:camel-quarkus-core::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar" ]
+      "extension-dependencies" : [ "io.quarkus:quarkus-elasticsearch-rest-client::jar", "io.quarkus:quarkus-core::jar", "io.quarkus:quarkus-elasticsearch-rest-client-common::jar", "io.quarkus:quarkus-apache-httpclient::jar", "io.quarkus:quarkus-arc::jar", "org.apache.camel.quarkus:camel-quarkus-core::jar", "org.apache.camel.quarkus:camel-quarkus-support-common::jar" ]
     },
     "artifact" : "org.apache.camel.quarkus:camel-quarkus-elasticsearch-rest::jar:2.0.0",
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]

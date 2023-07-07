@@ -19,10 +19,8 @@ Quarkus provides two ways of accessing Elasticsearch:
 
 [WARNING]
 ====
-A third Quarkus extension for the "high level REST Client" exists, but is deprecated and will be removed in a future version,
-as this client has been deprecated by Elastic and has some licensing issues.
-
-It is highly recommended to upgrade to the new Elasticsearch Java client extension.
+A third Quarkus extension for the "high level REST Client" used to exist,
+but was removed as this client has been deprecated by Elastic and has some licensing issues.
 ====
 
 == Prerequisites

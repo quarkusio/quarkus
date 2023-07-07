@@ -247,23 +247,6 @@
     "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client::jar:999-SNAPSHOT",
     "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
   }, {
-    "name" : "Elasticsearch REST High Level Client",
-    "description" : "Connect to an Elasticsearch cluster using the REST high level client",
-    "metadata" : {
-      "keywords" : [ "elasticsearch", "full text", "search" ],
-      "guide" : "https://quarkus.io/guides/elasticsearch",
-      "categories" : [ "data" ],
-      "status" : "preview",
-      "config" : [ "quarkus.elasticsearch." ],
-      "built-with-quarkus-core" : "999-SNAPSHOT",
-      "capabilities" : {
-        "provides" : [ "io.quarkus.elasticsearch-rest-high-level-client" ]
-      },
-      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-elasticsearch-rest-client", "io.quarkus:quarkus-arc" ]
-    },
-    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar:999-SNAPSHOT",
-    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
-  }, {
     "name" : "Security",
     "description" : "Security",
     "metadata" : {

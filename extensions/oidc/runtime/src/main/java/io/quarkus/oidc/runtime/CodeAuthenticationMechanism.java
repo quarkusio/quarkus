@@ -275,30 +275,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(currentIdToken,
                                         isInternalIdToken(currentIdToken, configContext)))
-                                .call(new Function<SecurityIdentity, Uni<?>>() {
-                                    @Override
-                                    public Uni<Void> apply(SecurityIdentity identity) {
-                                        if (isLogout(context, configContext)) {
-                                            LOG.debug("Performing an RP initiated logout");
-                                            fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
-                                            return buildLogoutRedirectUriUni(context, configContext,
-                                                    session.getIdToken());
-                                        }
-                                        if (isBackChannelLogoutPendingAndValid(configContext, identity)
-                                                || isFrontChannelLogoutValid(context, configContext,
-                                                        identity)) {
-                                            return removeSessionCookie(context, configContext.oidcConfig)
-                                                    .map(new Function<Void, Void>() {
-                                                        @Override
-                                                        public Void apply(Void t) {
-                                                            throw new LogoutException();
-                                                        }
-                                                    });
-
-                                        }
-                                        return VOID_UNI;
-                                    }
-                                }).onFailure()
+                                .call(new LogoutCall(context, configContext, session.getIdToken())).onFailure()
                                 .recoverWithUni(new Function<Throwable, Uni<? extends SecurityIdentity>>() {
                                     @Override
                                     public Uni<? extends SecurityIdentity> apply(Throwable t) {
@@ -344,26 +321,35 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     session.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, false, null);
-                                        } else if (session.getRefreshToken() != null) {
-                                            // Token has nearly expired, try to refresh
-                                            LOG.debug("Token auto-refresh is starting");
-                                            return refreshSecurityIdentity(configContext,
-                                                    currentIdToken,
-                                                    session.getRefreshToken(),
-                                                    context,
-                                                    identityProviderManager, true,
-                                                    ((TokenAutoRefreshException) t).getSecurityIdentity());
                                         } else {
-                                            LOG.debug(
-                                                    "Token auto-refresh is required but is not possible because the refresh token is null");
-                                            // Auto-refreshing is not possible, just continue with the current security identity
+                                            // Token auto-refresh, security identity is still valid
                                             SecurityIdentity currentIdentity = ((TokenAutoRefreshException) t)
                                                     .getSecurityIdentity();
-                                            if (currentIdentity != null) {
-                                                return Uni.createFrom().item(currentIdentity);
+                                            if (isLogout(context, configContext, currentIdentity)) {
+                                                // No need to refresh the token since the user is requesting a logout
+                                                return Uni.createFrom().item(currentIdentity).call(
+                                                        new LogoutCall(context, configContext, session.getIdToken()));
+                                            }
+
+                                            if (session.getRefreshToken() != null) {
+                                                // Token has nearly expired, try to refresh
+                                                LOG.debug("Token auto-refresh is starting");
+                                                return refreshSecurityIdentity(configContext,
+                                                        currentIdToken,
+                                                        session.getRefreshToken(),
+                                                        context,
+                                                        identityProviderManager, true,
+                                                        currentIdentity);
                                             } else {
-                                                return Uni.createFrom()
-                                                        .failure(new AuthenticationFailedException(t.getCause()));
+                                                LOG.debug(
+                                                        "Token auto-refresh is required but is not possible because the refresh token is null");
+                                                // Auto-refreshing is not possible, just continue with the current security identity
+                                                if (currentIdentity != null) {
+                                                    return Uni.createFrom().item(currentIdentity);
+                                                } else {
+                                                    return Uni.createFrom()
+                                                            .failure(new AuthenticationFailedException(t.getCause()));
+                                                }
                                             }
                                         }
                                     }
@@ -388,8 +374,31 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return token;
     }
 
-    private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, SecurityIdentity identity) {
+    private boolean isLogout(RoutingContext context, TenantConfigContext configContext, SecurityIdentity identity) {
+        return isRpInitiatedLogout(context, configContext) || isBackChannelLogoutPending(configContext, identity)
+                || isFrontChannelLogoutValid(context, configContext, identity);
+    }
 
+    private boolean isBackChannelLogoutPending(TenantConfigContext configContext, SecurityIdentity identity) {
+        if (configContext.oidcConfig.logout.backchannel.path.isEmpty()) {
+            return false;
+        }
+        BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
+                .get(configContext.oidcConfig.getTenantId().get());
+        if (tokens != null) {
+            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+
+            String logoutTokenKeyValue = idTokenJson.getString(configContext.oidcConfig.logout.backchannel.getLogoutTokenKey());
+
+            return tokens.containsTokenVerification(logoutTokenKeyValue);
+        }
+        return false;
+    }
+
+    private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, SecurityIdentity identity) {
+        if (configContext.oidcConfig.logout.backchannel.path.isEmpty()) {
+            return false;
+        }
         BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
                 .get(configContext.oidcConfig.getTenantId().get());
         if (tokens != null) {
@@ -1014,7 +1023,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .toString();
     }
 
-    private boolean isLogout(RoutingContext context, TenantConfigContext configContext) {
+    private boolean isRpInitiatedLogout(RoutingContext context, TenantConfigContext configContext) {
         return isEqualToRequestPath(configContext.oidcConfig.logout.path, context, configContext);
     }
 
@@ -1204,5 +1213,39 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return cookieSuffixConfigured
                 ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication.cookieSuffix.get())
                 : tenantIdSuffix;
+    }
+
+    private class LogoutCall implements Function<SecurityIdentity, Uni<?>> {
+        RoutingContext context;
+        TenantConfigContext configContext;
+        String idToken;
+
+        LogoutCall(RoutingContext context, TenantConfigContext configContext, String idToken) {
+            this.context = context;
+            this.configContext = configContext;
+            this.idToken = idToken;
+        }
+
+        @Override
+        public Uni<Void> apply(SecurityIdentity identity) {
+            if (isRpInitiatedLogout(context, configContext)) {
+                LOG.debug("Performing an RP initiated logout");
+                fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
+                return buildLogoutRedirectUriUni(context, configContext, idToken);
+            }
+            if (isBackChannelLogoutPendingAndValid(configContext, identity)
+                    || isFrontChannelLogoutValid(context, configContext,
+                            identity)) {
+                return removeSessionCookie(context, configContext.oidcConfig)
+                        .map(new Function<Void, Void>() {
+                            @Override
+                            public Void apply(Void t) {
+                                throw new LogoutException();
+                            }
+                        });
+
+            }
+            return VOID_UNI;
+        }
     }
 }

@@ -20,7 +20,7 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.hibernate.reactive.panache.common.WithSession;
+import io.quarkus.hibernate.reactive.panache.common.WithSessionOnDemand;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
@@ -62,6 +62,7 @@ class ResourceImplementor {
         // when injecting the resource in user beans:
         classCreator.addAnnotation(Alternative.class);
         classCreator.addAnnotation(Priority.class).add("value", Integer.MAX_VALUE);
+        classCreator.addAnnotation(WithSessionOnDemand.class);
 
         HibernateReactiveResourceMethodListenerImplementor resourceMethodListenerImplementor = new HibernateReactiveResourceMethodListenerImplementor(
                 classCreator, resourceMethodListeners);
@@ -82,7 +83,6 @@ class ResourceImplementor {
 
     private void implementList(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("list", Uni.class, Page.class, Sort.class);
-        methodCreator.addAnnotation(WithSession.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
         ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
@@ -98,7 +98,6 @@ class ResourceImplementor {
     private void implementListWithQuery(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("list", Uni.class, Page.class, Sort.class,
                 String.class, Map.class);
-        methodCreator.addAnnotation(WithSession.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
         ResultHandle query = methodCreator.getMethodParam(2);
@@ -120,7 +119,6 @@ class ResourceImplementor {
      */
     private void implementCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("count", Uni.class);
-        methodCreator.addAnnotation(WithSession.class);
         methodCreator.returnValue(dataAccessImplementor.count(methodCreator));
         methodCreator.close();
     }
@@ -132,7 +130,6 @@ class ResourceImplementor {
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list", Uni.class,
                 Page.class);
-        methodCreator.addAnnotation(WithSession.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         methodCreator.returnValue(dataAccessImplementor.pageCount(methodCreator, page));
         methodCreator.close();
@@ -140,7 +137,6 @@ class ResourceImplementor {
 
     private void implementGet(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("get", Uni.class, Object.class);
-        methodCreator.addAnnotation(WithSession.class);
         ResultHandle id = methodCreator.getMethodParam(0);
         methodCreator.returnValue(dataAccessImplementor.findById(methodCreator, id));
         methodCreator.close();

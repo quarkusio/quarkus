@@ -22,7 +22,7 @@ public final class DialectVersions {
         public static final String ORACLE = "12";
 
         // This must be aligned on the H2 version in the Quarkus BOM
-        public static final String H2 = "2.1.210";
+        public static final String H2 = "2.2.220";
 
         private Defaults() {
         }

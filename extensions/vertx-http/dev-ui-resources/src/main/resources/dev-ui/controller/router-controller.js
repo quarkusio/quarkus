@@ -41,12 +41,18 @@ export class RouterController {
     }
     
     getCurrentTitle(){
+        let dot = "\u00B7";
         let p = this.getCurrentPage();
         if(p){
             if(p.namespaceLabel){
                 return p.namespaceLabel;
             }else {
-                return p.title;
+                let md = this.getCurrentMetaData();
+                if(md && md.extensionName){
+                    return md.extensionName + " " + dot + " " + p.title;
+                }else {
+                    return p.title;
+                }
             }
         }
         return null;

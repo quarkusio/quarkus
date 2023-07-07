@@ -32,7 +32,7 @@ export class QuiCodeBlock extends observeState(LitElement) {
         let currentPath = window.location.pathname;
         currentPath = currentPath.substring(0, currentPath.indexOf('/dev'));
         
-        return html`<wc-codemirror mode='${this.mode}'
+        return html`<wc-codemirror id="code" mode='${this.mode}'
                                 src='${this.src || nothing}'
                                 theme='base16-${themeState.theme.name}'
                                 ?readonly=${!this.editable}
@@ -51,6 +51,19 @@ export class QuiCodeBlock extends observeState(LitElement) {
         if(this.content){
             return html`<script type='wc-content'>${this.content}</script>`;
         }
+    }
+    
+    populatePrettyJson(v){
+        this.clear();
+        let pv = JSON.parse(v);
+        v = JSON.stringify(pv, null, 2);
+        this.content = v;
+        this.value = v;
+    }
+    
+    clear(){
+        this.content = "\n\n\n\n";
+        this.value = null;
     }
 }
 

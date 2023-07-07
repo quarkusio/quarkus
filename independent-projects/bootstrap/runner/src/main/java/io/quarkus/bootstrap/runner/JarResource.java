@@ -14,10 +14,10 @@ import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiFunction;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import io.smallrye.common.io.jar.JarEntries;
 import io.smallrye.common.io.jar.JarFiles;
@@ -69,62 +69,60 @@ public class JarResource implements ClassLoadingResource {
 
     @Override
     public byte[] getResourceData(String resource) {
-        final ZipFile zipFile = readLockAcquireAndGetJarReference();
-        try {
-            ZipEntry entry = zipFile.getEntry(resource);
-            if (entry == null) {
-                return null;
-            }
-            try (InputStream is = zipFile.getInputStream(entry)) {
-                byte[] data = new byte[(int) entry.getSize()];
-                int pos = 0;
-                int rem = data.length;
-                while (rem > 0) {
-                    int read = is.read(data, pos, rem);
-                    if (read == -1) {
-                        throw new RuntimeException("Failed to read all data for " + resource);
-                    }
-                    pos += read;
-                    rem -= read;
+        return readLockAcquireAndApply(resource, this::getBytes);
+    }
+
+    private byte[] getBytes(JarFile zipFile, String resource) {
+        ZipEntry entry = zipFile.getEntry(resource);
+        if (entry == null) {
+            return null;
+        }
+        try (InputStream is = zipFile.getInputStream(entry)) {
+            byte[] data = new byte[(int) entry.getSize()];
+            int pos = 0;
+            int rem = data.length;
+            while (rem > 0) {
+                int read = is.read(data, pos, rem);
+                if (read == -1) {
+                    throw new RuntimeException("Failed to read all data for " + resource);
                 }
-                return data;
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to read zip entry " + resource, e);
+                pos += read;
+                rem -= read;
             }
-        } finally {
-            readLock.unlock();
+            return data;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read zip entry " + resource, e);
         }
     }
 
     @Override
     public URL getResourceURL(String resource) {
-        final JarFile jarFile = readLockAcquireAndGetJarReference();
+        return readLockAcquireAndApply(resource, this::getUrl);
+    }
+
+    private URL getUrl(JarFile jarFile, String resource) {
+        JarEntry entry = jarFile.getJarEntry(resource);
+        if (entry == null) {
+            return null;
+        }
         try {
-            JarEntry entry = jarFile.getJarEntry(resource);
-            if (entry == null) {
-                return null;
+            String realName = JarEntries.getRealName(entry);
+            // Avoid ending the URL with / to avoid breaking compatibility
+            if (realName.endsWith("/")) {
+                realName = realName.substring(0, realName.length() - 1);
             }
-            try {
-                String realName = JarEntries.getRealName(entry);
-                // Avoid ending the URL with / to avoid breaking compatibility
-                if (realName.endsWith("/")) {
-                    realName = realName.substring(0, realName.length() - 1);
-                }
-                final URI jarUri = jarPath.toUri();
-                // first create a URI which includes both the jar file path and the relative resource name
-                // and then invoke a toURL on it. The URI reconstruction allows for any encoding to be done
-                // for the "path" which includes the "realName"
-                final URL resUrl = new URI(jarUri.getScheme(), jarUri.getPath() + "!/" + realName, null).toURL();
-                // wrap it up into a "jar" protocol URL
-                //horrible hack to deal with '?' characters in the URL
-                //seems to be the only way, the URI constructor just does not let you handle them in a sane way
-                return new URL("jar", null, resUrl.getProtocol() + ':' + resUrl.getPath()
-                        + (resUrl.getQuery() == null ? "" : ("%3F" + resUrl.getQuery())));
-            } catch (MalformedURLException | URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
-        } finally {
-            readLock.unlock();
+            final URI jarUri = jarPath.toUri();
+            // first create a URI which includes both the jar file path and the relative resource name
+            // and then invoke a toURL on it. The URI reconstruction allows for any encoding to be done
+            // for the "path" which includes the "realName"
+            final URL resUrl = new URI(jarUri.getScheme(), jarUri.getPath() + "!/" + realName, null).toURL();
+            // wrap it up into a "jar" protocol URL
+            //horrible hack to deal with '?' characters in the URL
+            //seems to be the only way, the URI constructor just does not let you handle them in a sane way
+            return new URL("jar", null, resUrl.getProtocol() + ':' + resUrl.getPath()
+                    + (resUrl.getQuery() == null ? "" : ("%3F" + resUrl.getQuery())));
+        } catch (MalformedURLException | URISyntaxException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -138,26 +136,42 @@ public class JarResource implements ClassLoadingResource {
         return protectionDomain;
     }
 
-    private JarFile readLockAcquireAndGetJarReference() {
-        while (true) {
-            readLock.lock();
-            final JarFile zipFileLocal = this.zipFile;
-            if (zipFileLocal != null) {
-                //Expected fast path: returns a reference to the open JarFile while owning the readLock
-                return zipFileLocal;
-            } else {
-                //This Lock implementation doesn't allow upgrading a readLock to a writeLock, so release it
-                //as we're going to need the WriteLock.
+    private <T> T readLockAcquireAndApply(String resource, BiFunction<JarFile, String, T> bf) {
+        readLock.lock();
+        final JarFile zipFileLocal = this.zipFile;
+        if (zipFileLocal != null) {
+            //Expected fast path: returns a reference to the open JarFile while owning the readLock
+            try {
+                return bf.apply(zipFileLocal, resource);
+            } finally {
                 readLock.unlock();
-                //trigger the JarFile being (re)opened.
-                ensureJarFileIsOpen();
-                //Now since we no longer own any lock, we need to try again to obtain the readLock
-                //and check for the reference still being valid.
-                //This exposes us to a race with closing the just-opened JarFile;
-                //however this should be extremely rare, so we can trust we won't loop much;
-                //A counter doesn't seem necessary, as in fact we know that methods close()
-                //and resetInternalCaches() are invoked each at most once, which limits the amount
-                //of loops here in practice.
+            }
+        } else {
+            //This Lock implementation doesn't allow upgrading a readLock to a writeLock, so release it
+            //as we're going to need the WriteLock.
+            readLock.unlock();
+
+            Lock lock = writeLock;
+            lock.lock();
+            try {
+                if (this.zipFile == null) {
+                    try {
+                        this.zipFile = JarFiles.create(jarPath.toFile());
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to open " + jarPath, e);
+                    }
+                }
+
+                // downgrade lock safely (see https://word-bits.flurg.com/safely-downgrading-a-write-lock-with-readwritelock/)
+                readLock.lock();
+                try {
+                    lock.unlock();
+                    return bf.apply(this.zipFile, resource);
+                } finally {
+                    lock = readLock;
+                }
+            } finally {
+                lock.unlock();
             }
         }
     }

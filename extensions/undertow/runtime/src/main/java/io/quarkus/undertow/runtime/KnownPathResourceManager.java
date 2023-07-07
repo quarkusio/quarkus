@@ -86,7 +86,7 @@ public class KnownPathResourceManager implements ResourceManager {
         }
 
         private String evaluatePath(String path) {
-            return IS_WINDOWS ? path.replaceAll("\\\\", "/") : path;
+            return path.replaceAll("\\\\", "/");
         }
 
         @Override

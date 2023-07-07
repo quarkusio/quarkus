@@ -234,7 +234,6 @@ public class GrpcDevConsoleWebSocketListener implements GrpcWebSocketProxy.WebSo
         grpcClientStubs = new HashMap<>();
         try {
             for (Class<?> grpcServiceClass : grpcServices) {
-
                 Method method = grpcServiceClass.getDeclaredMethod("getServiceDescriptor");
                 ServiceDescriptor serviceDescriptor = (ServiceDescriptor) method.invoke(null);
                 serviceDescriptors.put(serviceDescriptor.getName(), serviceDescriptor);

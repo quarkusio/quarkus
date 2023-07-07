@@ -48,7 +48,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -129,10 +131,19 @@ public class AnalyticsService implements AutoCloseable {
                 log.debug("[Quarkus build analytics] Build analytics sent successfully. Sent event can be seen at .../target/" +
                         fileLocations.lastTrackFileName());
             }
+        } catch (ExecutionException | TimeoutException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Failed to send build analytics to Segment. " +
+                        "Connection might not be available or is too slow: " +
+                        e.getClass().getName() + ": " +
+                        (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            }
         } catch (Exception e) {
-            log.warn("[Quarkus build analytics] Failed to send build analytics to Segment: " +
-                    e.getClass().getName() + ": " +
-                    (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Failed to send build analytics to Segment: " +
+                        e.getClass().getName() + ": " +
+                        (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            }
         }
     }
 

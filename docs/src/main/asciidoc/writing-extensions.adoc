@@ -1544,9 +1544,11 @@ this includes the ability to register creation functions for classes without no-
 substitution (basically a transformer from a non-serializable object to a serializable one and vice versa), and to create
 a class proxy. This interface can be directly injected as a method parameter into any `@Record` method.
 
-Calling `classProxy` with a given class name will create a `Class` that can be passed into recorder
-methods, and at runtime will be substituted with the class whose name was passed in to `classProxy`. This is basically a
-convenience to avoid the need to explicitly load classes in the recorders.
+Calling `classProxy` with a given fully-qualified class name will create a `Class` instance that can be passed into a recorder
+method, and at runtime will be substituted with the class whose name was passed in to `classProxy()`.
+However, this method should not be needed in most use cases because directly loading deployment/application classes at processing time in build steps is safe.
+Therefore, this method is deprecated.
+Nonetheless, there are some use cases where this method comes in handy, such as referring to classes that were generated in previous build steps using `GeneratedClassBuildItem`.
 
 ==== Printing step execution time
 

@@ -721,6 +721,7 @@ public class KeycloakDevServicesProcessor {
         realm.setClients(new ArrayList<>());
         realm.setAccessTokenLifespan(600);
         realm.setSsoSessionMaxLifespan(600);
+        realm.setRefreshTokenMaxReuse(10);
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();

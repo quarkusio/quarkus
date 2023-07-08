@@ -860,6 +860,30 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean allowMultipleCodeFlows = true;
 
         /**
+         * Fail with the HTTP 401 error if the state cookie is present but no state query parameter is present.
+         * <p/>
+         * When either multiple authentications are disabled or the redirect URL
+         * matches the original request URL, the stale state cookie might remain in the browser cache from
+         * the earlier failed redirect to an OpenId Connect provider and be visible during the current request.
+         * For example, if Single-page application (SPA) uses XHR to handle redirects to the provider
+         * which does not support CORS for its authorization endpoint, the browser will block it
+         * and the state cookie created by Quarkus will remain in the browser cache.
+         * Quarkus will report an authentication failure when it will detect such an old state cookie but find no matching state
+         * query parameter.
+         * <p/>
+         * Reporting HTTP 401 error is usually the right thing to do in such cases, it will minimize a risk of the
+         * browser redirect loop but also can identify problems in the way SPA or Quarkus application manage redirects.
+         * For example, enabling {@link #javaScriptAutoRedirect} or having the provider redirect to URL configured
+         * with {@link #redirectPath} may be needed to avoid such errors.
+         * <p/>
+         * However, setting this property to `false` may help if the above options are not suitable.
+         * It will cause a new authentication redirect to OpenId Connect provider. Please be aware doing so may increase the
+         * risk of browser redirect loops.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean failOnMissingStateParam = true;
+
+        /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
          * This property will be enabled if `quarkus.oidc.roles.source` is `userinfo`
          * or `quarkus.oidc.token.verify-access-token-with-user-info` is `true`

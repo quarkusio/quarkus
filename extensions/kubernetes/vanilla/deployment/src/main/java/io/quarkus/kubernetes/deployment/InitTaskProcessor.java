@@ -1,6 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,8 @@ import io.quarkus.kubernetes.spi.PolicyRule;
 
 public class InitTaskProcessor {
 
+    private static final String INIT_JOB = "INIT_JOB";
+    private static final String INIT_TASK_NAME = "INIT_TASK";
     private static final String INIT_CONTAINER_WAITER_NAME_PREFIX = "wait-for-";
     private static final String INIT_CONTAINER_WAITER_DEFAULT_IMAGE = "groundnuty/k8s-wait-for:no-root-v1.7";
 
@@ -43,10 +46,15 @@ public class InitTaskProcessor {
             InitTaskConfig config = initTasksConfig.get(task.getName());
             if (config == null || config.enabled) {
                 generateRoleForJobs = true;
+
+                Map<String, String> jobEnvVars = new HashMap<>(task.getTaskEnvVars());
+                jobEnvVars.put(INIT_JOB, "true");
+                jobEnvVars.put(INIT_TASK_NAME, task.getName());
+
                 jobs.produce(KubernetesJobBuildItem.create(image.getImage())
                         .withName(jobName)
                         .withTarget(target)
-                        .withEnvVars(task.getTaskEnvVars())
+                        .withEnvVars(jobEnvVars)
                         .withCommand(task.getCommand())
                         .withArguments(task.getArguments())
                         .withSharedEnvironment(task.isSharedEnvironment())

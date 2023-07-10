@@ -12,7 +12,6 @@ import jakarta.enterprise.inject.spi.Bean;
 import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.PreventFurtherStepsException;
@@ -33,6 +32,8 @@ import io.quarkus.runtime.util.StringUtil;
 public class InitTaskRecorder {
 
     private static final String QUARKUS_INIT_AND_EXIT = "quarkus.init-and-exit";
+    private static final String QUARKUS_INIT_DISABLED = "quarkus.init-disabled";
+
     private static final String UNAMED = "";
     private final RuntimeValue<InitRuntimeConfig> config;
 
@@ -41,7 +42,8 @@ public class InitTaskRecorder {
     }
 
     public void executeInitializationTask(String taskName) {
-        if (config.getValue().initDisabled) {
+        boolean initDisabledConfigured = propertyConfigured(QUARKUS_INIT_DISABLED);
+        if (initDisabledConfigured && config.getValue().initDisabled) {
             return;
         }
 
@@ -70,13 +72,10 @@ public class InitTaskRecorder {
     public void exitIfNeeded() {
         //The tcks CustomConverTest is broken: It always returns true for boolean values.
         //To workaround this issue, we need to check if `init-and-exit` is explicitly defined.
-        boolean initAndExitConfigured = StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false)
-                .anyMatch(n -> QUARKUS_INIT_AND_EXIT.equals(n));
-        if (initAndExitConfigured) {
-            if (config.getValue().initAndExit) {
-                preventFurtherRecorderSteps(5, "Error attempting to gracefully shutdown after initialization",
-                        () -> new PreventFurtherStepsException("Gracefully exiting after initialization.", 0));
-            }
+        boolean initAndExitConfigured = propertyConfigured(QUARKUS_INIT_AND_EXIT);
+        if (initAndExitConfigured && config.getValue().initAndExit) {
+            preventFurtherRecorderSteps(5, "Error attempting to gracefully shutdown after initialization",
+                    () -> new PreventFurtherStepsException("Gracefully exiting after initialization.", 0));
         }
     }
 
@@ -101,5 +100,14 @@ public class InitTaskRecorder {
     private static String beanToTaskName(Bean<?> bean) {
         //Get class name, strip prefix of generated runnables and hyphenate
         return StringUtil.hyphenate(bean.getBeanClass().getSimpleName().replaceAll("_GeneratedRunnable", ""));
+    }
+
+    private static String propertyToEnvVar(String property) {
+        return io.smallrye.config.common.utils.StringUtil.replaceNonAlphanumericByUnderscores(property).toUpperCase();
+    }
+
+    private static boolean propertyConfigured(String property) {
+        return StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false)
+                .anyMatch(n -> property.equals(n) || propertyToEnvVar(property).equals(n));
     }
 }

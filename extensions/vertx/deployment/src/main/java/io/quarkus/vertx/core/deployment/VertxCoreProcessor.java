@@ -27,6 +27,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
@@ -56,6 +57,7 @@ import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
+import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
@@ -70,6 +72,11 @@ class VertxCoreProcessor {
             "io.vertx.core.impl.BlockedThreadChecker", // Vert.x 4.2-
             "io.vertx.core.impl.btc.BlockedThreadChecker" // Vert.x 4.3+
     );
+
+    @BuildStep
+    AdditionalBeanBuildItem registerSafeDuplicatedContextInterceptor() {
+        return new AdditionalBeanBuildItem(SafeVertxContextInterceptor.class.getName());
+    }
 
     @BuildStep
     NativeImageConfigBuildItem build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

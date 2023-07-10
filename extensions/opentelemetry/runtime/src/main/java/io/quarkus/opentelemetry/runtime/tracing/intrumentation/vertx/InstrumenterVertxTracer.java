@@ -29,6 +29,10 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
             final Iterable<Map.Entry<String, String>> headers,
             final TagExtractor<R> tagExtractor) {
 
+        if (TracingPolicy.IGNORE == policy) {
+            return null;
+        }
+
         Instrumenter<REQ, RESP> instrumenter = getReceiveRequestInstrumenter();
         io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(context);
         if (parentContext == null) {
@@ -79,6 +83,10 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
             final String operation,
             final BiConsumer<String, String> headers,
             final TagExtractor<R> tagExtractor) {
+
+        if (TracingPolicy.IGNORE == policy) {
+            return null;
+        }
 
         Instrumenter<REQ, RESP> instrumenter = getSendRequestInstrumenter();
         io.opentelemetry.context.Context parentContext = QuarkusContextStorage.getContext(context);

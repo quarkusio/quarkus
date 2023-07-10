@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime.devui;
 
+import java.util.List;
+
 import org.eclipse.microprofile.config.Config;
 
 import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
@@ -26,7 +28,7 @@ public class OidcDevUiRuntimePropertiesDTO {
     private final String oidcGrantType;
     private final boolean introspectionIsAvailable;
     private final String keycloakAdminUrl;
-    private final Object keycloakRealms;
+    private final List<String> keycloakRealms;
     private final boolean swaggerIsAvailable;
     private final boolean graphqlIsAvailable;
     private final String swaggerUiPath;
@@ -36,7 +38,7 @@ public class OidcDevUiRuntimePropertiesDTO {
 
     OidcDevUiRuntimePropertiesDTO(String authorizationUrl, String tokenUrl, String logoutUrl, Config config, int httpPort,
             String oidcProviderName, String oidcApplicationType, String oidcGrantType,
-            boolean introspectionIsAvailable, String keycloakAdminUrl, Object keycloakRealms,
+            boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms,
             boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath,
             String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload, String propertiesStateId) {
         this.clientId = new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY).get(config);
@@ -114,7 +116,7 @@ public class OidcDevUiRuntimePropertiesDTO {
         return keycloakAdminUrl;
     }
 
-    public Object getKeycloakRealms() {
+    public List<String> getKeycloakRealms() {
         return keycloakRealms;
     }
 

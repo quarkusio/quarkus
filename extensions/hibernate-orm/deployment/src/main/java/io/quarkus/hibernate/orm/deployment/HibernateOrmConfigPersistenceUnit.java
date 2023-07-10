@@ -341,71 +341,98 @@ public class HibernateOrmConfigPersistenceUnit {
     @ConfigGroup
     public static class HibernateOrmConfigPersistenceUnitMapping {
         /**
-         * How to store timezones in the database by default
-         * for properties of type `OffsetDateTime` and `ZonedDateTime`.
-         *
-         * This default may be overridden on a per-property basis using `@TimeZoneStorage`.
-         *
-         * NOTE: Properties of type `OffsetTime` are https://hibernate.atlassian.net/browse/HHH-16287[not affected by this
-         * setting].
-         *
-         * `default`::
-         * Equivalent to `native` if supported, `normalize-utc` otherwise.
-         * `auto`::
-         * Equivalent to `native` if supported, `column` otherwise.
-         * `native`::
-         * Stores the timestamp and timezone in a column of type `timestamp with time zone`.
-         * +
-         * Only available on some databases/dialects;
-         * if not supported, an exception will be thrown during static initialization.
-         * `column`::
-         * Stores the timezone in a separate column next to the timestamp column.
-         * +
-         * Use `@TimeZoneColumn` on the relevant entity property to customize the timezone column.
-         * `normalize-utc`::
-         * Does not store the timezone, and loses timezone information upon persisting.
-         * +
-         * Instead, normalizes the value to a timestamp in the UTC timezone.
-         * `normalize`::
-         * Does not store the timezone, and loses timezone information upon persisting.
-         * +
-         * Instead, normalizes the value:
-         * * upon persisting to the database, to a timestamp in the JDBC timezone
-         * set through `quarkus.hibernate-orm.jdbc.timezone`,
-         * or the JVM default timezone if not set.
-         * * upon reading back from the database, to the JVM default timezone.
-         * +
-         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
-         *
-         * @asciidoclet
+         * Timezone configuration.
          */
-        @ConfigItem(name = "timezone.default-storage", defaultValueDocumentation = "default")
-        public Optional<TimeZoneStorageType> timeZoneDefaultStorage;
+        @ConfigItem
+        public Timezone timezone;
 
         /**
-         * The optimizer to apply to identifier generators
-         * whose optimizer is not configured explicitly.
-         *
-         * Only relevant for table- and sequence-based identifier generators.
-         * Other generators, such as UUID-based generators, will ignore this setting.
-         *
-         * The optimizer is responsible for pooling new identifier values,
-         * in order to reduce the frequency of database calls to retrieve those values
-         * and thereby improve performance.
-         *
-         * @asciidoclet
+         * Optimizer configuration.
          */
-        @ConfigItem(name = "id.optimizer.default", defaultValueDocumentation = "pooled-lo")
-        // Note this needs to be a build-time property due to
-        // org.hibernate.boot.internal.InFlightMetadataCollectorImpl.handleIdentifierValueBinding
-        // which may call (indirectly) org.hibernate.id.enhanced.SequenceStructure.buildSequence
-        // whose output depends on org.hibernate.id.enhanced.SequenceStructure.applyIncrementSizeToSourceValues
-        // which is determined by the optimizer.
-        public Optional<IdOptimizerType> idOptimizerDefault;
+        @ConfigItem
+        public Id id;
+
+        @ConfigGroup
+        public static class Timezone {
+            /**
+             * How to store timezones in the database by default
+             * for properties of type `OffsetDateTime` and `ZonedDateTime`.
+             *
+             * This default may be overridden on a per-property basis using `@TimeZoneStorage`.
+             *
+             * NOTE: Properties of type `OffsetTime` are https://hibernate.atlassian.net/browse/HHH-16287[not affected by this
+             * setting].
+             *
+             * `default`::
+             * Equivalent to `native` if supported, `normalize-utc` otherwise.
+             * `auto`::
+             * Equivalent to `native` if supported, `column` otherwise.
+             * `native`::
+             * Stores the timestamp and timezone in a column of type `timestamp with time zone`.
+             * +
+             * Only available on some databases/dialects;
+             * if not supported, an exception will be thrown during static initialization.
+             * `column`::
+             * Stores the timezone in a separate column next to the timestamp column.
+             * +
+             * Use `@TimeZoneColumn` on the relevant entity property to customize the timezone column.
+             * `normalize-utc`::
+             * Does not store the timezone, and loses timezone information upon persisting.
+             * +
+             * Instead, normalizes the value to a timestamp in the UTC timezone.
+             * `normalize`::
+             * Does not store the timezone, and loses timezone information upon persisting.
+             * +
+             * Instead, normalizes the value:
+             * * upon persisting to the database, to a timestamp in the JDBC timezone
+             * set through `quarkus.hibernate-orm.jdbc.timezone`,
+             * or the JVM default timezone if not set.
+             * * upon reading back from the database, to the JVM default timezone.
+             * +
+             * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+             *
+             * @asciidoclet
+             */
+            @ConfigItem(name = "default-storage", defaultValueDocumentation = "default")
+            public Optional<TimeZoneStorageType> timeZoneDefaultStorage;
+        }
+
+        @ConfigGroup
+        public static class Id {
+            /**
+             * Optimizer configuration.
+             */
+            @ConfigItem
+            public Optimizer optimizer;
+
+            @ConfigGroup
+            public static class Optimizer {
+                /**
+                 * The optimizer to apply to identifier generators
+                 * whose optimizer is not configured explicitly.
+                 *
+                 * Only relevant for table- and sequence-based identifier generators.
+                 * Other generators, such as UUID-based generators, will ignore this setting.
+                 *
+                 * The optimizer is responsible for pooling new identifier values,
+                 * in order to reduce the frequency of database calls to retrieve those values
+                 * and thereby improve performance.
+                 *
+                 * @asciidoclet
+                 */
+                @ConfigItem(name = "default", defaultValueDocumentation = "pooled-lo")
+                // Note this needs to be a build-time property due to
+                // org.hibernate.boot.internal.InFlightMetadataCollectorImpl.handleIdentifierValueBinding
+                // which may call (indirectly) org.hibernate.id.enhanced.SequenceStructure.buildSequence
+                // whose output depends on org.hibernate.id.enhanced.SequenceStructure.applyIncrementSizeToSourceValues
+                // which is determined by the optimizer.
+                public Optional<IdOptimizerType> idOptimizerDefault;
+            }
+        }
 
         public boolean isAnyPropertySet() {
-            return timeZoneDefaultStorage.isPresent()
-                    || idOptimizerDefault.isPresent();
+            return timezone.timeZoneDefaultStorage.isPresent()
+                    || id.optimizer.idOptimizerDefault.isPresent();
         }
 
     }

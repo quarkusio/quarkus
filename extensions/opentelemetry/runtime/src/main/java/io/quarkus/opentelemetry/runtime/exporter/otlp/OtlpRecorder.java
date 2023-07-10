@@ -107,7 +107,7 @@ public class OtlpRecorder {
         if (exporterRuntimeConfig.traces().protocol().isPresent()) {
             if (!exporterRuntimeConfig.traces().protocol().get().equals(HTTP_PROTOBUF)) {
                 throw new IllegalStateException("Only the GRPC Exporter is currently supported. " +
-                        "Please check `otel.exporter.otlp.traces.protocol` property");
+                        "Please check `quarkus.otel.exporter.otlp.traces.protocol` property");
             }
         }
 

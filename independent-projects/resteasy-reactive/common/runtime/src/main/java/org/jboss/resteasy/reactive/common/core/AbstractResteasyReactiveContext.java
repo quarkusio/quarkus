@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.CompletionCallback;
 import jakarta.ws.rs.container.ConnectionCallback;
 
@@ -22,6 +23,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasyReactiveContext<T, H>, H extends RestHandler<T>>
         implements Runnable, Closeable, ResteasyReactiveCallbackContext {
     protected static final Logger log = Logger.getLogger(AbstractResteasyReactiveContext.class);
+    protected static final Logger logWebApplicationExceptions = Logger.getLogger(WebApplicationException.class.getSimpleName());
     protected H[] handlers;
     protected H[] abortHandlerChain;
     protected int position;
@@ -322,7 +324,11 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             handleUnrecoverableError(unwrapException(t));
         } else {
             this.throwable = unwrapException(t);
-            log.debug("Restarting handler chain for exception exception", this.throwable);
+            if (t instanceof WebApplicationException) {
+                logWebApplicationExceptions.debug("Restarting handler chain for exception exception", this.throwable);
+            } else {
+                log.debug("Restarting handler chain for exception exception", this.throwable);
+            }
             abortHandlerChainStarted = true;
             restart(abortHandlerChain, keepSameTarget);
         }

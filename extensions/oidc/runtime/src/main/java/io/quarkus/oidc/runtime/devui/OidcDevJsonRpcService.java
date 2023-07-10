@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime.devui;
 import static io.quarkus.oidc.runtime.devui.OidcDevServicesUtils.getTokens;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import io.quarkus.arc.Arc;
@@ -30,7 +31,7 @@ public class OidcDevJsonRpcService {
     private final String oidcGrantType;
     private final boolean introspectionIsAvailable;
     private final String keycloakAdminUrl;
-    private final Object keycloakRealms;
+    private final List<String> keycloakRealms;
     private final boolean swaggerIsAvailable;
     private final boolean graphqlIsAvailable;
     private final String swaggerUiPath;

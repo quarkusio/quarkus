@@ -1,5 +1,6 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -84,6 +85,9 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
 
             String keycloakAdminUrl = configProps.get().getConfig().get("keycloak.url");
 
+            @SuppressWarnings("unchecked")
+            final List<String> keycloakRealms = (List<String>) configProps.get().getProperties().get("keycloak.realms");
+
             CardPageBuildItem cardPageBuildItem = createProviderWebComponent(
                     recorder,
                     capabilities,
@@ -102,7 +106,7 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     configurationBuildItem,
                     keycloakAdminUrl,
                     users,
-                    configProps.get().getProperties().get("keycloak.realms"),
+                    keycloakRealms,
                     configProps.get().isContainerRestarted());
 
             // Also add Admin page

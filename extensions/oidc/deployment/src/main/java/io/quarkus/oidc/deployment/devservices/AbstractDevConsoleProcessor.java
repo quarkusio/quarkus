@@ -1,6 +1,7 @@
 package io.quarkus.oidc.deployment.devservices;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.inject.Singleton;
@@ -109,7 +110,7 @@ public abstract class AbstractDevConsoleProcessor {
             ConfigurationBuildItem configurationBuildItem,
             String keycloakAdminUrl,
             Map<String, String> keycloakUsers,
-            Object keycloakRealms,
+            List<String> keycloakRealms,
             boolean alwaysLogoutUserInDevUiOnReload) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 

@@ -1,19 +1,19 @@
 package io.quarkus.arc.init;
 
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.enterprise.inject.spi.Bean;
-import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.RuntimeValue;
@@ -51,20 +51,18 @@ public class InitTaskRecorder {
             return;
         }
 
-        BeanManager beanManager = Arc.container().beanManager();
-        Set<Bean<?>> beans = beanManager.getBeans(Runnable.class, PreStart.Literal.forName(taskName));
-        if (beans.isEmpty()) {
-            // If no bean found, then let's check task with no explicit name.
+        InjectableInstance<Runnable> instances = Arc.container().select(Runnable.class, PreStart.Literal.forName(taskName));
+        Set<Runnable> runnables = stream(instances).collect(Collectors.toSet());
+        if (runnables.isEmpty()) {
+            // If no instance found, then let's check task with no explicit name.
             // Such tasks by convention are named after the bearing class.
-            beans = beanManager.getBeans(Runnable.class, PreStart.Literal.forName(UNAMED));
-            beans = beans.stream()
-                    .filter(b -> beanToTaskName(b).equalsIgnoreCase(taskName))
+            instances = Arc.container().select(Runnable.class, PreStart.Literal.forName(UNAMED));
+            runnables = stream(instances)
+                    .filter(i -> beanToTaskName(i).equalsIgnoreCase(taskName))
                     .collect(Collectors.toSet());
         }
-        for (Bean<?> bean : beans) {
-            Bean<Runnable> runnableBean = (Bean<Runnable>) bean;
-            CreationalContext<Runnable> ctx = beanManager.createCreationalContext(runnableBean);
-            Runnable runnable = (Runnable) beanManager.getReference(runnableBean, Runnable.class, ctx);
+
+        for (Runnable runnable : runnables) {
             runnable.run();
         }
     }
@@ -97,9 +95,10 @@ public class InitTaskRecorder {
         throw supplier.get();
     }
 
-    private static String beanToTaskName(Bean<?> bean) {
+    private static String beanToTaskName(Runnable runnable) {
         //Get class name, strip prefix of generated runnables and hyphenate
-        return StringUtil.hyphenate(bean.getBeanClass().getSimpleName().replaceAll("_GeneratedRunnable", ""));
+        //We also strip everything that follows the _GeneratedRunnable as it may include addtional suffixes (e.g. _ClientProxy).
+        return StringUtil.hyphenate(runnable.getClass().getSimpleName().replaceAll("_GeneratedRunnable.*", ""));
     }
 
     private static String propertyToEnvVar(String property) {
@@ -109,5 +108,10 @@ public class InitTaskRecorder {
     private static boolean propertyConfigured(String property) {
         return StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false)
                 .anyMatch(n -> property.equals(n) || propertyToEnvVar(property).equals(n));
+    }
+
+    private static Stream<Runnable> stream(InjectableInstance<Runnable> instance) {
+        Spliterator<Runnable> spliterator = Spliterators.spliteratorUnknownSize(instance.iterator(), Spliterator.ORDERED);
+        return StreamSupport.stream(spliterator, false);
     }
 }

@@ -113,9 +113,11 @@ public class RestClient implements ConfigClient, SegmentClient {
             }
             return Optional.empty();
         } catch (IOException | InterruptedException | ExecutionException | TimeoutException e) {
-            log.warn("[Quarkus build analytics] Analytics remote config not received. " +
-                    e.getClass().getName() + ": " +
-                    (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Analytics remote config not received. " +
+                        e.getClass().getName() + ": " +
+                        (e.getMessage() == null ? "(no message)" : e.getMessage()));
+            }
         }
         return Optional.empty();
     }

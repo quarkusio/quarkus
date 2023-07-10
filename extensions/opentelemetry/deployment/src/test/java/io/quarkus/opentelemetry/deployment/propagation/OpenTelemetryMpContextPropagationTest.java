@@ -25,6 +25,7 @@ public class OpenTelemetryMpContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClass(OpenTelemetryMpContextPropagationTest.TestResource.class));
 

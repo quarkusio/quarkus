@@ -18,6 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryIdGeneratorTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class));
 
     @Inject

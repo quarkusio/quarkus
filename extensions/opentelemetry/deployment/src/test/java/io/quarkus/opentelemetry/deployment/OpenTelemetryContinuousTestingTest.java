@@ -23,7 +23,8 @@ public class OpenTelemetryContinuousTestingTest {
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .add(new StringAsset(ContinuousTestingTestUtils.appProperties(
-                            "quarkus.otel.traces.exporter=test-span-exporter")),
+                            "quarkus.otel.traces.exporter=test-span-exporter",
+                            "quarkus.otel.devservices.enabled=false")),
                             "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TracerRouterUT.class));

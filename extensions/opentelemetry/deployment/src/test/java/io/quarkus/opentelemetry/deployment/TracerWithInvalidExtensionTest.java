@@ -15,6 +15,7 @@ public class TracerWithInvalidExtensionTest {
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
             .withEmptyApplication()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-smallrye-opentracing", Version.getVersion())))
             .setExpectedException(ConfigurationException.class);
 

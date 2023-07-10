@@ -21,6 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 class OpenTelemetryLegacyConfigurationTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false")
             .overrideConfigKey("quarkus.opentelemetry.enabled", "false")
             .overrideConfigKey("quarkus.opentelemetry.tracer.enabled", "false")
             .overrideConfigKey("quarkus.opentelemetry.propagators", "tracecontext")

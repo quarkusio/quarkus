@@ -4,12 +4,21 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.opentelemetry.api.trace.Tracer;
 import io.quarkus.runtime.StartupEvent;
+import io.quarkus.test.QuarkusUnitTest;
 import io.vertx.ext.web.Router;
 
 @ApplicationScoped
 public class TracerRouter {
+
+    @RegisterExtension
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withEmptyApplication()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false");
+
     @Inject
     Router router;
     @Inject

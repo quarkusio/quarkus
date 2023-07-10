@@ -138,37 +138,24 @@ The legacy configurations are now deprecated but will still work during a transi
 
 == Run the application
 
-The first step is to configure and start the https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] to receive, process and export telemetry data to https://www.jaegertracing.io/[Jaeger] that will display the captured traces.
+At this point, Quarkus uses the OpenTelemetry Dev Service to run Jaeger-all-in-one container to collect, process and export telemetry data, which you can display.
+To utilize Dev Service you should not set `quarkus.otel.exporter.otlp.traces.endpoint` property. Jaeger-all-in-one includes the Jaeger agent, an OTel collector, and the query service/UI.
 
 [NOTE]
 ====
-Jaeger-all-in-one includes the Jaeger agent, an OTel collector, and the query service/UI.
-You do not need to install a separated collector. You can directly send the trace data to Jaeger (after enabling OTLP receivers there, see e.g. this
-https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c[blog entry] for details).
+
+For production you will need to configure your own tracer.
+
 ====
 
-Start the OpenTelemetry Collector and Jaeger system via the following `docker-compose.yml` file that you can launch via `docker-compose up -d`:
+If using your own tracer do not forget to configure your OTLP gRPC endpoint in `application.properties` as follows:
 
-[source,yaml,subs="attributes"]
+[source,properties]
 ----
-version: "2"
-services:
-
-  # Jaeger
-  jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - "16686:16686" # Jaeger UI
-      - "14268:14268" # Receive legacy OpenTracing traces, optional
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver, not yet used by Quarkus, optional
-      - "14250:14250" # Receive from external otel-collector, optional
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
+quarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317
 ----
-You should remove the optional ports you don't need them.
 
-Now we are ready to run our application. If using `application.properties` to configure the tracer:
+Now we are ready to run our application.
 
 include::{includes}/devtools/dev.adoc[]
 

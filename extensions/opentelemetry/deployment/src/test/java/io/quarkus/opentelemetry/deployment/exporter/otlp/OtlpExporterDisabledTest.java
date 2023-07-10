@@ -16,6 +16,7 @@ public class OtlpExporterDisabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withEmptyApplication()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false")
             .overrideConfigKey("otel.traces.exporter", "cdi")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.enabled", "false");
 

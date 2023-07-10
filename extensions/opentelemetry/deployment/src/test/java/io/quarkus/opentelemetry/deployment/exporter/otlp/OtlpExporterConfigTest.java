@@ -15,6 +15,7 @@ public class OtlpExporterConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withEmptyApplication()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false")
             .overrideConfigKey("otel.traces.exporter", "cdi")
             .overrideConfigKey("otel.exporter.otlp.traces.protocol", "http/protobuf")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.endpoint", "http://localhost ")

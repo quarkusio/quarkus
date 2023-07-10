@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.TracerProvider;
@@ -16,9 +18,16 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.test.QuarkusUnitTest;
 
 @Unremovable
 public final class TestUtil {
+
+    @RegisterExtension
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withEmptyApplication()
+            .overrideConfigKey("quarkus.otel.devservices.enabled", "false");
+
     private TestUtil() {
     }
 

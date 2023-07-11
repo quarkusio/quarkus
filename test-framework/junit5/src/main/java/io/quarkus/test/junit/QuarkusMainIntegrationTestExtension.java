@@ -138,9 +138,10 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 }
 
                 additionalProperties.putAll(testProfileAndProperties.properties);
-                Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
                 //also make the dev services props accessible from the test
-                resourceManagerProps.putAll(QuarkusMainIntegrationTestExtension.devServicesProps);
+                Map<String, String> resourceManagerProps = new HashMap<>(QuarkusMainIntegrationTestExtension.devServicesProps);
+                // Allow override of dev services props by integration test extensions
+                resourceManagerProps.putAll(testResourceManager.start());
                 for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
                     old.put(i.getKey(), System.getProperty(i.getKey()));
                     if (i.getValue() == null) {

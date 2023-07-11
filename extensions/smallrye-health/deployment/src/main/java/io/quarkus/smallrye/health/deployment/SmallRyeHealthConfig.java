@@ -73,6 +73,13 @@ public class SmallRyeHealthConfig {
     Optional<String> defaultHealthGroup;
 
     /**
+     * If management interface is turned on the health endpoints and ui will be published under the management interface. This
+     * allows you to exclude Health from management by setting the value to false
+     */
+    @ConfigItem(name = "management.enabled", defaultValue = "true")
+    public boolean managementEnabled;
+
+    /**
      * SmallRye Health UI configuration
      */
     @ConfigItem

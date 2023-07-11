@@ -38,6 +38,13 @@ public final class SmallRyeOpenApiConfig {
     public boolean ignoreStaticDocument;
 
     /**
+     * If management interface is turned on the openapi schema document will be published under the management interface. This
+     * allows you to exclude OpenAPI from management by setting the value to false
+     */
+    @ConfigItem(name = "management.enabled", defaultValue = "true")
+    public boolean managementEnabled;
+
+    /**
      * A list of local directories that should be scanned for yaml and/or json files to be included in the static model.
      * Example: `META-INF/openapi/`
      */

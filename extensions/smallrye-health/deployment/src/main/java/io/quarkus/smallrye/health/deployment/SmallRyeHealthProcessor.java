@@ -208,7 +208,7 @@ class SmallRyeHealthProcessor {
 
         // Register the health handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+                .management("quarkus.smallrye-health.management.enabled")
                 .route(healthConfig.rootPath)
                 .routeConfigKey("quarkus.smallrye-health.root-path")
                 .handler(new SmallRyeHealthHandler())
@@ -218,7 +218,7 @@ class SmallRyeHealthProcessor {
 
         // Register the liveness handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+                .management("quarkus.smallrye-health.management.enabled")
                 .nestedRoute(healthConfig.rootPath, healthConfig.livenessPath)
                 .handler(new SmallRyeLivenessHandler())
                 .displayOnNotFoundPage()
@@ -227,7 +227,7 @@ class SmallRyeHealthProcessor {
 
         // Register the readiness handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+                .management("quarkus.smallrye-health.management.enabled")
                 .nestedRoute(healthConfig.rootPath, healthConfig.readinessPath)
                 .handler(new SmallRyeReadinessHandler())
                 .displayOnNotFoundPage()
@@ -249,7 +249,7 @@ class SmallRyeHealthProcessor {
 
         // Register the health group handlers
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+                .management("quarkus.smallrye-health.management.enabled")
                 .nestedRoute(healthConfig.rootPath, healthConfig.groupPath)
                 .handler(new SmallRyeHealthGroupHandler())
                 .displayOnNotFoundPage()
@@ -258,7 +258,7 @@ class SmallRyeHealthProcessor {
 
         SmallRyeIndividualHealthGroupHandler handler = new SmallRyeIndividualHealthGroupHandler();
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+                .management("quarkus.smallrye-health.management.enabled")
                 .nestedRoute(healthConfig.rootPath, healthConfig.groupPath + "/*")
                 .handler(handler)
                 .displayOnNotFoundPage()
@@ -267,7 +267,7 @@ class SmallRyeHealthProcessor {
 
         // Register the wellness handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+                .management("quarkus.smallrye-health.management.enabled")
                 .nestedRoute(healthConfig.rootPath, healthConfig.wellnessPath)
                 .handler(new SmallRyeWellnessHandler())
                 .displayOnNotFoundPage()
@@ -276,7 +276,7 @@ class SmallRyeHealthProcessor {
 
         // Register the startup handler
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+                .management("quarkus.smallrye-health.management.enabled")
                 .nestedRoute(healthConfig.rootPath, healthConfig.startupPath)
                 .handler(new SmallRyeStartupHandler())
                 .displayOnNotFoundPage()
@@ -443,8 +443,9 @@ class SmallRyeHealthProcessor {
 
             Handler<RoutingContext> handler = recorder.uiHandler(result.getFinalDestination(),
                     healthUiPath, result.getWebRootConfigurations(), runtimeConfig, shutdownContext);
-            // The health ui is not a management route.
+
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .management("quarkus.smallrye-health.management.enabled")
                     .route(healthConfig.ui.rootPath)
                     .displayOnNotFoundPage("Health UI")
                     .routeConfigKey("quarkus.smallrye-health.ui.root-path")
@@ -452,6 +453,7 @@ class SmallRyeHealthProcessor {
                     .build());
 
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .management("quarkus.smallrye-health.management.enabled")
                     .route(healthConfig.ui.rootPath + "*")
                     .handler(handler)
                     .build());

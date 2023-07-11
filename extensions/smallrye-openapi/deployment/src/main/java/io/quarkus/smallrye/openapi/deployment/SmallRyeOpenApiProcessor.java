@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -70,6 +71,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -105,6 +107,8 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
 import io.smallrye.openapi.api.OpenApiDocument;
@@ -235,12 +239,15 @@ public class SmallRyeOpenApiProcessor {
     void handler(LaunchModeBuildItem launch,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             BuildProducer<RouteBuildItem> routes,
+            BuildProducer<SystemPropertyBuildItem> systemProperties,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             OpenApiRuntimeConfig openApiRuntimeConfig,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
-            List<FilterBuildItem> filterBuildItems) {
+            List<FilterBuildItem> filterBuildItems,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementInterfaceConfiguration managementInterfaceConfiguration) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -271,6 +278,7 @@ public class SmallRyeOpenApiProcessor {
         }
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .management("quarkus.smallrye-openapi.management.enabled")
                 .routeFunction(openApiConfig.path, corsFilter)
                 .routeConfigKey("quarkus.smallrye-openapi.path")
                 .handler(handler)
@@ -279,19 +287,59 @@ public class SmallRyeOpenApiProcessor {
                 .build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .management("quarkus.smallrye-openapi.management.enabled")
                 .routeFunction(openApiConfig.path + ".json", corsFilter)
                 .handler(handler)
                 .build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .management("quarkus.smallrye-openapi.management.enabled")
                 .routeFunction(openApiConfig.path + ".yaml", corsFilter)
                 .handler(handler)
                 .build());
 
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .management("quarkus.smallrye-openapi.management.enabled")
                 .routeFunction(openApiConfig.path + ".yml", corsFilter)
                 .handler(handler)
                 .build());
+
+        // If management is enabled and swagger-ui is part of management, we need to add CORS so that swagger can hit the endpoint
+        if (isManagement(managementInterfaceBuildTimeConfig, openApiConfig, launch)) {
+            Config c = ConfigProvider.getConfig();
+
+            // quarkus.http.cors=true
+            // quarkus.http.cors.origins
+            Optional<Boolean> maybeCors = c.getOptionalValue("quarkus.http.cors", Boolean.class);
+            if (!maybeCors.isPresent() || !maybeCors.get().booleanValue()) {
+                // We need to set quarkus.http.cors=true
+                systemProperties.produce(new SystemPropertyBuildItem("quarkus.http.cors", "true"));
+            }
+
+            String managementUrl = getManagementRoot(launch, nonApplicationRootPathBuildItem, openApiConfig,
+                    managementInterfaceBuildTimeConfig, managementInterfaceConfiguration);
+
+            List<String> origins = c.getOptionalValues("quarkus.http.cors.origins", String.class).orElse(new ArrayList<>());
+            if (!origins.contains(managementUrl)) {
+                // We need to set quarkus.http.cors.origins
+                origins.add(managementUrl);
+                String originConfigValue = String.join(",", origins);
+                systemProperties.produce(new SystemPropertyBuildItem("quarkus.http.cors.origins", originConfigValue));
+            }
+
+        }
+    }
+
+    private String getManagementRoot(LaunchModeBuildItem launch,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            SmallRyeOpenApiConfig openApiConfig,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            ManagementInterfaceConfiguration managementInterfaceConfiguration) {
+        String managementRoot = nonApplicationRootPathBuildItem.resolveManagementPath("/",
+                managementInterfaceBuildTimeConfig, launch, openApiConfig.managementEnabled);
+
+        return managementRoot.split(managementInterfaceBuildTimeConfig.rootPath)[0];
+
     }
 
     @BuildStep
@@ -340,7 +388,9 @@ public class SmallRyeOpenApiProcessor {
     void addAutoFilters(BuildProducer<AddToOpenAPIDefinitionBuildItem> addToOpenAPIDefinitionProducer,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
-            SmallRyeOpenApiConfig config) {
+            SmallRyeOpenApiConfig config,
+            LaunchModeBuildItem launchModeBuildItem,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
 
         // Add a security scheme from config
         if (config.securityScheme.isPresent()) {
@@ -371,10 +421,22 @@ public class SmallRyeOpenApiProcessor {
         }
 
         // Add Auto Server based on the current server details
-        OASFilter autoServerFilter = getAutoServerFilter(config, false);
+        OASFilter autoServerFilter = getAutoServerFilter(config, false, "Auto generated value");
         if (autoServerFilter != null) {
             addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(autoServerFilter));
+        } else if (isManagement(managementInterfaceBuildTimeConfig, config, launchModeBuildItem)) { // Add server if management is enabled
+            OASFilter serverFilter = getAutoServerFilter(config, true, "Auto-added by management interface");
+            if (serverFilter != null) {
+                addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(serverFilter));
+            }
         }
+    }
+
+    private boolean isManagement(ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            SmallRyeOpenApiConfig smallRyeOpenApiConfig,
+            LaunchModeBuildItem launchModeBuildItem) {
+        return managementInterfaceBuildTimeConfig.enabled && smallRyeOpenApiConfig.managementEnabled
+                && launchModeBuildItem.getLaunchMode().equals(LaunchMode.DEVELOPMENT);
     }
 
     private OASFilter getAutoSecurityFilter(List<SecurityInformationBuildItem> securityInformationBuildItems,
@@ -467,7 +529,7 @@ public class SmallRyeOpenApiProcessor {
         return null;
     }
 
-    private OASFilter getAutoServerFilter(SmallRyeOpenApiConfig config, boolean defaultFlag) {
+    private OASFilter getAutoServerFilter(SmallRyeOpenApiConfig config, boolean defaultFlag, String description) {
         if (config.autoAddServer.orElse(defaultFlag)) {
             Config c = ConfigProvider.getConfig();
 
@@ -483,7 +545,7 @@ public class SmallRyeOpenApiProcessor {
                 port = c.getOptionalValue("quarkus.http.ssl-port", Integer.class).orElse(8443);
             }
 
-            return new AutoServerFilter(scheme, host, port);
+            return new AutoServerFilter(scheme, host, port, description);
         }
         return null;
     }
@@ -1040,7 +1102,7 @@ public class SmallRyeOpenApiProcessor {
         }
 
         // By default, also add the auto generated server
-        OASFilter autoServerFilter = getAutoServerFilter(smallRyeOpenApiConfig, true);
+        OASFilter autoServerFilter = getAutoServerFilter(smallRyeOpenApiConfig, true, "Auto generated value");
         if (autoServerFilter != null) {
             document.filter(autoServerFilter);
         }

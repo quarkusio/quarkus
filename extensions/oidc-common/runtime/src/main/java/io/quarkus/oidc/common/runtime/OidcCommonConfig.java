@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -307,6 +308,12 @@ public class OidcCommonConfig {
             public Optional<String> signatureAlgorithm = Optional.empty();
 
             /**
+             * Additional `scope` added to JWT claims.
+             */
+            @ConfigItem
+            public Optional<Set<String>> scope = Optional.empty();
+
+            /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
              */
             @ConfigItem(defaultValue = "10")
@@ -368,6 +375,13 @@ public class OidcCommonConfig {
                 this.keyFile = Optional.of(keyFile);
             }
 
+            public Optional<Set<String>> getScope() {
+                return scope;
+            }
+
+            public void setScope(Set<String> scope) {
+                this.scope = Optional.of(scope);
+            }
         }
 
         /**

@@ -35,6 +35,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
+import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
@@ -344,14 +345,20 @@ public class OidcCommonUtils {
 
     public static String signJwtWithKey(OidcCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claims are created by default, 'iat' - is set to the current time
-        JwtSignatureBuilder builder = Jwt
+        JwtClaimsBuilder claimsBuilder = Jwt
                 .issuer(oidcConfig.credentials.jwt.issuer.orElse(oidcConfig.clientId.get()))
                 .subject(oidcConfig.credentials.jwt.subject.orElse(oidcConfig.clientId.get()))
                 .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
                         ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
                         : tokenRequestUri)
-                .expiresIn(oidcConfig.credentials.jwt.lifespan)
-                .jws();
+                .expiresIn(oidcConfig.credentials.jwt.lifespan);
+
+        oidcConfig.credentials.jwt.scope.ifPresent((scope) -> {
+            claimsBuilder.claim("scope", String.join(",", scope));
+        });
+
+        JwtSignatureBuilder builder = claimsBuilder.jws();
+
         if (oidcConfig.credentials.jwt.getTokenKeyId().isPresent()) {
             builder.keyId(oidcConfig.credentials.jwt.getTokenKeyId().get());
         }

@@ -311,7 +311,7 @@ public class OidcCommonConfig {
              * Additional `scope` added to JWT claims.
              */
             @ConfigItem
-            public Optional<Set<String>> scope = Optional.empty();
+            public Optional<Set<String>> scopes = Optional.empty();
 
             /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
@@ -375,12 +375,12 @@ public class OidcCommonConfig {
                 this.keyFile = Optional.of(keyFile);
             }
 
-            public Optional<Set<String>> getScope() {
-                return scope;
+            public Optional<Set<String>> getScopes() {
+                return scopes;
             }
 
-            public void setScope(Set<String> scope) {
-                this.scope = Optional.of(scope);
+            public void setScopes(Set<String> scopes) {
+                this.scopes = Optional.of(scopes);
             }
         }
 

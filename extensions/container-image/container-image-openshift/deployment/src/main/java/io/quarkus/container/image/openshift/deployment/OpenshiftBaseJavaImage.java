@@ -25,7 +25,15 @@ public enum OpenshiftBaseJavaImage {
     OPENJ9_11_RHEL7("openj9/openj9-11-rhel7:latest", "/deployments", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR",
             "JAVA_CLASSPATH", "JAVA_OPTIONS"),
     OPENJ9_11_RHEL8("openj9/openj9-11-rhel8:latest", "/deployments", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR",
-            "JAVA_CLASSPATH", "JAVA_OPTIONS");
+            "JAVA_CLASSPATH", "JAVA_OPTIONS"),
+    OPENJDK_11_UBI8("ubi8/openjdk-11", "/deployments", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR",
+            "JAVA_CLASSPATH", "JAVA_OPTIONS", true),
+    OPENJDK_17_UBI8("ubi8/openjdk-17", "/deployments", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR",
+            "JAVA_CLASSPATH", "JAVA_OPTIONS", true),
+    OPENJDK_11_UBI9("ubi9/openjdk-11", "/deployments", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR",
+            "JAVA_CLASSPATH", "JAVA_OPTIONS", true),
+    OPENJDK_17_UBI9("ubi9/openjdk-17", "/deployments", "JAVA_MAIN_CLASS", "JAVA_APP_JAR", "JAVA_LIB_DIR",
+            "JAVA_CLASSPATH", "JAVA_OPTIONS", true);
 
     private final String image;
     private final String jarDirectory;
@@ -34,6 +42,7 @@ public enum OpenshiftBaseJavaImage {
     private final String jarLibEnvVar;
     private final String classpathEnvVar;
     private final String jvmOptionsEnvVar;
+    private final boolean requiresCommand;
 
     public static Optional<OpenshiftBaseJavaImage> findMatching(String image) {
         for (OpenshiftBaseJavaImage candidate : OpenshiftBaseJavaImage.values()) {
@@ -44,8 +53,13 @@ public enum OpenshiftBaseJavaImage {
         return Optional.empty();
     }
 
-    private OpenshiftBaseJavaImage(String image, String jarDirectory, String javaMainClassEnvVar, String jarEnvVar,
+    OpenshiftBaseJavaImage(String image, String jarDirectory, String javaMainClassEnvVar, String jarEnvVar,
             String jarLibEnvVar, String classpathEnvVar, String jvmOptionsEnvVar) {
+        this(image, jarDirectory, javaMainClassEnvVar, jarEnvVar, jarLibEnvVar, classpathEnvVar, jvmOptionsEnvVar, false);
+    }
+
+    OpenshiftBaseJavaImage(String image, String jarDirectory, String javaMainClassEnvVar, String jarEnvVar,
+            String jarLibEnvVar, String classpathEnvVar, String jvmOptionsEnvVar, boolean requiresCommand) {
         this.image = image;
         this.jarDirectory = jarDirectory;
         this.javaMainClassEnvVar = javaMainClassEnvVar;
@@ -53,6 +67,7 @@ public enum OpenshiftBaseJavaImage {
         this.jarLibEnvVar = jarLibEnvVar;
         this.classpathEnvVar = classpathEnvVar;
         this.jvmOptionsEnvVar = jvmOptionsEnvVar;
+        this.requiresCommand = requiresCommand;
     }
 
     public String getImage() {
@@ -83,4 +98,7 @@ public enum OpenshiftBaseJavaImage {
         return jarEnvVar;
     }
 
+    public boolean isRequiresCommand() {
+        return requiresCommand;
+    }
 }

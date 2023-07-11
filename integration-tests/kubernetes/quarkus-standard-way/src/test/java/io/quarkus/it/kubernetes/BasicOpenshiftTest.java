@@ -56,6 +56,8 @@ public class BasicOpenshiftTest {
             // containers assertions
             assertThat(deployment.getSpec().getTemplate().getSpec().getContainers()).satisfiesExactly(container -> {
                 assertThat(container.getImagePullPolicy()).isEqualTo("Always"); // expect the default value
+
+                assertThat(container.getEnv()).noneSatisfy(envVar -> assertThat(envVar.getName()).isEqualTo("JAVA_OPTIONS"));
             });
         });
 

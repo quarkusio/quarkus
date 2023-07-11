@@ -33,6 +33,10 @@ public final class KubernetesCommandBuildItem extends SimpleBuildItem {
     }
 
     public static KubernetesCommandBuildItem commandWithArgs(String cmd, List<String> args) {
-        return new KubernetesCommandBuildItem(Collections.singletonList(cmd), args);
+        return commandWithArgs(Collections.singletonList(cmd), args);
+    }
+
+    public static KubernetesCommandBuildItem commandWithArgs(List<String> cmd, List<String> args) {
+        return new KubernetesCommandBuildItem(cmd, args);
     }
 }

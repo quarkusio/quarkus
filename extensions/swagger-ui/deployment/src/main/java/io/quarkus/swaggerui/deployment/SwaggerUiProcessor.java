@@ -120,6 +120,7 @@ public class SwaggerUiProcessor {
             }
 
             String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path);
+
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path);
             ThemeHref theme = swaggerUiConfig.theme.orElse(ThemeHref.feeling_blue);
 
@@ -180,6 +181,7 @@ public class SwaggerUiProcessor {
                     runtimeConfig, shutdownContext);
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .management("quarkus.smallrye-openapi.management.enabled")
                     .route(swaggerUiConfig.path)
                     .displayOnNotFoundPage("Open API UI")
                     .routeConfigKey("quarkus.swagger-ui.path")
@@ -187,6 +189,7 @@ public class SwaggerUiProcessor {
                     .build());
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .management("quarkus.smallrye-openapi.management.enabled")
                     .route(swaggerUiConfig.path + "*")
                     .handler(handler)
                     .build());

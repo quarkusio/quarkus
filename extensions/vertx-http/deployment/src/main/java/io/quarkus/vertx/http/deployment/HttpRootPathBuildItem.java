@@ -225,6 +225,12 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
         }
 
         @Override
+        public Builder management(String managementConfigKey) {
+            super.management(managementConfigKey);
+            return this;
+        }
+
+        @Override
         protected NotFoundPageDisplayableEndpointBuildItem getNotFoundEndpoint() {
             return super.getNotFoundEndpoint();
         }

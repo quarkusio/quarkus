@@ -1199,8 +1199,8 @@ public class ValueResolverGenerator {
                 return Modifier.isPublic(method.flags())
                         && !isSynthetic(method.flags())
                         && method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
-                        && !method.name().equals("<init>")
-                        && !method.name().equals("<clinit>");
+                        && !method.name().equals(MethodDescriptor.INIT)
+                        && !method.name().equals(MethodDescriptor.CLINIT);
             case FIELD:
                 FieldInfo field = target.asField();
                 return Modifier.isPublic(field.flags())

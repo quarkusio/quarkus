@@ -154,10 +154,16 @@ When you want to reference your attachment, for instance in the `src` attribute,
 [[templates]]
 == Message Body Based on Qute Templates
 
-It's possible to inject a mail template, where the message body is created automatically using xref:qute.adoc[Qute templates].
+It's also possible to send an e-mail where the message body is created automatically using xref:qute.adoc[Qute templates].
+
+You can define a type-safe mail template in your Java code.
+Just annotate a class with `@io.quarkus.qute.CheckedTemplate` and all its `static native` methods that return `MailTemplate` will be used to define type-safe mail templates and the list of parameters they require:
 
 [source, java]
 ----
+import io.quarkus.mailer.MailTemplate;
+import io.quarkus.qute.CheckedTemplate;
+
 @Path("")
 public class MailingResource {
 
@@ -183,13 +189,43 @@ we will use the `src/main/resources/templates/MailingResource/hello.html` and `s
 <3> Create a mail template instance and set the recipient.
 <4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
-TIP: Injected mail templates are validated during build.
-The build fails if there is no matching template in `src/main/resources/templates`.
+Alternatively, use a Java record that implements `io.quarkus.mailer.MailTemplate`.
+The record components represent the template parameters.
+
+[source, java]
+----
+import io.quarkus.mailer.MailTemplate;
+import io.quarkus.qute.CheckedTemplate;
+
+@Path("")
+public class MailingResource {
+
+    record hello(String name) implements MailTemplateInstance { // <1>
+    }
+
+    @GET
+    @Path("/mail")
+    public Uni<Void> send() {
+        // the template looks like: Hello {name}! // <2>
+        return new hello("John")
+           .to("to@acme.org")  // <3>
+           .subject("Hello from Qute template")
+           .send(); // <4>
+    }
+}
+----
+<1> By convention, the enclosing class name and the record name are used to locate the template. In this particular case,
+we will use the `src/main/resources/templates/MailingResource/hello.html` and `src/main/resources/templates/MailingResource/hello.txt` templates to create the message body.
+<2> Set the data used in the template.
+<3> Create a mail template instance and set the recipient.
+<4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
 
 You can also do this without type-safe templates:
 
 [source, java]
 ----
+import io.quarkus.mailer.MailTemplate;
+
 @Inject
 @Location("hello")
 MailTemplate hello; // <1>
@@ -208,6 +244,9 @@ Otherwise, search for the template as the specified location. In this particular
 <2> Create a mail template instance and set the recipient.
 <3> Set the data used in the template.
 <4> `MailTemplate.send()` triggers the rendering and, once finished, sends the e-mail via a `Mailer` instance.
+
+TIP: Injected mail templates are validated during build.
+The build fails if there is no matching template in `src/main/resources/templates`.
 
 [[execution-model]]
 == Execution model

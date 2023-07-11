@@ -1751,7 +1751,18 @@ IMPORTANT: The type of a default value is not validated in <<standalone,Qute sta
  
 [[typesafe_templates]]
 === Type-safe Templates
-You can also define type-safe templates in your Java code.
+
+You can define type-safe templates in your Java code.
+Parameters of type-safe templates are automatically turned into _parameter declarations_ that are used to bind <<typesafe_expressions>>.
+The type-safe expressions are then validated at build time.
+
+There are two ways to define a type-safe template:
+
+1. Annotate a class with `@io.quarkus.qute.CheckedTemplate` and all its `static native` methods will be used to define type-safe templates and the list of parameters they require.
+2. Use a Java record that implements `io.quarkus.qute.TemplateInstance`; the record components represent the template parameters and `@io.quarkus.qute.CheckedTemplate` can be optionally used to configure the template.
+
+==== Nested Type-safe Templates
+
 If using <<resteasy_integration,templates in Jakarta REST resources>>, you can rely on the following convention:
 
 - Organise your template files in the `/src/main/resources/templates` directory, by grouping them into one directory per resource class. So, if
@@ -1845,6 +1856,41 @@ public class HelloResource {
     }
 }
 ----
+
+==== Template Records
+
+A Java record that implements `io.quarkus.qute.TemplateInstance` denotes a type-safe template.
+The record components represent the template parameters and `@io.quarkus.qute.CheckedTemplate` can be optionally used to configure the template.
+
+.HelloResource.java
+[source,java]
+----
+package org.acme.quarkus.sample;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import io.quarkus.qute.TemplateInstance;
+
+@Path("hello")
+public class HelloResource {
+
+    record Hello(String name) implements TemplateInstance {} <1>
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public TemplateInstance get(@QueryParam("name") String name) {
+        return new Hello(name); <2>
+    }
+}
+----
+<1> Declares a type-safe template with the Java record.
+<2> Instantiate the record and use it as an ordinary `TemplateInstance`.
+
 
 ==== Customized Template Path
 
@@ -2793,9 +2839,13 @@ Engine::
 * First, no managed `Engine` instance is available out of the box.
 You'll need to configure a new instance via `Engine.builder()`.
 
-Templates::
+Template locators::
 * By default, no <<template-locator,template locators>> are registered, i.e. `Engine.getTemplate(String)` will not work.
 * You can register a custom template locator using `EngineBuilder.addLocator()` or parse a template manually and put the result in the cache via `Engine.putTemplate(String, Template)`.
+
+Template initializers::
+* No `TemplateInstance.Initializer` is registered by default, therefore <<global_variables,`@TemplateGlobal`>> annotations are ignored.
+* A custom `TemplateInstance.Initializer` can be registered with `EngineBuilder#addTemplateInstanceInitializer()` and initialize a template instance with any data and attributes.
 
 Sections::
 * No section helpers are registered by default.

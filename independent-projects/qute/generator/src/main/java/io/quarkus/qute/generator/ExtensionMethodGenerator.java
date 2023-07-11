@@ -191,7 +191,7 @@ public class ExtensionMethodGenerator {
         if (matchRegex != null && !matchRegex.isEmpty()) {
             patternField = valueResolver.getFieldCreator(PATTERN, Pattern.class)
                     .setModifiers(ACC_PRIVATE | ACC_FINAL).getFieldDescriptor();
-            MethodCreator constructor = valueResolver.getMethodCreator("<init>", "V");
+            MethodCreator constructor = valueResolver.getMethodCreator(MethodDescriptor.INIT, "V");
             // Invoke super()
             constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
             // Compile the regex pattern
@@ -488,7 +488,7 @@ public class ExtensionMethodGenerator {
                 this.name = resolve.invokeInterfaceMethod(Descriptors.GET_NAME, evalContext);
                 this.paramsHandle = resolve.invokeInterfaceMethod(Descriptors.GET_PARAMS, evalContext);
                 this.paramsCount = resolve.invokeInterfaceMethod(Descriptors.COLLECTION_SIZE, paramsHandle);
-                this.constructor = namespaceResolver.getMethodCreator("<init>", "V");
+                this.constructor = namespaceResolver.getMethodCreator(MethodDescriptor.INIT, "V");
                 // Invoke super()
                 this.constructor.invokeSpecialMethod(Descriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
             }

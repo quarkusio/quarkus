@@ -182,8 +182,8 @@ public class QuteDevUIProcessor {
             CheckedTemplateBuildItem checkedTemplate = findCheckedTemplate(getBasePath(templatePath.getPath(), variants),
                     checkedTemplates);
             if (checkedTemplate != null) {
-                template.put("checkedTemplateMethod",
-                        checkedTemplate.method.declaringClass().name() + "#" + checkedTemplate.method.name() + "()");
+                template.put("checkedTemplate",
+                        checkedTemplate.getDescription());
             }
 
             TemplateAnalysis analysis = templatesAnalysis.getAnalysis().stream()

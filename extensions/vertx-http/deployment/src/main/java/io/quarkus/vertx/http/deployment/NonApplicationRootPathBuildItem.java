@@ -169,15 +169,15 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
     public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             LaunchModeBuildItem mode) {
+        return resolveManagementPath(path, managementInterfaceBuildTimeConfig, mode, true);
+    }
+
+    public String resolveManagementPath(String path, ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            LaunchModeBuildItem mode, boolean extensionOverride) {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Specified path can not be empty");
         }
-        if (!managementInterfaceBuildTimeConfig.enabled) {
-            if (managementRootPath != null) {
-                return UriNormalizationUtil.normalizeWithBase(managementRootPath, path, false).getPath();
-            }
-            return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
-        } else {
+        if (managementInterfaceBuildTimeConfig.enabled && extensionOverride) {
             // Best effort
             String prefix = getManagementUrlPrefix(mode);
             if (managementRootPath != null) {
@@ -185,6 +185,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             } else {
                 return prefix + path;
             }
+        } else {
+            if (managementRootPath != null) {
+                return UriNormalizationUtil.normalizeWithBase(managementRootPath, path, false).getPath();
+            }
+            return UriNormalizationUtil.normalizeWithBase(nonApplicationRootPath, path, false).getPath();
         }
     }
 
@@ -411,6 +416,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
             return this;
         }
 
+        @Override
+        public Builder management(String managementConfigKey) {
+            super.management(managementConfigKey);
+            return this;
+        }
     }
 
     /**

@@ -64,7 +64,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testConfigFactoryInAppModuleBannedInCodeGen() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/codegen-config-factory");
+        testDir = initProject("projects/codegen-config-factory", "project/codegen-config-factory-banned");
         run(true);
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory")).isEqualTo("n/a");
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-provider")).isEqualTo("n/a");
@@ -76,7 +76,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testConfigFactoryInAppModuleFilteredInCodeGen() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/codegen-config-factory");
+        testDir = initProject("projects/codegen-config-factory", "projects/codegen-config-factory-filtered");
         run(true, "-Dconfig-factory.enabled");
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory"))
                 .isEqualTo("org.acme.config.AcmeConfigSourceFactory");

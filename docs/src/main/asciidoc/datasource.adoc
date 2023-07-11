@@ -326,9 +326,6 @@ In most cases, the configuration above will be optional as either a JDBC driver 
 
 === Configure multiple datasources
 
-Multiple datasources are only supported for JDBC and the Agroal extension.
-Creating multiple reactive datasources is not currently possible.
-
 [NOTE]
 ====
 The Hibernate ORM extension supports defining xref:hibernate-orm.adoc#multiple-persistence-units[persistence units] by using configuration properties.

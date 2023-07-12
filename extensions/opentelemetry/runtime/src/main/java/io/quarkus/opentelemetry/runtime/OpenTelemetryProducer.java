@@ -32,6 +32,7 @@ import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.TracerUtil;
+import io.quarkus.runtime.ApplicationConfig;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
@@ -57,6 +58,9 @@ public class OpenTelemetryProducer {
     OTelBuildConfig oTelBuildConfig;
     @Inject
     OTelRuntimeConfig oTelRuntimeConfig;
+
+    @Inject
+    ApplicationConfig appConfig;
 
     @Produces
     @Singleton
@@ -85,11 +89,20 @@ public class OpenTelemetryProducer {
                         if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                             Resource consolidatedResource = existingResource.merge(
                                     Resource.create(delayedAttributes.get())); // from cdi
+
+                            // if user explicitly set 'otel.service.name', make sure we don't override it with defaults
+                            // inside resource customizer
+                            String serviceName = oTelRuntimeConfig
+                                    .serviceName()
+                                    .filter(sn -> !sn.equals(appConfig.name.orElse("unset")))
+                                    .orElse(null);
+
                             // Merge resource instances with env attributes
                             Resource resource = resources.stream()
                                     .reduce(Resource.empty(), Resource::merge)
-                                    .merge(TracerUtil
-                                            .mapResourceAttributes(oTelRuntimeConfig.resourceAttributes().orElse(emptyList()))); // from properties
+                                    .merge(TracerUtil.mapResourceAttributes(
+                                            oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
+                                            serviceName)); // from properties
                             return consolidatedResource.merge(resource);
                         } else {
                             return Resource.builder().build();

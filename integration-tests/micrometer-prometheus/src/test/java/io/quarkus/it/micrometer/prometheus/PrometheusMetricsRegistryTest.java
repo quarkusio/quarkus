@@ -1,5 +1,6 @@
 package io.quarkus.it.micrometer.prometheus;
 
+import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
@@ -88,6 +89,15 @@ class PrometheusMetricsRegistryTest {
 
     @Test
     @Order(10)
+    void testSecuredEndpoint() {
+        when().get("/secured/item/123").then().statusCode(401);
+        given().auth().preemptive().basic("foo", "bar").when().get("/secured/item/321").then().statusCode(401);
+        given().auth().preemptive().basic("scott", "reader").when().get("/secured/item/123").then().statusCode(200);
+        given().auth().preemptive().basic("stuart", "writer").when().get("/secured/item/321").then().statusCode(200);
+    }
+
+    @Test
+    @Order(11)
     void testPrometheusScrapeEndpointTextPlain() {
         RestAssured.given().header("Accept", TextFormat.CONTENT_TYPE_004)
                 .when().get("/q/metrics")
@@ -110,6 +120,10 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString("status=\"200\""))
                 .body(containsString("uri=\"/message\""))
                 .body(containsString("uri=\"/message/item/{id}\""))
+                .body(containsString("status=\"200\",uri=\"/message/item/{id}\""))
+                .body(containsString("uri=\"/secured/item/{id}\""))
+                .body(containsString("status=\"200\",uri=\"/secured/item/{id}\""))
+                .body(containsString("status=\"401\",uri=\"/secured/item/{id}\""))
                 .body(containsString("outcome=\"SUCCESS\""))
                 .body(containsString("uri=\"/message/match/{id}/{sub}\""))
                 .body(containsString("uri=\"/message/match/{other}\""))

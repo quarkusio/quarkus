@@ -953,12 +953,12 @@ public final class HibernateOrmProcessor {
                         .setProperty(EntityManagerFactoryBuilderImpl.METADATA_BUILDER_CONTRIBUTOR, className));
 
         // Mapping
-        if (persistenceUnitConfig.mapping.timeZoneDefaultStorage.isPresent()) {
+        if (persistenceUnitConfig.mapping.timezone.timeZoneDefaultStorage.isPresent()) {
             descriptor.getProperties().setProperty(AvailableSettings.TIMEZONE_DEFAULT_STORAGE,
-                    persistenceUnitConfig.mapping.timeZoneDefaultStorage.get().name());
+                    persistenceUnitConfig.mapping.timezone.timeZoneDefaultStorage.get().name());
         }
         descriptor.getProperties().setProperty(AvailableSettings.PREFERRED_POOLED_OPTIMIZER,
-                persistenceUnitConfig.mapping.idOptimizerDefault
+                persistenceUnitConfig.mapping.id.optimizer.idOptimizerDefault
                         .orElse(HibernateOrmConfigPersistenceUnit.IdOptimizerType.POOLED_LO).configName);
 
         //charset

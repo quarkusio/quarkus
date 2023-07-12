@@ -1,5 +1,7 @@
 package io.quarkus.cli.deploy;
 
+import java.util.Optional;
+
 import io.quarkus.cli.BuildToolContext;
 import picocli.CommandLine;
 
@@ -20,14 +22,16 @@ public class Openshift extends BaseKubernetesDeployCommand {
     }
 
     @CommandLine.Option(names = { "--deployment-kind" }, description = "The kind of resource to generate and deploy")
-    public DeploymentKind kind = DeploymentKind.DeploymentConfig;
+    public Optional<DeploymentKind> kind;
 
     @Override
     public void populateContext(BuildToolContext context) {
         super.populateContext(context);
         context.getPropertiesOptions().properties.put(String.format(QUARKUS_DEPLOY_FORMAT, OPENSHIFT), "true");
-        context.getPropertiesOptions().properties.put(DEPLOYMENT_KIND, kind.name());
         context.getForcedExtensions().add(OPENSHIFT_EXTENSION);
+        kind.ifPresent(k -> {
+            context.getPropertiesOptions().properties.put(DEPLOYMENT_KIND, k.name());
+        });
     }
 
     @Override

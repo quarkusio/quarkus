@@ -698,18 +698,21 @@ Next, you'll need one interceptor for each of those annotations:
 
 [source,java]
 ----
-@Interceptor
-@HrTenant
-public class HrTenantInterceptor {
-    @Inject
-    RoutingContext routingContext;
+package io.quarkus.it.keycloak;
 
-    @AroundInvoke
-    Object setTenant(InvocationContext context) throws Exception {
-        routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, "hr");
-        return context.proceed();
+import jakarta.interceptor.Interceptor;
+
+import io.quarkus.oidc.TenantResolverInterceptor;
+
+@HrTenant
+@Interceptor
+public class HrInterceptor extends TenantResolverInterceptor {
+    @Override
+    protected String getTenantId() {
+        return "hr";
     }
 }
+
 ----
 
 Now all methods and classes carrying `@HrTenant` will be authenticated using the OIDC provider configured by

@@ -10,7 +10,9 @@ import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentI
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -21,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +37,7 @@ public class OpenTelemetryReactiveTest {
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 0);
     }
 
     @Test
@@ -49,7 +50,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
@@ -78,7 +79,7 @@ public class OpenTelemetryReactiveTest {
     }
 
     private static void assertExceptionRecorded() {
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getExceptionEventData().size() == 1);
+        await().atMost(5, SECONDS).until(() -> getExceptionEventData().size() == 1);
         assertThat(getExceptionEventData()).singleElement().satisfies(s -> {
             assertThat(s).contains("dummy");
         });
@@ -94,7 +95,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
@@ -109,7 +110,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto and Hello Goku"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 7);
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 7);
 
         List<Map<String, Object>> spans = getSpans();
         assertEquals(7, spans.size());
@@ -158,7 +159,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto and Hello Goku"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 7);
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 7);
 
         List<Map<String, Object>> spans = getSpans();
         assertEquals(7, spans.size());
@@ -196,5 +197,29 @@ public class OpenTelemetryReactiveTest {
         assertEquals("/reactive?name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(HTTP_TARGET.getKey()));
         Map<String, Object> gokuInternal = getSpanByKindAndParentId(spans, INTERNAL, gokuServer.get("spanId"));
         assertEquals("helloGet", gokuInternal.get("name"));
+    }
+
+    @Test
+    public void securedInvalidCredential() {
+        given().auth().preemptive().basic("scott", "reader2").when().get("/secured/item/something")
+                .then()
+                .statusCode(401);
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        assertThat(getSpans()).singleElement().satisfies(m -> {
+            assertThat(m).extractingByKey("name").isEqualTo("GET /secured/item/{value}");
+        });
+    }
+
+    @Test
+    public void securedProperCredentials() {
+        given().auth().preemptive().basic("scott", "reader").when().get("/secured/item/something")
+                .then()
+                .statusCode(200);
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        assertThat(getSpans()).singleElement().satisfies(m -> {
+            assertThat(m).extractingByKey("name").isEqualTo("GET /secured/item/{value}");
+        });
     }
 }

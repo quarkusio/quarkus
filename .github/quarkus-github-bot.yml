@@ -483,9 +483,56 @@ triage:
         - independent-projects/tools/
     - id: documentation
       labels: [area/documentation]
-      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, hmanwani-rh, sheilamjones, MichalMaler]
+      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, sheilamjones, MichalMaler, rolfedh]
       directories:
         - docs/
+    - id: docstyle
+      labels: [area/docstyle]
+      title: "A tagged source doc has been modified"
+      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, sheilamjones, MichalMaler, rolfedh]
+      directories:
+        - docs/src/main/asciidoc/_attributes.adoc
+        - docs/src/main/asciidoc/_attributes-local.adoc
+        - docs/src/main/asciidoc/datasource.adoc
+        - docs/src/main/asciidoc/deploying-native-executable-openshift.adoc
+        - docs/src/main/asciidoc/deploying-to-openshift.adoc
+        - docs/src/main/asciidoc/deploying-to-openshift-serverless.adoc
+        - docs/src/main/asciidoc/deployment-to-openshift.adoc
+        - docs/src/main/asciidoc/security-architecture.adoc
+        - docs/src/main/asciidoc/security-authentication-mechanisms.adoc
+        - docs/src/main/asciidoc/security-authorize-web-endpoints-reference.adoc
+        - docs/src/main/asciidoc/security-basic-authentication.adoc
+        - docs/src/main/asciidoc/security-basic-authentication-howto.adoc
+        - docs/src/main/asciidoc/security-basic-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-identity-providers.adoc
+        - docs/src/main/asciidoc/security-identity-providers-concept.adoc
+        - docs/src/main/asciidoc/security-jpa.adoc
+        - docs/src/main/asciidoc/security-oidc-bearer-token-authentication.adoc
+        - docs/src/main/asciidoc/security-oidc-bearer-token-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-oidc-code-flow-authentication.adoc
+        - docs/src/main/asciidoc/security-oidc-code-flow-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-oidc-configuration-properties-reference.adoc
+        - docs/src/main/asciidoc/security-openid-connect-client-reference.adoc
+        - docs/src/main/asciidoc/security-overview.adoc
+        - docs/src/main/asciidoc/security-proactive-authentication.adoc
+        - docs/src/main/asciidoc/security-vulnerability-detection.adoc
+        - docs/src/main/asciidoc/update-quarkus.adoc
+        - docs/src/main/asciidoc/_includes/compile-quarkus-quickly.adoc
+        - docs/src/main/asciidoc/_includes/duration-format-note.adoc
+        - docs/src/main/asciidoc/_includes/extension-status.adoc
+        - docs/src/main/asciidoc/_includes/platform-include.adoc
+        - docs/src/main/asciidoc/_includes/prerequisites.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native-container.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native-container-parameters.adoc
+        - docs/src/main/asciidoc/_includes/devtools/create-app.adoc
+        - docs/src/main/asciidoc/_includes/devtools/create-cli.adoc
+        - docs/src/main/asciidoc/_includes/devtools/dev.adoc
+        - docs/src/main/asciidoc/_includes/devtools/dev-parameters.adoc
+        - docs/src/main/asciidoc/_includes/devtools/extension-add.adoc
+        - docs/src/main/asciidoc/_includes/devtools/extension-list.adoc
+        - docs/src/main/asciidoc/_includes/devtools/maven-opts.adoc
     - id: infra-automation
       labels: [area/infra-automation]
       directories:

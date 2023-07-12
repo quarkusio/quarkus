@@ -352,9 +352,9 @@ public class OidcCommonUtils {
                         ? removeLastPathSeparator(oidcConfig.credentials.jwt.getAudience().get())
                         : tokenRequestUri)
                 .expiresIn(oidcConfig.credentials.jwt.lifespan);
-        
+
         if (oidcConfig.credentials.jwt.scopes.isPresent()) {
-            claimsBuilder.claim(OidcConstants.TOKEN_SCOPE, String.join(",", oidcConfig.credentials.jwt.scopes.get()))
+            claimsBuilder.claim(OidcConstants.TOKEN_SCOPE, String.join(",", oidcConfig.credentials.jwt.scopes.get()));
         }
 
         JwtSignatureBuilder builder = claimsBuilder.jws();

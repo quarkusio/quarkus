@@ -39,16 +39,18 @@ public class CodeGenerator {
 
     private static final Logger log = Logger.getLogger(CodeGenerator.class);
 
+    private static final String META_INF_SERVICES = "META-INF/services/";
+
     private static final List<String> CONFIG_SERVICES = List.of(
-            "META-INF/services/org.eclipse.microprofile.config.spi.Converter",
-            "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSource",
-            "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider",
-            "META-INF/services/io.smallrye.config.ConfigSourceInterceptor",
-            "META-INF/services/io.smallrye.config.ConfigSourceInterceptorFactory",
-            "META-INF/services/io.smallrye.config.ConfigSourceFactory",
-            "META-INF/services/io.smallrye.config.SecretKeysHandler",
-            "META-INF/services/io.smallrye.config.SecretKeysHandlerFactory",
-            "META-INF/services/io.smallrye.config.ConfigValidator");
+            "org.eclipse.microprofile.config.spi.Converter",
+            "org.eclipse.microprofile.config.spi.ConfigSource",
+            "org.eclipse.microprofile.config.spi.ConfigSourceProvider",
+            "io.smallrye.config.ConfigSourceInterceptor",
+            "io.smallrye.config.ConfigSourceInterceptorFactory",
+            "io.smallrye.config.ConfigSourceFactory",
+            "io.smallrye.config.SecretKeysHandler",
+            "io.smallrye.config.SecretKeysHandlerFactory",
+            "io.smallrye.config.ConfigValidator");
 
     // used by Gradle and Maven
     public static void initAndRun(QuarkusClassLoader classLoader,
@@ -185,13 +187,13 @@ public class CodeGenerator {
 
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
-        // Config instance that is returned by this method should be as close to the one built in the ExtensionLoader as possible
-        final Map<String, List<String>> appModuleConfigServices = getConfigServices(appModel.getAppArtifact());
-        if (!appModuleConfigServices.isEmpty()) {
-            final Map<String, List<String>> allConfigServices = new HashMap<>(appModuleConfigServices.size());
-            final Map<String, byte[]> allowedConfigServices = new HashMap<>(appModuleConfigServices.size());
-            final Map<String, byte[]> bannedConfigServices = new HashMap<>(appModuleConfigServices.size());
-            for (Map.Entry<String, List<String>> appModuleServices : appModuleConfigServices.entrySet()) {
+        final Map<String, List<String>> unavailableConfigServices = getUnavailableConfigServices(appModel.getAppArtifact(),
+                deploymentClassLoader);
+        if (!unavailableConfigServices.isEmpty()) {
+            final Map<String, List<String>> allConfigServices = new HashMap<>(unavailableConfigServices.size());
+            final Map<String, byte[]> allowedConfigServices = new HashMap<>(unavailableConfigServices.size());
+            final Map<String, byte[]> bannedConfigServices = new HashMap<>(unavailableConfigServices.size());
+            for (Map.Entry<String, List<String>> appModuleServices : unavailableConfigServices.entrySet()) {
                 final String service = appModuleServices.getKey();
                 try {
                     ClassPathUtils.consumeAsPaths(deploymentClassLoader, service, p -> {
@@ -233,31 +235,51 @@ public class CodeGenerator {
         } catch (Exception e) {
             throw new CodeGenException("Failed to initialize application configuration", e);
         } finally {
-            if (!appModuleConfigServices.isEmpty()) {
+            if (!unavailableConfigServices.isEmpty()) {
                 deploymentClassLoader.close();
             }
         }
     }
 
-    private static Map<String, List<String>> getConfigServices(ResolvedDependency dep) throws CodeGenException {
-        final Map<String, List<String>> configServices = new HashMap<>(CONFIG_SERVICES.size());
+    private static Map<String, List<String>> getUnavailableConfigServices(ResolvedDependency dep, ClassLoader classLoader)
+            throws CodeGenException {
         try (OpenPathTree openTree = dep.getContentTree().open()) {
-            for (String s : CONFIG_SERVICES) {
-                openTree.accept(s, v -> {
-                    if (v == null) {
-                        return;
+            return openTree.apply(META_INF_SERVICES, visit -> {
+                if (visit == null) {
+                    // the application module does not include META-INF/services entry
+                    return Map.of();
+                }
+                Map<String, List<String>> unavailableServices = Map.of();
+                var servicesDir = visit.getPath();
+                for (String serviceClass : CONFIG_SERVICES) {
+                    var serviceFile = servicesDir.resolve(serviceClass);
+                    if (!Files.exists(serviceFile)) {
+                        continue;
                     }
+                    final List<String> implList;
                     try {
-                        configServices.put(s, Files.readAllLines(v.getPath()));
+                        implList = Files.readAllLines(serviceFile);
                     } catch (IOException e) {
-                        throw new UncheckedIOException("Failed to read " + v.getPath(), e);
+                        throw new UncheckedIOException("Failed to read " + serviceFile, e);
                     }
-                });
-            }
+                    final List<String> unavailableList = new ArrayList<>(implList.size());
+                    for (String impl : implList) {
+                        if (classLoader.getResource(impl.replace('.', '/') + ".class") == null) {
+                            unavailableList.add(impl);
+                        }
+                    }
+                    if (!unavailableList.isEmpty()) {
+                        if (unavailableServices.isEmpty()) {
+                            unavailableServices = new HashMap<>();
+                        }
+                        unavailableServices.put(META_INF_SERVICES + serviceClass, unavailableList);
+                    }
+                }
+                return unavailableServices;
+            });
         } catch (IOException e) {
             throw new CodeGenException("Failed to read " + dep.getResolvedPaths(), e);
         }
-        return configServices;
     }
 
     private static Path codeGenOutDir(Path generatedSourcesDir,

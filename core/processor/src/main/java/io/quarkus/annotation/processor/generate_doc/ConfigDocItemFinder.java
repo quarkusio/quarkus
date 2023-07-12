@@ -123,24 +123,28 @@ class ConfigDocItemFinder {
             throws JsonProcessingException {
         List<ConfigDocItem> configDocItems = new ArrayList<>();
         TypeElement asTypeElement = (TypeElement) element;
-        TypeMirror superType = asTypeElement.getSuperclass();
+        List<TypeMirror> superTypes = new ArrayList<>();
+        superTypes.add(asTypeElement.getSuperclass());
+        superTypes.addAll(asTypeElement.getInterfaces());
 
-        if (superType.getKind() != TypeKind.NONE && !superType.toString().equals(Object.class.getName())) {
-            String key = superType.toString();
-            String rawConfigItems = allConfigurationGroups.get(key);
-            if (rawConfigItems == null) {
-                rawConfigItems = allConfigurationRoots.get(key);
-            }
-            final List<ConfigDocItem> superTypeConfigItems;
-            if (rawConfigItems == null) { // element not yet scanned
-                Element superElement = ((DeclaredType) superType).asElement();
-                superTypeConfigItems = recursivelyFindConfigItems(superElement, rootName, parentName,
-                        configPhase, withinAMap, sectionLevel, generateSeparateConfigGroupDocsFiles);
-            } else {
-                superTypeConfigItems = OBJECT_MAPPER.readValue(rawConfigItems, LIST_OF_CONFIG_ITEMS_TYPE_REF);
-            }
+        for (TypeMirror superType : superTypes) {
+            if (superType.getKind() != TypeKind.NONE && !superType.toString().equals(Object.class.getName())) {
+                String key = superType.toString();
+                String rawConfigItems = allConfigurationGroups.get(key);
+                if (rawConfigItems == null) {
+                    rawConfigItems = allConfigurationRoots.get(key);
+                }
+                final List<ConfigDocItem> superTypeConfigItems;
+                if (rawConfigItems == null) { // element not yet scanned
+                    Element superElement = ((DeclaredType) superType).asElement();
+                    superTypeConfigItems = recursivelyFindConfigItems(superElement, rootName, parentName,
+                            configPhase, withinAMap, sectionLevel, generateSeparateConfigGroupDocsFiles);
+                } else {
+                    superTypeConfigItems = OBJECT_MAPPER.readValue(rawConfigItems, LIST_OF_CONFIG_ITEMS_TYPE_REF);
+                }
 
-            configDocItems.addAll(superTypeConfigItems);
+                configDocItems.addAll(superTypeConfigItems);
+            }
         }
 
         for (Element enclosedElement : element.getEnclosedElements()) {

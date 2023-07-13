@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.Set;
 
 import javax.crypto.SecretKey;
@@ -232,7 +233,7 @@ public class CodeFlowAuthorizationTest {
 
         doTestCodeFlowUserInfo("code-flow-user-info-only", 300);
         clearCache();
-        doTestCodeFlowUserInfo("code-flow-user-info-github", 360);
+        doTestCodeFlowUserInfo("code-flow-user-info-github", 25200);
         clearCache();
         doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301);
         clearCache();
@@ -288,6 +289,10 @@ public class CodeFlowAuthorizationTest {
             long issuedAt = idTokenClaims.getLong("iat");
             long expiresAt = idTokenClaims.getLong("exp");
             assertEquals(internalIdTokenLifetime, expiresAt - issuedAt);
+
+            Cookie sessionCookie = getSessionCookie(webClient, tenantId);
+            Date date = sessionCookie.getExpires();
+            assertEquals(internalIdTokenLifetime, date.toInstant().getEpochSecond() - issuedAt);
 
             webClient.getCookieManager().clearCookies();
         }

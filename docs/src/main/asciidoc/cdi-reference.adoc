@@ -14,7 +14,7 @@ include::_attributes.adoc[]
 Quarkus DI solution (also called ArC) is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
 It implements the CDI Lite specification, with selected improvements on top, and passes the CDI Lite TCK.
 It does not implement CDI Full.
-See also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
+See also <<supported_features_and_limitations,the list of supported features and limitations>>.
 
 TIP: If you're new to CDI then we recommend you to read the xref:cdi.adoc[Introduction to CDI] first.
 
@@ -200,43 +200,20 @@ public class CounterBean {
 ----
 <1> A package-private constructor injection. `@Inject` is optional in this particular case.
 
-[[supported_features]]
-== Supported Features
+[[supported_features_and_limitations]]
+== [[supported_features]][[limitations]] Supported Features and Limitations
 
-* Programming model
-** Managed beans implemented by a Java class
-*** `@PostConstruct` and `@PreDestroy` lifecycle callbacks
-** Producer methods and fields, disposers
-** Qualifiers
-** Alternatives
-** Stereotypes
-* Dependency injection and lookup
-** Field, constructor and initializer/setter injection
-** Type-safe resolution
-** Programmatic lookup via `jakarta.enterprise.inject.Instance`
-** Client proxies
-** Injection point metadata
-* Scopes and contexts; see xref:cdi.adoc#bean-scope-available[here] for details
-* Interceptors
-** Business method interceptors: `@AroundInvoke`
-** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
+The CDI Lite specification is fully supported.
+The following features from CDI Full are also supported:
+
 * Decorators
-* Events and observer methods, including asynchronous events and transactional observer methods
-* Build Compatible Extensions
-* `BeanContainer`
+** Decoration of built-in beans, such as `Event`, is not supported
+* `BeanManager`
+** In addition to the `BeanContainer` methods, the following methods are supported: `getInjectableReference()`, `resolveDecorators()`
+* `@SessionScoped`
+** Only with the Undertow extension; see xref:cdi.adoc#bean-scope-available[here] for details
 
-[[limitations]]
-== Limitations
-
-* `@ConversationScoped` is not supported
-* Portable Extensions are not supported
-* `BeanManager`: in addition to the `BeanContainer` methods, only the following methods are supported: `getInjectableReference()`, `resolveDecorators()`
-* Specialization is not supported
-* `beans.xml` descriptor content is ignored, except for the `bean-discovery-mode` attribute
-* Passivation and passivating scopes are not supported
-* Interceptor methods on superclasses are not implemented yet
-* `@Interceptors` is not supported
-* Decoration of built-in beans, such as `Event`, is not supported
+NOTE: These additional features are not covered by the CDI Lite TCK.
 
 [[nonstandard_features]]
 == Non-standard Features

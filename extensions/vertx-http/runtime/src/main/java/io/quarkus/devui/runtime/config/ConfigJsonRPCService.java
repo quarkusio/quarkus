@@ -11,19 +11,23 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.comms.JsonRpcMessage;
 import io.quarkus.devui.runtime.comms.MessageType;
+import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 public class ConfigJsonRPCService {
     private static final Logger LOG = Logger.getLogger(ConfigJsonRPCService.class.getName());
+
+    @Inject
+    ConfigDescriptionBean configDescriptionBean;
 
     public JsonRpcMessage<Boolean> updateProperty(String name, String value) {
         DevConsoleManager.invoke("config-update-property", Map.of("name", name, "value", value));
@@ -31,7 +35,6 @@ public class ConfigJsonRPCService {
     }
 
     public boolean updateProperties(String content, String type) {
-
         if (type.equalsIgnoreCase("properties")) {
             Properties p = new Properties();
             try (StringReader sr = new StringReader(content)) {
@@ -47,11 +50,14 @@ public class ConfigJsonRPCService {
         return false;
     }
 
+    public JsonArray getAllConfiguration() {
+        return new JsonArray(configDescriptionBean.getAllConfig());
+    }
+
     public JsonObject getAllValues() {
         JsonObject values = new JsonObject();
-        Config config = ConfigProvider.getConfig();
-        for (String name : config.getPropertyNames()) {
-            values.put(name, config.getConfigValue(name).getValue());
+        for (ConfigDescription configDescription : configDescriptionBean.getAllConfig()) {
+            values.put(configDescription.getName(), configDescription.getConfigValue().getValue());
         }
         return values;
     }

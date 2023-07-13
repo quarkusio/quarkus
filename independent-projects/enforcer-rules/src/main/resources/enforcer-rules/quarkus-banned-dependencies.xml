@@ -110,6 +110,9 @@
                 <!-- These defunct artifacts cause conflicts with their modern counterparts -->
                 <!-- replaced with: org.codehaus.plexus:* -->
                 <exclude>org.sonatype.plexus:*</exclude>
+                <!-- svm artifact, shouldn't be used as it's not public API. Use the -->
+                <!-- org.graalvm.sdk:graal-sdk dependency instead -->
+                <exclude>org.graalvm.nativeimage:svm</exclude>
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

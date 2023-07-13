@@ -90,7 +90,6 @@
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
         <graal-sdk.version>22.3.2</graal-sdk.version>
-        <graal-svm.version>${graal-sdk.version}</graal-svm.version>
         <gizmo.version>1.6.1.Final</gizmo.version>
         <jackson-bom.version>2.15.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
@@ -3235,10 +3234,6 @@
                 <version>${jboss-logmanager.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.graalvm.nativeimage</groupId>
-                        <artifactId>svm</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.jboss.modules</groupId>
                         <artifactId>jboss-modules</artifactId>
                     </exclusion>
@@ -4948,20 +4943,6 @@
                 <version>${jandex.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.graalvm.nativeimage</groupId>
-                <artifactId>svm</artifactId>
-                <version>${graal-svm.version}</version>
-                <!-- TODO: declaring a provided or test scope in BoM is not necessarily a good practice. We should think of removing it -->
-                <scope>provided</scope>
-                <!-- We only want the included annotations -->
-                <exclusions>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>*</groupId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-annotations</artifactId>

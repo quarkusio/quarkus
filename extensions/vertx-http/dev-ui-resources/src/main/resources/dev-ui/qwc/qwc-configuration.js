@@ -17,7 +17,6 @@ import { notifier } from 'notifier';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import { observeState } from 'lit-element-state';
-import { devuiState } from 'devui-state';
 import { connectionState } from 'connection-state';
 import 'qui-badge';
 
@@ -90,6 +89,7 @@ export class QwcConfiguration extends observeState(LitElement) {
     static properties = {
         _filtered: {state: true, type: Array}, // Filter the visible configuration
         _visibleConfiguration: {state: true, type: Array}, // Either all or just user's configuration
+        _allConfiguration: {state: true, type: Array},
         _values: {state: true},
         _detailsOpenedItem: {state: true, type: Array},
         _busy: {state: true},
@@ -105,8 +105,11 @@ export class QwcConfiguration extends observeState(LitElement) {
         if(this._filteredValue){
             this._filteredValue = this._filteredValue.replaceAll(",", " OR ");
         }
-        this._visibleConfiguration = devuiState.allConfiguration;
-        this._filtered = this._visibleConfiguration;
+        this.jsonRpc.getAllConfiguration().then(e => {
+            this._allConfiguration = e.result;
+            this._visibleConfiguration = e.result;
+            this._filtered = e.result;
+        })
         this.jsonRpc.getAllValues().then(e => {
             this._values = e.result;
         });
@@ -184,12 +187,12 @@ export class QwcConfiguration extends observeState(LitElement) {
     _toggleShowOnlyOwnProperties(onlyMine){
         this._showOnlyOwnProperties = onlyMine;
         if(this._showOnlyOwnProperties){
-            this._visibleConfiguration = devuiState.allConfiguration.filter((prop) => {
+            this._visibleConfiguration = this._allConfiguration.filter((prop) => {
                 return (prop.configValue.sourceName && prop.configValue.sourceName.startsWith("PropertiesConfigSource[source")
                     && prop.configValue.sourceName.endsWith("/application.properties]"));
             });
         }else {
-            this._visibleConfiguration = devuiState.allConfiguration;
+            this._visibleConfiguration = this._allConfiguration;
         }
         return this._filterGrid();
     }

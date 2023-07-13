@@ -3,24 +3,26 @@ package io.quarkus.kubernetes.config.runtime;
 import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "kubernetes-config", phase = ConfigPhase.BOOTSTRAP)
-public class KubernetesConfigSourceConfig {
+@ConfigMapping(prefix = "quarkus.kubernetes-config")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface KubernetesConfigSourceConfig {
 
     /**
      * If set to true, the application will attempt to look up the configuration from the API server
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean enabled;
+    @WithDefault("false")
+    boolean enabled();
 
     /**
      * If set to true, the application will not start if any of the configured config sources cannot be located
      */
-    @ConfigItem(defaultValue = "true")
-    public boolean failOnMissingConfig;
+    @WithDefault("true")
+    boolean failOnMissingConfig();
 
     /**
      * ConfigMaps to look for in the namespace that the Kubernetes Client has been configured for.
@@ -28,8 +30,7 @@ public class KubernetesConfigSourceConfig {
      * in this list.
      * Furthermore, any Secrets defined in {@code secrets}, will have higher priorities than all ConfigMaps.
      */
-    @ConfigItem
-    public Optional<List<String>> configMaps;
+    Optional<List<String>> configMaps();
 
     /**
      * Secrets to look for in the namespace that the Kubernetes Client has been configured for.
@@ -38,14 +39,11 @@ public class KubernetesConfigSourceConfig {
      * in this list.
      * Furthermore, these Secrets have a higher priorities than all ConfigMaps defined in {@code configMaps}.
      */
-    @ConfigItem
-    public Optional<List<String>> secrets;
+    Optional<List<String>> secrets();
 
     /**
      * Namespace to look for config maps and secrets. If this is not specified, then the namespace configured in the kubectl
      * config context is used. If the value is specified and the namespace doesn't exist, the application will fail to start.
      */
-    @ConfigItem
-    public Optional<String> namespace;
-
+    Optional<String> namespace();
 }

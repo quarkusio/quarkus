@@ -5,11 +5,14 @@ import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_URL;
+import static io.quarkus.it.opentelemetry.reactive.Utils.getExceptionEventData;
+import static io.quarkus.it.opentelemetry.reactive.Utils.getSpanByKindAndParentId;
+import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
+import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
-import static io.restassured.RestAssured.when;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,9 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.opentelemetry.api.trace.SpanKind;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
 public class OpenTelemetryReactiveTest {
@@ -52,6 +53,35 @@ public class OpenTelemetryReactiveTest {
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
+    }
+
+    @Test
+    void blockingException() {
+        given()
+                .when()
+                .get("/reactive/blockingException")
+                .then()
+                .statusCode(500);
+
+        assertExceptionRecorded();
+    }
+
+    @Test
+    void reactiveException() {
+        given()
+                .when()
+                .get("/reactive/reactiveException")
+                .then()
+                .statusCode(500);
+
+        assertExceptionRecorded();
+    }
+
+    private static void assertExceptionRecorded() {
+        await().atMost(5, TimeUnit.SECONDS).until(() -> getExceptionEventData().size() == 1);
+        assertThat(getExceptionEventData()).singleElement().satisfies(s -> {
+            assertThat(s).contains("dummy");
+        });
     }
 
     @Test
@@ -166,24 +196,5 @@ public class OpenTelemetryReactiveTest {
         assertEquals("/reactive?name=Goku", ((Map<?, ?>) gokuServer.get("attributes")).get(HTTP_TARGET.getKey()));
         Map<String, Object> gokuInternal = getSpanByKindAndParentId(spans, INTERNAL, gokuServer.get("spanId"));
         assertEquals("helloGet", gokuInternal.get("name"));
-    }
-
-    private static List<Map<String, Object>> getSpans() {
-        return when().get("/export").body().as(new TypeRef<>() {
-        });
-    }
-
-    private static Map<String, Object> getSpanByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
-        List<Map<String, Object>> span = getSpansByKindAndParentId(spans, kind, parentSpanId);
-        assertEquals(1, span.size());
-        return span.get(0);
-    }
-
-    private static List<Map<String, Object>> getSpansByKindAndParentId(List<Map<String, Object>> spans, SpanKind kind,
-            Object parentSpanId) {
-        return spans.stream()
-                .filter(map -> map.get("kind").equals(kind.toString()))
-                .filter(map -> map.get("parentSpanId").equals(parentSpanId)).collect(toList());
     }
 }

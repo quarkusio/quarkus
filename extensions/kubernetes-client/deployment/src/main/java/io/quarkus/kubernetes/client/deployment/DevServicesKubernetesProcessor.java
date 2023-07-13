@@ -159,6 +159,7 @@ public class DevServicesKubernetesProcessor {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private RunningDevService startKubernetes(DockerStatusBuildItem dockerStatusBuildItem, KubernetesDevServiceCfg config,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
@@ -226,6 +227,8 @@ public class DevServicesKubernetesProcessor {
             }
             timeout.ifPresent(container::withStartupTimeout);
 
+            container.withEnv(config.containerEnv);
+
             container.start();
 
             KubeConfig kubeConfig = KubeConfigUtils.parseKubeConfig(container.getKubeconfig());
@@ -279,7 +282,7 @@ public class DevServicesKubernetesProcessor {
     }
 
     private KubernetesDevServiceCfg getConfiguration(KubernetesClientBuildConfig cfg) {
-        KubernetesDevServicesBuildTimeConfig devServicesConfig = cfg.devservices;
+        KubernetesDevServicesBuildTimeConfig devServicesConfig = cfg.devservices();
         return new KubernetesDevServiceCfg(devServicesConfig);
     }
 
@@ -291,19 +294,21 @@ public class DevServicesKubernetesProcessor {
         public boolean overrideKubeconfig;
         public boolean shared;
         public String serviceName;
+        public Map<String, String> containerEnv;
 
         public KubernetesDevServiceCfg(KubernetesDevServicesBuildTimeConfig config) {
-            this.devServicesEnabled = config.enabled;
-            this.serviceName = config.serviceName;
-            this.apiVersion = config.apiVersion;
-            this.overrideKubeconfig = config.overrideKubeconfig;
-            this.flavor = config.flavor;
-            this.shared = config.shared;
+            this.devServicesEnabled = config.enabled();
+            this.serviceName = config.serviceName();
+            this.apiVersion = config.apiVersion();
+            this.overrideKubeconfig = config.overrideKubeconfig();
+            this.flavor = config.flavor();
+            this.shared = config.shared();
+            this.containerEnv = config.containerEnv();
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, flavor, apiVersion, overrideKubeconfig, shared, serviceName);
+            return Objects.hash(devServicesEnabled, flavor, apiVersion, overrideKubeconfig, shared, serviceName, containerEnv);
         }
 
         @Override
@@ -315,7 +320,8 @@ public class DevServicesKubernetesProcessor {
             KubernetesDevServiceCfg other = (KubernetesDevServiceCfg) obj;
             return devServicesEnabled == other.devServicesEnabled && flavor == other.flavor
                     && Objects.equals(apiVersion, other.apiVersion) && overrideKubeconfig == other.overrideKubeconfig
-                    && shared == other.shared && Objects.equals(serviceName, other.serviceName);
+                    && shared == other.shared && Objects.equals(serviceName, other.serviceName)
+                    && Objects.equals(containerEnv, other.containerEnv);
         }
     }
 

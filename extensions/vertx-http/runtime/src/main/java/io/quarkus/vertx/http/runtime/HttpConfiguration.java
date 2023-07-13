@@ -45,6 +45,13 @@ public class HttpConfiguration {
     public String host;
 
     /**
+     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running and
+     * listening on the host specified by this property.
+     */
+    @ConfigItem
+    public Optional<String> testHost;
+
+    /**
      * Enable listening to host:port
      */
     @ConfigItem(defaultValue = "true")
@@ -61,6 +68,13 @@ public class HttpConfiguration {
      */
     @ConfigItem(defaultValue = "8444")
     public int testSslPort;
+
+    /**
+     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running
+     * to configure the test to use SSL.
+     */
+    @ConfigItem
+    public Optional<Boolean> testSslEnabled;
 
     /**
      * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled}
@@ -80,6 +94,14 @@ public class HttpConfiguration {
      */
     @ConfigItem(defaultValue = "true")
     public boolean http2;
+
+    /**
+     * Enables or Disable the HTTP/2 Push feature.
+     * This setting can be used to disable server push. The server will not send a {@code PUSH_PROMISE} frame if it
+     * receives this parameter set to @{code false}.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean http2PushEnabled;
 
     /**
      * The CORS config
@@ -178,6 +200,14 @@ public class HttpConfiguration {
      */
     @ConfigItem(defaultValue = "-1")
     public int acceptBacklog;
+
+    /**
+     * Set the SETTINGS_INITIAL_WINDOW_SIZE HTTP/2 setting.
+     * Indicates the sender's initial window size (in octets) for stream-level flow control.
+     * The initial value is {@code 2^16-1} (65,535) octets.
+     */
+    @ConfigItem
+    public OptionalInt initialWindowSize;
 
     /**
      * Path to a unix domain socket

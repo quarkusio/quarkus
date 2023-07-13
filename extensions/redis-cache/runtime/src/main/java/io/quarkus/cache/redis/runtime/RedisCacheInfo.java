@@ -13,7 +13,12 @@ public class RedisCacheInfo {
     /**
      * The default time to live of the item stored in the cache
      */
-    public Optional<Duration> ttl = Optional.empty();
+    public Optional<Duration> expireAfterAccess = Optional.empty();
+
+    /**
+     * The default time to live to add to the item once read
+     */
+    public Optional<Duration> expireAfterWrite = Optional.empty();
 
     /**
      * the key prefix allowing to identify the keys belonging to the cache.

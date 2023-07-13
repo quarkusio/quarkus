@@ -16,6 +16,7 @@ import io.quarkus.redis.datasource.stream.XAddArgs;
 import io.quarkus.redis.datasource.stream.XClaimArgs;
 import io.quarkus.redis.datasource.stream.XGroupCreateArgs;
 import io.quarkus.redis.datasource.stream.XGroupSetIdArgs;
+import io.quarkus.redis.datasource.stream.XPendingArgs;
 import io.quarkus.redis.datasource.stream.XReadArgs;
 import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
@@ -424,6 +425,42 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         RedisCommand cmd = RedisCommand.of(Command.XTRIM)
                 .put(marshaller.encode(key))
                 .putArgs(args);
+
+        return execute(cmd);
+    }
+
+    Uni<Response> _xpending(K key, String group) {
+        nonNull(key, "key");
+        nonNull(key, "group");
+
+        RedisCommand cmd = RedisCommand.of(Command.XPENDING)
+                .put(marshaller.encode(key))
+                .put(group);
+        return execute(cmd);
+    }
+
+    Uni<Response> _xpending(K key, String group, StreamRange range, int count, XPendingArgs args) {
+        nonNull(key, "key");
+        nonNull(key, "group");
+        nonNull(range, "range");
+        positive(count, "count");
+
+        RedisCommand cmd = RedisCommand.of(Command.XPENDING)
+                .put(marshaller.encode(key))
+                .put(group);
+
+        // IDLE must be before the range and count
+        if (args != null && args.idle() != null) {
+            cmd.put("IDLE");
+            cmd.put(args.idle().toMillis());
+        }
+
+        cmd.putArgs(range)
+                .put(count);
+
+        if (args != null) {
+            cmd.putArgs(args);
+        }
 
         return execute(cmd);
     }

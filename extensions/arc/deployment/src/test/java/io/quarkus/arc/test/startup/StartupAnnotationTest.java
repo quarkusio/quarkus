@@ -9,6 +9,7 @@ import java.util.function.Consumer;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Produces;
 import jakarta.enterprise.inject.spi.ObserverMethod;
 import jakarta.inject.Singleton;
@@ -34,7 +35,8 @@ public class StartupAnnotationTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(StartMe.class, SingletonStartMe.class, DependentStartMe.class, ProducerStartMe.class))
+                    .addClasses(StartMe.class, SingletonStartMe.class, DependentStartMe.class, ProducerStartMe.class,
+                            StartupMethods.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -70,7 +72,7 @@ public class StartupAnnotationTest {
     @Test
     public void testStartup() {
         // StartMe, SingletonStartMe, ProducerStartMe, StartupMethods, DependentStartMe
-        assertEquals(17, LOG.size(), "Unexpected number of log messages: " + LOG);
+        assertEquals(23, LOG.size(), "Unexpected number of log messages: " + LOG);
         assertEquals("startMe_c", LOG.get(0));
         assertEquals("startMe_c", LOG.get(1));
         assertEquals("startMe_pc", LOG.get(2));
@@ -80,14 +82,20 @@ public class StartupAnnotationTest {
         assertEquals("produce_long", LOG.get(6));
         assertEquals("producer_pd", LOG.get(7));
         assertEquals("producer_pc", LOG.get(8));
-        assertEquals("produce_string", LOG.get(9));
+        assertEquals("dispose_long", LOG.get(9));
         assertEquals("producer_pd", LOG.get(10));
-        assertEquals("startup_pc", LOG.get(11));
-        assertEquals("startup_first", LOG.get(12));
-        assertEquals("startup_second", LOG.get(13));
-        assertEquals("dependent_c", LOG.get(14));
-        assertEquals("dependent_pc", LOG.get(15));
-        assertEquals("dependent_pd", LOG.get(16));
+        assertEquals("producer_pc", LOG.get(11));
+        assertEquals("produce_string", LOG.get(12));
+        assertEquals("producer_pd", LOG.get(13));
+        assertEquals("producer_pc", LOG.get(14));
+        assertEquals("dispose_string", LOG.get(15));
+        assertEquals("producer_pd", LOG.get(16));
+        assertEquals("startup_pc", LOG.get(17));
+        assertEquals("startup_first", LOG.get(18));
+        assertEquals("startup_second", LOG.get(19));
+        assertEquals("dependent_c", LOG.get(20));
+        assertEquals("dependent_pc", LOG.get(21));
+        assertEquals("dependent_pd", LOG.get(22));
     }
 
     // This component should be started first
@@ -162,11 +170,19 @@ public class StartupAnnotationTest {
             return "ok";
         }
 
+        void disposeString(@Disposes String val) {
+            LOG.add("dispose_string");
+        }
+
         @Startup(Integer.MAX_VALUE - 20)
         @Produces
         Long produceLong() {
             LOG.add("produce_long");
             return 1l;
+        }
+
+        void disposeLong(@Disposes Long val) {
+            LOG.add("dispose_long");
         }
 
         @PostConstruct
@@ -181,8 +197,6 @@ public class StartupAnnotationTest {
 
     }
 
-    @Singleton
-    @Unremovable // only classes annotated with @Startup are made unremovable
     static class StartupMethods {
 
         @Startup(Integer.MAX_VALUE - 2)

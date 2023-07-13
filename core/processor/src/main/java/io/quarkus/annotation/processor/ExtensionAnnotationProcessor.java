@@ -1,5 +1,6 @@
 package io.quarkus.annotation.processor;
 
+import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_GROUP;
 import static io.quarkus.annotation.processor.Constants.ANNOTATION_CONFIG_MAPPING;
 import static javax.lang.model.util.ElementFilter.constructorsIn;
 import static javax.lang.model.util.ElementFilter.fieldsIn;
@@ -27,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -44,6 +46,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -375,6 +378,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                                     "Class '" + parameterTypeElement.getQualifiedName()
                                             + "' is annotated with @Recorder and therefore cannot be made as a final class.");
+                        } else if (getPackageName(clazz).equals(getPackageName(parameterTypeElement))) {
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING,
+                                    "Build step class '" + clazz.getQualifiedName()
+                                            + "' and recorder '" + parameterTypeElement
+                                            + "' share the same package. This is highly discouraged as it can lead to unexpected results.");
                         }
                         hasRecorder = true;
                         break;
@@ -388,6 +396,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                         + "' which is annotated with '@Record' does not contain a method parameter whose type is annotated with '@Recorder'.");
             }
         }
+    }
+
+    private Name getPackageName(TypeElement clazz) {
+        return processingEnv.getElementUtils().getPackageOf(clazz).getQualifiedName();
     }
 
     private StringBuilder getRelativeBinaryName(TypeElement te, StringBuilder b) {
@@ -545,9 +557,53 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private void processMethodConfigMapping(ExecutableElement method, Properties javadocProps, String className) {
         if (method.getModifiers().contains(Modifier.ABSTRACT)) {
-            final String docComment = getRequiredJavadoc(method);
+            // Skip toString method, because mappings can include it and generate it
+            if (method.getSimpleName().contentEquals("toString") && method.getParameters().size() == 0) {
+                return;
+            }
+
+            String docComment = getRequiredJavadoc(method);
             javadocProps.put(className + Constants.DOT + method.getSimpleName().toString(), docComment);
+
+            // Find groups without annotation
+            TypeMirror returnType = method.getReturnType();
+            if (TypeKind.DECLARED.equals(returnType.getKind())) {
+                DeclaredType declaredType = (DeclaredType) returnType;
+                if (!isAnnotationPresent(declaredType.asElement(), ANNOTATION_CONFIG_GROUP)) {
+                    TypeElement type = unwrapConfigGroup(returnType);
+                    if (type != null && ElementKind.INTERFACE.equals(type.getKind())) {
+                        recordMappingJavadoc(type);
+                        configDocItemScanner.addConfigGroups(type);
+                    }
+                }
+            }
         }
+    }
+
+    private TypeElement unwrapConfigGroup(TypeMirror typeMirror) {
+        if (typeMirror == null) {
+            return null;
+        }
+
+        DeclaredType declaredType = (DeclaredType) typeMirror;
+        String name = declaredType.asElement().toString();
+        List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
+        if (typeArguments.size() == 0) {
+            if (!name.startsWith("java.")) {
+                return (TypeElement) declaredType.asElement();
+            }
+        } else if (typeArguments.size() == 1) {
+            if (name.equals(Optional.class.getName()) ||
+                    name.equals(List.class.getName()) ||
+                    name.equals(Set.class.getName())) {
+                return unwrapConfigGroup(typeArguments.get(0));
+            }
+        } else if (typeArguments.size() == 2) {
+            if (name.equals(Map.class.getName())) {
+                return unwrapConfigGroup(typeArguments.get(1));
+            }
+        }
+        return null;
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {

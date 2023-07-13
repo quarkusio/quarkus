@@ -9,6 +9,7 @@ import 'qui-badge';
 import { removedBeans } from 'build-time-data';
 import { removedDecorators } from 'build-time-data';
 import { removedInterceptors } from 'build-time-data';
+import 'qui-ide-link';
 
 /**
  * This component shows the Arc RemovedComponents
@@ -142,7 +143,8 @@ export class QwcArcRemovedComponents extends LitElement {
       ${bean.nonDefaultQualifiers.map(qualifier =>
             html`${this._simpleNameRenderer(qualifier)}`
         )}
-      <code>${bean.providerType.name}</code>
+      <qui-ide-link fileName='${bean.providerType.name}'
+                        lineNumber=0><code>${bean.providerType.name}</code></qui-ide-link>
       </vaadin-vertical-layout>`;
     }
 

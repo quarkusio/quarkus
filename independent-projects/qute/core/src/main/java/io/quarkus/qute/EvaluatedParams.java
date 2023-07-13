@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 
 public final class EvaluatedParams {
 
-    static final EvaluatedParams EMPTY = new EvaluatedParams(CompletedStage.VOID, new Supplier<?>[0]);
+    static final EvaluatedParams EMPTY = new EvaluatedParams(CompletedStage.ofVoid(), new Supplier<?>[0]);
 
     /**
      *
@@ -52,7 +52,7 @@ public final class EvaluatedParams {
         }
         CompletionStage<?> cs;
         if (asyncResults == null) {
-            cs = failure != null ? failure : CompletedStage.VOID;
+            cs = failure != null ? failure : CompletedStage.ofVoid();
         } else if (asyncResults.size() == 1) {
             cs = asyncResults.get(0);
         } else {
@@ -101,7 +101,7 @@ public final class EvaluatedParams {
         }
         CompletionStage<?> cs;
         if (asyncResults == null) {
-            cs = failure != null ? failure : CompletedStage.VOID;
+            cs = failure != null ? failure : CompletedStage.ofVoid();
         } else if (asyncResults.size() == 1) {
             cs = asyncResults.get(0);
         } else {

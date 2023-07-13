@@ -37,9 +37,11 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.maven.components.ManifestSection;
+import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
@@ -54,17 +56,19 @@ public class QuarkusBootstrapProvider implements Closeable {
     private static final String MANIFEST_SECTIONS_PROPERTY_PREFIX = "quarkus.package.manifest.manifest-sections";
     private static final String MANIFEST_ATTRIBUTES_PROPERTY_PREFIX = "quarkus.package.manifest.attributes";
 
+    private final QuarkusWorkspaceProvider workspaceProvider;
     private final RepositorySystem repoSystem;
-
     private final RemoteRepositoryManager remoteRepoManager;
 
     private final Cache<String, QuarkusMavenAppBootstrap> appBootstrapProviders = CacheBuilder.newBuilder()
             .concurrencyLevel(4).softValues().initialCapacity(10).build();
 
     @Inject
-    public QuarkusBootstrapProvider(RepositorySystem repoSystem, RemoteRepositoryManager remoteRepoManager) {
+    public QuarkusBootstrapProvider(RepositorySystem repoSystem, RemoteRepositoryManager remoteRepoManager,
+            QuarkusWorkspaceProvider workspaceProvider) {
         this.repoSystem = repoSystem;
         this.remoteRepoManager = remoteRepoManager;
+        this.workspaceProvider = workspaceProvider;
     }
 
     static ArtifactKey getProjectId(MavenProject project) {
@@ -87,17 +91,23 @@ public class QuarkusBootstrapProvider implements Closeable {
         return projectModels;
     }
 
-    public RepositorySystem repositorySystem() {
-        return repoSystem;
+    private static String getBootstrapProviderId(ArtifactKey moduleKey, String bootstrapId) {
+        return bootstrapId == null ? moduleKey.toGacString() : moduleKey.toGacString() + "-" + bootstrapId;
     }
 
+    @Deprecated(forRemoval = true)
+    public RepositorySystem repositorySystem() {
+        return workspaceProvider.getRepositorySystem();
+    }
+
+    @Deprecated(forRemoval = true)
     public RemoteRepositoryManager remoteRepositoryManager() {
         return remoteRepoManager;
     }
 
     public QuarkusMavenAppBootstrap bootstrapper(QuarkusBootstrapMojo mojo) {
         try {
-            return appBootstrapProviders.get(String.format("%s-%s", mojo.projectId(), mojo.executionId()),
+            return appBootstrapProviders.get(getBootstrapProviderId(mojo.projectId(), mojo.bootstrapId()),
                     QuarkusMavenAppBootstrap::new);
         } catch (ExecutionException e) {
             throw new IllegalStateException("Failed to cache a new instance of " + QuarkusMavenAppBootstrap.class.getName(),
@@ -110,11 +120,12 @@ public class QuarkusBootstrapProvider implements Closeable {
         return bootstrapper(mojo).bootstrapApplication(mojo, mode);
     }
 
-    public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode) {
+    public ApplicationModel getResolvedApplicationModel(ArtifactKey projectId, LaunchMode mode, String bootstrapId) {
         if (appBootstrapProviders.size() == 0) {
             return null;
         }
-        final QuarkusMavenAppBootstrap provider = appBootstrapProviders.getIfPresent(projectId + "-null");
+        final QuarkusMavenAppBootstrap provider = appBootstrapProviders
+                .getIfPresent(getBootstrapProviderId(projectId, bootstrapId));
         if (provider == null) {
             return null;
         }
@@ -157,19 +168,22 @@ public class QuarkusBootstrapProvider implements Closeable {
 
         private MavenArtifactResolver artifactResolver(QuarkusBootstrapMojo mojo, LaunchMode mode)
                 throws MojoExecutionException {
-            isWorkspaceDiscovery(mojo);
             try {
-                final MavenArtifactResolver.Builder builder = MavenArtifactResolver.builder()
-                        .setCurrentProject(mojo.mavenProject().getFile().toString())
-                        .setPreferPomsFromWorkspace(mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST)
+                if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
+                    return workspaceProvider.createArtifactResolver(
+                            BootstrapMavenContext.config()
+                                    .setCurrentProject(mojo.mavenProject().getFile().toString())
+                                    .setPreferPomsFromWorkspace(true)
+                                    .setProjectModelProvider(getProjectMap(mojo.mavenSession())::get));
+                }
+                // PROD packaging mode with workspace discovery disabled
+                return MavenArtifactResolver.builder()
+                        .setWorkspaceDiscovery(false)
                         .setRepositorySystem(repoSystem)
                         .setRepositorySystemSession(mojo.repositorySystemSession())
                         .setRemoteRepositories(mojo.remoteRepositories())
-                        .setRemoteRepositoryManager(remoteRepoManager);
-                if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
-                    builder.setWorkspaceDiscovery(true).setProjectModelProvider(getProjectMap(mojo.mavenSession())::get);
-                }
-                return builder.build();
+                        .setRemoteRepositoryManager(remoteRepoManager)
+                        .build();
             } catch (BootstrapMavenException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus bootstrap Maven artifact resolver", e);
             }
@@ -177,55 +191,6 @@ public class QuarkusBootstrapProvider implements Closeable {
 
         private CuratedApplication doBootstrap(QuarkusBootstrapMojo mojo, LaunchMode mode)
                 throws MojoExecutionException {
-            final Properties projectProperties = mojo.mavenProject().getProperties();
-            final Properties effectiveProperties = new Properties();
-            // quarkus. properties > ignoredEntries in pom.xml
-            if (mojo.ignoredEntries() != null && mojo.ignoredEntries().length > 0) {
-                String joinedEntries = String.join(",", mojo.ignoredEntries());
-                effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
-            }
-            for (String name : projectProperties.stringPropertyNames()) {
-                if (name.startsWith("quarkus.")) {
-                    effectiveProperties.setProperty(name, projectProperties.getProperty(name));
-                }
-            }
-
-            // Add plugin properties
-            effectiveProperties.putAll(mojo.properties());
-
-            effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
-            effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
-
-            for (Map.Entry<String, String> attribute : mojo.manifestEntries().entrySet()) {
-                if (attribute.getValue() == null) {
-                    mojo.getLog().warn("Skipping manifest entry property " + attribute.getKey() + " with a missing value");
-                } else {
-                    effectiveProperties.put(toManifestAttributeKey(attribute.getKey()), attribute.getValue());
-                }
-            }
-            for (ManifestSection section : mojo.manifestSections()) {
-                for (Map.Entry<String, String> attribute : section.getManifestEntries().entrySet()) {
-                    effectiveProperties
-                            .put(toManifestSectionAttributeKey(section.getName(), attribute.getKey()), attribute.getValue());
-                }
-            }
-
-            // Add other properties that may be required for expansion
-            for (Object value : effectiveProperties.values()) {
-                for (String reference : Expression.compile((String) value, LENIENT_SYNTAX, NO_TRIM).getReferencedStrings()) {
-                    String referenceValue = mojo.mavenSession().getUserProperties().getProperty(reference);
-                    if (referenceValue != null) {
-                        effectiveProperties.setProperty(reference, referenceValue);
-                        continue;
-                    }
-
-                    referenceValue = projectProperties.getProperty(reference);
-                    if (referenceValue != null) {
-                        effectiveProperties.setProperty(reference, referenceValue);
-                    }
-                }
-            }
-
             final BootstrapAppModelResolver modelResolver = new BootstrapAppModelResolver(artifactResolver(mojo, mode))
                     .setDevMode(mode == LaunchMode.DEVELOPMENT)
                     .setTest(mode == LaunchMode.TEST)
@@ -263,7 +228,7 @@ public class QuarkusBootstrapProvider implements Closeable {
                     .setExistingModel(appModel)
                     .setIsolateDeployment(true)
                     .setBaseClassLoader(getClass().getClassLoader())
-                    .setBuildSystemProperties(effectiveProperties)
+                    .setBuildSystemProperties(getBuildSystemProperties(mojo, true))
                     .setProjectRoot(mojo.baseDir().toPath())
                     .setBaseName(mojo.finalName())
                     .setOriginalBaseName(mojo.mavenProject().getBuild().getFinalName())
@@ -275,6 +240,74 @@ public class QuarkusBootstrapProvider implements Closeable {
             } catch (BootstrapException e) {
                 throw new MojoExecutionException("Failed to bootstrap the application", e);
             }
+        }
+
+        /**
+         * Collects properties from a project configuration that are relevant for the build.
+         * The {@code quarkusOnly} argument indicates whether only {@code quarkus.*} properties
+         * should be collected, which is currently set to {@code true} for building an application.
+         * {@code quarkusOnly} is set to {@code false} when initializing configuration for
+         * source code generators, for example to enable {@code avro.*} properties, etc.
+         *
+         * @param mojo Mojo for which the properties should be collected
+         * @param quarkusOnly whether to collect only 'quarkus.*' properties
+         * @return properties from a project configuration that are relevant for the build
+         * @throws MojoExecutionException in case of a failure
+         */
+        public Properties getBuildSystemProperties(QuarkusBootstrapMojo mojo, boolean quarkusOnly)
+                throws MojoExecutionException {
+            final Properties effectiveProperties = new Properties();
+            // quarkus. properties > ignoredEntries in pom.xml
+            if (mojo.ignoredEntries() != null && mojo.ignoredEntries().length > 0) {
+                String joinedEntries = String.join(",", mojo.ignoredEntries());
+                effectiveProperties.setProperty("quarkus.package.user-configured-ignored-entries", joinedEntries);
+            }
+
+            final Properties projectProperties = mojo.mavenProject().getProperties();
+            for (String name : projectProperties.stringPropertyNames()) {
+                if (!quarkusOnly || name.startsWith("quarkus.")) {
+                    effectiveProperties.setProperty(name, projectProperties.getProperty(name));
+                }
+            }
+
+            // Add plugin properties
+            effectiveProperties.putAll(mojo.properties());
+
+            effectiveProperties.putIfAbsent("quarkus.application.name", mojo.mavenProject().getArtifactId());
+            effectiveProperties.putIfAbsent("quarkus.application.version", mojo.mavenProject().getVersion());
+
+            for (Map.Entry<String, String> attribute : mojo.manifestEntries().entrySet()) {
+                if (attribute.getValue() == null) {
+                    mojo.getLog().warn("Skipping manifest entry property " + attribute.getKey() + " with a missing value");
+                } else {
+                    effectiveProperties.put(toManifestAttributeKey(attribute.getKey()), attribute.getValue());
+                }
+            }
+            for (ManifestSection section : mojo.manifestSections()) {
+                for (Map.Entry<String, String> attribute : section.getManifestEntries().entrySet()) {
+                    effectiveProperties
+                            .put(toManifestSectionAttributeKey(section.getName(), attribute.getKey()),
+                                    attribute.getValue());
+                }
+            }
+
+            // Add other properties that may be required for expansion
+            for (Object value : effectiveProperties.values()) {
+                for (String reference : Expression.compile((String) value, LENIENT_SYNTAX, NO_TRIM)
+                        .getReferencedStrings()) {
+                    String referenceValue = mojo.mavenSession().getUserProperties().getProperty(reference);
+                    if (referenceValue != null) {
+                        effectiveProperties.setProperty(reference, referenceValue);
+                        continue;
+                    }
+
+                    referenceValue = projectProperties.getProperty(reference);
+                    if (referenceValue != null) {
+                        effectiveProperties.setProperty(reference, referenceValue);
+                    }
+                }
+            }
+            return effectiveProperties;
         }
 
         private String toManifestAttributeKey(String key) throws MojoExecutionException {

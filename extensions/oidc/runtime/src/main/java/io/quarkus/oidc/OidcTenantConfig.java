@@ -31,8 +31,9 @@ public class OidcTenantConfig extends OidcCommonConfig {
     /**
      * If this tenant configuration is enabled.
      *
-     * Note that the default tenant will be disabled if it is not configured
-     * but either {@link TenantResolver} or {@link TenantConfigResolver} are registered.
+     * Note that the default tenant will be disabled if it is not configured but either
+     * {@link TenantConfigResolver} which will resolve tenant configurations is registered
+     * or named tenants are configured.
      * You do not have to disable the default tenant in this case.
      */
     @ConfigItem(defaultValue = "true")
@@ -311,12 +312,72 @@ public class OidcTenantConfig extends OidcCommonConfig {
         @ConfigItem
         public Optional<String> path = Optional.empty();
 
+        /**
+         * Maximum number of logout tokens that can be cached before they are matched against ID tokens stored in session
+         * cookies.
+         */
+        @ConfigItem(defaultValue = "10")
+        public int tokenCacheSize = 10;
+
+        /**
+         * Number of minutes a logout token can be cached for.
+         */
+        @ConfigItem(defaultValue = "10M")
+        public Duration tokenCacheTimeToLive = Duration.ofMinutes(10);
+
+        /**
+         * Token cache timer interval.
+         * If this property is set then a timer will check and remove the stale entries periodically.
+         */
+        @ConfigItem
+        public Optional<Duration> cleanUpTimerInterval = Optional.empty();
+
+        /**
+         * Logout token claim whose value will be used as a key for caching the tokens.
+         * Only `sub` (subject) and `sid` (session id) claims can be used as keys.
+         * Set it to `sid` only if ID tokens issued by the OIDC provider have no `sub` but have `sid` claim.
+         */
+        @ConfigItem(defaultValue = "sub")
+        public String logoutTokenKey = "sub";
+
         public void setPath(Optional<String> path) {
             this.path = path;
         }
 
         public Optional<String> getPath() {
             return path;
+        }
+
+        public String getLogoutTokenKey() {
+            return logoutTokenKey;
+        }
+
+        public void setLogoutTokenKey(String logoutTokenKey) {
+            this.logoutTokenKey = logoutTokenKey;
+        }
+
+        public int getTokenCacheSize() {
+            return tokenCacheSize;
+        }
+
+        public void setTokenCacheSize(int tokenCacheSize) {
+            this.tokenCacheSize = tokenCacheSize;
+        }
+
+        public Duration getTokenCacheTimeToLive() {
+            return tokenCacheTimeToLive;
+        }
+
+        public void setTokenCacheTimeToLive(Duration tokenCacheTimeToLive) {
+            this.tokenCacheTimeToLive = tokenCacheTimeToLive;
+        }
+
+        public Optional<Duration> getCleanUpTimerInterval() {
+            return cleanUpTimerInterval;
+        }
+
+        public void setCleanUpTimerInterval(Duration cleanUpTimerInterval) {
+            this.cleanUpTimerInterval = Optional.of(cleanUpTimerInterval);
         }
     }
 
@@ -799,6 +860,30 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean allowMultipleCodeFlows = true;
 
         /**
+         * Fail with the HTTP 401 error if the state cookie is present but no state query parameter is present.
+         * <p/>
+         * When either multiple authentications are disabled or the redirect URL
+         * matches the original request URL, the stale state cookie might remain in the browser cache from
+         * the earlier failed redirect to an OpenId Connect provider and be visible during the current request.
+         * For example, if Single-page application (SPA) uses XHR to handle redirects to the provider
+         * which does not support CORS for its authorization endpoint, the browser will block it
+         * and the state cookie created by Quarkus will remain in the browser cache.
+         * Quarkus will report an authentication failure when it will detect such an old state cookie but find no matching state
+         * query parameter.
+         * <p/>
+         * Reporting HTTP 401 error is usually the right thing to do in such cases, it will minimize a risk of the
+         * browser redirect loop but also can identify problems in the way SPA or Quarkus application manage redirects.
+         * For example, enabling {@link #javaScriptAutoRedirect} or having the provider redirect to URL configured
+         * with {@link #redirectPath} may be needed to avoid such errors.
+         * <p/>
+         * However, setting this property to `false` may help if the above options are not suitable.
+         * It will cause a new authentication redirect to OpenId Connect provider. Please be aware doing so may increase the
+         * risk of browser redirect loops.
+         */
+        @ConfigItem(defaultValue = "true")
+        public boolean failOnMissingStateParam = true;
+
+        /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.
          * This property will be enabled if `quarkus.oidc.roles.source` is `userinfo`
          * or `quarkus.oidc.token.verify-access-token-with-user-info` is `true`
@@ -854,8 +939,17 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         /**
          * Secret which will be used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
-         * This secret must be set if PKCE is required but no client secret is set.
-         * The length of the secret which will be used to encrypt the code verifier must be 32 characters long.
+         * This secret should be at least 32 characters long.
+         * <p/>
+         * If this secret is not set, the client secret configured with
+         * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` will be checked.
+         * Finally, `quarkus.oidc.credentials.jwt.secret` which can be used for `client_jwt_secret` authentication will be
+         * checked. Client secret will not be used as a PKCE code verifier encryption secret if it is less than 32 characters
+         * long.
+         * </p>
+         * The secret will be auto-generated if it remains uninitialized after checking all of these properties.
+         * <p/>
+         * Error will be reported if the secret length is less than 16 characters.
          */
         @ConfigItem
         public Optional<String> pkceSecret = Optional.empty();

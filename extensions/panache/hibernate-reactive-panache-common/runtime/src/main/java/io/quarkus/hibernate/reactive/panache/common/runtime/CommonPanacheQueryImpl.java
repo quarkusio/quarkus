@@ -25,7 +25,14 @@ import io.smallrye.mutiny.Uni;
 public class CommonPanacheQueryImpl<Entity> {
 
     private Object paramsArrayOrMap;
+    /**
+     * this is the HQL query expanded from the Panache-Query
+     */
     private String query;
+    /**
+     * this is the original Panache-Query, if any (can be null)
+     */
+    private String originalQuery;
     protected String countQuery;
     private String orderBy;
     private Uni<Mutiny.Session> em;
@@ -40,9 +47,11 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private Map<String, Map<String, Object>> filters;
 
-    public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String orderBy, Object paramsArrayOrMap) {
+    public CommonPanacheQueryImpl(Uni<Mutiny.Session> em, String query, String originalQuery, String orderBy,
+            Object paramsArrayOrMap) {
         this.em = em;
         this.query = query;
+        this.originalQuery = originalQuery;
         this.orderBy = orderBy;
         this.paramsArrayOrMap = paramsArrayOrMap;
     }
@@ -64,11 +73,12 @@ public class CommonPanacheQueryImpl<Entity> {
     // Builder
 
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
+        String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            throw new PanacheQueryException("Unable to perform a projection on a named query");
+            selectQuery = NamedQueryUtil.getNamedQuery(query.substring(1));
         }
 
-        String lowerCasedTrimmedQuery = query.trim().toLowerCase();
+        String lowerCasedTrimmedQuery = selectQuery.trim().toLowerCase();
         if (lowerCasedTrimmedQuery.startsWith("select new ")) {
             throw new PanacheQueryException("Unable to perform a projection on a 'select new' query: " + query);
         }
@@ -79,7 +89,7 @@ public class CommonPanacheQueryImpl<Entity> {
         // New query: SELECT new org.acme.ProjectionClass(e.field1, e.field2) from EntityClass e
         if (lowerCasedTrimmedQuery.startsWith("select ")) {
             int endSelect = lowerCasedTrimmedQuery.indexOf(" from ");
-            String trimmedQuery = query.trim();
+            String trimmedQuery = selectQuery.trim();
             // 7 is the length of "select "
             String selectClause = trimmedQuery.substring(7, endSelect).trim();
             String from = trimmedQuery.substring(endSelect);
@@ -127,7 +137,7 @@ public class CommonPanacheQueryImpl<Entity> {
         }
         select.append(") ");
 
-        return new CommonPanacheQueryImpl<>(this, select.toString() + query, "select count(*) " + query);
+        return new CommonPanacheQueryImpl<>(this, select.toString() + selectQuery, "select count(*) " + selectQuery);
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {
@@ -226,14 +236,17 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("unchecked")
     public Uni<Long> count() {
+        String selectQuery;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            throw new PanacheQueryException("Unable to perform a count operation on a named query");
+            selectQuery = NamedQueryUtil.getNamedQuery(query.substring(1));
+        } else {
+            selectQuery = query;
         }
 
         if (count == null) {
             // FIXME: question about caching the result here
             count = em.flatMap(session -> {
-                Mutiny.Query<Long> countQuery = session.createQuery(countQuery());
+                Mutiny.Query<Long> countQuery = session.createQuery(countQuery(selectQuery));
                 if (paramsArrayOrMap instanceof Map)
                     AbstractJpaOperations.bindParameters(countQuery, (Map<String, Object>) paramsArrayOrMap);
                 else
@@ -244,11 +257,11 @@ public class CommonPanacheQueryImpl<Entity> {
         return count;
     }
 
-    private String countQuery() {
+    private String countQuery(String selectQuery) {
         if (countQuery != null) {
             return countQuery;
         }
-        return PanacheJpaUtil.getCountQuery(query);
+        return PanacheJpaUtil.getCountQuery(selectQuery);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -340,7 +353,11 @@ public class CommonPanacheQueryImpl<Entity> {
             String namedQuery = query.substring(1);
             jpaQuery = em.createNamedQuery(namedQuery);
         } else {
-            jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+            try {
+                jpaQuery = em.createQuery(orderBy != null ? query + orderBy : query);
+            } catch (IllegalArgumentException x) {
+                throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
+            }
         }
 
         if (paramsArrayOrMap instanceof Map) {

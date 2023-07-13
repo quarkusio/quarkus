@@ -22,6 +22,7 @@ import jakarta.interceptor.InvocationContext;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ArcInvocationContext;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.ComponentsProvider;
 import io.quarkus.arc.InjectableBean;
@@ -29,6 +30,7 @@ import io.quarkus.arc.InjectableBean.Kind;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.InterceptorCreator.InterceptFunction;
 import io.quarkus.arc.impl.ClientProxies;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.DecoratorDelegateProvider;
@@ -301,6 +303,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor INJECTION_POINT_IMPL_CONSTRUCTOR = MethodDescriptor.ofConstructor(
             InjectionPointImpl.class,
             Type.class, Type.class, Set.class, InjectableBean.class, Set.class, Member.class, int.class, boolean.class);
+
+    public static final MethodDescriptor INTERCEPT_FUNCTION_INTERCEPT = MethodDescriptor.ofMethod(InterceptFunction.class,
+            "intercept", Object.class, ArcInvocationContext.class);
 
     private MethodDescriptors() {
     }

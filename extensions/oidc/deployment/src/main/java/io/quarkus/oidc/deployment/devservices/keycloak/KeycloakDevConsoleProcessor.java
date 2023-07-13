@@ -1,5 +1,6 @@
 package io.quarkus.oidc.deployment.devservices.keycloak;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevConsoleProcessor;
 import io.quarkus.oidc.deployment.devservices.OidcAuthorizationCodePostHandler;
@@ -81,7 +83,12 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
             @SuppressWarnings("unchecked")
             Map<String, String> users = (Map<String, String>) configProps.get().getProperties().get("oidc.users");
 
-            var cardPage = createProviderWebComponent(
+            String keycloakAdminUrl = configProps.get().getConfig().get("keycloak.url");
+
+            @SuppressWarnings("unchecked")
+            final List<String> keycloakRealms = (List<String>) configProps.get().getProperties().get("keycloak.realms");
+
+            CardPageBuildItem cardPageBuildItem = createProviderWebComponent(
                     recorder,
                     capabilities,
                     "Keycloak",
@@ -97,11 +104,17 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     oidcConfig.devui.grantOptions,
                     nonApplicationRootPathBuildItem,
                     configurationBuildItem,
-                    configProps.get().getConfig().get("keycloak.url"),
+                    keycloakAdminUrl,
                     users,
-                    configProps.get().getProperties().get("keycloak.realms"),
+                    keycloakRealms,
                     configProps.get().isContainerRestarted());
-            cardPageProducer.produce(cardPage);
+
+            // Also add Admin page
+            cardPageBuildItem.addPage(Page.externalPageBuilder("Keycloak Admin")
+                    .icon("font-awesome-solid:key")
+                    .doNotEmbed(true)
+                    .url(keycloakAdminUrl));
+            cardPageProducer.produce(cardPageBuildItem);
         }
     }
 

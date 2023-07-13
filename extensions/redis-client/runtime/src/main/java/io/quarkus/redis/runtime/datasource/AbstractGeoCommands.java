@@ -32,8 +32,8 @@ import io.vertx.mutiny.redis.client.Response;
 class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
 
     protected final Class<V> typeOfValue;
-    protected final Codec<K> keyCodec;
-    protected final Codec<V> valueCodec;
+    protected final Codec keyCodec;
+    protected final Codec valueCodec;
 
     private static final Pattern NOISE_REMOVER_PATTERN = Pattern.compile("[^a-zA-Z0-9\\.]");
 

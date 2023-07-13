@@ -60,7 +60,6 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
         return this.lastKnownResults;
     }
 
-    @NonBlocking
     public boolean start() {
         return invokeAction("start");
     }

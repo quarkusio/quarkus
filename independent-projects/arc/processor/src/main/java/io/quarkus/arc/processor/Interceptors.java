@@ -41,10 +41,6 @@ final class Interceptors {
             if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
             }
-            if (priority == null && annotation.name().equals(DotNames.ARC_PRIORITY)) {
-                priority = annotation.value().asInt();
-            }
-
             // rudimentary, but good enough for now (should also look at inherited annotations and stereotypes)
             ScopeInfo scope = beanDeployment.getScope(annotation.name());
             if (scope != null && !BuiltinScope.DEPENDENT.is(scope)) {

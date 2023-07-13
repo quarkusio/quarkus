@@ -39,21 +39,21 @@ public class QuarkusUpdateCommand {
     }
 
     public static void handle(MessageWriter log, BuildTool buildTool, Path baseDir,
-            String rewritePluginVersion, Path recipe, boolean dryRun) throws QuarkusUpdateException {
+            String rewritePluginVersion, String recipesGAV, Path recipe, boolean dryRun) throws QuarkusUpdateException {
         switch (buildTool) {
             case MAVEN:
-                runMavenUpdate(log, baseDir, rewritePluginVersion, recipe, dryRun);
+                runMavenUpdate(log, baseDir, rewritePluginVersion, recipesGAV, recipe, dryRun);
                 break;
             case GRADLE:
-                runGradleUpdate(log, baseDir, rewritePluginVersion, recipe, dryRun);
+                runGradleUpdate(log, baseDir, rewritePluginVersion, recipesGAV, recipe, dryRun);
                 break;
             default:
                 throw new QuarkusUpdateException(buildTool.getKey() + " is not supported yet");
         }
     }
 
-    private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, Path recipe,
-            boolean dryRun) throws QuarkusUpdateException {
+    private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
+            Path recipe, boolean dryRun) throws QuarkusUpdateException {
         Path tempInit = null;
         try {
             tempInit = Files.createTempFile("openrewrite-init", "gradle");
@@ -66,6 +66,7 @@ public class QuarkusUpdateCommand {
                         Qute.fmt(template, Map.of(
                                 "rewriteFile", recipe.toAbsolutePath().toString(),
                                 "pluginVersion", rewritePluginVersion,
+                                "recipesGAV", recipesGAV,
                                 "activeRecipe", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS,
                                 "plainTextMask", ADDITIONAL_SOURCE_FILES_SET.stream()
                                         .map(s -> "\"" + s + "\"")
@@ -90,21 +91,11 @@ public class QuarkusUpdateCommand {
         }
     }
 
-    private static void printMavenUpdateCommand(MessageWriter log, Path baseDir, String rewritePluginVersion, Path recipe)
-            throws QuarkusUpdateException {
+    private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
+            Path recipe,
+            boolean dryRun) throws QuarkusUpdateException {
         final String mvnBinary = findMvnBinary(baseDir);
-        final String[] mavenUpdateCommand = getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipe, false);
-        final String[] mavenProcessSourcesCommand = getMavenProcessSourcesCommand(mvnBinary);
-
-        log.info(String.join(" ", mavenUpdateCommand).replace(" -D", "\\n-D"));
-        log.info(String.join(" ", mavenProcessSourcesCommand));
-    }
-
-    private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, Path recipe,
-            boolean dryRun)
-            throws QuarkusUpdateException {
-        final String mvnBinary = findMvnBinary(baseDir);
-        executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipe, dryRun), log);
+        executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
 
         // format the sources
         executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
@@ -114,15 +105,17 @@ public class QuarkusUpdateCommand {
         return new String[] { mvnBinary, "process-sources" };
     }
 
-    private static String[] getMavenUpdateCommand(String mvnBinary, String rewritePluginVersion, Path recipe, boolean dryRun) {
+    private static String[] getMavenUpdateCommand(String mvnBinary, String rewritePluginVersion, String recipesGAV, Path recipe,
+            boolean dryRun) {
         return new String[] { mvnBinary,
                 "-e",
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,
                         dryRun ? "dryRun" : "run"),
-                String.format("-D\"plainTextMasks=%s\"", ADDITIONAL_SOURCE_FILES),
-                String.format("-D\"rewrite.configLocation=%s\"", recipe.toAbsolutePath()),
-                String.format("-D\"activeRecipes=%s\"", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS),
-                "-D\"rewrite.pomCacheEnabled=false\"" };
+                String.format("-DplainTextMasks=%s", ADDITIONAL_SOURCE_FILES),
+                String.format("-Drewrite.configLocation=%s", recipe.toAbsolutePath()),
+                String.format("-Drewrite.recipeArtifactCoordinates=%s", recipesGAV),
+                String.format("-DactiveRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS),
+                "-Drewrite.pomCacheEnabled=false" };
     }
 
     private static void executeCommand(Path baseDir, String[] command, MessageWriter log) throws QuarkusUpdateException {

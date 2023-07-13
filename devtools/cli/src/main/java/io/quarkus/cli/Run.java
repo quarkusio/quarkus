@@ -9,7 +9,7 @@ import picocli.CommandLine;
 public class Run extends BuildToolDelegatingCommand {
 
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:run",
-            BuildTool.GRADLE, "run");
+            BuildTool.GRADLE, "quarkusRun");
 
     @CommandLine.Option(names = { "--target" }, description = "Run target.")
     String target;

@@ -86,7 +86,7 @@ public class OpenshiftProcessor {
     public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenshiftConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        List<String> targets = KubernetesConfigUtil.getConfiguratedDeploymentTargets();
+        List<String> targets = KubernetesConfigUtil.getConfiguredDeploymentTargets();
         boolean openshiftEnabled = targets.contains(OPENSHIFT);
 
         DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
@@ -335,31 +335,28 @@ public class OpenshiftProcessor {
                 ports,
                 config.ports));
 
-        // Handle non-openshift builds
-        if (deploymentKind == DeploymentResourceKind.DeploymentConfig
-                && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-            image.ifPresent(i -> {
-                String registry = i.registry
-                        .or(() -> containerImageConfig.registry)
-                        .orElse(fallbackRegistry.map(f -> f.getRegistry()).orElse(DOCKERIO_REGISTRY));
-                String repositoryWithRegistry = registry + "/" + i.getRepository();
-                ImageConfiguration imageConfiguration = new ImageConfigurationBuilder()
-                        .withName(name)
-                        .withRegistry(registry)
-                        .build();
+        image.ifPresent(i -> {
+            String registry = i.registry
+                    .or(() -> containerImageConfig.registry)
+                    .orElse(fallbackRegistry.map(f -> f.getRegistry()).orElse(DOCKERIO_REGISTRY));
+            String repositoryWithRegistry = registry + "/" + i.getRepository();
+            ImageConfiguration imageConfiguration = new ImageConfigurationBuilder()
+                    .withName(name)
+                    .withRegistry(registry)
+                    .build();
 
+            String imageStreamWithTag = name + ":" + i.getTag();
+            if (deploymentKind == DeploymentResourceKind.DeploymentConfig
+                    && !OpenshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                 result.add(new DecoratorBuildItem(OPENSHIFT,
                         new AddDockerImageStreamResourceDecorator(imageConfiguration, repositoryWithRegistry)));
-                String imageStreamWithTag = name + ":" + i.getTag();
-                result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, imageStreamWithTag)));
-                // remove the default trigger which has a wrong version
-                result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator(name)));
-                // re-add the trigger with the correct version
-                result.add(new DecoratorBuildItem(OPENSHIFT, new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag)));
-            });
-        } else if (image.isPresent()) {
-            result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, image.get().getImage())));
-        }
+            }
+            result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyContainerImageDecorator(name, i.getImage())));
+            // remove the default trigger which has a wrong version
+            result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveDeploymentTriggerDecorator(name)));
+            // re-add the trigger with the correct version
+            result.add(new DecoratorBuildItem(OPENSHIFT, new ChangeDeploymentTriggerDecorator(name, imageStreamWithTag)));
+        });
 
         // Handle remote debug configuration
         if (config.remoteDebug.enabled) {

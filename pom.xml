@@ -61,19 +61,19 @@
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <gitflow-incremental-builder.version>4.4.1</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.88</quarkus-platform-bom-plugin.version>
+        <quarkus-platform-bom-plugin.version>0.0.90</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
 
-        <owasp-dependency-check-plugin.version>8.2.1</owasp-dependency-check-plugin.version>
+        <owasp-dependency-check-plugin.version>8.3.1</owasp-dependency-check-plugin.version>
 
         <!-- Dependency versions -->
         <jacoco.version>0.8.10</jacoco.version>
-        <kubernetes-client.version>6.6.2</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <kubernetes-client.version>6.7.2</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.55.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.56.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
         <grpc-jprotoc.version>1.2.1</grpc-jprotoc.version>
         <protoc.version>3.22.0</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
@@ -170,7 +170,7 @@
             <extension>
                 <groupId>io.quarkus.bot</groupId>
                 <artifactId>build-reporter-maven-extension</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.0</version>
             </extension>
         </extensions>
     </build>

@@ -450,8 +450,8 @@ To run your applications as native, first we need to build the native executable
 
 [source, bash]
 ----
-> mvn -f rabbitmq-quickstart-producer package -Pnative  -Dquarkus.native.container-build=true
-> mvn -f rabbitmq-quickstart-processor package -Pnative -Dquarkus.native.container-build=true
+> mvn -f rabbitmq-quickstart-producer package -Dnative  -Dquarkus.native.container-build=true
+> mvn -f rabbitmq-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
 ----
 
 The `-Dquarkus.native.container-build=true` instructs Quarkus to build Linux 64bits native executables, who can run inside containers.

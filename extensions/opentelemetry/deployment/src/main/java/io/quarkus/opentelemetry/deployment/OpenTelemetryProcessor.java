@@ -189,7 +189,7 @@ public class OpenTelemetryProcessor {
                         new ValidationErrorBuildItem(
                                 new ConfigurationException(
                                         String.format(
-                                                "Data source '%s' is using unsupported JDBC driver '%s', please active JDBC instrumentation with the 'quarkus.datasource.jdbc.telemetry=true' configuration property instead",
+                                                "Data source '%s' is using unsupported JDBC driver '%s', please activate JDBC instrumentation by setting the 'quarkus.datasource.jdbc.telemetry' configuration property to 'true' instead",
                                                 dataSourceName, OPEN_TELEMETRY_DRIVER))));
             }
         }

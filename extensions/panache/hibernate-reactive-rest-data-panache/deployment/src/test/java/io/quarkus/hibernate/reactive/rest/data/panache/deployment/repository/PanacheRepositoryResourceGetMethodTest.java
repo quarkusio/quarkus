@@ -1,5 +1,9 @@
 package io.quarkus.hibernate.reactive.rest.data.panache.deployment.repository;
 
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
+
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.reactive.rest.data.panache.deployment.AbstractGetMethodTest;
@@ -16,4 +20,13 @@ class PanacheRepositoryResourceGetMethodTest extends AbstractGetMethodTest {
                             EmptyListItemsResource.class)
                     .addAsResource("application.properties")
                     .addAsResource("import.sql"));
+
+    @Test
+    void shouldCopyAdditionalMethodsAsResources() {
+        given().accept("application/json")
+                .when().get("/collections/name/full collection")
+                .then().statusCode(200)
+                .and().body("id", is("full"))
+                .and().body("name", is("full collection"));
+    }
 }

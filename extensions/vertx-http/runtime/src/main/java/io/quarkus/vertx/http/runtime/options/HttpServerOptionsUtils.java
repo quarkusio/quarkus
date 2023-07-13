@@ -23,6 +23,7 @@ import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.Http2Settings;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JdkSSLEngineOptions;
@@ -118,11 +119,7 @@ public class HttpServerOptionsUtils {
             serverOptions.addEnabledCipherSuite(cipher);
         }
 
-        for (String protocol : sslConfig.protocols) {
-            if (!protocol.isEmpty()) {
-                serverOptions.addEnabledSecureTransportProtocol(protocol);
-            }
-        }
+        serverOptions.setEnabledSecureTransportProtocols(sslConfig.protocols);
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
         int sslPort = httpConfiguration.determineSslPort(launchMode);
@@ -223,11 +220,8 @@ public class HttpServerOptionsUtils {
             serverOptions.addEnabledCipherSuite(cipher);
         }
 
-        for (String protocol : sslConfig.protocols) {
-            if (!protocol.isEmpty()) {
-                serverOptions.addEnabledSecureTransportProtocol(protocol);
-            }
-        }
+        serverOptions.setEnabledSecureTransportProtocols(sslConfig.protocols);
+
         serverOptions.setSsl(true);
         serverOptions.setSni(sslConfig.sni);
         int sslPort = httpConfiguration.determinePort(launchMode);
@@ -275,6 +269,27 @@ public class HttpServerOptionsUtils {
         httpServerOptions.setDecompressionSupported(buildTimeConfig.enableDecompression);
         httpServerOptions.setMaxInitialLineLength(httpConfiguration.limits.maxInitialLineLength);
         httpServerOptions.setHandle100ContinueAutomatically(httpConfiguration.handle100ContinueAutomatically);
+
+        if (httpConfiguration.http2) {
+            var settings = new Http2Settings();
+            if (httpConfiguration.limits.headerTableSize.isPresent()) {
+                settings.setHeaderTableSize(httpConfiguration.limits.headerTableSize.getAsLong());
+            }
+            settings.setPushEnabled(httpConfiguration.http2PushEnabled);
+            if (httpConfiguration.limits.maxConcurrentStreams.isPresent()) {
+                settings.setMaxConcurrentStreams(httpConfiguration.limits.maxConcurrentStreams.getAsLong());
+            }
+            if (httpConfiguration.initialWindowSize.isPresent()) {
+                settings.setInitialWindowSize(httpConfiguration.initialWindowSize.getAsInt());
+            }
+            if (httpConfiguration.limits.maxFrameSize.isPresent()) {
+                settings.setMaxFrameSize(httpConfiguration.limits.maxFrameSize.getAsInt());
+            }
+            if (httpConfiguration.limits.maxHeaderListSize.isPresent()) {
+                settings.setMaxHeaderListSize(httpConfiguration.limits.maxHeaderListSize.getAsLong());
+            }
+            httpServerOptions.setInitialSettings(settings);
+        }
     }
 
     public static void applyCommonOptionsForManagementInterface(HttpServerOptions options,

@@ -39,7 +39,13 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
             Context context = Vertx.currentContext();
             if (context != null && VertxContext.isDuplicatedContext(context)) {
                 VertxContextSafetyToggle.setContextSafe(context, true);
-                context.putLocal(LOCAL_KEY, state);
+                // this is racy but should be fine, because DC should not be shared
+                // and never remove the existing mapping
+                var oldState = context.getLocal(LOCAL_KEY);
+                if (oldState != state) {
+                    context.putLocal(LOCAL_KEY, state);
+                }
+
             } else {
                 fallback.set(state);
             }

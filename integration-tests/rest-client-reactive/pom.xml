@@ -75,6 +75,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-vertx</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock-jre8-standalone</artifactId>
             <scope>test</scope>
@@ -142,6 +147,32 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.gradle</groupId>
+                    <artifactId>gradle-enterprise-maven-extension</artifactId>
+                    <configuration>
+                        <gradleEnterprise>
+                            <normalization combine.children="append">
+                                <runtimeClassPath>
+                                    <propertiesNormalizations>
+                                        <propertiesNormalization>
+                                            <path>application.properties</path>
+                                            <ignoredProperties>
+                                                <ignore>quarkus.rest-client.self-signed.trust-store</ignore>
+                                                <ignore>quarkus.rest-client.wrong-host.trust-store</ignore>
+                                                <ignore>quarkus.rest-client.wrong-host-rejected.trust-store</ignore>
+                                            </ignoredProperties>
+                                        </propertiesNormalization>
+                                    </propertiesNormalizations>
+                                </runtimeClassPath>
+                            </normalization>
+                        </gradleEnterprise>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>

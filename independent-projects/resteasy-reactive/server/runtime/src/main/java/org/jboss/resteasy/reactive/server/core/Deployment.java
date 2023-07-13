@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.core.Application;
@@ -48,6 +49,7 @@ public class Deployment {
     private final RuntimeExceptionMapper exceptionMapper;
     private final boolean resumeOn404;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
+    private final Map<String, List<String>> disabledEndpoints;
     //this is not final, as it is set after startup
     private RuntimeConfiguration runtimeConfiguration;
 
@@ -62,7 +64,8 @@ public class Deployment {
             List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers,
             RuntimeExceptionMapper exceptionMapper,
             boolean resumeOn404,
-            ResteasyReactiveConfig resteasyReactiveConfig) {
+            ResteasyReactiveConfig resteasyReactiveConfig,
+            Map<String, List<String>> disabledEndpoints) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -80,6 +83,7 @@ public class Deployment {
         this.exceptionMapper = exceptionMapper;
         this.resumeOn404 = resumeOn404;
         this.resteasyReactiveConfig = resteasyReactiveConfig;
+        this.disabledEndpoints = disabledEndpoints;
     }
 
     public RuntimeExceptionMapper getExceptionMapper() {
@@ -205,5 +209,9 @@ public class Deployment {
         }
         this.runtimeConfiguration = runtimeConfiguration;
         return this;
+    }
+
+    public Map<String, List<String>> getDisabledEndpoints() {
+        return disabledEndpoints;
     }
 }

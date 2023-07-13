@@ -4,15 +4,15 @@
 
     <groupId>org.acme</groupId>
     <artifactId>quarkus-quickstart-multimodule-parent</artifactId>
-    <version>${revision}</version>
+    <version>\${revision}</version>
     <packaging>pom</packaging>
 
     <properties>
         <revision>1.0-SNAPSHOT</revision>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <quarkus.platform.version>${project.version}</quarkus.platform.version>
-        <quarkus-plugin.version>${project.version}</quarkus-plugin.version>
+        <quarkus.platform.version>\${project.version}</quarkus.platform.version>
+        <quarkus-plugin.version>\${project.version}</quarkus-plugin.version>
         <surefire-plugin.version>3.0.0</surefire-plugin.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
@@ -29,7 +29,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${quarkus-plugin.version}</version>
+                <version>\${quarkus-plugin.version}</version>
             </plugin>
         </plugins>
     </build>
@@ -37,21 +37,21 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <groupId>\${quarkus.platform.group-id}</groupId>
+                <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+                <version>\${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>quarkus-quickstart-multimodule-html</artifactId>
-                <version>${revision}</version>
+                <version>\${revision}</version>
             </dependency>
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>quarkus-quickstart-multimodule-rest</artifactId>
-                <version>${revision}</version>
+                <version>\${revision}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -1,6 +1,8 @@
 package io.quarkus.deployment.pkg.builditem;
 
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
@@ -53,6 +55,15 @@ public final class NativeImageBuildItem extends SimpleBuildItem {
 
         public static GraalVMVersion unknown() {
             return new GraalVMVersion("unknown", "unknown", -1, "unknown");
+        }
+
+        public Map<String, String> toMap() {
+            final Map<String, String> graalVMVersion = new HashMap<>();
+            graalVMVersion.put("graalvm.version.full", fullVersion);
+            graalVMVersion.put("graalvm.version.version", version);
+            graalVMVersion.put("graalvm.version.java", String.valueOf(javaVersion));
+            graalVMVersion.put("graalvm.version.distribution", distribution);
+            return graalVMVersion;
         }
     }
 }

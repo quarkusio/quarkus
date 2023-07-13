@@ -190,6 +190,7 @@ public class RabbitMQDevServicesProcessor {
 
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
+            container.withEnv(config.containerEnv);
             container.start();
             return getRunningDevService(container.getContainerId(), container::close, container.getHost(),
                     container.getPort(), container.getHttpPort(), container.getAdminUsername(), container.getAdminPassword());
@@ -320,6 +321,7 @@ public class RabbitMQDevServicesProcessor {
         private final List<Exchange> exchanges;
         private final List<Queue> queues;
         private final List<Binding> bindings;
+        private final Map<String, String> containerEnv;
 
         public RabbitMQDevServiceCfg(RabbitMQDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
@@ -337,6 +339,7 @@ public class RabbitMQDevServicesProcessor {
             this.bindings = devServicesConfig.bindings != null
                     ? devServicesConfig.bindings.entrySet().stream().map(Binding::new).collect(Collectors.toList())
                     : Collections.emptyList();
+            this.containerEnv = devServicesConfig.containerEnv;
         }
 
         @Override
@@ -349,12 +352,13 @@ public class RabbitMQDevServicesProcessor {
             }
             RabbitMQDevServiceCfg that = (RabbitMQDevServiceCfg) o;
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
+                    && Objects.equals(containerEnv, that.containerEnv);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort);
+            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort, containerEnv);
         }
     }
 

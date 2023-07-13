@@ -396,7 +396,7 @@ in pulling all the deployment time code into runtime scope, which defeats the pu
 
 You will need to include the `io.quarkus:quarkus-extension-maven-plugin` and configure the `maven-compiler-plugin` to detect the `quarkus-extension-processor` annotation processor to collect and generate the necessary xref:extension-metadata.adoc[Quarkus extension metadata] for the extension artifacts, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 
-TIP: You may want to use the `create-extension` mojo of `io.quarkus.platform:quarkus-maven-plugin` to create these Maven modules - see the next section.
+TIP: You may want to use the `create-extension` mojo of `{quarkus-platform-groupid}:quarkus-maven-plugin` to create these Maven modules - see the next section.
 
 NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
 has no suffix (and is what the end user adds to their project).
@@ -486,7 +486,7 @@ It will try to auto-detect its options:
 * in other cases it will use the 'Standalone' extension layout and defaults.
 * we may introduce other layout types in the future.
 
-TIP: You may not specify any parameter to use the interactive mode: `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
+TIP: You may not specify any parameter to use the interactive mode: `mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create-extension -N`
 
 As and example, let's add a new extension called `my-ext` to the Quarkus source tree:
 
@@ -494,7 +494,7 @@ As and example, let's add a new extension called `my-ext` to the Quarkus source 
 ----
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DextensionId=my-ext \
     -DextensionName="My Extension" \
     -DextensionDescription="Do something useful."
@@ -1544,9 +1544,11 @@ this includes the ability to register creation functions for classes without no-
 substitution (basically a transformer from a non-serializable object to a serializable one and vice versa), and to create
 a class proxy. This interface can be directly injected as a method parameter into any `@Record` method.
 
-Calling `classProxy` with a given class name will create a `Class` that can be passed into recorder
-methods, and at runtime will be substituted with the class whose name was passed in to `classProxy`. This is basically a
-convenience to avoid the need to explicitly load classes in the recorders.
+Calling `classProxy` with a given fully-qualified class name will create a `Class` instance that can be passed into a recorder
+method, and at runtime will be substituted with the class whose name was passed in to `classProxy()`.
+However, this method should not be needed in most use cases because directly loading deployment/application classes at processing time in build steps is safe.
+Therefore, this method is deprecated.
+Nonetheless, there are some use cases where this method comes in handy, such as referring to classes that were generated in previous build steps using `GeneratedClassBuildItem`.
 
 ==== Printing step execution time
 
@@ -1581,7 +1583,7 @@ Instead, Quarkus extensions can make use of various xref:cdi-reference.adoc[Buil
 
 === Quarkus Dev UI
 
-You can make your extension support the xref:dev-ui.adoc[Quarkus Dev UI] for a greater developer experience.
+You can make your extension support the xref:dev-ui-v2.adoc[Quarkus Dev UI] for a greater developer experience.
 
 === Extension-defined endpoints
 
@@ -2331,7 +2333,7 @@ using the Quarkus maven plugin as shown in this example taken from the xref:rest
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-json \
     -DclassName="org.acme.rest.json.FruitResource" \

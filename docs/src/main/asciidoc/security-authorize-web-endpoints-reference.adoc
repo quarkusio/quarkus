@@ -1,19 +1,20 @@
 ////
-This guide is maintained in the main Quarkus repository
-and pull requests should be submitted there:
+This guide is maintained in the main Quarkus repository, and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-authorize-web-endpoints-reference"]
 = Authorization of web endpoints
 include::_attributes.adoc[]
+:diataxis-type: reference
 :categories: security,web
 
-Quarkus has an integrated pluggable web security layer. If security is enabled, all HTTP requests will have a permission check performed to make sure they are allowed to continue.
-This means you cannot use `@PermitAll` to open a path if the path is blocked by the `quarkus.http.auth.` configuration.
+Quarkus has an integrated pluggable web security layer.
+If security is enabled, all HTTP requests have a permission check performed to verify that they are allowed to continue.
+Therefore, you cannot use `@PermitAll` to open a path if the path is blocked by the `quarkus.http.auth.` configuration.
 
 [NOTE]
 ====
-If you are using Jakarta REST, consider using `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` to set default security requirements instead of HTTP path-level matching because annotations can override these properties on an individual endpoint.
+If you use Jakarta RESTful Web Services, consider using `quarkus.security.jaxrs.deny-unannotated-endpoints` or `quarkus.security.jaxrs.default-roles-allowed` to set default security requirements instead of HTTP path-level matching because annotations can override these properties on an individual endpoint.
 ====
 
 Authorization is based on user roles that the security provider provides.
@@ -23,9 +24,10 @@ xref:security-customization.adoc#security-identity-customization[Security Identi
 [[authorization-using-configuration]]
 == Authorization using configuration
 
-Permissions are defined in the Quarkus configuration using permission sets, with each permission set specifying a policy for access control.
+Permissions are defined in the Quarkus configuration using permission sets, each specifying a policy for access control.
 
 .{project-name} policies summary
+[options="header"]
 |===
 s| Built-in policy s| Description
 s| `deny` | This policy denies all users.
@@ -33,7 +35,7 @@ s| `permit` | This policy permits all users.
 s| `authenticated` | This policy permits only authenticated users.
 |===
 
-You can define role-based policies that allow users with specified roles to access the resources.
+You can define role-based policies that allow users with specific roles to access the resources.
 
 .Example of a role-based policy
 [source,properties]
@@ -41,9 +43,8 @@ You can define role-based policies that allow users with specified roles to acce
 quarkus.http.auth.policy.role-policy1.roles-allowed=user,admin                  <1>
 ----
 <1> This defines a role-based policy that allows users with the `user` and `admin` roles.
-Such a custom policy can be referenced by permission sets just like the built-in ones, as shown in the example below.
 
-Permission sets are defined in `application.properties` as follows:
+You can reference a custom policy by configuring the built-in permission sets that are defined in the `application.properties` file, as outlined in the following configuration example:
 
 .Example of policy configuration
 [source,properties]
@@ -58,11 +59,11 @@ quarkus.http.auth.permission.deny1.policy=deny
 quarkus.http.auth.permission.roles1.paths=/roles-secured/*,/other/*,/api/*      <3>
 quarkus.http.auth.permission.roles1.policy=role-policy1
 ----
-<1> This permission references the default `permit` built-in policy to allow `GET` methods to `/public`.
+<1> This permission references the default built-in `permit` policy to allow `GET` methods to `/public`.
 In this case, the demonstrated setting would not affect this example because this request is allowed anyway.
 <2> This permission references the built-in `deny` policy for `/forbidden`.
-This is an exact path match as it does not end with `*`.
-<3> This is a permission set that references the previously defined policy.
+It is an exact path match because it does not end with `*`.
+<3> This permission set references the previously defined policy.
 `roles1` is an example name; you can call the permission sets whatever you want.
 
 
@@ -70,7 +71,7 @@ This is an exact path match as it does not end with `*`.
 
 Permission sets can also specify paths and methods as a comma-separated list.
 If a path ends with the `*` wildcard, the query it generates matches all sub-paths.
-Otherwise, it queries for an exact match and will only match that specific path:
+Otherwise, it queries for an exact match and only matches that specific path:
 
 [source,properties]
 ----
@@ -81,10 +82,11 @@ quarkus.http.auth.permission.permit1.methods=GET,HEAD
 
 === Matching a path but not a method
 
-The request is rejected if a request matches one or more permission sets based on the path but does not match any due to method requirements.
+The request is rejected if it matches one or more permission sets based on the path but none of the required methods.
 
-TIP: Given the above permission set, `GET /public/foo` would match both the path and method and thus be allowed,
-whereas `POST /public/foo` would match the path but not the method and would therefore be rejected.
+TIP: Given the preceding permission set, `GET /public/foo` would match both the path and method and therefore be allowed.
+In contrast, `POST /public/foo` would match the path but not the method.
+It would therefore be rejected.
 
 [[matching-multiple-paths]]
 === Matching multiple paths: longest path wins
@@ -102,13 +104,12 @@ quarkus.http.auth.permission.deny1.paths=/public/forbidden-folder/*
 quarkus.http.auth.permission.deny1.policy=deny
 ----
 
-TIP: Given the above permission set, `GET /public/forbidden-folder/foo` would match both permission sets' paths,
-but because it matches the `deny1` permission set's path on a longer match, `deny1` will be chosen, and the request will
-be rejected.
+TIP: Given the preceding permission set, `GET /public/forbidden-folder/foo` would match both permission sets' paths.
+However, because the longer path matches the path of the `deny1` permission set, `deny1` is chosen, and the request is rejected.
 
 [NOTE]
 ====
-Subpath permissions always win against the root path permissions, as explained above in the `deny1` versus `permit1` permission example.
+Subpath permissions always win against the root path permissions, as explained in the preceding `deny1` versus `permit1` permission example.
 Here is another example showing subpath permission allowing a public resource access with the root path permission requiring the authorization:
 
 [source,properties]
@@ -124,9 +125,8 @@ quarkus.http.auth.permission.public.policy=permit
 
 === Matching multiple paths: most specific method wins
 
-When a path is registered with multiple permission sets,
-the permission sets that explicitly specify an HTTP method that matches the request will take precedence.
-In this instance, the permission sets without methods will only come into effect if the request method does not match permission sets with the method specification.
+When a path is registered with multiple permission sets, the permission sets explicitly specifying an HTTP method that matches the request take precedence.
+In this instance, the permission sets without methods only come into effect if the request method does not match permission sets with the method specification.
 
 [source,properties]
 ----
@@ -140,16 +140,17 @@ quarkus.http.auth.permission.deny1.policy=deny
 
 [NOTE]
 ====
-Given the above permission set, `GET /public/foo` would match the paths of both permission sets, but because it fits the explicit method of the `permit1` permission set, `permit1` is chosen, and the request is accepted.
+Given the preceding permission set, `GET /public/foo` would match the paths of both permission sets, but because it fits the explicit method of the `permit1` permission set, `permit1` is chosen, and the request is accepted.
 
-`PUT /public/foo`, on the other hand, will not match the method permissions of `permit1`, so `deny1` will be activated and reject the request.
+Conversely, `PUT /public/foo` would not match the method permissions of `permit1`, so `deny1` would be activated and reject the request.
 ====
 
 === Matching multiple paths and methods: both win
 
-Sometimes, the previously described rules allow multiple permission sets to win at the same time.
+Sometimes, the previously described rules allow multiple permission sets to win simultaneously.
 In that case, for the request to proceed, all the permissions must allow access.
-Note that for this to happen, both have to either have specified the method or have no method. Method-specific matches take precedence.
+For this to happen, both must either have specified the method or have no method.
+Method-specific matches take precedence.
 
 [source,properties]
 ----
@@ -163,26 +164,25 @@ quarkus.http.auth.permission.roles2.paths=/api/*,/admin/*
 quarkus.http.auth.permission.roles2.policy=admin-policy1
 ----
 
-TIP: Given the above permission set, `GET /api/foo` would match both permission sets' paths, requiring both the `user` and `admin` roles.
+TIP: Given the preceding permission set, `GET /api/foo` would match both permission sets' paths, requiring both the `user` and `admin` roles.
 
 === Configuration properties to deny access
 
 The following configuration settings alter the role-based access control (RBAC) denying behavior:
 
 `quarkus.security.jaxrs.deny-unannotated-endpoints=true|false`::
-If set to true, access is denied for all Jakarta REST endpoints by default. If a Jakarta REST endpoint does not have any security annotations, it defaults to the `@DenyAll` behavior.
-This is useful to ensure you cannot accidentally expose an endpoint that is supposed to be secured.
+If set to true, access is denied for all Jakarta REST endpoints by default.
+If a Jakarta REST endpoint has no security annotations, it defaults to the `@DenyAll` behavior.
+This helps you to avoid accidentally exposing an endpoint that is supposed to be secured.
 Defaults to `false`.
 
 `quarkus.security.jaxrs.default-roles-allowed=role1,role2`::
 Defines the default role requirements for unannotated endpoints.
-The `**`  role is a special role that means any authenticated user.
-This cannot be combined with `deny-unannotated-endpoints`, as `deny` takes the effect instead.
+The `**` role is a special role that means any authenticated user.
+This cannot be combined with `deny-unannotated-endpoints` because `deny` takes effect instead.
 
 `quarkus.security.deny-unannotated-members=true|false`::
-- if set to true, the access will be denied to all CDI methods
-and Jakarta REST endpoints that do not have security annotations but are defined in classes that contain methods with
-security annotations.
+If set to true, the access is denied to all CDI methods and Jakarta REST endpoints that do not have security annotations but are defined in classes that contain methods with security annotations.
 Defaults to `false`.
 
 === Disabling permissions
@@ -202,7 +202,7 @@ Permissions can be reenabled at runtime with a system property or environment va
 
 === Permission paths and HTTP root path
 
-The `quarkus.http.root-path` configuration property is used to change the xref:http-reference.adoc#context-path[http endpoint context path].
+The `quarkus.http.root-path` configuration property changes the xref:http-reference.adoc#context-path[http endpoint context path].
 
 By default, `quarkus.http.root-path` is prepended automatically to configured permission paths then do not use a forward slash, for example:
 
@@ -218,8 +218,8 @@ This configuration is equivalent to the following:
 quarkus.http.auth.permission.permit1.paths=${quarkus.http.root-path}/public/*,${quarkus.http.root-path}/css/*,${quarkus.http.root-path}/js/*,${quarkus.http.root-path}/robots.txt
 ----
 
-A leading slash will change how the configured permission path is interpreted.
-The configured URL will be used as-is, and paths will not be adjusted if the value of `quarkus.http.root-path` is changed.
+A leading slash changes how the configured permission path is interpreted.
+The configured URL is used as-is, and paths are not adjusted if the value of `quarkus.http.root-path` changes.
 For example:
 
 [source,properties]
@@ -227,30 +227,31 @@ For example:
 quarkus.http.auth.permission.permit1.paths=/public/*,css/*,js/*,robots.txt
 ----
 
-This configuration will only impact resources served from the fixed/static URL `/public`, which may not match your application resources if `quarkus.http.root-path` has been set to something other than `/`.
+This configuration only impacts resources served from the fixed or static URL, `/public`, which might not match your application resources if `quarkus.http.root-path` has been set to something other than `/`.
 
-See link:https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus] for more information.
+For more information, see link:https://quarkus.io/blog/path-resolution-in-quarkus/[Path Resolution in Quarkus].
 
 
-[#standard-security-annotations]
+[[standard-security-annotations]]
 == Authorization using annotations
 
-{project-name} comes with built-in security to allow for Role-Based Access Control (link:https://en.wikipedia.org/wiki/Role-based_access_control[RBAC])
+{project-name} includes built-in security to allow for  link:https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control (RBAC)]
 based on the common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints and CDI beans.
 
 .{project-name} annotation types summary
+[options="header"]
 |===
 s| Annotation type s| Description
 s| @DenyAll | Specifies that no security roles are allowed to invoke the specified methods.
 s| @PermitAll | Specifies that all security roles are allowed to invoke the specified methods.
 
-`@PermitAll` lets everybody in even without authentication.
+`@PermitAll` lets everybody in, even without authentication.
 s| @RolesAllowed | Specifies the list of security roles permitted to access methods in an application.
 
 As an equivalent to `@RolesAllowed("**")`, {project-name} also provides the `io.quarkus.security.Authenticated` annotation that permits any authenticated user to access the resource.
 |===
 
-xref:subject-example[SubjectExposingResource example] featured in this chapter demonstrates an endpoint that uses both Jakarta REST and Common Security annotations to describe and secure its endpoints.
+The following <<subject-example>> demonstrates an endpoint that uses both Jakarta REST and Common Security annotations to describe and secure its endpoints.
 
 [[subject-example]]
 .SubjectExposingResource example
@@ -298,26 +299,29 @@ public class SubjectExposingResource {
 }
 ----
 <1> The `/subject/secured` endpoint requires an authenticated user with the granted "Tester" role through the use of the `@RolesAllowed("Tester")` annotation.
-<2> The endpoint obtains the user principal from the Jakarta REST `SecurityContext`. This will be non-null for a secured endpoint.
+<2> The endpoint obtains the user principal from the Jakarta REST `SecurityContext`.
+This returns `non-null` for a secured endpoint.
 <3> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
-<4> The call to obtain the user principal returns null if the caller is unauthenticated and non-null if the caller is authenticated.
-<5> The `/subject/denied` endpoint declares the `@DenyAll` annotation, thus disallowing all direct access to it as a REST method, regardless of the user calling it. The method is still invokable internally by other methods in this class.
+<4> The call to obtain the user principal returns `null` if the caller is unauthenticated and `non-null` if the caller is authenticated.
+<5> The `/subject/denied` endpoint declares the `@DenyAll` annotation, disallowing all direct access to it as a REST method, regardless of the user calling it.
+The method is still invokable internally by other methods in this class.
 
-CAUTION: If you plan to use standard security annotations on the IO thread, review the information in xref:security-proactive-authentication-concept.adoc[Proactive Authentication].
+CAUTION: If you plan to use standard security annotations on the IO thread, review the information in xref:security-proactive-authentication.adoc[Proactive Authentication].
 
-The `@RolesAllowed` annotation value supports <<config-reference#property-expressions,Property Expressions>> including default values and nested Property Expressions.
+The `@RolesAllowed` annotation value supports xref:config-reference.adoc#property-expressions[property expressions] including default values and nested property expressions.
 Configuration properties used with the annotation are resolved at runtime.
 
 .Annotation value examples
+[options="header"]
 |===
 s| Annotation s| Value explanation
-s| `@RolesAllowed("${admin-role}")` | The endpoint will allow users with the role denoted by the value of the `admin-role` property.
+s| `@RolesAllowed("${admin-role}")` | The endpoint allows users with the role denoted by the value of the `admin-role` property.
 s| `@RolesAllowed("${tester.group}-${tester.role}")` | An example showing that the value can contain multiple variables.
 
 s| `@RolesAllowed("${customer:User}")` | A default value demonstration.
-The required role will be denoted by the value of the `customer` property, but if that property is not specified, a role named `User` will be required as a default.
+The required role is denoted by the value of the `customer` property.
+However, if that property is not specified, a role named `User` is required as a default.
 |===
-
 
 .Example of a property expressions usage in the `@RolesAllowed` annotation
 
@@ -371,7 +375,6 @@ public class SubjectExposingResource {
         String name = user != null ? user.getName() : "anonymous";
         return name;
     }
-
     @GET
     @Path("secured")
     @RolesAllowed("${secured}") <4>
@@ -383,15 +386,16 @@ public class SubjectExposingResource {
 }
 ----
 <1> The `@RolesAllowed` annotation value is set to the value of `Administrator`.
-<2> This `/subject/software-tester` endpoint requires an authenticated user that has been granted the role "Software-Tester".
+<2> This `/subject/software-tester` endpoint requires an authenticated user that has been granted the role of "Software-Tester".
 It is possible to use multiple expressions in the role definition.
-<3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation, as we did not set the configuration property `customer`.
-<4> This `/subject/secured` endpoint requires an authenticated user that has been granted the role `User` in production but allows any authenticated user in development mode.
+<3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation because we did not set the configuration property `customer`.
+<4> In production, this `/subject/secured` endpoint requires an authenticated user with the `User` role.
+In development mode, it allows any authenticated user.
 
 === Permission annotation
 
-Quarkus also provides the `io.quarkus.security.PermissionsAllowed` annotation that will permit any authenticated user with given permission to access the resource.
-The annotation is extension of the common security annotations and check permissions granted to `SecurityIdentity`.
+Quarkus also provides the `io.quarkus.security.PermissionsAllowed` annotation, which authorizes any authenticated user with the given permission to access the resource.
+This annotation is an extension of the common security annotations and checks the permissions granted to a `SecurityIdentity` instance.
 
 .Example of endpoints secured with the `@PermissionsAllowed` annotation
 
@@ -462,21 +466,22 @@ public class CRUDResource {
     }
 }
 ----
-<1> Resource method `createOrUpdate` is only accessible by user with both `create` and `update` permissions.
+<1> The resource method `createOrUpdate` is only accessible for a user with both `create` and `update` permissions.
 <2> By default, at least one of the permissions specified through one annotation instance is required.
-You can require all of them by setting `inclusive=true`. Both resource methods `createOrUpdate` have equal authorization requirements.
-<3> Access is granted to `getItem` if `SecurityIdentity` has either `read` permission or `see` permission and one of actions (`all`, `detail`).
-<4> You can use any `java.security.Permission` implementation of your choice.
-By default, string-based permission is performed by the `io.quarkus.security.StringPermission`.
-<5> Permissions are not beans, therefore only way to obtain bean instances is programmatically via the `Arc.container()`.
+You can require all permissions by setting `inclusive=true`.
+Both resource methods `createOrUpdate` have equal authorization requirements.
+<3> Access is granted to `getItem` if `SecurityIdentity` has either `read` permission or `see` permission and one of the `all` or `detail` actions.
+<4> You can use your preferred `java.security.Permission` implementation.
+By default, string-based permission is performed by `io.quarkus.security.StringPermission`.
+<5> Permissions are not beans, therefore the only way to obtain bean instances is programmatically by using `Arc.container()`.
 
-CAUTION: If you plan to use the `@PermissionsAllowed` on the IO thread, review the information in xref:security-proactive-authentication-concept.adoc[Proactive Authentication].
+CAUTION: If you plan to use the `@PermissionsAllowed` on the IO thread, review the information in xref:security-proactive-authentication.adoc[Proactive Authentication].
 
-NOTE: The `@PermissionsAllowed` is not repeatable on class-level due to limitations of Quarkus interceptors.
-Please find well-argued explanation in the xref:cdi-reference.adoc#repeatable-interceptor-bindings[Repeatable interceptor bindings] section of the CDI reference.
+NOTE: `@PermissionsAllowed` is not repeatable on the class level due to a limitation with Quarkus interceptors.
+For more information, see the xref:cdi-reference.adoc#repeatable-interceptor-bindings[Repeatable interceptor bindings] section of the Quarkus "CDI reference" guide.
 
-Provided `SecurityIdentity` contains roles, the easiest to add permissions to `SecurityIdentity` is to create a roles to permissions mapping.
-<<authorization-using-configuration,HTTP role-based policies>> can be used to grant `SecurityIdentity` permissions required by `CRUDResource` endpoints to authenticated requests like this:
+The easiest way to add permissions to a role-enabled `SecurityIdentity` instance is to map roles to permissions.
+Use <<authorization-using-configuration>> to grant the required  `SecurityIdentity` permissions for `CRUDResource` endpoints to authenticated requests, as outlined in the following example:
 
 [source,properties]
 ----
@@ -490,20 +495,20 @@ quarkus.http.auth.policy.role-policy2.permission-class=org.acme.crud.CRUDResourc
 quarkus.http.auth.permission.roles2.paths=/crud/list
 quarkus.http.auth.permission.roles2.policy=role-policy2
 ----
-<1> Add permission `see` with action `all` to `SecurityIdentity` that holds role `user`.
-Similarly as for `@PermissionsAllowed` annotation, `io.quarkus.security.StringPermission` is used by default.
-<2> Permissions `create`, `update` and `read` are mapped to the role `admin`.
-<3> The role policy `role-policy1` only allows authenticated requests to access `/crud/modify` and `/crud/id` sub-paths.
-Please see <<matching-multiple-paths, Matching multiple paths>> section of this guide for more information on path matching algorithm.
-<4> You can also specify your own implementation of the `java.security.Permission` class.
-The class you provide must define exactly one constructor that accepts permission name and optionally actions (as `String` array).
-Here, permission `list` will be added to `SecurityIdentity` as `new CustomPermission("list")`.
+<1> Add the permission `see` and the action `all` to the `SecurityIdentity` instance of the `user` role.
+Similarly, for the `@PermissionsAllowed` annotation, `io.quarkus.security.StringPermission` is used by default.
+<2> Permissions `create`, `update`, and `read` are mapped to the role `admin`.
+<3> The role policy `role-policy1` allows only authenticated requests to access `/crud/modify` and `/crud/id` sub-paths.
+For more information about the path-matching algorithm, see <<matching-multiple-paths>> later in this guide.
+<4> You can also specify a custom implementation of the `java.security.Permission` class.
+Your custom class must define exactly one constructor that accepts the permission name and optionally some actions, for example, `String` array.
+In this scenario, the permission `list` is added to the `SecurityIdentity` instance as `new CustomPermission("list")`.
 
-You can also create a custom `java.security.Permission` with additional constructor parameters.
-These additional parameters will be matched with arguments of the method annotated with the `@PermissionsAllowed` annotation.
-Later, Quarkus will instantiate your custom Permission with actual arguments, with which the method annotated with the `@PermissionsAllowed` has been invoked.
+You can also create a custom `java.security.Permission` class with additional constructor parameters.
+These additional parameters get matched with arguments of the method annotated with the `@PermissionsAllowed` annotation.
+Later, Quarkus instantiates your custom permission with actual arguments, with which the method annotated with the `@PermissionsAllowed` has been invoked.
 
-.Example of a custom `java.security.Permission` that accepts additional arguments
+.Example of a custom `java.security.Permission` class that accepts additional arguments
 
 [source,java]
 ----
@@ -557,11 +562,14 @@ public class LibraryPermission extends Permission {
     }
 }
 ----
-<1> There must be exactly one constructor of a custom `Permission` class, also first parameter is always considered a permission name (must be `String`).
-Optionally, Quarkus may pass Permission actions to the constructor. Just declare the second parameter as `String[]`.
+<1> There must be exactly one constructor of a custom `Permission` class.
+The first parameter is always considered to be a permission name and must be of type `String`.
+Quarkus can optionally pass permission actions to the constructor.
+For this to happen, declare the second parameter as `String[]`.
 
-The `LibraryPermission` permit access to a library if `SecurityIdentity` is allowed to perform one of required actions
-(like `read`, `write`, `list`) on the very same library, or the parent one. Let's see how it is used:
+The `LibraryPermission` class permits access to the current or parent library if `SecurityIdentity` is allowed to perform one of the required actions, for example, `read`, `write`, or `list`.
+
+The following example shows how the `LibraryPermission` class can be used:
 
 [source,java]
 ----
@@ -586,12 +594,12 @@ public class LibraryService {
 
 }
 ----
-<1> Formal parameter `update` is identified as the first `Library` parameter and passed to the `LibraryPermission`.
-However this option comes with a price, as the `LibraryPermission` must be instantiated every single time `updateLibrary` method is invoked.
-<2> Here, the first `Library` parameter is `migrate`, therefore we marked `library` parameter explicitly via `PermissionsAllowed#params`.
-Please note that both Permission constructor and annotated method must have parameter `library`, otherwise validation will fail.
+<1> The formal parameter `update` is identified as the first `Library` parameter and gets passed to the `LibraryPermission` class.
+However, the `LibraryPermission` must be instantiated each time the `updateLibrary` method is invoked.
+<2> Here, the first `Library` parameter is `migrate`, therefore the `library` parameter gets marked explicitly through `PermissionsAllowed#params`.
+The permission constructor and the annotated method must have the parameter `library` set, otherwise, validation fails.
 
-.Example of resource secured with the `LibraryPermission`
+.Example of a resource secured with the `LibraryPermission`
 
 [source,java]
 ----
@@ -618,8 +626,7 @@ public class LibraryResource {
 }
 ----
 
-Similarly to the `CRUDResource` example, we can use permission to role mapping and grant user with role `admin` right to
-update `MediaLibrary`:
+Similarly to the `CRUDResource` example, the following example shows how you can grant a user with the `admin` role permissions to update `MediaLibrary`:
 
 [source,java]
 ----
@@ -637,7 +644,7 @@ public class MediaLibraryPermission extends LibraryPermission {
 
 }
 ----
-<1> We want to pass `MediaLibrary` instance to the `LibraryPermission` constructor.
+<1> We want to pass the `MediaLibrary` instance to the `LibraryPermission` constructor.
 
 [source,properties]
 ----
@@ -646,14 +653,15 @@ quarkus.http.auth.policy.role-policy3.permission-class=org.acme.library.MediaLib
 quarkus.http.auth.permission.roles3.paths=/library/*
 quarkus.http.auth.permission.roles3.policy=role-policy3
 ----
-<1> Grants permission `media-library` that is allowed to perform actions `read`, `write` and `list`.
-Considering `MediaLibrary` is the `TvLibrary` class parent, we know that administrator is also going to be allowed to modify television library.
 
-All the examples above leveraged role to permission mapping, but you can also add permissions to the `SecurityIdentity` programmatically.
-In the example below, we use xref:security-customization.adoc#security-identity-customization[Security Identity Customization] to add
-the same permission as we previously granted with the HTTP role-based policy.
+<1> Grants the permission `media-library`, which permits `read`, `write`, and `list` actions.
+Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
 
-.Example of adding the `LibraryPermission` programmatically to the `SecurityIdentity`
+The examples provided so far use role-to-permission mapping.
+You can also add permissions to the `SecurityIdentity` instance programmatically.
+In the following example, xref:security-customization.adoc#security-identity-customization[`SecurityIdentity` is customized] to add the same permission that was previously granted with the HTTP role-based policy.
+
+.Example of adding the `LibraryPermission` programmatically to `SecurityIdentity`
 
 [source,java]
 ----
@@ -699,16 +707,16 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
 
 }
 ----
-<1> Created permission `media-library` is allowed to perform actions `read`, `write` and `list`.
-Considering `MediaLibrary` is the `TvLibrary` class parent, we know that administrator is also going to be allowed to modify television library.
-<2> You can add a permission checker via `io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder#addPermissionChecker`.
+<1> The permission `media-library` that was created can perform `read`, `write`, and `list` actions.
+Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
+<2> You can add a permission checker through `io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder#addPermissionChecker`.
 
-CAUTION: Annotation permissions do not work with the custom xref:security-customization.adoc#jaxrs-security-context[JAX-RS SecurityContext], for there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
+CAUTION: Annotation permissions do not work with the custom xref:security-customization.adoc#jaxrs-security-context[Custom Jakarta REST SecurityContext] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-architecture-concept.adoc[Quarkus Security architecture] 
-* xref:security-authentication-mechanisms-concept.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
-* xref:security-basic-authentication-concept.adoc[Basic authentication]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
+* xref:security-basic-authentication.adoc[Basic authentication]
 * xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]

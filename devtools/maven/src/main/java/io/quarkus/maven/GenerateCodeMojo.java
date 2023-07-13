@@ -16,6 +16,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -37,7 +38,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
 
     @Override
     protected boolean beforeExecute() throws MojoExecutionException, MojoFailureException {
-        if (mavenProject().getPackaging().equals("pom")) {
+        if (mavenProject().getPackaging().equals(ArtifactCoords.TYPE_POM)) {
             getLog().info("Type of the artifact is POM, skipping build goal");
             return false;
         }
@@ -58,7 +59,15 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             Consumer<Path> sourceRegistrar,
             boolean test) throws MojoFailureException, MojoExecutionException {
 
-        final LaunchMode launchMode = test ? LaunchMode.TEST : LaunchMode.valueOf(mode);
+        final LaunchMode launchMode;
+        if (test) {
+            launchMode = LaunchMode.TEST;
+        } else if (mavenSession().getGoals().contains("quarkus:dev")) {
+            // if the command was 'compile quarkus:dev' then we'll end up with prod launch mode but we want dev
+            launchMode = LaunchMode.DEVELOPMENT;
+        } else {
+            launchMode = LaunchMode.valueOf(mode);
+        }
         if (getLog().isDebugEnabled()) {
             getLog().debug("Bootstrapping Quarkus application in mode " + launchMode);
         }
@@ -78,7 +87,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
                     boolean.class);
             initAndRun.invoke(null, deploymentClassLoader, sourceParents,
                     generatedSourcesDir(test), buildDir().toPath(),
-                    sourceRegistrar, curatedApplication.getApplicationModel(), mavenProject().getProperties(),
+                    sourceRegistrar, curatedApplication.getApplicationModel(), getBuildSystemProperties(false),
                     launchMode.name(),
                     test);
         } catch (Exception any) {

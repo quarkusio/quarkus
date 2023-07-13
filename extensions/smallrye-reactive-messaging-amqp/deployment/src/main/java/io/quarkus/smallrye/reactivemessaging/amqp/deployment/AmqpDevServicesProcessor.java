@@ -98,15 +98,6 @@ public class AmqpDevServicesProcessor {
                     devServicesConfig.timeout, !devServicesSharedNetworkBuildItem.isEmpty());
             if (newDevService != null) {
                 devService = newDevService;
-                Map<String, String> config = devService.getConfig();
-                if (newDevService.isOwner()) {
-                    log.info("Dev Services for AMQP started.");
-                    log.infof("Other Quarkus applications in dev mode will find the "
-                            + "broker automatically. For Quarkus applications in production mode, you can connect to"
-                            + " this by starting your application with -Damqp.host=%s -Damqp.port=%s -Damqp.user=%s -Damqp.password=%s",
-                            config.get(AMQP_HOST_PROP), config.get(AMQP_PORT_PROP), config.get(AMQP_USER_PROP),
-                            config.get(AMQP_PASSWORD_PROP));
-                }
             }
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
@@ -138,6 +129,16 @@ public class AmqpDevServicesProcessor {
             closeBuildItem.addCloseTask(closeTask, true);
         }
         cfg = configuration;
+
+        if (devService.isOwner()) {
+            Map<String, String> config = devService.getConfig();
+            log.infof("Dev Services for AMQP started. Other Quarkus applications in dev mode will find the "
+                    + "broker automatically. For Quarkus applications in production mode, you can connect to"
+                    + " this by starting your application with -Damqp.host=%s -Damqp.port=%s -Damqp.user=%s -Damqp.password=%s",
+                    config.get(AMQP_HOST_PROP), config.get(AMQP_PORT_PROP), config.get(AMQP_USER_PROP),
+                    config.get(AMQP_PASSWORD_PROP));
+        }
+
         return devService.toBuildItem();
     }
 
@@ -188,6 +189,7 @@ public class AmqpDevServicesProcessor {
                     useSharedNetwork);
 
             timeout.ifPresent(container::withStartupTimeout);
+            container.withEnv(config.containerEnv);
             container.start();
 
             return getRunningService(container.getContainerId(), container::close, container.getEffectiveHost(),
@@ -245,6 +247,7 @@ public class AmqpDevServicesProcessor {
         private final String extra;
         private final boolean shared;
         private final String serviceName;
+        private final Map<String, String> containerEnv;
 
         public AmqpDevServiceCfg(AmqpDevServicesBuildTimeConfig devServicesConfig) {
             this.devServicesEnabled = devServicesConfig.enabled.orElse(true);
@@ -253,7 +256,7 @@ public class AmqpDevServicesProcessor {
             this.extra = devServicesConfig.extraArgs;
             this.shared = devServicesConfig.shared;
             this.serviceName = devServicesConfig.serviceName;
-            ;
+            this.containerEnv = devServicesConfig.containerEnv;
         }
 
         @Override
@@ -266,12 +269,13 @@ public class AmqpDevServicesProcessor {
             }
             AmqpDevServiceCfg that = (AmqpDevServiceCfg) o;
             return devServicesEnabled == that.devServicesEnabled && Objects.equals(imageName, that.imageName)
-                    && Objects.equals(fixedExposedPort, that.fixedExposedPort);
+                    && Objects.equals(fixedExposedPort, that.fixedExposedPort)
+                    && Objects.equals(containerEnv, that.containerEnv);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort);
+            return Objects.hash(devServicesEnabled, imageName, fixedExposedPort, containerEnv);
         }
     }
 

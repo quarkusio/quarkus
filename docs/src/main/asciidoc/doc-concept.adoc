@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="doc-concept"]
 = Quarkus documentation content types
 include::_attributes.adoc[]
+:diataxis-type: concept
 :categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
 

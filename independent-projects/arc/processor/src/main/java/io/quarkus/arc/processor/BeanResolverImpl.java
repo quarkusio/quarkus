@@ -185,19 +185,19 @@ class BeanResolverImpl implements BeanResolver {
                     throw new IllegalArgumentException("Invalid argument combination " + requiredType + "; " + beanType);
                 }
                 for (int i = 0; i < requiredTypeArguments.size(); i++) {
-                    if (!parametersMatch(requiredTypeArguments.get(i), beanTypeArguments.get(i))) {
+                    if (!matchTypeArguments(requiredTypeArguments.get(i), beanTypeArguments.get(i))) {
                         return false;
                     }
                 }
                 return true;
             }
         } else if (WILDCARD_TYPE.equals(requiredType.kind())) {
-            return parametersMatch(requiredType, beanType);
+            return matchTypeArguments(requiredType, beanType);
         }
         return false;
     }
 
-    boolean parametersMatch(Type requiredParameter, Type beanParameter) {
+    public boolean matchTypeArguments(Type requiredParameter, Type beanParameter) {
         if (isActualType(requiredParameter) && isActualType(beanParameter)) {
             /*
              * the required type parameter and the bean type parameter are actual types with identical raw type, and, if the

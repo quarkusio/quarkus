@@ -1,15 +1,14 @@
 package io.quarkus.arc.deployment;
 
-import static io.quarkus.arc.processor.KotlinUtils.isKotlinClass;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,12 +22,10 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
-import jakarta.enterprise.inject.spi.DefinitionException;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
@@ -46,7 +43,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AlternativePriorities;
-import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
@@ -56,19 +52,15 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BeanResolver;
-import io.quarkus.arc.processor.Beans;
 import io.quarkus.arc.processor.BytecodeTransformer;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
 import io.quarkus.arc.processor.StereotypeInfo;
-import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcRecorder;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -156,25 +148,6 @@ public class ArcProcessor {
                 .setDefaultScope(DotName.createSimple(ApplicationScoped.class.getName()))
                 .addBeanClasses(quarkusApplications)
                 .build();
-    }
-
-    @BuildStep
-    StereotypeRegistrarBuildItem convertLegacyAdditionalStereotypes(List<AdditionalStereotypeBuildItem> buildItems) {
-        return new StereotypeRegistrarBuildItem(new StereotypeRegistrar() {
-            @Override
-            public Set<DotName> getAdditionalStereotypes() {
-                Set<DotName> result = new HashSet<>();
-                for (AdditionalStereotypeBuildItem buildItem : buildItems) {
-                    result.addAll(buildItem.getStereotypes()
-                            .values()
-                            .stream()
-                            .flatMap(Collection::stream)
-                            .map(AnnotationInstance::name)
-                            .collect(Collectors.toSet()));
-                }
-                return result;
-            }
-        });
     }
 
     // PHASE 1 - build BeanProcessor
@@ -412,6 +385,9 @@ public class ArcProcessor {
                 builder.addExcludeType(predicate);
             }
         }
+        if (launchModeBuildItem.getLaunchMode() == LaunchMode.TEST) {
+            builder.addExcludeType(createQuarkusComponentTestExcludePredicate(index));
+        }
 
         for (SuppressConditionGeneratorBuildItem generator : suppressConditionGenerators) {
             builder.addSuppressConditionGenerator(generator.getGenerator());
@@ -465,39 +441,6 @@ public class ArcProcessor {
 
         // Initialize the type -> bean map
         beanRegistrationPhase.getBeanProcessor().getBeanDeployment().initBeanByTypeMap();
-
-        // Register a synthetic bean for each List<?> with qualifier @All
-        List<InjectionPointInfo> listAll = beanRegistrationPhase.getInjectionPoints().stream()
-                .filter(this::isListAllInjectionPoint).collect(Collectors.toList());
-        for (InjectionPointInfo injectionPoint : listAll) {
-            // Note that at this point we can be sure that the required type is List<>
-            Type typeParam = injectionPoint.getType().asParameterizedType().arguments().get(0);
-            if (typeParam.kind() == Type.Kind.WILDCARD_TYPE) {
-                ClassInfo declaringClass;
-                if (injectionPoint.isField()) {
-                    declaringClass = injectionPoint.getTarget().asField().declaringClass();
-                } else {
-                    declaringClass = injectionPoint.getTarget().asMethod().declaringClass();
-                }
-                if (isKotlinClass(declaringClass)) {
-                    validationErrors.produce(new ValidationErrorBuildItem(
-                            new DefinitionException(
-                                    "kotlin.collections.List cannot be used together with the @All qualifier, please use MutableList or java.util.List instead: "
-                                            + injectionPoint.getTargetInfo())));
-                } else {
-                    validationErrors.produce(new ValidationErrorBuildItem(
-                            new DefinitionException(
-                                    "Wildcard is not a legal type argument for " + injectionPoint.getTargetInfo())));
-                }
-            } else if (typeParam.kind() == Type.Kind.TYPE_VARIABLE) {
-                validationErrors.produce(new ValidationErrorBuildItem(new DefinitionException(
-                        "Type variable is not a legal type argument for " + injectionPoint.getTargetInfo())));
-            }
-        }
-        if (!listAll.isEmpty()) {
-            registerUnremovableListBeans(beanRegistrationPhase, listAll, reflectiveMethods, reflectiveFields,
-                    unremovableBeans);
-        }
 
         BeanProcessor beanProcessor = beanRegistrationPhase.getBeanProcessor();
         ObserverRegistrar.RegistrationContext registrationContext = beanProcessor.registerSyntheticObservers();
@@ -793,58 +736,37 @@ public class ArcProcessor {
         }
     }
 
-    private void registerUnremovableListBeans(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            List<InjectionPointInfo> injectionPoints, BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        BeanDeployment beanDeployment = beanRegistrationPhase.getBeanProcessor().getBeanDeployment();
-        List<TypeAndQualifiers> unremovables = new ArrayList<>();
+    Predicate<ClassInfo> createQuarkusComponentTestExcludePredicate(IndexView index) {
+        // Exlude static nested classed declared on a QuarkusComponentTest:
+        // 1. Test class annotated with @QuarkusComponentTest
+        // 2. Test class with a static field of a type QuarkusComponentTestExtension
+        DotName quarkusComponentTest = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTest");
+        DotName quarkusComponentTestExtension = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTestExtension");
+        return new Predicate<ClassInfo>() {
 
-        for (InjectionPointInfo injectionPoint : injectionPoints) {
-            // All qualifiers but @All
-            Set<AnnotationInstance> qualifiers = new HashSet<>(injectionPoint.getRequiredQualifiers());
-            for (Iterator<AnnotationInstance> it = qualifiers.iterator(); it.hasNext();) {
-                AnnotationInstance qualifier = it.next();
-                if (DotNames.ALL.equals(qualifier.name())) {
-                    it.remove();
-                }
-            }
-            if (qualifiers.isEmpty()) {
-                // If no other qualifier is used then add @Any
-                qualifiers.add(AnnotationInstance.create(DotNames.ANY, null, new AnnotationValue[] {}));
-            }
-
-            Type elementType = injectionPoint.getType().asParameterizedType().arguments().get(0);
-
-            // make note of all types inside @All List<X> to make sure they are unremovable
-            unremovables.add(new TypeAndQualifiers(
-                    elementType.name().equals(DotNames.INSTANCE_HANDLE)
-                            ? elementType.asParameterizedType().arguments().get(0)
-                            : elementType,
-                    qualifiers));
-        }
-        if (!unremovables.isEmpty()) {
-            // New beans were registered - we need to re-init the type -> bean map
-            // Also make all beans that match the List<> injection points unremovable
-            beanDeployment.initBeanByTypeMap();
-            // And make all the matching beans unremovable
-            unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
-                @Override
-                public boolean test(BeanInfo bean) {
-                    for (TypeAndQualifiers tq : unremovables) {
-                        if (Beans.matches(bean, tq)) {
+            @Override
+            public boolean test(ClassInfo clazz) {
+                if (clazz.nestingType() == NestingType.INNER
+                        && Modifier.isStatic(clazz.flags())) {
+                    DotName enclosingClassName = clazz.enclosingClass();
+                    ClassInfo enclosingClass = index.getClassByName(enclosingClassName);
+                    if (enclosingClass != null) {
+                        if (enclosingClass.hasDeclaredAnnotation(quarkusComponentTest)) {
                             return true;
+                        } else {
+                            for (FieldInfo field : enclosingClass.fields()) {
+                                if (!field.isSynthetic()
+                                        && Modifier.isStatic(field.flags())
+                                        && field.type().name().equals(quarkusComponentTestExtension)) {
+                                    return true;
+                                }
+                            }
                         }
                     }
-                    return false;
                 }
-            }));
-        }
-    }
-
-    private boolean isListAllInjectionPoint(InjectionPointInfo injectionPoint) {
-        return DotNames.LIST.equals(injectionPoint.getRequiredType().name())
-                && Annotations.contains(injectionPoint.getRequiredQualifiers(), DotNames.ALL);
+                return false;
+            }
+        };
     }
 
     private abstract static class AbstractCompositeApplicationClassesPredicate<T> implements Predicate<T> {

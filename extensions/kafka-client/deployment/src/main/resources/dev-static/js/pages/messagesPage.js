@@ -30,6 +30,24 @@ export default class MessagesPage {
 
         $('#send-msg-btn').click(this.createMessage.bind(this));
 
+        $('#add-msg-header-btn').click(() => {
+            const headersTab = document.querySelector('#headers-list-tab-pane');
+            let blankHeader = document.createElement('div');
+            blankHeader.className = 'input-group top-margin';
+            blankHeader.innerHTML = `
+             <input type="text" class="msg-header-key form-control" placeholder="Key"/>
+             <input type="text" class="msg-header-value form-control" placeholder="Value"/>
+             <span class="input-group-text msg-header-delete">
+                <i class="bi bi-trash"></i>
+             </span>`
+
+            const addedHeader = headersTab.insertBefore(blankHeader, headersTab.lastElementChild);
+            addedHeader.querySelector('span.msg-header-delete').addEventListener('click', (e) => {
+                headersTab.removeChild(addedHeader);
+                e.stopPropagation();
+            });
+        });
+
         $('.close-modal-btn').click(() => {
             $('.modal').modal('hide');
             this.setActiveTab(MODAL_KEY_TAB);
@@ -241,30 +259,57 @@ export default class MessagesPage {
             tableRow.append(createTableItem(messages[i].offset));
             tableRow.append(createTableItem(messages[i].partition));
             tableRow.append(createTableItem(timestampToFormattedString(messages[i].timestamp)));
-            tableRow.append(createTableItem(messages[i].key));
+            tableRow.append(createTableItemHtml(this.formatOrPlaceholder(messages[i].key)));
 
             const value = messages[i].value;
             const maxMsgLength = 75;
             if (value.length < maxMsgLength) {
-                tableRow.append(createTableItem(value));
+                tableRow.append(createTableItemHtml(this.formatOrPlaceholder(value)));
             } else {
-                tableRow.append(createTableItem(value.slice(0, maxMsgLength) + "..."));
+                tableRow.append(createTableItemHtml(this.formatOrPlaceholder(value.slice(0, maxMsgLength) + "...")));
             }
             tableRow.append(createTableItem());
             tableRow
                 .addClass("pointer")
                 .click(collapseRow.collapse);
             msgTableBody.append(tableRow);
-            msgTableBody.append(collapseRow.getCollapseContent(tableRow.children().length, this.createMessageCollapseItem(value)));
+            msgTableBody.append(collapseRow.getCollapseContent(tableRow.children().length, this.createMessageCollapseItem(value, messages[i].headers)));
         }
 
         currentContext.lastOffset = data.partitionOffset;
         toggleSpinner(MESSAGES_TABLE_HOLDER, MESSAGES_SPINNER);
     }
 
-    createMessageCollapseItem(fullMessage) {
-        return $("<div/>")
-            .text(fullMessage);
+    /**
+     * @param {string} value
+     */
+    formatOrPlaceholder(value) {
+        if (value == null) {
+            return `<i>null</i>`;
+        }
+        if (value.length == 0) {
+            return `<i>empty</i>`
+        }
+        return `<code>${value}</code>`;
+    }
+
+    createMessageCollapseItem(fullMessage, headers) {
+        let contents = `
+            <dt>Message Value</dt>
+            <dd>${this.formatOrPlaceholder(fullMessage)}</dd>
+        `;
+
+        for (const [key, value] of Object.entries(headers)) {
+            contents += `
+                <dt>Header: ${this.formatOrPlaceholder(key)}</dt>
+                <dd>${this.formatOrPlaceholder(value)}</dd>
+            `;
+        }
+
+        let item = document.createElement('dl');
+        item.innerHTML = contents;
+
+        return $(item);
     }
 
     toggleContent() {
@@ -298,12 +343,24 @@ export default class MessagesPage {
 
         let valueTextarea = $('#msg-value-textarea');
         let keyTextarea = $('#msg-key-textarea');
+        let headers = {};
+
+        const headersTab = document.querySelector('#headers-list-tab-pane');
+        const headerRows = headersTab.querySelectorAll('div.input-group');
+
+        headerRows.forEach((headerRow) => {
+            let headerKey = headerRow.querySelector('.msg-header-key');
+            let headerValue = headerRow.querySelector('.msg-header-value');
+            headers[headerKey.value] = headerValue.value;
+        });
+
         const rq = {
             action: "createMessage",
             topic: topicName,
             partition: partition,
             value: valueTextarea.val(),
-            key: keyTextarea.val()
+            key: keyTextarea.val(),
+            headers: headers
         };
 
         // TODO: print out partitions count on topics page
@@ -330,6 +387,12 @@ export default class MessagesPage {
         $('#msg-key-textarea').val("");
         $('#msg-modal-partition-select').val("any");
         $('#msg-modal-type-select').val("text");
+
+        const headersTab = document.querySelector('#headers-list-tab-pane');
+
+        headersTab.querySelectorAll('div.input-group').forEach((headerRow) => {
+            headersTab.removeChild(headerRow);
+        });
 
         $('body').removeClass('modal-open');
         $('.modal-backdrop').remove();

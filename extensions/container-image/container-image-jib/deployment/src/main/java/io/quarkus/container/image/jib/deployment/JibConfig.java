@@ -16,9 +16,9 @@ public class JibConfig {
     /**
      * The base image to be used when a container image is being produced for the jar build.
      *
-     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.15}
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17-runtime:1.17}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.15} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11-runtime:1.16} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;
@@ -147,13 +147,13 @@ public class JibConfig {
      * List of target platforms. Each platform is defined using the pattern:
      *
      * <pre>
-     *  {@literal <os>|<arch>[/variant]|<os>/<arch>[/variant]}
+     * &lt;os>|&lt;arch>[/variant]|&lt;os>/&lt;arch>[/variant]
      * </pre>
      *
      * for example:
      *
      * <pre>
-     * {@literal linux/amd64,linux/arm64/v8}
+     * linux/amd64,linux/arm64/v8
      * </pre>
      *
      * If not specified, OS default is linux and architecture default is {@code amd64}.

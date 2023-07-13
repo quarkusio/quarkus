@@ -8,10 +8,14 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import io.quarkus.test.InjectMock;
 import io.smallrye.common.annotation.Experimental;
 
 /**
  * Registers the {@link QuarkusComponentTestExtension} that makes it easy to test Quarkus components.
+ *
+ * @see InjectMock
+ * @see TestConfigProperty
  */
 @Experimental("This feature is experimental and the API may change in the future")
 @ExtendWith(QuarkusComponentTestExtension.class)
@@ -39,4 +43,11 @@ public @interface QuarkusComponentTest {
      * @see QuarkusComponentTestExtension#useDefaultConfigProperties()
      */
     boolean useDefaultConfigProperties() default false;
+
+    /**
+     * If set to {@code true} then all static nested classes are considered additional components under test.
+     *
+     * @see #value()
+     */
+    boolean addNestedClassesAsComponents() default true;
 }

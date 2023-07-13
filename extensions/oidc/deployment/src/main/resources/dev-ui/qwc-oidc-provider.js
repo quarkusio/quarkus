@@ -26,7 +26,7 @@ class OidcPropertiesState extends LitState {
             hideImplicitLoggedIn: false,
             hideImplLoggedOut: false,
             swaggerUiPath: null,
-            graphQlUiPath: null,
+            graphqlUiPath: null,
             oidcProviderName: null,
             oidcApplicationType: null,
             oidcGrantType: null,
@@ -83,7 +83,7 @@ class OidcPropertiesState extends LitState {
             propertiesState.keycloakAdminUrl = response.result.keycloakAdminUrl;
             propertiesState.keycloakRealms = response.result.keycloakRealms;
             propertiesState.swaggerUiPath = response.result.swaggerUiPath;
-            propertiesState.graphQlUiPath = response.result.graphQlUiPath;
+            propertiesState.graphqlUiPath = response.result.graphqlUiPath;
 
             return {
                 // logout === true will trigger query params removal
@@ -123,26 +123,13 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         .full-width {
           width: 100%;
         }
-        @media (min-width: 1200px) {
-          .container {
-            max-width: 1140px;
-          }
-        }
+        
         .container {
           width: 93%;
           margin: auto;
           align-items: stretch;
-          border: 1px solid rgba(0,0,0,.125);
-          border-radius: var(--lumo-border-radius-l);
         }
-        @media (min-width: 768px) {
-          .container-btn-mn-lf {
-            margin-left: 16.666667%;
-          }
-        }
-        .container-btn {
-          --lumo-success-color: #28a745;
-        }
+        
         .frm-field {
           width: 83.333333%;
           margin-left: 20px;
@@ -161,6 +148,9 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         .hidden {
           display: none;
         }
+        .heading {
+            font-size: larger;
+        }
         .error-color {
           color: var(--lumo-error-text-color);
         }
@@ -174,7 +164,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
           color: var(--lumo-primary-text-color);
         }
         .black-5pct {
-          background-color: var(--lumo-shade-5pct);
+          background-color: var(--lumo-contrast-10pct);
         }
         .margin-l-m {
           margin-left: var(--lumo-space-m);
@@ -210,11 +200,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
           }
         }
         .decoded-token, .encoded-token {
-          background-color: var(--lumo-contrast-90pct);
-          color: var(--lumo-success-contrast-color);
           padding: 0 var(--lumo-space-m);
           word-break: break-word;
           word-wrap: break-word;
+          background-color: var(--lumo-contrast-5pct);
         }
         .decoded-token pre {
           white-space: break-spaces;
@@ -351,27 +340,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _renderProvider() {
-        const content = this._content();
-        if (propertiesState.keycloakAdminUrl) {
-            return html `
-                    <vaadin-horizontal-layout
-                            theme="spacing padding"
-                            style="align-items: center"
-                    >
-                        ${content}
-                        <vaadin-button class="keycloak-btn" theme="tertiary"
-                                       @click=${() => QwcOidcProvider._goToKeycloakUrl()}>
-                            <vaadin-icon icon="font-awesome-solid:key" slot="prefix" class="btn-icon"></vaadin-icon>
-                            Keycloak Admin
-                        </vaadin-button>
-                    </vaadin-horizontal-layout>
-                `;
-        }
-
-        return content;
-    }
-
-    _content() {
         if (QwcOidcProvider._isServiceOrHybridApp()) {
             switch (propertiesState.oidcGrantType) {
                 case 'password':
@@ -395,7 +363,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return html`
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container">
                 ${servicePathForm}
-                <vaadin-button class="container-btn-mn-lf container-btn" theme="primary success"
+                <vaadin-button theme="primary success"
                                @click=${() => this._signInToService()}>
                     Log into your Web Application
                 </vaadin-button>
@@ -454,7 +422,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         ${extraFields}
                         ${servicePathForm}
                         <vaadin-horizontal-layout class="full-width">
-                            <vaadin-horizontal-layout class="container-btn-mn-lf full-width">
+                            <vaadin-horizontal-layout class="full-width">
                                 <vaadin-button class="fill-space margin-right-auto" theme="primary" title="Test service" 
                                                @click=${testSvcFun}>
                                     Test service
@@ -668,12 +636,18 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
                                     ?hidden="${propertiesState.hideImplLoggedOut}">
                 ${keycloakRealms}
-                <vaadin-button class="container-btn-mn-lf container-btn" theme="primary success"
-                               title="Log into Single Page Application to Get Access and ID Tokens"
-                               @click=${() => this._signInToOidcProviderAndGetTokens()}>
-                    <vaadin-icon icon="font-awesome-solid:user" slot="prefix" class="btn-icon"></vaadin-icon>
-                    Log into Single Page Application
-                </vaadin-button>
+                <vaadin-form-layout class="txt-field-form full-width">
+                        <vaadin-form-item class="full-width">
+                            <vaadin-button theme="primary success"
+                                        title="Log into Single Page Application to Get Access and ID Tokens"
+                                        @click=${() => this._signInToOidcProviderAndGetTokens()}>
+                                <vaadin-icon icon="font-awesome-solid:user" slot="prefix" class="btn-icon"></vaadin-icon>
+                                Log into Single Page Application
+                            </vaadin-button>            
+                        </vaadin-form-item>
+                    </vaadin-form-layout>
+
+                
             </vaadin-vertical-layout>
             <vaadin-horizontal-layout theme="spacing padding" class="height-4xl container vertical-center" 
                                       ?hidden="${propertiesState.hideLogInErr}">
@@ -688,7 +662,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             <vaadin-vertical-layout class="full-width" ?hidden="${propertiesState.hideImplicitLoggedIn}">
                 <vaadin-vertical-layout class="height-4xl container">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
-                        <span class="margin-right-auto default-cursor">Your tokens</span>
+                        <span class="margin-right-auto default-cursor heading">Your tokens</span>
                         <span class="margin-right-space-m ${classMap({'display-none': !propertiesState.userName})}">
                             Logged in as ${propertiesState.userName}</span>
                         <vaadin-button theme="tertiary small" title="Click to logout and start again" 
@@ -756,7 +730,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 </vaadin-vertical-layout>
                 <vaadin-vertical-layout theme="spacing" class="height-4xl container margin-top-space-m">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
-                        <span class="margin-right-auto default-cursor">Test your service</span>
+                        <span class="margin-right-auto default-cursor heading">Test your service</span>
                         <vaadin-button theme="tertiary small" title="Test in Swagger UI" 
                                        @click=${() => QwcOidcProvider._navigateToSwaggerUi()} 
                                        ?hidden="${!propertiesState.swaggerIsAvailable}">
@@ -775,7 +749,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     <vaadin-vertical-layout theme="padding">
                         ${servicePathForm}
                         <vaadin-horizontal-layout class="full-width">
-                            <vaadin-horizontal-layout class="container-btn-mn-lf full-width">
+                            <vaadin-horizontal-layout class="full-width">
                                 <vaadin-button class="fill-space" theme="primary" title="Test With Access Token" 
                                                @click=${() => this._testServiceWithAccessToken()}>
                                     With Access Token
@@ -931,10 +905,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             result += characters.charAt(Math.floor(Math.random() * charactersLength));
         }
         return result;
-    }
-
-    static _goToKeycloakUrl() {
-        window.open(propertiesState.keycloakAdminUrl, '_blank').focus();
     }
 
     static _areTokensInUrl() {
@@ -1133,7 +1103,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     static _navigateToGraphQLUiWithToken(token) {
-        let url = propertiesState.graphQlUiPath;
+        let url = propertiesState.graphqlUiPath;
         const headerJson = '{"authorization": "Bearer ' + token + '"}';
         url += '/?' + encodeURIComponent('headers') + '=' + encodeURIComponent(headerJson);
         window.open(url, '_blank').focus();

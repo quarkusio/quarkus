@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,7 +76,7 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice, cache size: 0", page.getBody().asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "code-flow"));
-
+            // Logout
             page = webClient.getPage("http://localhost:8081/code-flow/logout");
             assertEquals("Welcome, clientId: quarkus-web-app", page.getBody().asNormalizedText());
             assertNull(getSessionCookie(webClient, "code-flow"));
@@ -142,9 +143,25 @@ public class CodeFlowAuthorizationTest {
             // Session is still active
             assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
 
-            // request a back channel logout
+            // ID token subject is `123456`
+            // request a back channel logout for some other subject
             RestAssured.given()
-                    .when().contentType(ContentType.URLENC).body("logout_token=" + OidcWiremockTestResource.getLogoutToken())
+                    .when().contentType(ContentType.URLENC)
+                    .body("logout_token=" + OidcWiremockTestResource.getLogoutToken("789"))
+                    .post("/back-channel-logout")
+                    .then()
+                    .statusCode(200);
+
+            // No logout:
+            page = webClient.getPage("http://localhost:8081/code-flow-form-post");
+            assertEquals("alice", page.getBody().asNormalizedText());
+            // Session is still active
+            assertNotNull(getSessionCookie(webClient, "code-flow-form-post"));
+
+            // request a back channel logout for the same subject
+            RestAssured.given()
+                    .when().contentType(ContentType.URLENC).body("logout_token="
+                            + OidcWiremockTestResource.getLogoutToken("123456"))
                     .post("/back-channel-logout")
                     .then()
                     .statusCode(200);
@@ -214,9 +231,11 @@ public class CodeFlowAuthorizationTest {
         defineCodeFlowAuthorizationOauth2TokenStub();
 
         doTestCodeFlowUserInfo("code-flow-user-info-only", 300);
+        clearCache();
         doTestCodeFlowUserInfo("code-flow-user-info-github", 360);
+        clearCache();
         doTestCodeFlowUserInfo("code-flow-user-info-dynamic-github", 301);
-
+        clearCache();
         doTestCodeFlowUserInfoCashedInIdToken();
     }
 
@@ -256,6 +275,13 @@ public class CodeFlowAuthorizationTest {
             page = form.getInputByValue("login").click();
 
             assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
+            page = webClient.getPage("http://localhost:8081/" + tenantId);
+            assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
+            page = webClient.getPage("http://localhost:8081/" + tenantId);
+            assertEquals("alice:alice:alice, cache size: 1", page.getBody().asNormalizedText());
+
+            wireMockServer.verify(1, getRequestedFor(urlPathMatching("/auth/realms/quarkus/protocol/openid-connect/userinfo")));
+            wireMockServer.resetRequests();
 
             JsonObject idTokenClaims = decryptIdToken(webClient, tenantId);
             assertNull(idTokenClaims.getJsonObject(OidcUtils.USER_INFO_ATTRIBUTE));

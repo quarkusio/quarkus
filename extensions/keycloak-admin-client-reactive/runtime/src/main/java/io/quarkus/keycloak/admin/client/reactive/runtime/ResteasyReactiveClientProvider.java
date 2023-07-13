@@ -11,6 +11,7 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
@@ -74,7 +75,10 @@ public class ResteasyReactiveClientProvider implements ResteasyClientProvider {
                         .registerMessageBodyWriter(new ClientJacksonMessageBodyWriter(newObjectMapper), Object.class,
                                 HANDLED_MEDIA_TYPES, true, PROVIDER_PRIORITY);
             }
-
+            InstanceHandle<ClientLogger> clientLogger = arcContainer.instance(ClientLogger.class);
+            if (clientLogger.isAvailable()) {
+                clientBuilder.clientLogger(clientLogger.get());
+            }
         }
         return clientBuilder;
     }

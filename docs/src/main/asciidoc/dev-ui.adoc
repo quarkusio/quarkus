@@ -8,11 +8,11 @@ include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Learn how to get your extension contribute features to the Dev UI (v1).
 
-[IMPORTANT]
+[NOTE]
 .Dev UI v1
 ====
-This guide covers the Dev UI v1, which has been replaced in Quarkus 3.
-You can still access the Dev UI v1 using http://localhost/q/dev-v1/
+This guide covers the Dev UI v1, which has been replaced in Quarkus 3 with xref:dev-ui-v2.adoc[a new Dev UI].
+You can still access the Dev UI v1 using http://localhost:8080/q/dev-v1[/q/dev-v1]
 ====
 
 This guide covers the Quarkus Dev UI for xref:building-my-first-extension.adoc[extension authors].

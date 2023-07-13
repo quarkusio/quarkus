@@ -6,18 +6,17 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.RunTimeConfigurationSourceValueBuildItem;
-import io.quarkus.kubernetes.client.runtime.KubernetesClientBuildConfig;
+import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigBuildTimeConfig;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigRecorder;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigSourceConfig;
+import io.quarkus.kubernetes.config.runtime.KubernetesConfigSourceFactoryBuilder;
 import io.quarkus.kubernetes.config.runtime.SecretsRoleConfig;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.PolicyRule;
-import io.quarkus.runtime.TlsConfig;
 
 public class KubernetesConfigProcessor {
 
@@ -28,44 +27,40 @@ public class KubernetesConfigProcessor {
             List.of("get")));
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public RunTimeConfigurationSourceValueBuildItem configure(KubernetesConfigRecorder recorder,
-            KubernetesConfigSourceConfig config, KubernetesConfigBuildTimeConfig buildTimeConfig,
-            KubernetesClientBuildConfig clientConfig,
-            TlsConfig tlsConfig) {
-        return new RunTimeConfigurationSourceValueBuildItem(
-                recorder.configSources(config, buildTimeConfig, clientConfig, tlsConfig));
+    void configFactory(BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(KubernetesConfigSourceFactoryBuilder.class.getName()));
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void handleAccessToSecrets(KubernetesConfigSourceConfig config,
+    public void handleAccessToSecrets(
             KubernetesConfigBuildTimeConfig buildTimeConfig,
+            KubernetesConfigSourceConfig config,
             BuildProducer<KubernetesRoleBuildItem> roleProducer,
             BuildProducer<KubernetesClusterRoleBuildItem> clusterRoleProducer,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccountProducer,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer,
             KubernetesConfigRecorder recorder) {
-        if (buildTimeConfig.secretsEnabled) {
-            SecretsRoleConfig roleConfig = buildTimeConfig.secretsRoleConfig;
-            String roleName = roleConfig.name;
-            if (roleConfig.generate) {
-                if (roleConfig.clusterWide) {
+        if (buildTimeConfig.secretsEnabled()) {
+            SecretsRoleConfig roleConfig = buildTimeConfig.secretsRoleConfig();
+            String roleName = roleConfig.name();
+            if (roleConfig.generate()) {
+                if (roleConfig.clusterWide()) {
                     clusterRoleProducer.produce(new KubernetesClusterRoleBuildItem(roleName,
                             POLICY_RULE_FOR_ROLE,
                             ANY_TARGET));
                 } else {
                     roleProducer.produce(new KubernetesRoleBuildItem(roleName,
-                            roleConfig.namespace.orElse(null),
+                            roleConfig.namespace().orElse(null),
                             POLICY_RULE_FOR_ROLE,
                             ANY_TARGET));
                 }
             }
 
             serviceAccountProducer.produce(new KubernetesServiceAccountBuildItem(true));
-            roleBindingProducer.produce(new KubernetesRoleBindingBuildItem(roleName, roleConfig.clusterWide));
+            roleBindingProducer.produce(new KubernetesRoleBindingBuildItem(roleName, roleConfig.clusterWide()));
         }
 
-        recorder.warnAboutSecrets(config, buildTimeConfig);
+        recorder.warnAboutSecrets(buildTimeConfig, config);
     }
 }

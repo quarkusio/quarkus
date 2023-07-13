@@ -39,6 +39,9 @@ public class ClientCallingResource {
     private final AtomicInteger count = new AtomicInteger(0);
 
     @RestClient
+    ClientWithClientLogger clientWithClientLogger;
+
+    @RestClient
     ClientWithExceptionMapper clientWithExceptionMapper;
 
     @RestClient
@@ -59,13 +62,61 @@ public class ClientCallingResource {
     @Inject
     InMemorySpanExporter inMemorySpanExporter;
 
+    @Inject
+    MyClientLogger globalClientLogger;
+
     void init(@Observes Router router) {
         router.post().handler(BodyHandler.create());
 
         router.get("/unprocessable").handler(rc -> rc.response().setStatusCode(422).end("the entity was unprocessable"));
 
+        router.get("/client-logger").handler(rc -> {
+            rc.response().end("Hello World!");
+        });
+
+        router.get("/correlation").handler(rc -> {
+            rc.response().end(rc.request().getHeader(CorrelationIdClient.CORRELATION_ID_HEADER_NAME));
+        });
+
+        router.post("/call-client-with-global-client-logger").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            ClientWithClientLogger client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .build(ClientWithClientLogger.class);
+            globalClientLogger.reset();
+            client.call();
+            if (globalClientLogger.wasUsed()) {
+                success(rc, "global client logger was used");
+            } else {
+                fail(rc, "global client logger was not used");
+            }
+        });
+
+        router.post("/call-client-with-explicit-client-logger").blockingHandler(rc -> {
+            String url = rc.body().asString();
+            MyClientLogger explicitClientLogger = new MyClientLogger();
+            ClientWithClientLogger client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
+                    .clientLogger(explicitClientLogger)
+                    .build(ClientWithClientLogger.class);
+            client.call();
+            if (explicitClientLogger.wasUsed()) {
+                success(rc, "explicit client logger was used");
+            } else {
+                fail(rc, "explicit client logger was not used");
+            }
+        });
+
+        router.post("/call-cdi-client-with-global-client-logger").blockingHandler(rc -> {
+            globalClientLogger.reset();
+            clientWithClientLogger.call();
+            if (globalClientLogger.wasUsed()) {
+                success(rc, "global client logger was used");
+            } else {
+                fail(rc, "global client logger was not used");
+            }
+        });
+
         router.post("/call-client-with-exception-mapper").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             ClientWithExceptionMapper client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .register(MyResponseExceptionMapper.class)
                     .build(ClientWithExceptionMapper.class);
@@ -81,7 +132,7 @@ public class ClientCallingResource {
         });
 
         router.route("/call-client").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             AppleClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(AppleClient.class);
             Uni<Apple> apple1 = Uni.createFrom().item(client.swapApple(new Apple("lobo")));
@@ -110,7 +161,7 @@ public class ClientCallingResource {
         });
 
         router.route("/call-client-retry").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             AppleClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url + "/does-not-exist"))
                     .build(AppleClient.class);
             AtomicInteger count = new AtomicInteger(0);
@@ -120,13 +171,13 @@ public class ClientCallingResource {
         });
 
         router.post("/hello").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
-                .end("Hello, " + (rc.getBodyAsString()).repeat(getCount(rc))));
+                .end("Hello, " + (rc.body().asString()).repeat(getCount(rc))));
 
         router.post("/hello/fromMessage").handler(rc -> rc.response().putHeader("content-type", MediaType.TEXT_PLAIN)
                 .end(rc.body().asJsonObject().getString("message")));
 
         router.route("/call-hello-client").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             HelloClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
             String greeting = client.greeting("John", 2);
@@ -134,7 +185,7 @@ public class ClientCallingResource {
         });
 
         router.route("/call-hello-client-trace").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             HelloClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
             String greeting = client.greeting("Mary", 3);
@@ -142,7 +193,7 @@ public class ClientCallingResource {
         });
 
         router.route("/call-helloFromMessage-client").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             HelloClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(HelloClient.class);
             String greeting = client.fromMessage(new HelloClient.Message("Hello world"));
@@ -153,7 +204,7 @@ public class ClientCallingResource {
                 .end(getParam(rc)));
 
         router.route("/call-params-client-with-param-first").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             ParamClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .build(ParamClient.class);
             String result = client.getParam(Param.FIRST);
@@ -161,7 +212,7 @@ public class ClientCallingResource {
         });
 
         router.route("/rest-response").blockingHandler(rc -> {
-            String url = rc.getBody().toString();
+            String url = rc.body().asString();
             RestResponseClient client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(url))
                     .property("microprofile.rest.client.disable.default.mapper", true)
                     .build(RestResponseClient.class);

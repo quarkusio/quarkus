@@ -2,6 +2,7 @@ package io.quarkus.annotation.processor.generate_doc;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -11,6 +12,7 @@ import io.quarkus.annotation.processor.Constants;
 final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDocElement> {
     private String type;
     private String key;
+    private List<String> additionalKeys = new ArrayList<>();
     private String configDoc;
     private boolean withinAMap;
     private String defaultValue;
@@ -59,6 +61,14 @@ final public class ConfigDocKey implements ConfigDocElement, Comparable<ConfigDo
 
     public void setKey(String key) {
         this.key = key;
+    }
+
+    public List<String> getAdditionalKeys() {
+        return additionalKeys;
+    }
+
+    public void setAdditionalKeys(final List<String> additionalKeys) {
+        this.additionalKeys = additionalKeys;
     }
 
     public void setTopLevelGrouping(String topLevelGrouping) {

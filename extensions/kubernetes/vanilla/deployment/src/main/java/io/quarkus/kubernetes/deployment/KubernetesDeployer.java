@@ -158,7 +158,7 @@ public class KubernetesDeployer {
             ContainerImageConfig containerImageConfig) {
         final DeploymentTargetEntry selectedTarget;
 
-        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplictilyDeploymentTargets();
+        List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplicitlyConfiguredDeploymentTargets();
         if (userSpecifiedDeploymentTargets.isEmpty()) {
             selectedTarget = targets.getEntriesSortedByPriority().get(0);
             if (targets.getEntriesSortedByPriority().size() > 1) {

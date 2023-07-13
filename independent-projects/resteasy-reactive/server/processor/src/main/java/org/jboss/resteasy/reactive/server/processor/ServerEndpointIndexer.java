@@ -20,6 +20,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OFFSET_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SET;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SORTED_SET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.YEAR;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ZONED_DATE_TIME;
 
 import java.io.File;
@@ -79,6 +80,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.PathSegment
 import org.jboss.resteasy.reactive.server.core.parameters.converters.RuntimeResolvedConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SetConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.SortedSetConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.YearParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.ZonedDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
@@ -504,6 +506,8 @@ public class ServerEndpointIndexer
             return new OffsetTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         } else if (ZONED_DATE_TIME.equals(paramType)) {
             return new ZonedDateTimeParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
+        } else if (YEAR.equals(paramType)) {
+            return new YearParamConverter.Supplier(format, dateTimeFormatterProviderClassName);
         }
 
         throw new RuntimeException(

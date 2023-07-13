@@ -51,7 +51,7 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ProfileManager;
-import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.TestResourceManager;
@@ -219,6 +219,7 @@ public class QuarkusDevModeTest
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.DEVELOPMENT);
         originalRootLoggerHandlers = rootLogger.getHandlers();
@@ -313,7 +314,6 @@ public class QuarkusDevModeTest
         inMemoryLogHandler.clearRecords();
         inMemoryLogHandler.setFilter(null);
         ClearCache.clearAnnotationCache();
-        GroovyCacheCleaner.clearGroovyCache();
     }
 
     @Override

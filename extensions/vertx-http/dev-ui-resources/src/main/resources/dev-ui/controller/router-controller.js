@@ -41,12 +41,18 @@ export class RouterController {
     }
     
     getCurrentTitle(){
+        let dot = "\u00B7";
         let p = this.getCurrentPage();
         if(p){
             if(p.namespaceLabel){
                 return p.namespaceLabel;
             }else {
-                return p.title;
+                let md = this.getCurrentMetaData();
+                if(md && md.extensionName){
+                    return md.extensionName + " " + dot + " " + p.title;
+                }else {
+                    return p.title;
+                }
             }
         }
         return null;
@@ -122,6 +128,22 @@ export class RouterController {
         return false;
     }
     
+    addExternalLink(page){
+        let path = this.getPageUrlFor(page);
+        if (!this.isExistingPath(path)) {
+            RouterController.pageMap.set(path, page);
+            if(RouterController.namespaceMap.has(page.namespace)){
+                // Existing
+                RouterController.namespaceMap.get(page.namespace).push(page);
+            }else{
+                // New
+                let namespacePages = [];
+                namespacePages.push(page);
+                RouterController.namespaceMap.set(page.namespace, namespacePages);
+            }
+        }
+    }
+
     addRouteForMenu(page, defaultSelection){
         this.addRoute(page.id, page.componentName, page.title, page, defaultSelection);
     }

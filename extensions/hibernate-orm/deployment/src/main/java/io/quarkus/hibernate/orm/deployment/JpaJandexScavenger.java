@@ -58,7 +58,8 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  */
 public final class JpaJandexScavenger {
 
-    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED, ClassNames.ELEMENT_COLLECTION);
+    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED_ID, ClassNames.EMBEDDED,
+            ClassNames.ELEMENT_COLLECTION);
 
     private static final String XML_MAPPING_DEFAULT_ORM_XML = "META-INF/orm.xml";
     private static final String XML_MAPPING_NO_FILE = "no-file";
@@ -102,9 +103,9 @@ public final class JpaJandexScavenger {
             enlistExplicitMappings(collector, persistenceUnitContribution);
         }
 
-        Set<String> allModelClassNames = new HashSet<>(collector.entityTypes);
-        allModelClassNames.addAll(collector.modelTypes);
-        for (String className : allModelClassNames) {
+        Set<String> managedClassNames = new HashSet<>(collector.entityTypes);
+        managedClassNames.addAll(collector.modelTypes);
+        for (String className : managedClassNames) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
         }
 
@@ -119,12 +120,6 @@ public final class JpaJandexScavenger {
         // we just register them for reflection
         for (String javaType : collector.javaTypes) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(javaType).methods().build());
-        }
-
-        // Converters need to be in the list of model types in order for @Converter#autoApply to work,
-        // but they don't need reflection enabled.
-        for (DotName potentialCdiBeanType : collector.potentialCdiBeanTypes) {
-            allModelClassNames.add(potentialCdiBeanType.toString());
         }
 
         if (!collector.unindexedClasses.isEmpty()) {
@@ -143,8 +138,8 @@ public final class JpaJandexScavenger {
             }
         }
 
-        return new JpaModelBuildItem(collector.packages, collector.entityTypes, collector.potentialCdiBeanTypes,
-                allModelClassNames, collector.xmlMappingsByPU);
+        return new JpaModelBuildItem(collector.packages, collector.entityTypes, managedClassNames,
+                collector.potentialCdiBeanTypes, collector.xmlMappingsByPU);
     }
 
     private void enlistExplicitMappings(Collector collector,

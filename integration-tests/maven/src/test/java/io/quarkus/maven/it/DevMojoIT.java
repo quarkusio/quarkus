@@ -64,7 +64,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testConfigFactoryInAppModuleBannedInCodeGen() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/codegen-config-factory");
+        testDir = initProject("projects/codegen-config-factory", "project/codegen-config-factory-banned");
         run(true);
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory")).isEqualTo("n/a");
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-provider")).isEqualTo("n/a");
@@ -76,7 +76,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testConfigFactoryInAppModuleFilteredInCodeGen() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/codegen-config-factory");
+        testDir = initProject("projects/codegen-config-factory", "projects/codegen-config-factory-filtered");
         run(true, "-Dconfig-factory.enabled");
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory"))
                 .isEqualTo("org.acme.config.AcmeConfigSourceFactory");
@@ -827,7 +827,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         running = new RunningInvoker(testDir, false);
         final Properties mvnRunProps = new Properties();
         mvnRunProps.setProperty("debug", "false");
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
+        running.execute(Arrays.asList("compile", "quarkus:dev", "-Dquarkus.analytics.disabled=true"), Collections.emptyMap(),
+                mvnRunProps);
 
         String resp = DevModeTestUtils.getHttpResponse();
 
@@ -860,7 +861,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         running = new RunningInvoker(testDir, false);
         final Properties mvnRunProps = new Properties();
         mvnRunProps.setProperty("debug", "false");
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
+        running.execute(Arrays.asList("compile", "quarkus:dev", "-Dquarkus.analytics.disabled=true"), Collections.emptyMap(),
+                mvnRunProps);
 
         String resp = DevModeTestUtils.getHttpResponse();
 
@@ -1147,7 +1149,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         running = new RunningInvoker(testDir, false);
         final Properties mvnRunProps = new Properties();
         mvnRunProps.setProperty("debug", "false");
-        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
+        running.execute(Arrays.asList("compile", "quarkus:dev", "-Dquarkus.analytics.disabled=true"), Collections.emptyMap(),
+                mvnRunProps);
 
         String resp = DevModeTestUtils.getHttpResponse();
 
@@ -1206,7 +1209,8 @@ public class DevMojoIT extends LaunchMojoTestBase {
         RunningInvoker invoker = new RunningInvoker(testDir, false);
 
         // to properly surface the problem of multiple classpath entries, we need to install the project to the local m2
-        MavenProcessInvocationResult installInvocation = invoker.execute(List.of("clean", "install", "-DskipTests"),
+        MavenProcessInvocationResult installInvocation = invoker.execute(
+                List.of("clean", "install", "-DskipTests", "-Dquarkus.analytics.disabled=true"),
                 Collections.emptyMap());
         assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
         assertThat(installInvocation.getExecutionException()).isNull();

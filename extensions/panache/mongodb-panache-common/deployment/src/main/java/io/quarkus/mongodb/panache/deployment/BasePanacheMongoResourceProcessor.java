@@ -30,11 +30,13 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.bean.JavaBeanUtil;
@@ -76,6 +78,7 @@ public abstract class BasePanacheMongoResourceProcessor {
     public static final String BSON_PACKAGE = "org.bson.";
 
     @BuildStep
+    @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     public void buildImperative(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -94,6 +97,7 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     @BuildStep
+    @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     public void buildReactive(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
@@ -289,14 +293,14 @@ public abstract class BasePanacheMongoResourceProcessor {
     }
 
     private void replaceFieldAccesses(BuildProducer<BytecodeTransformerBuildItem> transformers, MetamodelInfo modelInfo) {
-        Set<String> entitiesWithPublicFields = modelInfo.getEntitiesWithPublicFields();
-        if (entitiesWithPublicFields.isEmpty()) {
-            // There are no public fields to be accessed in the first place.
+        Set<String> entitiesWithExternallyAccessibleFields = modelInfo.getEntitiesWithExternallyAccessibleFields();
+        if (entitiesWithExternallyAccessibleFields.isEmpty()) {
+            // There are no fields to be accessed in the first place.
             return;
         }
 
         Set<String> entityClassNamesInternal = new HashSet<>();
-        for (String entityClassName : entitiesWithPublicFields) {
+        for (String entityClassName : entitiesWithExternallyAccessibleFields) {
             entityClassNamesInternal.add(entityClassName.replace(".", "/"));
         }
 
@@ -323,10 +327,11 @@ public abstract class BasePanacheMongoResourceProcessor {
         EntityModel entityModel = new EntityModel(classInfo);
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
-            if (Modifier.isPublic(fieldInfo.flags())
+            var visibility = EntityField.Visibility.get(fieldInfo.flags());
+            if (EntityField.Visibility.PUBLIC.equals(visibility)
                     && !Modifier.isStatic(fieldInfo.flags())
                     && !fieldInfo.hasAnnotation(BSON_IGNORE)) {
-                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
+                entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type()), visibility));
             }
         }
         return entityModel;

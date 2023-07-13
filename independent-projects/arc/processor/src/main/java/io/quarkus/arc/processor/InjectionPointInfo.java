@@ -409,7 +409,8 @@ public class InjectionPointInfo {
                 if (other.qualifiers != null) {
                     return false;
                 }
-            } else if (!qualifiers.equals(other.qualifiers)) {
+            } else if (!qualifiersAreEqual(qualifiers, other.qualifiers)) {
+                // We cannot use AnnotationInstance#equals() as it requires the exact same annotationTarget instance
                 return false;
             }
             if (type == null) {
@@ -420,6 +421,30 @@ public class InjectionPointInfo {
                 return false;
             }
             return true;
+        }
+
+        private boolean qualifiersAreEqual(Set<AnnotationInstance> q1, Set<AnnotationInstance> q2) {
+            if (q1 == q2) {
+                return true;
+            }
+            if (q1.size() != q2.size()) {
+                return false;
+            }
+            for (AnnotationInstance a1 : q1) {
+                for (AnnotationInstance a2 : q2) {
+                    if (!annotationsAreEqual(a1, a2)) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private boolean annotationsAreEqual(AnnotationInstance a1, AnnotationInstance a2) {
+            if (a1 == a2) {
+                return true;
+            }
+            return a1.name().equals(a2.name()) && a1.values().equals(a2.values());
         }
 
     }

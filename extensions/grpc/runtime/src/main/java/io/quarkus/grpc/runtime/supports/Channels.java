@@ -3,6 +3,7 @@ package io.quarkus.grpc.runtime.supports;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_HEADER_LIST_SIZE;
 import static io.grpc.internal.GrpcUtil.DEFAULT_MAX_MESSAGE_SIZE;
 import static io.grpc.netty.NettyChannelBuilder.DEFAULT_FLOW_CONTROL_WINDOW;
+import static io.quarkus.grpc.runtime.GrpcTestPortUtils.testPort;
 import static io.quarkus.grpc.runtime.config.GrpcClientConfiguration.DNS;
 
 import java.io.IOException;
@@ -99,6 +100,10 @@ public class Channels {
 
         if (config == null) {
             throw new IllegalStateException("gRPC client " + name + " is missing configuration.");
+        }
+
+        if (LaunchMode.current() == LaunchMode.TEST) {
+            config.port = testPort(configProvider.getServerConfiguration());
         }
 
         GrpcBuilderProvider provider = GrpcBuilderProvider.findChannelBuilderProvider(config);

@@ -20,6 +20,8 @@ import jakarta.inject.Singleton;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.RemoteCounterManagerFactory;
+import org.infinispan.client.hotrod.configuration.ClientIntelligence;
+import org.infinispan.client.hotrod.configuration.ClusterConfigurationBuilder;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
@@ -289,6 +291,17 @@ public class InfinispanClientProducer {
             }
         }
 
+        for (Map.Entry<String, InfinispanClientRuntimeConfig.BackupClusterConfig> backupCluster : infinispanClientRuntimeConfig.backupCluster
+                .entrySet()) {
+            InfinispanClientRuntimeConfig.BackupClusterConfig backupClusterConfig = backupCluster.getValue();
+            ClusterConfigurationBuilder clusterConfigurationBuilder = builder.addCluster(backupCluster.getKey());
+            clusterConfigurationBuilder.addClusterNodes(backupClusterConfig.hosts);
+            if (backupClusterConfig.clientIntelligence.isPresent()) {
+                clusterConfigurationBuilder.clusterClientIntelligence(
+                        ClientIntelligence.valueOf(backupClusterConfig.clientIntelligence.get()));
+            }
+        }
+
         return builder;
     }
 
@@ -409,7 +422,7 @@ public class InfinispanClientProducer {
     }
 
     public CounterManager getNamedCounterManager(String clientName) {
-        RemoteCacheManager cacheManager = remoteCacheManagers.get(clientName);
+        RemoteCacheManager cacheManager = getNamedRemoteCacheManager(clientName);
         return RemoteCounterManagerFactory.asCounterManager(cacheManager);
     }
 

@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
@@ -28,11 +27,10 @@ public class KubernetesConfigUtil {
     public static final String MANAGEMENT_PORT_NAME = "management";
 
     private static final String DEKORATE_PREFIX = "dekorate.";
-    private static final Pattern QUARKUS_DEPLOY_PATTERN = Pattern.compile("quarkus\\.([^\\.]+)\\.deploy");
 
     /**
-     * Get the explicit configured deployment target, if any.
-     * The explicit deployment target is determined using: `quarkus.kubernetes.deployment-target=<deployment-target>`
+     * Get the explicitly configured deployment target, if any.
+     * The explicit deployment target is determined using: {@code quarkus.kubernetes.deployment-target=<deployment-target>}
      */
     public static Optional<String> getExplicitlyConfiguredDeploymentTarget() {
         Config config = ConfigProvider.getConfig();
@@ -40,48 +38,59 @@ public class KubernetesConfigUtil {
     }
 
     /**
-     * The the explicitly configured deployment target list.
-     * The configured deployment targets are determined using: `quarkus.kubernetes.deployment-target=<deployment-target>`
+     * @deprecated Use {@link #getExplicitlyConfiguredDeploymentTargets()} instead
      */
+    @Deprecated(forRemoval = true)
     public static List<String> getExplictilyDeploymentTargets() {
-        String deploymentTargets = getExplicitlyConfiguredDeploymentTarget().orElse("");
-        if (deploymentTargets.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return Arrays.stream(deploymentTargets
-                .split(Pattern.quote(",")))
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .collect(Collectors.toList());
+        return getExplicitlyConfiguredDeploymentTargets();
+    }
+
+    /**
+     * The explicitly configured deployment target list.
+     * The configured deployment targets are determined using: {@code quarkus.kubernetes.deployment-target=<deployment-target>}
+     */
+    public static List<String> getExplicitlyConfiguredDeploymentTargets() {
+        return splitDeploymentTargets(getExplicitlyConfiguredDeploymentTarget());
+    }
+
+    private static List<String> splitDeploymentTargets(Optional<String> commaSeparatedDeploymentTargets) {
+        return commaSeparatedDeploymentTargets
+                .map(s -> Arrays.stream(s.split(","))
+                        .map(String::trim)
+                        .map(String::toLowerCase)
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
     }
 
     /**
      * Get the user configured deployment target, if any.
      * The configured deployment target is determined using:
-     * 1. the value of `quarkus.kubernetes.deployment-target=<deployment-target>`
-     * 2. the presence of `quarkus.<deployment-target>.deploy=true`
+     * <ol>
+     * <li>the value of {@code quarkus.kubernetes.deployment-target=<deployment-target>}</li>
+     * <li>the presence of {@code quarkus.<deployment-target>.deploy=true}</li>
+     * </ol>
      */
     public static Optional<String> getConfiguredDeploymentTarget() {
-        Config config = ConfigProvider.getConfig();
-        return getExplicitlyConfiguredDeploymentTarget().or(() -> DeploymentUtil.getEnabledDeployer());
+        return getExplicitlyConfiguredDeploymentTarget().or(DeploymentUtil::getEnabledDeployer);
     }
 
     /**
-     * The the configured deployment target list.
-     * The configured deployment targets are determined using:
-     * 1. the value of `quarkus.kubernetes.deployment-target=<deployment-target>`
-     * 2. the presenve of `quarkus.<deployment-target>.deploy=true`
+     * @deprecated Use {@link #getConfiguredDeploymentTargets()} instead
      */
+    @Deprecated(forRemoval = true)
     public static List<String> getConfiguratedDeploymentTargets() {
-        String deploymentTargets = getConfiguredDeploymentTarget().orElse("");
-        if (deploymentTargets.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return Arrays.stream(deploymentTargets
-                .split(","))
-                .map(String::trim)
-                .map(String::toLowerCase)
-                .collect(Collectors.toList());
+        return getConfiguredDeploymentTargets();
+    }
+
+    /**
+     * Get the configured deployment target list as determined by:
+     * <ol>
+     * <li>the value of {@code quarkus.kubernetes.deployment-target=<deployment-target>}</li>
+     * <li>the presence of {@code quarkus.<deployment-target>.deploy=true}</li>
+     * </ol>
+     */
+    public static List<String> getConfiguredDeploymentTargets() {
+        return splitDeploymentTargets(getConfiguredDeploymentTarget());
     }
 
     public static boolean isDeploymentEnabled() {
@@ -91,8 +100,7 @@ public class KubernetesConfigUtil {
     /*
      * Collects configuration properties for Kubernetes. Reads all properties and
      * matches properties that match known Dekorate generators. These properties may
-     * or may not be prefixed with `quarkus.` though the prefixed ones take
-     * precedence.
+     * or may not be prefixed with {@code quarkus.} though the prefixed ones take precedence.
      *
      * @return A map containing the properties.
      */

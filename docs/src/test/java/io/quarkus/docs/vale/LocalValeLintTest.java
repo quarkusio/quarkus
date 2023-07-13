@@ -42,18 +42,13 @@ public class LocalValeLintTest {
         if ("git".equals(valeFileFilter)) {
             Path baseDir = gitDir.getParent().toAbsolutePath().normalize();
             Path docsDir = baseDir.relativize(srcDir.toAbsolutePath());
-            try (ChangedFiles git = new ChangedFiles(gitDir)) {
-                Collection<String> files = git.modifiedFiles(docsDir, s -> s.replace(docsDir.toString() + "/", ""));
-                if (files.isEmpty()) {
-                    System.out.println("\nConfigured to analyze changed files: there are no pending changes.\n");
-                    return;
-                } else {
-                    System.out.println("The following files will be inspected: ");
-                    files.forEach(System.out::println);
-                }
-                metadataGenerator.setFileList(files);
-                linter.setFileList(files);
+
+            Collection<String> files = ChangedFiles.getChangedFiles(gitDir, docsDir);
+            if (files.isEmpty()) {
+                return; // EXIT EARLY
             }
+            metadataGenerator.setFileList(files);
+            linter.setFileList(files);
         } else {
             metadataGenerator.setFileFilterPattern(valeFileFilter);
             linter.setFileFilterPattern(valeFileFilter);

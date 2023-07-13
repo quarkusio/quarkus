@@ -92,7 +92,7 @@ import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.TestMethodInvoker;
-import io.quarkus.test.common.GroovyCacheCleaner;
+import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
@@ -296,7 +296,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                                 tm.close();
                             } finally {
                                 restorableSystemProperties.close();
-                                GroovyCacheCleaner.clearGroovyCache();
                                 shutdownHangDetection();
                             }
                         }
@@ -645,6 +644,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        GroovyClassValue.disable();
         currentTestClassStack.push(context.getRequiredTestClass());
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.TEST);

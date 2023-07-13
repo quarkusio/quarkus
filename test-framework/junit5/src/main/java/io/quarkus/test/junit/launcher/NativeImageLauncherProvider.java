@@ -7,6 +7,7 @@ import static io.quarkus.test.junit.IntegrationTestUtil.DEFAULT_PORT;
 import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.ServiceLoader;
 
@@ -43,6 +44,7 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
                     ConfigUtil.waitTimeValue(config),
                     ConfigUtil.integrationTestProfile(config),
                     ConfigUtil.argLineValue(config),
+                    ConfigUtil.env(config),
                     context.devServicesLaunchResult(),
                     System.getProperty("native.image.path"),
                     config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),
@@ -61,9 +63,10 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
         private final String configuredOutputDirectory;
 
         public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
-                List<String> argLine, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
+                List<String> argLine, Map<String, String> env,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
                 String nativeImagePath, String configuredOutputDirectory, Class<?> testClass) {
-            super(httpPort, httpsPort, waitTime, testProfile, argLine, devServicesLaunchResult);
+            super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.nativeImagePath = nativeImagePath;
             this.configuredOutputDirectory = configuredOutputDirectory;
             this.testClass = testClass;

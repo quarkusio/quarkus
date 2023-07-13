@@ -18,7 +18,7 @@ public class HttpCommonTags {
      * Creates an {@code method} {@code Tag} derived from the given {@code HTTP method}.
      *
      * @param method the HTTP method
-     * @return the outcome tag
+     * @return the method tag
      */
     public static Tag method(String method) {
         return method == null ? METHOD_UNKNOWN : Tag.of("method", method);
@@ -50,8 +50,7 @@ public class HttpCommonTags {
      * for 404 responses, {@code root} for requests with no path info, and {@code UNKNOWN}
      * for all other requests.
      *
-     *
-     * @param pathInfo
+     * @param pathInfo request path
      * @param code status code of the response
      * @return the uri tag derived from the request
      */

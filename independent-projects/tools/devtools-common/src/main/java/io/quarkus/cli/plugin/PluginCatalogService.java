@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 
 public class PluginCatalogService extends CatalogService<PluginCatalog> {
 
-    private static final Function<Path, Path> RELATIVE_CATALOG_JSON = p -> p.resolve(".quarkus").resolve("cli")
+    static final Function<Path, Path> RELATIVE_CATALOG_JSON = p -> p.resolve(".quarkus").resolve("cli")
             .resolve("plugins").resolve("quarkus-cli-catalog.json");
 
     public PluginCatalogService() {

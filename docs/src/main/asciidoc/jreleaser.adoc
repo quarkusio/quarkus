@@ -4,14 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Packaging And Releasing With JReleaser
-
 include::_attributes.adoc[]
+:categories: tooling
 :jreleaser-version: 1.6.0
-
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
 
 This guide covers packaging and releasing CLI applications using the link:https://jreleaser.org[JReleaser] tool.
 
@@ -490,7 +488,7 @@ remote resources such as Git repositories. This is how it would look like:
 [source,subs=attributes+]
 ----
 # because we changed the project's version
-./mvnw -Pnative,dist package
+./mvnw -Dnative,dist package
 ./mvnw -Prelease jreleaser:full-release -Djreleaser.select.current.platform -Djreleaser.dry.run=true
 
 [INFO] --- jreleaser-maven-plugin:{jreleaser-version}:full-release (default-cli) @ app ---
@@ -627,7 +625,7 @@ As a reference, these are the full contents of the `pom.xml`:
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-    <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+    <quarkus.platform.group-id>{quarkus-platform-groupid}</quarkus.platform.group-id>
     <quarkus.platform.version>{quarkus-version}</quarkus.platform.version>
     <surefire-plugin.version>3.0.0</surefire-plugin.version>
   </properties>

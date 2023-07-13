@@ -16,7 +16,7 @@
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>my-project-add-to-bom</artifactId>
-                <version>${project.version}</version>
+                <version>\${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.example</groupId>
@@ -26,12 +26,12 @@
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>acme-add-to-bom</artifactId>
-                <version>${acme.version}</version>
+                <version>\${acme.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.acme</groupId>
                 <artifactId>my-project-add-to-bom-deployment</artifactId>
-                <version>${project.version}</version>
+                <version>\${project.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

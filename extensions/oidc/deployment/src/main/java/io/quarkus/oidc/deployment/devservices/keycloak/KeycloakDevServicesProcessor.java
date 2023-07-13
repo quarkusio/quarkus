@@ -369,6 +369,7 @@ public class KeycloakDevServicesProcessor {
                     errors);
 
             timeout.ifPresent(oidcContainer::withStartupTimeout);
+            oidcContainer.withEnv(capturedDevServicesConfiguration.containerEnv);
             oidcContainer.start();
 
             String internalUrl = startURL(oidcContainer.getHost(), oidcContainer.getPort(), oidcContainer.keycloakX);
@@ -720,6 +721,7 @@ public class KeycloakDevServicesProcessor {
         realm.setClients(new ArrayList<>());
         realm.setAccessTokenLifespan(600);
         realm.setSsoSessionMaxLifespan(600);
+        realm.setRefreshTokenMaxReuse(10);
 
         RolesRepresentation roles = new RolesRepresentation();
         List<RoleRepresentation> realmRoles = new ArrayList<>();

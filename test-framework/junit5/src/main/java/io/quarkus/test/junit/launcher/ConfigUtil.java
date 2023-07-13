@@ -6,8 +6,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.microprofile.config.Config;
+
+import io.smallrye.config.SmallRyeConfig;
 
 public final class ConfigUtil {
 
@@ -31,6 +34,11 @@ public final class ConfigUtil {
             result.add(trimmed);
         }
         return result;
+    }
+
+    public static Map<String, String> env(Config config) {
+        return ((SmallRyeConfig) config).getOptionalValues("quarkus.test.env", String.class, String.class)
+                .orElse(Collections.emptyMap());
     }
 
     public static Duration waitTimeValue(Config config) {

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
@@ -15,6 +16,7 @@ import jakarta.enterprise.inject.spi.InterceptionType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
@@ -22,7 +24,12 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.InterceptorCreator;
+import io.quarkus.arc.InterceptorCreator.InterceptFunction;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.impl.Sets;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  *
@@ -37,6 +44,35 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
     private final List<MethodInfo> aroundConstructs;
     private final List<MethodInfo> postConstructs;
     private final List<MethodInfo> preDestroys;
+    // These fields are only used for synthetic interceptors
+    private final InterceptionType interceptionType;
+    private final Class<? extends InterceptorCreator> creatorClass;
+
+    InterceptorInfo(Class<? extends InterceptorCreator> creatorClass, BeanDeployment beanDeployment,
+            Set<AnnotationInstance> bindings, List<Injection> injections, int priority, InterceptionType interceptionType,
+            Map<String, Object> params, String identifier) {
+        super(null, ClassType.create(InterceptFunction.class), null, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
+                Sets.singletonHashSet(Type.create(DotName.OBJECT_NAME, Kind.CLASS)), new HashSet<>(), injections, null,
+                null, false,
+                Collections.emptyList(), null, false, mc -> {
+                    ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(creatorClass));
+                    ResultHandle ret = mc.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(InterceptorCreator.class, "create", InterceptFunction.class,
+                                    SyntheticCreationalContext.class),
+                            creatorHandle, mc.getMethodParam(0));
+                    mc.ifNull(ret).trueBranch().throwException(IllegalStateException.class,
+                            creatorClass.getName() + "#create() must not return null");
+                    mc.returnValue(ret);
+                },
+                null, params, true, false, null, priority, creatorClass.getName() + (identifier != null ? identifier : ""));
+        this.bindings = bindings;
+        this.interceptionType = interceptionType;
+        this.creatorClass = creatorClass;
+        this.aroundInvokes = List.of();
+        this.aroundConstructs = List.of();
+        this.postConstructs = List.of();
+        this.preDestroys = List.of();
+    }
 
     InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
             List<Injection> injections, int priority) {
@@ -44,6 +80,8 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
                 Sets.singletonHashSet(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, false, Collections.emptyList(), null, false, null, priority);
         this.bindings = bindings;
+        this.interceptionType = null;
+        this.creatorClass = null;
         AnnotationStore store = beanDeployment.getAnnotationStore();
         List<MethodInfo> aroundInvokes = new ArrayList<>();
         List<MethodInfo> aroundConstructs = new ArrayList<>();
@@ -128,6 +166,14 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
 
     public Set<AnnotationInstance> getBindings() {
         return bindings;
+    }
+
+    InterceptionType getInterceptionType() {
+        return interceptionType;
+    }
+
+    Class<? extends InterceptorCreator> getCreatorClass() {
+        return creatorClass;
     }
 
     /**
@@ -218,6 +264,9 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
     }
 
     public boolean intercepts(InterceptionType interceptionType) {
+        if (isSynthetic()) {
+            return interceptionType == this.interceptionType;
+        }
         switch (interceptionType) {
             case AROUND_INVOKE:
                 return !aroundInvokes.isEmpty();

@@ -11,6 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
@@ -18,6 +19,8 @@ import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.CollectorRegistry;
 import io.quarkus.micrometer.runtime.MeterFilterConstraint;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizer;
+import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint;
 
 @Singleton
 @Priority(Interceptor.Priority.APPLICATION - 100)
@@ -36,6 +39,14 @@ public class CustomConfiguration {
 
     @Produces
     @Singleton
+    @MeterFilterConstraint(applyTo = PrometheusMeterRegistry.class)
+    public MeterFilter configurePrometheusRegistries2() {
+        return MeterFilter.commonTags(Arrays.asList(
+                Tag.of("registry2", "prometheus")));
+    }
+
+    @Produces
+    @Singleton
     @MeterFilterConstraint(applyTo = CustomConfiguration.class)
     public MeterFilter configureNonexistantRegistries() {
         return MeterFilter.commonTags(Arrays.asList(
@@ -47,6 +58,42 @@ public class CustomConfiguration {
     public MeterFilter configureAllRegistries() {
         return MeterFilter.commonTags(Arrays.asList(
                 Tag.of("env", deploymentEnv)));
+    }
+
+    @Produces
+    @Singleton
+    @MeterRegistryCustomizerConstraint(applyTo = PrometheusMeterRegistry.class)
+    public MeterRegistryCustomizer customizePrometheusRegistries() {
+        return new MeterRegistryCustomizer() {
+            @Override
+            public void customize(MeterRegistry registry) {
+                registry.config().meterFilter(MeterFilter.ignoreTags("registry2"));
+            }
+        };
+    }
+
+    @Produces
+    @Singleton
+    @MeterRegistryCustomizerConstraint(applyTo = CustomConfiguration.class)
+    public MeterRegistryCustomizer customizeNonexistantRegistries() {
+        return new MeterRegistryCustomizer() {
+            @Override
+            public void customize(MeterRegistry registry) {
+                registry.config().meterFilter(MeterFilter.ignoreTags("env"));
+            }
+        };
+    }
+
+    @Produces
+    @Singleton
+    public MeterRegistryCustomizer customizeAllRegistries() {
+        return new MeterRegistryCustomizer() {
+            @Override
+            public void customize(MeterRegistry registry) {
+                registry.config().meterFilter(MeterFilter.commonTags(Arrays.asList(
+                        Tag.of("env2", deploymentEnv))));
+            }
+        };
     }
 
     /**

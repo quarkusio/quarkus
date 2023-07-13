@@ -182,6 +182,7 @@ public class YamlMetadataGenerator {
                             Object categories = doc.getAttribute("categories");
                             Object keywords = doc.getAttribute("keywords");
                             Object summary = doc.getAttribute("summary");
+                            Object type = doc.getAttribute("diataxis-type");
 
                             Optional<StructuralNode> preambleNode = doc.getBlocks().stream()
                                     .filter(b -> "preamble".equals(b.getNodeName()))
@@ -198,15 +199,15 @@ public class YamlMetadataGenerator {
                                 summaryString = getSummary(summary, content);
 
                                 if (content.isPresent()) {
-                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
                                 } else {
                                     messages.record("empty-preamble", path);
-                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
+                                    index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
                                 }
                             } else {
                                 messages.record("missing-preamble", path);
                                 summaryString = getSummary(summary, Optional.empty());
-                                index.add(new DocMetadata(title, path, summaryString, categories, keywords, id));
+                                index.add(new DocMetadata(title, path, summaryString, categories, keywords, type, id));
                             }
 
                             long spaceCount = summaryString.chars().filter(c -> c == (int) ' ').count();
@@ -270,7 +271,6 @@ public class YamlMetadataGenerator {
         miscellaneous("miscellaneous", "Miscellaneous"),
         native_docs("native", "Native"),
         observability("observability", "Observability"),
-        reactive("reactive", "Reactive"),
         security("security", "Security"),
         serialization("serialization", "Serialization"),
         tooling("tooling", "Tooling"),
@@ -329,6 +329,18 @@ public class YamlMetadataGenerator {
             this.name = name;
             this.id = id;
             this.suffix = suffix;
+        }
+
+        public static Type fromObject(Object diataxisType) {
+            if (diataxisType != null) {
+                String type = diataxisType.toString().toLowerCase();
+                for (Type value : Type.values()) {
+                    if (value.id.equals(type) || value.suffix.equals(type)) {
+                        return value;
+                    }
+                }
+            }
+            return null;
         }
     }
 
@@ -389,7 +401,7 @@ public class YamlMetadataGenerator {
                 case "missing-categories":
                     return "Document does not specify associated categories";
                 case "not-diataxis-type":
-                    return "Document does not follow naming conventions (type not recognized).";
+                    return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions.";
                 case "toc":
                     return "A :toc: attribute is present in the document header (remove it)";
             }
@@ -408,14 +420,6 @@ public class YamlMetadataGenerator {
             });
 
             return result;
-        }
-
-        Map<String, Collection<String>> errorsByFile() {
-            return errorsByFile;
-        }
-
-        Map<String, Collection<String>> warningsByFile() {
-            return warningsByFile;
         }
     }
 
@@ -480,7 +484,8 @@ public class YamlMetadataGenerator {
         String id;
         Type type;
 
-        DocMetadata(String title, Path path, String summary, Object categories, Object keywords, String id) {
+        DocMetadata(String title, Path path, String summary, Object categories, Object keywords, Object diataxisType,
+                String id) {
             this.id = id;
             this.title = title == null ? "" : title;
             this.filename = path.getFileName().toString();
@@ -489,30 +494,27 @@ public class YamlMetadataGenerator {
 
             Category.addAll(this.categories, categories, path);
 
-            if (this.categories.contains(Category.getting_started)) {
-                this.type = Type.tutorial;
-            } else if (filename.endsWith("-concept.adoc")) {
-                this.type = Type.concept;
-            } else if (filename.endsWith("-howto.adoc")) {
-                this.type = Type.howto;
-            } else if (filename.endsWith("-tutorial.adoc")) {
-                this.type = Type.tutorial;
-            } else if (filename.endsWith("-reference.adoc")) {
-                this.type = Type.reference;
-            } else {
-                this.type = Type.other;
-                messages.record("not-diataxis-type", path);
+            this.type = Type.fromObject(diataxisType);
+            if (this.type == null) {
+                if (this.categories.contains(Category.getting_started)) {
+                    this.type = Type.tutorial;
+                } else if (filename.endsWith("-concept.adoc")) {
+                    this.type = Type.concept;
+                } else if (filename.endsWith("-howto.adoc")) {
+                    this.type = Type.howto;
+                } else if (filename.endsWith("-tutorial.adoc")) {
+                    this.type = Type.tutorial;
+                } else if (filename.endsWith("-reference.adoc")) {
+                    this.type = Type.reference;
+                } else {
+                    this.type = Type.other;
+                    messages.record("not-diataxis-type", path);
+                }
             }
 
             if (id == null) {
                 messages.record("missing-id", path);
-            } else if (type != Type.other && !id.endsWith(type.suffix)) {
-                messages.record("incorrect-id", path,
-                        String.format(
-                                "The document id (%s) does not end with the correct suffix, should end with '-%s'%n",
-                                id, type.suffix));
             }
-
             if (this.categories.isEmpty()) {
                 messages.record("missing-categories", path);
             }
@@ -574,6 +576,13 @@ public class YamlMetadataGenerator {
         public boolean listAll(StringBuilder sb) {
             errors().forEach(e -> sb.append("    [ ERR] ").append(e).append("\n"));
             warnings().forEach(e -> sb.append("    [WARN] ").append(e).append("\n"));
+            sb.append("\n");
+            return !errors().isEmpty();
+        }
+
+        public boolean mdListAll(StringBuilder sb) {
+            errors().forEach(e -> sb.append("- 🛑 ").append(e).append("\n"));
+            warnings().forEach(e -> sb.append("- ⚠️ ").append(e).append("\n"));
             sb.append("\n");
             return !errors().isEmpty();
         }

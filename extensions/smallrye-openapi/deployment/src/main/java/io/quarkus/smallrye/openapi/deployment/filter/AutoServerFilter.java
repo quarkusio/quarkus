@@ -14,7 +14,6 @@ import io.smallrye.openapi.api.models.servers.ServerImpl;
  */
 public class AutoServerFilter implements OASFilter {
 
-    private static final String DESCRIPTION = "Auto generated value";
     private static final String HTTP = "http";
     private static final String ZEROS = "0.0.0.0";
     private static final String LOCALHOST = "localhost";
@@ -23,8 +22,9 @@ public class AutoServerFilter implements OASFilter {
     private final String defaultScheme;
     private final String defaultHost;
     private final int defaultPort;
+    private final String description;
 
-    public AutoServerFilter(String defaultScheme, String defaultHost, int defaultPort) {
+    public AutoServerFilter(String defaultScheme, String defaultHost, int defaultPort, String description) {
         if (defaultScheme == null) {
             defaultScheme = HTTP;
         }
@@ -34,6 +34,7 @@ public class AutoServerFilter implements OASFilter {
         this.defaultScheme = defaultScheme;
         this.defaultHost = defaultHost;
         this.defaultPort = defaultPort;
+        this.description = description;
     }
 
     @Override
@@ -47,13 +48,13 @@ public class AutoServerFilter implements OASFilter {
             if (this.defaultHost.equals(ZEROS)) {
                 ServerImpl localhost = new ServerImpl();
                 localhost.setUrl(getUrl(this.defaultScheme, LOCALHOST, this.defaultPort));
-                localhost.setDescription(DESCRIPTION);
+                localhost.setDescription(this.description);
                 servers.add(localhost);
             }
 
             ServerImpl serverImpl = new ServerImpl();
             serverImpl.setUrl(getUrl(this.defaultScheme, this.defaultHost, this.defaultPort));
-            serverImpl.setDescription(DESCRIPTION);
+            serverImpl.setDescription(this.description);
             servers.add(serverImpl);
 
             openAPI.setServers(servers);

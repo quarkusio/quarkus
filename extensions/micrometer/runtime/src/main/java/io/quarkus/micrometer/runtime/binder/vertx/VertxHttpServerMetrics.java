@@ -1,5 +1,8 @@
 package io.quarkus.micrometer.runtime.binder.vertx;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.jboss.logging.Logger;
@@ -10,9 +13,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.binder.http.Outcome;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.micrometer.runtime.HttpServerMetricsTagsContributor;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.binder.HttpCommonTags;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.spi.metrics.HttpServerMetrics;
 import io.vertx.core.spi.observability.HttpRequest;
@@ -37,6 +44,8 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     final String nameHttpServerRequests;
     final LongAdder activeRequests;
 
+    private final List<HttpServerMetricsTagsContributor> httpServerMetricsTagsContributors;
+
     VertxHttpServerMetrics(MeterRegistry registry, HttpBinderConfiguration config) {
         super(registry, "http.server", null);
         this.config = config;
@@ -49,6 +58,27 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         activeRequests = new LongAdder();
         Gauge.builder(config.getHttpServerActiveRequestsName(), activeRequests, LongAdder::doubleValue)
                 .register(registry);
+
+        httpServerMetricsTagsContributors = resolveHttpServerMetricsTagsContributors();
+    }
+
+    private List<HttpServerMetricsTagsContributor> resolveHttpServerMetricsTagsContributors() {
+        final List<HttpServerMetricsTagsContributor> httpServerMetricsTagsContributors;
+        ArcContainer arcContainer = Arc.container();
+        if (arcContainer == null) {
+            httpServerMetricsTagsContributors = Collections.emptyList();
+        } else {
+            var handles = arcContainer.listAll(HttpServerMetricsTagsContributor.class);
+            if (handles.isEmpty()) {
+                httpServerMetricsTagsContributors = Collections.emptyList();
+            } else {
+                httpServerMetricsTagsContributors = new ArrayList<>(handles.size());
+                for (var handle : handles) {
+                    httpServerMetricsTagsContributors.add(handle.get());
+                }
+            }
+        }
+        return httpServerMetricsTagsContributors;
     }
 
     /**
@@ -148,12 +178,23 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
                 config.getServerIgnorePatterns());
         if (path != null) {
             Timer.Sample sample = requestMetric.getSample();
-            Timer.Builder builder = Timer.builder(nameHttpServerRequests)
-                    .tags(Tags.of(
-                            VertxMetricsTags.method(requestMetric.request().method()),
-                            HttpCommonTags.uri(path, response.statusCode()),
-                            VertxMetricsTags.outcome(response),
-                            HttpCommonTags.status(response.statusCode())));
+            Tags allTags = Tags.of(
+                    VertxMetricsTags.method(requestMetric.request().method()),
+                    HttpCommonTags.uri(path, response.statusCode()),
+                    VertxMetricsTags.outcome(response),
+                    HttpCommonTags.status(response.statusCode()));
+            if (!httpServerMetricsTagsContributors.isEmpty()) {
+                HttpServerMetricsTagsContributor.Context context = new DefaultContext(requestMetric.request());
+                for (int i = 0; i < httpServerMetricsTagsContributors.size(); i++) {
+                    try {
+                        Tags additionalTags = httpServerMetricsTagsContributors.get(i).contribute(context);
+                        allTags = allTags.and(additionalTags);
+                    } catch (Exception e) {
+                        log.debug("Unable to obtain additional tags", e);
+                    }
+                }
+            }
+            Timer.Builder builder = Timer.builder(nameHttpServerRequests).tags(allTags);
 
             sample.stop(builder.register(registry));
         }
@@ -193,6 +234,19 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
         log.debugf("websocket disconnected %s", websocketMetric);
         if (websocketMetric != null) {
             websocketMetric.stop();
+        }
+    }
+
+    private static class DefaultContext implements HttpServerMetricsTagsContributor.Context {
+        private final HttpServerRequest request;
+
+        private DefaultContext(HttpServerRequest request) {
+            this.request = request;
+        }
+
+        @Override
+        public HttpServerRequest request() {
+            return request;
         }
     }
 }

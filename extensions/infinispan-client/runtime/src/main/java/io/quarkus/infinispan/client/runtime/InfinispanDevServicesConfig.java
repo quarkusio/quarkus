@@ -1,6 +1,7 @@
 package io.quarkus.infinispan.client.runtime;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -110,6 +111,12 @@ public class InfinispanDevServicesConfig {
     @ConfigItem(name = "tracing.exporter.otlp.endpoint", defaultValue = "http://localhost:4317")
     public Optional<String> exporterOtlpEndpoint;
 
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
+
     @Override
     public boolean equals(Object o) {
         if (this == o)
@@ -122,12 +129,13 @@ public class InfinispanDevServicesConfig {
                 Objects.equals(shared, that.shared) &&
                 Objects.equals(serviceName, that.serviceName) &&
                 Objects.equals(imageName, that.imageName) &&
-                Objects.equals(artifacts, this.artifacts);
+                Objects.equals(artifacts, this.artifacts) &&
+                Objects.equals(containerEnv, that.containerEnv);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, port, shared, serviceName, imageName, artifacts);
+        return Objects.hash(enabled, port, shared, serviceName, imageName, artifacts, containerEnv);
     }
 
     @Override

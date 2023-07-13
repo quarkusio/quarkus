@@ -237,9 +237,7 @@ export class QwcHeader extends observeState(LitElement) {
         if(subMenu){
             this._rightSideNav = html`<vaadin-tabs selected="${subMenu.index}">
                                     ${subMenu.links.map(link =>
-                                        html`<vaadin-tab>
-                                                ${this._renderSubMenuLink(link)}
-                                            </vaadin-tab>`
+                                        html`${this._renderTab(subMenu.index, link)}`
                                     )}
                                 </vaadin-tabs>`;
         }else{
@@ -251,7 +249,19 @@ export class QwcHeader extends observeState(LitElement) {
         }
     }
 
-    _renderSubMenuLink(link){
+    _renderTab(index, link){
+        if(!link.page.embed && link.page.includeInSubMenu){
+            return html`
+                ${this._renderSubMenuLink(index, link)}
+                `;
+        }else{
+            return html`<vaadin-tab>
+                ${this._renderSubMenuLink(index, link)}
+            </vaadin-tab>`;
+        }
+    }
+
+    _renderSubMenuLink(index, link){
 
         let relativePath = link.page.id.replace(link.page.namespace + "/", ""); 
 

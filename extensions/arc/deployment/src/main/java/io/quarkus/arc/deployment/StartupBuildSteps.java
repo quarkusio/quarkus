@@ -1,9 +1,13 @@
 package io.quarkus.arc.deployment;
 
+import static io.quarkus.arc.processor.Annotations.getAnnotations;
+
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
@@ -13,7 +17,9 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.Arc;
@@ -21,9 +27,11 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.deployment.AutoAddScopeBuildItem.MatchPredicate;
 import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.processor.AnnotationStore;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -55,18 +63,47 @@ public class StartupBuildSteps {
 
     @BuildStep
     AutoAddScopeBuildItem addScope(CustomScopeAnnotationsBuildItem customScopes) {
-        // Class with no built-in scope annotation but with @Startup method
+        // Class with no built-in scope annotation but with @Startup annotation
         return AutoAddScopeBuildItem.builder()
                 .defaultScope(BuiltinScope.APPLICATION)
-                .isAnnotatedWith(STARTUP_NAME)
+                .match(new MatchPredicate() {
+                    @Override
+                    public boolean test(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index) {
+                        if (Annotations.contains(annotations, STARTUP_NAME)) {
+                            // Class annotated with @Startup
+                            return true;
+                        }
+                        for (MethodInfo method : clazz.methods()) {
+                            if (method.hasAnnotation(STARTUP_NAME)
+                                    && !method.hasAnnotation(DotNames.PRODUCES)) {
+                                // @Startup methods but not producers
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                })
                 .reason("Found classes containing @Startup annotation.")
                 .build();
     }
 
     @BuildStep
     UnremovableBeanBuildItem unremovableBeans() {
-        // Make all classes annotated with @Startup unremovable
-        return UnremovableBeanBuildItem.targetWithAnnotation(STARTUP_NAME);
+        return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
+            @Override
+            public boolean test(BeanInfo bean) {
+                if (bean.isClassBean()) {
+                    return bean.getTarget().get().asClass().annotationsMap().containsKey(STARTUP_NAME);
+                } else if (bean.isProducerMethod()) {
+                    return !getAnnotations(Kind.METHOD, STARTUP_NAME, bean.getTarget().get().asMethod().annotations())
+                            .isEmpty();
+                } else if (bean.isProducerField()) {
+                    return bean.getTarget().get().asField().hasAnnotation(STARTUP_NAME);
+                }
+                // No target - synthetic bean
+                return false;
+            }
+        });
     }
 
     @BuildStep

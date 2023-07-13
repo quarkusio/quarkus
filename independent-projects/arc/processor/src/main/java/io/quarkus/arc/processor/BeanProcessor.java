@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -35,6 +34,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
+import io.quarkus.arc.processor.CustomAlterableContexts.CustomAlterableContextInfo;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
@@ -87,11 +87,13 @@ public class BeanProcessor {
     protected final Predicate<DotName> injectionPointAnnotationsPredicate;
 
     private final ExtensionsEntryPoint buildCompatibleExtensions;
+    private final CustomAlterableContexts customAlterableContexts; // generic but currently only used for BCE
 
     private BeanProcessor(Builder builder) {
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
+        this.customAlterableContexts = new CustomAlterableContexts(builder.applicationClassPredicate);
         if (buildCompatibleExtensions != null) {
-            buildCompatibleExtensions.registerMetaAnnotations(builder);
+            buildCompatibleExtensions.registerMetaAnnotations(builder, customAlterableContexts);
             buildCompatibleExtensions.runEnhancement(builder.beanArchiveComputingIndex, builder);
         }
 
@@ -163,6 +165,7 @@ public class BeanProcessor {
      */
     public BeanDeploymentValidator.ValidationContext validate(Consumer<BytecodeTransformer> bytecodeTransformerConsumer) {
         ValidationContext validationContext = beanDeployment.validate(beanDeploymentValidators, bytecodeTransformerConsumer);
+        customAlterableContexts.validate(validationContext, transformUnproxyableClasses, bytecodeTransformerConsumer);
         if (buildCompatibleExtensions != null) {
             buildCompatibleExtensions.runValidation(beanDeployment.getBeanArchiveIndex(),
                     validationContext.get(Key.BEANS), validationContext.get(Key.OBSERVERS));
@@ -225,6 +228,9 @@ public class BeanProcessor {
         for (ObserverInfo observer : observers) {
             observerGenerator.precomputeGeneratedName(observer);
         }
+
+        CustomAlterableContextsGenerator alterableContextsGenerator = new CustomAlterableContextsGenerator(generateSources);
+        List<CustomAlterableContextInfo> alterableContexts = customAlterableContexts.getRegistered();
 
         List<Resource> resources = new ArrayList<>();
 
@@ -334,6 +340,16 @@ public class BeanProcessor {
                 }));
             }
 
+            // Generate `_InjectableContext` subclasses for custom `AlterableContext`s
+            for (CustomAlterableContextInfo info : alterableContexts) {
+                primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+                    @Override
+                    public Collection<Resource> call() throws Exception {
+                        return alterableContextsGenerator.generate(info);
+                    }
+                }));
+            }
+
             for (Future<Collection<Resource>> future : primaryTasks) {
                 resources.addAll(future.get());
             }
@@ -390,6 +406,11 @@ public class BeanProcessor {
             // Generate observers
             for (ObserverInfo observer : observers) {
                 resources.addAll(observerGenerator.generate(observer));
+            }
+
+            // Generate `_InjectableContext` subclasses for custom `AlterableContext`s
+            for (CustomAlterableContextInfo info : alterableContexts) {
+                resources.addAll(alterableContextsGenerator.generate(info));
             }
 
             // Generate _ComponentsProvider
@@ -586,26 +607,6 @@ public class BeanProcessor {
             return this;
         }
 
-        /**
-         * @deprecated use {@link #addStereotypeRegistrar(StereotypeRegistrar)};
-         *             this method will be removed at some time after Quarkus 3.0
-         */
-        @Deprecated
-        public Builder setAdditionalStereotypes(Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
-            Objects.requireNonNull(additionalStereotypes);
-            this.stereotypeRegistrars.add(new StereotypeRegistrar() {
-                @Override
-                public Set<DotName> getAdditionalStereotypes() {
-                    return additionalStereotypes.values()
-                            .stream()
-                            .flatMap(Collection::stream)
-                            .map(AnnotationInstance::name)
-                            .collect(Collectors.toSet());
-                }
-            });
-            return this;
-        }
-
         public Builder addQualifierRegistrar(QualifierRegistrar qualifierRegistrar) {
             this.qualifierRegistrars.add(qualifierRegistrar);
             return this;
@@ -623,15 +624,6 @@ public class BeanProcessor {
 
         public Builder setOutput(ResourceOutput output) {
             this.output = output;
-            return this;
-        }
-
-        /**
-         * @deprecated annotation literal sharing is now always enabled, this method doesn't do anything
-         *             and will be removed at some time after Quarkus 3.0
-         */
-        @Deprecated
-        public Builder setSharedAnnotationLiterals(boolean sharedAnnotationLiterals) {
             return this;
         }
 

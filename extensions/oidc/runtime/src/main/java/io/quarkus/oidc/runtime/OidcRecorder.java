@@ -24,7 +24,6 @@ import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.TenantConfigResolver;
-import io.quarkus.oidc.TenantResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.ExecutorRecorder;
@@ -115,9 +114,9 @@ public class OidcRecorder {
     }
 
     private TenantConfigContext createStaticTenantContext(Vertx vertx,
-            OidcTenantConfig oidcConfig, boolean checkTenantResolver, TlsConfig tlsConfig, String tenantId) {
+            OidcTenantConfig oidcConfig, boolean checkNamedTenants, TlsConfig tlsConfig, String tenantId) {
 
-        Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, checkTenantResolver, tlsConfig, tenantId);
+        Uni<TenantConfigContext> uniContext = createTenantContext(vertx, oidcConfig, checkNamedTenants, tlsConfig, tenantId);
         return uniContext.onFailure()
                 .recoverWithItem(new Function<Throwable, TenantConfigContext>() {
                     @Override
@@ -140,7 +139,7 @@ public class OidcRecorder {
                         throw new OIDCException(t);
                     }
                 })
-                .await().indefinitely();
+                .await().atMost(oidcConfig.getConnectionTimeout());
     }
 
     private static Throwable logTenantConfigContextFailure(Throwable t, String tenantId) {
@@ -152,7 +151,7 @@ public class OidcRecorder {
 
     @SuppressWarnings("resource")
     private Uni<TenantConfigContext> createTenantContext(Vertx vertx, OidcTenantConfig oidcTenantConfig,
-            boolean checkTenantResolver,
+            boolean checkNamedTenants,
             TlsConfig tlsConfig, String tenantId) {
         if (!oidcTenantConfig.tenantId.isPresent()) {
             oidcTenantConfig.tenantId = Optional.of(tenantId);
@@ -174,11 +173,10 @@ public class OidcRecorder {
                 if (OidcUtils.DEFAULT_TENANT_ID.equals(oidcConfig.tenantId.get())) {
                     ArcContainer container = Arc.container();
                     if (container != null
-                            && (container.instance(TenantConfigResolver.class).isAvailable()
-                                    || (checkTenantResolver && container.instance(TenantResolver.class).isAvailable()))) {
+                            && (container.instance(TenantConfigResolver.class).isAvailable() || checkNamedTenants)) {
                         LOG.debugf("Default tenant is not configured and will be disabled"
-                                + " because either 'TenantConfigResolver' or `TenantResolver`which will resolve"
-                                + " tenant configurations are registered");
+                                + " because either 'TenantConfigResolver' which will resolve tenant configurations is registered"
+                                + " or named tenants are configured.");
                         oidcConfig.setTenantEnabled(false);
                         return Uni.createFrom()
                                 .item(new TenantConfigContext(new OidcProvider(null, null, null, null), oidcConfig));
@@ -225,6 +223,11 @@ public class OidcRecorder {
                             "Either 'jwks-path' or 'introspection-path' properties must be set when the discovery is disabled.",
                             Set.of("quarkus.oidc.jwks-path", "quarkus.oidc.introspection-path"));
                 }
+            }
+            if (oidcConfig.authentication.userInfoRequired.orElse(false) && !oidcConfig.userInfoPath.isPresent()) {
+                throw new ConfigurationException(
+                        "UserInfo is required but 'quarkus.oidc.user-info-path' is not configured.",
+                        Set.of("quarkus.oidc.user-info-path"));
             }
         }
 
@@ -449,6 +452,12 @@ public class OidcRecorder {
                                 return Uni.createFrom().failure(new ConfigurationException(
                                         "The application supports RP-Initiated Logout but the OpenID Provider does not advertise the end_session_endpoint"));
                             }
+                        }
+                        if (oidcConfig.authentication.userInfoRequired.orElse(false) && metadata.getUserInfoUri() == null) {
+                            client.close();
+                            return Uni.createFrom().failure(new ConfigurationException(
+                                    "UserInfo is required but the OpenID Provider UserInfo endpoint is not configured."
+                                            + " Use 'quarkus.oidc.user-info-path' if the discovery is disabled."));
                         }
                         return Uni.createFrom().item(new OidcProviderClient(client, metadata, oidcConfig));
                     }

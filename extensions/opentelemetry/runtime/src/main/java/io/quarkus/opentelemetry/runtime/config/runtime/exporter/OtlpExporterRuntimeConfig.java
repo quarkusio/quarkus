@@ -35,13 +35,4 @@ public interface OtlpExporterRuntimeConfig {
     // TODO logs();
     // TODO additional global exporter configuration
 
-    /**
-     * From <a href=
-     * "https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#configuration-options">
-     * the OpenTelemetry Protocol Exporter configuration options</a>
-     */
-    public class Constants {
-        public static final String DEFAULT_GRPC_BASE_URI = "http://localhost:4317/";
-        public static final String DEFAULT_HTTP_BASE_URI = "http://localhost:4318/";
-    }
 }

@@ -780,7 +780,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:PrintAnalysisCallTreeType=CSV");
                 }
 
-                // only available in GraalVM 22.3.0 and better.
+                // only available in GraalVM 22.3.0+.
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_22_3_0) >= 0) {
                     if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) < 0) {
                         // Used to retrieve build time information in 22.3. Starting with 23.0 this info is included in
@@ -900,10 +900,13 @@ public class NativeImageBuildStep {
                 } else {
                     nativeImageArgs.add("-H:-UseServiceLoaderFeature");
                 }
-                if (nativeConfig.fullStackTraces()) {
-                    nativeImageArgs.add("-H:+StackTrace");
-                } else {
-                    nativeImageArgs.add("-H:-StackTrace");
+                // This option has no effect on GraalVM 23.1+
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) < 0) {
+                    if (nativeConfig.fullStackTraces()) {
+                        nativeImageArgs.add("-H:+StackTrace");
+                    } else {
+                        nativeImageArgs.add("-H:-StackTrace");
+                    }
                 }
 
                 if (nativeConfig.enableDashboardDump()) {

@@ -38,7 +38,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
-import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -229,6 +228,56 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testStateCookieIsPresentButStateParamNot() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "tenant-https",
+                    true);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint containing the state and code
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocation.startsWith("https"));
+            endpointLocation = "http" + endpointLocation.substring(5);
+
+            // State cookie is present
+            Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
+            assertNull(stateCookie.getSameSite());
+            verifyCodeVerifier(stateCookie, keycloakUrl);
+
+            // Make a call without an extra state query param, status is 401
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create(endpointLocation + "&state=123").toURL()));
+            assertEquals(401, webResponse.getStatusCode());
+
+            // Make a call without the state query param, confirm the old state cookie is removed, status is 302
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            // the old state cookie has been removed
+            assertNull(webClient.getCookieManager().getCookie(stateCookie.getName()));
+            // new state cookie is created
+            Cookie newStateCookie = getStateCookie(webClient, "tenant-https_test");
+            assertNotEquals(newStateCookie.getName(), stateCookie.getName());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCodeFlowForceHttpsRedirectUriWithQueryAndPkce() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
@@ -358,8 +407,9 @@ public class CodeFlowTest {
     private void verifyCodeVerifier(Cookie stateCookie, String keycloakUrl) throws Exception {
         String encodedState = stateCookie.getValue().split("\\|")[1];
 
-        String codeVerifier = OidcUtils.decryptJson(encodedState,
-                KeyUtils.createSecretKeyFromSecret("eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU")).getString("code_verifier");
+        byte[] secretBytes = "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU".getBytes(StandardCharsets.UTF_8);
+        SecretKey key = new SecretKeySpec(OidcUtils.getSha256Digest(secretBytes), "AES");
+        String codeVerifier = OidcUtils.decryptJson(encodedState, key).getString("code_verifier");
         String codeChallenge = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(OidcUtils.getSha256Digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)));
 
@@ -444,7 +494,7 @@ public class CodeFlowTest {
             assertNotNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout/logout");
-            assertTrue(page.asNormalizedText().contains("You were logged out"));
+            assertTrue(page.asNormalizedText().contains("You were logged out, please login again"));
             assertNull(getSessionCookie(webClient, "tenant-logout"));
 
             page = webClient.getPage("http://localhost:8081/tenant-logout");
@@ -936,12 +986,15 @@ public class CodeFlowTest {
 
             final String decryptSecret = "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU";
             Cookie idTokenCookie = getSessionCookie(page.getWebClient(), "tenant-split-tokens");
+            assertEquals("strict", idTokenCookie.getSameSite());
             checkSingleTokenCookie(idTokenCookie, "ID", decryptSecret);
 
             Cookie atTokenCookie = getSessionAtCookie(page.getWebClient(), "tenant-split-tokens");
+            assertEquals("strict", atTokenCookie.getSameSite());
             checkSingleTokenCookie(atTokenCookie, "Bearer", decryptSecret);
 
             Cookie rtTokenCookie = getSessionRtCookie(page.getWebClient(), "tenant-split-tokens");
+            assertEquals("strict", rtTokenCookie.getSameSite());
             checkSingleTokenCookie(rtTokenCookie, "Refresh", decryptSecret);
 
             // verify all the cookies are cleared after the session timeout
@@ -1021,11 +1074,6 @@ public class CodeFlowTest {
 
             webClient.getCookieManager().clearCookies();
         }
-    }
-
-    private void checkSingleTokenCookie(Cookie tokenCookie, String type) {
-        checkSingleTokenCookie(tokenCookie, type, null);
-
     }
 
     private void checkSingleTokenCookie(Cookie tokenCookie, String type, String decryptSecret) {

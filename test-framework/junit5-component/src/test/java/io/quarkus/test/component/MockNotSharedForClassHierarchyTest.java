@@ -10,15 +10,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
+import io.quarkus.test.InjectMock;
+
 public class MockNotSharedForClassHierarchyTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(Component.class);
+    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(Component.class)
+            .ignoreNestedClasses();
 
     @Inject
     Component component;
 
-    @ConfigureMock
+    @InjectMock
     Alpha alpha;
 
     @Test

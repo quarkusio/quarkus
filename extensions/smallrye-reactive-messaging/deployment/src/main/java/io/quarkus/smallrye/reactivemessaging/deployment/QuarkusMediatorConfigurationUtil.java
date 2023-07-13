@@ -16,7 +16,6 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -92,14 +91,13 @@ public final class QuarkusMediatorConfigurationUtil {
         configuration.setParameterDescriptor(descriptor);
 
         // Extract @Keyed, key type and value type
-        Optional<Class<? extends KeyValueExtractor>> keyed = handleKeyedMulti(methodInfo, recorderContext, configuration);
+        handleKeyedMulti(methodInfo, recorderContext, configuration);
 
         MediatorConfigurationSupport mediatorConfigurationSupport = new MediatorConfigurationSupport(
                 fullMethodName(methodInfo), returnTypeClass, parameterTypeClasses,
                 genericReturnTypeAssignable,
                 methodInfo.parameterTypes().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
-                        : new MethodParamGenericTypeAssignable(methodInfo, 0, cl),
-                keyed.orElse(null));
+                        : new MethodParamGenericTypeAssignable(methodInfo, 0, cl));
 
         if (strict) {
             mediatorConfigurationSupport.strict();
@@ -199,9 +197,8 @@ public final class QuarkusMediatorConfigurationUtil {
         return configuration;
     }
 
-    private static Optional<Class<? extends KeyValueExtractor>> handleKeyedMulti(MethodInfo methodInfo,
+    private static void handleKeyedMulti(MethodInfo methodInfo,
             RecorderContext recorderContext, QuarkusMediatorConfiguration configuration) {
-        Optional<Class<? extends KeyValueExtractor>> keyed = Optional.empty();
         if (methodInfo.parametersCount() == 1) { // @Keyed can only be used with a single parameter, a keyed multi
             var info = methodInfo.parameters().get(0);
             var annotation = info.annotation(ReactiveMessagingDotNames.KEYED);
@@ -219,7 +216,6 @@ public final class QuarkusMediatorConfigurationUtil {
                 var extractor = (Class<? extends KeyValueExtractor>) recorderContext
                         .classProxy(annotation.value().asClass().name().toString());
                 configuration.setKeyed(extractor);
-                keyed = Optional.of(extractor);
             }
             if (info.type().kind() == Type.Kind.PARAMETERIZED_TYPE
                     && info.type().asParameterizedType().name().equals(ReactiveMessagingDotNames.KEYED_MULTI)) {
@@ -228,8 +224,6 @@ public final class QuarkusMediatorConfigurationUtil {
                 configuration.setValueType(recorderContext.classProxy(args.get(1).name().toString()));
             }
         }
-
-        return keyed;
     }
 
     // TODO: avoid hard coding CompletionStage handling

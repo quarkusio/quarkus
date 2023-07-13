@@ -15,11 +15,17 @@ import static org.jboss.logmanager.Level.INFO;
 import static org.jboss.logmanager.Level.TRACE;
 import static org.jboss.logmanager.Level.WARN;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -27,10 +33,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.mvnpm.importmap.Aggregator;
 import org.mvnpm.importmap.Location;
 
@@ -40,8 +49,13 @@ import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
+import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.IoUtil;
+import io.quarkus.dev.console.DevConsoleManager;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.deployment.extension.Extension;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
@@ -61,6 +75,8 @@ import io.vertx.core.json.jackson.DatabindCodec;
  * time
  */
 public class BuildTimeContentProcessor {
+    private static final Logger log = Logger.getLogger(BuildTimeContentProcessor.class);
+
     private static final String SLASH = "/";
     private static final String DEV_UI = "dev-ui";
     private static final String BUILD_TIME_PATH = "dev-ui-templates/build-time";
@@ -92,6 +108,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qui-badge", contextRoot + "qui/qui-badge.js");
         internalImportMapBuildItem.add("qui-alert", contextRoot + "qui/qui-alert.js");
         internalImportMapBuildItem.add("qui-code-block", contextRoot + "qui/qui-code-block.js");
+        internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");
 
         // Echarts
         internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");
@@ -217,7 +234,7 @@ public class BuildTimeContentProcessor {
                         String value = DatabindCodec.prettyMapper().writeValueAsString(pageData.getValue());
                         data.put(key, value);
                     } catch (JsonProcessingException ex) {
-                        ex.printStackTrace();
+                        log.error("Could not create Json Data for Dev UI page", ex);
                     }
                 }
             }
@@ -245,8 +262,8 @@ public class BuildTimeContentProcessor {
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         try {
             Enumeration<URL> jarsWithImportMaps = tccl.getResources(Location.IMPORTMAP_PATH);
-            Set<URL> jarUrls = new HashSet<URL>(Collections.list(jarsWithImportMaps));
-            for (URL jarUrl : jarUrls) {
+            while (jarsWithImportMaps.hasMoreElements()) {
+                URL jarUrl = jarsWithImportMaps.nextElement();
                 final JarURLConnection connection = (JarURLConnection) jarUrl.openConnection();
                 mvnpmJars.add(connection.getJarFileURL());
             }
@@ -341,7 +358,9 @@ public class BuildTimeContentProcessor {
             BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
             List<InternalPageBuildItem> internalPages,
             ExtensionsBuildItem extensionsBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
+            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
 
@@ -349,7 +368,7 @@ public class BuildTimeContentProcessor {
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem);
         addVersionInfoBuildTimeData(internalBuildTimeData, nonApplicationRootPathBuildItem);
-
+        addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
     }
 
@@ -372,6 +391,7 @@ public class BuildTimeContentProcessor {
             List<InternalPageBuildItem> internalPages,
             ExtensionsBuildItem extensionsBuildItem) {
         // Menu section
+        @SuppressWarnings("unchecked")
         List<Page> sectionMenu = new ArrayList();
         Collections.sort(internalPages, (t, t1) -> {
             return ((Integer) t.getPosition()).compareTo(t1.getPosition());
@@ -397,6 +417,7 @@ public class BuildTimeContentProcessor {
     private void addFooterTabBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
             ExtensionsBuildItem extensionsBuildItem) {
         // Add the Footer tabs
+        @SuppressWarnings("unchecked")
         List<Page> footerTabs = new ArrayList();
         Page serverLog = Page.webComponentPageBuilder().internal()
                 .namespace("devui-logstream")
@@ -442,6 +463,108 @@ public class BuildTimeContentProcessor {
         applicationInfo.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
         internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
+    }
+
+    private void addIdeBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
+            LaunchModeBuildItem launchModeBuildItem) {
+
+        Map<String, Object> ideInfo = new HashMap<>();
+        boolean disable = launchModeBuildItem.getDevModeType().orElse(DevModeType.LOCAL) != DevModeType.LOCAL;
+        ideInfo.put("disable", disable);
+        if (effectiveIdeBuildItem.isPresent()) {
+            EffectiveIdeBuildItem eibi = effectiveIdeBuildItem.get();
+            if (!disable) {
+                // Add IDE info
+                Ide ide = eibi.getIde();
+                ideInfo.put("ideName", ide.name());
+                ideInfo.put("idePackages", getAllUserPackages());
+            }
+        }
+        internalBuildTimeData.addBuildTimeData("ideInfo", ideInfo);
+    }
+
+    private List<String> getAllUserPackages() {
+        List<Path> sourcesDir = DevConsoleManager.getHotReplacementContext().getSourcesDir();
+        List<String> packages = new ArrayList<>();
+
+        for (Path sourcePaths : sourcesDir) {
+            packages.addAll(sourcePackagesForRoot(sourcePaths));
+        }
+        return packages;
+    }
+
+    /**
+     * Return the most general packages used in the application
+     * <p>
+     * TODO: this likely covers almost all typical use cases, but probably needs some tweaks for extreme corner cases
+     */
+    private List<String> sourcePackagesForRoot(Path langPath) {
+        if (!Files.exists(langPath)) {
+            return Collections.emptyList();
+        }
+        File[] rootFiles = langPath.toFile().listFiles();
+        List<Path> rootPackages = new ArrayList<>(1);
+        if (rootFiles != null) {
+            for (File rootFile : rootFiles) {
+                if (rootFile.isDirectory()) {
+                    rootPackages.add(rootFile.toPath());
+                }
+            }
+        }
+        if (rootPackages.isEmpty()) {
+            return List.of("");
+        }
+        List<String> result = new ArrayList<>(rootPackages.size());
+        for (Path rootPackage : rootPackages) {
+            List<String> paths = new ArrayList<>();
+            SimpleFileVisitor<Path> simpleFileVisitor = new DetectPackageFileVisitor(paths);
+            try {
+                Files.walkFileTree(rootPackage, simpleFileVisitor);
+                if (paths.isEmpty()) {
+                    continue;
+                }
+                String commonPath = commonPath(paths);
+                String rootPackageStr = commonPath.replace(langPath.toAbsolutePath().toString(), "")
+                        .replace(File.separator, ".");
+                if (rootPackageStr.startsWith(".")) {
+                    rootPackageStr = rootPackageStr.substring(1);
+                }
+                if (rootPackageStr.endsWith(".")) {
+                    rootPackageStr = rootPackageStr.substring(0, rootPackageStr.length() - 1);
+                }
+                result.add(rootPackageStr);
+            } catch (IOException e) {
+                log.debug("Unable to determine the sources directories", e);
+                // just ignore it as it's not critical for the DevUI functionality
+            }
+        }
+        return result;
+    }
+
+    private String commonPath(List<String> paths) {
+        String commonPath = "";
+        List<String[]> dirs = new ArrayList<>(paths.size());
+        for (int i = 0; i < paths.size(); i++) {
+            dirs.add(i, paths.get(i).split(Pattern.quote(File.separator)));
+        }
+        for (int j = 0; j < dirs.get(0).length; j++) {
+            String thisDir = dirs.get(0)[j]; // grab the next directory name in the first path
+            boolean allMatched = true;
+            for (int i = 1; i < dirs.size() && allMatched; i++) { // look at the other paths
+                if (dirs.get(i).length < j) { //there is no directory
+                    allMatched = false;
+                    break;
+                }
+                allMatched = dirs.get(i)[j].equals(thisDir); //check if it matched
+            }
+            if (allMatched) {
+                commonPath += thisDir + File.separator;
+            } else {
+                break;
+            }
+        }
+        return commonPath;
     }
 
     private static final List<String> LEVELS = List.of(
@@ -622,6 +745,32 @@ public class BuildTimeContentProcessor {
 
         static Color from(int hue, int saturation, int lightness, double alpha) {
             return new Color(hue, saturation, lightness, alpha);
+        }
+    }
+
+    private static class DetectPackageFileVisitor extends SimpleFileVisitor<Path> {
+        private final List<String> paths;
+
+        public DetectPackageFileVisitor(List<String> paths) {
+            this.paths = paths;
+        }
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            boolean hasRegularFiles = false;
+            File[] files = dir.toFile().listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isFile()) {
+                        hasRegularFiles = true;
+                        break;
+                    }
+                }
+            }
+            if (hasRegularFiles) {
+                paths.add(dir.toAbsolutePath().toString());
+            }
+            return FileVisitResult.CONTINUE;
         }
     }
 }

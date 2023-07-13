@@ -19,8 +19,7 @@ public class NativeOrNativeSourcesBuild implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE.getValue())
-                || packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE_SOURCES.getValue());
+        return packageConfig.isNativeOrNativeSources();
     }
 
 }

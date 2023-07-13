@@ -201,7 +201,7 @@ public class IdeProcessor {
                 ProcessHandle.Info info = p.info();
                 Optional<String> command = info.command();
                 if (command.isPresent()) {
-                    result.add(new ProcessInfo(command.get(), info.arguments().orElse(null)));
+                    result.add(new ProcessInfo(command.get(), info.commandLine().orElse(""), info.arguments().orElse(null)));
                 }
             });
             return result;
@@ -211,10 +211,12 @@ public class IdeProcessor {
     private static class ProcessInfo {
         // the executable pathname of the process.
         private final String command;
+        private final String commandLine;
         private final String[] arguments;
 
-        public ProcessInfo(String command, String[] arguments) {
+        public ProcessInfo(String command, String commandLine, String[] arguments) {
             this.command = command;
+            this.commandLine = commandLine;
             this.arguments = arguments;
         }
 
@@ -222,12 +224,16 @@ public class IdeProcessor {
             return command;
         }
 
+        public String getCommandLine() {
+            return commandLine;
+        }
+
         public String[] getArguments() {
             return arguments;
         }
 
         private boolean containInCommand(String value) {
-            return this.command.contains(value);
+            return this.command.contains(value) || this.commandLine.contains(value);
         }
 
         private boolean containInArguments(String value) {

@@ -6,7 +6,6 @@ import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartData.Quarku
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 import static io.quarkus.devtools.testing.SnapshotTesting.assertThatMatchSnapshot;
 import static io.quarkus.devtools.testing.SnapshotTesting.checkContains;
-import static io.quarkus.devtools.testing.SnapshotTesting.checkNotContains;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
@@ -211,6 +210,25 @@ class QuarkusCodestartGenerationTest {
     }
 
     @Test
+    void generateGradleDefaultJava(TestInfo testInfo) throws Throwable {
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
+                .buildTool(BuildTool.GRADLE)
+                .addData(getGenerationTestInputData())
+                .build();
+        final Path projectDir = testDirPath.resolve("gradle-default-java");
+        getCatalog().createProject(input).generate(projectDir);
+
+        checkGradle(projectDir);
+        checkReadme(projectDir);
+        checkDockerfiles(projectDir, BuildTool.GRADLE);
+        checkConfigProperties(projectDir);
+
+        assertThatMatchSnapshot(testInfo, projectDir, "src/main/java/org/acme/GreetingResource.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/test/java/org/acme/GreetingResourceTest.java");
+        assertThatMatchSnapshot(testInfo, projectDir, "src/native-test/java/org/acme/GreetingResourceIT.java");
+    }
+
+    @Test
     void generateMavenResteasyJava(TestInfo testInfo) throws Throwable {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .addExtension(ArtifactKey.fromString("io.quarkus:quarkus-resteasy"))
@@ -297,25 +315,25 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./mvnw package"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.15"))//TODO: make a test for java17
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))//TODO: make a test for java17
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
-                .satisfies(checkNotContains("ENTRYPOINT"));
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./mvnw package -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.15"))
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))
                 .satisfies(checkContains("EXPOSE 8080"))
                 .satisfies(checkContains("USER 185"))
                 .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
-                .satisfies(checkNotContains("ENTRYPOINT"));
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
-                .satisfies(checkContains("./mvnw package -Pnative"))
+                .satisfies(checkContains("./mvnw package -Dnative"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
-                .satisfies(checkContains("./mvnw package -Pnative"))
+                .satisfies(checkContains("./mvnw package -Dnative"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
     private void checkDockerfilesWithGradle(Path projectDir) {
@@ -323,23 +341,25 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.jvm")).exists()
                 .satisfies(checkContains("./gradlew build"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.jvm"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.6"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))//TODO: make a test for java17
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.legacy-jar")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=legacy-jar"))
                 .satisfies(checkContains("docker build -f src/main/docker/Dockerfile.legacy-jar"))
-                .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal:8.6"))
-                .satisfies(checkContains("ARG JAVA_PACKAGE=java-11-openjdk-headless"))
-                .satisfies(checkContains("ENTRYPOINT [ \"/deployments/run-java.sh\" ]"));
+                .satisfies(checkContains("registry.access.redhat.com/ubi8/openjdk-11:1.16"))
+                .satisfies(checkContains("EXPOSE 8080"))
+                .satisfies(checkContains("USER 185"))
+                .satisfies(checkContains("ENV JAVA_APP_JAR=\"/deployments/quarkus-run.jar\""))
+                .satisfies(checkContains("ENTRYPOINT [ \"/opt/jboss/container/java/run/run-java.sh\" ]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native-micro")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
                 .satisfies(checkContains("quay.io/quarkus/quarkus-micro-image:2.0"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
         assertThat(projectDir.resolve("src/main/docker/Dockerfile.native")).exists()
                 .satisfies(checkContains("./gradlew build -Dquarkus.package.type=native"))
                 .satisfies(checkContains("registry.access.redhat.com/ubi8/ubi-minimal"))
-                .satisfies(checkContains("CMD [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
+                .satisfies(checkContains("ENTRYPOINT [\"./application\", \"-Dquarkus.http.host=0.0.0.0\"]"));
     }
 
     private void checkConfigProperties(Path projectDir) {

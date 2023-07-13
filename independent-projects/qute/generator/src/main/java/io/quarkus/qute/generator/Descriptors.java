@@ -35,7 +35,7 @@ public final class Descriptors {
     public static final MethodDescriptor EVALUATE = MethodDescriptor.ofMethod(EvalContext.class, "evaluate",
             CompletionStage.class, Expression.class);
     static final MethodDescriptor LIST_GET = MethodDescriptor.ofMethod(List.class, "get", Object.class, int.class);
-    static final MethodDescriptor COMPLETED_STAGE = MethodDescriptor.ofMethod(CompletedStage.class,
+    static final MethodDescriptor COMPLETED_STAGE_OF = MethodDescriptor.ofMethod(CompletedStage.class,
             "of", CompletedStage.class, Object.class);
     public static final MethodDescriptor COMPLETABLE_FUTURE_ALL_OF = MethodDescriptor.ofMethod(CompletableFuture.class,
             "allOf",
@@ -58,6 +58,8 @@ public final class Descriptors {
             CompletionStage.class, BiConsumer.class);
     public static final MethodDescriptor BOOLEAN_LOGICAL_OR = MethodDescriptor.ofMethod(Boolean.class, "logicalOr",
             boolean.class, boolean.class, boolean.class);
+    public static final MethodDescriptor BOOLEAN_VALUE = MethodDescriptor.ofMethod(Boolean.class, "booleanValue",
+            boolean.class);
     public static final MethodDescriptor EVALUATED_PARAMS_EVALUATE = MethodDescriptor.ofMethod(EvaluatedParams.class,
             "evaluate",
             EvaluatedParams.class,
@@ -96,5 +98,7 @@ public final class Descriptors {
 
     public static final FieldDescriptor EVALUATED_PARAMS_STAGE = FieldDescriptor.of(EvaluatedParams.class, "stage",
             CompletionStage.class);
+    public static final FieldDescriptor RESULTS_TRUE = FieldDescriptor.of(Results.class, "TRUE", CompletedStage.class);
+    public static final FieldDescriptor RESULTS_FALSE = FieldDescriptor.of(Results.class, "FALSE", CompletedStage.class);
 
 }

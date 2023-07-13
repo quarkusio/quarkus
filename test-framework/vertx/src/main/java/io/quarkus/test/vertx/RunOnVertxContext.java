@@ -32,4 +32,9 @@ public @interface RunOnVertxContext {
      * @return {@code true} by default.
      */
     boolean duplicateContext() default true;
+
+    /**
+     * If {@code true}, the test method is run on the Event Loop, otherwise it will be run on Vert.x blocking thread pool
+     */
+    boolean runOnEventLoop() default true;
 }

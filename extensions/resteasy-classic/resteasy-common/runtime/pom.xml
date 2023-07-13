@@ -115,7 +115,6 @@
                         <excludedArtifact>javax.activation:activation</excludedArtifact>
                         <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_3.0_spec</excludedArtifact>
                         <excludedArtifact>org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec</excludedArtifact>
-                        <excludedArtifact>org.jboss.resteasy:resteasy-context-propagation</excludedArtifact>
                     </excludedArtifacts>
                 </configuration>
             </plugin>

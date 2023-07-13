@@ -23,11 +23,15 @@ public class ConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(HelloClientWithBaseUri.class, EchoResource.class))
+            .withApplicationRoot(
+                    jar -> jar.addClasses(HelloClientWithBaseUri.class, EchoResource.class, EchoClientWithEmptyPath.class))
             .withConfigurationResource("configuration-test-application.properties");
 
     @RestClient
     HelloClientWithBaseUri client;
+
+    @RestClient
+    EchoClientWithEmptyPath echoClientWithEmptyPath;
 
     @Test
     void shouldHaveSingletonScope() {
@@ -60,6 +64,11 @@ public class ConfigurationTest {
 
         clientConfig = RestClientConfig.load("mp-client-prefix");
         verifyClientConfig(clientConfig, false);
+    }
+
+    @Test
+    void emptyPathAnnotationShouldWork() {
+        assertThat(echoClientWithEmptyPath.echo("hello", "hello world")).isEqualTo("hello world");
     }
 
     private void verifyClientConfig(RestClientConfig clientConfig, boolean checkExtraProperties) {

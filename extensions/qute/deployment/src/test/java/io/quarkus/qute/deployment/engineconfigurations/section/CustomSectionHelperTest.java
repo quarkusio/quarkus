@@ -23,7 +23,7 @@ public class CustomSectionHelperTest {
 
     @Test
     public void testSectionHelper() {
-        assertEquals("BAR!", foo.render());
+        assertEquals("1:BAR!", foo.render());
     }
 
 }

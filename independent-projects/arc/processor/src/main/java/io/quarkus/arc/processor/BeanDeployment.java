@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.event.Reception;
 import jakarta.enterprise.inject.spi.DefinitionException;
 import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -455,7 +456,8 @@ public class BeanDeployment {
     }
 
     private Set<BeanInfo> removeUnusedBeans(Set<BeanInfo> declaresObserver, List<Predicate<BeanInfo>> allUnusedExclusions) {
-        Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(this.beans, this.injectionPoints, declaresObserver,
+        Set<BeanInfo> removableBeans = UnusedBeans.findRemovableBeans(beanResolver, this.beans, this.injectionPoints,
+                declaresObserver,
                 allUnusedExclusions);
         if (!removableBeans.isEmpty()) {
             this.beans.removeAll(removableBeans);
@@ -878,8 +880,6 @@ public class BeanDeployment {
                         }
                         isNamed = true;
                     } else if (DotNames.PRIORITY.equals(annotation.name())) {
-                        alternativePriority = annotation.value().asInt();
-                    } else if (DotNames.ARC_PRIORITY.equals(annotation.name()) && alternativePriority == null) {
                         alternativePriority = annotation.value().asInt();
                     } else {
                         final ScopeInfo scope = getScope(annotation.name(), customContexts);
@@ -1415,6 +1415,17 @@ public class BeanDeployment {
         beans.add(bean);
     }
 
+    void addSyntheticInterceptor(InterceptorInfo interceptor) {
+        for (InterceptorInfo i : interceptors) {
+            if (i.getIdentifier().equals(interceptor.getIdentifier())) {
+                throw new IllegalStateException(
+                        "A synthetic interceptor with identifier " + interceptor.getIdentifier() + " is already registered: "
+                                + i);
+            }
+        }
+        interceptors.add(interceptor);
+    }
+
     private void addSyntheticObserver(ObserverConfigurator configurator) {
         observers.add(ObserverInfo.create(configurator.id, this, configurator.beanClass, null, null, null, null,
                 configurator.observedType,
@@ -1687,6 +1698,20 @@ public class BeanDeployment {
         @Override
         public <T> BeanConfigurator<T> configure(DotName beanClassName) {
             return new BeanConfigurator<T>(beanClassName, beanDeployment, this);
+        }
+
+        @Override
+        public InterceptorConfigurator configureInterceptor(InterceptionType interceptionType) {
+            switch (Objects.requireNonNull(interceptionType)) {
+                case AROUND_INVOKE:
+                case POST_CONSTRUCT:
+                case PRE_DESTROY:
+                case AROUND_CONSTRUCT:
+                    return new InterceptorConfigurator(beanDeployment, interceptionType);
+                default:
+                    throw new IllegalArgumentException("Unsuppored interception type: " + interceptionType);
+            }
+
         }
 
         @Override

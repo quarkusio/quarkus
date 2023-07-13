@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,7 +44,10 @@ import org.apache.maven.settings.building.SettingsBuildingException;
 import org.apache.maven.settings.building.SettingsBuildingResult;
 import org.apache.maven.settings.building.SettingsProblem;
 import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
+import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecryptionResult;
+import org.codehaus.plexus.configuration.PlexusConfiguration;
 import org.codehaus.plexus.configuration.xml.XmlPlexusConfiguration;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.ConfigurationProperties;
@@ -91,8 +95,19 @@ public class BootstrapMavenContext {
     private static final String MAVEN_SETTINGS = "maven.settings";
     private static final String MAVEN_TOP_LEVEL_PROJECT_BASEDIR = "maven.top-level-basedir";
     private static final String SETTINGS_XML = "settings.xml";
+    private static final String SETTINGS_SECURITY = "settings.security";
 
     private static final String EFFECTIVE_MODEL_BUILDER_PROP = "quarkus.bootstrap.effective-model-builder";
+
+    private static final String MAVEN_RESOLVER_TRANSPORT_KEY = "maven.resolver.transport";
+    private static final String MAVEN_RESOLVER_TRANSPORT_DEFAULT = "default";
+    private static final String MAVEN_RESOLVER_TRANSPORT_WAGON = "wagon";
+    private static final String MAVEN_RESOLVER_TRANSPORT_NATIVE = "native";
+    private static final String MAVEN_RESOLVER_TRANSPORT_AUTO = "auto";
+    private static final String WAGON_TRANSPORTER_PRIORITY_KEY = "aether.priority.WagonTransporterFactory";
+    private static final String NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY = "aether.priority.HttpTransporterFactory";
+    private static final String NATIVE_FILE_TRANSPORTER_PRIORITY_KEY = "aether.priority.FileTransporterFactory";
+    private static final String RESOLVER_MAX_PRIORITY = String.valueOf(Float.MAX_VALUE);
 
     private boolean artifactTransferLogging;
     private BootstrapMavenOptions cliOptions;
@@ -116,6 +131,7 @@ public class BootstrapMavenContext {
     private boolean preferPomsFromWorkspace;
     private Boolean effectiveModelBuilder;
     private Boolean wsModuleParentHierarchy;
+    private SettingsDecrypter settingsDecrypter;
 
     public static BootstrapMavenContextConfig<?> config() {
         return new BootstrapMavenContextConfig<>();
@@ -256,11 +272,17 @@ public class BootstrapMavenContext {
     }
 
     public RepositorySystem getRepositorySystem() throws BootstrapMavenException {
-        return repoSystem == null ? repoSystem = newRepositorySystem() : repoSystem;
+        if (repoSystem == null) {
+            initRepoSystemAndManager();
+        }
+        return repoSystem;
     }
 
     public RemoteRepositoryManager getRemoteRepositoryManager() {
-        return remoteRepoManager == null ? remoteRepoManager = newRemoteRepositoryManager() : remoteRepoManager;
+        if (remoteRepoManager == null) {
+            initRepoSystemAndManager();
+        }
+        return remoteRepoManager;
     }
 
     public RepositorySystemSession getRepositorySystemSession() throws BootstrapMavenException {
@@ -273,6 +295,13 @@ public class BootstrapMavenContext {
 
     public List<RemoteRepository> getRemotePluginRepositories() throws BootstrapMavenException {
         return remotePluginRepos == null ? remotePluginRepos = resolveRemotePluginRepos() : remotePluginRepos;
+    }
+
+    private SettingsDecrypter getSettingsDecrypter() {
+        if (settingsDecrypter == null) {
+            initRepoSystemAndManager();
+        }
+        return settingsDecrypter;
     }
 
     public Settings getEffectiveSettings() throws BootstrapMavenException {
@@ -409,15 +438,9 @@ public class BootstrapMavenContext {
         final Settings settings = getEffectiveSettings();
         final List<Mirror> mirrors = settings.getMirrors();
         if (mirrors != null && !mirrors.isEmpty()) {
-            final boolean isBlockedMethodAvailable = mirrorIsBlockedMethodAvailable();
             final DefaultMirrorSelector ms = new DefaultMirrorSelector();
             for (Mirror m : mirrors) {
-                if (isBlockedMethodAvailable) {
-                    ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
-                } else {
-                    // Maven pre-3.8.x
-                    ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.getMirrorOf(), m.getMirrorOfLayouts());
-                }
+                ms.add(m.getId(), m.getUrl(), m.getLayout(), false, m.isBlocked(), m.getMirrorOf(), m.getMirrorOfLayouts());
             }
             session.setMirrorSelector(ms);
         }
@@ -441,10 +464,20 @@ public class BootstrapMavenContext {
             }
         }
 
-        final DefaultSettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
+        final SettingsDecryptionRequest decrypt = new DefaultSettingsDecryptionRequest();
         decrypt.setProxies(settings.getProxies());
         decrypt.setServers(settings.getServers());
-        final SettingsDecryptionResult decrypted = new SettingsDecrypterImpl().decrypt(decrypt);
+        // set settings.security property to ~/.m2/settings-security.xml unless it's already set to some other value
+        File settingsSecurityXml = null;
+        final boolean setSettingsSecurity = !System.getProperties().contains(SETTINGS_SECURITY)
+                && ((settingsSecurityXml = new File(getUserMavenConfigurationHome(), "settings-security.xml")).exists());
+        if (setSettingsSecurity) {
+            System.setProperty(SETTINGS_SECURITY, settingsSecurityXml.toString());
+        }
+        final SettingsDecryptionResult decrypted = getSettingsDecrypter().decrypt(decrypt);
+        if (setSettingsSecurity) {
+            System.clearProperty(SETTINGS_SECURITY);
+        }
         if (!decrypted.getProblems().isEmpty() && log.isDebugEnabled()) {
             // this is how maven handles these
             for (SettingsProblem p : decrypted.getProblems()) {
@@ -481,11 +514,96 @@ public class BootstrapMavenContext {
                 }
                 XmlPlexusConfiguration config = new XmlPlexusConfiguration(dom);
                 configProps.put("aether.connector.wagon.config." + server.getId(), config);
+
+                // Translate to proper resolver configuration properties as well (as Plexus XML above is Wagon specific
+                // only), but support only configuration/httpConfiguration/all, see
+                // https://maven.apache.org/guides/mini/guide-http-settings.html
+                Map<String, String> headers = null;
+                Integer connectTimeout = null;
+                Integer requestTimeout = null;
+
+                PlexusConfiguration httpHeaders = config.getChild("httpHeaders", false);
+                if (httpHeaders != null) {
+                    PlexusConfiguration[] properties = httpHeaders.getChildren("property");
+                    if (properties != null && properties.length > 0) {
+                        headers = new HashMap<>();
+                        for (PlexusConfiguration property : properties) {
+                            headers.put(
+                                    property.getChild("name").getValue(),
+                                    property.getChild("value").getValue());
+                        }
+                    }
+                }
+
+                PlexusConfiguration connectTimeoutXml = config.getChild("connectTimeout", false);
+                if (connectTimeoutXml != null) {
+                    connectTimeout = Integer.parseInt(connectTimeoutXml.getValue());
+                } else {
+                    // fallback configuration name
+                    PlexusConfiguration httpConfiguration = config.getChild("httpConfiguration", false);
+                    if (httpConfiguration != null) {
+                        PlexusConfiguration httpConfigurationAll = httpConfiguration.getChild("all", false);
+                        if (httpConfigurationAll != null) {
+                            connectTimeoutXml = httpConfigurationAll.getChild("connectionTimeout", false);
+                            if (connectTimeoutXml != null) {
+                                connectTimeout = Integer.parseInt(connectTimeoutXml.getValue());
+                                log.warn("Settings for server " + server.getId() + " uses legacy format");
+                            }
+                        }
+                    }
+                }
+
+                PlexusConfiguration requestTimeoutXml = config.getChild("requestTimeout", false);
+                if (requestTimeoutXml != null) {
+                    requestTimeout = Integer.parseInt(requestTimeoutXml.getValue());
+                } else {
+                    // fallback configuration name
+                    PlexusConfiguration httpConfiguration = config.getChild("httpConfiguration", false);
+                    if (httpConfiguration != null) {
+                        PlexusConfiguration httpConfigurationAll = httpConfiguration.getChild("all", false);
+                        if (httpConfigurationAll != null) {
+                            requestTimeoutXml = httpConfigurationAll.getChild("readTimeout", false);
+                            if (requestTimeoutXml != null) {
+                                requestTimeout = Integer.parseInt(requestTimeoutXml.getValue());
+                                log.warn("Settings for server " + server.getId() + " uses legacy format");
+                            }
+                        }
+                    }
+                }
+
+                // org.eclipse.aether.ConfigurationProperties.HTTP_HEADERS => Map<String, String>
+                if (headers != null) {
+                    configProps.put(ConfigurationProperties.HTTP_HEADERS + "." + server.getId(), headers);
+                }
+                // org.eclipse.aether.ConfigurationProperties.CONNECT_TIMEOUT => int
+                if (connectTimeout != null) {
+                    configProps.put(ConfigurationProperties.CONNECT_TIMEOUT + "." + server.getId(), connectTimeout);
+                }
+                // org.eclipse.aether.ConfigurationProperties.REQUEST_TIMEOUT => int
+                if (requestTimeout != null) {
+                    configProps.put(ConfigurationProperties.REQUEST_TIMEOUT + "." + server.getId(), requestTimeout);
+                }
             }
             configProps.put("aether.connector.perms.fileMode." + server.getId(), server.getFilePermissions());
             configProps.put("aether.connector.perms.dirMode." + server.getId(), server.getDirectoryPermissions());
         }
         session.setAuthenticationSelector(authSelector);
+
+        Object transport = configProps.getOrDefault(MAVEN_RESOLVER_TRANSPORT_KEY, MAVEN_RESOLVER_TRANSPORT_DEFAULT);
+        if (MAVEN_RESOLVER_TRANSPORT_DEFAULT.equals(transport)) {
+            // The "default" mode (user did not set anything) from now on defaults to AUTO
+        } else if (MAVEN_RESOLVER_TRANSPORT_NATIVE.equals(transport)) {
+            // Make sure (whatever extra priority is set) that resolver native is selected
+            configProps.put(NATIVE_FILE_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+            configProps.put(NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+        } else if (MAVEN_RESOLVER_TRANSPORT_WAGON.equals(transport)) {
+            // Make sure (whatever extra priority is set) that wagon is selected
+            configProps.put(WAGON_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
+        } else if (!MAVEN_RESOLVER_TRANSPORT_AUTO.equals(transport)) {
+            throw new IllegalArgumentException("Unknown resolver transport '" + transport
+                    + "'. Supported transports are: " + MAVEN_RESOLVER_TRANSPORT_WAGON + ", "
+                    + MAVEN_RESOLVER_TRANSPORT_NATIVE + ", " + MAVEN_RESOLVER_TRANSPORT_AUTO);
+        }
 
         session.setConfigProperties(configProps);
 
@@ -738,16 +856,6 @@ public class BootstrapMavenContext {
         return new Proxy(proxy.getProtocol(), proxy.getHost(), proxy.getPort(), auth);
     }
 
-    private RepositorySystem newRepositorySystem() throws BootstrapMavenException {
-        initRepoSystemAndManager();
-        return repoSystem;
-    }
-
-    public RemoteRepositoryManager newRemoteRepositoryManager() {
-        initRepoSystemAndManager();
-        return remoteRepoManager;
-    }
-
     private void initRepoSystemAndManager() {
         final MavenFactory factory = configureMavenFactory();
         if (repoSystem == null) {
@@ -756,10 +864,13 @@ public class BootstrapMavenContext {
         if (remoteRepoManager == null) {
             remoteRepoManager = factory.getContainer().requireBean(RemoteRepositoryManager.class);
         }
+        if (settingsDecrypter == null) {
+            settingsDecrypter = factory.getContainer().requireBean(SettingsDecrypter.class);
+        }
     }
 
     protected MavenFactory configureMavenFactory() {
-        final MavenFactory factory = MavenFactory.create(RepositorySystem.class.getClassLoader(), builder -> {
+        return MavenFactory.create(RepositorySystem.class.getClassLoader(), builder -> {
             builder.addBean(ModelBuilder.class).setSupplier(new BeanSupplier<ModelBuilder>() {
                 @Override
                 public ModelBuilder get(Scope scope) {
@@ -767,7 +878,6 @@ public class BootstrapMavenContext {
                 }
             }).setPriority(100).build();
         });
-        return factory;
     }
 
     private static String getUserAgent() {
@@ -987,15 +1097,6 @@ public class BootstrapMavenContext {
     private static boolean isMavenRepoEnvVarOption(String varName, String repoId, String option) {
         return varName.length() == BOOTSTRAP_MAVEN_REPO_PREFIX.length() + repoId.length() + option.length()
                 && varName.endsWith(option);
-    }
-
-    private static boolean mirrorIsBlockedMethodAvailable() {
-        try {
-            Mirror.class.getMethod("isBlocked");
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     private static FileProfileActivator createFileProfileActivator() throws BootstrapMavenException {

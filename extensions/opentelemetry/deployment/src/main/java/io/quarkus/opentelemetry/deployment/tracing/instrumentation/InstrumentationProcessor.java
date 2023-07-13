@@ -25,9 +25,11 @@ import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingC
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.grpc.GrpcTracingServerInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.reactivemessaging.ReactiveMessagingTracingDecorator;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.restclient.OpenTelemetryClientFilter;
+import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.AttachExceptionHandler;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryClassicServerFilter;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.resteasy.OpenTelemetryReactiveServerFilter;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 import io.vertx.core.VertxOptions;
@@ -125,19 +127,20 @@ public class InstrumentationProcessor {
     }
 
     @BuildStep
-    void registerResteasyReactiveProvider(
+    void resteasyReactiveIntegration(
             Capabilities capabilities,
-            BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer) {
+            BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
+            BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer) {
 
-        boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE);
-
-        if (!isResteasyReactiveAvailable) {
-            // if RestEasy is not available then no need to continue
+        if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
+            // if RESTEasy Reactive is not available then no need to continue
             return;
         }
 
         containerRequestFilterBuildItemBuildProducer
                 .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
+        preExceptionMapperHandlerBuildItemBuildProducer
+                .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
     }
 
 }

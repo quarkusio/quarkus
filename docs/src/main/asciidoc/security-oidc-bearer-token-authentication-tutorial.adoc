@@ -4,14 +4,17 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-oidc-bearer-token-authentication-tutorial"]
-= Protect a service application by using OpenID Connect (OIDC) bearer authentication
+= Protect a service application by using OpenID Connect (OIDC) Bearer token authentication
 include::_attributes.adoc[]
+:diataxis-type: tutorial
 :categories: security
 
-Here, you use the Quarkus OpenID Connect (OIDC) extension to secure a Jakarta REST application using Bearer authentication.
+Here, you use the Quarkus OpenID Connect (OIDC) extension to secure a Jakarta REST application using Bearer token authentication.
 The bearer tokens are issued by OIDC and OAuth 2.0 compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
-To better understand OIDC Bearer authentication, see xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication].
+To better understand OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
+
+If you want to protect web applications by using OIDC Authorization Code Flow authentication, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC authorization code flow authentication].
 
 == Prerequisites
 
@@ -266,7 +269,7 @@ See the <<keycloak-dev-mode,Running the Application in Dev mode>> section above 
 
 You can test the application launched in JVM or Native modes with `curl`.
 
-The application is using Bearer authentication and the first thing to do is obtain an access token from the Keycloak Server in order to access the application resources:
+The application is using Bearer token authentication and the first thing to do is obtain an access token from the Keycloak Server in order to access the application resources:
 
 [source,bash]
 ----
@@ -311,18 +314,18 @@ export access_token=$(\
  )
 ----
 
-Please also see the xref:security-oidc-bearer-token-authentication-concept.adoc#integration-testing-keycloak-devservices[OIDC Bearer authentication, Dev Services for Keycloak] section, about writing the integration tests which depend on `Dev Services for Keycloak`.
+Please also see the xref:security-oidc-bearer-token-authentication.adoc#integration-testing-keycloak-devservices[OIDC Bearer token authentication, Dev Services for Keycloak] section, about writing the integration tests which depend on `Dev Services for Keycloak`.
 
 == References
 
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
-* xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication]
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 * link:https://www.keycloak.org/documentation.html[Keycloak Documentation]
 * link:https://openid.net/connect/[OpenID Connect]
 * link:https://tools.ietf.org/html/rfc7519[JSON Web Token]
 * xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
 * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security-authentication-mechanisms-concept.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
-* xref:security-overview-concept.adoc[Quarkus Security]
+* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
+* xref:security-overview.adoc[Quarkus Security]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

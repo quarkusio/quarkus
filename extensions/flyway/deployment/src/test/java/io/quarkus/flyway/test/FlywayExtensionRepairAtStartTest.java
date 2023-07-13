@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
@@ -45,7 +46,8 @@ public class FlywayExtensionRepairAtStartTest {
         await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
             assertThat(config.getLogRecords()).anySatisfy(r -> {
                 assertThat(r.getMessage()).contains("Failed to start application");
-                assertThat(r.getThrown().getMessage()).contains("Migration checksum mismatch for migration version 1.0.0");
+                assertThat(ExceptionUtil.getRootCause(r.getThrown()).getMessage())
+                        .contains("Migration checksum mismatch for migration version 1.0.0");
             });
             RestAssured.get("/flyway/current-version").then().statusCode(500);
         });

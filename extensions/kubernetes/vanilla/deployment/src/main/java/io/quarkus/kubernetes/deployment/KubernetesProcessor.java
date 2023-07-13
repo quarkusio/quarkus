@@ -140,10 +140,7 @@ class KubernetesProcessor {
             optionalProject.ifPresent(project -> {
                 Set<String> targets = new HashSet<>();
                 targets.add(COMMON);
-                targets.addAll(kubernetesDeploymentTargets.getEntriesSortedByPriority()
-                        .stream()
-                        .map(DeploymentTargetEntry::getName)
-                        .collect(Collectors.toSet()));
+                targets.addAll(deploymentTargets);
                 final Map<String, String> generatedResourcesMap;
                 final SessionWriter sessionWriter = new QuarkusFileWriter(project);
                 final SessionReader sessionReader = new SimpleFileReader(

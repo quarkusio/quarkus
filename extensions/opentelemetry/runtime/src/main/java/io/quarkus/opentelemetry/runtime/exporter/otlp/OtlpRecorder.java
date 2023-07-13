@@ -1,12 +1,9 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
-import static io.quarkus.opentelemetry.runtime.OpenTelemetryUtil.convertKeyValueListToMap;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig.Protocol.HTTP_PROTOBUF;
 
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.spi.CDI;
@@ -17,7 +14,6 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.Recorder;
@@ -88,28 +84,33 @@ public class OtlpRecorder {
         // FIXME TLS Support. Was not available before but will be available soon.
         // exporterRuntimeConfig.traces.certificate.ifPresent(exporterBuilder::setTrustedCertificates);
         // exporterRuntimeConfig.client.ifPresent(exporterBuilder::setClientTls);
-        exporterRuntimeConfig.traces().headers().ifPresent(new Consumer<List<String>>() {
-            @Override
-            public void accept(final List<String> headers) {
-                for (Map.Entry<String, String> entry : convertKeyValueListToMap(headers).entrySet()) {
-                    String key = entry.getKey();
-                    String value = entry.getValue();
+
+        if (exporterRuntimeConfig.traces().headers().isPresent()) {
+            List<String> headers = exporterRuntimeConfig.traces().headers().get();
+            if (!headers.isEmpty()) {
+                for (String header : headers) {
+                    if (header.isEmpty()) {
+                        continue;
+                    }
+                    String[] parts = header.split("=", 2);
+                    String key = parts[0].trim();
+                    String value = parts[1].trim();
                     exporterBuilder.addHeader(key, value);
                 }
             }
-        });
-        exporterRuntimeConfig.traces().compression()
-                .ifPresent(new Consumer<CompressionType>() {
-                    @Override
-                    public void accept(CompressionType compression) {
-                        exporterBuilder.setCompression(compression.getValue());
-                    }
-                });
-
-        if (!exporterRuntimeConfig.traces().protocol().orElse("").equals(HTTP_PROTOBUF)) {
-            throw new IllegalStateException("Only the GRPC Exporter is currently supported. " +
-                    "Please check `otel.exporter.otlp.traces.protocol` property");
         }
+
+        if (exporterRuntimeConfig.traces().compression().isPresent()) {
+            exporterBuilder.setCompression(exporterRuntimeConfig.traces().compression().get().getValue());
+        }
+
+        if (exporterRuntimeConfig.traces().protocol().isPresent()) {
+            if (!exporterRuntimeConfig.traces().protocol().get().equals(HTTP_PROTOBUF)) {
+                throw new IllegalStateException("Only the GRPC Exporter is currently supported. " +
+                        "Please check `quarkus.otel.exporter.otlp.traces.protocol` property");
+            }
+        }
+
         return exporterBuilder.build();
     }
 }

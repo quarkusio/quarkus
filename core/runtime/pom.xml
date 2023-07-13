@@ -192,10 +192,6 @@
                         <parentFirstArtifact>io.quarkus:quarkus-bootstrap-gradle-resolver</parentFirstArtifact>
                         <parentFirstArtifact>io.quarkus:quarkus-junit5-mockito-config</parentFirstArtifact>
 
-                        <!-- RestAssured uses groovy, which seems to do some things with soft references that
-                        prevent the ClassLoader from being GC'ed, see https://github.com/quarkusio/quarkus/issues/12498 -->
-                        <parentFirstArtifact>org.apache.groovy:groovy</parentFirstArtifact>
-
                         <!-- Load the junit engine parent first, so it is shared between the outer dev mode
                         process and the test application-->
                         <parentFirstArtifact>org.junit.platform:junit-platform-launcher</parentFirstArtifact>

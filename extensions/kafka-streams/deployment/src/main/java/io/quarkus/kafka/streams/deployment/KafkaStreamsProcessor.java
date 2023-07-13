@@ -12,6 +12,7 @@ import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.errors.DefaultProductionExceptionHandler;
 import org.apache.kafka.streams.errors.LogAndFailExceptionHandler;
 import org.apache.kafka.streams.processor.FailOnInvalidTimestamp;
+import org.apache.kafka.streams.processor.internals.DefaultKafkaClientSupplier;
 import org.apache.kafka.streams.processor.internals.StreamsPartitionAssignor;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
@@ -75,6 +76,8 @@ class KafkaStreamsProcessor {
                     ReflectiveClassBuildItem.builder(DEFAULT_PARTITION_GROUPER)
                             .build());
         }
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(DefaultKafkaClientSupplier.class)
+                .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(DefaultProductionExceptionHandler.class)
                 .build());
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(FailOnInvalidTimestamp.class)

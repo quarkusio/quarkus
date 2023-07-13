@@ -44,18 +44,18 @@
         <!-- specification versions -->
         <version.cdi>4.0.1</version.cdi>
         <version.jakarta-annotation>2.1.1</version.jakarta-annotation>
-        <version.jpa>3.0.0</version.jpa>
+        <version.jpa>3.1.0</version.jpa>
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.6.1.Final</version.gizmo>
-        <version.jandex>3.1.1</version.jandex>
-        <version.jboss-logging>3.5.0.Final</version.jboss-logging>
+        <version.jandex>3.1.2</version.jandex>
+        <version.jboss-logging>3.5.1.Final</version.jboss-logging>
         <version.mutiny>2.2.0</version.mutiny>
         <!-- test versions -->
         <version.assertj>3.24.2</version.assertj>
         <version.junit5>5.9.3</version.junit5>
-        <version.kotlin>1.8.21</version.kotlin>
-        <version.kotlin-coroutines>1.6.4</version.kotlin-coroutines>
+        <version.kotlin>1.8.22</version.kotlin>
+        <version.kotlin-coroutines>1.7.1</version.kotlin-coroutines>
         <version.mockito>5.3.1</version.mockito>
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
@@ -249,7 +249,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.22.0</version>
+                    <version>2.23.0</version>
                     <dependencies>
                         <dependency>
                             <artifactId>quarkus-ide-config</artifactId>
@@ -268,7 +268,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.8.0</version>
+                    <version>1.9.0</version>
                     <configuration>
                         <!-- store outside of target to speed up formatting when mvn clean is used -->
                         <cachedir>.cache/impsort-maven-plugin-${impsort-maven-plugin.version}</cachedir>

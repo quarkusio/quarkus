@@ -20,7 +20,8 @@ import io.quarkus.test.QuarkusProdModeTest;
 public class KubernetesWithDefaultApplicationVersionTest {
 
     private static final String APP_NAME = "kubernetes-with-default-application-version";
-    private static final String EXPECTED_VERSION = "latest";
+    private static final String EXPECTED_LABEL_VERSION = "<<unset>>";
+    private static final String EXPECTED_CONTAINER_IMAGE_VERSION = "latest";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -46,7 +47,7 @@ public class KubernetesWithDefaultApplicationVersionTest {
             assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo(APP_NAME);
                 assertThat(m.getLabels()).contains(entry("app.kubernetes.io/name", APP_NAME),
-                        entry("app.kubernetes.io/version", EXPECTED_VERSION));
+                        entry("app.kubernetes.io/version", EXPECTED_LABEL_VERSION));
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
@@ -54,7 +55,7 @@ public class KubernetesWithDefaultApplicationVersionTest {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             // then, we should use `latest` and not `<< unset >>` which gives an exception.
-                            assertThat(container.getImage()).endsWith(APP_NAME + ":" + EXPECTED_VERSION);
+                            assertThat(container.getImage()).endsWith(APP_NAME + ":" + EXPECTED_CONTAINER_IMAGE_VERSION);
                         });
                     });
                 });

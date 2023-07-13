@@ -828,13 +828,13 @@ Note that there is no dependency on Mockito, you can use any mocking library you
 objects to provide the behaviour you require.
 
 NOTE: Using `@Inject` will get you a CDI proxy to the mock instance you install, which is not suitable for passing to methods such as `Mockito.verify`
-which want the mock instance itself. So if you need to call methods such as `verify` you need to hang on to the mock instance in your test, or use `@InjectMock`
-as shown below.
+which want the mock instance itself.
+So if you need to call methods such as `verify` you should hang on to the mock instance in your test, or use `@io.quarkus.test.InjectMock`.
 
 ==== Further simplification with `@InjectMock`
 
 Building on the features provided by `QuarkusMock`, Quarkus also allows users to effortlessly take advantage of link:https://site.mockito.org/[Mockito] for mocking the beans supported by `QuarkusMock`.
-This functionality is available via the `@io.quarkus.test.junit.mockito.InjectMock` annotation which is available in the `quarkus-junit5-mockito` dependency.
+This functionality is available with the `@io.quarkus.test.InjectMock` annotation if the `quarkus-junit5-mockito` dependency is present.
 
 Using `@InjectMock`, the previous example could be written as follows:
 
@@ -938,7 +938,7 @@ public class MockGreetingServiceTest {
 <1> Since we configured `greetingService` as a mock, the `GreetingResource` which uses the `GreetingService` bean, we get the mocked response instead of the response of the regular `GreetingService` bean
 
 By default, the `@InjectMock` annotation can be used for any normal CDI scoped bean (e.g. `@ApplicationScoped`, `@RequestScoped`).
-Mocking `@Singleton` beans can be performed by setting the `convertScopes` property to true (such as `@InjectMock(convertScopes = true`).
+Mocking `@Singleton` beans can be performed by adding the `@MockitoConfig(convertScopes = true)` annotation.
 This will convert the `@Singleton` bean to an `@ApplicationScoped` bean for the test.
 
 This is considered an advanced option and should only be performed if you fully understand the consequences of changing the scope of the bean.
@@ -1396,6 +1396,7 @@ An example use of this could be the following Maven command, that forces `@Quark
 ./mvnw verify -Dquarkus.http.test-host=1.2.3.4 -Dquarkus.http.test-port=4321
 ----
 
+To test against a running instance that only accepts SSL/TLS connection (example: `https://1.2.3.4:4321`) set the system property `quarkus.http.test-ssl-enabled` to `true`.
 
 == Mixing `@QuarkusTest` with other type of tests
 
@@ -1549,8 +1550,8 @@ Then a component test could look like:
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.inject.Inject;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.TestConfigProperty;
-import io.quarkus.test.component.TestMock;
 import io.quarkus.test.component.QuarkusComponentTest;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -1562,7 +1563,7 @@ public class FooTest {
     @Inject
     Foo foo; <3>
 
-    @ConfigureMock
+    @InjectMock
     Charlie charlieMock; <4>
 
     @Test
@@ -1573,8 +1574,8 @@ public class FooTest {
 }
 ----
 <1> The `QuarkusComponentTest` annotation registers the JUnit extension.
-<2> Set a configuration property for the test.
-<3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`.
+<2> Sets a configuration property for the test.
+<3> The test injects the component under the test. The types of all fields annotated with `@Inject` are considered the component types under test. You can also specify additional component classes via `@QuarkusComponentTest#value()`. Furthermore, the static nested classes declared on the test class are components too.
 <4> The test also injects `Charlie`, a dependency for which a synthetic `@Singleton` bean is registered automatically. The injected reference is an "unconfigured" Mockito mock.
 <5> We can leverage the Mockito API in a test method to configure the behavior.
 
@@ -1586,7 +1587,7 @@ The test above could be rewritten like:
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.inject.Inject;
-import io.quarkus.test.component.TestMock;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTestExtension;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -1599,7 +1600,7 @@ public class FooTest {
     @Inject
     Foo foo;
 
-    @ConfigureMock
+    @InjectMock
     Charlie charlieMock;
 
     @Test
@@ -1609,14 +1610,14 @@ public class FooTest {
     }
 }
 ----
-<1> The `QuarkusComponentTestExtension` is configured in a static field.
+<1> The `QuarkusComponentTestExtension` is configured in a static field of the test class.
 
 === Lifecycle
 
 So what exactly does the `QuarkusComponentTest` do?
 It starts the CDI container and registers a dedicated xref:config-reference.adoc[configuration object] during the `before all` test phase. 
 The container is stopped and the config is released during the `after all` test phase.
-The fields annotated with `@Inject` and `@ConfigureMock` are injected after a test instance is created and unset before a test instance is destroyed.
+The fields annotated with `@Inject` and `@InjectMock` are injected after a test instance is created and unset before a test instance is destroyed.
 Finally, the CDI request context is activated and terminated per each test method.
 
 NOTE: By default, a new test instance is created for each test method. Therefore, a new CDI container is started for each test method. However, if the test class is annotated with `@org.junit.jupiter.api.TestInstance` and the test instance lifecycle is set to `org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS` then the CDI container will be shared across all test method executions of a given test class.
@@ -1639,3 +1640,97 @@ You can use the mock configurator API via the `QuarkusComponentTestExtension#moc
 A dedicated `SmallRyeConfig` is registered during the `before all` test phase.
 Moreover, it's possible to set the configuration properties via the `QuarkusComponentTestExtension#configProperty(String, String)` method or the `@TestConfigProperty` annotation.
 If you only need to use the default values for missing config properties, then the `QuarkusComponentTestExtension#useDefaultConfigProperties()` or `@QuarkusComponentTest#useDefaultConfigProperties()` might come in useful.
+
+=== Mocking CDI Interceptors
+
+If a tested component class declares an interceptor binding then you might need to mock the interception too.
+There are two ways to accomplish this task.
+First, you can define an interceptor class as a static nested class of the test class.
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusComponentTest
+public class FooTest {
+
+    @Inject
+    Foo foo;
+
+    @Test
+    public void testPing() {
+        assertEquals("OK", foo.ping());
+    }
+    
+    @ApplicationScoped
+    static class Foo {
+       
+       @SimpleBinding <1>
+       String ping() {
+         return "ok";
+       }
+    
+    }
+    
+    @SimpleBinding
+    @Interceptor
+    static class SimpleInterceptor { <2>
+
+        @AroundInvoke
+        Object aroundInvoke(InvocationContext context) throws Exception {
+            return context.proceed().toString().toUpperCase();
+        }
+
+    }
+}
+----
+<1> `@SimpleBinding` is an interceptor binding.
+<2> The interceptor class is automatically considered a tested component.
+
+NOTE: Static nested classed declared on a test class that is annotated with `@QuarkusComponentTest` are excluded from bean discovery when running a `@QuarkusTest` in order to prevent unintentional CDI conflicts.
+
+Furthermore, you can also declare a "test interceptor method" directly on the test class.
+This method is then invoked in the relevant interception phase.
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
+import io.quarkus.test.component.QuarkusComponentTest;
+import org.junit.jupiter.api.Test;
+
+@QuarkusComponentTest
+public class FooTest {
+
+    @Inject
+    Foo foo;
+
+    @Test
+    public void testPing() {
+        assertEquals("OK", foo.ping());
+    }
+
+    @SimpleBinding <1>
+    @AroundInvoke <2>
+    Object aroundInvoke(InvocationContext context) throws Exception {
+       return context.proceed().toString().toUpperCase();
+    }
+
+    @ApplicationScoped
+    static class Foo {
+       
+       @SimpleBinding <1>
+       String ping() {
+         return "ok";
+       }
+    
+    }
+}
+----
+<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types. 
+<2> Defines the interception type.

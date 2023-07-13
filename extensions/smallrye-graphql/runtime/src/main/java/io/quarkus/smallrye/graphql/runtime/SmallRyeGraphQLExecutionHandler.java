@@ -242,14 +242,54 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         return DEFAULT_RESPONSE_CONTENT_TYPE;
     }
 
-    private String getCharset(String mimeType) {
-        if (mimeType != null && mimeType.contains(";")) {
-            String[] parts = mimeType.split(";");
-            for (String part : parts) {
-                if (part.trim().startsWith("charset")) {
-                    return part.split("=")[1];
-                }
+    private static int indexOfSemicolonOrWhitespace(String s, int start) {
+        for (int i = start; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            if (c == ';' || Character.isWhitespace(c)) {
+                return i;
             }
+        }
+        return -1;
+    }
+
+    private static final String CHARSET_TOKEN = "charset=";
+    private static final String UTF_8_LOW = "utf-8";
+    private static final String UTF_8_HIGH = "UTF-8";
+
+    private static String parseCharset(String mimeType) {
+        if (mimeType == null) {
+            return null;
+        }
+        final int charsetIndex = mimeType.indexOf(CHARSET_TOKEN);
+        if (charsetIndex == -1) {
+            return null;
+        }
+        final int charsetValueStart = charsetIndex + CHARSET_TOKEN.length();
+        final int firstSemicolonWhitespace = indexOfSemicolonOrWhitespace(mimeType, charsetValueStart);
+        final int charsetValueEnd = firstSemicolonWhitespace == -1 ? mimeType.length() : firstSemicolonWhitespace;
+        final int charsetLen = charsetValueEnd - charsetValueStart;
+        if (charsetLen == 0) {
+            return null;
+        }
+        return charsetOf(mimeType, charsetValueStart, charsetLen);
+    }
+
+    private static String charsetOf(String mimeType, int charsetValueStart, int charsetLen) {
+        if (charsetLen == UTF_8_LOW.length()) {
+            if (mimeType.regionMatches(charsetValueStart, UTF_8_LOW, 0, UTF_8_LOW.length())) {
+                return UTF_8_LOW;
+            }
+            if (mimeType.regionMatches(charsetValueStart, UTF_8_HIGH, 0, UTF_8_LOW.length())) {
+                return UTF_8_HIGH;
+            }
+        }
+        return mimeType.substring(charsetValueStart, charsetValueStart + charsetLen);
+    }
+
+    private static String getCharset(String mimeType) {
+        final String parsedCharset = parseCharset(mimeType);
+        if (parsedCharset != null) {
+            return parsedCharset;
         }
         return StandardCharsets.UTF_8.name();
     }

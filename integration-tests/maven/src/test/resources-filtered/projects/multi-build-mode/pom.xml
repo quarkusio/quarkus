@@ -21,9 +21,9 @@
     <dependencies>
       <!-- insert managed dependencies here -->
       <dependency>
-        <groupId>${quarkus.platform.group-id}</groupId>
-        <artifactId>${quarkus.platform.artifact-id}</artifactId>
-        <version>${quarkus.platform.version}</version>
+        <groupId>\${quarkus.platform.group-id}</groupId>
+        <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+        <version>\${quarkus.platform.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -48,13 +48,13 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-collections4</artifactId>
-      <version>${commons.collections.version}</version>
+      <version>\${commons.collections.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>${commons.io.version}</version>
+      <version>\${commons.io.version}</version>
       <optional>true</optional>
     </dependency>
   </dependencies>
@@ -63,7 +63,7 @@
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>\${quarkus-plugin.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
@@ -300,7 +300,7 @@
 
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire-plugin.version}</version>
+        <version>\${surefire-plugin.version}</version>
         <executions>
           <execution>
             <id>test-foo</id>
@@ -310,11 +310,11 @@
             <configuration>
               <groups>foo</groups>
               <excludedGroups>others</excludedGroups>
-              <skip>${maven.test.skip}</skip>
+              <skip>\${maven.test.skip}</skip>
               <systemPropertyVariables>
                 <quarkus.test.profile>foo</quarkus.test.profile>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                <maven.home>${maven.home}</maven.home>
+                <maven.home>\${maven.home}</maven.home>
               </systemPropertyVariables>
             </configuration>
           </execution>
@@ -326,11 +326,11 @@
             <configuration>
               <groups>bar</groups>
               <excludedGroups>others</excludedGroups>
-              <skip>${maven.test.skip}</skip>
+              <skip>\${maven.test.skip}</skip>
               <systemPropertyVariables>
                 <quarkus.test.profile>bar</quarkus.test.profile>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                <maven.home>${maven.home}</maven.home>
+                <maven.home>\${maven.home}</maven.home>
               </systemPropertyVariables>
             </configuration>
           </execution>

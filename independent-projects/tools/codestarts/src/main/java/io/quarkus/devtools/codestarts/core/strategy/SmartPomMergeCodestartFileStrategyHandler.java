@@ -12,7 +12,7 @@ import org.apache.maven.model.Model;
 
 import io.fabric8.maven.Maven;
 import io.fabric8.maven.merge.SmartModelMerger;
-import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.CodestartException;
 import io.quarkus.devtools.codestarts.core.CodestartData;
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 
@@ -32,7 +32,7 @@ final class SmartPomMergeCodestartFileStrategyHandler implements CodestartFileSt
         createDirectories(targetPath);
         CodestartData.getBuildtool(data)
                 .filter(b -> Objects.equals(b, "maven"))
-                .orElseThrow(() -> new CodestartStructureException(
+                .orElseThrow(() -> new CodestartException(
                         "something is wrong, smart-pom-merge file strategy must only be used on maven projects"));
 
         final SmartModelMerger merger = new SmartModelMerger();

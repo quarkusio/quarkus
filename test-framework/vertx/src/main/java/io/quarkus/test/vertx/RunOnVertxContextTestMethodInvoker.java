@@ -16,6 +16,7 @@ import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
@@ -39,6 +40,18 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
     @Override
     public boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod) {
+        return hasSupportedAnnotation(originalTestClass, originalTestMethod)
+                && hasSupportedParams(originalTestMethod);
+    }
+
+    private boolean hasSupportedParams(Method originalTestMethod) {
+        return originalTestMethod.getParameterCount() == 0
+                || (originalTestMethod.getParameterCount() == 1
+                        // we need to use the class name to avoid ClassLoader issues
+                        && originalTestMethod.getParameterTypes()[0].getName().equals(UniAsserter.class.getName()));
+    }
+
+    protected boolean hasSupportedAnnotation(Class<?> originalTestClass, Method originalTestMethod) {
         return hasAnnotation(RunOnVertxContext.class, originalTestMethod.getAnnotations())
                 || hasAnnotation(RunOnVertxContext.class, originalTestClass.getAnnotations())
                 || hasAnnotation(TestReactiveTransaction.class, originalTestMethod.getAnnotations())
@@ -46,7 +59,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
     }
 
     // we need to use the class name to avoid ClassLoader issues
-    private boolean hasAnnotation(Class<? extends Annotation> annotation, Annotation[] annotations) {
+    protected boolean hasAnnotation(Class<? extends Annotation> annotation, Annotation[] annotations) {
         return hasAnnotation(annotation.getName(), annotations);
     }
 
@@ -70,17 +83,27 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             throw new IllegalStateException("Vert.x instance has not been created before attempting to run test method '"
                     + actualTestMethod.getName() + "' of test class '" + testClassName + "'");
         }
-        CompletableFuture<Object> cf = new CompletableFuture<>();
-        RunTestMethodOnContextHandler handler = new RunTestMethodOnContextHandler(actualTestInstance, actualTestMethod,
-                actualTestMethodArgs, uniAsserter, cf);
+
         Context context = vertx.getOrCreateContext();
-        boolean shouldDuplicateContext = shouldContextBeDuplicated(
-                actualTestInstance != null ? actualTestInstance.getClass() : Object.class, actualTestMethod);
+        Class<?> testClass = actualTestInstance != null ? actualTestInstance.getClass() : Object.class;
+        boolean shouldDuplicateContext = shouldContextBeDuplicated(testClass, actualTestMethod);
         if (shouldDuplicateContext) {
             context = VertxContext.getOrCreateDuplicatedContext(context);
             VertxContextSafetyToggle.setContextSafe(context, true);
         }
-        context.runOnContext(handler);
+
+        CompletableFuture<Object> cf;
+        if (shouldRunOnEventLoop(testClass, actualTestMethod)) {
+            cf = new CompletableFuture<>();
+            var handler = new RunTestMethodOnVertxEventLoopContextHandler(actualTestInstance, actualTestMethod,
+                    actualTestMethodArgs, uniAsserter, cf);
+            context.runOnContext(handler);
+        } else {
+            var handler = new RunTestMethodOnVertxBlockingContextHandler(actualTestInstance, actualTestMethod,
+                    actualTestMethodArgs, uniAsserter);
+            cf = ((CompletableFuture<Object>) context.executeBlocking(handler).toCompletionStage());
+        }
+
         try {
             return cf.get();
         } catch (InterruptedException e) {
@@ -90,6 +113,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             // the test itself threw an exception
             throw e.getCause();
         }
+
     }
 
     private boolean shouldContextBeDuplicated(Class<?> c, Method m) {
@@ -106,7 +130,19 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         }
     }
 
-    public static class RunTestMethodOnContextHandler implements Handler<Void> {
+    private boolean shouldRunOnEventLoop(Class<?> c, Method m) {
+        RunOnVertxContext runOnVertxContext = m.getAnnotation(RunOnVertxContext.class);
+        if (runOnVertxContext == null) {
+            runOnVertxContext = c.getAnnotation(RunOnVertxContext.class);
+        }
+        if (runOnVertxContext == null) {
+            return true;
+        } else {
+            return runOnVertxContext.runOnEventLoop();
+        }
+    }
+
+    public static class RunTestMethodOnVertxEventLoopContextHandler implements Handler<Void> {
         private static final Runnable DO_NOTHING = new Runnable() {
             @Override
             public void run() {
@@ -119,7 +155,7 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final DefaultUniAsserter uniAsserter;
         private final CompletableFuture<Object> future;
 
-        public RunTestMethodOnContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
+        public RunTestMethodOnVertxEventLoopContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
                 DefaultUniAsserter uniAsserter, CompletableFuture<Object> future) {
             this.testInstance = testInstance;
             this.future = future;
@@ -168,6 +204,70 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             } catch (Throwable t) {
                 onTerminate.run();
                 future.completeExceptionally(t.getCause());
+            }
+        }
+    }
+
+    public static class RunTestMethodOnVertxBlockingContextHandler implements Handler<Promise<Object>> {
+        private static final Runnable DO_NOTHING = new Runnable() {
+            @Override
+            public void run() {
+            }
+        };
+
+        private final Object testInstance;
+        private final Method targetMethod;
+        private final List<Object> methodArgs;
+        private final DefaultUniAsserter uniAsserter;
+
+        public RunTestMethodOnVertxBlockingContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
+                DefaultUniAsserter uniAsserter) {
+            this.testInstance = testInstance;
+            this.targetMethod = targetMethod;
+            this.methodArgs = methodArgs;
+            this.uniAsserter = uniAsserter;
+        }
+
+        @Override
+        public void handle(Promise<Object> promise) {
+            ManagedContext requestContext = Arc.container().requestContext();
+            if (requestContext.isActive()) {
+                doRun(promise, DO_NOTHING);
+            } else {
+                requestContext.activate();
+                doRun(promise, new Runnable() {
+                    @Override
+                    public void run() {
+                        requestContext.terminate();
+                    }
+                });
+            }
+        }
+
+        private void doRun(Promise<Object> promise, Runnable onTerminate) {
+            try {
+                Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
+                if (uniAsserter != null) {
+                    uniAsserter.execution.subscribe().with(new Consumer<Object>() {
+                        @Override
+                        public void accept(Object o) {
+                            onTerminate.run();
+                            promise.complete();
+                        }
+                    }, new Consumer<>() {
+                        @Override
+                        public void accept(Throwable t) {
+                            onTerminate.run();
+                            promise.fail(t);
+                        }
+                    });
+                } else {
+                    onTerminate.run();
+                    promise.complete(testMethodResult);
+                }
+            } catch (Throwable t) {
+                onTerminate.run();
+                promise.fail(t.getCause());
             }
         }
     }

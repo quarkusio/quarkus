@@ -15,6 +15,7 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
@@ -62,6 +63,11 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
         this.compileClasspath = compileClasspath;
     }
 
+    @Input
+    public Map<String, String> getCachingRelevantInput() {
+        return extension().baseConfig().quarkusProperties();
+    }
+
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     public Set<File> getInputDirectory() {
@@ -104,6 +110,7 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
                     .setFrom(sourcesDirectories.stream().map(Path::toFile).collect(Collectors.toList()));
             params.getOutputPath().set(outputPath);
             params.getLaunchMode().set(launchMode);
+            params.getGradleVersion().set(getProject().getGradle().getGradleVersion());
         });
 
         workQueue.await();

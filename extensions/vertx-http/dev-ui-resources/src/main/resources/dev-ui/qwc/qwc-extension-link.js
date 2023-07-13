@@ -195,8 +195,8 @@ export class QwcExtensionLink extends QwcHotReloadElement {
                         <vaadin-icon class="icon" icon="${this.iconName}"></vaadin-icon>
                         ${this.displayName}
                     </span>
-                    ${this._renderBadge()} 
                 </a>
+                ${this._renderBadge()}
                 `;
         }else{
             return html`<a class="extensionLink" ?router-ignore=true>
@@ -204,8 +204,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
                 <vaadin-icon class="icon" icon="font-awesome-solid:spinner"></vaadin-icon>
                 loading ...
             </span>
-            ${this._renderBadge()} 
-        </a>`;
+        </a>${this._renderBadge()}`;
         }
     }
 

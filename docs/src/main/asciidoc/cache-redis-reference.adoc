@@ -101,13 +101,13 @@ You can also configure the time to live of the cached entries:
 [source, properties]
 ----
 # Default configuration
-quarkus.cache.redis.ttl=10s
+quarkus.cache.redis.expire-after-write=10s
 
 # Configuration for `expensiveResourceCache`
-quarkus.cache.redis.expensiveResourceCache.ttl=1h
+quarkus.cache.redis.expensiveResourceCache.expire-after-write=1h
 ----
 
-If the `ttl` is not configured, the entry won't be evicted.
+If the `expire-after-write` is not configured, the entry won't be evicted.
 You would need to invalidate the values using the `@CacheInvalidateAll` or `@CacheInvalidate` annotations.
 
 The following table lists the supported properties:

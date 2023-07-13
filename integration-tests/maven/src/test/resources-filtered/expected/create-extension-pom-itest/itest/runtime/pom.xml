@@ -21,7 +21,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
+                <version>\${quarkus.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -29,7 +29,7 @@
                         </goals>
                         <phase>compile</phase>
                         <configuration>
-                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
+                            <deployment>\${project.groupId}:\${project.artifactId}-deployment:\${project.version}
                             </deployment>
                         </configuration>
                     </execution>
@@ -43,7 +43,7 @@
                         <path>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${quarkus.version}</version>
+                            <version>\${quarkus.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>

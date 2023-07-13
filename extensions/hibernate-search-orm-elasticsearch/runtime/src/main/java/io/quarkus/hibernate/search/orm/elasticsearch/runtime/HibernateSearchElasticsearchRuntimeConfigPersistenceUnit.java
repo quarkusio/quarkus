@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,6 +20,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
 @ConfigGroup
 public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
@@ -41,18 +41,13 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     Optional<Boolean> active();
 
     /**
-     * Default backend
+     * Configuration for backends.
      */
-    @WithName("elasticsearch")
     @ConfigDocSection
-    ElasticsearchBackendRuntimeConfig defaultBackend();
-
-    /**
-     * Named backends
-     */
     @WithName("elasticsearch")
-    @ConfigDocSection
-    ElasticsearchNamedBackendsRuntimeConfig namedBackends();
+    @WithUnnamedKey // The default backend has the null key
+    @ConfigDocMapKey("backend-name")
+    Map<String, ElasticsearchBackendRuntimeConfig> backends();
 
     /**
      * Configuration for automatic creation and validation of the Elasticsearch schema:
@@ -67,8 +62,16 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     SearchQueryLoadingConfig queryLoading();
 
     /**
-     * Configuration for the automatic indexing.
+     * Configuration for indexing.
      */
+    IndexingConfig indexing();
+
+    /**
+     * Configuration for automatic indexing.
+     *
+     * @deprecated Use {@link #indexing()} instead.
+     */
+    @Deprecated
     AutomaticIndexingConfig automaticIndexing();
 
     /**
@@ -76,30 +79,8 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
      */
     MultiTenancyConfig multiTenancy();
 
-    default Map<String, ElasticsearchBackendRuntimeConfig> getAllBackendConfigsAsMap() {
-        Map<String, ElasticsearchBackendRuntimeConfig> map = new LinkedHashMap<>();
-        if (defaultBackend() != null) {
-            map.put(null, defaultBackend());
-        }
-        if (namedBackends() != null) {
-            map.putAll(namedBackends().backends());
-        }
-        return map;
-    }
-
     @ConfigGroup
-    public interface ElasticsearchNamedBackendsRuntimeConfig {
-
-        /**
-         * Named backends
-         */
-        @ConfigDocMapKey("backend-name")
-        Map<String, ElasticsearchBackendRuntimeConfig> backends();
-
-    }
-
-    @ConfigGroup
-    public interface ElasticsearchBackendRuntimeConfig {
+    interface ElasticsearchBackendRuntimeConfig {
         /**
          * The list of hosts of the Elasticsearch servers.
          */
@@ -185,13 +166,14 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         ElasticsearchIndexRuntimeConfig indexDefaults();
 
         /**
-         * Per-index specific configuration.
+         * Per-index configuration overrides.
          */
+        @ConfigDocSection
         @ConfigDocMapKey("index-name")
         Map<String, ElasticsearchIndexRuntimeConfig> indexes();
     }
 
-    public enum ElasticsearchClientProtocol {
+    enum ElasticsearchClientProtocol {
         /**
          * Use clear-text HTTP, with SSL/TLS disabled.
          */
@@ -226,7 +208,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface ElasticsearchIndexRuntimeConfig {
+    interface ElasticsearchIndexRuntimeConfig {
         /**
          * Configuration for the schema management of the indexes.
          */
@@ -239,7 +221,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface DiscoveryConfig {
+    interface DiscoveryConfig {
 
         /**
          * Defines if automatic discovery is enabled.
@@ -256,31 +238,41 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface AutomaticIndexingConfig {
+    interface IndexingConfig {
 
         /**
-         * Configuration for synchronization with the index when indexing automatically.
+         * Configuration for indexing plans.
          */
-        AutomaticIndexingSynchronizationConfig synchronization();
+        IndexingPlanConfig plan();
 
-        /**
-         * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
-         *
-         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
-         * indexing.
-         *
-         * @asciidoclet
-         */
-        @WithDefault("true")
-        boolean enableDirtyCheck();
     }
 
+    // Having a dedicated config group class feels a bit unnecessary
+    // because we could just use @WithName("plan.synchronization.strategy")
+    // but that leads to bugs
+    // see https://github.com/quarkusio/quarkus/pull/34251#issuecomment-1611273375
     @ConfigGroup
-    public interface AutomaticIndexingSynchronizationConfig {
+    interface IndexingPlanConfig {
+
+        /**
+         * Configuration for indexing plan synchronization.
+         */
+        IndexingPlanSynchronizationConfig synchronization();
+
+    }
+
+    // Having a dedicated config group class feels a bit unnecessary
+    // because we could just use @WithName("plan.synchronization.strategy")
+    // but that leads to bugs
+    // see https://github.com/quarkusio/quarkus/pull/34251#issuecomment-1611273375
+    @ConfigGroup
+    interface IndexingPlanSynchronizationConfig {
 
         // @formatter:off
         /**
-         * The synchronization strategy to use when indexing automatically.
+         * How to synchronize between application threads and indexing,
+         * in particular when relying on (implicit) listener-triggered indexing on entity change,
+         * but also when using a `SearchIndexingPlan` explicitly.
          *
          * Defines how complete indexing should be before resuming the application thread
          * after a database transaction is committed.
@@ -332,16 +324,16 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          * !===
          *
          * This property also accepts a xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference]
-         * to a custom implementations of `AutomaticIndexingSynchronizationStrategy`.
+         * to a custom implementations of `IndexingPlanSynchronizationStrategy`.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#mapper-orm-indexing-automatic-synchronization[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#indexing-plan-synchronization[this section of the reference documentation]
          * for more information.
          *
          * [NOTE]
          * ====
          * Instead of setting this configuration property,
-         * you can simply annotate your custom `AutomaticIndexingSynchronizationStrategy` implementation with `@SearchExtension`
+         * you can simply annotate your custom `IndexingPlanSynchronizationStrategy` implementation with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
@@ -351,10 +343,51 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         // @formatter:on
         @ConfigDocDefault("write-sync")
         Optional<String> strategy();
+
     }
 
     @ConfigGroup
-    public interface SearchQueryLoadingConfig {
+    @Deprecated
+    interface AutomaticIndexingConfig {
+
+        /**
+         * Configuration for synchronization with the index when indexing automatically.
+         *
+         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy} instead.
+         */
+        AutomaticIndexingSynchronizationConfig synchronization();
+
+        /**
+         * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
+         * <p>
+         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
+         * indexing.
+         *
+         * @deprecated This property is deprecated with no alternative to replace it.
+         *             In the future, a dirty check will always be performed when considering whether to trigger reindexing.
+         */
+        @WithDefault("true")
+        @Deprecated
+        boolean enableDirtyCheck();
+    }
+
+    @ConfigGroup
+    @Deprecated
+    interface AutomaticIndexingSynchronizationConfig {
+
+        // @formatter:off
+        /**
+         * The synchronization strategy to use when indexing automatically.
+         *
+         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy} instead.
+         */
+        // @formatter:on
+        @ConfigDocDefault("write-sync")
+        Optional<String> strategy();
+    }
+
+    @ConfigGroup
+    interface SearchQueryLoadingConfig {
 
         /**
          * Configuration for cache lookup when loading entities during the execution of a search query.
@@ -379,7 +412,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface SchemaManagementConfig {
+    interface SchemaManagementConfig {
 
         // @formatter:off
         /**
@@ -449,7 +482,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface ThreadPoolConfig {
+    interface ThreadPoolConfig {
         /**
          * The size of the thread pool assigned to the backend.
          *
@@ -475,7 +508,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     // We can't set actual default values in this section,
     // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
-    public interface ElasticsearchIndexSchemaManagementConfig {
+    interface ElasticsearchIndexSchemaManagementConfig {
         /**
          * The minimal https://www.elastic.co/guide/en/elasticsearch/reference/7.17/cluster-health.html[Elasticsearch cluster
          * status] required on startup.
@@ -497,7 +530,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     // We can't set actual default values in this section,
     // otherwise "quarkus.hibernate-search-orm.elasticsearch.index-defaults" will be ignored.
     @ConfigGroup
-    public interface ElasticsearchIndexIndexingConfig {
+    interface ElasticsearchIndexIndexingConfig {
         /**
          * The number of indexing queues assigned to each index.
          *
@@ -549,7 +582,7 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface MultiTenancyConfig {
+    interface MultiTenancyConfig {
 
         /**
          * An exhaustive list of all tenant identifiers that may be used by the application when multi-tenancy is enabled.

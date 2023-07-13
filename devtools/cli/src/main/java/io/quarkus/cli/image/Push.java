@@ -37,6 +37,7 @@ public class Push extends BaseImageCommand {
 
     @Override
     public void populateContext(BuildToolContext context) {
+        super.populateContext(context);
         Map<String, String> properties = context.getPropertiesOptions().properties;
         registryUsername.ifPresent(u -> properties.put(QUARKUS_CONTAINER_IMAGE_USERNAME, u));
 

@@ -9,9 +9,9 @@ include::_attributes.adoc[]
 
 == Introduction
 
-If you use xref:security-oidc-code-flow-authentication-concept.adoc[OpenID Connect Authorization Code Flow] to protect Quarkus endpoints, then you need to configure Quarkus to tell it how to connect to OpenID Connect providers, how to authenticate to such providers, which scopes to use, and so on.
+If you use xref:security-oidc-code-flow-authentication.adoc[OpenID Connect Authorization Code Flow] to protect Quarkus endpoints, then you need to configure Quarkus to tell it how to connect to OpenID Connect providers, how to authenticate to such providers, which scopes to use, and so on.
 
-Sometimes you need to use the configuration to work around the fact that some providers do not implement OpenID Connect completely or when they are in fact xref:security-oidc-code-flow-authentication-concept.adoc#oauth2[OAuth2 providers only].
+Sometimes you need to use the configuration to work around the fact that some providers do not implement OpenID Connect completely or when they are in fact xref:security-oidc-code-flow-authentication.adoc#oauth2[OAuth2 providers only].
 
 The configuration of such providers can become complex, very technical and difficult to understand.
 
@@ -21,6 +21,7 @@ This property can be used in `application.properties`, in xref:security-openid-c
 
 == Well Known Providers
 
+[[github]]
 === GitHub
 
 In order to set up OIDC for GitHub you need to create a new OAuth application in your https://github.com/settings/applications/new[GitHub developer settings]:
@@ -51,6 +52,7 @@ quarkus.oidc.credentials.secret=<Secret>
 
 TIP: You can also use GitHub provider with `quarkus.oidc.application-type=service`, just set `quarkus.oidc.verify-access-token-with-user-info` configuration property to `true`.
 
+[[google]]
 === Google
 
 In order to set up OIDC for Google you need to create a new project in your https://console.cloud.google.com/projectcreate[Google Cloud Platform console]:
@@ -101,6 +103,7 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Secret>
 ----
 
+[[microsoft]]
 === Microsoft
 
 In order to set up OIDC for Microsoft you need to go to your https://portal.azure.com[Microsoft Azure Portal],
@@ -142,6 +145,7 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Secret>
 ----
 
+[[apple]]
 === Apple
 
 In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99€/year program, but you cannot test your application on `localhost` like most other OIDC providers: 
@@ -248,6 +252,7 @@ quarkus.oidc.credentials.jwt.issuer=<App ID Prefix>
 quarkus.oidc.credentials.jwt.subject=<Bundle ID}
 ----
 
+[[facebook]]
 === Facebook
 
 Facebook you will not be let you test your application on `localhost` like most other OIDC providers: 
@@ -287,6 +292,7 @@ quarkus.oidc.client-id=<App ID>
 quarkus.oidc.credentials.secret=<App secret>
 ----
 
+[[twitter]]
 === Twitter
 
 You can use Twitter for OIDC login, but at the moment, it restricts access to the user's email, which means you
@@ -343,6 +349,17 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
 ----
 
+[NOTE]
+====
+Twitter provider requires Proof Key for Code Exchange (PKCE) which is supported by the `quarkus.oidc.provider=twitter` declaration.
+Quarkus has to encrypt the current PKCE code verifier in a state cookie while the authorization code flow with Twitter is in progress and it will
+generate a secure random secret key for encrypting it.
+
+You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.pkce-secret` property but
+note that this secret should be 32 characters long, and an error will be reported if it is less than 16 characters long.
+====
+
+[[spotify]]
 === Spotify
 
 Create a https://developer.spotify.com/documentation/general/guides/authorization/app-settings/[Spotify application]:
@@ -362,7 +379,78 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
 ----
 
+== Support for multiple providers
+
+If you would like to support authenticating users with more than one provider then a provider-specific tenant configuration resolution must be supported.
+
+For more information, see the Quarkus xref:security-openid-connect-multitenancy.adoc#static-tenant-resolution[Using OpenID Connect (OIDC) Multi-Tenancy] guide.
+
+== Access provider services with token propagation
+
+Sometimes, only authenticating users with a social provider is not enough.
+A provider-specific service also needs to be accessed for the Quarkus OIDC `web-app` application to fetch or update data from the provider service on behalf of the currently authenticated user.
+
+As mentioned in the xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications] guide, ID and access tokens are returned after the authorization code flow has been completed, with some providers like `GitHub` returning an access token only. 
+It is this access token that has to be propagated to services such as `Google Calendar`, or `Spotify Playlists` for the currently authenticated user to be able to use such services.
+
+You do not have to bring provider-specific libraries in order to achieve this, but instead you can use a reactive `Token Propagation` filter, which can be bound to a given REST client with a simple annotation.
+For more information, see the Quarkus xref:security-openid-connect-client-reference.adoc#token-propagation-reactive[Access token propagation] guide.
+
+For example, after you have configured the <<google>> provider, you can have events added to the user's Google Calendar by using a REST client as shown in the following example:
+
+[source,java]
+----
+package org.acme.calendar;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import io.quarkus.oidc.token.propagation.AccessToken;
+import io.smallrye.mutiny.Uni;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@RegisterRestClient(configKey="google-calendar-api")
+@AccessToken  <1>
+@Path("/calendars/primary")
+public interface GoogleCalendarClient {
+    @POST
+    @Path("events")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    Uni<String> addEvent(Event event);
+    public static class Event {
+        public String summary;
+        public String kind = "calendar#event";
+        public Time start;
+        public Time end
+    }
+
+    public static class Time {
+        public String dateTime;
+        public String timeZone = "Europe/CET";
+        public Time() {
+        }
+        public Time(String value) {
+            dateTime = value;
+	}
+    }
+}
+----
+
+<1> The `@AccessToken` annotation enables an access token propagation to the target service.
+
+Finally,  you need to configure the Google Calendar address and request  the Google Calendar scope for an access token, as outlined in the following example:
+
+[source,properties]
+----
+quarkus.oidc.authentication.scopes=email,profile,https://www.googleapis.com/auth/calendar
+quarkus.rest-client.google-calendar-api.url=https://www.googleapis.com/calendar/v3
+----
+
 == References
 
-* xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
-* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
+* xref:security-overview.adoc[Quarkus Security overview]

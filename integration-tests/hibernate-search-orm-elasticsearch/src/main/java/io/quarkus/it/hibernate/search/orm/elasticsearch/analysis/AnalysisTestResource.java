@@ -13,8 +13,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
+import org.hibernate.search.engine.common.EntityReference;
 import org.hibernate.search.mapper.orm.Search;
-import org.hibernate.search.mapper.orm.common.EntityReference;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.jboss.resteasy.annotations.jaxrs.QueryParam;
 
@@ -65,7 +65,7 @@ public class AnalysisTestResource {
     public List<Class<?>> findTypesMatching(@QueryParam String field, @QueryParam String term) {
         SearchSession searchSession = Search.session(entityManager);
         return searchSession.search(AnalysisTestingEntityBase.class)
-                .<Class<?>> select(f -> f.composite(EntityReference::type, f.entityReference()))
+                .<Class<?>> select(f -> f.composite().from(f.entityReference()).as(EntityReference::type))
                 .where(f -> f.match().field(field).matching(term).skipAnalysis())
                 .fetchAllHits();
     }

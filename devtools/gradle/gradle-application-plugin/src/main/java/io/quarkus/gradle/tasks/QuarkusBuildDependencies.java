@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,8 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
     static final String CLASS_LOADING_REMOVED_ARTIFACTS = "quarkus.class-loading.removed-artifacts";
     static final String CLASS_LOADING_PARENT_FIRST_ARTIFACTS = "quarkus.class-loading.parent-first-artifacts";
+    static final String FILTER_OPTIONAL_DEPENDENCIES = "quarkus.package.filter-optional-dependencies";
+    static final String INCLUDED_OPTIONAL_DEPENDENCIES = "quarkus.package.included-optional-dependencies";
 
     @Inject
     public QuarkusBuildDependencies() {
@@ -139,19 +142,22 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         Map<String, String> configMap = extension().buildEffectiveConfiguration(appModel.getAppArtifact()).configMap();
 
         // see https://quarkus.io/guides/class-loading-reference#configuring-class-loading
-        String removedArtifactsProp = configMap.getOrDefault(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, "");
-        java.util.Optional<Set<ArtifactKey>> optionalDependencies = java.util.Optional.ofNullable(
+        Set<ArtifactKey> removedArtifacts = java.util.Optional.ofNullable(
                 configMap.getOrDefault(CLASS_LOADING_REMOVED_ARTIFACTS, null))
-                .map(s -> Arrays.stream(s.split(","))
-                        .map(String::trim)
-                        .filter(gact -> !gact.isEmpty())
-                        .map(ArtifactKey::fromString)
-                        .collect(Collectors.toSet()));
-        Set<ArtifactKey> removedArtifacts = Arrays.stream(removedArtifactsProp.split(","))
-                .map(String::trim)
-                .filter(gact -> !gact.isEmpty())
-                .map(ArtifactKey::fromString)
-                .collect(Collectors.toSet());
+                .map(QuarkusBuildDependencies::dependenciesListToArtifactKeySet)
+                .orElse(Collections.emptySet());
+        getLogger().info("Removed artifacts: {}", configMap.getOrDefault(CLASS_LOADING_REMOVED_ARTIFACTS, "(none)"));
+
+        String parentFirstArtifactsProp = configMap.getOrDefault(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, "");
+        Set<ArtifactKey> parentFirstArtifacts = dependenciesListToArtifactKeySet(parentFirstArtifactsProp);
+        getLogger().info("parent first artifacts: {}", configMap.getOrDefault(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, "(none)"));
+
+        String optionalDependenciesProp = configMap.getOrDefault(INCLUDED_OPTIONAL_DEPENDENCIES, "");
+        boolean filterOptionalDependencies = Boolean
+                .parseBoolean(configMap.getOrDefault(FILTER_OPTIONAL_DEPENDENCIES, "false"));
+        Set<ArtifactKey> optionalDependencies = filterOptionalDependencies
+                ? dependenciesListToArtifactKeySet(optionalDependenciesProp)
+                : Collections.emptySet();
 
         appModel.getRuntimeDependencies().stream()
                 .filter(appDep -> {
@@ -159,13 +165,13 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
                     if (!appDep.isJar()) {
                         return false;
                     }
-                    if (appDep.isOptional()) {
-                        return optionalDependencies.map(appArtifactKeys -> appArtifactKeys.contains(appDep.getKey()))
-                                .orElse(true);
+                    if (filterOptionalDependencies && appDep.isOptional()) {
+                        return optionalDependencies.contains(appDep.getKey());
                     }
                     return !removedArtifacts.contains(appDep.getKey());
                 })
-                .map(dep -> Map.entry(dep.isFlagSet(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST) ? libBoot : libMain, dep))
+                .map(dep -> Map.entry(dep.isFlagSet(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST)
+                        || parentFirstArtifacts.contains(dep.getKey()) ? libBoot : libMain, dep))
                 .peek(depAndTarget -> {
                     ResolvedDependency dep = depAndTarget.getValue();
                     Path targetDir = depAndTarget.getKey();
@@ -198,5 +204,13 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, depAndTarget -> 1, Integer::sum))
                 .forEach((path, count) -> getLogger().info("Copied {} files into {}", count, path));
+    }
+
+    private static Set<ArtifactKey> dependenciesListToArtifactKeySet(String optionalDependenciesProp) {
+        return Arrays.stream(optionalDependenciesProp.split(","))
+                .map(String::trim)
+                .filter(gact -> !gact.isEmpty())
+                .map(ArtifactKey::fromString)
+                .collect(Collectors.toSet());
     }
 }

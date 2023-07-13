@@ -106,7 +106,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 @Override
                                 public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
                                     return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
-                                            requestParams);
+                                            requestParams, cookies);
                                 }
                             });
                 }
@@ -115,7 +115,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 return Uni.createFrom().failure(new AuthenticationFailedException());
             } else {
                 return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
-                        context.queryParams());
+                        context.queryParams(), cookies);
             }
         }
 
@@ -136,7 +136,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private Uni<SecurityIdentity> processRedirectFromOidc(RoutingContext context, OidcTenantConfig oidcTenantConfig,
-            IdentityProviderManager identityProviderManager, MultiMap requestParams) {
+            IdentityProviderManager identityProviderManager, MultiMap requestParams,
+            Map<String, Cookie> cookies) {
 
         // At this point it has already been detected that some state cookie is available.
         // If the state query parameter is not available or is available but no matching state cookie is found then if
@@ -150,16 +151,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         List<String> stateQueryParam = requestParams.getAll(OidcConstants.CODE_FLOW_STATE);
         if (stateQueryParam.size() != 1) {
-            LOG.debug("State parameter can not be empty or multi-valued if the state cookie is present");
-            return stateCookieIsMissing(oidcTenantConfig, context);
+            return stateParamIsMissing(oidcTenantConfig, context, cookies, stateQueryParam.size() > 1);
         }
 
         final Cookie stateCookie = context.request().getCookie(
                 getStateCookieName(oidcTenantConfig) + "_" + stateQueryParam.get(0));
 
         if (stateCookie == null) {
-            LOG.debug("Matching state cookie is not found");
-            return stateCookieIsMissing(oidcTenantConfig, context);
+            return stateCookieIsMissing(oidcTenantConfig, context, cookies);
         }
 
         String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
@@ -239,14 +238,44 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
-    private Uni<SecurityIdentity> stateCookieIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context) {
+    private Uni<SecurityIdentity> stateParamIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context,
+            Map<String, Cookie> cookies, boolean multipleStateQueryParams) {
+        if (multipleStateQueryParams) {
+            LOG.warn("State query parameter can not be multi-valued if the state cookie is present");
+            removeStateCookies(oidcTenantConfig, context, cookies);
+            return Uni.createFrom().failure(new AuthenticationCompletionException());
+        }
+        LOG.debug("State parameter can not be empty if the state cookie is present");
+        return stateCookieIsNotMatched(oidcTenantConfig, context, cookies);
+    }
+
+    private Uni<SecurityIdentity> stateCookieIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context,
+            Map<String, Cookie> cookies) {
+        LOG.debug("Matching state cookie is not found");
+        return stateCookieIsNotMatched(oidcTenantConfig, context, cookies);
+    }
+
+    private Uni<SecurityIdentity> stateCookieIsNotMatched(OidcTenantConfig oidcTenantConfig, RoutingContext context,
+            Map<String, Cookie> cookies) {
         if (!oidcTenantConfig.authentication.allowMultipleCodeFlows
                 || context.request().path().equals(getRedirectPath(oidcTenantConfig, context))) {
-            return Uni.createFrom().failure(new AuthenticationCompletionException());
-        } else {
-            context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
-            return Uni.createFrom().optional(Optional.empty());
+            if (oidcTenantConfig.authentication.failOnMissingStateParam) {
+                return Uni.createFrom().failure(new AuthenticationCompletionException());
+            } else {
+                removeStateCookies(oidcTenantConfig, context, cookies);
+            }
         }
+        context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
+        return Uni.createFrom().optional(Optional.empty());
+    }
+
+    private void removeStateCookies(OidcTenantConfig oidcTenantConfig, RoutingContext context, Map<String, Cookie> cookies) {
+        for (String name : cookies.keySet()) {
+            if (name.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
+                OidcUtils.removeCookie(context, oidcTenantConfig, name);
+            }
+        }
+
     }
 
     private String getRequestParametersAsQuery(URI requestUri, MultiMap requestParams, OidcTenantConfig oidcConfig) {
@@ -275,30 +304,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(currentIdToken,
                                         isInternalIdToken(currentIdToken, configContext)))
-                                .call(new Function<SecurityIdentity, Uni<?>>() {
-                                    @Override
-                                    public Uni<Void> apply(SecurityIdentity identity) {
-                                        if (isLogout(context, configContext)) {
-                                            LOG.debug("Performing an RP initiated logout");
-                                            fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
-                                            return buildLogoutRedirectUriUni(context, configContext,
-                                                    session.getIdToken());
-                                        }
-                                        if (isBackChannelLogoutPendingAndValid(configContext, identity)
-                                                || isFrontChannelLogoutValid(context, configContext,
-                                                        identity)) {
-                                            return removeSessionCookie(context, configContext.oidcConfig)
-                                                    .map(new Function<Void, Void>() {
-                                                        @Override
-                                                        public Void apply(Void t) {
-                                                            throw new LogoutException();
-                                                        }
-                                                    });
-
-                                        }
-                                        return VOID_UNI;
-                                    }
-                                }).onFailure()
+                                .call(new LogoutCall(context, configContext, session.getIdToken())).onFailure()
                                 .recoverWithUni(new Function<Throwable, Uni<? extends SecurityIdentity>>() {
                                     @Override
                                     public Uni<? extends SecurityIdentity> apply(Throwable t) {
@@ -344,26 +350,35 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                     session.getRefreshToken(),
                                                     context,
                                                     identityProviderManager, false, null);
-                                        } else if (session.getRefreshToken() != null) {
-                                            // Token has nearly expired, try to refresh
-                                            LOG.debug("Token auto-refresh is starting");
-                                            return refreshSecurityIdentity(configContext,
-                                                    currentIdToken,
-                                                    session.getRefreshToken(),
-                                                    context,
-                                                    identityProviderManager, true,
-                                                    ((TokenAutoRefreshException) t).getSecurityIdentity());
                                         } else {
-                                            LOG.debug(
-                                                    "Token auto-refresh is required but is not possible because the refresh token is null");
-                                            // Auto-refreshing is not possible, just continue with the current security identity
+                                            // Token auto-refresh, security identity is still valid
                                             SecurityIdentity currentIdentity = ((TokenAutoRefreshException) t)
                                                     .getSecurityIdentity();
-                                            if (currentIdentity != null) {
-                                                return Uni.createFrom().item(currentIdentity);
+                                            if (isLogout(context, configContext, currentIdentity)) {
+                                                // No need to refresh the token since the user is requesting a logout
+                                                return Uni.createFrom().item(currentIdentity).call(
+                                                        new LogoutCall(context, configContext, session.getIdToken()));
+                                            }
+
+                                            if (session.getRefreshToken() != null) {
+                                                // Token has nearly expired, try to refresh
+                                                LOG.debug("Token auto-refresh is starting");
+                                                return refreshSecurityIdentity(configContext,
+                                                        currentIdToken,
+                                                        session.getRefreshToken(),
+                                                        context,
+                                                        identityProviderManager, true,
+                                                        currentIdentity);
                                             } else {
-                                                return Uni.createFrom()
-                                                        .failure(new AuthenticationFailedException(t.getCause()));
+                                                LOG.debug(
+                                                        "Token auto-refresh is required but is not possible because the refresh token is null");
+                                                // Auto-refreshing is not possible, just continue with the current security identity
+                                                if (currentIdentity != null) {
+                                                    return Uni.createFrom().item(currentIdentity);
+                                                } else {
+                                                    return Uni.createFrom()
+                                                            .failure(new AuthenticationFailedException(t.getCause()));
+                                                }
                                             }
                                         }
                                     }
@@ -388,11 +403,43 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return token;
     }
 
-    private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, SecurityIdentity identity) {
-        TokenVerificationResult backChannelLogoutTokenResult = resolver.getBackChannelLogoutTokens()
-                .remove(configContext.oidcConfig.getTenantId().get());
-        if (backChannelLogoutTokenResult != null) {
+    private boolean isLogout(RoutingContext context, TenantConfigContext configContext, SecurityIdentity identity) {
+        return isRpInitiatedLogout(context, configContext) || isBackChannelLogoutPending(configContext, identity)
+                || isFrontChannelLogoutValid(context, configContext, identity);
+    }
+
+    private boolean isBackChannelLogoutPending(TenantConfigContext configContext, SecurityIdentity identity) {
+        if (configContext.oidcConfig.logout.backchannel.path.isEmpty()) {
+            return false;
+        }
+        BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
+                .get(configContext.oidcConfig.getTenantId().get());
+        if (tokens != null) {
             JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+
+            String logoutTokenKeyValue = idTokenJson.getString(configContext.oidcConfig.logout.backchannel.getLogoutTokenKey());
+
+            return tokens.containsTokenVerification(logoutTokenKeyValue);
+        }
+        return false;
+    }
+
+    private boolean isBackChannelLogoutPendingAndValid(TenantConfigContext configContext, SecurityIdentity identity) {
+        if (configContext.oidcConfig.logout.backchannel.path.isEmpty()) {
+            return false;
+        }
+        BackChannelLogoutTokenCache tokens = resolver.getBackChannelLogoutTokens()
+                .get(configContext.oidcConfig.getTenantId().get());
+        if (tokens != null) {
+            JsonObject idTokenJson = OidcUtils.decodeJwtContent(((JsonWebToken) (identity.getPrincipal())).getRawToken());
+
+            String logoutTokenKeyValue = idTokenJson.getString(configContext.oidcConfig.logout.backchannel.getLogoutTokenKey());
+
+            TokenVerificationResult backChannelLogoutTokenResult = tokens.removeTokenVerification(logoutTokenKeyValue);
+            if (backChannelLogoutTokenResult == null) {
+                return false;
+            }
+
             String idTokenIss = idTokenJson.getString(Claims.iss.name());
             String logoutTokenIss = backChannelLogoutTokenResult.localVerificationResult.getString(Claims.iss.name());
             if (logoutTokenIss != null && !logoutTokenIss.equals(idTokenIss)) {
@@ -412,7 +459,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 LOG.debugf("Logout token session id does not match the ID token session id");
                 return false;
             }
-            LOG.debugf("Frontchannel logout request for the tenant %s has been completed",
+            LOG.debugf("Backchannel logout request for the tenant %s has been completed",
                     configContext.oidcConfig.tenantId.get());
 
             fireEvent(SecurityEvent.Type.OIDC_BACKCHANNEL_LOGOUT_COMPLETED, identity);
@@ -495,7 +542,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         if (context.get(NO_OIDC_COOKIES_AVAILABLE) != null
                                 && isRedirectFromProvider(context, configContext)) {
-                            LOG.debug(
+                            LOG.warn(
                                     "The state cookie is missing after the redirect from OpenId Connect Provider, authentication has failed");
                             return Uni.createFrom().item(new ChallengeData(401, "WWW-Authenticate", "OIDC"));
                         }
@@ -1005,7 +1052,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 .toString();
     }
 
-    private boolean isLogout(RoutingContext context, TenantConfigContext configContext) {
+    private boolean isRpInitiatedLogout(RoutingContext context, TenantConfigContext configContext) {
         return isEqualToRequestPath(configContext.oidcConfig.logout.path, context, configContext);
     }
 
@@ -1134,8 +1181,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         if (configContext.oidcConfig.logout.postLogoutPath.isPresent()) {
             logoutUri.append(AMP).append(configContext.oidcConfig.logout.getPostLogoutUriParam()).append(EQ).append(
-                    buildUri(context, isForceHttps(configContext.oidcConfig),
-                            configContext.oidcConfig.logout.postLogoutPath.get()));
+                    OidcCommonUtils.urlEncode(buildUri(context, isForceHttps(configContext.oidcConfig),
+                            configContext.oidcConfig.logout.postLogoutPath.get())));
             logoutUri.append(AMP).append(OidcConstants.LOGOUT_STATE).append(EQ)
                     .append(generatePostLogoutState(context, configContext));
         }
@@ -1195,5 +1242,39 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return cookieSuffixConfigured
                 ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication.cookieSuffix.get())
                 : tenantIdSuffix;
+    }
+
+    private class LogoutCall implements Function<SecurityIdentity, Uni<?>> {
+        RoutingContext context;
+        TenantConfigContext configContext;
+        String idToken;
+
+        LogoutCall(RoutingContext context, TenantConfigContext configContext, String idToken) {
+            this.context = context;
+            this.configContext = configContext;
+            this.idToken = idToken;
+        }
+
+        @Override
+        public Uni<Void> apply(SecurityIdentity identity) {
+            if (isRpInitiatedLogout(context, configContext)) {
+                LOG.debug("Performing an RP initiated logout");
+                fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED, identity);
+                return buildLogoutRedirectUriUni(context, configContext, idToken);
+            }
+            if (isBackChannelLogoutPendingAndValid(configContext, identity)
+                    || isFrontChannelLogoutValid(context, configContext,
+                            identity)) {
+                return removeSessionCookie(context, configContext.oidcConfig)
+                        .map(new Function<Void, Void>() {
+                            @Override
+                            public Void apply(Void t) {
+                                throw new LogoutException();
+                            }
+                        });
+
+            }
+            return VOID_UNI;
+        }
     }
 }

@@ -5,13 +5,14 @@ import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
-
+import { StorageController } from 'storage-controller';
 
 /**
  * This component create cards of all the extensions
  */
 export class QwcExtensions extends observeState(LitElement) {
     routerController = new RouterController(this);
+    storageController = new StorageController(this);
     
     static styles = css`
         .grid {
@@ -46,20 +47,52 @@ export class QwcExtensions extends observeState(LitElement) {
         }
        `;
 
+    static properties = {
+        _favourites: {state: true},
+    }
+
+    constructor() {
+        super();
+        this._favourites = this._getStoredFavourites();
+    }
+
     render() {
         return html`<div class="grid">
-            ${devuiState.cards.active.map(extension => this._renderActive(extension))}            
+            ${this._renderActives(devuiState.cards.active)}
             ${devuiState.cards.inactive.map(extension => this._renderInactive(extension))}
           </div>`;
     }
 
-    _renderActive(extension){
-        extension.cardPages.forEach(page => {
-            if(page.embed){ // we need to register with the router
-                import(page.componentRef);
-                this.routerController.addRouteForExtension(page);
+    _renderActives(extensions){
+        let favouriteExtensions = [];
+        let unfavouriteExtensions = [];
+
+        for (let i = 0; i < extensions.length; i++) {
+            let extension = extensions[i];
+            // Make sure we import the components
+            extension.cardPages.forEach(page => {
+                if(page.embed){ // we need to register with the router
+                    import(page.componentRef);
+                    this.routerController.addRouteForExtension(page);
+                }else if(page.includeInSubMenu){ // we need to add the link to the submenu
+                    this.routerController.addExternalLink(page);
+                }
+            });
+            
+            if(this._favourites.includes(extension.namespace)){
+                favouriteExtensions.push(extension);
+            } else {
+                unfavouriteExtensions.push(extension);
             }
-        });
+        }
+        
+        return html`
+            ${favouriteExtensions.map(e => this._renderActive(e,true))}
+            ${unfavouriteExtensions.map(e => this._renderActive(e,false))}
+        `;
+    }
+
+    _renderActive(extension, fav){
 
         return html`
                 <qwc-extension 
@@ -77,13 +110,44 @@ export class QwcExtensions extends observeState(LitElement) {
                     unlisted="${extension.unlisted}"
                     builtWith="${extension.builtWith}"
                     providesCapabilities="${extension.providesCapabilities}"
-                    extensionDependencies="${extension.extensionDependencies}">
+                    extensionDependencies="${extension.extensionDependencies}"
+                    ?favourite=${fav} 
+                    @favourite=${this._favourite}>
 
                     ${this._renderCardContent(extension)}
 
                 </qwc-extension>
 
             `;
+    }
+
+    _favourite(e){
+        let favourites = this._getStoredFavourites();
+        let extName = e.detail.name;
+        if(favourites.includes(extName)){
+            const index = favourites.indexOf(extName);
+            if (index > -1) {
+                favourites.splice(index, 1);
+            }
+        }else{
+            favourites.push(extName);
+        }
+        this._setStoredFavourites(favourites);
+
+        this._favourites = this._getStoredFavourites();
+    }
+
+    _getStoredFavourites(){
+        let favourites = this.storageController.get('favourites');
+        if(favourites){
+            return JSON.parse(favourites);
+        }else{
+            return [];
+        }
+    }
+
+    _setStoredFavourites(favourites){
+        this.storageController.set('favourites', JSON.stringify(favourites));
     }
 
     _renderCardContent(extension){

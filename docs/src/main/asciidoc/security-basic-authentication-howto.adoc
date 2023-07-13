@@ -1,52 +1,54 @@
 [id="security-basic-authentication-howto"]
 = Enable Basic authentication
 include::_attributes.adoc[]
+:diataxis-type: howto
 :categories: security
 
-Enable xref:security-basic-authentication-concept.adoc[Basic authentication] for your Quarkus project and allow users to authenticate with a username and password.
+Enable xref:security-basic-authentication.adoc[Basic authentication] for your Quarkus project and allow users to authenticate with a username and password.
 
 == Prerequisites
 
-* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as xref:security-jdbc.adoc[Elytron JDBC].
+* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as link:{url-quarkusio-guides}security-jdbc[Elytron JDBC].
 
 == Procedure
 
-. Enable Basic authentication by setting the value of `quarkus.http.auth.basic` property to `true`.
+. Enable Basic authentication by setting the `quarkus.http.auth.basic` property to `true`.
 +
 [source,properties]
 ----
 quarkus.http.auth.basic=true
 ----
 
-An easy way to configure the required user credentials for Basic authentication to work is to configure the user name, secret, and roles directly in the `application.properties` file.
-
-.Example of Basic authentication properties
-
+. For testing purposes, you can configure the required user credentials, user name, secret, and roles, in the `application.properties` file.
+For example:
++
 [source,properties]
 ----
 quarkus.http.auth.basic=true
 quarkus.security.users.embedded.plain-text=true
-quarkus.security.users.embedded.users.alice=alice
-quarkus.security.users.embedded.users.bob=bob
-quarkus.security.users.embedded.roles.alice=admin
-quarkus.security.users.embedded.roles.bob=user
+quarkus.security.users.embedded.users.alice=alice <1>
+quarkus.security.users.embedded.users.bob=bob <2>
+quarkus.security.users.embedded.roles.alice=admin <1>
+quarkus.security.users.embedded.roles.bob=user <2>
 ----
-
-In this configuration the credentials for users `alice` and `bob` are configured: `alice` has a password `alice` and an `admin` role, `bob` has a password `bob` and a `user` role.
-
-For more information, see xref:security-testing.adoc#configuring-user-information[Configuring User Information] in the "Security Testing" guide.
-
+<1> The user, `alice`, has `alice` as their password and `admin` as their role.
+<2> The user, `bob`, has `bob` as their password and `user` as their role.
++
+For information about other methods that you can use to configure the required user credentials, see the xref:security-testing.adoc#configuring-user-information[Configuring User Information] section of the Quarkus "Security Testing" guide.
++
 [IMPORTANT]
 ====
 Configuring user names, secrets, and roles in the `application.properties` file is only suitable for testing scenarios.
-If you are securing an application for production, always use a database to store this information.
+If you are securing a production application, always use a database to store this information.
 ====
 
-To walk through how to configure Basic authentication together with Jakarta Persistence for storing user credentials in a database, see the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication] tutorial.
+== Next steps
+
+For a more detailed walk-through that shows you how to configure Basic authentication together with Jakarta Persistence for storing user credentials in a database, see the xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence] guide.
 
 == References
 
-* xref:security-overview-concept.adoc[Quarkus Security overview]
-* xref:security-identity-providers-concept.adoc[Identity Providers]
+* xref:security-overview.adoc[Quarkus Security overview]
+* xref:security-identity-providers.adoc[Identity Providers]
 * xref:security-testing.adoc#configuring-user-information[Configuring User Information in application.properties]
-* xref:security-basic-authentication-concept.adoc[Basic authentication] 
+* xref:security-basic-authentication.adoc[Basic authentication]

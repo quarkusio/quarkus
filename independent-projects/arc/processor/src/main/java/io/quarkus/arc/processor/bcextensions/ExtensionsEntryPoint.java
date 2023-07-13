@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.AlterableContext;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.event.TransactionPhase;
 import jakarta.enterprise.inject.Instance;
@@ -45,6 +46,8 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ConfiguratorBase;
 import io.quarkus.arc.processor.ContextConfigurator;
 import io.quarkus.arc.processor.ContextRegistrar;
+import io.quarkus.arc.processor.CustomAlterableContexts;
+import io.quarkus.arc.processor.CustomAlterableContexts.CustomAlterableContextInfo;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.arc.processor.ObserverConfigurator;
 import io.quarkus.arc.processor.ObserverInfo;
@@ -144,7 +147,7 @@ public class ExtensionsEntryPoint {
      * <p>
      * It is a no-op if no {@link BuildCompatibleExtension} was found.
      */
-    public void registerMetaAnnotations(BeanProcessor.Builder builder) {
+    public void registerMetaAnnotations(BeanProcessor.Builder builder, CustomAlterableContexts customAlterableContexts) {
         if (invoker.isEmpty()) {
             return;
         }
@@ -212,11 +215,17 @@ public class ExtensionsEntryPoint {
                     @Override
                     public void register(RegistrationContext registrationContext) {
                         Class<? extends Annotation> scopeAnnotation = context.scopeAnnotation;
-                        // TODO how many changes in ArC will be needed to support AlterableContext?
-                        Class<? extends InjectableContext> contextClass = (Class) context.contextClass;
+                        Class<? extends AlterableContext> contextClass = context.contextClass;
 
-                        ContextConfigurator config = registrationContext.configure(scopeAnnotation)
-                                .contextClass(contextClass);
+                        ContextConfigurator config = registrationContext.configure(scopeAnnotation);
+                        if (InjectableContext.class.isAssignableFrom(contextClass)) {
+                            config.contextClass((Class<? extends InjectableContext>) contextClass);
+                        } else {
+                            CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal);
+                            config.creator(bytecode -> {
+                                return bytecode.newInstance(MethodDescriptor.ofConstructor(info.generatedName));
+                            });
+                        }
                         if (context.isNormal != null) {
                             config.normal(context.isNormal);
                         }

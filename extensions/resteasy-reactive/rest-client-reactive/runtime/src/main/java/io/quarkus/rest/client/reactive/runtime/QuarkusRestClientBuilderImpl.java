@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.Configuration;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
+import org.jboss.resteasy.reactive.client.api.ClientLogger;
 
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.runtime.context.ClientHeadersFactoryContextResolver;
@@ -214,6 +215,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder httpClientOptions(HttpClientOptions httpClientOptions) {
         proxy.register(new HttpClientOptionsContextResolver(httpClientOptions));
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder clientLogger(ClientLogger clientLogger) {
+        proxy.clientLogger(clientLogger);
         return this;
     }
 

@@ -5,10 +5,12 @@
      </server>
     <buildScan>
         <!-- adjust conditions ?
-        mvn gradle-enterprise:provision-access-key 
+        mvn gradle-enterprise:provision-access-key
         https://docs.gradle.com/enterprise/maven-extension/#publishing_based_on_criteria
          -->
-        <publish>ALWAYS</publish>
+        <!-- build scan publication is configured in gradle-enterprise-custom-user-data.groovy
+        to leverage options to disable build scan publication for test builds
+        -->
         <obfuscation>
           <!-- Don't share ip addresses-->
           <ipAddresses>#{{'0.0.0.0'}}</ipAddresses>
@@ -18,7 +20,6 @@
         </capture>
         <!-- https://docs.gradle.com/enterprise/maven-extension/#manual_access_key_configuration -->
         <backgroundBuildScanUpload>#{env['CI'] == null}</backgroundBuildScanUpload>
-        <publishIfAuthenticated>true</publishIfAuthenticated>
     </buildScan>
     <buildCache>
         <local><enabled>false</enabled></local>

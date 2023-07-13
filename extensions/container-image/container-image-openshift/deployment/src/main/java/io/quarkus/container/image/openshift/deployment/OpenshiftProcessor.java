@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 
@@ -385,7 +384,7 @@ public class OpenshiftProcessor {
                     .collect(Collectors.toList());
 
             applyOpenshiftResources(openShiftClient, buildResources);
-            openshiftBuild(openShiftClient, buildResources, tar, openshiftConfig);
+            openshiftBuild(buildResources, tar, openshiftConfig, kubernetesClientBuilder);
         }
     }
 
@@ -411,80 +410,97 @@ public class OpenshiftProcessor {
                 deployResource(client, i);
                 LOG.info("Applied: " + i.getKind() + " " + i.getMetadata().getName());
             }
-            OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
-
+            try {
+                OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
+            } catch (KubernetesClientException e) {
+                //User may not have permission to get / list `ImageStreamTag` or this step may fail for any reason.
+                //As this is not an integral part of the build we should catch and log.
+                LOG.debug("Waiting for ImageStream tag failed. Ignoring.");
+            }
         } catch (KubernetesClientException e) {
             KubernetesClientErrorHandler.handle(e);
         }
     }
 
-    private static void openshiftBuild(OpenShiftClient client, List<HasMetadata> buildResources, File binaryFile,
-            OpenshiftConfig openshiftConfig) {
+    private static void openshiftBuild(List<HasMetadata> buildResources, File binaryFile,
+            OpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
         distinct(buildResources).stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
-                .forEach(bc -> openshiftBuild(client, bc, binaryFile, openshiftConfig));
+                .forEach(bc -> {
+                    Build build = startOpenshiftBuild(bc, binaryFile, openshiftConfig, kubernetesClientBuilder);
+                    waitForOpenshiftBuild(build, openshiftConfig, kubernetesClientBuilder);
+                });
     }
 
     /**
      * Performs the binary build of the specified {@link BuildConfig} with the given
      * binary input.
      *
-     * @param client The openshift client instance
      * @param buildConfig The build config
      * @param binaryFile The binary file
      * @param openshiftConfig The openshift configuration
+     * @param kubernetesClientBuilder The kubernetes client builder
      */
-    private static void openshiftBuild(OpenShiftClient client, BuildConfig buildConfig, File binaryFile,
-            OpenshiftConfig openshiftConfig) {
-        Build build;
-        try {
-            build = client.buildConfigs().withName(buildConfig.getMetadata().getName())
-                    .instantiateBinary()
-                    .withTimeoutInMillis(openshiftConfig.buildTimeout.toMillis())
-                    .fromFile(binaryFile);
-        } catch (Exception e) {
-            Optional<Build> running = runningBuildsOf(client, buildConfig).findFirst();
-            if (running.isPresent()) {
-                LOG.warn("An exception: '" + e.getMessage()
-                        + " ' occurred while instantiating the build, however the build has been started.");
-                build = running.get();
-            } else {
-                throw openshiftException(e);
+    private static Build startOpenshiftBuild(BuildConfig buildConfig, File binaryFile,
+            OpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
+        try (KubernetesClient kubernetesClient = kubernetesClientBuilder.build()) {
+            OpenShiftClient client = toOpenshiftClient(kubernetesClient);
+            try {
+                return client.buildConfigs().withName(buildConfig.getMetadata().getName())
+                        .instantiateBinary()
+                        .withTimeoutInMillis(openshiftConfig.buildTimeout.toMillis())
+                        .fromFile(binaryFile);
+            } catch (Exception e) {
+                Optional<Build> running = buildsOf(client, buildConfig).stream().findFirst();
+                if (running.isPresent()) {
+                    LOG.warn("An exception: '" + e.getMessage()
+                            + " ' occurred while instantiating the build, however the build has been started.");
+                    return running.get();
+                } else {
+                    throw openshiftException(e);
+                }
             }
         }
+    }
+
+    private static void waitForOpenshiftBuild(Build build, OpenshiftConfig openshiftConfig,
+            KubernetesClientBuilder kubernetesClientBuilder) {
 
         while (isNew(build) || isPending(build) || isRunning(build)) {
             final String buildName = build.getMetadata().getName();
-            Build updated = client.builds().withName(buildName).get();
-            if (updated == null) {
-                throw new IllegalStateException("Build:" + build.getMetadata().getName() + " is no longer present!");
-            } else if (updated.getStatus() == null) {
-                throw new IllegalStateException("Build:" + build.getMetadata().getName() + " has no status!");
-            } else if (isNew(updated) || isPending(updated) || isRunning(updated)) {
-                build = updated;
-                try (LogWatch w = client.builds().withName(buildName).withPrettyOutput().watchLog();
-                        Reader reader = new InputStreamReader(w.getOutput())) {
-                    display(reader, openshiftConfig.buildLogLevel);
-                } catch (IOException e) {
-                    // This may happen if the LogWatch is closed while we are still reading.
-                    // We shouldn't let the build fail, so let's log a warning and display last few lines of the log
-                    LOG.warn("Log stream closed, redisplaying last " + LOG_TAIL_SIZE + " entries:");
-                    try {
-                        display(client.builds().withName(buildName).tailingLines(LOG_TAIL_SIZE).getLogReader(),
-                                Logger.Level.WARN);
-                    } catch (IOException ex) {
-                        // Let's ignore this.
+            try (KubernetesClient kubernetesClient = kubernetesClientBuilder.build()) {
+                OpenShiftClient client = toOpenshiftClient(kubernetesClient);
+                Build updated = client.builds().withName(buildName).get();
+                if (updated == null) {
+                    throw new IllegalStateException("Build:" + build.getMetadata().getName() + " is no longer present!");
+                } else if (updated.getStatus() == null) {
+                    throw new IllegalStateException("Build:" + build.getMetadata().getName() + " has no status!");
+                } else if (isNew(updated) || isPending(updated) || isRunning(updated)) {
+                    build = updated;
+                    try (LogWatch w = client.builds().withName(buildName).withPrettyOutput().watchLog();
+                            Reader reader = new InputStreamReader(w.getOutput())) {
+                        display(reader, openshiftConfig.buildLogLevel);
+                    } catch (IOException | KubernetesClientException ex) {
+                        // This may happen if the LogWatch is closed while we are still reading.
+                        // We shouldn't let the build fail, so let's log a warning and display last few lines of the log
+                        LOG.warn("Log stream closed, redisplaying last " + LOG_TAIL_SIZE + " entries:");
+                        try {
+                            display(client.builds().withName(buildName).tailingLines(LOG_TAIL_SIZE).getLogReader(),
+                                    Logger.Level.WARN);
+                        } catch (IOException | KubernetesClientException ignored) {
+                            // Let's ignore this.
+                        }
                     }
+                } else if (isComplete(updated)) {
+                    return;
+                } else if (isCancelled(updated)) {
+                    throw new IllegalStateException("Build:" + buildName + " cancelled!");
+                } else if (isFailed(updated)) {
+                    throw new IllegalStateException(
+                            "Build:" + buildName + " failed! " + updated.getStatus().getMessage());
+                } else if (isError(updated)) {
+                    throw new IllegalStateException(
+                            "Build:" + buildName + " encountered error! " + updated.getStatus().getMessage());
                 }
-            } else if (isComplete(updated)) {
-                return;
-            } else if (isCancelled(updated)) {
-                throw new IllegalStateException("Build:" + buildName + " cancelled!");
-            } else if (isFailed(updated)) {
-                throw new IllegalStateException(
-                        "Build:" + buildName + " failed! " + updated.getStatus().getMessage());
-            } else if (isError(updated)) {
-                throw new IllegalStateException(
-                        "Build:" + buildName + " encountered error! " + updated.getStatus().getMessage());
             }
         }
     }
@@ -501,10 +517,6 @@ public class OpenshiftProcessor {
 
     private static List<Build> buildsOf(OpenShiftClient client, BuildConfig config) {
         return client.builds().withLabel(BUILD_CONFIG_NAME, config.getMetadata().getName()).list().getItems();
-    }
-
-    private static Stream<Build> runningBuildsOf(OpenShiftClient client, BuildConfig config) {
-        return buildsOf(client, config).stream().filter(b -> RUNNING.equalsIgnoreCase(b.getStatus().getPhase()));
     }
 
     private static RuntimeException openshiftException(Throwable t) {

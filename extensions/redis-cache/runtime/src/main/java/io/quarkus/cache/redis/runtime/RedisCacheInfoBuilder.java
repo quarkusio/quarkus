@@ -23,10 +23,23 @@ public class RedisCacheInfoBuilder {
                 RedisCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig;
                 RedisCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig.get(cacheInfo.name);
 
+                if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterAccess.isPresent()) {
+                    cacheInfo.expireAfterAccess = namedRuntimeConfig.expireAfterAccess;
+                } else if (defaultRuntimeConfig.expireAfterAccess.isPresent()) {
+                    cacheInfo.expireAfterAccess = defaultRuntimeConfig.expireAfterAccess;
+                }
+
+                if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterWrite.isPresent()) {
+                    cacheInfo.expireAfterWrite = namedRuntimeConfig.expireAfterWrite;
+                } else if (defaultRuntimeConfig.expireAfterAccess.isPresent()) {
+                    cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite;
+                }
+
+                // Handle the deprecated TTL
                 if (namedRuntimeConfig != null && namedRuntimeConfig.ttl.isPresent()) {
-                    cacheInfo.ttl = namedRuntimeConfig.ttl;
+                    cacheInfo.expireAfterWrite = namedRuntimeConfig.ttl;
                 } else if (defaultRuntimeConfig.ttl.isPresent()) {
-                    cacheInfo.ttl = defaultRuntimeConfig.ttl;
+                    cacheInfo.expireAfterWrite = defaultRuntimeConfig.ttl;
                 }
 
                 if (namedRuntimeConfig != null && namedRuntimeConfig.prefix.isPresent()) {

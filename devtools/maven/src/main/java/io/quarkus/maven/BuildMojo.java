@@ -25,6 +25,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.repository.RemoteRepository;
 
+import io.quarkus.analytics.dto.segment.TrackEventType;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -44,6 +45,9 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     @Component
     MavenProjectHelper projectHelper;
 
+    @Component
+    BuildAnalyticsProvider analyticsProvider;
+
     /**
      * The project's remote repositories to use for the resolution of plugins and their dependencies.
      */
@@ -62,9 +66,22 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     @Parameter(defaultValue = "false", property = "quarkus.build.skip")
     boolean skip = false;
 
+    /**
+     * When the building an Uber JAR, the default JAR is renamed by adding {@code .original} suffix.
+     * Enabling this property will disable the renaming of the original JAR.
+     */
     @Deprecated
     @Parameter(property = "skipOriginalJarRename")
     boolean skipOriginalJarRename;
+
+    /**
+     * Whether to replace the original JAR with the Uber runner JAR as the main project artifact
+     */
+    @Parameter(property = "attachRunnerAsMainArtifact", required = false)
+    boolean attachRunnerAsMainArtifact;
+
+    @Parameter(defaultValue = "${project.build.directory}", readonly = true)
+    File buildDirectory;
 
     /**
      * The list of system properties defined for the plugin.
@@ -131,7 +148,11 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
                 AugmentAction action = curatedApplication.createAugmentor();
                 AugmentResult result = action.createProductionApplication();
-
+                analyticsProvider.sendAnalytics(
+                        TrackEventType.BUILD,
+                        curatedApplication.getApplicationModel(),
+                        result.getGraalVMInfo(),
+                        buildDirectory);
                 Artifact original = mavenProject().getArtifact();
                 if (result.getJar() != null) {
 
@@ -150,11 +171,12 @@ public class BuildMojo extends QuarkusBootstrapMojo {
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }
-                            original.setFile(result.getJar().getOriginalArtifact().toFile());
+                            // unless we point to the renamed file the install plugin will fail
+                            original.setFile(renamedOriginal.toFile());
                         }
                     }
                     if (uberJarWithSuffix) {
-                        if (result.getJar().getClassifier().isEmpty()) {
+                        if (attachRunnerAsMainArtifact || result.getJar().getClassifier().isEmpty()) {
                             original.setFile(result.getJar().getPath().toFile());
                         } else {
                             projectHelper.attachArtifact(mavenProject(), result.getJar().getPath().toFile(),

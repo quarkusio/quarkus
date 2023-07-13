@@ -7,8 +7,11 @@ import java.lang.annotation.Target;
 
 /**
  * When used on a field of a test class, the field becomes a Mockito mock,
- * that is then used to mock the normal scoped bean which the field represents
+ * that is then used to mock the normal scoped bean which the field represents.
+ *
+ * @deprecated Use {@link io.quarkus.test.InjectMock} and {@link MockitoConfig} instead.
  */
+@Deprecated(since = "3.2", forRemoval = true)
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface InjectMock {

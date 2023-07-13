@@ -85,7 +85,12 @@ public class OidcClientConfig extends OidcCommonConfig {
              * If 'quarkus.oidc-client.grant-type' is set to 'refresh' then `OidcClient` will only support refreshing the
              * tokens.
              */
-            REFRESH("refresh_token");
+            REFRESH("refresh_token"),
+            /**
+             * 'urn:openid:params:grant-type:ciba' grant requiring an OIDC client authentication as well as 'auth_req_id'
+             * parameter which must be passed to OidcClient at the token request time.
+             */
+            CIBA("urn:openid:params:grant-type:ciba");
 
             private String grantType;
 

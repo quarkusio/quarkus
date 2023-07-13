@@ -21,6 +21,7 @@ allprojects {
     }
     dependencies {
       rewrite("org.openrewrite:rewrite-java")
+      rewrite("{recipesGAV}");
     }
     rewrite {
       configFile = project.getRootProject().file("{rewriteFile}")

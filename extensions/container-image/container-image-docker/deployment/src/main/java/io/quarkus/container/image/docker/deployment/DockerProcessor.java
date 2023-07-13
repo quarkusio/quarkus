@@ -6,10 +6,6 @@ import static io.quarkus.container.image.deployment.util.EnablementUtil.pushCont
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
 import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,8 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
@@ -106,8 +100,7 @@ public class DockerProcessor {
             log.info("Starting (local) container image build for jar using docker.");
         }
 
-        ImageIdReader reader = new ImageIdReader();
-        String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out, reader,
+        String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImageInfo, out,
                 false,
                 buildContainerImage,
                 pushContainerImage, packageConfig);
@@ -151,8 +144,7 @@ public class DockerProcessor {
 
         log.info("Starting (local) container image build for native binary using docker.");
 
-        ImageIdReader reader = new ImageIdReader();
-        String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, reader, true,
+        String builtContainerImage = createContainerImage(containerImageConfig, dockerConfig, containerImage, out, true,
                 buildContainerImage,
                 pushContainerImage, packageConfig);
 
@@ -166,7 +158,7 @@ public class DockerProcessor {
 
     private String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,
             ContainerImageInfoBuildItem containerImageInfo,
-            OutputTargetBuildItem out, ImageIdReader reader, boolean forNative, boolean buildContainerImage,
+            OutputTargetBuildItem out, boolean forNative, boolean buildContainerImage,
             boolean pushContainerImage,
             PackageConfig packageConfig) {
 
@@ -201,8 +193,7 @@ public class DockerProcessor {
             final String executableName = dockerConfig.executableName.orElse(detectContainerRuntime(true).getExecutableName());
             log.infof("Executing the following command to build docker image: '%s %s'", executableName,
                     String.join(" ", dockerArgs));
-            boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), reader, executableName,
-                    dockerArgs);
+            boolean buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), executableName, dockerArgs);
             if (!buildSuccessful) {
                 throw dockerException(executableName, dockerArgs);
             }
@@ -212,8 +203,7 @@ public class DockerProcessor {
                     .ifPresentOrElse(
                             platform -> log.infof("Built container image %s (%s platform(s))\n", containerImageInfo.getImage(),
                                     String.join(",", platform)),
-                            () -> log.infof("Built container image %s (%s)\n", containerImageInfo.getImage(),
-                                    reader.getImageId()));
+                            () -> log.infof("Built container image %s\n", containerImageInfo.getImage()));
 
         }
 
@@ -258,7 +248,8 @@ public class DockerProcessor {
 
     private String[] getDockerArgs(String image, DockerfilePaths dockerfilePaths, ContainerImageConfig containerImageConfig,
             DockerConfig dockerConfig, ContainerImageInfoBuildItem containerImageInfo, boolean pushImages) {
-        List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size());
+        List<String> dockerArgs = new ArrayList<>(6 + dockerConfig.buildArgs.size() + dockerConfig.additionalArgs.map(
+                List::size).orElse(0));
         boolean useBuildx = dockerConfig.buildx.useBuildx();
 
         if (useBuildx) {
@@ -303,6 +294,7 @@ public class DockerProcessor {
             dockerArgs.add("--network");
             dockerArgs.add(network);
         });
+        dockerConfig.additionalArgs.ifPresent(dockerArgs::addAll);
         dockerArgs.addAll(Arrays.asList("-t", image));
 
         if (useBuildx) {
@@ -366,41 +358,6 @@ public class DockerProcessor {
             } else {
                 return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);
             }
-        }
-    }
-
-    /**
-     * A function that creates a command output reader, that reads and holds the image id from the docker build output.
-     */
-    private static class ImageIdReader implements Function<InputStream, Runnable> {
-
-        private final AtomicReference<String> id = new AtomicReference<>();
-
-        public String getImageId() {
-            return id.get();
-        }
-
-        @Override
-        public Runnable apply(InputStream t) {
-            return new Runnable() {
-                @Override
-                public void run() {
-                    try (InputStreamReader isr = new InputStreamReader(t);
-                            BufferedReader reader = new BufferedReader(isr)) {
-
-                        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                            if (line.startsWith("Successfully built")) {
-                                String[] parts = line.split(" ");
-                                if (parts.length == 3)
-                                    id.set(parts[2]);
-                            }
-                            log.info(line);
-                        }
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
         }
     }
 

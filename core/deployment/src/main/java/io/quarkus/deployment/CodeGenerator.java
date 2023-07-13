@@ -16,35 +16,41 @@ import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
+import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
+import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.util.ClassPathUtils;
-import io.smallrye.config.KeyMap;
-import io.smallrye.config.KeyMapBackedConfigSource;
-import io.smallrye.config.NameIterator;
-import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SysPropConfigSource;
 
 /**
  * A set of methods to initialize and execute {@link CodeGenProvider}s.
  */
 public class CodeGenerator {
 
-    private static final List<String> CONFIG_SOURCE_FACTORY_INTERFACES = List.of(
-            "META-INF/services/io.smallrye.config.ConfigSourceFactory",
-            "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider");
+    private static final Logger log = Logger.getLogger(CodeGenerator.class);
+
+    private static final String META_INF_SERVICES = "META-INF/services/";
+
+    private static final List<String> CONFIG_SERVICES = List.of(
+            "org.eclipse.microprofile.config.spi.Converter",
+            "org.eclipse.microprofile.config.spi.ConfigSource",
+            "org.eclipse.microprofile.config.spi.ConfigSourceProvider",
+            "io.smallrye.config.ConfigSourceInterceptor",
+            "io.smallrye.config.ConfigSourceInterceptorFactory",
+            "io.smallrye.config.ConfigSourceFactory",
+            "io.smallrye.config.SecretKeysHandler",
+            "io.smallrye.config.SecretKeysHandlerFactory",
+            "io.smallrye.config.ConfigValidator");
 
     // used by Gradle and Maven
     public static void initAndRun(QuarkusClassLoader classLoader,
@@ -160,7 +166,7 @@ public class CodeGenerator {
      * @param deploymentClassLoader deployment classloader
      * @param data code gen
      * @param appModel app model
-     * @param properties custom code generation properties
+     * @param config config instance
      * @param test whether the sources are generated for production code or tests
      * @return true if sources have been created
      * @throws CodeGenException on failure
@@ -181,18 +187,18 @@ public class CodeGenerator {
 
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
-        // Config instance that is returned by this method should be as close to the one built in the ExtensionLoader as possible
-        final Map<String, List<String>> appModuleConfigFactories = getConfigSourceFactoryImpl(appModel.getAppArtifact());
-        if (!appModuleConfigFactories.isEmpty()) {
-            final Map<String, List<String>> allConfigFactories = new HashMap<>(appModuleConfigFactories.size());
-            final Map<String, byte[]> allowedConfigFactories = new HashMap<>(appModuleConfigFactories.size());
-            final Map<String, byte[]> bannedConfigFactories = new HashMap<>(appModuleConfigFactories.size());
-            for (Map.Entry<String, List<String>> appModuleFactories : appModuleConfigFactories.entrySet()) {
-                final String factoryImpl = appModuleFactories.getKey();
+        final Map<String, List<String>> unavailableConfigServices = getUnavailableConfigServices(appModel.getAppArtifact(),
+                deploymentClassLoader);
+        if (!unavailableConfigServices.isEmpty()) {
+            final Map<String, List<String>> allConfigServices = new HashMap<>(unavailableConfigServices.size());
+            final Map<String, byte[]> allowedConfigServices = new HashMap<>(unavailableConfigServices.size());
+            final Map<String, byte[]> bannedConfigServices = new HashMap<>(unavailableConfigServices.size());
+            for (Map.Entry<String, List<String>> appModuleServices : unavailableConfigServices.entrySet()) {
+                final String service = appModuleServices.getKey();
                 try {
-                    ClassPathUtils.consumeAsPaths(deploymentClassLoader, factoryImpl, p -> {
+                    ClassPathUtils.consumeAsPaths(deploymentClassLoader, service, p -> {
                         try {
-                            allConfigFactories.computeIfAbsent(factoryImpl, k -> new ArrayList<>())
+                            allConfigServices.computeIfAbsent(service, k -> new ArrayList<>())
                                     .addAll(Files.readAllLines(p));
                         } catch (IOException e) {
                             throw new UncheckedIOException("Failed to read " + p, e);
@@ -201,75 +207,79 @@ public class CodeGenerator {
                 } catch (IOException e) {
                     throw new CodeGenException("Failed to read resources from classpath", e);
                 }
-                final List<String> allFactories = allConfigFactories.getOrDefault(factoryImpl, List.of());
-                allFactories.removeAll(appModuleFactories.getValue());
-                if (allFactories.isEmpty()) {
-                    bannedConfigFactories.put(factoryImpl, new byte[0]);
+                final List<String> allServices = allConfigServices.getOrDefault(service, List.of());
+                allServices.removeAll(appModuleServices.getValue());
+                if (allServices.isEmpty()) {
+                    bannedConfigServices.put(service, new byte[0]);
                 } else {
                     final StringJoiner joiner = new StringJoiner(System.lineSeparator());
-                    allFactories.forEach(f -> joiner.add(f));
-                    allowedConfigFactories.put(factoryImpl, joiner.toString().getBytes());
+                    allServices.forEach(joiner::add);
+                    allowedConfigServices.put(service, joiner.toString().getBytes());
                 }
             }
 
-            // we don't want to load config source factories/providers from the current module because they haven't been compiled yet
-            QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
+            // we don't want to load config services from the current module because they haven't been compiled yet
+            final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
                     deploymentClassLoader, false);
-            if (!allowedConfigFactories.isEmpty()) {
-                configClBuilder.addElement(new MemoryClassPathElement(allowedConfigFactories, true));
+            if (!allowedConfigServices.isEmpty()) {
+                configClBuilder.addElement(new MemoryClassPathElement(allowedConfigServices, true));
             }
-            if (!bannedConfigFactories.isEmpty()) {
-                configClBuilder.addBannedElement(new MemoryClassPathElement(bannedConfigFactories, true));
+            if (!bannedConfigServices.isEmpty()) {
+                configClBuilder.addBannedElement(new MemoryClassPathElement(bannedConfigServices, true));
             }
             deploymentClassLoader = configClBuilder.build();
         }
         try {
-            final SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode)
-                    .forClassLoader(deploymentClassLoader);
-            final PropertiesConfigSource pcs = new PropertiesConfigSource(buildSystemProps, "Build system");
-            final SysPropConfigSource spcs = new SysPropConfigSource();
-
-            final Map<String, String> platformProperties = appModel.getPlatformProperties();
-            if (platformProperties.isEmpty()) {
-                builder.withSources(pcs, spcs);
-            } else {
-                final KeyMap<String> props = new KeyMap<>(platformProperties.size());
-                for (Map.Entry<String, String> prop : platformProperties.entrySet()) {
-                    props.findOrAdd(new NameIterator(prop.getKey())).putRootValue(prop.getValue());
-                }
-                final KeyMapBackedConfigSource platformConfigSource = new KeyMapBackedConfigSource("Quarkus platform",
-                        // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-                        // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-                        Integer.MIN_VALUE + 1000, props);
-                builder.withSources(platformConfigSource, pcs, spcs);
-            }
-            return builder.build();
+            return new BuildTimeConfigurationReader(deploymentClassLoader).initConfiguration(launchMode, buildSystemProps,
+                    appModel.getPlatformProperties());
+        } catch (Exception e) {
+            throw new CodeGenException("Failed to initialize application configuration", e);
         } finally {
-            if (!appModuleConfigFactories.isEmpty()) {
+            if (!unavailableConfigServices.isEmpty()) {
                 deploymentClassLoader.close();
             }
         }
     }
 
-    private static Map<String, List<String>> getConfigSourceFactoryImpl(ResolvedDependency dep) throws CodeGenException {
-        final Map<String, List<String>> configFactoryImpl = new HashMap<>(CONFIG_SOURCE_FACTORY_INTERFACES.size());
+    private static Map<String, List<String>> getUnavailableConfigServices(ResolvedDependency dep, ClassLoader classLoader)
+            throws CodeGenException {
         try (OpenPathTree openTree = dep.getContentTree().open()) {
-            for (String s : CONFIG_SOURCE_FACTORY_INTERFACES) {
-                openTree.accept(s, v -> {
-                    if (v == null) {
-                        return;
+            return openTree.apply(META_INF_SERVICES, visit -> {
+                if (visit == null) {
+                    // the application module does not include META-INF/services entry
+                    return Map.of();
+                }
+                Map<String, List<String>> unavailableServices = Map.of();
+                var servicesDir = visit.getPath();
+                for (String serviceClass : CONFIG_SERVICES) {
+                    var serviceFile = servicesDir.resolve(serviceClass);
+                    if (!Files.exists(serviceFile)) {
+                        continue;
                     }
+                    final List<String> implList;
                     try {
-                        configFactoryImpl.put(s, Files.readAllLines(v.getPath()));
+                        implList = Files.readAllLines(serviceFile);
                     } catch (IOException e) {
-                        throw new UncheckedIOException("Failed to read " + v.getPath(), e);
+                        throw new UncheckedIOException("Failed to read " + serviceFile, e);
                     }
-                });
-            }
+                    final List<String> unavailableList = new ArrayList<>(implList.size());
+                    for (String impl : implList) {
+                        if (classLoader.getResource(impl.replace('.', '/') + ".class") == null) {
+                            unavailableList.add(impl);
+                        }
+                    }
+                    if (!unavailableList.isEmpty()) {
+                        if (unavailableServices.isEmpty()) {
+                            unavailableServices = new HashMap<>();
+                        }
+                        unavailableServices.put(META_INF_SERVICES + serviceClass, unavailableList);
+                    }
+                }
+                return unavailableServices;
+            });
         } catch (IOException e) {
             throw new CodeGenException("Failed to read " + dep.getResolvedPaths(), e);
         }
-        return configFactoryImpl;
     }
 
     private static Path codeGenOutDir(Path generatedSourcesDir,

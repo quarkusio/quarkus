@@ -25,16 +25,16 @@
         <version.enforcer.plugin>3.3.0</version.enforcer.plugin>
         <version.exec.plugin>3.1.0</version.exec.plugin>
         <version.failsafe.plugin>3.1.0</version.failsafe.plugin>
-        <version.formatter.plugin>2.22.0</version.formatter.plugin>
+        <version.formatter.plugin>2.23.0</version.formatter.plugin>
         <version.gpg.plugin>3.0.1</version.gpg.plugin>
-        <version.impsort.plugin>1.8.0</version.impsort.plugin>
+        <version.impsort.plugin>1.9.0</version.impsort.plugin>
         <version.install.plugin>3.1.1</version.install.plugin>
         <version.javadoc.plugin>3.5.0</version.javadoc.plugin>
         <version.jar.plugin>3.3.0</version.jar.plugin>
         <version.nexus-staging.plugin>1.6.13</version.nexus-staging.plugin>
         <version.release.plugin>3.0.0</version.release.plugin>
         <version.resources.plugin>3.3.1</version.resources.plugin>
-        <version.shade.plugin>3.4.1</version.shade.plugin>
+        <version.shade.plugin>3.2.1</version.shade.plugin>
         <version.source.plugin>3.2.1</version.source.plugin>
         <version.surefire.plugin>${version.failsafe.plugin}</version.surefire.plugin>
         <version.versions.plugin>2.15.0</version.versions.plugin>
@@ -320,6 +320,9 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${version.resources.plugin}</version>
+                    <configuration>
+                        <escapeString>\</escapeString>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

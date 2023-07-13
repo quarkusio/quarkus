@@ -185,7 +185,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                         if (Modifier.isInterface(resultClassInfo.flags())) {
                             // Find the implementation name, and use that for subsequent query result generation
                             customResultTypeName = customResultTypeImplNames.computeIfAbsent(customResultTypeName,
-                                    k -> createSimpleInterfaceImpl(resultType.name()));
+                                    k -> createSimpleInterfaceImpl(k, entityClassInfo.name()));
 
                             // Remember the parameters for this usage of the custom type, we'll deal with it later
                             customResultTypes.computeIfAbsent(customResultTypeName,
@@ -297,12 +297,20 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             // this is accomplished by resolving the generic type from the interface we are actually implementing
             TypeVariable resultTypeVariable = resultType.asTypeVariable();
             List<TypeVariable> interfaceTypeVariables = method.declaringClass().typeParameters();
-            if (interfaceTypeVariables.size() == 1 && interfaceTypeVariables.get(0)
-                    .equals(resultTypeVariable)) {
+
+            int matchingIndex = -1;
+            for (int i = 0; i < interfaceTypeVariables.size(); i++) {
+                if (interfaceTypeVariables.get(i).equals(resultTypeVariable)) {
+                    matchingIndex = i;
+                    break;
+                }
+            }
+
+            if (matchingIndex != -1) {
                 List<Type> resolveTypeParameters = JandexUtil.resolveTypeParameters(repositoryClassInfo.name(),
                         method.declaringClass().name(), index);
-                if (resolveTypeParameters.size() == 1) {
-                    return resolveTypeParameters.get(0);
+                if (matchingIndex < resolveTypeParameters.size()) {
+                    return resolveTypeParameters.get(matchingIndex);
                 }
             }
         }

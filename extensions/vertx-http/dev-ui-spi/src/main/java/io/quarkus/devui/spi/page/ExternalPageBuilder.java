@@ -21,10 +21,18 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
     }
 
     public ExternalPageBuilder url(String url) {
+        return url(url, null);
+    }
+
+    public ExternalPageBuilder url(String url, String externalLink) {
         if (url == null || url.isEmpty()) {
             throw new RuntimeException("Invalid external URL, can not be empty");
         }
         super.metadata.put(EXTERNAL_URL, url);
+        if (externalLink != null) {
+            return staticLabel("<a style='color: var(--lumo-contrast-80pct);' href='" + externalLink
+                    + "' target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></a>");
+        }
         return this;
     }
 
@@ -65,7 +73,13 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
     }
 
     public ExternalPageBuilder doNotEmbed() {
+        return doNotEmbed(false);
+    }
+
+    public ExternalPageBuilder doNotEmbed(boolean includeInSubMenu) {
         super.embed = false;
+        super.includeInSubMenu = includeInSubMenu;
         return this;
     }
+
 }

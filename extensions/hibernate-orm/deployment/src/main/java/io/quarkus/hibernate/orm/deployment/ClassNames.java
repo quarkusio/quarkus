@@ -43,6 +43,7 @@ public class ClassNames {
     public static final DotName ID_CLASS = createConstant("jakarta.persistence.IdClass");
     public static final DotName CONVERTER = createConstant("jakarta.persistence.Converter");
     public static final DotName EMBEDDED = createConstant("jakarta.persistence.Embedded");
+    public static final DotName EMBEDDED_ID = createConstant("jakarta.persistence.EmbeddedId");
     public static final DotName ELEMENT_COLLECTION = createConstant("jakarta.persistence.ElementCollection");
     public static final DotName PROXY = createConstant("org.hibernate.annotations.Proxy");
     public static final DotName HIBERNATE_PROXY = createConstant("org.hibernate.proxy.HibernateProxy");
@@ -62,6 +63,7 @@ public class ClassNames {
             createConstant("org.hibernate.generator.internal.GeneratedAlwaysGeneration"),
             createConstant("org.hibernate.generator.internal.GeneratedGeneration"),
             createConstant("org.hibernate.generator.internal.SourceGeneration"),
+            createConstant("org.hibernate.generator.internal.TenantIdGeneration"),
             createConstant("org.hibernate.generator.internal.VersionGeneration"),
             createConstant("org.hibernate.id.Assigned"),
             createConstant("org.hibernate.id.ForeignGenerator"),

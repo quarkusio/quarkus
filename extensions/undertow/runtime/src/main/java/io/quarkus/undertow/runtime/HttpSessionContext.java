@@ -6,10 +6,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.context.BeforeDestroyed;
 import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.context.Destroyed;
+import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
 import jakarta.servlet.annotation.WebListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -205,12 +209,20 @@ public class HttpSessionContext implements InjectableContext, HttpSessionListene
     @Override
     public void sessionDestroyed(HttpSessionEvent se) {
         HttpSession session = se.getSession();
+        Event<Object> event = Arc.container().beanManager().getEvent();
+        event.select(HttpSession.class, BeforeDestroyed.Literal.SESSION).fire(session);
         try {
             DESTRUCT_SESSION.set(session);
             destroy(session);
+            event.select(HttpSession.class, Destroyed.Literal.SESSION).fire(session);
         } finally {
             DESTRUCT_SESSION.remove();
         }
+    }
+
+    @Override
+    public void sessionCreated(HttpSessionEvent se) {
+        Arc.container().beanManager().getEvent().select(HttpSession.class, Initialized.Literal.SESSION).fire(se.getSession());
     }
 
 }

@@ -14,10 +14,11 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     internal constructor(
         em: Uni<Mutiny.Session>,
         query: String?,
+        originalQuery: String?,
         orderBy: String?,
         paramsArrayOrMap: Any?
     ) {
-        delegate = CommonPanacheQueryImpl(em, query, orderBy, paramsArrayOrMap)
+        delegate = CommonPanacheQueryImpl(em, query, originalQuery, orderBy, paramsArrayOrMap)
     }
 
     private constructor(delegate: CommonPanacheQueryImpl<Entity>) {

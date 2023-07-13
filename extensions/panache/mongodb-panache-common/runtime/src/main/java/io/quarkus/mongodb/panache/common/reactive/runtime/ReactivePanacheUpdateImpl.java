@@ -6,6 +6,7 @@ import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import io.quarkus.mongodb.panache.common.reactive.Panache;
 import io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Parameters;
@@ -56,6 +57,9 @@ public class ReactivePanacheUpdateImpl implements ReactivePanacheUpdate {
     }
 
     private Uni<Long> executeUpdate(Bson query) {
+        if (Panache.getCurrentSession() != null) {
+            return collection.updateMany(Panache.getCurrentSession(), query, update).map(result -> result.getModifiedCount());
+        }
         return collection.updateMany(query, update).map(result -> result.getModifiedCount());
     }
 }

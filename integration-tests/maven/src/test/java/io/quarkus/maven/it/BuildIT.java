@@ -36,7 +36,8 @@ class BuildIT extends MojoTestBase {
         testDir = initProject("projects/project-with-extension", "projects/project-with-extension-build");
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running
-                .execute(List.of("clean", "compile", "quarkus:build", "-Dquarkus.bootstrap.workspace-discovery"), Map.of());
+                .execute(List.of("clean", "compile", "quarkus:build", "-Dquarkus.bootstrap.workspace-discovery",
+                        "-Dquarkus.analytics.disabled=true"), Map.of());
         assertThat(result.getProcess().waitFor()).isZero();
 
         launch(TestContext.FAST_NO_PREFIX, "/app/hello/local-modules", new File(testDir, "runner"), "",
@@ -48,7 +49,8 @@ class BuildIT extends MojoTestBase {
             throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/test-source-sets");
         running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(List.of("clean", "verify"), Map.of());
+        MavenProcessInvocationResult result = running.execute(List.of("clean", "verify", "-Dquarkus.analytics.disabled=true"),
+                Map.of());
         assertThat(result.getProcess().waitFor()).isZero();
     }
 

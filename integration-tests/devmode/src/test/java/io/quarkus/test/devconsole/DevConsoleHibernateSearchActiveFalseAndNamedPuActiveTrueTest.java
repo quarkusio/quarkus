@@ -47,15 +47,4 @@ public class DevConsoleHibernateSearchActiveFalseAndNamedPuActiveTrueTest {
                 .body(Matchers.containsString(MyNamedPuIndexedEntity.class.getName()))
                 .body(Matchers.not(Matchers.containsString(MyIndexedEntity.class.getName())));
     }
-
-    @Test
-    public void testPages() {
-        // TODO #31970 restore tests of the page's content as we used to do for the old Dev UI
-
-        RestAssured.get("q/dev-ui/hibernate-search-+-elasticsearch/indexed-entity-types")
-                .then()
-                .statusCode(200);
-        //        .body(Matchers.containsString(MyNamedPuIndexedEntity.class.getName()))
-        //        .body(Matchers.not(Matchers.containsString(MyIndexedEntity.class.getName())));
-    }
 }

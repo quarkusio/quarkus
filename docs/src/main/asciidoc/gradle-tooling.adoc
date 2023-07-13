@@ -35,14 +35,14 @@ _For more information about how to install the Quarkus CLI and use it, please re
 ****
 [source, bash, subs=attributes+]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=my-groupId \
     -DprojectArtifactId=my-artifactId \
     -Dextensions="resteasy-reactive,resteasy-reactive-jackson" \
     -DbuildTool=gradle
 ----
 
-NOTE: If you just launch `mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
+NOTE: If you just launch `mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create` the Maven plugin asks
 for user inputs. You can disable this interactive mode (and use default values) by passing `-B` to the Maven command.
 ****
 

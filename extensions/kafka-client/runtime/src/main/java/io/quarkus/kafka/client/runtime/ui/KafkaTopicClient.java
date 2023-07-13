@@ -2,9 +2,19 @@ package io.quarkus.kafka.client.runtime.ui;
 
 import static io.quarkus.kafka.client.runtime.ui.util.ConsumerFactory.createConsumer;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -240,9 +250,15 @@ public class KafkaTopicClient {
 
     public void createMessage(KafkaMessageCreateRequest request) {
         var record = new ProducerRecord<>(request.getTopic(), request.getPartition(), Bytes.wrap(request.getKey().getBytes()),
-                Bytes.wrap(request.getValue().getBytes())
-        //TODO: support headers
-        );
+                Bytes.wrap(request.getValue().getBytes()));
+
+        Optional.ofNullable(request.getHeaders())
+                .orElseGet(Collections::emptyMap)
+                .forEach((key, value) -> record.headers().add(
+                        key,
+                        Optional.ofNullable(value)
+                                .map(v -> v.getBytes(StandardCharsets.UTF_8))
+                                .orElse(null)));
 
         try (var producer = createProducer()) {
             producer.send(record);

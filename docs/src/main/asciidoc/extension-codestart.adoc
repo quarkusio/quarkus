@@ -20,9 +20,9 @@ Extension codestarts are applied by default when using the Quarkus tooling (if t
 * https://code.quarkus.io[code.quarkus.io, window="_blank"] (find the extensions tagged with [code])
 * The Quarkus Maven plugin:
 +
-[source,bash]
+[source,bash,subs=attributes+]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:create
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:create
 ----
 
 * The Quarkus CLI:
@@ -115,7 +115,7 @@ To generate a new extension with a Codestart skeleton provide the `-DwithCodesta
 
 [source,bash,subs=attributes+]
 ----
-mvn io.quarkus.platform:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
+mvn {quarkus-platform-groupid}:quarkus-maven-plugin:{quarkus-version}:create-extension -N \
     -DgroupId=org.acme \
     -DextensionId=greeting-extension \
     -DwithCodestart

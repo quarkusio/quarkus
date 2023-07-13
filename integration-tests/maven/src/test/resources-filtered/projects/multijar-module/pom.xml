@@ -4,7 +4,7 @@
 
     <groupId>org.acme</groupId>
     <artifactId>acme-parent</artifactId>
-    <version>${revision}.${changelist}${sha1}</version>
+    <version>\${revision}.\${changelist}\${sha1}</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -38,9 +38,9 @@
         </pluginManagement>
         <plugins>
             <plugin>
-                <groupId>${quarkus.platform.group-id}</groupId>
+                <groupId>\${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <version>\${quarkus.platform.version}</version>
             </plugin>
         </plugins>
     </build>
@@ -48,9 +48,9 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
+                <groupId>\${quarkus.platform.group-id}</groupId>
+                <artifactId>\${quarkus.platform.artifact-id}</artifactId>
+                <version>\${quarkus.platform.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

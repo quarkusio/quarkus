@@ -66,6 +66,7 @@ final public class Constants {
     public static final String ANNOTATION_CONFIG_WITH_NAME = "io.smallrye.config.WithName";
     public static final String ANNOTATION_CONFIG_WITH_PARENT_NAME = "io.smallrye.config.WithParentName";
     public static final String ANNOTATION_CONFIG_WITH_DEFAULT = "io.smallrye.config.WithDefault";
+    public static final String ANNOTATION_CONFIG_WITH_UNNAMED_KEY = "io.smallrye.config.WithUnnamedKey";
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = Set.of(ANNOTATION_BUILD_STEP, ANNOTATION_CONFIG_GROUP,
             ANNOTATION_CONFIG_ROOT, ANNOTATION_RECORDER);

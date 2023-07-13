@@ -16,9 +16,9 @@ to verify https://tools.ietf.org/html/rfc7519[JSON Web Token]s, represent them a
 and provide secured access to the Quarkus HTTP endpoints using Bearer Token Authorization and https://en.wikipedia.org/wiki/Role-based_access_control[Role-Based Access Control].
 
 NOTE: Quarkus OpenID Connect `quarkus-oidc` extension also supports Bearer Token Authorization and uses `smallrye-jwt` to represent the bearer tokens as `JsonWebToken`.
-For more information, read the xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer authentication] guide.
+For more information, read the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] guide.
 OpenID Connect extension has to be used if the Quarkus application needs to authenticate the users using OIDC Authorization Code Flow.
-For more information, see xref:security-oidc-code-flow-authentication-concept.adoc[OIDC code flow mechanism for protecting web applications]
+For more information, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications]
 
 == Prerequisites
 
@@ -794,6 +794,19 @@ public class TestJWTCallerPrincipalFactory extends JWTCallerPrincipalFactory {
 }
 ----
 
+=== Blocking calls
+
+`quarkus-smallrye-jwt` extension uses link:https://github.com/smallrye/smallrye-jwt[SmallRye JWT] library which is currently not reactive.
+
+What it means from the perspective of `quarkus-smallrye-jwt` which operates as part of the reactive Quarkus security architecture, is that an IO thread entering the link:https://github.com/smallrye/smallrye-jwt[SmallRye JWT] verification or decryption code might block in one of the following cases:
+
+* Default key resolver refreshes `JsonWebKey` set containing the keys which involves a remote call to the OIDC endpoint
+* Custom key resolver such as `AWS Application Load Balancer` (`ALB`) key resolver, resolves the keys against the AWS ALB key endpoint using the current token's key identifier header value
+
+In such cases, if the connections are slow, for example, it may take more than 3 seconds to get a response from the key endpoint, the current event loop thread will most likely block.
+
+To prevent it, set `quarkus.smallrye-jwt.blocking-authentication=true`.
+
 === Token Propagation
 
 Please see the xref:security-openid-connect-client.adoc#token-propagation[Token Propagation] section about the Bearer access token propagation to the downstream services.
@@ -804,7 +817,7 @@ Please see the xref:security-openid-connect-client.adoc#token-propagation[Token 
 [[integration-testing-wiremock]]
 ==== Wiremock
 
-If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication-concept.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Wiremock` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -816,7 +829,7 @@ mp.jwt.verify.issuer=${keycloak.url}/realms/quarkus
 [[integration-testing-keycloak]]
 ==== Keycloak
 
-If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication-concept.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] Keycloak section but only change the `application.properties` to use MP JWT configuration properties instead:
+If you work with Keycloak and configure `mp.jwt.verify.publickey.location` to point to HTTPS or HTTP based JsonWebKey (JWK) set then you can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] Keycloak section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -844,7 +857,7 @@ mp.jwt.verify.issuer=${client.quarkus.oidc.auth-server-url}
 [[integration-testing-public-key]]
 ==== Local Public Key
 
-You can use the same approach as described in the xref:security-oidc-bearer-token-authentication-concept.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
+You can use the same approach as described in the xref:security-oidc-bearer-token-authentication.adoc#integration-testing[OpenID Connect Bearer Token Integration testing] `Local Public Key` section but only change the `application.properties` to use MP JWT configuration properties instead:
 
 [source, properties]
 ----
@@ -977,7 +990,7 @@ quarkus.log.category."io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator".min-l
 
 === Proactive Authentication
 
-If you'd like to skip the token verification when the public endpoint methods are invoked, disable the xref:security-proactive-authentication-concept.adoc[proactive authentication].
+If you'd like to skip the token verification when the public endpoint methods are invoked, disable the xref:security-proactive-authentication.adoc[proactive authentication].
 
 Note that you can't access the injected `JsonWebToken` in the public methods if the token verification has not been done.
 
@@ -987,7 +1000,7 @@ Note that you can't access the injected `JsonWebToken` in the public methods if 
 To <<jwt-parser,parse and verify JsonWebToken with JWTParser>>, use `smallrye-jwt` instead of `quarkus-smallrye-jwt` directly for the following situations:
 
 * You work with Quarkus extensions that do not support `HTTP`, such as `Quarkus GRPC`.
-* You provide an extension-specific `HTTP`, the support of which conflicts with the support of those offered by `quarkus-smallrye-jwt` and `Vert.x HTTP`, such as `Quarkus Amazon Lambda`.
+* You provide an extension-specific `HTTP`, the support of which conflicts with the support of those offered by `quarkus-smallrye-jwt` and `Vert.x HTTP`, such as `Quarkus AWS Lambda`.
 
 Start with adding the `smallrye-jwt` dependency:
 
@@ -1048,10 +1061,13 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.verify.key.location|NONE|Location of the verification key which can point to both public and secret keys. Secret keys can only be in the JWK format. Note that 'mp.jwt.verify.publickey.location' will be ignored if this property is set.
 |smallrye.jwt.verify.algorithm||Signature algorithm. This property should only be used for setting a required symmetric algorithm such as `HS256`. It is deprecated for setting asymmetric algorithms such as `ES256` - use 'mp.jwt.verify.publickey.algorithm' instead.
 |smallrye.jwt.verify.key-format|`ANY`|Set this property to a specific key format such as `PEM_KEY`, `PEM_CERTIFICATE`, `JWK` or `JWK_BASE64URL` to optimize the way the verification key is loaded.
+|smallrye.jwt.verify.key-provider|`DEFAULT`|By default, PEM, JWK or JWK key sets can be read from the local file system or fetched from URIs as required by MicroProfile JWT specification. Set this property to `AWS_ALB` to support an AWS Application Load Balancer verification key resolution.
 |smallrye.jwt.verify.relax-key-validation|false|Relax the validation of the verification keys, setting this property to `true` will allow public RSA keys with the length less than 2048 bit.
 |smallrye.jwt.verify.certificate-thumbprint|false|If this property is enabled then a signed token must contain either 'x5t' or 'x5t#S256' X509Certificate thumbprint headers. Verification keys can only be in JWK or PEM Certificate key formats in this case. JWK keys must have a 'x5c' (Base64-encoded X509Certificate) property set.
 |smallrye.jwt.token.header|`Authorization`|Set this property if another header such as `Cookie` is used to pass the token. This property is deprecated - use 'mp.jwt.token.header'.
-|smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if `smallrye.jwt.token.header` is set to `Cookie`. This property is deprecated - use 'mp.jwt.token.cookie`.
+|smallrye.jwt.key-cache-size|`100`|Key cache size. Use this property, as well as `smallrye.jwt.key-cache-time-to-live`, to control the key cache when a key provider such as `AWS_ALB` is configured with `smallrye.jwt.verify.key-provider=AWS_ALB` for resolving the keys dynamically.
+|smallrye.jwt.key-cache-time-to-live|`10`|Key cache entry time-to-live in minutes. Use this property, as well as `smallrye.jwt.key-cache-size`, to control the key cache when a key provider such as `AWS_ALB` is configured with `smallrye.jwt.verify.key-provider=AWS_ALB` for resolving the keys dynamically.
+|smallrye.jwt.token.cookie|none|Name of the cookie containing a token. This property will be effective only if `smallrye.jwt.token.header` is set to `Cookie`. This property is deprecated - use `mp.jwt.token.cookie`.
 |smallrye.jwt.always-check-authorization|false|Set this property to `true` for `Authorization` header be checked even if the `smallrye.jwt.token.header` is set to `Cookie` but no cookie with a `smallrye.jwt.token.cookie` name exists.
 |smallrye.jwt.token.schemes|`Bearer`|Comma-separated list containing an alternative single or multiple schemes, for example, `DPoP`.
 |smallrye.jwt.token.kid|none|Key identifier. If it is set then the verification JWK key as well every JWT token must have a matching `kid` header.
@@ -1060,14 +1076,14 @@ SmallRye JWT provides more properties which can be used to customize the token p
 |smallrye.jwt.path.sub|none|Path to the claim containing the subject name. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realms/subject`. This property can be used if a token has no 'sub' claim but has the subject set in a different claim. Use double quotes with the namespace qualified claims.
 |smallrye.jwt.claims.sub|none| This property can be used to set a default sub claim value when the current token has no standard or custom `sub` claim available. Effectively this property can be used to customize `java.security.Principal` name if no `upn` or `preferred_username` or `sub` claim is set.
 |smallrye.jwt.path.groups|none|Path to the claim containing the groups. It starts from the top level JSON object and can contain multiple segments where each segment represents a JSON object name only, example: `realm/groups`. This property can be used if a token has no 'groups' claim but has the groups set in a different claim. Use double quotes with the namespace qualified claims.
-|smallrye.jwt.groups-separator|' '|Separator for splitting a string which may contain multiple group values. It will only be used if the `smallrye.jwt.path.groups` property points to a custom claim whose value is a string. The default value is a single space because a standard OAuth2 `scope` claim may contain a space separated sequence.
+|smallrye.jwt.groups-separator|space|Separator for splitting a string which may contain multiple group values. It will only be used if the `smallrye.jwt.path.groups` property points to a custom claim whose value is a string. The default value is a single space because a standard OAuth2 `scope` claim may contain a space separated sequence.
 |smallrye.jwt.claims.groups|none| This property can be used to set a default groups claim value when the current token has no standard or custom groups claim available.
 |smallrye.jwt.jwks.refresh-interval|60|JWK cache refresh interval in minutes. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set and no HTTP `Cache-Control` response header with a positive `max-age` parameter value is returned from a JWK HTTPS endpoint.
 |smallrye.jwt.jwks.forced-refresh-interval|30|Forced JWK cache refresh interval in minutes which is used to restrict the frequency of the forced refresh attempts which may happen when the token verification fails due to the cache having no JWK key with a `kid` property matching the current token's `kid` header. It will be ignored unless the `mp.jwt.verify.publickey.location` points to the HTTP or HTTPS URL based JWK set.
 |smallrye.jwt.expiration.grace|0|Expiration grace in seconds. By default an expired token will still be accepted if the current time is no more than 1 min after the token expiry time. This property is deprecated. Use `mp.jwt.verify.clock.skew` instead.
 |smallrye.jwt.verify.aud|none|Comma separated list of the audiences that a token `aud` claim may contain. This property is deprecated - use `mp.jwt.verify.audiences`.
 |smallrye.jwt.required.claims|none|Comma separated list of the claims that a token must contain.
-|smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated - use 'mp.jwt.decrypt.key.location'.
+|smallrye.jwt.decrypt.key.location|none|Config property allows for an external or internal location of Private Decryption Key to be specified. This property is deprecated - use `mp.jwt.decrypt.key.location`.
 |smallrye.jwt.decrypt.algorithm|`RSA_OAEP`|Decryption algorithm.
 |smallrye.jwt.decrypt.key|none|Decryption key supplied as a string.
 |smallrye.jwt.token.decryption.kid|none|Decryption Key identifier. If it is set then the decryption JWK key as well every JWT token must have a matching `kid` header.
@@ -1094,5 +1110,5 @@ SmallRye JWT provides more properties which can be used to customize the token p
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
 * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
-* xref:security-authentication-mechanisms-concept.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
-* xref:security-overview-concept.adoc[Quarkus Security overview]
+* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
+* xref:security-overview.adoc[Quarkus Security overview]

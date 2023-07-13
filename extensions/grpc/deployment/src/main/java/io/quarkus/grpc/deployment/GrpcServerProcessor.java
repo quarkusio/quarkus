@@ -1,6 +1,7 @@
 package io.quarkus.grpc.deployment;
 
 import static io.quarkus.deployment.Feature.GRPC_SERVER;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.MUTINY_SERVICE;
 import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
@@ -40,6 +41,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanArchivePredicateBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -71,6 +73,7 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider;
 import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
+import io.quarkus.grpc.auth.GrpcSecurityRecorder;
 import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
@@ -659,7 +662,9 @@ public class GrpcServerProcessor {
 
         if (!bindables.isEmpty()
                 || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode.forceServerStart)) {
-            recorder.initializeGrpcServer(vertx.getVertx(), routerBuildItem.getHttpRouter(),
+            //Uses mainrouter when the 'quarkus.http.root-path' is not '/'
+            recorder.initializeGrpcServer(vertx.getVertx(),
+                    routerBuildItem.getMainRouter() != null ? routerBuildItem.getMainRouter() : routerBuildItem.getHttpRouter(),
                     config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
@@ -724,6 +729,28 @@ public class GrpcServerProcessor {
     @BuildStep
     UnremovableBeanBuildItem unremovableServerInterceptors() {
         return UnremovableBeanBuildItem.beanTypes(GrpcDotNames.SERVER_INTERCEPTOR);
+    }
+
+    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Record(RUNTIME_INIT)
+    @BuildStep
+    void initGrpcSecurityInterceptor(List<BindableServiceBuildItem> bindables, Capabilities capabilities,
+            GrpcSecurityRecorder recorder, BeanContainerBuildItem beanContainer) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+
+            // Grpc service to blocking method
+            Map<String, List<String>> blocking = new HashMap<>();
+            for (BindableServiceBuildItem bindable : bindables) {
+                if (bindable.hasBlockingMethods()) {
+                    blocking.put(bindable.serviceClass.toString(), bindable.blockingMethods);
+                }
+            }
+
+            if (!blocking.isEmpty()) {
+                // provide GrpcSecurityInterceptor with blocking methods
+                recorder.initGrpcSecurityInterceptor(blocking, beanContainer.getValue());
+            }
+        }
     }
 
 }

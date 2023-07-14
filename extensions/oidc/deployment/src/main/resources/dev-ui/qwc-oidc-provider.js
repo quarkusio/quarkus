@@ -363,10 +363,12 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return html`
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container">
                 ${servicePathForm}
-                <vaadin-button theme="primary success"
-                               @click=${() => this._signInToService()}>
-                    Log into your Web Application
-                </vaadin-button>
+                <vaadin-vertical-layout class="margin-left-auto frm-field">
+                    <vaadin-button theme="primary success" class="full-width"
+                                   @click=${() => this._signInToService()}>
+                        Log into your Web Application
+                    </vaadin-button>
+                </vaadin-vertical-layout>
             </vaadin-vertical-layout>
         `;
     }
@@ -421,7 +423,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         ${keycloakRealms}
                         ${extraFields}
                         ${servicePathForm}
-                        <vaadin-horizontal-layout class="full-width">
+                        <vaadin-horizontal-layout class="margin-left-auto frm-field">
                             <vaadin-horizontal-layout class="full-width">
                                 <vaadin-button class="fill-space margin-right-auto" theme="primary" title="Test service" 
                                                @click=${testSvcFun}>
@@ -636,9 +638,9 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
                                     ?hidden="${propertiesState.hideImplLoggedOut}">
                 ${keycloakRealms}
-                <vaadin-form-layout class="txt-field-form full-width">
+                <vaadin-form-layout class="margin-left-auto txt-field-form frm-field">
                         <vaadin-form-item class="full-width">
-                            <vaadin-button theme="primary success"
+                            <vaadin-button theme="primary success" class="full-width"
                                         title="Log into Single Page Application to Get Access and ID Tokens"
                                         @click=${() => this._signInToOidcProviderAndGetTokens()}>
                                 <vaadin-icon icon="font-awesome-solid:user" slot="prefix" class="btn-icon"></vaadin-icon>
@@ -749,7 +751,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     <vaadin-vertical-layout theme="padding">
                         ${servicePathForm}
                         <vaadin-horizontal-layout class="full-width">
-                            <vaadin-horizontal-layout class="full-width">
+                            <vaadin-horizontal-layout class="margin-left-auto frm-field">
                                 <vaadin-button class="fill-space" theme="primary" title="Test With Access Token" 
                                                @click=${() => this._testServiceWithAccessToken()}>
                                     With Access Token

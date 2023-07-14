@@ -12,18 +12,30 @@ import jakarta.ws.rs.core.Response;
 public class RedirectingResource {
 
     @GET
+    @Path("302")
     public Response redirectedResponse(@QueryParam("redirects") Integer number) {
         if (number == null || 0 == number) {
             return Response.ok().build();
         } else {
-            return Response.temporaryRedirect(URI.create("/redirect?redirects=" + (number - 1))).build();
+            return Response.status(Response.Status.FOUND).location(URI.create("/redirect/302?redirects=" + (number - 1)))
+                    .build();
         }
     }
 
     @POST
-    @Path("/post")
+    @Path("/302/post")
     public Response redirectedResponse() {
         // it redirects to the GET resource
-        return Response.temporaryRedirect(URI.create("/redirect?redirects=0")).build();
+        return Response.status(Response.Status.FOUND).location(URI.create("/redirect/302?redirects=0")).build();
+    }
+
+    @POST
+    @Path("/307")
+    public Response temporatyRedirectedResponse(@QueryParam("redirects") Integer number) {
+        if (number == null || 0 == number) {
+            return Response.ok().build();
+        }
+        // will redirect back to this method since the HTTP method should not change when returning 307
+        return Response.status(Response.Status.TEMPORARY_REDIRECT).location(URI.create("/redirect/307?redirects=0")).build();
     }
 }

@@ -6,7 +6,7 @@ import jakarta.ws.rs.core.Response;
 
 import io.quarkus.rest.client.reactive.ClientRedirectHandler;
 
-public interface RedirectingResourceWithRedirectHandlerAnnotationClient extends RedirectingResourceClient {
+public interface RedirectingResourceWithRedirectHandlerAnnotationClient extends RedirectingResourceClient302 {
     @ClientRedirectHandler
     static URI alwaysRedirect(Response response) {
         if (response.getStatus() > 300) {

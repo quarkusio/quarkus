@@ -70,17 +70,22 @@ public class AnalyticsService implements AutoCloseable {
 
     final private RestClient restClient;
     final private ConfigService config;
-    final private AnonymousUserId userId;
+    final private AnonymousUserId anonymousUserId;
     final private MessageWriter log;
     final FileLocations fileLocations;
 
     public AnalyticsService(final FileLocations fileLocations, MessageWriter log) {
         this.fileLocations = fileLocations;
-        this.log = log;
+        if (log == null) {
+            this.log = MessageWriter.info();
+            this.log.info("No logger provided, using default");
+        } else {
+            this.log = log;
+        }
         this.postFutures = new ConcurrentLinkedQueue<>();
-        this.restClient = new RestClient(log);
-        this.userId = AnonymousUserId.getInstance(fileLocations, log);
-        this.config = new ConfigService(this.restClient, this.userId, fileLocations, log);
+        this.restClient = new RestClient(this.log);
+        this.anonymousUserId = AnonymousUserId.getInstance(fileLocations, this.log);
+        this.config = new ConfigService(this.restClient, this.anonymousUserId, fileLocations, this.log);
     }
 
     public void buildAnalyticsUserInput(Function<String, String> analyticsEnabledSupplier) {
@@ -100,7 +105,7 @@ public class AnalyticsService implements AutoCloseable {
             final Map<String, Object> context = createContextMap(applicationModel, buildInfo);
             sendIdentity(context);
             Track trackEvent = Track.builder()
-                    .userId(userId.getUuid())
+                    .userId(anonymousUserId.getUuid())
                     .context(context)
                     .event(trackEventType)
                     .properties(TrackProperties.builder()
@@ -150,9 +155,9 @@ public class AnalyticsService implements AutoCloseable {
     }
 
     void sendIdentity(final Map<String, Object> context) {
-        if (this.userId.isNew()) { // fixme when inactive on 1st call it will not send identity.
+        if (this.anonymousUserId.isNew()) { // fixme when inactive on 1st call it will not send identity.
             this.restClient.postIdentity(Identity.builder()
-                    .userId(this.userId.getUuid())
+                    .userId(this.anonymousUserId.getUuid())
                     .context(context)
                     .timestamp(Instant.now())
                     .build());

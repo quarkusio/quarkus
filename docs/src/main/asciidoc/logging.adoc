@@ -59,7 +59,7 @@ In such cases, you need to use a <<logging-apis, logging adapter>> to ensure tha
 In Quarkus, the most common ways to obtain an application logger are by:
 
 * <<declaring-a-loger-field,Declaring a logger field>>
-* <<logging-with-style,Logging with style>>
+* <<simplified-logging,Simplified Logging>>
 * <<injection-of-a-configured-logger,Injecting a configured logger>>
 
 [[declaring-a-loger-field]]
@@ -87,8 +87,8 @@ public class MyService {
 <2> Invoke the desired logging methods on the `log` object.
 
 
-[[logging-with-style]]
-=== Logging with Style
+[[simplified-logging]]
+=== Simplified Logging
 
 Quarkus simplifies logging by automatically adding logger fields to classes that use `io.quarkus.logging.Log`.
 This eliminates the need for repetitive boilerplate code and enhances logging setup convenience.

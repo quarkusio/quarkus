@@ -88,7 +88,7 @@ public class MyService {
 
 
 [[simplified-logging]]
-=== Simplified Logging
+=== Simplified logging
 
 Quarkus simplifies logging by automatically adding logger fields to classes that use `io.quarkus.logging.Log`.
 This eliminates the need for repetitive boilerplate code and enhances logging setup convenience.

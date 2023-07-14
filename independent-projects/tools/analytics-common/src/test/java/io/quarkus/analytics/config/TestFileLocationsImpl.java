@@ -8,7 +8,7 @@ import java.util.UUID;
 public class TestFileLocationsImpl implements FileLocations {
 
     private final Path tempDir;
-    private final Path uuidFile;
+    private Path uuidFile;
     private final Path remoteConfigFile;
     private final Path lastTryFile;
     private final Path localConfigFile;
@@ -57,6 +57,10 @@ public class TestFileLocationsImpl implements FileLocations {
     @Override
     public String lastTrackFileName() {
         return "lasttrack.json";
+    }
+
+    public void setUuidFile(Path uuidFile) {
+        this.uuidFile = uuidFile;
     }
 
     public void deleteAll() throws IOException {

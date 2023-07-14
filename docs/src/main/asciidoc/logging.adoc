@@ -59,7 +59,7 @@ In such cases, you need to use a <<logging-apis, logging adapter>> to ensure tha
 In Quarkus, the most common ways to obtain an application logger are by:
 
 * <<declaring-a-loger-field,Declaring a logger field>>
-* <<simplified-logging,Simplified Logging>>
+* <<simplified-logging,Simplified logging>>
 * <<injection-of-a-configured-logger,Injecting a configured logger>>
 
 [[declaring-a-loger-field]]

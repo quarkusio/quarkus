@@ -41,12 +41,18 @@ class ConfigServiceTest {
 
     @Test
     void activeWithRemoteConfig() throws IOException {
-        ConfigService configService = createConfigService();
-
+        RemoteConfig remoteConfig = RemoteConfig.builder()
+                .active(true)
+                .denyQuarkusVersions(Collections.emptyList())
+                .denyUserIds(Collections.emptyList())
+                .refreshInterval(Duration.ofHours(12)).build();
+        FileUtils.write(remoteConfig, fileLocations.getRemoteConfigFile());
         long lastModified = fileLocations.getRemoteConfigFile().toFile().lastModified();
 
+        ConfigService configService = createConfigService(remoteConfig);
+
         assertNotNull(configService);
-        assertTrue(configService.isActive()); // if remote config not found, it will be downloaded (it shouldn't)
+        assertTrue(configService.isActive(), "Remote config is there and active");
         assertEquals(lastModified, fileLocations.getRemoteConfigFile().toFile().lastModified(), "File must not change");
     }
 
@@ -180,8 +186,10 @@ class ConfigServiceTest {
             assertEquals(ACCEPTANCE_PROMPT, s);
             return "y";
         });
-        assertTrue(Files.exists(fileLocations.getLocalConfigFile()), "Local config file must be present");
+
         assertTrue(configService.isActive());
+        assertTrue(Files.exists(fileLocations.getLocalConfigFile()), "Local config file must be present");
+        assertTrue(Files.exists(fileLocations.getRemoteConfigFile()), "remote config file was not created");
     }
 
     @Test
@@ -194,21 +202,55 @@ class ConfigServiceTest {
             assertEquals(ACCEPTANCE_PROMPT, s);
             return "n";
         });
-        assertTrue(Files.exists(fileLocations.getLocalConfigFile()), "Local config file must be present");
         assertFalse(configService.isActive());
+        assertTrue(Files.exists(fileLocations.getLocalConfigFile()), "Local config file must be present");
+        assertFalse(Files.exists(fileLocations.getRemoteConfigFile()), "remote config file cannot be present");
     }
 
     @Test
-    void userAcceptance_fail() throws IOException {
+    void userAcceptance_invalidInput() throws IOException {
         deleteLocalConfigFile();
 
         ConfigService configService = createConfigService();
 
         configService.userAcceptance(s -> {
-            throw new RuntimeException("User input failed");
+            assertEquals(ACCEPTANCE_PROMPT, s);
+            return "not valid input";
         });
-        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present");
         assertFalse(configService.isActive());
+        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present");
+        assertFalse(Files.exists(fileLocations.getRemoteConfigFile()), "remote config file cannot be present");
+    }
+
+    @Test
+    void noRemoteConfigOnInit() throws IOException {
+        deleteLocalConfigFile();
+        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present");
+        assertFalse(Files.exists(fileLocations.getRemoteConfigFile()), "remote config file cannot be present");
+        ConfigService configService = new ConfigService(new TestRestClient(NoopRemoteConfig.INSTANCE),
+                AnonymousUserId.getInstance(fileLocations, MessageWriter.info()),
+                fileLocations,
+                MessageWriter.info());
+        assertFalse(configService.isActive());
+        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config file cannot be present on 1st init");
+        assertFalse(Files.exists(fileLocations.getRemoteConfigFile()), "remote config file cannot be present on 1st init");
+    }
+
+    @Test
+    void noRemoteConfigUserDisabledByProp() throws IOException {
+        deleteLocalConfigFile();
+        System.setProperty("quarkus.analytics.disabled", "true");
+        ConfigService configService = createConfigService();
+
+        configService.userAcceptance(s -> {
+            fail("User should not be asked");
+            return null;
+        });
+
+        assertFalse(configService.isActive());
+        assertFalse(Files.exists(fileLocations.getLocalConfigFile()), "Local config is present");
+        assertFalse(Files.exists(fileLocations.getRemoteConfigFile()), "remote config file cannot be present on 1st init");
+        System.clearProperty("quarkus.analytics.disabled");
     }
 
     private void deleteLocalConfigFile() {
@@ -221,9 +263,10 @@ class ConfigServiceTest {
                 .denyQuarkusVersions(Collections.emptyList())
                 .denyUserIds(Collections.emptyList())
                 .refreshInterval(Duration.ofHours(12)).build();
+        return createConfigService(remoteConfig);
+    }
 
-        FileUtils.write(remoteConfig, fileLocations.getRemoteConfigFile());
-
+    private ConfigService createConfigService(final RemoteConfig remoteConfig) throws IOException {
         ConfigService configService = new ConfigService(new TestRestClient(remoteConfig),
                 AnonymousUserId.getInstance(fileLocations, MessageWriter.info()),
                 fileLocations,

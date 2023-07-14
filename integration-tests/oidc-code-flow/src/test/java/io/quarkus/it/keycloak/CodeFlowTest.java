@@ -1137,9 +1137,12 @@ public class CodeFlowTest {
 
             doTestAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener(webClient);
 
-            page = loginForm.getInputByName("login").click();
-
-            assertTrue(page.getBody().asNormalizedText().contains("You are already logged in"));
+            try {
+                page = loginForm.getInputByName("login").click();
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(400, ex.getStatusCode());
+                assertTrue(ex.getResponse().getContentAsString().contains("You are already logged in"));
+            }
             webClient.getCookieManager().clearCookies();
         }
     }

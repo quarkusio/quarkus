@@ -17,20 +17,20 @@ public class ContainerImageConfig {
      */
     @ConfigItem(defaultValue = "${user.name}")
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> group;
+    Optional<String> group; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * The name of the container image. If not set defaults to the application name
      */
     @ConfigItem(defaultValue = "${quarkus.application.name:unset}")
     @ConvertWith(TrimmedStringConverter.class)
-    public String name;
+    String name; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * The tag of the container image. If not set defaults to the application version
      */
     @ConfigItem(defaultValue = "${quarkus.application.version:latest}")
-    public Optional<String> tag;
+    Optional<String> tag; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * Additional tags of the container image.

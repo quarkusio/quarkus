@@ -32,14 +32,13 @@ import org.w3c.dom.NodeList;
  *
  * This script record/update the suggestions that are in the api-changes-suggestions.xml into api-changes.xml.
  */
+
 public class RevapiUpdate {
     public static void main(String[] args) {
 
         Path currDir = Path.of(System.getProperty("user.dir"));
-
         File apiChangesFile = currDir.resolve("api-changes.xml").toFile();
         File apiSuggestionsFile = currDir.resolve("target/api-changes-suggestions.xml").toFile();
-
 
         if(!apiSuggestionsFile.exists()){
             throw new IllegalStateException("Use this command to run revapi: \"mvn -Papi-check -Drevapi.skip=false -DskipTests verify\"");
@@ -93,8 +92,6 @@ public class RevapiUpdate {
         revapiDifferences.appendChild(differences);
 
         writeToXmlFile(document, file);
-
-
         return document;
     }
 
@@ -115,20 +112,15 @@ public class RevapiUpdate {
         SequenceInputStream sequenceStream = new SequenceInputStream(inputStreams);
 
         return db.parse(sequenceStream);
-
     }
 
     private static void writeToXmlFile(Document document, File file) throws Exception{
 
         TransformerFactory tff = TransformerFactory.newInstance();
         Transformer tf = tff.newTransformer();
-
         tf.setOutputProperty(OutputKeys.INDENT, "yes");
-
         DOMSource source = new DOMSource(document);
-
         StreamResult target = new StreamResult(file);
-
         tf.transform(source, target);
     }
 

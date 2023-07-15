@@ -63,8 +63,15 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
+    public void testFlattenedPomInTargetDir() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/pom-in-target-dir");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("Hello from RESTEasy Reactive");
+    }
+
+    @Test
     public void testConfigFactoryInAppModuleBannedInCodeGen() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/codegen-config-factory", "project/codegen-config-factory-banned");
+        testDir = initProject("projects/codegen-config-factory", "projects/codegen-config-factory-banned");
         run(true);
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory")).isEqualTo("n/a");
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-provider")).isEqualTo("n/a");

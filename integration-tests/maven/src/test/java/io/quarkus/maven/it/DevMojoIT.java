@@ -1192,7 +1192,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(30, TimeUnit.SECONDS)
-                .until(() -> running.log().contains("skipping quarkus:dev as this is assumed to be a support library"));
+                .until(() -> running.log().contains("Skipping quarkus:dev as this is assumed to be a support library"));
     }
 
     @Test
@@ -1200,7 +1200,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         testDir = initProject("projects/classic-no-build", "projects/classic-no-build-not-enforced");
         runAndCheck("-Dquarkus.enforceBuildGoal=false");
 
-        assertThat(running.log()).doesNotContain("skipping quarkus:dev as this is assumed to be a support library");
+        assertThat(running.log()).doesNotContain("Skipping quarkus:dev as this is assumed to be a support library");
     }
 
     @Test

@@ -15,16 +15,21 @@ public class ArcThreadSetupAction implements ThreadSetupAction {
 
     @Override
     public ThreadState activateInitial() {
-        managedContext.activate();
+        boolean wasActiveBefore = managedContext.isActive();
+        if (!wasActiveBefore) {
+            managedContext.activate();
+        }
         InjectableContext.ContextState state = managedContext.getState();
-        return toThreadState(state);
+        return toThreadState(state, wasActiveBefore);
     }
 
-    private ThreadState toThreadState(InjectableContext.ContextState state) {
+    private ThreadState toThreadState(InjectableContext.ContextState state, boolean wasActiveBefore) {
         return new ThreadState() {
             @Override
             public void close() {
-                managedContext.destroy(state);
+                if (!wasActiveBefore) {
+                    managedContext.destroy(state);
+                }
             }
 
             @Override
@@ -41,6 +46,6 @@ public class ArcThreadSetupAction implements ThreadSetupAction {
 
     @Override
     public ThreadState currentState() {
-        return toThreadState(managedContext.getState());
+        return toThreadState(managedContext.getState(), false);
     }
 }

@@ -75,7 +75,6 @@ public class KnownOidcProviders {
         ret.setAuthServerUrl("https://login.microsoftonline.com/common/v2.0");
         ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
         ret.getToken().setIssuer("any");
-        ret.getToken().setCustomizerName("azure-access-token-customizer");
         ret.getAuthentication().setScopes(List.of("openid", "email", "profile"));
         return ret;
     }

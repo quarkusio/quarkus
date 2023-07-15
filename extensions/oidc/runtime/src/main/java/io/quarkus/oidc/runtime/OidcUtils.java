@@ -449,9 +449,6 @@ public final class OidcUtils {
         if (tenant.token.verifyAccessTokenWithUserInfo.isEmpty()) {
             tenant.token.verifyAccessTokenWithUserInfo = provider.token.verifyAccessTokenWithUserInfo;
         }
-        if (tenant.token.customizerName.isEmpty()) {
-            tenant.token.customizerName = provider.token.customizerName;
-        }
 
         return tenant;
     }

@@ -146,9 +146,9 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
                 throw new BootstrapMavenException("Failed to resolve the effective model for " + pomFile, e);
             }
         } else {
-            project = new LocalProject(rawModel, workspace);
+            project = new LocalProject(rawModel, workspace, resolveProjectPath(pomFile));
         }
-        projectCache.put(pomFile.getParent(), project);
+        projectCache.put(resolveProjectPath(pomFile), project);
         return project;
     }
 
@@ -270,6 +270,13 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
         return project != null && project.getVersion().equals(versionConstraint)
                 ? project.getModelBuildingResult().getEffectiveModel()
                 : null;
+    }
+
+    private Path resolveProjectPath(Path pomFile) {
+        if (pomFile.endsWith("target/.flattened-pom.xml")) {
+            return pomFile.getParent().getParent().toAbsolutePath();
+        }
+        return pomFile.getParent().toAbsolutePath();
     }
 
     @Override

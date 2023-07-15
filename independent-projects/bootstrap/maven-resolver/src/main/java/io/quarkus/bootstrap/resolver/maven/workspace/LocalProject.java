@@ -69,7 +69,7 @@ public class LocalProject {
             return null;
         }
         try {
-            return new LocalProject(readModel(pom), null);
+            return new LocalProject(readModel(pom), null, null);
         } catch (UnresolvedVersionException e) {
             // if a property in the version couldn't be resolved, we are trying to resolve it from the workspace
             return loadWorkspace(pom);
@@ -165,10 +165,10 @@ public class LocalProject {
         }
     }
 
-    LocalProject(Model rawModel, LocalWorkspace workspace) throws BootstrapMavenException {
+    LocalProject(Model rawModel, LocalWorkspace workspace, Path projectDirectory) throws BootstrapMavenException {
         this.modelBuildingResult = null;
         this.rawModel = rawModel;
-        this.dir = rawModel.getProjectDirectory().toPath();
+        this.dir = (projectDirectory != null) ? projectDirectory : rawModel.getProjectDirectory().toPath();
         this.workspace = workspace;
         this.key = ArtifactKey.ga(ModelUtils.getGroupId(rawModel), rawModel.getArtifactId());
 

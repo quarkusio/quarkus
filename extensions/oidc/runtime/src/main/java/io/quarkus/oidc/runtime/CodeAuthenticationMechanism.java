@@ -870,7 +870,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                             + " to have the ID, access and refresh tokens stored in separate cookies."
                                                             + " 2. Set 'quarkus.oidc.token-state-manager.strategy=id-refresh-tokens' if you do not need to use the access token"
                                                             + " as a source of roles or to request UserInfo or propagate it to the downstream services."
-                                                            + " 3. Register a custom 'quarkus.oidc.TokenStateManager' CDI bean with the alternative priority set to 1.",
+                                                            + " 3. Decrease the session cookie's length by disabling its encryption with 'quarkus.oidc.token-state-manager.encryption-required=false'"
+                                                            + " but only if it is considered to be safe in your application's network."
+                                                            + " 4. Register a custom 'quarkus.oidc.TokenStateManager' CDI bean with the alternative priority set to 1.",
                                                     configContext.oidcConfig.tenantId.get(),
                                                     MAX_COOKIE_VALUE_LENGTH);
                                         }

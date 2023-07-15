@@ -751,6 +751,18 @@ public class MessageBundleProcessor {
 
     private Map<String, String> parseKeyToTemplateFromLocalizedFile(ClassInfo bundleInterface,
             Path localizedFile) throws IOException {
+        AnnotationInstance bundleAnnotation = bundleInterface.declaredAnnotation(Names.BUNDLE);
+        AnnotationValue defaultKeyValue = bundleAnnotation.value(BUNDLE_DEFAULT_KEY);
+
+        Set<String> methodsToKeys = new HashSet<>();
+        for (MethodInfo method : bundleInterface.methods()) {
+            AnnotationInstance messageAnnotation = method.declaredAnnotation(Names.MESSAGE);
+            String key = getKey(method, messageAnnotation, defaultKeyValue);
+            if (!methodsToKeys.add(key)) {
+                throw new MessageBundleException("Duplicate key '" + key + "' from method: " + method.name());
+            }
+        }
+
         Map<String, String> keyToTemplate = new HashMap<>();
         for (ListIterator<String> it = Files.readAllLines(localizedFile).listIterator(); it.hasNext();) {
             String line = it.next();
@@ -764,7 +776,7 @@ public class MessageBundleProcessor {
                         "Missing key/value separator\n\t- file: " + localizedFile + "\n\t- line " + it.previousIndex());
             }
             String key = line.substring(0, eqIdx).strip();
-            if (!hasMessageBundleMethod(bundleInterface, key)) {
+            if (!methodsToKeys.contains(key)) {
                 throw new MessageBundleException(
                         "Message bundle method " + key + "() not found on: " + bundleInterface + "\n\t- file: "
                                 + localizedFile + "\n\t- line " + it.previousIndex());
@@ -796,15 +808,6 @@ public class MessageBundleProcessor {
 
     private String adaptLine(String line) {
         return line.stripLeading().replace("\\n", "\n");
-    }
-
-    private boolean hasMessageBundleMethod(ClassInfo bundleInterface, String name) {
-        for (MethodInfo method : bundleInterface.methods()) {
-            if (method.name().equals(name)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private String generateImplementation(MessageBundleBuildItem bundle, ClassInfo defaultBundleInterface,
@@ -889,7 +892,7 @@ public class MessageBundleProcessor {
             }
             keyMap.put(key, method);
 
-            String messageTemplate = messageTemplates.get(method.name());
+            String messageTemplate = messageTemplates.get(key);
             if (messageTemplate == null) {
                 messageTemplate = getMessageAnnotationValue(messageAnnotation);
             }
@@ -1174,7 +1177,7 @@ public class MessageBundleProcessor {
     }
 
     private String getKey(MethodInfo method, AnnotationInstance messageAnnotation, AnnotationValue defaultKeyValue) {
-        AnnotationValue keyValue = messageAnnotation.value("key");
+        AnnotationValue keyValue = messageAnnotation != null ? messageAnnotation.value("key") : null;
         String key;
         if (keyValue == null) {
             // Use the strategy from @MessageBundle

@@ -1139,7 +1139,9 @@ public class DevMojo extends AbstractMojo {
                     .setRemoteRepositories(repos)
                     .setWorkspaceDiscovery(true)
                     .setPreferPomsFromWorkspace(true)
-                    .setCurrentProject(project.getFile().toString());
+                    // it's important to set the base directory instead of the POM
+                    // which maybe manipulated by a plugin and stored outside the base directory
+                    .setCurrentProject(project.getBasedir().toString());
 
             // There are a couple of reasons we don't want to use the original Maven session:
             // 1) a reload could be triggered by a change in a pom.xml, in which case the Maven session might not be in sync any more with the effective POM;

@@ -87,6 +87,14 @@ public class QuarkusBootstrapProvider implements Closeable {
             // activated profiles or custom extensions may have overridden the build defaults
             model.setBuild(mp.getModel().getBuild());
             projectModels.put(mp.getBasedir().toPath(), model);
+            // The Maven Model API determines the project directory as the directory containing the POM file.
+            // However, in case when plugins manipulating POMs store their results elsewhere
+            // (such as the flatten plugin storing the flattened POM under the target directory),
+            // both the base directory and the directory containing the POM file should be added to the map.
+            var pomDir = mp.getFile().getParentFile();
+            if (!pomDir.equals(mp.getBasedir())) {
+                projectModels.put(pomDir.toPath(), model);
+            }
         }
         return projectModels;
     }

@@ -59,7 +59,24 @@ public class OidcCommonUtilsTest {
         String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://localhost", key);
         JsonObject json = decodeJwtContent(jwt);
         String scope = json.getString("scope");
-        assertEquals("read,write", scope);
+        assertEquals(
+                Set.of("read", "write"),
+                Set.of(scope.split(" ")));
+    }
+
+    @Test
+    public void testJwtTokenWithScopeAndCustomSeparator() throws Exception {
+        OidcCommonConfig cfg = new OidcCommonConfig();
+        cfg.setClientId("client");
+        cfg.credentials.jwt.setScopes(Set.of("read", "write"));
+        cfg.credentials.jwt.setScopesSeparator(",");
+        PrivateKey key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPrivate();
+        String jwt = OidcCommonUtils.signJwtWithKey(cfg, "http://localhost", key);
+        JsonObject json = decodeJwtContent(jwt);
+        String scope = json.getString("scope");
+        assertEquals(
+                Set.of("read", "write"),
+                Set.of(scope.split(",")));
     }
 
     public static JsonObject decodeJwtContent(String jwt) {

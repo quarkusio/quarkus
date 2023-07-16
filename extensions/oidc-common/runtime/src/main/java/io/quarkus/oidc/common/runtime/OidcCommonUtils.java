@@ -354,7 +354,9 @@ public class OidcCommonUtils {
                 .expiresIn(oidcConfig.credentials.jwt.lifespan);
 
         if (oidcConfig.credentials.jwt.scopes.isPresent()) {
-            claimsBuilder.claim(OidcConstants.TOKEN_SCOPE, String.join(",", oidcConfig.credentials.jwt.scopes.get()));
+            String separator = oidcConfig.credentials.jwt.scopesSeparator.orElse(" ");
+            String scope = String.join(separator, oidcConfig.credentials.jwt.scopes.get());
+            claimsBuilder.claim(OidcConstants.TOKEN_SCOPE, scope);
         }
 
         JwtSignatureBuilder builder = claimsBuilder.jws();

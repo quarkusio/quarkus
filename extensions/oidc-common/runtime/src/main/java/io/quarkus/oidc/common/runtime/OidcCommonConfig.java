@@ -314,6 +314,12 @@ public class OidcCommonConfig {
             public Optional<Set<String>> scopes = Optional.empty();
 
             /**
+             * Separator used to join scopes.
+             */
+            @ConfigItem
+            public Optional<String> scopesSeparator = Optional.empty();
+
+            /**
              * JWT life-span in seconds. It will be added to the time it was issued at to calculate the expiration time.
              */
             @ConfigItem(defaultValue = "10")
@@ -381,6 +387,14 @@ public class OidcCommonConfig {
 
             public void setScopes(Set<String> scopes) {
                 this.scopes = Optional.of(scopes);
+            }
+
+            public Optional<String> getScopesSeparator() {
+                return scopesSeparator;
+            }
+
+            public void setScopesSeparator(String scopesSeparator) {
+                this.scopesSeparator = Optional.of(scopesSeparator);
             }
         }
 

@@ -164,6 +164,16 @@ class AnalyticsServiceTest extends AnalyticsServiceTestBase {
         assertTrue(new File(FILE_LOCATIONS.getFolder().toString() + "/" + FILE_LOCATIONS.lastTrackFileName()).exists());
     }
 
+    @Test
+    void nullLogger() {
+        AnalyticsService service = new AnalyticsService(FILE_LOCATIONS, null);
+        assertNotNull(service);
+        service.sendAnalytics(TrackEventType.BUILD,
+                mockApplicationModel(),
+                Map.of(),
+                new File(FILE_LOCATIONS.getFolder().toUri()));
+    }
+
     private void assertMapEntriesNotEmpty(int size, Map<String, Object> map) {
         assertNotNull(map);
         assertEquals(size, map.size());

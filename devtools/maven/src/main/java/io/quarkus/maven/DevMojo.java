@@ -336,6 +336,9 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${quarkus.enforceBuildGoal}")
     private boolean enforceBuildGoal = true;
 
+    @Parameter(property = "quarkus.warnIfBuildGoalMissing")
+    boolean warnIfBuildGoalMissing = true;
+
     @Component
     private WorkspaceReader wsReader;
 
@@ -399,13 +402,18 @@ public class DevMojo extends AbstractMojo {
             final PluginDescriptor pluginDescr = getPluginDescriptor();
             final Plugin pluginDef = getConfiguredPluginOrNull(pluginDescr.getGroupId(), pluginDescr.getArtifactId());
             if (!isGoalConfigured(pluginDef, "build")) {
-                var currentGoal = getCurrentGoal();
-                getLog().warn(
-                        "The quarkus-maven-plugin build goal was not configured for this project, skipping " +
-                                currentGoal + " as this is assumed to be a support library. If you want to run " + currentGoal +
-                                " on this project make sure the quarkus-maven-plugin is configured with the build goal" +
-                                " or disable the enforceBuildGoal flag (via plugin configuration or via" +
-                                " -Dquarkus.enforceBuildGoal=false).");
+                if (warnIfBuildGoalMissing) {
+                    var currentGoal = getCurrentGoal();
+                    getLog().warn(
+                            "Skipping " + currentGoal + " as this is assumed to be a support library." +
+                                    " To disable this warning set warnIfBuildGoalMissing parameter to false."
+                                    + System.lineSeparator() +
+                                    "To enable " + currentGoal +
+                                    " for this module, make sure the quarkus-maven-plugin configuration includes the build goal"
+                                    +
+                                    " or disable the enforceBuildGoal flag (via plugin configuration or via" +
+                                    " -Dquarkus.enforceBuildGoal=false).");
+                }
                 return;
             }
         }

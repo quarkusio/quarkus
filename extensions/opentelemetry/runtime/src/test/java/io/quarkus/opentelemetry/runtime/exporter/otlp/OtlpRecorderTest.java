@@ -109,6 +109,31 @@ class OtlpRecorderTest {
                     public Optional<String> protocol() {
                         return Optional.empty();
                     }
+
+                    @Override
+                    public KeyCert keyCert() {
+                        return new KeyCert() {
+                            @Override
+                            public Optional<List<String>> keys() {
+                                return Optional.empty();
+                            }
+
+                            @Override
+                            public Optional<List<String>> certs() {
+                                return Optional.empty();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public TrustCert trustCert() {
+                        return new TrustCert() {
+                            @Override
+                            public Optional<List<String>> certs() {
+                                return Optional.empty();
+                            }
+                        };
+                    }
                 };
             }
         };

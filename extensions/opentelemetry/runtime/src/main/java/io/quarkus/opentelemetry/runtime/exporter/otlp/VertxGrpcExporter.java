@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,6 +64,7 @@ final class VertxGrpcExporter implements SpanExporter {
             URI grpcBaseUri, boolean compressionEnabled,
             Duration timeout,
             Map<String, String> headersMap,
+            Consumer<HttpClientOptions> clientOptionsCustomizer,
             Vertx vertx) {
         this.type = type;
         this.exporterMetrics = ExporterMetrics.createGrpcOkHttp(exporterName, type, meterProviderSupplier);
@@ -73,6 +75,7 @@ final class VertxGrpcExporter implements SpanExporter {
                 .setHttp2ClearTextUpgrade(false) // needed otherwise connections get closed immediately
                 .setReadIdleTimeout((int) timeout.getSeconds())
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this gRPC client
+        clientOptionsCustomizer.accept(httpClientOptions);
         this.client = GrpcClient.client(vertx, httpClientOptions);
     }
 
@@ -82,10 +85,14 @@ final class VertxGrpcExporter implements SpanExporter {
             return originalPort;
         }
 
-        if ("https".equals(uri.getScheme().toLowerCase(Locale.ROOT))) {
+        if (isHttps(uri)) {
             return 443;
         }
         return 80;
+    }
+
+    static boolean isHttps(URI uri) {
+        return "https".equals(uri.getScheme().toLowerCase(Locale.ROOT));
     }
 
     private CompletableResultCode export(TraceRequestMarshaler marshaler, int numItems) {

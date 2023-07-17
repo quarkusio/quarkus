@@ -126,7 +126,6 @@ public final class GraalVM {
                 "(GraalVM|native-image)( Version)? " + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?" +
                         "(\\(Java Version (?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)?$");
 
-        static final Version UNVERSIONED = new Version("Undefined", "snapshot", Distribution.ORACLE);
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.ORACLE);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.ORACLE);
         public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", Distribution.ORACLE);
@@ -158,10 +157,6 @@ public final class GraalVM {
 
         String getFullVersion() {
             return fullVersion;
-        }
-
-        boolean isDetected() {
-            return this != UNVERSIONED;
         }
 
         boolean isObsolete() {
@@ -204,10 +199,7 @@ public final class GraalVM {
 
             if (lines.size() == 3) {
                 // Attempt to parse the new 3-line version scheme first.
-                Version v = VersionParseHelper.parse(lines);
-                if (v != VersionParseHelper.UNKNOWN_VERSION) {
-                    return v;
-                }
+                return VersionParseHelper.parse(lines);
             } else if (lines.size() == 1) {
                 // Old, single line version parsing logic
                 final String line = lines.get(0);
@@ -234,7 +226,8 @@ public final class GraalVM {
                 }
             }
 
-            return UNVERSIONED;
+            throw new IllegalArgumentException(
+                    "Cannot parse version from output: " + output.collect(Collectors.joining("\n")));
         }
 
         private static boolean isMandrel(String s) {

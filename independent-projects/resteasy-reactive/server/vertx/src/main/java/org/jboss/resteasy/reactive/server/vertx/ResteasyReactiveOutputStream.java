@@ -226,10 +226,12 @@ public class ResteasyReactiveOutputStream extends OutputStream {
         if (!committed) {
             committed = true;
             if (finished) {
-                if (buffer == null) {
-                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "0");
-                } else {
-                    context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
+                if (!context.serverResponse().headWritten()) {
+                    if (buffer == null) {
+                        context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "0");
+                    } else {
+                        context.serverResponse().setResponseHeader(HttpHeaderNames.CONTENT_LENGTH, "" + buffer.readableBytes());
+                    }
                 }
             } else {
                 var contentLengthSet = contentLengthSet();

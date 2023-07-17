@@ -7,6 +7,7 @@ import org.bson.BsonTimestamp;
 
 import com.mongodb.client.model.Collation;
 import com.mongodb.client.model.changestream.FullDocument;
+import com.mongodb.client.model.changestream.FullDocumentBeforeChange;
 import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
 
 /**
@@ -15,7 +16,9 @@ import com.mongodb.reactivestreams.client.ChangeStreamPublisher;
 public class ChangeStreamOptions {
 
     private FullDocument fullDocument;
+    private FullDocumentBeforeChange fullDocumentBeforeChange;
     private BsonDocument resumeToken;
+    private BsonDocument startAfterResumeToken;
     private BsonTimestamp startAtOperationTime;
     private long maxAwaitTime;
     private Collation collation;
@@ -33,6 +36,17 @@ public class ChangeStreamOptions {
     }
 
     /**
+     * Sets the fullDocumentBeforeChange value.
+     *
+     * @param fullDocumentBeforeChange the fullDocumentBeforeChange
+     * @return this
+     */
+    public ChangeStreamOptions fullDocumentBeforeChange(FullDocumentBeforeChange fullDocumentBeforeChange) {
+        this.fullDocumentBeforeChange = fullDocumentBeforeChange;
+        return this;
+    }
+
+    /**
      * Sets the logical starting point for the new change stream.
      *
      * @param resumeToken the resume token
@@ -40,6 +54,18 @@ public class ChangeStreamOptions {
      */
     public ChangeStreamOptions resumeAfter(BsonDocument resumeToken) {
         this.resumeToken = resumeToken;
+        return this;
+    }
+
+    /**
+     * Sets the logical starting point for the new change stream.
+     * Unlike resumeAfter, startAfter can resume notifications after an invalidate event by creating a new change stream.
+     *
+     * @param resumeToken the resume token
+     * @return this
+     */
+    public ChangeStreamOptions startAfter(BsonDocument resumeToken) {
+        this.startAfterResumeToken = resumeToken;
         return this;
     }
 
@@ -101,8 +127,14 @@ public class ChangeStreamOptions {
         if (fullDocument != null) {
             publisher = publisher.fullDocument(fullDocument);
         }
+        if (fullDocumentBeforeChange != null) {
+            publisher = publisher.fullDocumentBeforeChange(fullDocumentBeforeChange);
+        }
         if (resumeToken != null) {
             publisher = publisher.resumeAfter(resumeToken);
+        }
+        if (startAfterResumeToken != null) {
+            publisher = publisher.startAfter(startAfterResumeToken);
         }
         if (startAtOperationTime != null) {
             publisher = publisher.startAtOperationTime(startAtOperationTime);

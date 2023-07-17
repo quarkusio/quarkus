@@ -13,15 +13,17 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     private final String path;
     private final Path fullPath;
+    private final String content;
 
-    public TemplatePathBuildItem(String path, Path fullPath) {
+    public TemplatePathBuildItem(String path, Path fullPath, String content) {
         this.path = path;
         this.fullPath = fullPath;
+        this.content = content;
     }
 
     /**
      * Uses the {@code /} path separator.
-     * 
+     *
      * @return the path relative to the template root
      */
     public String getPath() {
@@ -30,7 +32,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     /**
      * Uses the system-dependent path separator.
-     * 
+     *
      * @return the full path of the template
      */
     public Path getFullPath() {
@@ -38,7 +40,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return {@code true} if it represents a user tag, {@code false} otherwise
      */
     public boolean isTag() {
@@ -47,6 +49,10 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
 
     public boolean isRegular() {
         return !isTag();
+    }
+
+    public String getContent() {
+        return content;
     }
 
 }

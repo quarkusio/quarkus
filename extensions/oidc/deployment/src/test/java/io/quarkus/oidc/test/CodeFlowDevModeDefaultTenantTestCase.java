@@ -5,8 +5,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -30,7 +28,7 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application-dev-mode-default-tenant.properties", "application.properties"));
 
@@ -40,15 +38,15 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
             try {
                 webClient.getPage("http://localhost:8080/protected");
-                fail("Exception is expected because auth-server-url is not available and the authentication can not be completed");
+                fail("Exception is expected because by default the bearer token is required");
             } catch (FailingHttpStatusCodeException ex) {
                 // Reported by Quarkus
-                assertEquals(500, ex.getStatusCode());
+                assertEquals(401, ex.getStatusCode());
             }
 
-            // Enable auth-server-url
+            // Enable 'web-app' application type
             test.modifyResourceFile("application.properties",
-                    s -> s.replace("#quarkus.oidc.auth-server-url", "quarkus.oidc.auth-server-url"));
+                    s -> s.replace("#quarkus.oidc.application-type=web-app", "quarkus.oidc.application-type=web-app"));
 
             HtmlPage page = webClient.getPage("http://localhost:8080/protected");
 
@@ -61,7 +59,7 @@ public class CodeFlowDevModeDefaultTenantTestCase {
 
             page = loginForm.getInputByName("login").click();
 
-            assertEquals("alice", page.getBody().asText());
+            assertEquals("alice", page.getBody().asNormalizedText());
 
             webClient.getCookieManager().clearCookies();
         }

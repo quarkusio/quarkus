@@ -21,6 +21,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-integration-test-class-transformer</artifactId>
         </dependency>
+        <dependency>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

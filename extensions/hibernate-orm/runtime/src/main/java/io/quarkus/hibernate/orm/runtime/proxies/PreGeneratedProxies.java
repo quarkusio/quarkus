@@ -13,7 +13,7 @@ import java.util.Set;
  * In most circumstances these will be used for every entity, however
  * in some corner cases it may still be necessary to generate proxies
  * at static init time.
- * 
+ *
  * This class is bytecode recordable.
  */
 public class PreGeneratedProxies {

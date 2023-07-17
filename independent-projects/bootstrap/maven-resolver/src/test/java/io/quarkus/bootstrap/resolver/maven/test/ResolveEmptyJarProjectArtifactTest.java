@@ -2,12 +2,13 @@ package io.quarkus.bootstrap.resolver.maven.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContextConfig;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 
 /**
  * This test makes sure that projects with packaging 'jar' that don't include any content

@@ -11,12 +11,12 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * Contains classes that need to have @DenyAll on all methods that don't have security annotations
+ *
+ * @deprecated use {@link AdditionalSecuredMethodsBuildItem}
  */
 public final class AdditionalSecuredClassesBuildItem extends MultiBuildItem {
+
     public final Collection<ClassInfo> additionalSecuredClasses;
-    /**
-     * The roles alloe
-     */
     public final Optional<List<String>> rolesAllowed;
 
     public AdditionalSecuredClassesBuildItem(Collection<ClassInfo> additionalSecuredClasses) {

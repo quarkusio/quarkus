@@ -2,8 +2,6 @@ package io.quarkus.security.test;
 
 import static io.restassured.RestAssured.given;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,7 +21,7 @@ public class FormAuthTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application-form-auth.properties", "application.properties")
                     .addAsResource("test-users.properties")

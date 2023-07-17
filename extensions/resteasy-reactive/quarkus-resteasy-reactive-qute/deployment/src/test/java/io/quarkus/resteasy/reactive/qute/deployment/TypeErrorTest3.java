@@ -1,7 +1,5 @@
 package io.quarkus.resteasy.reactive.qute.deployment;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.wildfly.common.Assert;
@@ -12,7 +10,7 @@ public class TypeErrorTest3 {
 
     @RegisterExtension
     static final QuarkusUnitTest configError = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(TypeErrorResource.class)
                     .addAsResource("templates/TypeErrorResource/typeError3.txt"))
             .assertException(t -> {

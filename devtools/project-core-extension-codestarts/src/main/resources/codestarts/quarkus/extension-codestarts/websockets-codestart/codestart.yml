@@ -1,0 +1,12 @@
+name: websockets-codestart
+ref: websockets
+type: code
+tags: extension-codestart
+metadata:
+  title: WebSockets
+  description: WebSocket communication channel starter code
+  related-guide-section: https://quarkus.io/guides/websockets
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-websockets

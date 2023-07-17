@@ -13,7 +13,7 @@ import io.quarkus.test.junit.QuarkusTest;
  * and there's no applicable runtime log level override.
  */
 @QuarkusTest
-@QuarkusTestResource(SetRuntimeLogLevels.class)
+@QuarkusTestResource(SetCategoryRuntimeLogLevels.class)
 public class LoggingMinLevelByDefaultTest {
 
     @Test

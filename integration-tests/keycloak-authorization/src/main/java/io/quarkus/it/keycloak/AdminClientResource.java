@@ -1,33 +1,100 @@
 package io.quarkus.it.keycloak;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.logging.Logger;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.KeycloakBuilder;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
+import org.keycloak.representations.idm.RolesRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 
 @Path("/admin-client")
 public class AdminClientResource {
 
-    private static final Logger LOG = Logger.getLogger(AdminClientResource.class);
-
     @ConfigProperty(name = "admin-url")
     String url;
 
+    @Inject
+    Keycloak keycloak;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String hello() {
-        LOG.info("Hello invoked");
-
-        Keycloak keycloak = KeycloakBuilder.builder().serverUrl(url)
-                .realm("master")
-                .clientId("admin-cli")
-                .username("admin")
-                .password("admin").build();
+    @Path("realm")
+    public String getRealm() {
         return keycloak.realm("quarkus").toRepresentation().getRealm();
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("newrealm")
+    public String createRealm() {
+        RealmRepresentation newRealm = createRealm("quarkus2");
+
+        newRealm.getClients().add(createClient("quarkus-app2"));
+        newRealm.getUsers().add(createUser("alice", "user"));
+        keycloak.realms().create(newRealm);
+        return keycloak.realm("quarkus2").toRepresentation().getRealm();
+    }
+
+    private static RealmRepresentation createRealm(String name) {
+        RealmRepresentation realm = new RealmRepresentation();
+
+        realm.setRealm(name);
+        realm.setEnabled(true);
+        realm.setUsers(new ArrayList<>());
+        realm.setClients(new ArrayList<>());
+
+        RolesRepresentation roles = new RolesRepresentation();
+        List<RoleRepresentation> realmRoles = new ArrayList<>();
+
+        roles.setRealm(realmRoles);
+        realm.setRoles(roles);
+
+        realm.getRoles().getRealm().add(new RoleRepresentation("user", null, false));
+
+        return realm;
+    }
+
+    private static ClientRepresentation createClient(String clientId) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setRedirectUris(Arrays.asList("*"));
+        client.setPublicClient(false);
+        client.setSecret("secret");
+        client.setDirectAccessGrantsEnabled(true);
+        client.setEnabled(true);
+
+        return client;
+    }
+
+    private static UserRepresentation createUser(String username, String... realmRoles) {
+        UserRepresentation user = new UserRepresentation();
+
+        user.setUsername(username);
+        user.setEnabled(true);
+        user.setCredentials(new ArrayList<>());
+        user.setRealmRoles(Arrays.asList(realmRoles));
+
+        CredentialRepresentation credential = new CredentialRepresentation();
+
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(username);
+        credential.setTemporary(false);
+
+        user.getCredentials().add(credential);
+
+        return user;
     }
 }

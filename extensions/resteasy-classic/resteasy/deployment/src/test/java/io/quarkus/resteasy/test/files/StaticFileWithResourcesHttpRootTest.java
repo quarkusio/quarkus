@@ -4,9 +4,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.File;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class StaticFileWithResourcesHttpRootTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(RootResource.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties")
                     .addAsResource(new File("src/test/resources/lorem.txt"), "META-INF/resources/lorem.txt")

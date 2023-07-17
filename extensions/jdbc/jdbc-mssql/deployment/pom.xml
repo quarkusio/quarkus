@@ -51,6 +51,12 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -68,7 +74,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
+                    <excludes>
+                        <exclude>**/DevServices*TestCase.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
@@ -88,7 +96,10 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <skip>false</skip>
+                            <excludes>
+                                <!-- force the default, overriding the DevServices exclude -->
+                                <exclude>**/*$*</exclude>
+                            </excludes>
                         </configuration>
                     </plugin>
                 </plugins>

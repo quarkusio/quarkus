@@ -35,7 +35,7 @@ public class MessageBundleRecorder {
         // message id -> message template
         Map<String, String> getMessageTemplates();
 
-        // bundle -> (locale -> interface class)
+        // bundle name -> (locale -> interface class)
         Map<String, Map<String, Class<?>>> getBundleInterfaces();
 
     }

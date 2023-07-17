@@ -1,11 +1,12 @@
 package io.quarkus.registry.client;
 
-import io.quarkus.maven.ArtifactCoords;
+import java.util.Objects;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.PlatformCatalog;
 import io.quarkus.registry.config.RegistryConfig;
-import java.util.Objects;
 
 public class RegistryClientDispatcher implements RegistryClient {
 
@@ -33,18 +34,18 @@ public class RegistryClientDispatcher implements RegistryClient {
     }
 
     @Override
-    public PlatformCatalog resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
+    public PlatformCatalog.Mutable resolvePlatforms(String quarkusVersion) throws RegistryResolutionException {
         return platforms == null ? null : platforms.resolvePlatforms(quarkusVersion);
     }
 
     @Override
-    public ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platformCoords)
+    public ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platformCoords)
             throws RegistryResolutionException {
         return platformExtensions.resolvePlatformExtensions(platformCoords);
     }
 
     @Override
-    public ExtensionCatalog resolveNonPlatformExtensions(String quarkusVersion) throws RegistryResolutionException {
+    public ExtensionCatalog.Mutable resolveNonPlatformExtensions(String quarkusVersion) throws RegistryResolutionException {
         return nonPlatformExtensions == null ? null
                 : nonPlatformExtensions.resolveNonPlatformExtensions(quarkusVersion);
     }

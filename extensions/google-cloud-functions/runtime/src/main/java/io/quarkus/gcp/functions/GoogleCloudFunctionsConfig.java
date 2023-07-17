@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class GoogleCloudFunctionsConfig {
     /**
-     * The function name. Function names are specified on function classes using the {@link @javax.inject.Named} annotation.
+     * The function name. Function names are specified on function classes using the {@link @jakarta.inject.Named} annotation.
      *
      * If this name is unspecified and there is exactly one unnamed function then this unnamed function will be used.
      * If there is only a single named function and the name is unspecified then the named function will be used.

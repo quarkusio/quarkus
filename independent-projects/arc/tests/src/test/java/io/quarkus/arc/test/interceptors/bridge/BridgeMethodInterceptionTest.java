@@ -3,14 +3,16 @@ package io.quarkus.arc.test.interceptors.bridge;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.interceptors.Counter;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class BridgeMethodInterceptionTest {
 

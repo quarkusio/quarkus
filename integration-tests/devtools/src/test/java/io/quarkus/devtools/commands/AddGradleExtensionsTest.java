@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -17,7 +16,7 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.buildfile.AbstractGroovyGradleBuildFile;
 import io.quarkus.devtools.testing.SnapshotTesting;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
@@ -95,12 +94,12 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
         }
 
         private ArtifactCoords createDependency(String groupId, String artifactId, String version, String type) {
-            return new ArtifactCoords(groupId, artifactId, type, version);
+            return ArtifactCoords.of(groupId, artifactId, ArtifactCoords.DEFAULT_CLASSIFIER, type, version);
         }
 
         @Override
         public Collection<ArtifactCoords> getInstalledPlatforms() throws IOException {
-            return Collections.emptyList();
+            return List.of();
         }
     }
 }

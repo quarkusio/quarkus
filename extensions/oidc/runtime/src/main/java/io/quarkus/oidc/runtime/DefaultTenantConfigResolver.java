@@ -1,10 +1,14 @@
 package io.quarkus.oidc.runtime;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Event;
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
@@ -14,7 +18,10 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.TenantResolver;
+import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.TokenStateManager;
+import io.quarkus.oidc.UserInfo;
+import io.quarkus.oidc.UserInfoCache;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -25,7 +32,8 @@ public class DefaultTenantConfigResolver {
     private static final String CURRENT_STATIC_TENANT_ID = "static.tenant.id";
     private static final String CURRENT_STATIC_TENANT_ID_NULL = "static.tenant.id.null";
     private static final String CURRENT_DYNAMIC_TENANT_CONFIG = "dynamic.tenant.config";
-    private static final String CURRENT_DYNAMIC_TENANT_CONFIG_NULL = "dynamic.tenant.config.null";
+
+    private DefaultStaticTenantResolver defaultStaticTenantResolver = new DefaultStaticTenantResolver();
 
     @Inject
     Instance<TenantResolver> tenantResolver;
@@ -40,13 +48,23 @@ public class DefaultTenantConfigResolver {
     Instance<TokenStateManager> tokenStateManager;
 
     @Inject
+    Instance<TokenIntrospectionCache> tokenIntrospectionCache;
+
+    @Inject
+    Instance<UserInfoCache> userInfoCache;
+
+    @Inject
     Event<SecurityEvent> securityEvent;
 
     @Inject
     @ConfigProperty(name = "quarkus.http.proxy.enable-forwarded-prefix")
     boolean enableHttpForwardedPrefix;
 
+    private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>();
+
     private volatile boolean securityEventObserved;
+
+    private ConcurrentHashMap<String, BackChannelLogoutTokenCache> backChannelLogoutTokens = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void verifyResolvers() {
@@ -59,56 +77,76 @@ public class DefaultTenantConfigResolver {
         if (tokenStateManager.isAmbiguous()) {
             throw new IllegalStateException("Multiple " + TokenStateManager.class + " beans registered");
         }
+        if (tokenIntrospectionCache.isAmbiguous()) {
+            throw new IllegalStateException("Multiple " + TokenIntrospectionCache.class + " beans registered");
+        }
+        if (userInfoCache.isAmbiguous()) {
+            throw new IllegalStateException("Multiple " + UserInfo.class + " beans registered");
+        }
     }
 
-    OidcTenantConfig resolveConfig(RoutingContext context) {
-        OidcTenantConfig tenantConfig = getDynamicTenantConfig(context);
-        if (tenantConfig == null) {
-            TenantConfigContext tenant = getStaticTenantContext(context);
-            if (tenant != null) {
-                tenantConfig = tenant.oidcConfig;
-            }
-        }
-        return tenantConfig;
+    Uni<OidcTenantConfig> resolveConfig(RoutingContext context) {
+        return getDynamicTenantConfig(context)
+                .map(new Function<OidcTenantConfig, OidcTenantConfig>() {
+                    @Override
+                    public OidcTenantConfig apply(OidcTenantConfig tenantConfig) {
+                        if (tenantConfig == null) {
+                            TenantConfigContext tenant = getStaticTenantContext(context);
+                            if (tenant != null) {
+                                tenantConfig = tenant.oidcConfig;
+                            }
+                        }
+                        return tenantConfig;
+                    }
+                });
     }
 
     Uni<TenantConfigContext> resolveContext(RoutingContext context) {
-        Uni<TenantConfigContext> uniTenantContext = getDynamicTenantContext(context);
-        if (uniTenantContext != null) {
-            return uniTenantContext;
-        }
-        TenantConfigContext tenantContext = getStaticTenantContext(context);
-        if (tenantContext != null && !tenantContext.ready) {
+        return getDynamicTenantContext(context).chain(new Function<TenantConfigContext, Uni<? extends TenantConfigContext>>() {
+            @Override
+            public Uni<? extends TenantConfigContext> apply(TenantConfigContext tenantConfigContext) {
+                if (tenantConfigContext != null) {
+                    return Uni.createFrom().item(tenantConfigContext);
+                }
+                TenantConfigContext tenantContext = getStaticTenantContext(context);
+                if (tenantContext != null && !tenantContext.ready) {
 
-            // check if it the connection has already been created            
-            TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
-                    .get(tenantContext.oidcConfig.tenantId.get());
-            if (readyTenantContext == null) {
-                LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
-                        tenantContext.oidcConfig.tenantId.get());
-                return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
-            } else {
-                tenantContext = readyTenantContext;
+                    // check if the connection has already been created
+                    TenantConfigContext readyTenantContext = tenantConfigBean.getDynamicTenantsConfig()
+                            .get(tenantContext.oidcConfig.tenantId.get());
+                    if (readyTenantContext == null) {
+                        LOG.debugf("Tenant '%s' is not initialized yet, trying to create OIDC connection now",
+                                tenantContext.oidcConfig.tenantId.get());
+                        return tenantConfigBean.getTenantConfigContextFactory().apply(tenantContext.oidcConfig);
+                    } else {
+                        tenantContext = readyTenantContext;
+                    }
+                }
+
+                return Uni.createFrom().item(tenantContext);
             }
-        }
-
-        return Uni.createFrom().item(tenantContext);
+        });
     }
 
     private TenantConfigContext getStaticTenantContext(RoutingContext context) {
 
-        String tenantId = null;
+        String tenantId = context.get(CURRENT_STATIC_TENANT_ID);
 
-        if (tenantResolver.isResolvable()) {
-            tenantId = context.get(CURRENT_STATIC_TENANT_ID);
-            if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
+        if (tenantId == null && context.get(CURRENT_STATIC_TENANT_ID_NULL) == null) {
+            if (tenantResolver.isResolvable()) {
                 tenantId = tenantResolver.get().resolve(context);
-                if (tenantId != null) {
-                    context.put(CURRENT_STATIC_TENANT_ID, tenantId);
-                } else {
-                    context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
-                }
+            } else if (tenantConfigBean.getStaticTenantsConfig().size() > 0) {
+                tenantId = defaultStaticTenantResolver.resolve(context);
             }
+            if (tenantId == null) {
+                tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            }
+        }
+
+        if (tenantId != null) {
+            context.put(CURRENT_STATIC_TENANT_ID, tenantId);
+        } else {
+            context.put(CURRENT_STATIC_TENANT_ID_NULL, true);
         }
 
         TenantConfigContext configContext = tenantId != null ? tenantConfigBean.getStaticTenantsConfig().get(tenantId) : null;
@@ -139,42 +177,87 @@ public class DefaultTenantConfigResolver {
         return tokenStateManager.get();
     }
 
-    private OidcTenantConfig getDynamicTenantConfig(RoutingContext context) {
-        OidcTenantConfig oidcConfig = null;
+    TokenIntrospectionCache getTokenIntrospectionCache() {
+        return tokenIntrospectionCache.isResolvable() ? tokenIntrospectionCache.get() : null;
+    }
+
+    UserInfoCache getUserInfoCache() {
+        return userInfoCache.isResolvable() ? userInfoCache.get() : null;
+    }
+
+    private Uni<OidcTenantConfig> getDynamicTenantConfig(RoutingContext context) {
         if (tenantConfigResolver.isResolvable()) {
-            oidcConfig = context.get(CURRENT_DYNAMIC_TENANT_CONFIG);
-            if (oidcConfig == null && context.get(CURRENT_DYNAMIC_TENANT_CONFIG_NULL) == null) {
-                oidcConfig = tenantConfigResolver.get().resolve(context);
-                if (oidcConfig != null) {
-                    context.put(CURRENT_DYNAMIC_TENANT_CONFIG, oidcConfig);
-                } else {
-                    context.put(CURRENT_DYNAMIC_TENANT_CONFIG_NULL, true);
+            Uni<OidcTenantConfig> oidcConfig = context.get(CURRENT_DYNAMIC_TENANT_CONFIG);
+            if (oidcConfig == null) {
+                oidcConfig = tenantConfigResolver.get().resolve(context, blockingRequestContext);
+                if (oidcConfig == null) {
+                    //shouldn't happen, but guard against it anyway
+                    oidcConfig = Uni.createFrom().nullItem();
                 }
+                oidcConfig = oidcConfig.memoize().indefinitely();
+                if (oidcConfig == null) {
+                    //shouldn't happen, but guard against it anyway
+                    oidcConfig = Uni.createFrom().nullItem();
+                } else {
+                    oidcConfig = oidcConfig.onItem().transform(cfg -> OidcUtils.resolveProviderConfig(cfg));
+                }
+                context.put(CURRENT_DYNAMIC_TENANT_CONFIG, oidcConfig);
             }
+            return oidcConfig;
         }
-        return oidcConfig;
+        return Uni.createFrom().nullItem();
     }
 
     private Uni<TenantConfigContext> getDynamicTenantContext(RoutingContext context) {
 
-        OidcTenantConfig tenantConfig = getDynamicTenantConfig(context);
-        if (tenantConfig != null) {
-            String tenantId = tenantConfig.getTenantId()
-                    .orElseThrow(() -> new OIDCException("Tenant configuration must have tenant id"));
-            TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
-
-            if (tenantContext == null) {
-                return tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig);
-            } else {
-                return Uni.createFrom().item(tenantContext);
+        return getDynamicTenantConfig(context).chain(new Function<OidcTenantConfig, Uni<? extends TenantConfigContext>>() {
+            @Override
+            public Uni<? extends TenantConfigContext> apply(OidcTenantConfig tenantConfig) {
+                if (tenantConfig != null) {
+                    String tenantId = tenantConfig.getTenantId()
+                            .orElseThrow(() -> new OIDCException("Tenant configuration must have tenant id"));
+                    TenantConfigContext tenantContext = tenantConfigBean.getDynamicTenantsConfig().get(tenantId);
+                    if (tenantContext == null) {
+                        return tenantConfigBean.getTenantConfigContextFactory().apply(tenantConfig);
+                    } else {
+                        return Uni.createFrom().item(tenantContext);
+                    }
+                }
+                return Uni.createFrom().nullItem();
             }
-        }
-
-        return null;
+        });
     }
 
     boolean isEnableHttpForwardedPrefix() {
         return enableHttpForwardedPrefix;
+    }
+
+    public Map<String, BackChannelLogoutTokenCache> getBackChannelLogoutTokens() {
+        return backChannelLogoutTokens;
+    }
+
+    public TenantConfigBean getTenantConfigBean() {
+        return tenantConfigBean;
+    }
+
+    private class DefaultStaticTenantResolver implements TenantResolver {
+
+        @Override
+        public String resolve(RoutingContext context) {
+            String tenantId = context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            if (tenantId != null) {
+                return tenantId;
+            }
+            String[] pathSegments = context.request().path().split("/");
+            if (pathSegments.length > 0) {
+                String lastPathSegment = pathSegments[pathSegments.length - 1];
+                if (tenantConfigBean.getStaticTenantsConfig().containsKey(lastPathSegment)) {
+                    return lastPathSegment;
+                }
+            }
+            return null;
+        }
+
     }
 
 }

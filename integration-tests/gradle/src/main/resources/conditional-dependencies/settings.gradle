@@ -1,18 +1,16 @@
 pluginManagement {
     repositories {
-        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
-        if (System.properties.containsKey('maven.repo.local')) {
-            maven {
-                url System.properties.get('maven.repo.local')
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
             }
-        } else {
-            mavenLocal()
         }
         mavenCentral()
         gradlePluginPortal()
     }
     plugins {
         id 'io.quarkus' version "${quarkusPluginVersion}"
+        id 'io.quarkus.extension' version "${quarkusPluginVersion}"
     }
 }
 
@@ -36,3 +34,4 @@ include 'ext-r:runtime', 'ext-r:deployment'
 include 'ext-s:runtime', 'ext-s:deployment'
 include 'ext-t:runtime', 'ext-t:deployment'
 include 'ext-u:runtime', 'ext-u:deployment'
+include 'simple-dependency', 'transitive-dependency'

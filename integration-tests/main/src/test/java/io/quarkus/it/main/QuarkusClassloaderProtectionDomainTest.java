@@ -10,7 +10,7 @@ import java.net.URL;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
-import javax.enterprise.inject.spi.BeanManager;
+import jakarta.enterprise.inject.spi.BeanManager;
 
 import org.junit.jupiter.api.Test;
 

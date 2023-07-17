@@ -1,5 +1,6 @@
 package io.quarkus.builder;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -174,6 +175,32 @@ public class BasicTests {
         final BuildResult result = chain.createExecutionBuilder("my-app.jar").execute();
         assertNotNull(result.consume(DummyItem.class));
         assertFalse(ran.get());
+    }
+
+    @Test
+    public void testMissingProduces() {
+        final BuildChainBuilder builder = BuildChain.builder();
+        BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
+            public void execute(final BuildContext context) {
+                context.produce(new DummyItem());
+            }
+
+            @Override
+            public String getId() {
+                return "myBuildStepId";
+            }
+        });
+        stepBuilder.consumes(DummyItem.class);
+        assertThatThrownBy(stepBuilder::build)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContainingAll(
+                        "Build step 'myBuildStepId'",
+                        "does not produce any build item and thus will never get executed",
+                        "change the return type of the method to a build item type",
+                        "add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>",
+                        "annotate the method with @Produces",
+                        "Use @Produce(ArtifactResultBuildItem.class) if you want to always execute this step");
     }
 
     @Test

@@ -13,6 +13,10 @@
     <artifactId>quarkus-tck-microprofile-context-propagation</artifactId>
     <name>Quarkus - TCK - MicroProfile Context Propagation</name>
 
+    <properties>
+        <microprofile-context-propagation-tck.version>1.3</microprofile-context-propagation-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -46,7 +50,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-context-propagation</artifactId>
             <exclusions>
-                <!-- By default we check if resteasy is present and don't register this provider
+                <!-- By default, we check if resteasy is present and don't register this provider
                 however the TCK builds the context manually in some cases which does not take this
                 into account so we need to either exclude this or include RESTeasy
 
@@ -74,7 +78,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.context-propagation</groupId>
             <artifactId>microprofile-context-propagation-tck</artifactId>
-            <version>${microprofile-context-propagation.version}</version>
+            <version>${microprofile-context-propagation-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>javax.enterprise</groupId>

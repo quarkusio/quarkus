@@ -1,0 +1,13 @@
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+.CLI
+----
+MAVEN_OPTS='--enable-preview' quarkus build
+----
+ifndef::devtools-no-maven[]
+ifdef::devtools-wrapped[+]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+----
+MAVEN_OPTS='--enable-preview' ./mvnw install
+----
+endif::[]

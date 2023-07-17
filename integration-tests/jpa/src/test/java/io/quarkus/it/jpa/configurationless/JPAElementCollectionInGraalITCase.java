@@ -1,8 +1,8 @@
 package io.quarkus.it.jpa.configurationless;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class JPAElementCollectionInGraalITCase extends JPAElementCollectionTest {
 
 }

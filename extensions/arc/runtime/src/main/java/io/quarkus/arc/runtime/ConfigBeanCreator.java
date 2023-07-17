@@ -2,9 +2,9 @@ package io.quarkus.arc.runtime;
 
 import java.util.Map;
 
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.DeploymentException;
-import javax.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.InjectionPoint;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 

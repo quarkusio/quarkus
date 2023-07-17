@@ -2,13 +2,11 @@ package io.quarkus.flyway.test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
-import javax.inject.Inject;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.UnsatisfiedResolutionException;
+import jakarta.inject.Inject;
 
 import org.flywaydb.core.Flyway;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -18,7 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Flyway needs a datasource to work.
- * This tests assures, that an error occurs, as soon as a named flyway configuration points to an missing datasource.
+ * This tests assures that an error occurs as soon as a named flyway configuration points to a missing datasource.
  */
 public class FlywayExtensionConfigMissingNamedDataSourceTest {
 
@@ -28,7 +26,7 @@ public class FlywayExtensionConfigMissingNamedDataSourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("config-for-missing-named-datasource.properties", "application.properties"));
 
     @Test

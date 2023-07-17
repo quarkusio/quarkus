@@ -21,7 +21,7 @@ public class BootstrapConfigSetupBuildStep {
     private static final String BOOTSTRAP_CONFIG_STARTUP_TASK_CLASS_NAME = "io.quarkus.deployment.steps.BootstrapConfigSetup";
 
     /**
-     * Generates a StartupTask that creates a instance of the generated Config class
+     * Generates a StartupTask that creates an instance of the generated Config class
      * It runs before any StartupTask that uses configuration
      */
     @BuildStep

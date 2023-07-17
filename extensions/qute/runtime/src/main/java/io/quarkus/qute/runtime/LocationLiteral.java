@@ -1,6 +1,6 @@
 package io.quarkus.qute.runtime;
 
-import javax.enterprise.util.AnnotationLiteral;
+import jakarta.enterprise.util.AnnotationLiteral;
 
 import io.quarkus.qute.Location;
 

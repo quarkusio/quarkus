@@ -10,15 +10,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
-import io.quarkus.vertx.http.testrunner.ContinuousTestingTestUtils;
+import io.restassured.RestAssured;
 
 public class TestParameterizedTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(OddResource.class, Setup.class, HelloResource.class)
@@ -26,7 +27,7 @@ public class TestParameterizedTestCase {
                                     "application.properties");
                 }
             })
-            .setTestArchiveProducer(new Supplier<JavaArchive>() {
+            .setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClass(ParamET.class);
@@ -42,6 +43,13 @@ public class TestParameterizedTestCase {
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
+        RestAssured.post("q/dev-v1/io.quarkus.quarkus-vertx-http/tests/runfailed");
+
+        ts = utils.waitForNextCompletion();
+
+        Assertions.assertEquals(1L, ts.getTestsFailed());
+        Assertions.assertEquals(3L, ts.getTestsPassed()); //they are all re-run
+        Assertions.assertEquals(0L, ts.getTestsSkipped());
         test.modifyTestSourceFile(ParamET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {

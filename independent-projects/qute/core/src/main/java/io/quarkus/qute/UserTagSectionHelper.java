@@ -1,69 +1,53 @@
 package io.quarkus.qute;
 
-import static io.quarkus.qute.Futures.evaluateParams;
-
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-public class UserTagSectionHelper implements SectionHelper {
+public class UserTagSectionHelper extends IncludeSectionHelper implements SectionHelper {
 
-    private static final String IT = "it";
     private static final String NESTED_CONTENT = "nested-content";
 
-    private final Supplier<Template> templateSupplier;
-    private final Map<String, Expression> parameters;
-    private final boolean isEmpty;
+    protected final boolean isNestedContentNeeded;
 
-    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, Expression> parameters, boolean isEmpty) {
-        this.templateSupplier = templateSupplier;
-        this.parameters = parameters;
-        this.isEmpty = isEmpty;
+    UserTagSectionHelper(Supplier<Template> templateSupplier, Map<String, SectionBlock> extendingBlocks,
+            Map<String, Expression> parameters, boolean isIsolated, boolean isNestedContentNeeded) {
+        super(templateSupplier, extendingBlocks, parameters, isIsolated);
+        this.isNestedContentNeeded = isNestedContentNeeded;
     }
 
     @Override
-    public CompletionStage<ResultNode> resolve(SectionResolutionContext context) {
-        CompletableFuture<ResultNode> result = new CompletableFuture<>();
-        evaluateParams(parameters, context.resolutionContext()).whenComplete((evaluatedParams, t1) -> {
-            if (t1 != null) {
-                result.completeExceptionally(t1);
-            } else {
-                if (!isEmpty) {
-                    // Execute the nested content first and make it accessible via the "nested-content" key 
-                    evaluatedParams.put(NESTED_CONTENT,
-                            context.execute(
-                                    context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null)));
-                }
-                try {
-                    // Execute the template with the params as the root context object
-                    TemplateImpl tagTemplate = (TemplateImpl) templateSupplier.get();
-                    tagTemplate.root.resolve(context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null))
-                            .whenComplete((resultNode, t2) -> {
-                                if (t2 != null) {
-                                    result.completeExceptionally(t2);
-                                } else {
-                                    result.complete(resultNode);
-                                }
-                            });
-                } catch (Throwable e) {
-                    result.completeExceptionally(e);
-                }
-            }
-        });
-        return result;
+    protected boolean optimizeIfNoParams() {
+        return false;
     }
 
-    public static class Factory implements SectionHelperFactory<UserTagSectionHelper> {
+    @Override
+    protected void addAdditionalEvaluatedParams(SectionResolutionContext context, Map<String, Object> evaluatedParams) {
+        if (isNestedContentNeeded) {
+            // If needed then add the {nested-content} to the evaluated params
+            Expression nestedContent = ((TemplateImpl) template.get()).findExpression(this::isNestedContent);
+            if (nestedContent != null) {
+                // Execute the nested content first and make it accessible via the "nested-content" key
+                evaluatedParams.put(NESTED_CONTENT,
+                        context.execute(
+                                context.resolutionContext().createChild(Mapper.wrap(evaluatedParams), null)));
+            }
+        }
+    }
+
+    private boolean isNestedContent(Expression expr) {
+        return expr.getParts().size() == 1 && expr.getParts().get(0).getName().equals(NESTED_CONTENT);
+    }
+
+    public static class Factory extends IncludeSectionHelper.AbstractIncludeFactory<UserTagSectionHelper> {
+
+        private static final String IT = "it";
 
         private final String name;
         private final String templateId;
 
         /**
-         * 
+         *
          * @param name Identifies the tag
          * @param templateId Used to locate the template
          */
@@ -79,47 +63,44 @@ public class UserTagSectionHelper implements SectionHelper {
 
         @Override
         public ParametersInfo getParameters() {
-            return ParametersInfo.builder().addParameter(new Parameter(IT, IT, false)).build();
+            ParametersInfo.Builder builder = ParametersInfo.builder().addParameter(Parameter.builder(IT).defaultValue(IT));
+            addDefaultParams(builder);
+            return builder.build();
         }
 
         @Override
-        public Scope initializeBlock(Scope outerScope, BlockInfo block) {
-            if (block.getLabel().equals(MAIN_BLOCK_NAME)) {
-                for (Entry<String, String> entry : block.getParameters().entrySet()) {
-                    if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
-                        continue;
-                    }
-                    block.addExpression(entry.getKey(), entry.getValue());
-                }
-                return outerScope;
-            } else {
-                return outerScope;
-            }
+        protected boolean ignoreParameterInit(String key, String value) {
+            // {#myTag _isolated=true /}
+            return key.equals(IncludeSectionHelper.Factory.ISOLATED)
+                    // {#myTag _isolated /}
+                    || value.equals(IncludeSectionHelper.Factory.ISOLATED)
+                    // IT with default value, e.g. {#myTag foo=bar /}
+                    || (key.equals(IT) && value.equals(IT));
         }
 
         @Override
-        public UserTagSectionHelper initialize(SectionInitContext context) {
-            Map<String, Expression> params = new HashMap<>();
-            for (Entry<String, String> entry : context.getParameters().entrySet()) {
-                if (entry.getKey().equals(IT) && entry.getValue().equals(IT)) {
-                    continue;
+        protected String getTemplateId(SectionInitContext context) {
+            return templateId;
+        }
+
+        @Override
+        protected UserTagSectionHelper newHelper(Supplier<Template> template, Map<String, Expression> params,
+                Map<String, SectionBlock> extendingBlocks, boolean isolated, SectionInitContext context) {
+            boolean isNestedContentNeeded = !context.getBlock(SectionHelperFactory.MAIN_BLOCK_NAME).isEmpty();
+            return new UserTagSectionHelper(template, extendingBlocks, params, isolated, isNestedContentNeeded);
+        }
+
+        @Override
+        protected void handleParamInit(String key, String value, SectionInitContext context, Map<String, Expression> params) {
+            if (key.equals(IT)) {
+                if (value.equals(IT)) {
+                    return;
+                } else if (isSinglePart(value)) {
+                    // Also register the param with a defaulted key
+                    params.put(value, context.getExpression(key));
                 }
-                params.put(entry.getKey(), context.getExpression(entry.getKey()));
             }
-            boolean isEmpty = context.getBlocks().size() == 1 && context.getBlocks().get(0).isEmpty();
-            final Engine engine = context.getEngine();
-
-            return new UserTagSectionHelper(new Supplier<Template>() {
-
-                @Override
-                public Template get() {
-                    Template template = engine.getTemplate(templateId);
-                    if (template == null) {
-                        throw new TemplateException("Tag template not found: " + templateId);
-                    }
-                    return template;
-                }
-            }, params, isEmpty);
+            super.handleParamInit(key, value, context, params);
         }
 
     }

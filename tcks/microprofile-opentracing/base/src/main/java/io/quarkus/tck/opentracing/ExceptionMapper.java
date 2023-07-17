@@ -1,8 +1,8 @@
 package io.quarkus.tck.opentracing;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * Temporary fix to catch exceptions thrown in JAX-RS endpoints
@@ -11,7 +11,7 @@ import javax.ws.rs.ext.Provider;
  * @author Pavol Loffay
  */
 @Provider
-public class ExceptionMapper implements javax.ws.rs.ext.ExceptionMapper<RuntimeException> {
+public class ExceptionMapper implements jakarta.ws.rs.ext.ExceptionMapper<RuntimeException> {
 
     @Override
     public Response toResponse(RuntimeException exception) {

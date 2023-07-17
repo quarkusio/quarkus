@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Funqy HTTP Binding (Standalone)
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: cloud
+:summary: This guide explains Funqy's HTTP binding.
 :extension-status: preview
 
 The guide walks through quickstart code to show you how you can deploy Funqy as a
@@ -15,18 +16,14 @@ WARNING: The Funqy HTTP binding is not a replacement for REST over HTTP.  Becaus
 needs to be portable across a lot of different protocols and function providers its HTTP binding
 is very minimalistic and you will lose REST features like linking and the ability to leverage
 HTTP features like cache-control and conditional GETs.  You may want to consider using Quarkus's
-JAX-RS, Spring MVC, or Vert.x Web Reactive Routes support instead, although Funqy will have less overhead
+Jakarta REST, Spring MVC, or Vert.x Web Reactive Routes support instead, although Funqy will have less overhead
 than these alternatives (except Vert.x which is still super fast).
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* Read about link:funqy[Funqy Basics].  This is a short read!
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+* Read about xref:funqy.adoc[Funqy Basics].  This is a short read!
 
 == The Quickstart
 

@@ -1,14 +1,14 @@
 package io.quarkus.arc.test.interceptors.intercepted;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.Priority;
-import javax.enterprise.inject.Intercepted;
-import javax.enterprise.inject.spi.Bean;
-import javax.inject.Inject;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Intercepted;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.inject.Inject;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
 @Simple
 @Priority(1)

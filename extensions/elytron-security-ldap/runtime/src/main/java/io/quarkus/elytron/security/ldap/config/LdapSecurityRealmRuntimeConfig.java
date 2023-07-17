@@ -5,7 +5,7 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
- * Runtime configuration object for a LDAP based realm configuration,
+ * Runtime configuration object for an LDAP based realm configuration,
  * {@linkplain org.wildfly.security.auth.realm.ldap.LdapSecurityRealm}
  */
 @ConfigRoot(name = "security.ldap", phase = ConfigPhase.RUN_TIME)

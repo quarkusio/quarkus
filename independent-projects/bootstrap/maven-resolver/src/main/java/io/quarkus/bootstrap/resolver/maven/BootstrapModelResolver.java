@@ -1,14 +1,12 @@
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.Repository;
@@ -28,6 +26,7 @@ import org.eclipse.aether.impl.ArtifactResolver;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.impl.VersionRangeResolver;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
@@ -35,13 +34,17 @@ import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+
 public class BootstrapModelResolver implements ModelResolver {
 
-    public static ModelResolver newInstance(BootstrapMavenContext ctx, LocalWorkspace workspace)
+    public static ModelResolver newInstance(BootstrapMavenContext ctx, WorkspaceReader workspace)
             throws BootstrapMavenException {
         final RepositorySystem repoSystem = ctx.getRepositorySystem();
-        return new BootstrapModelResolver(
-                new DefaultRepositorySystemSession(ctx.getRepositorySystemSession()).setWorkspaceReader(workspace), null, null,
+        final RepositorySystemSession session = workspace == null
+                ? ctx.getRepositorySystemSession()
+                : new DefaultRepositorySystemSession(ctx.getRepositorySystemSession()).setWorkspaceReader(workspace);
+        return new BootstrapModelResolver(session, null, null,
                 new ArtifactResolver() {
                     @Override
                     public ArtifactResult resolveArtifact(RepositorySystemSession session, ArtifactRequest request)
@@ -83,7 +86,7 @@ public class BootstrapModelResolver implements ModelResolver {
         this.versionRangeResolver = versionRangeResolver;
         this.remoteRepositoryManager = remoteRepositoryManager;
         this.repositories = repositories;
-        this.externalRepositories = Collections.unmodifiableList(new ArrayList<>(repositories));
+        this.externalRepositories = List.copyOf(repositories);
         this.repositoryIds = new HashSet<>();
     }
 
@@ -111,19 +114,14 @@ public class BootstrapModelResolver implements ModelResolver {
         if (session.isIgnoreArtifactDescriptorRepositories()) {
             return;
         }
-
         if (!repositoryIds.add(repository.getId())) {
             if (!replace) {
                 return;
             }
-
             removeMatchingRepository(repositories, repository.getId());
         }
-
-        List<RemoteRepository> newRepositories = Collections
-                .singletonList(ArtifactDescriptorUtils.toRemoteRepository(repository));
-
-        this.repositories = remoteRepositoryManager.aggregateRepositories(session, repositories, newRepositories, true);
+        this.repositories = remoteRepositoryManager.aggregateRepositories(session, repositories,
+                List.of(ArtifactDescriptorUtils.toRemoteRepository(repository)), true);
     }
 
     private static void removeMatchingRepository(Iterable<RemoteRepository> repositories, final String id) {
@@ -144,8 +142,8 @@ public class BootstrapModelResolver implements ModelResolver {
     @Override
     public ModelSource resolveModel(String groupId, String artifactId, String version)
             throws UnresolvableModelException {
-        Artifact pomArtifact = new DefaultArtifact(groupId, artifactId, "", "pom", version);
-
+        Artifact pomArtifact = new DefaultArtifact(groupId, artifactId, ArtifactCoords.DEFAULT_CLASSIFIER,
+                ArtifactCoords.TYPE_POM, version);
         try {
             ArtifactRequest request = new ArtifactRequest(pomArtifact, repositories, context);
             request.setTrace(trace);
@@ -153,17 +151,15 @@ public class BootstrapModelResolver implements ModelResolver {
         } catch (ArtifactResolutionException e) {
             throw new UnresolvableModelException(e.getMessage(), groupId, artifactId, version, e);
         }
-
-        File pomFile = pomArtifact.getFile();
-
-        return new FileModelSource(pomFile);
+        return new FileModelSource(pomArtifact.getFile());
     }
 
     @Override
     public ModelSource resolveModel(final Parent parent)
             throws UnresolvableModelException {
         try {
-            final Artifact artifact = new DefaultArtifact(parent.getGroupId(), parent.getArtifactId(), "", "pom",
+            final Artifact artifact = new DefaultArtifact(parent.getGroupId(), parent.getArtifactId(),
+                    ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_POM,
                     parent.getVersion());
 
             final VersionRangeRequest versionRangeRequest = new VersionRangeRequest(artifact, repositories, context);
@@ -192,7 +188,7 @@ public class BootstrapModelResolver implements ModelResolver {
             parent.setVersion(versionRangeResult.getHighestVersion().toString());
 
             return resolveModel(parent.getGroupId(), parent.getArtifactId(), parent.getVersion());
-        } catch (final VersionRangeResolutionException e) {
+        } catch (VersionRangeResolutionException e) {
             throw new UnresolvableModelException(e.getMessage(), parent.getGroupId(), parent.getArtifactId(),
                     parent.getVersion(), e);
         }
@@ -202,8 +198,9 @@ public class BootstrapModelResolver implements ModelResolver {
     public ModelSource resolveModel(final Dependency dependency)
             throws UnresolvableModelException {
         try {
-            final Artifact artifact = new DefaultArtifact(dependency.getGroupId(), dependency.getArtifactId(), "",
-                    "pom", dependency.getVersion());
+            final Artifact artifact = new DefaultArtifact(dependency.getGroupId(), dependency.getArtifactId(),
+                    ArtifactCoords.DEFAULT_CLASSIFIER,
+                    ArtifactCoords.TYPE_POM, dependency.getVersion());
 
             final VersionRangeRequest versionRangeRequest = new VersionRangeRequest(artifact, repositories, context);
             versionRangeRequest.setTrace(trace);

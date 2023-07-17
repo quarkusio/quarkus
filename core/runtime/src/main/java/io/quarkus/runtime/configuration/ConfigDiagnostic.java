@@ -1,6 +1,5 @@
 package io.quarkus.runtime.configuration;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -10,11 +9,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
 
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
-
+import io.quarkus.runtime.ImageMode;
 import io.smallrye.config.common.utils.StringUtil;
 
 /**
@@ -23,7 +20,6 @@ import io.smallrye.config.common.utils.StringUtil;
 public final class ConfigDiagnostic {
     private static final Logger log = Logger.getLogger("io.quarkus.config");
 
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static final List<String> errorsMessages = new CopyOnWriteArrayList<>();
     private static final Set<String> errorKeys = new CopyOnWriteArraySet<>();
 
@@ -68,19 +64,19 @@ public final class ConfigDiagnostic {
 
     /**
      * Report any unused properties.
-     *
-     * The list of unused properties may contain false positives. This is caused when an environment variable is set up
+     * <br>
+     * The list of unused properties may contain false positives. This is caused when an environment variable is set up,
      * and we cannot determine correctly if it was used or not.
-     *
-     * Environment variables required conversion to regular property names so a Map can be properly populated when
+     * <br>
+     * Environment variables require a conversion to regular property names so a Map can be properly populated when
      * iterating {@link Config#getPropertyNames()}. Because an Environment variable name may match multiple property
-     * names, we try a best effort to report unknowns by matching used properties in their Environment variable name
+     * names, we try the best effort to report unknowns by matching used properties in their Environment variable name
      * format.
      *
-     * @param properties the list of possible unused properties
+     * @param properties the set of possible unused properties
      */
-    public static void unknownProperties(List<String> properties) {
-        List<String> usedProperties = new ArrayList<>();
+    public static void unknownProperties(Set<String> properties) {
+        Set<String> usedProperties = new HashSet<>();
         for (String property : ConfigProvider.getConfig().getPropertyNames()) {
             if (properties.contains(property)) {
                 continue;
@@ -91,6 +87,11 @@ public final class ConfigDiagnostic {
         usedProperties.removeAll(properties);
 
         for (String property : properties) {
+            // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
+            if (property.contains("[") && property.contains("]")) {
+                continue;
+            }
+
             boolean found = false;
             for (String usedProperty : usedProperties) {
                 if (usedProperty.equalsIgnoreCase(StringUtil.replaceNonAlphanumericByUnderscores(property))) {
@@ -105,7 +106,7 @@ public final class ConfigDiagnostic {
     }
 
     public static void unknownRunTime(String name) {
-        if (ImageInfo.inImageRuntimeCode()) {
+        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
             // only warn at run time for native images, otherwise the user will get warned twice for every property
             unknown(name);
         }
@@ -115,8 +116,8 @@ public final class ConfigDiagnostic {
         unknownRunTime(name.getName());
     }
 
-    public static void unknownPropertiesRuntime(List<String> properties) {
-        if (ImageInfo.inImageRuntimeCode()) {
+    public static void unknownPropertiesRuntime(Set<String> properties) {
+        if (ImageMode.current() == ImageMode.NATIVE_RUN) {
             unknownProperties(properties);
         }
     }

@@ -18,5 +18,9 @@
         <module>runtime</module>
         <module>dev-console-spi</module>
         <module>dev-console-runtime-spi</module>
+        <module>deployment-spi</module>
+        <module>dev-ui-spi</module>
+        <module>dev-ui-resources</module>
+        <module>dev-ui-tests</module>
     </modules>
 </project>

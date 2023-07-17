@@ -1,18 +1,20 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
 import io.quarkus.smallrye.reactivemessaging.sendSuspending
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.POST
+import jakarta.ws.rs.Path
 import kotlinx.coroutines.delay
 import org.eclipse.microprofile.reactive.messaging.Channel
 import org.eclipse.microprofile.reactive.messaging.Emitter
 import org.eclipse.microprofile.rest.client.inject.RestClient
-import javax.ws.rs.GET
-import javax.ws.rs.POST
-import javax.ws.rs.Path
 
 @Path("country")
-class CountriesEndpoint(@RestClient private val countriesGateway: CountriesGateway,
-                        private val countryNameConsumer: CountryNameConsumer,
-                        @Channel("countries-emitter") private val countryEmitter: Emitter<String>) {
+class CountriesEndpoint(
+    @RestClient private val countriesGateway: CountriesGateway,
+    private val countryNameConsumer: CountryNameConsumer,
+    @Channel("countries-emitter") private val countryEmitter: Emitter<Country>
+) {
 
     @GET
     @Path("/name/{name}")
@@ -24,10 +26,11 @@ class CountriesEndpoint(@RestClient private val countriesGateway: CountriesGatew
 
     @POST
     @Path("/kafka/{name}")
-    suspend fun sendCountryNameToKafka(name: String): String {
+    suspend fun sendCountryNameToKafka(name: String): Country {
         delay(50)
-        countryEmitter.sendSuspending(name)
-        return name
+        val country = Country(name, "capital-$name")
+        countryEmitter.sendSuspending(country)
+        return country
     }
 
     @GET

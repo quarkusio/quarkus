@@ -24,6 +24,10 @@ public class VirtualClientConnection<T> {
         return clientAddress;
     }
 
+    public VirtualChannel peer() {
+        return peer;
+    }
+
     public void close() {
         // todo more cleanup?
         connected = false;

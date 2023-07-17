@@ -15,6 +15,7 @@
   <modules>
     <module>maven-invoker-way</module>
     <module>quarkus-standard-way</module>
+    <module>quarkus-standard-way-kafka</module>
   </modules>
 
 </project>

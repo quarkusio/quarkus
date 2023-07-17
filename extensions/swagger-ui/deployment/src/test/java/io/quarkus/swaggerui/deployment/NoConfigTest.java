@@ -2,8 +2,6 @@ package io.quarkus.swaggerui.deployment;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class NoConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+            .withEmptyApplication();
 
     @Test
     public void shouldUseDefaultConfig() {

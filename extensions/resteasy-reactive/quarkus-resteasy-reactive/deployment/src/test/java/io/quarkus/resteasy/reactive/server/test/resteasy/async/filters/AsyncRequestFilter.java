@@ -4,12 +4,14 @@ import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveContainerRequestFilter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
+
+import io.quarkus.resteasy.reactive.server.test.ExceptionUtil;
 
 public abstract class AsyncRequestFilter implements ResteasyReactiveContainerRequestFilter {
 
@@ -58,13 +60,13 @@ public abstract class AsyncRequestFilter implements ResteasyReactiveContainerReq
                 }
                 resteasyReactiveCallbackContext.registerCompletionCallback((t) -> {
                     if (callbackException != null)
-                        throw new RuntimeException("Callback called twice");
+                        throw ExceptionUtil.removeStackTrace(new RuntimeException("Callback called twice"));
                     callbackException = Objects.toString(t);
                 });
                 if ("true".equals(ctx.getHeaderString("UseExceptionMapper")))
-                    ctx.resume(new AsyncFilterException("ouch"));
+                    ctx.resume(ExceptionUtil.removeStackTrace(new AsyncFilterException("ouch")));
                 else
-                    ctx.resume(new Throwable("ouch"));
+                    ctx.resume(ExceptionUtil.removeStackTrace(new Throwable("ouch")));
             });
         }
         LOG.debug("Filter request for " + name + " with action: " + action + " done");

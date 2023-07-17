@@ -30,6 +30,7 @@ public class KeycloakRealmUserPasswordManager implements QuarkusTestResourceLife
             RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
 
             realm.getClients().add(createClient("quarkus-app"));
+            realm.getClients().add(createPublicClient("quarkus-public-app"));
             realm.getUsers().add(createUser("alice", "user"));
             realm.getUsers().add(createUser("bob", "user"));
 
@@ -89,6 +90,17 @@ public class KeycloakRealmUserPasswordManager implements QuarkusTestResourceLife
         client.setClientId(clientId);
         client.setPublicClient(false);
         client.setSecret("secret");
+        client.setDirectAccessGrantsEnabled(true);
+        client.setEnabled(true);
+
+        return client;
+    }
+
+    private static ClientRepresentation createPublicClient(String clientId) {
+        ClientRepresentation client = new ClientRepresentation();
+
+        client.setClientId(clientId);
+        client.setPublicClient(true);
         client.setDirectAccessGrantsEnabled(true);
         client.setEnabled(true);
 

@@ -14,5 +14,5 @@ public interface RegistryPlatformsResolver {
      * @return catalog of the recommended platform versions
      * @throws RegistryResolutionException in case of a failure
      */
-    PlatformCatalog resolvePlatforms(String quarkusVersion) throws RegistryResolutionException;
+    PlatformCatalog.Mutable resolvePlatforms(String quarkusVersion) throws RegistryResolutionException;
 }

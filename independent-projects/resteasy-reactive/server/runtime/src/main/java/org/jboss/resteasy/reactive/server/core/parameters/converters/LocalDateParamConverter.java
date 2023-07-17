@@ -1,34 +1,46 @@
 package org.jboss.resteasy.reactive.server.core.parameters.converters;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
-public class LocalDateParamConverter implements ParameterConverter {
+public class LocalDateParamConverter extends TemporalParamConverter<LocalDate> {
 
-    @Override
-    public Object convert(Object parameter) {
-        return LocalDate.parse(String.valueOf(parameter), DateTimeFormatter.ISO_LOCAL_DATE);
+    // this can be called by generated code
+    public LocalDateParamConverter() {
+        super(DateTimeFormatter.ISO_LOCAL_DATE);
+    }
+
+    public LocalDateParamConverter(DateTimeFormatter formatter) {
+        super(formatter);
     }
 
     @Override
-    public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType,
-            Annotation[] annotations) {
-        // no init required
+    protected LocalDate convert(String value) {
+        return LocalDate.parse(value);
     }
 
-    public static class Supplier implements ParameterConverterSupplier {
+    @Override
+    protected LocalDate convert(String value, DateTimeFormatter formatter) {
+        return LocalDate.parse(value, formatter);
+    }
+
+    public static class Supplier extends TemporalSupplier<LocalDateParamConverter> {
+
+        public Supplier() {
+        }
+
+        public Supplier(String pattern, String dateTimeFormatterProviderClassName) {
+            super(pattern, dateTimeFormatterProviderClassName);
+        }
+
+        @Override
+        protected LocalDateParamConverter createConverter(DateTimeFormatter dateTimeFormatter) {
+            return new LocalDateParamConverter(dateTimeFormatter);
+        }
 
         @Override
         public String getClassName() {
             return LocalDateParamConverter.class.getName();
-        }
-
-        @Override
-        public ParameterConverter get() {
-            return new LocalDateParamConverter();
         }
     }
 }

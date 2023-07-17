@@ -13,3 +13,5 @@ metadata:
   - "core"
   status: "stable"
   unlisted: true
+  config:
+  - "quarkus.arc."

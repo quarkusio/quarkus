@@ -15,4 +15,9 @@ public class MutinyHelloService implements Greeter {
                 .map(s -> "Hello " + s)
                 .map(s -> HelloReply.newBuilder().setMessage(s).build());
     }
+
+    @Override
+    public Uni<HelloReply> wEIRD(HelloRequest request) {
+        return sayHello(request);
+    }
 }

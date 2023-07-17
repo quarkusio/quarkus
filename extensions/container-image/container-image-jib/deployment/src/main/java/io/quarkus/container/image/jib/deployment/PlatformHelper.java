@@ -12,10 +12,10 @@ import com.google.cloud.tools.jib.api.buildplan.Platform;
 /*
  * This code is a simplified version of <a href="https://github.com/containerd/containerd/blob/release/1.4/platforms/platforms.go">platforms</a>
  * The reason is to comply with docker's convention and the format is not formally defined in Jib, although it use a reverse notation "arch/os" in documentation
- * 
+ *
  * The accepted platform format is: <os>|<arch>[/variant]|<os>/<arch>[/variant]
  * The default OS is linux and the default Architecture is amd64 (as in Jib lib)
- * Valid values for OS and Arch are define by OCI. See <a href="https://github.com/opencontainers/image-spec/blob/master/image-index.md">image-index</a>
+ * Valid values for OS and Arch are define by OCI. See <a href="https://github.com/opencontainers/image-spec/blob/main/image-index.md">image-index</a>
  *
 */
 final class PlatformHelper {

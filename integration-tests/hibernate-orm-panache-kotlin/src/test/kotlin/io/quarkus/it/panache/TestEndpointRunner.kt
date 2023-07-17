@@ -5,28 +5,26 @@ import io.quarkus.it.panache.kotlin.AddressDao
 import io.quarkus.it.panache.kotlin.Person
 import io.quarkus.it.panache.kotlin.TestEndpoint
 import io.quarkus.test.junit.QuarkusTest
-import org.hibernate.internal.SessionImpl
+import jakarta.inject.Inject
+import jakarta.persistence.EntityManager
+import java.sql.ResultSet
+import org.hibernate.engine.spi.SessionImplementor
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-import java.sql.ResultSet
-import javax.inject.Inject
-import javax.persistence.EntityManager
 
 @QuarkusTest
 class TestEndpointRunner {
-    @Inject
-    lateinit var endpoint: TestEndpoint
+    @Inject lateinit var endpoint: TestEndpoint
 
-    @Inject
-    lateinit var addressDao: AddressDao
+    @Inject lateinit var addressDao: AddressDao
 
-    @Inject
-    lateinit var em: EntityManager
+    @Inject lateinit var em: EntityManager
 
     @Test
     fun testModel() {
-        val con = (em.delegate as SessionImpl).connection()
+        val con =
+            (em.delegate as SessionImplementor).jdbcCoordinator.logicalConnection.physicalConnection
 
         val schema = mutableMapOf<String, Map<String, String>>()
         val result: ResultSet = con.metaData.getTables(null, "PUBLIC", null, arrayOf("TABLE"))
@@ -41,7 +39,11 @@ class TestEndpointRunner {
         }
         con.close()
 
-        Assertions.assertEquals("VARCHAR", schema["PERSON2"]?.get("STATUS"), schema.toString())
+        Assertions.assertEquals(
+            "CHARACTER VARYING",
+            schema["PERSON2"]?.get("STATUS"),
+            schema.toString()
+        )
 
         endpoint.testModelDao()
         endpoint.testModel()

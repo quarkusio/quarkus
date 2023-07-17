@@ -93,7 +93,7 @@ public class IoUtils {
 
     /**
      * Creates a new empty directory or empties an existing one.
-     * 
+     *
      * @param dir directory
      * @throws IOException in case of a failure
      */
@@ -120,33 +120,34 @@ public class IoUtils {
     public static Path copy(Path source, Path target) throws IOException {
         if (Files.isDirectory(source)) {
             Files.createDirectories(target);
+            Files.walkFileTree(source, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
+                    new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                                throws IOException {
+                            final Path targetDir = target.resolve(source.relativize(dir).toString());
+                            try {
+                                Files.copy(dir, targetDir);
+                            } catch (FileAlreadyExistsException e) {
+                                if (!Files.isDirectory(targetDir)) {
+                                    throw e;
+                                }
+                            }
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                        @Override
+                        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                                throws IOException {
+                            Files.copy(file, target.resolve(source.relativize(file).toString()),
+                                    StandardCopyOption.REPLACE_EXISTING);
+                            return FileVisitResult.CONTINUE;
+                        }
+                    });
         } else {
             Files.createDirectories(target.getParent());
+            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
         }
-        Files.walkFileTree(source, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
-                new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                            throws IOException {
-                        final Path targetDir = target.resolve(source.relativize(dir).toString());
-                        try {
-                            Files.copy(dir, targetDir);
-                        } catch (FileAlreadyExistsException e) {
-                            if (!Files.isDirectory(targetDir)) {
-                                throw e;
-                            }
-                        }
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                            throws IOException {
-                        Files.copy(file, target.resolve(source.relativize(file).toString()),
-                                StandardCopyOption.REPLACE_EXISTING);
-                        return FileVisitResult.CONTINUE;
-                    }
-                });
         return target;
     }
 
@@ -163,11 +164,7 @@ public class IoUtils {
     }
 
     public static void copy(OutputStream out, InputStream in) throws IOException {
-        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-        int r;
-        while ((r = in.read(buffer)) > 0) {
-            out.write(buffer, 0, r);
-        }
+        in.transferTo(out);
     }
 
     public static void writeFile(Path file, String content) throws IOException {

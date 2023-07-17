@@ -1,0 +1,136 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services Overview
+include::_attributes.adoc[]
+:categories: core
+:summary: A list of all extensions that support Dev Services and their configuration options.
+
+Quarkus supports the automatic provisioning of unconfigured services in development and test mode. We refer to this capability
+as Dev Services. From a developer's perspective this means that if you include an extension and don't configure it then
+Quarkus will automatically start the relevant service (usually using https://www.testcontainers.org/[Testcontainers] behind the scenes) and wire up your
+application to use this service.
+
+All this functionality is part of the Quarkus `deployment` modules, so does not affect the production application in any
+way. If you want to disable all Dev Services you can use the `quarkus.devservices.enabled=false` config property, although
+in most cases this is not necessary as simply configuring the service will result in the Dev Service being disabled automatically.
+
+Note that the default startup timeout is 60s, if this is not enough you can increase it with the `quarkus.devservices.timeout` property.
+
+
+This page lists all the Dev Services that Quarkus supports.
+
+NOTE: In order to use Dev Services you will generally need a working Docker environment (remote environments are supported).
+If you don't have Docker installed you will need to configure your services normally.
+
+== AMQP
+
+The AMQP Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-amqp` extension is present in your application, and
+the broker address has not been explicitly configured. More information can be found in the
+xref:amqp-dev-services.adoc[AMQP Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-amqp-config-group-amqp-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== Apicurio Registry
+
+The Apicurio Dev Service will be enabled when the `quarkus-apicurio-registry-avro` extension is present in your application, and it's
+address has not been explicitly configured. More information can be found in the
+xref:apicurio-registry-dev-services.adoc[Apicurio Registry Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-apicurio-registry-devservices-apicurio-registry-devservice-apicurio-registry-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== Databases
+
+The database Dev Services will be enabled when a reactive or JDBC datasource extension is present in the application,
+and the database URL has not been configured. More information can be found in the
+xref:databases-dev-services.adoc[Databases Dev Services Guide].
+
+Quarkus provides Dev Services for all databases it supports. Most of these are run in a container, except
+H2 and Derby which are run in-process. Dev Services are supported for both JDBC and reactive drivers.
+
+Those relational databases that are running in a container are started using Testcontainers and support "reusable instances";
+this implies that if you add the property `testcontainers.reuse.enable=true` in your Testcontainers configuration file,
+a property file named `.testcontainers.properties` in your user home, then the databases will not be stopped aggressively
+after each run, and can be reused.
+
+N.B. if you opt in for this feature, Quarkus will not reset the state of the database between runs unless you explicitly configure it to.
+
+include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== Kafka
+
+The Kafka Dev Service will be enabled when the `quarkus-kafka-client` extension is present in your application, and
+the broker address has not been explicitly configured. More information can be found in the
+xref:kafka-dev-services.adoc[Kafka Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-kafka-client-config-group-kafka-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== Keycloak
+
+The Keycloak Dev Service will be enabled when the `quarkus-oidc` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found in the
+xref:security-openid-connect-dev-services.adoc[OIDC Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-keycloak-devservices-keycloak-keycloak-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== Kubernetes
+
+The Kubernetes Dev Service will be enabled when `kubernetes-client` extension is present in your application, and 
+the API server address has not been explicitly configured. More information can be found in the
+xref:kubernetes-dev-services.adoc[Kubernetes Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-kubernetes-client-config-group-kubernetes-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== MongoDB
+
+The MongoDB Dev Service will be enabled when the `quarkus-mongodb-client` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found in the
+xref:mongodb.adoc#dev-services[MongoDB Guide].
+
+include::{generated-dir}/config/quarkus-mongodb-config-group-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== RabbitMQ
+
+The RabbitMQ Dev Service will be enabled when the `quarkus-smallrye-reactive-messaging-rabbitmq` extension is present in your application, and
+the broker address has not been explicitly configured. More information can be found in the
+xref:rabbitmq-dev-services.adoc[RabbitMQ Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-smallrye-reactivemessaging-rabbitmq-config-group-rabbit-mq-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]
+
+== Redis
+
+The Redis Dev Service will be enabled when the `quarkus-redis-client` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found in the
+xref:redis-dev-services.adoc[Redis Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+
+== Vault
+
+The Vault Dev Service will be enabled when the `quarkus-vault` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found in the
+link:{vault-guide}#dev-services[Vault Guide].
+
+== Neo4j
+
+The Neo4j Dev Service will be enabled when the `quarkus-neo4j` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found in the
+link:{neo4j-guide}#dev-services[Neo4j Guide].
+
+== Infinispan
+
+The Infinispan Dev Service will be enabled when the `quarkus-infinispan-client` extension is present in your application, and
+the server address has not been explicitly configured. More information can be found in the
+xref:infinispan-dev-services.adoc[Infinispan Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-infinispan-client-config-group-infinispan-client-build-time-config-dev-service-configuration.adoc[opts=optional, leveloffset=+1]
+
+== Elasticsearch
+
+The Elasticsearch Dev Service will be enabled when one of the Elasticsearch based extensions (Elasticsearch client or Hibernate Search ORM Elasticsearch)
+is present in your application, and the server address has not been explicitly configured.
+More information can be found in the xref:elasticsearch-dev-services.adoc[Elasticsearch Dev Services Guide].
+
+include::{generated-dir}/config/quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]

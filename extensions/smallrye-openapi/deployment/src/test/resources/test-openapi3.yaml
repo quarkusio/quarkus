@@ -1,0 +1,12 @@
+openapi: 3.0.0
+info:
+  title: Test OpenAPI
+  description: Some description
+  version: 4.2
+paths:
+  /openapi3:
+    get:
+      operationId: someOperation3
+      responses:
+        200:
+          description: Ok

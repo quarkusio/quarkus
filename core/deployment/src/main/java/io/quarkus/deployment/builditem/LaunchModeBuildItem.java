@@ -44,9 +44,18 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     }
 
     /**
+     * Whether the development mode type is not local.
+     *
+     * @return true if {@link #getDevModeType()} is not {@link DevModeType#LOCAL}
+     */
+    public boolean isNotLocalDevModeType() {
+        return devModeType.orElse(null) != DevModeType.LOCAL;
+    }
+
+    /**
      * An Auxiliary Application is a second application running in the same JVM as a primary application.
      * <p>
-     * Currently this is done to allow running tests in dev mode, while the main dev mode process continues to
+     * Currently, this is done to allow running tests in dev mode, while the main dev mode process continues to
      * run.
      */
     public boolean isAuxiliaryApplication() {

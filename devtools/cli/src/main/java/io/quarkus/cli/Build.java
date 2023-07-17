@@ -14,7 +14,7 @@ import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 import picocli.CommandLine.Parameters;
 
-@CommandLine.Command(name = "build", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "Options:%n")
+@CommandLine.Command(name = "build", showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.")
 public class Build extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin

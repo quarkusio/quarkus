@@ -1,7 +1,7 @@
 package io.quarkus.it.keycloak;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.is;
+import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
 
@@ -11,12 +11,18 @@ import io.quarkus.test.junit.QuarkusTest;
 public class AdminClientTestCase {
 
     @Test
-    public void testHelloEndpoint() {
-        given()
-                .when().get("/admin-client")
+    public void testGetExistingRealm() {
+        when().get("/admin-client/realm")
                 .then()
                 .statusCode(200)
-                .body(is("quarkus"));
+                .body(equalTo("quarkus"));
     }
 
+    @Test
+    public void testGetNewRealm() {
+        when().get("/admin-client/newrealm")
+                .then()
+                .statusCode(200)
+                .body(equalTo("quarkus2"));
+    }
 }

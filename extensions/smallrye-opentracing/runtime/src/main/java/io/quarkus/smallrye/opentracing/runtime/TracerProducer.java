@@ -1,8 +1,8 @@
 package io.quarkus.smallrye.opentracing.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
 
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;

@@ -3,22 +3,20 @@ package io.quarkus.arc.test.alternatives.priority;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.AlternativePriority;
-import io.quarkus.arc.test.ArcTestContainer;
-import javax.annotation.Priority;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Alternative;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.Vetoed;
-import javax.enterprise.inject.spi.CDI;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.spi.CDI;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-/**
- * Tests {@link io.quarkus.arc.AlternativePriority} annotation.
- */
+import io.quarkus.arc.test.ArcTestContainer;
+
 public class AlternativePriorityAnnotationTest {
 
     @RegisterExtension
@@ -54,7 +52,8 @@ public class AlternativePriorityAnnotationTest {
     }
 
     @ApplicationScoped
-    @AlternativePriority(2)
+    @Alternative
+    @Priority(2)
     static class AlternativeClassBean implements MyInterface {
 
         @Override
@@ -72,8 +71,8 @@ public class AlternativePriorityAnnotationTest {
         // this should be the selected alternative
         @Produces
         @ApplicationScoped
-        @AlternativePriority(1000)
         @Alternative
+        @Priority(1000)
         public TheUltimateImpl createUltimateImpl() {
             return new TheUltimateImpl();
         }
@@ -85,12 +84,14 @@ public class AlternativePriorityAnnotationTest {
     static class MyProducer {
         @Produces
         @ApplicationScoped
-        @AlternativePriority(3)
+        @Alternative
+        @Priority(3)
         AlternativeProducerFieldBean bar = new AlternativeProducerFieldBean();
 
         @Produces
         @ApplicationScoped
-        @AlternativePriority(4)
+        @Alternative
+        @Priority(4)
         public AlternativeProducerMethodBean createBar() {
             return new AlternativeProducerMethodBean();
         }

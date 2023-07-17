@@ -1,7 +1,5 @@
 package io.quarkus.security.test;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -12,7 +10,7 @@ public class DuplicatedDifferentBouncycastleProviderTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setExpectedException(IllegalStateException.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("application-duplicated-different-providers.properties", "application.properties"));
 
     @Test

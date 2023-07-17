@@ -1,32 +1,33 @@
 package io.quarkus.oidc.deployment;
 
-import java.util.Collection;
 import java.util.function.BooleanSupplier;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
-import io.quarkus.arc.processor.BuildExtension;
-import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.SecurityEvent;
+import io.quarkus.oidc.TokenIntrospectionCache;
+import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
+import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
 import io.quarkus.oidc.runtime.OidcConfig;
@@ -34,24 +35,31 @@ import io.quarkus.oidc.runtime.OidcConfigurationMetadataProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
+import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
 
+@BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
     public static final DotName DOTNAME_SECURITY_EVENT = DotName.createSimple(SecurityEvent.class.getName());
 
-    @BuildStep(onlyIf = IsEnabled.class)
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC);
+    @BuildStep
+    public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+        // TODO: By default quarkus.oidc.application-type = service
+        // Also look at other options (web-app, hybrid)
+        securityInformationProducer
+                .produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     AdditionalBeanBuildItem jwtClaimIntegration(Capabilities capabilities) {
         if (!capabilities.isPresent(Capability.JWT)) {
             AdditionalBeanBuildItem.Builder removable = AdditionalBeanBuildItem.builder();
@@ -65,7 +73,7 @@ public class OidcBuildStep {
         return null;
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
@@ -76,22 +84,33 @@ public class OidcBuildStep {
                 .addBeanClass(OidcConfigurationMetadataProducer.class)
                 .addBeanClass(OidcIdentityProvider.class)
                 .addBeanClass(DefaultTenantConfigResolver.class)
-                .addBeanClass(DefaultTokenStateManager.class);
+                .addBeanClass(DefaultTokenStateManager.class)
+                .addBeanClass(OidcSessionImpl.class)
+                .addBeanClass(BackChannelLogoutHandler.class)
+                .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
-    EnableAllSecurityServicesBuildItem security() {
-        return new EnableAllSecurityServicesBuildItem();
+    @BuildStep(onlyIf = IsCacheEnabled.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public SyntheticBeanBuildItem addDefaultCacheBean(OidcConfig config,
+            OidcRecorder recorder,
+            CoreVertxBuildItem vertxBuildItem) {
+        return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
+                .types(DefaultTokenIntrospectionUserInfoCache.class, TokenIntrospectionCache.class, UserInfoCache.class)
+                .supplier(recorder.setupTokenCache(config, vertxBuildItem.getVertx()))
+                .scope(Singleton.class)
+                .setRuntimeInit()
+                .done();
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.OIDC);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public SyntheticBeanBuildItem setup(
             OidcConfig config,
             OidcRecorder recorder,
@@ -99,21 +118,22 @@ public class OidcBuildStep {
             TlsConfig tlsConfig) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .supplier(recorder.setup(config, vertxBuildItem.getVertx(), tlsConfig))
+                .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
                 .done();
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    // Note that DefaultTenantConfigResolver injects quarkus.http.proxy.enable-forwarded-prefix
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public ValidationErrorBuildItem findSecurityEventObservers(
+    public void findSecurityEventObservers(
             OidcRecorder recorder,
-            ValidationPhaseBuildItem validationPhase) {
-        Collection<ObserverInfo> observers = validationPhase.getContext().get(BuildExtension.Key.OBSERVERS);
-        boolean isSecurityEventObserved = observers.stream()
+            SynthesisFinishedBuildItem synthesisFinished) {
+        boolean isSecurityEventObserved = synthesisFinished.getObservers().stream()
                 .anyMatch(observer -> observer.asObserver().getObservedType().name().equals(DOTNAME_SECURITY_EVENT));
         recorder.setSecurityEventObserved(isSecurityEventObserved);
-        return new ValidationErrorBuildItem();
     }
 
     public static class IsEnabled implements BooleanSupplier {
@@ -121,6 +141,14 @@ public class OidcBuildStep {
 
         public boolean getAsBoolean() {
             return config.enabled;
+        }
+    }
+
+    public static class IsCacheEnabled implements BooleanSupplier {
+        OidcBuildTimeConfig config;
+
+        public boolean getAsBoolean() {
+            return config.enabled && config.defaultTokenCacheEnabled;
         }
     }
 }

@@ -1,10 +1,11 @@
 package io.quarkus.it.vertx.verticles;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
@@ -42,6 +43,13 @@ public class VerticleEndpoint {
     @Path("/mutiny-classname")
     public Uni<String> mutinyWithClassName() {
         return vertx.eventBus().<String> request("mutiny-classname", "")
+                .onItem().transform(Message::body);
+    }
+
+    @GET
+    @Path("/mdc")
+    public Uni<String> mdc(@QueryParam("value") String value) {
+        return vertx.eventBus().<String> request("mdc", value)
                 .onItem().transform(Message::body);
     }
 

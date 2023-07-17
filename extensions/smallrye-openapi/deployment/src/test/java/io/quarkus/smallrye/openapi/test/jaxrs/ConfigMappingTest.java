@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,10 +13,11 @@ public class ConfigMappingTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DefaultContentTypeResource.class, Greeting.class)
 
-                    .addAsResource(new StringAsset("quarkus.smallrye-openapi.open-api-version=3.0.3\n"
+                    .addAsResource(new StringAsset("quarkus.smallrye-openapi.open-api-version=3.0.2\n"
+                            + "quarkus.smallrye-openapi.servers=http:\\//www.server1.com,http:\\//www.server2.com\n"
                             + "quarkus.smallrye-openapi.info-title=My API\n"
                             + "quarkus.smallrye-openapi.info-version=1.2.3\n"
                             + "quarkus.smallrye-openapi.info-description=My Description\n"
@@ -38,7 +37,11 @@ public class ConfigMappingTest {
                 .then()
                 .log().body().and()
                 .body("openapi",
-                        Matchers.equalTo("3.0.3"))
+                        Matchers.equalTo("3.0.2"))
+                .body("servers[0].url",
+                        Matchers.startsWith("http://www.server"))
+                .body("servers[1].url",
+                        Matchers.startsWith("http://www.server"))
                 .body("info.title",
                         Matchers.equalTo("My API"))
                 .body("info.description",

@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -27,7 +25,7 @@ public class BasicKubernetesTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("basic")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
@@ -67,6 +65,7 @@ public class BasicKubernetesTest {
             assertThat(d.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("basic");
                 assertThat(m.getNamespace()).isNull();
+                assertThat(m.getLabels()).contains(entry("app.kubernetes.io/managed-by", "quarkus"));
             });
 
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
@@ -77,10 +76,10 @@ public class BasicKubernetesTest {
 
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
+                        assertThat(podSpec.getSecurityContext()).isNull();
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getImagePullPolicy()).isEqualTo("Always"); // expect the default value
-                            assertThat(container.getPorts()).singleElement().satisfies(p -> {
-
+                            assertThat(container.getPorts()).hasSize(1).anySatisfy(p -> {
                                 assertThat(p.getContainerPort()).isEqualTo(8080);
                             });
                         });
@@ -97,7 +96,7 @@ public class BasicKubernetesTest {
                 assertThat(spec.getSelector()).containsOnly(entry("app.kubernetes.io/name", "basic"),
                         entry("app.kubernetes.io/version", "0.1-SNAPSHOT"));
 
-                assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                assertThat(spec.getPorts()).hasSize(1).anySatisfy(p -> {
                     assertThat(p.getPort()).isEqualTo(80);
                     assertThat(p.getTargetPort().getIntVal()).isEqualTo(8080);
                 });

@@ -10,17 +10,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-jaxrs-client-reactive</artifactId>
-    <name>Quarkus - JAX-RS Client Reactive - Runtime</name>
-    <description>Consume JAX-RS resources reactively</description>
+    <name>Quarkus - Jakarta REST Client Reactive - Runtime</name>
+    <description>Consume Jakarta REST resources reactively</description>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-core</artifactId>
+            <artifactId>quarkus-vertx</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -41,7 +37,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

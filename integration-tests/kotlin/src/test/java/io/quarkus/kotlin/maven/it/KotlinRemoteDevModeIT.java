@@ -4,13 +4,12 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Test;
-
-import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.maven.it.RunAndCheckWithAgentMojoTestBase;
 import io.quarkus.test.devmode.util.DevModeTestUtils;
@@ -27,7 +26,7 @@ public class KotlinRemoteDevModeIT extends RunAndCheckWithAgentMojoTestBase {
         // Edit the "Hello" message.
         File source = new File(agentDir, "src/main/kotlin/org/acme/HelloResource.kt");
         String uuid = UUID.randomUUID().toString();
-        filter(source, ImmutableMap.of("return \"hello\"", "return \"" + uuid + "\""));
+        filter(source, Map.of("return \"hello\"", "return \"" + uuid + "\""));
 
         // Wait until we get "uuid"
         await()
@@ -39,7 +38,7 @@ public class KotlinRemoteDevModeIT extends RunAndCheckWithAgentMojoTestBase {
                 .pollInterval(1, TimeUnit.SECONDS)
                 .until(source::isFile);
 
-        filter(source, ImmutableMap.of(uuid, "carambar"));
+        filter(source, Map.of(uuid, "carambar"));
 
         // Wait until we get "carambar"
         await()

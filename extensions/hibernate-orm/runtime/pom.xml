@@ -11,7 +11,7 @@
 
     <artifactId>quarkus-hibernate-orm</artifactId>
     <name>Quarkus - Hibernate ORM - Runtime</name>
-    <description>Define your persistent model with Hibernate ORM and JPA</description>
+    <description>Define your persistent model with Hibernate ORM and Jakarta Persistence</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -42,46 +42,49 @@
             <artifactId>quarkus-narayana-jta</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
             <exclusions>
-                <exclusion>
-                    <groupId>javax.persistence</groupId>
-                    <artifactId>javax.persistence-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.spec.javax.transaction</groupId>
-                    <artifactId>jboss-transaction-api_1.2_spec</artifactId>
-                </exclusion>
-
-                <!-- Javassist is never used in Quarkus -->
-                <exclusion>
-                    <groupId>org.javassist</groupId>
-                    <artifactId>javassist</artifactId>
-                </exclusion>
-
-                <!-- These XML parsers are banned in the project as we use the new package -->
-                <exclusion>
-                    <groupId>javax.xml.bind</groupId>
-                    <artifactId>jaxb-api</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>org.glassfish.jaxb</groupId>
                     <artifactId>jaxb-runtime</artifactId>
                 </exclusion>
-
-                <!-- Following dependencies are only necessary during metadata initialization -->
                 <exclusion>
-                    <groupId>javax.activation</groupId>
-                    <artifactId>javax.activation-api</artifactId>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
                 </exclusion>
-
-                <!-- Not necessary at runtime -->
                 <exclusion>
-                    <groupId>org.jboss</groupId>
+                    <groupId>io.smallrye</groupId>
                     <artifactId>jandex</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <!-- ByteBuddy is marked as a "runtime" dependency of Hibernate ORM but we need it to compile the extension -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <!-- HCANN is marked as a "runtime" dependency of Hibernate ORM but we need it to compile the extension -->
+        <dependency>
+            <groupId>org.hibernate.common</groupId>
+            <artifactId>hibernate-commons-annotations</artifactId>
+            <scope>compile</scope>
         </dependency>
 
         <!--
@@ -91,7 +94,7 @@
         useful as it helps to keep it shorter; also this should allow us to have slightly more flexibility
         in experimenting with different version of Hibernate ORM -->
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-graalvm</artifactId>
         </dependency>
 
@@ -107,8 +110,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.xml.bind</groupId>
-            <artifactId>jboss-jaxb-api_2.3_spec</artifactId>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.persistence</groupId>
@@ -119,13 +122,19 @@
             <artifactId>jakarta.transaction-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>quarkus-local-cache</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Technically the quarkus-caffeine-runtime belongs as a dependency to the Quarkus Caching layer,
           but since this is currently shaped as a non-quarkus external project I'd rather not have it depend on
@@ -140,7 +149,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.hibernate.orm</provides>

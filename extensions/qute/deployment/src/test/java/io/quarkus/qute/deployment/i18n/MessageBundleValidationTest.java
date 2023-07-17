@@ -1,11 +1,10 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +17,7 @@ public class MessageBundleValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Hellos.class)
                     .addAsResource(new StringAsset(
                             "hello=Hallo {foo}!\nhello_never=Ball!"),
@@ -46,7 +45,7 @@ public class MessageBundleValidationTest {
         fail();
     }
 
-    @MessageBundle
+    @MessageBundle(DEFAULT_NAME)
     public interface Hellos {
 
         @Message("Hello {foo}")

@@ -11,3 +11,5 @@ metadata:
   categories:
   - "reactive"
   status: "stable"
+  config:
+  - "quarkus.vertx."

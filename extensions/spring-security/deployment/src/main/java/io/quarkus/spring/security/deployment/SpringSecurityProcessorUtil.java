@@ -44,7 +44,7 @@ final class SpringSecurityProcessorUtil {
     }
 
     static int getParameterIndex(MethodInfo methodInfo, String parameterName, String expression) {
-        int parametersCount = methodInfo.parameters().size();
+        int parametersCount = methodInfo.parametersCount();
         int matchingParameterIndex = -1;
         for (int i = 0; i < parametersCount; i++) {
             if (parameterName.equals(methodInfo.parameterName(i))) {

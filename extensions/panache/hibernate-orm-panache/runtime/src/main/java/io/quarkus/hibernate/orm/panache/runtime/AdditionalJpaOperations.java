@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.EntityType;
-import javax.persistence.metamodel.Metamodel;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.Metamodel;
 
 import org.hibernate.engine.spi.CascadeStyle;
 import org.hibernate.engine.spi.CascadingActions;
@@ -24,7 +24,7 @@ import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
-//TODO this class is only needed by the Spring Data JPA module and would be placed there it it weren't for a dev-mode classloader issue
+//TODO this class is only needed by the Spring Data JPA module and would not be placed there if it weren't for a dev-mode classloader issue
 // see https://github.com/quarkusio/quarkus/issues/6214
 public class AdditionalJpaOperations {
 
@@ -55,7 +55,7 @@ public class AdditionalJpaOperations {
 
     public static long deleteAllWithCascade(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {
         EntityManager em = jpaOperations.getEntityManager();
-        //detecting the case where there are cascade-delete associations, and do the the bulk delete query otherwise.
+        //detecting the case where there are cascade-delete associations, and do the bulk delete query otherwise.
         if (deleteOnCascadeDetected(jpaOperations, entityClass)) {
             int count = 0;
             List<?> objects = jpaOperations.listAll(entityClass);
@@ -70,8 +70,8 @@ public class AdditionalJpaOperations {
 
     /**
      * Detects if cascading delete is needed. The delete-cascading is needed when associations with cascade delete enabled
-     * {@link javax.persistence.OneToMany#cascade()} and also on entities containing a collection of elements
-     * {@link javax.persistence.ElementCollection}
+     * {@link jakarta.persistence.OneToMany#cascade()} and also on entities containing a collection of elements
+     * {@link jakarta.persistence.ElementCollection}
      *
      * @param entityClass
      * @return true if cascading delete is needed. False otherwise
@@ -88,9 +88,8 @@ public class AdditionalJpaOperations {
         boolean doCascade = Arrays.stream(propertyCascadeStyles)
                 .anyMatch(cascadeStyle -> cascadeStyle.doCascade(CascadingActions.DELETE));
         boolean hasElementCollection = declaredAttributes.stream()
-                .filter(attribute -> attribute.getPersistentAttributeType()
-                        .equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION))
-                .count() > 0;
+                .anyMatch(attribute -> attribute.getPersistentAttributeType()
+                        .equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION));
         return doCascade || hasElementCollection;
 
     }

@@ -8,9 +8,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.spi.Bean;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.spi.Bean;
 
 import org.bson.Document;
 import org.eclipse.microprofile.health.HealthCheck;
@@ -149,7 +149,7 @@ public class MongoHealthCheck implements HealthCheck {
                     public HealthCheckResponse apply(List<?> list) {
                         return MongoHealthCheck.this.combine(list, builder);
                     }
-                }).await().indefinitely(); // All checks fails after a timeout, so if won't be forever.
+                }).await().indefinitely(); // All checks fail after a timeout, so it won't be forever.
 
     }
 

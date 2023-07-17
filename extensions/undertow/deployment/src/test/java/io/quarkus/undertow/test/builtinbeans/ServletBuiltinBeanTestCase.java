@@ -5,8 +5,6 @@ import static io.restassured.RestAssured.when;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,7 +15,7 @@ public class ServletBuiltinBeanTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestServlet.class,
+            .withApplicationRoot((jar) -> jar.addClasses(TestServlet.class,
                     ServletBuiltinBeanInjectingBean.class, Counter.class));
 
     @Test

@@ -50,7 +50,7 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
 
     /**
      * A bundle method that does not need to be validated has {@code null} template id.
-     * 
+     *
      * @return {@code true} if the template needs to be validated
      */
     public boolean isValidatable() {
@@ -58,7 +58,7 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return {@code true} if the message comes from the default bundle
      */
     public boolean isDefaultBundle() {

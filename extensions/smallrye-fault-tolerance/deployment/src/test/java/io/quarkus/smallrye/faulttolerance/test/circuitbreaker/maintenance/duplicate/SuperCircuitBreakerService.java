@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.faulttolerance.test.circuitbreaker.maintenance.duplicate;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 

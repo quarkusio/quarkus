@@ -1,6 +1,6 @@
 package io.quarkus.it.panache;
 
-import io.quarkus.hibernate.orm.panache.ProjectedFieldName;
+import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection

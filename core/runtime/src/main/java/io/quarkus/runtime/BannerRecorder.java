@@ -7,10 +7,14 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class BannerRecorder {
+    final RuntimeValue<BannerRuntimeConfig> bannerRuntimeConfig;
 
-    public RuntimeValue<Optional<Supplier<String>>> provideBannerSupplier(String bannerText,
-            BannerRuntimeConfig bannerRuntimeConfig) {
-        if (bannerRuntimeConfig.enabled) {
+    public BannerRecorder(RuntimeValue<BannerRuntimeConfig> bannerRuntimeConfig) {
+        this.bannerRuntimeConfig = bannerRuntimeConfig;
+    }
+
+    public RuntimeValue<Optional<Supplier<String>>> provideBannerSupplier(String bannerText) {
+        if (bannerRuntimeConfig.getValue().enabled) {
             return new RuntimeValue<>(Optional.of(new ConstantSupplier(bannerText)));
         }
         return new RuntimeValue<>(Optional.empty());

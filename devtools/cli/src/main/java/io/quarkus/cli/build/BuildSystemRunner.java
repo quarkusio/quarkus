@@ -19,7 +19,9 @@ import io.quarkus.cli.common.ListFormatOptions;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.common.TargetQuarkusVersionGroup;
 import io.quarkus.cli.registry.RegistryClientMixin;
+import io.quarkus.cli.update.RewriteGroup;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
 
@@ -58,12 +60,11 @@ public interface BuildSystemRunner {
         File wrapper = getWrapper();
         if (wrapper != null) {
             args.addFirst(wrapper.getAbsolutePath());
-            cmd.targetDirectory = wrapper.getParentFile();
         } else {
             File command = getExecutable();
             args.addFirst(command.getAbsolutePath());
-            cmd.targetDirectory = getProjectRoot().toFile();
         }
+        cmd.targetDirectory = getProjectRoot().toFile();
         cmd.arguments = args.toArray(new String[0]);
         return cmd;
     }
@@ -101,10 +102,17 @@ public interface BuildSystemRunner {
 
     Integer removeExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
+    Integer projectInfo(boolean perModule) throws Exception;
+
+    Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite, boolean perModule)
+            throws Exception;
+
+    BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);
+
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
-    List<Supplier<BuildCommandArgs>> prepareDevMode(DevOptions devOptions, DebugOptions debugOptions,
-            List<String> params);
+    List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
+            DebugOptions debugOptions, List<String> params);
 
     Path getProjectRoot();
 

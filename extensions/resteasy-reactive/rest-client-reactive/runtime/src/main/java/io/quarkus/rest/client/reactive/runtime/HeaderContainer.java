@@ -1,9 +1,9 @@
 package io.quarkus.rest.client.reactive.runtime;
 
-import javax.enterprise.context.RequestScoped;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 @RequestScoped
 public class HeaderContainer {

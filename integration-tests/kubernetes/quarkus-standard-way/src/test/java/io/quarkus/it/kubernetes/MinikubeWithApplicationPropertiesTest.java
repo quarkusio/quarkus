@@ -6,19 +6,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -27,12 +24,11 @@ public class MinikubeWithApplicationPropertiesTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("minikube-with-application-properties")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("minikube-with-application.properties")
-            .setForcedDependencies(
-                    Collections.singletonList(new AppArtifact("io.quarkus", "quarkus-minikube", Version.getVersion())));
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-minikube", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -76,7 +72,7 @@ public class MinikubeWithApplicationPropertiesTest {
 
                 assertThat(s.getSpec()).satisfies(spec -> {
                     assertEquals("NodePort", spec.getType());
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).anySatisfy(p -> {
                         assertThat(p.getNodePort()).isEqualTo(31999);
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(9090);

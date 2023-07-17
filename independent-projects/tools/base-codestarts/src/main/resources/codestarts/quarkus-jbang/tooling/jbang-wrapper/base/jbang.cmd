@@ -1,15 +1,8 @@
 @echo off
 SETLOCAL ENABLEEXTENSIONS ENABLEDELAYEDEXPANSION
 
-
 rem The Java version to install when it's not installed on the system yet
 if "%JBANG_DEFAULT_JAVA_VERSION%"=="" (set javaVersion=11) else (set javaVersion=%JBANG_DEFAULT_JAVA_VERSION%)
-
-set os=windows
-set arch=x64
-
-set jburl="https://github.com/jbangdev/jbang/releases/latest/download/jbang.zip"
-set jdkurl="https://api.adoptopenjdk.net/v3/binary/latest/%javaVersion%/ga/%os%/%arch%/jdk/hotspot/normal/adoptopenjdk"
 
 if "%JBANG_DIR%"=="" (set JBDIR=%userprofile%\.jbang) else (set JBDIR=%JBANG_DIR%)
 if "%JBANG_CACHE_DIR%"=="" (set TDIR=%JBDIR%\cache) else (set TDIR=%JBANG_CACHE_DIR%)
@@ -21,20 +14,16 @@ if exist "%~dp0jbang.jar" (
   set jarPath=%~dp0.jbang\jbang.jar
 ) else (
   if not exist "%JBDIR%\bin\jbang.jar" (
-    echo Downloading JBang... 1>&2
-    if not exist "%TDIR%\urls" ( mkdir "%TDIR%\urls" )
-    powershell -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command "$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest %jburl% -OutFile %TDIR%\urls\jbang.zip"
-    if !ERRORLEVEL! NEQ 0 ( echo Error downloading JBang 1>&2 & exit /b %ERRORLEVEL% )
-    echo Installing JBang... 1>&2
-    if exist "%TDIR%\urls\jbang" ( rd /s /q "%TDIR%\urls\jbang" > nul 2>&1 )
-    powershell -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command "$ProgressPreference = 'SilentlyContinue'; Expand-Archive -Path %TDIR%\urls\jbang.zip -DestinationPath %TDIR%\urls"
-    if !ERRORLEVEL! NEQ 0 ( echo Error installing JBang 1>&2 & exit /b %ERRORLEVEL% )
-    if not exist "%JBDIR%\bin" ( mkdir "%JBDIR%\bin" )
-    del /f /q "%JBDIR%\bin\jbang" "%JBDIR%\bin\jbang.*"
-    copy /y "%TDIR%\urls\jbang\bin\*" "%JBDIR%\bin" > nul 2>&1
+    powershell -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command "%~dp0jbang.ps1 version" > nul
+    if !ERRORLEVEL! NEQ 0 ( exit /b %ERRORLEVEL% )
   )
   call "%JBDIR%\bin\jbang.cmd" %*
   exit /b %ERRORLEVEL%
+)
+if exist "%jarPath%.new" (
+  rem a new jbang version was found, we replace the old one with it
+  copy /y "%jarPath%.new" "%jarPath%" > nul 2>&1
+  del /f /q "%jarPath%.new"
 )
 
 rem Find/get a JDK
@@ -51,6 +40,7 @@ if "!JAVA_EXEC!"=="" (
   rem Determine if a (working) JDK is available on the PATH
   where javac > nul 2>&1
   if !errorlevel! equ 0 (
+    set JAVA_HOME=
     set JAVA_EXEC=java.exe
   ) else if exist "%JBDIR%\currentjdk\bin\javac" (
     set JAVA_HOME=%JBDIR%\currentjdk
@@ -61,33 +51,19 @@ if "!JAVA_EXEC!"=="" (
     rem Check if we installed a JDK before
     if not exist "%TDIR%\jdks\%javaVersion%" (
       rem If not, download and install it
-      if not exist "%TDIR%\jdks" ( mkdir "%TDIR%\jdks" )
-      echo Downloading JDK %javaVersion%. Be patient, this can take several minutes... 1>&2
-      powershell -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command "$ProgressPreference = 'SilentlyContinue'; Invoke-WebRequest %jdkurl% -OutFile %TDIR%\bootstrap-jdk.zip"
-      if !ERRORLEVEL! NEQ 0 ( echo Error downloading JDK 1>&2 & exit /b %ERRORLEVEL% )
-      echo Installing JDK %javaVersion%... 1>&2
-      if exist "%TDIR%\jdks\%javaVersion%.tmp" ( rd /s /q "%TDIR%\jdks\%javaVersion%.tmp" > nul 2>&1 )
-      powershell -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command "$ProgressPreference = 'SilentlyContinue'; Expand-Archive -Path %TDIR%\bootstrap-jdk.zip -DestinationPath %TDIR%\jdks\%javaVersion%.tmp"
-      if !ERRORLEVEL! NEQ 0 ( echo Error installing JDK 1>&2 & exit /b %ERRORLEVEL% )
-      for /d %%d in (%TDIR%\jdks\%javaVersion%.tmp\*) do (
-        powershell -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command "Move-Item %%d\* !TDIR!\jdks\%javaVersion%.tmp"
-        if !ERRORLEVEL! NEQ 0 ( echo Error installing JDK 1>&2 & exit /b %ERRORLEVEL% )
-      )
-      rem Check if the JDK was installed properly
-      %TDIR%\jdks\%javaVersion%.tmp\bin\javac -version > nul 2>&1
-      if !ERRORLEVEL! NEQ 0 ( echo "Error installing JDK" 1>&2; exit /b %ERRORLEVEL% )
-      rem Activate the downloaded JDK giving it its proper name
-      ren "%TDIR%\jdks\%javaVersion%.tmp" "%javaVersion%"
+      echo powershell -NoProfile -ExecutionPolicy Bypass -NonInteractive -Command "%~dp0jbang.ps1 jdk install %JBANG_DEFAULT_JAVA_VERSION%"
+      if !ERRORLEVEL! NEQ 0 ( exit /b %ERRORLEVEL% )
+      rem Set the current JDK
+      !JAVA_EXEC! -classpath "%jarPath%" dev.jbang.Main jdk default "%javaVersion%"
     )
-    # Set the current JDK
-    !JAVA_EXEC! -classpath "%jarPath%" dev.jbang.Main jdk default "%javaVersion%"
   )
 )
 
 if not exist "%TDIR%" ( mkdir "%TDIR%" )
 set tmpfile=%TDIR%\%RANDOM%.jbang.tmp
 rem execute jbang and pipe to temporary random file
-set JBANG_USES_POWERSHELL=
+set JBANG_RUNTIME_SHELL=cmd
+2>nul >nul timeout /t 0 && (set JBANG_STDIN_NOTTY=false) || (set JBANG_STDIN_NOTTY=true)
 set "CMD=!JAVA_EXEC!"
 SETLOCAL DISABLEDELAYEDEXPANSION
 %CMD% > "%tmpfile%" %JBANG_JAVA_OPTIONS% -classpath "%jarPath%" dev.jbang.Main %*

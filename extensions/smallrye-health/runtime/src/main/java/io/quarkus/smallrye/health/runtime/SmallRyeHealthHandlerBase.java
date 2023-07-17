@@ -1,7 +1,7 @@
 package io.quarkus.smallrye.health.runtime;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 
 import io.quarkus.arc.Arc;
@@ -47,11 +47,31 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
             resp.setStatusCode(503);
         }
         resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        Buffer buffer = Buffer.buffer(256); // this size seems to cover the basic health checks
+        try (BufferOutputStream outputStream = new BufferOutputStream(buffer);) {
             reporter.reportHealth(outputStream, health);
-            resp.end(Buffer.buffer(outputStream.toByteArray()));
+            resp.end(buffer);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private static class BufferOutputStream extends OutputStream {
+
+        private final Buffer buffer;
+
+        private BufferOutputStream(Buffer buffer) {
+            this.buffer = buffer;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            buffer.appendBytes(b, off, len);
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            buffer.appendInt(b);
         }
     }
 }

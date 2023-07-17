@@ -6,7 +6,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import javax.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -30,16 +31,11 @@ import io.quarkus.gizmo.Gizmo;
  */
 public class ClassTransformerProcessor {
 
-    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
-
-    @Inject
-    CombinedIndexBuildItem combinedIndex;
-
-    @Inject
-    BuildProducer<BytecodeTransformerBuildItem> transformers;
+    private static final DotName PATH = DotName.createSimple(Path.class.getName());
 
     @BuildStep
-    public void build() throws Exception {
+    public void build(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<BytecodeTransformerBuildItem> transformers) throws Exception {
         final Set<String> pathAnnotatedClasses = new HashSet<>();
 
         Collection<AnnotationInstance> annotations = combinedIndex.getIndex().getAnnotations(PATH);
@@ -62,10 +58,11 @@ public class ClassTransformerProcessor {
                                 MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed", "()Ljava/lang/String;", null,
                                         null);
 
-                                AnnotationVisitor annotation = mv.visitAnnotation("Ljavax/ws/rs/Path;", true);
+                                AnnotationVisitor annotation = mv
+                                        .visitAnnotation("L" + Path.class.getName().replace('.', '/') + ";", true);
                                 annotation.visit("value", "/transformed");
                                 annotation.visitEnd();
-                                annotation = mv.visitAnnotation("Ljavax/ws/rs/GET;", true);
+                                annotation = mv.visitAnnotation("L" + GET.class.getName().replace('.', '/') + ";", true);
                                 annotation.visitEnd();
 
                                 mv.visitLdcInsn("Transformed Endpoint");

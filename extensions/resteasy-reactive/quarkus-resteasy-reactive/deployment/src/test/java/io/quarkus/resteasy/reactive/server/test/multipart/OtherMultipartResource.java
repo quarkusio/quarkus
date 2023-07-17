@@ -1,12 +1,11 @@
 package io.quarkus.resteasy.reactive.server.test.multipart;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-
-import org.jboss.resteasy.reactive.MultipartForm;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/otherMultipart")
 public class OtherMultipartResource {
@@ -15,7 +14,7 @@ public class OtherMultipartResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @POST
-    public String simple(@MultipartForm OtherFormData formData) {
+    public String simple(@BeanParam OtherFormData formData) {
         return formData.first + " - " + formData.last + " - " + formData.finalField + " - " + OtherFormData.staticField;
     }
 }

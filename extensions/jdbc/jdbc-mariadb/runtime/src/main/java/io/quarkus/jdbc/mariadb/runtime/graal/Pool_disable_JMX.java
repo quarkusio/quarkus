@@ -1,12 +1,12 @@
 package io.quarkus.jdbc.mariadb.runtime.graal;
 
-import org.mariadb.jdbc.internal.logging.Logger;
+import org.mariadb.jdbc.util.log.Logger;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(org.mariadb.jdbc.internal.util.pool.Pool.class)
+@TargetClass(org.mariadb.jdbc.pool.Pool.class)
 public final class Pool_disable_JMX {
 
     @Alias

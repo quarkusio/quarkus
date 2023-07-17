@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.grpc.runtime.config.GrpcServerConfiguration;
 import io.quarkus.grpc.runtime.config.SslServerConfig;
+import io.quarkus.runtime.util.ClassPathUtils;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
@@ -27,7 +28,7 @@ public class GrpcSslUtils {
 
     /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled.
-     * 
+     *
      * @return whether plain text is used.
      */
     static boolean applySslOptions(GrpcServerConfiguration config, HttpServerOptions options)
@@ -51,7 +52,6 @@ public class GrpcSslUtils {
         final Optional<Path> certFile = sslConfig.certificate;
         final Optional<Path> keyFile = sslConfig.key;
         final Optional<Path> keyStoreFile = sslConfig.keyStore;
-        final String keystorePassword = sslConfig.keyStorePassword;
         final Optional<Path> trustStoreFile = sslConfig.trustStore;
         final Optional<String> trustStorePassword = sslConfig.trustStorePassword;
 
@@ -76,15 +76,19 @@ public class GrpcSslUtils {
             switch (type) {
                 case "pkcs12": {
                     PfxOptions o = new PfxOptions()
-                            .setPassword(keystorePassword)
                             .setValue(Buffer.buffer(data));
+                    if (sslConfig.keyStorePassword.isPresent()) {
+                        o.setPassword(sslConfig.keyStorePassword.get());
+                    }
                     options.setPfxKeyCertOptions(o);
                     break;
                 }
                 case "jks": {
                     JksOptions o = new JksOptions()
-                            .setPassword(keystorePassword)
                             .setValue(Buffer.buffer(data));
+                    if (sslConfig.keyStorePassword.isPresent()) {
+                        o.setPassword(sslConfig.keyStorePassword.get());
+                    }
                     options.setKeyStoreOptions(o);
                     break;
                 }
@@ -96,7 +100,7 @@ public class GrpcSslUtils {
         }
 
         if (trustStoreFile.isPresent()) {
-            if (!trustStorePassword.isPresent()) {
+            if (trustStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No trust store password provided");
             }
             String type;
@@ -113,12 +117,7 @@ public class GrpcSslUtils {
         for (String cipher : sslConfig.cipherSuites.orElse(Collections.emptyList())) {
             options.addEnabledCipherSuite(cipher);
         }
-
-        for (String protocol : sslConfig.protocols) {
-            if (!protocol.isEmpty()) {
-                options.addEnabledSecureTransportProtocol(protocol);
-            }
-        }
+        options.setEnabledSecureTransportProtocols(sslConfig.protocols);
         options.setClientAuth(sslConfig.clientAuth);
         return false;
     }
@@ -126,7 +125,7 @@ public class GrpcSslUtils {
     private static byte[] getFileContent(Path path) throws IOException {
         byte[] data;
         final InputStream resource = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(path.toString());
+                .getResourceAsStream(ClassPathUtils.toResourceName(path));
         if (resource != null) {
             try (InputStream is = resource) {
                 data = doRead(is);

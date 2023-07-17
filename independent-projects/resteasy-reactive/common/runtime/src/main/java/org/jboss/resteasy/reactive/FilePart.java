@@ -24,7 +24,7 @@ public class FilePart {
 
     /**
      * Create a new partial {@link File} object.
-     * 
+     *
      * @param file The file to send
      * @param offset The starting byte of the file (must be >= 0)
      * @param count The number of bytes to send (must be >= 0 and offset+count <= file size)

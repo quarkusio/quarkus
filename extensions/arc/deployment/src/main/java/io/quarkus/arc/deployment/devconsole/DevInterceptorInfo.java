@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import javax.enterprise.inject.spi.InterceptionType;
+import jakarta.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
@@ -26,7 +26,7 @@ public class DevInterceptorInfo implements Comparable<DevInterceptorInfo> {
             intercepts.put(InterceptionType.AROUND_INVOKE, interceptor.getAroundInvoke());
         }
         if (interceptor.intercepts(InterceptionType.AROUND_CONSTRUCT)) {
-            intercepts.put(InterceptionType.AROUND_CONSTRUCT, interceptor.getAroundInvoke());
+            intercepts.put(InterceptionType.AROUND_CONSTRUCT, interceptor.getAroundConstruct());
         }
         if (interceptor.intercepts(InterceptionType.POST_CONSTRUCT)) {
             intercepts.put(InterceptionType.POST_CONSTRUCT, interceptor.getPostConstruct());

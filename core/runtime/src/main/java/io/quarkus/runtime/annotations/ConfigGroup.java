@@ -12,16 +12,16 @@ import java.lang.annotation.Target;
  * <em>Configuration group properties cannot be {@code Optional} or {@code null}.</em> It is expected that, in the event
  * that a group property can be disabled, this should be done using a {@code boolean} property (preferably the unnamed
  * property or a {@code enabled} property). For example:
- * 
+ *
  * <pre>
  * <code>
 quarkus.extra-fast-mode         = yes
 quarkus.extra-fast-mode.gadgets = 20
 </code>
  * </pre>
- * 
+ *
  * Or:
- * 
+ *
  * <pre>
  * <code>
 quarkus.laser-beam.enabled    = true

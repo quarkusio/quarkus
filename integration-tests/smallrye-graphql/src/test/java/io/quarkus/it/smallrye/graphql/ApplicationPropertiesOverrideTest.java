@@ -11,7 +11,7 @@ import io.quarkus.test.junit.QuarkusTest;
 
 /**
  * tests that application.properties is read from src/test/resources
- * 
+ *
  * This does not necessarily belong here, but main and test-extension have a lot of existing
  * config that would need to be duplicated, so it is here out of convenience.
  */

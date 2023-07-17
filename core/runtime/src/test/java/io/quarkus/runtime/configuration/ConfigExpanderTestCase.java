@@ -8,13 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import io.smallrye.config.ExpressionConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -23,33 +18,11 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  */
 public class ConfigExpanderTestCase {
 
-    static ClassLoader classLoader;
-    static ConfigProviderResolver cpr;
-    Config config;
-
-    @BeforeAll
-    public static void initConfig() {
-        classLoader = Thread.currentThread().getContextClassLoader();
-        cpr = ConfigProviderResolver.instance();
-    }
-
-    @AfterEach
-    public void doAfter() {
-        try {
-            cpr.releaseConfig(cpr.getConfig());
-        } catch (IllegalStateException ignored) {
-            // just means no config was installed, which is fine
-        }
-    }
-
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {
-        final SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
-        builder.withInterceptors(new ExpressionConfigSourceInterceptor());
-        builder.withSources(new PropertiesConfigSource(configMap, "test input", 500));
-        final SmallRyeConfig config = (SmallRyeConfig) builder.build();
-        cpr.registerConfig(config, classLoader);
-        this.config = config;
-        return config;
+        return new SmallRyeConfigBuilder()
+                .addDefaultInterceptors()
+                .withSources(new PropertiesConfigSource(configMap, "test input", 500))
+                .build();
     }
 
     private Map<String, String> maps(Map... maps) {

@@ -15,6 +15,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>
+        <module>spi-deployment</module>
         <module>runtime</module>
     </modules>
 

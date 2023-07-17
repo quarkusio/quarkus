@@ -4,11 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.Lock;
-import io.quarkus.arc.Lock.Type;
-import io.quarkus.arc.impl.LockInterceptor;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -19,13 +14,21 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.inject.Singleton;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Singleton;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Lock;
+import io.quarkus.arc.Lock.Type;
+import io.quarkus.arc.impl.LockInterceptor;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class LockInterceptorTest {
 

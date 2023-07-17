@@ -1,8 +1,8 @@
 package io.quarkus.deployment.dev;
 
-import static io.quarkus.deployment.dev.filewatch.FileChangeEvent.Type.ADDED;
-import static io.quarkus.deployment.dev.filewatch.FileChangeEvent.Type.MODIFIED;
-import static io.quarkus.deployment.dev.filewatch.FileChangeEvent.Type.REMOVED;
+import static io.quarkus.deployment.dev.filesystem.watch.FileChangeEvent.Type.ADDED;
+import static io.quarkus.deployment.dev.filesystem.watch.FileChangeEvent.Type.MODIFIED;
+import static io.quarkus.deployment.dev.filesystem.watch.FileChangeEvent.Type.REMOVED;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -18,9 +18,9 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.deployment.dev.filewatch.FileChangeCallback;
-import io.quarkus.deployment.dev.filewatch.FileChangeEvent;
-import io.quarkus.deployment.dev.filewatch.WatchServiceFileSystemWatcher;
+import io.quarkus.deployment.dev.filesystem.watch.FileChangeCallback;
+import io.quarkus.deployment.dev.filesystem.watch.FileChangeEvent;
+import io.quarkus.deployment.dev.filesystem.watch.WatchServiceFileSystemWatcher;
 
 /**
  * Test file system watcher, non poll based

@@ -5,10 +5,12 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.jaeger.runtime.JaegerDeploymentRecorder;
 import io.quarkus.jaeger.runtime.ZipkinConfig;
 import io.quarkus.jaeger.runtime.ZipkinReporterProvider;
 
+@BuildSteps(onlyIf = ZipkinProcessor.ZipkinEnabled.class)
 public class ZipkinProcessor {
 
     static final String REGISTRY_CLASS_NAME = "zipkin2.reporter.urlconnection.URLConnectionSender";
@@ -22,7 +24,7 @@ public class ZipkinProcessor {
         }
     }
 
-    @BuildStep(onlyIf = ZipkinEnabled.class)
+    @BuildStep
     void addZipkinClasses(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         // Add Zipkin classes

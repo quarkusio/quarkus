@@ -3,24 +3,6 @@ package io.quarkus.devtools.project.buildfile;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.codestartLoadersBuilder;
 import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
-import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.QuarkusProject;
-import io.quarkus.devtools.project.QuarkusProjectHelper;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
-import io.quarkus.platform.tools.ToolsUtils;
-import io.quarkus.registry.ExtensionCatalogResolver;
-import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.config.RegistriesConfig;
-import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,12 +17,32 @@ import java.util.Properties;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
+import io.quarkus.platform.tools.ToolsUtils;
+import io.quarkus.registry.ExtensionCatalogResolver;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.config.RegistriesConfig;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 public class MavenProjectBuildFile extends BuildFile {
 
@@ -66,8 +68,18 @@ public class MavenProjectBuildFile extends BuildFile {
     }
 
     public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
-            Properties projectProps, MavenArtifactResolver mvnResolver, MessageWriter log,
+            Properties projectProps, MavenArtifactResolver artifactResolver, MessageWriter log,
             Supplier<String> defaultQuarkusVersion) throws RegistryResolutionException {
+        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
+                ? QuarkusProjectHelper.getCatalogResolver(artifactResolver, log)
+                : ExtensionCatalogResolver.empty();
+        return getProject(projectPom, projectModel, projectDir, projectProps, artifactResolver, catalogResolver, log,
+                defaultQuarkusVersion);
+    }
+
+    public static QuarkusProject getProject(Artifact projectPom, Model projectModel, Path projectDir,
+            Properties projectProps, MavenArtifactResolver artifactResolver, ExtensionCatalogResolver catalogResolver,
+            MessageWriter log, Supplier<String> defaultQuarkusVersion) throws RegistryResolutionException {
         final List<ArtifactCoords> managedDeps;
         final Supplier<List<ArtifactCoords>> deps;
         final List<ArtifactCoords> importedPlatforms;
@@ -79,7 +91,7 @@ public class MavenProjectBuildFile extends BuildFile {
             // TODO allow multiple streams in the same catalog for now
             quarkusVersion = null;// defaultQuarkusVersion.get();
         } else {
-            final ArtifactDescriptorResult descriptor = describe(mvnResolver, projectPom);
+            final ArtifactDescriptorResult descriptor = describe(artifactResolver, projectPom);
             managedDeps = toArtifactCoords(descriptor.getManagedDependencies());
             deps = () -> toArtifactCoords(descriptor.getDependencies());
             importedPlatforms = collectPlatformDescriptors(managedDeps, log);
@@ -87,9 +99,6 @@ public class MavenProjectBuildFile extends BuildFile {
         }
 
         final ExtensionCatalog extensionCatalog;
-        final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.isRegistryClientEnabled()
-                ? QuarkusProjectHelper.getCatalogResolver(mvnResolver, log)
-                : ExtensionCatalogResolver.empty();
         if (catalogResolver.hasRegistries()) {
             try {
                 if (!importedPlatforms.isEmpty()) {
@@ -103,15 +112,16 @@ public class MavenProjectBuildFile extends BuildFile {
             }
         } else {
             if (importedPlatforms.isEmpty()) {
-                extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, mvnResolver, log);
+                extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(null, null, quarkusVersion, artifactResolver,
+                        log);
             } else {
-                extensionCatalog = ToolsUtils.mergePlatforms(importedPlatforms, mvnResolver);
+                extensionCatalog = ToolsUtils.mergePlatforms(importedPlatforms, artifactResolver);
             }
         }
         final MavenProjectBuildFile extensionManager = new MavenProjectBuildFile(projectDir, extensionCatalog,
-                projectModel, deps, managedDeps, projectProps, projectPom == null ? null : mvnResolver);
+                projectModel, deps, managedDeps, projectProps, projectPom == null ? null : artifactResolver);
         final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder().catalog(extensionCatalog)
-                .artifactResolver(mvnResolver).build();
+                .artifactResolver(artifactResolver).build();
         return QuarkusProject.of(projectDir, extensionCatalog,
                 codestartResourceLoaders, log, extensionManager);
     }
@@ -142,7 +152,7 @@ public class MavenProjectBuildFile extends BuildFile {
         final List<ArtifactCoords> result = new ArrayList<>(deps.size());
         for (org.eclipse.aether.graph.Dependency dep : deps) {
             org.eclipse.aether.artifact.Artifact a = dep.getArtifact();
-            result.add(new ArtifactCoords(a.getGroupId(), a.getArtifactId(), a.getClassifier(),
+            result.add(ArtifactCoords.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(),
                     a.getExtension(), a.getVersion()));
         }
         return result;
@@ -204,24 +214,24 @@ public class MavenProjectBuildFile extends BuildFile {
 
     @Override
     protected boolean importBom(ArtifactCoords coords) {
-        if (!"pom".equalsIgnoreCase(coords.getType())) {
+        if (!ArtifactCoords.TYPE_POM.equals(coords.getType())) {
             throw new IllegalArgumentException(coords + " is not a POM");
         }
         final String depKey = depKey(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
         if (coords.getGroupId().equals(getProperty("quarkus.platform.group-id"))
                 && coords.getVersion().equals(getProperty("quarkus.platform.version"))) {
-            coords = new ArtifactCoords("${quarkus.platform.group-id}",
+            coords = ArtifactCoords.pom("${quarkus.platform.group-id}",
                     coords.getArtifactId().equals(getProperty("quarkus.platform.artifact-id"))
                             ? "${quarkus.platform.artifact-id}"
                             : coords.getArtifactId(),
-                    "pom", "${quarkus.platform.version}");
+                    "${quarkus.platform.version}");
         }
 
         final Dependency d = new Dependency();
         d.setGroupId(coords.getGroupId());
         d.setArtifactId(coords.getArtifactId());
         d.setType(coords.getType());
-        d.setScope("import");
+        d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
         d.setVersion(coords.getVersion());
         DependencyManagement dependencyManagement = model().getDependencyManagement();
         if (dependencyManagement == null) {
@@ -230,7 +240,7 @@ public class MavenProjectBuildFile extends BuildFile {
         }
         if (dependencyManagement.getDependencies()
                 .stream()
-                .filter(t -> t.getScope().equals("import"))
+                .filter(t -> t.getScope().equals(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT))
                 .noneMatch(thisDep -> depKey.equals(resolveKey(thisDep)))) {
             dependencyManagement.addDependency(d);
             // the effective managed dependencies set may already include it
@@ -255,8 +265,8 @@ public class MavenProjectBuildFile extends BuildFile {
             d.setClassifier(coords.getClassifier());
         }
         d.setType(coords.getType());
-        if ("pom".equalsIgnoreCase(coords.getType())) {
-            d.setScope("import");
+        if (ArtifactCoords.TYPE_POM.equals(coords.getType())) {
+            d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
             DependencyManagement dependencyManagement = model().getDependencyManagement();
             if (dependencyManagement == null) {
                 dependencyManagement = new DependencyManagement();

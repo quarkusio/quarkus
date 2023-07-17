@@ -1,17 +1,5 @@
 package io.quarkus.platform.tools;
 
-import io.quarkus.bootstrap.BootstrapConstants;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.resolver.AppModelResolver;
-import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonCatalogMerger;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
-import io.quarkus.registry.catalog.selection.OriginPreference;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,9 +9,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.CatalogMergeUtility;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.selection.OriginPreference;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 public class ToolsUtils {
 
@@ -88,7 +88,12 @@ public class ToolsUtils {
 
     public static ExtensionCatalog resolvePlatformDescriptorDirectly(String bomGroupId, String bomArtifactId, String bomVersion,
             MavenArtifactResolver artifactResolver, MessageWriter log) {
-        // TODO remove this method once we have the registry service available
+        return resolvePlatformDescriptorDirectly(bomGroupId, bomArtifactId, bomVersion, artifactResolver, log, 1);
+    }
+
+    private static ExtensionCatalog resolvePlatformDescriptorDirectly(String bomGroupId, String bomArtifactId,
+            String bomVersion,
+            MavenArtifactResolver artifactResolver, MessageWriter log, int registryPreference) {
         if (bomVersion == null) {
             throw new IllegalArgumentException("BOM version was not provided");
         }
@@ -97,6 +102,7 @@ public class ToolsUtils {
                 (bomArtifactId == null ? ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID : bomArtifactId)
                         + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX,
                 bomVersion, "json", bomVersion);
+
         Path platformJson = null;
         try {
             log.debug("Resolving platform descriptor %s", catalogCoords);
@@ -114,12 +120,19 @@ public class ToolsUtils {
                 }
             }
             if (platformJson == null) {
-                throw new RuntimeException("Failed to resolve the default platform JSON descriptor", e);
+                final StringBuilder sb = new StringBuilder();
+                sb.append("Failed to resolve extension catalog for ");
+                sb.append(PlatformArtifacts.ensureBomArtifact(ArtifactCoords.of(catalogCoords.getGroupId(),
+                        catalogCoords.getArtifactId(), catalogCoords.getClassifier(), catalogCoords.getExtension(),
+                        catalogCoords.getVersion())).toCompactCoords());
+                sb.append(
+                        ". Make sure the groupId, artifactId and version are spelled correctly and the relevant Maven repositories are configured.");
+                throw new RuntimeException(sb.toString(), e);
             }
         }
         ExtensionCatalog catalog;
         try {
-            catalog = JsonCatalogMapperHelper.deserialize(platformJson, JsonExtensionCatalog.class);
+            catalog = ExtensionCatalog.fromFile(platformJson);
         } catch (IOException e) {
             throw new RuntimeException("Failed to deserialize extension catalog " + platformJson, e);
         }
@@ -147,22 +160,37 @@ public class ToolsUtils {
                                         coords.getClassifier(), coords.getType(), coords.getVersion());
                                 log.debug("Resolving platform descriptor %s", catalogCoords);
                                 final Path jsonPath = artifactResolver.resolve(catalogCoords).getArtifact().getFile().toPath();
-                                memberCatalog = JsonCatalogMapperHelper.deserialize(jsonPath,
-                                        JsonExtensionCatalog.class);
+                                memberCatalog = ExtensionCatalog.fromFile(jsonPath);
                             } catch (Exception e) {
                                 log.warn("Failed to resolve member catalog " + m, e);
                                 continue;
                             }
                         }
 
-                        final OriginPreference originPreference = new OriginPreference(1, 1, 1, ++memberIndex, 1);
+                        final OriginPreference originPreference = new OriginPreference(registryPreference, 1, 1, ++memberIndex,
+                                1);
                         Map<String, Object> metadata = new HashMap<>(memberCatalog.getMetadata());
                         metadata.put("origin-preference", originPreference);
-                        ((JsonExtensionCatalog) memberCatalog).setMetadata(metadata);
-                        catalogs.add(memberCatalog);
+                        ExtensionCatalog.Mutable mutableMemberCatalog = memberCatalog.mutable();
+                        mutableMemberCatalog.setMetadata(metadata);
+                        catalogs.add(mutableMemberCatalog.build());
                     }
-                    catalog = JsonCatalogMerger.merge(catalogs);
+                    catalog = CatalogMergeUtility.merge(catalogs);
                 }
+            }
+        }
+        if (catalog.getUpstreamQuarkusCoreVersion() != null
+                && !catalog.getUpstreamQuarkusCoreVersion().isBlank()
+                && !(bomVersion.equals(catalog.getUpstreamQuarkusCoreVersion())
+                        && catalogCoords.getGroupId().equals(ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID)
+                        && catalogCoords.getArtifactId().equals(ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID
+                                + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX))) {
+            try {
+                final ExtensionCatalog upstreamCatalog = resolvePlatformDescriptorDirectly(null, null,
+                        catalog.getUpstreamQuarkusCoreVersion(), artifactResolver, log, registryPreference + 1);
+                catalog = CatalogMergeUtility.merge(List.of(catalog, upstreamCatalog));
+            } catch (Exception e) {
+                log.warn(e.getLocalizedMessage());
             }
         }
         return catalog;
@@ -179,18 +207,19 @@ public class ToolsUtils {
         for (ArtifactCoords platform : platforms) {
             final Path json;
             try {
-                json = artifactResolver.resolve(new AppArtifact(platform.getGroupId(), platform.getArtifactId(),
-                        platform.getClassifier(), platform.getType(), platform.getVersion()));
+                json = artifactResolver.resolve(ArtifactCoords.of(platform.getGroupId(), platform.getArtifactId(),
+                        platform.getClassifier(), platform.getType(), platform.getVersion())).getResolvedPaths()
+                        .getSinglePath();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to resolve platform descriptor " + platform, e);
             }
             try {
-                catalogs.add(JsonCatalogMapperHelper.deserialize(json, JsonExtensionCatalog.class));
+                catalogs.add(ExtensionCatalog.fromFile(json));
             } catch (IOException e) {
                 throw new RuntimeException("Failed to deserialize platform descriptor " + json, e);
             }
         }
-        return JsonCatalogMerger.merge(catalogs);
+        return CatalogMergeUtility.merge(catalogs);
     }
 
     @SuppressWarnings("unchecked")

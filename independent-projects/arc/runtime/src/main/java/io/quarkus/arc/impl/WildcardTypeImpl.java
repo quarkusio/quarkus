@@ -2,10 +2,11 @@ package io.quarkus.arc.impl;
 
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.Arrays;
 
 /**
  * This code was mainly copied from Weld codebase.
- * 
+ *
  * Implementation of {@link WildcardType}.
  *
  * Note that per JLS a wildcard may define either the upper bound or the lower bound. A wildcard may not have multiple bounds.
@@ -47,5 +48,26 @@ public class WildcardTypeImpl implements WildcardType {
     @Override
     public Type[] getLowerBounds() {
         return lowerBound;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (!(obj instanceof WildcardType)) {
+            return false;
+        }
+        WildcardType other = (WildcardType) obj;
+        return Arrays.equals(lowerBound, other.getLowerBounds()) && Arrays.equals(upperBound, other.getUpperBounds());
+    }
+
+    @Override
+    public int hashCode() {
+        // We deliberately use the logic from JDK/guava
+        return Arrays.hashCode(lowerBound) ^ Arrays.hashCode(upperBound);
     }
 }

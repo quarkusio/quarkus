@@ -1,0 +1,27 @@
+{#include main}
+  {#title}Reset Databases{/title}
+  {#body}
+  <table class="table table-striped">
+   <thead class="thead-dark">
+    <tr>
+      <th scope="col">Datasource</th>
+      <th scope="col">Actions</th>
+    </tr>
+   </thead>
+   <tbody>
+   {#for db in info:dbs}
+    <tr>
+      <td>
+        {db}
+      </td>
+      <td>
+       <form method="post"  enctype="application/x-www-form-urlencoded">
+        <input type="hidden" name="name" value="{db}">
+        <input id="invoke" type="submit" value="Reset" class="btn btn-primary btn-sm">
+       </form>
+      </td>
+    {/for}
+   </tbody>
+  </table>
+  {/body}
+{/include}

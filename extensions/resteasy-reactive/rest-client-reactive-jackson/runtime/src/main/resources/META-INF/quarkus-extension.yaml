@@ -10,14 +10,19 @@ metadata:
   - "json"
   - "jackson"
   - "resteasy-reactive"
+  - "rest"
+  - "jakarta-rest"
   categories:
   - "web"
   - "serialization"
-  status: "preview"
+  status: "stable"
   codestart:
     name: "resteasy-reactive"
+    kind: "core"
     languages:
       - "java"
       - "kotlin"
       - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.rest-client-reactive."

@@ -1,0 +1,352 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Stork Reference Guide
+:extension-status: preview
+
+include::_attributes.adoc[]
+
+This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
+It explains the configuration and usage of SmallRye Stork integration in Quarkus.
+
+include::{includes}/extension-status.adoc[]
+
+== Supported clients
+
+The current integration of Stork supports:
+
+* the Reactive REST Client
+* the gRPC clients
+
+Warning: The gRPC client integration does not support statistic-based load balancers.
+
+== Available service discovery and selection
+
+Check the https://smallrye.io/smallrye-stork[SmallRye Stork website] to find more about the provided service discovery and selection.
+
+== Using Stork in Kubernetes
+
+Stork provides a service discovery support for Kubernetes, which goes beyond what Kubernetes provides by default.
+It looks for all the pods backing up a Kubernetes service, but instead of applying a round-robin (as Kubernetes would do), it gives you the option to select the pod using a Stork load-balancer.
+
+To use this feature, add the following dependency to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-service-discovery-kubernetes</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-service-discovery-kubernetes")
+----
+
+For each service expected to be exposed as a Kubernetes Service, configure the lookup:
+
+[source, properties]
+----
+quarkus.stork.my-service.service-discovery.type=kubernetes
+quarkus.stork.my-service.service-discovery.k8s-namespace=my-namespace
+----
+
+Stork looks for the Kubernetes Service with the given name (`my-service` in the previous example) in the specified namespace.
+Instead of using the Kubernetes Service IP directly and let Kubernetes handle the selection and balancing, Stork inspects the service and retrieves the list of pods providing the service. Then, it can select the instance.
+
+For a full example of using Stork with Kubernetes, please read the xref:stork-kubernetes.adoc[Using Stork with Kubernetes guide].
+
+== Implementing a custom service discovery
+
+Stork is extensible, and you can implement your own service discovery mechanism.
+
+=== Dependency
+To implement your Service Discovery Provider, make sure your project depends on Core and Configuration Generator. The former brings classes necessary to implement custom discovery, the latter contains an annotation processor that generates classes needed by Stork.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-configuration-generator</artifactId>
+    <!-- provided scope is sufficient for the annotation processor -->
+    <scope>provided</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-core")
+compileOnly("io.smallrye.stork:stork-configuration-generator")
+----
+
+[NOTE]
+====
+If the provider is located in an extension, the configuration generator should be declared in the
+`annotationProcessorPaths` section of the runtime module using the default scope:
+
+[source,xml]
+----
+<annotationProcessorPaths>
+  ...
+  <path>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-configuration-generator</artifactId>
+  </path>
+</annotationProcessorPaths>
+----
+====
+
+=== Implementing a service discovery provider
+
+The custom provider is a factory that creates an `io.smallrye.stork.ServiceDiscovery` instance for each configured service using this service discovery provider.
+A type, for example, `acme` identifies each provider.
+This type is used in the configuration to reference the provider:
+
+[source, properties]
+----
+quarkus.stork.my-service.service-discovery.type=acme
+----
+
+The first step consists of implementing the `io.smallrye.stork.spi.ServiceDiscoveryProvider` interface:
+
+[source, java]
+----
+package examples;
+
+import io.smallrye.stork.api.ServiceDiscovery;
+import io.smallrye.stork.api.config.ServiceConfig;
+import io.smallrye.stork.api.config.ServiceDiscoveryAttribute;
+import io.smallrye.stork.api.config.ServiceDiscoveryType;
+import io.smallrye.stork.spi.StorkInfrastructure;
+import io.smallrye.stork.spi.ServiceDiscoveryProvider;
+
+@ServiceDiscoveryType("acme") // <1>
+@ServiceDiscoveryAttribute(name = "host",
+        description = "Host name of the service discovery server.", required = true) // <2>
+@ServiceDiscoveryAttribute(name = "port",
+        description = "Port of the service discovery server.", required = false)
+public class AcmeServiceDiscoveryProvider // <3>
+        implements ServiceDiscoveryProvider<AcmeConfiguration> {
+
+    // <4>
+    @Override
+    public ServiceDiscovery createServiceDiscovery(AcmeConfiguration config,
+                                                   String serviceName,
+                                                   ServiceConfig serviceConfig,
+                                                   StorkInfrastructure storkInfrastructure) {
+        return new AcmeServiceDiscovery(config);
+    }
+}
+----
+
+This implementation is straightforward.
+
+<1> `@ServiceDiscoveryType` annotation defines the type of the service discovery provider. For each `ServiceDiscoveryProvider` annotated with this annotation, a configuration class will be generated. The name of the configuration class is constructed by appending `Configuration` to the name of the provider.
+<2> Use `@ServiceDiscoveryAttribute` to define configuration properties for services configured with this service discovery provider. Configuration properties are gathered from all properties of a form: `quarkus.stork.my-service.service-discovery.attr=value`.
+<3> The provider needs to implement `ServiceDiscoveryType` typed by the configuration class. This configuration class is generated automatically by the Configuration Generator. Its name is created by appending `Configuration` to the service discovery type, such as `AcmeConfiguration`.
+<4> `createServiceDiscovery` method is the factory method. It receives the configuration and access to the name of the service and available infrastructure.
+
+Then, we need to implement the `ServiceDiscovery` interface:
+
+[source, java]
+----
+package examples;
+
+import java.util.Collections;
+import java.util.List;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.stork.api.ServiceDiscovery;
+import io.smallrye.stork.api.ServiceInstance;
+import io.smallrye.stork.impl.DefaultServiceInstance;
+import io.smallrye.stork.utils.ServiceInstanceIds;
+
+public class AcmeServiceDiscovery implements ServiceDiscovery {
+
+    private final String host;
+    private final int port;
+
+    public AcmeServiceDiscovery(AcmeConfiguration configuration) {
+        this.host = configuration.getHost();
+        this.port = Integer.parseInt(configuration.getPort());
+    }
+
+    @Override
+    public Uni<List<ServiceInstance>> getServiceInstances() {
+        // Proceed to the lookup...
+        // Here, we just return a DefaultServiceInstance with the configured host and port
+        // The last parameter specifies whether the communication with the instance should happen over a secure connection
+        DefaultServiceInstance instance =
+                new DefaultServiceInstance(ServiceInstanceIds.next(), host, port, false);
+        return Uni.createFrom().item(() -> Collections.singletonList(instance));
+    }
+}
+----
+
+Again, this implementation is simplistic.
+Typically, instead of creating a service instance with values from the configuration, you would connect to a service discovery backend, look for the service and build the list of service instances accordingly.
+That's why the method returns a `Uni`.
+Most of the time, the lookup is a remote operation.
+
+=== Using your service discovery
+
+In the project using it, don't forget to add the dependency on the module providing your implementation.
+Then, in the configuration, just add:
+
+[source, properties]
+----
+quarkus.stork.my-service.service-discovery.type=acme
+quarkus.stork.my-service.service-discovery.host=localhost
+quarkus.stork.my-service.service-discovery.port=1234
+----
+
+Then, Stork will use your implementation to locate the `my-service` service.
+
+== Implementing a custom service selection / load-balancer
+
+Stork is extensible, and you can implement your own service selection (load-balancer) mechanism.
+
+=== Dependency
+To implement your Load Balancer Provider, make sure your project depends on Core and Configuration Generator. The former brings classes necessary to implement custom load balancer, the latter contains an annotation processor that generates classes needed by Stork.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-configuration-generator</artifactId>
+    <!-- provided scope is sufficient for the annotation processor -->
+    <scope>provided</scope>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-core")
+compileOnly("io.smallrye.stork:stork-configuration-generator")
+----
+
+[NOTE]
+====
+Similar to custom discovery providers, if the provider is located in an extension, the configuration generator should be declared in the `annotationProcessorPaths` section of the runtime module using the default scope.
+====
+
+=== Implementing a load balancer provider
+
+Load balancer implementation consists of three elements:
+
+- `LoadBalancer` which is responsible for selecting service instances for a single Stork service
+- `LoadBalancerProvider` which creates instances of `LoadBalancer` for a given load balancer _type_
+- `LoadBalancerProviderConfiguration` which is a configuration for the load balancer
+
+
+A _type_, for example, `acme`, identifies each provider.
+This _type_ is used in the configuration to reference the provider:
+
+[source, properties]
+----
+quarkus.stork.my-service.load-balancer.type=acme
+----
+
+Similarly to `ServiceDiscoveryProvider`, a `LoadBalancerProvider` implementation needs to be annotated with `@LoadBalancerType` that defines the _type_.
+Any configuration properties that the provider expects should be defined with `@LoadBalancerAttribute` annotations placed on the provider.
+[source, java]
+----
+package examples;
+
+import io.smallrye.stork.api.LoadBalancer;
+import io.smallrye.stork.api.ServiceDiscovery;
+import io.smallrye.stork.api.config.LoadBalancerAttribute;
+import io.smallrye.stork.api.config.LoadBalancerType;
+import io.smallrye.stork.spi.LoadBalancerProvider;
+
+@LoadBalancerType("acme")
+@LoadBalancerAttribute(name = "my-attribute",
+        description = "Attribute that alters the behavior of the LoadBalancer")
+public class AcmeLoadBalancerProvider implements
+        LoadBalancerProvider<AcmeLoadBalancerProviderConfiguration> {
+
+    @Override
+    public LoadBalancer createLoadBalancer(AcmeLoadBalancerProviderConfiguration config,
+                                           ServiceDiscovery serviceDiscovery) {
+        return new AcmeLoadBalancer(config);
+    }
+}
+----
+
+Note, that similarly to the `ServiceDiscoveryProvider`, the `LoadBalancerProvider` interface takes a configuration class as a parameter. This configuration class is generated automatically by the _Configuration Generator_.
+Its name is created by appending `Configuration` to the name of the provider class.
+
+The next step is to implement the `LoadBalancer` interface:
+
+[source, java]
+----
+package examples;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Random;
+
+import io.smallrye.stork.api.LoadBalancer;
+import io.smallrye.stork.api.NoServiceInstanceFoundException;
+import io.smallrye.stork.api.ServiceInstance;
+
+public class AcmeLoadBalancer implements LoadBalancer {
+
+    private final Random random;
+
+    public AcmeLoadBalancer(AcmeLoadBalancerProviderConfiguration config) {
+        random = new Random();
+    }
+
+    @Override
+    public ServiceInstance selectServiceInstance(Collection<ServiceInstance> serviceInstances) {
+        if (serviceInstances.isEmpty()) {
+            throw new NoServiceInstanceFoundException("No services found.");
+        }
+        int index = random.nextInt(serviceInstances.size());
+        return new ArrayList<>(serviceInstances).get(index);
+    }
+}
+----
+
+Again, this implementation is simplistic and just picks a random instance from the received list.
+
+
+[source, text]
+----
+examples.AcmeLoadBalancerProvider
+----
+
+=== Using your load balancer
+
+In the project using it, don't forget to add the dependency on the module providing your implementation.
+Then, in the configuration, just add:
+
+[source, properties]
+----
+quarkus.stork.my-service.service-discovery.type=...
+quarkus.stork.my-service.load-balancer.type=acme
+----
+
+Then, Stork will use your implementation to select the `my-service` service instance.
+
+
+
+

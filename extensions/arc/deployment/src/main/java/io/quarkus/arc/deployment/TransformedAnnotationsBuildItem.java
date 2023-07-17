@@ -1,5 +1,6 @@
 package io.quarkus.arc.deployment;
 
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -13,7 +14,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * Makes it possible to query transformed annotations for a given annotation target.
- * 
+ *
  * @see AnnotationsTransformer
  */
 public final class TransformedAnnotationsBuildItem extends SimpleBuildItem
@@ -29,8 +30,20 @@ public final class TransformedAnnotationsBuildItem extends SimpleBuildItem
         return beanDeployment.getAnnotations(target);
     }
 
-    public AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
-        return beanDeployment.getAnnotation(target, name);
+    public AnnotationInstance getAnnotation(AnnotationTarget target, DotName annotationName) {
+        return beanDeployment.getAnnotation(target, annotationName);
+    }
+
+    public AnnotationInstance getAnnotation(AnnotationTarget target, Class<? extends Annotation> annotationClass) {
+        return getAnnotation(target, DotName.createSimple(annotationClass));
+    }
+
+    public boolean hasAnnotation(AnnotationTarget target, DotName annotationName) {
+        return beanDeployment.hasAnnotation(target, annotationName);
+    }
+
+    public boolean hasAnnotation(AnnotationTarget target, Class<? extends Annotation> annotationClass) {
+        return hasAnnotation(target, DotName.createSimple(annotationClass));
     }
 
     @Override

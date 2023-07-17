@@ -1,158 +1,168 @@
 package io.quarkus.kubernetes.client.runtime;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-@ConfigRoot(name = "kubernetes-client", phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class KubernetesClientBuildConfig {
+@ConfigMapping(prefix = "quarkus.kubernetes-client")
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
+public interface KubernetesClientBuildConfig {
 
     /**
-     * Whether or not the client should trust a self signed certificate if so presented by the API server
+     * Whether the client should trust a self-signed certificate if so presented by the API server
      */
-    @ConfigItem
-    public Optional<Boolean> trustCerts = Optional.empty();
+    Optional<Boolean> trustCerts();
 
     /**
      * URL of the Kubernetes API server
      */
-    @ConfigItem
-    public Optional<String> masterUrl;
+    Optional<String> apiServerUrl();
+
+    /**
+     * Use api-server-url instead.
+     */
+    @Deprecated(forRemoval = true)
+    Optional<String> masterUrl();
 
     /**
      * Default namespace to use
      */
-    @ConfigItem
-    public Optional<String> namespace;
+    Optional<String> namespace();
 
     /**
      * CA certificate file
      */
-    @ConfigItem
-    public Optional<String> caCertFile;
+    Optional<String> caCertFile();
 
     /**
      * CA certificate data
      */
-    @ConfigItem
-    public Optional<String> caCertData;
+    Optional<String> caCertData();
 
     /**
      * Client certificate file
      */
-    @ConfigItem
-    public Optional<String> clientCertFile;
+    Optional<String> clientCertFile();
 
     /**
      * Client certificate data
      */
-    @ConfigItem
-    public Optional<String> clientCertData;
+    Optional<String> clientCertData();
 
     /**
      * Client key file
      */
-    @ConfigItem
-    public Optional<String> clientKeyFile;
+    Optional<String> clientKeyFile();
 
     /**
      * Client key data
      */
-    @ConfigItem
-    public Optional<String> clientKeyData;
+    Optional<String> clientKeyData();
 
     /**
      * Client key algorithm
      */
-    @ConfigItem
-    public Optional<String> clientKeyAlgo;
+    Optional<String> clientKeyAlgo();
 
     /**
      * Client key passphrase
      */
-    @ConfigItem
-    public Optional<String> clientKeyPassphrase;
+    Optional<String> clientKeyPassphrase();
 
     /**
      * Kubernetes auth username
      */
-    @ConfigItem
-    public Optional<String> username;
+    Optional<String> username();
 
     /**
      * Kubernetes auth password
      */
-    @ConfigItem
-    public Optional<String> password;
+    Optional<String> password();
 
     /**
      * Kubernetes oauth token
      */
-    @ConfigItem
-    public Optional<String> token;
+    Optional<String> token();
 
     /**
      * Watch reconnect interval
      */
-    @ConfigItem(defaultValue = "PT1S") // default lifted from Kubernetes Client
-    public Duration watchReconnectInterval;
+    @WithDefault("PT1S") // default lifted from Kubernetes Client
+    Duration watchReconnectInterval();
 
     /**
      * Maximum reconnect attempts in case of watch failure
      * By default there is no limit to the number of reconnect attempts
      */
-    @ConfigItem(defaultValue = "-1") // default lifted from Kubernetes Client
-    public int watchReconnectLimit;
+    @WithDefault("-1") // default lifted from Kubernetes Client
+    int watchReconnectLimit();
 
     /**
      * Maximum amount of time to wait for a connection with the API server to be established
      */
-    @ConfigItem(defaultValue = "PT10S") // default lifted from Kubernetes Client
-    public Duration connectionTimeout;
+    @WithDefault("PT10S") // default lifted from Kubernetes Client
+    Duration connectionTimeout();
 
     /**
      * Maximum amount of time to wait for a request to the API server to be completed
      */
-    @ConfigItem(defaultValue = "PT10S") // default lifted from Kubernetes Client
-    public Duration requestTimeout;
+    @WithDefault("PT10S") // default lifted from Kubernetes Client
+    Duration requestTimeout();
 
     /**
-     * Maximum amount of time in milliseconds to wait for a rollout to be completed
+     * Maximum number of retry attempts for API requests that fail with an HTTP code of >= 500
      */
-    @ConfigItem(defaultValue = "PT15M") // default lifted from Kubernetes Client
-    public Duration rollingTimeout;
+    @WithDefault("0") // default lifted from Kubernetes Client
+    Integer requestRetryBackoffLimit();
+
+    /**
+     * Time interval between retry attempts for API requests that fail with an HTTP code of >= 500
+     */
+    @WithDefault("PT1S") // default lifted from Kubernetes Client
+    Duration requestRetryBackoffInterval();
 
     /**
      * HTTP proxy used to access the Kubernetes API server
      */
-    @ConfigItem
-    public Optional<String> httpProxy;
+    Optional<String> httpProxy();
 
     /**
      * HTTPS proxy used to access the Kubernetes API server
      */
-    @ConfigItem
-    public Optional<String> httpsProxy;
+    Optional<String> httpsProxy();
 
     /**
      * Proxy username
      */
-    @ConfigItem
-    public Optional<String> proxyUsername;
+    Optional<String> proxyUsername();
 
     /**
      * Proxy password
      */
-    @ConfigItem
-    public Optional<String> proxyPassword;
+    Optional<String> proxyPassword();
 
     /**
      * IP addresses or hosts to exclude from proxying
      */
-    @ConfigItem
-    public Optional<String[]> noProxy;
+    Optional<List<String>> noProxy();
 
+    /**
+     * Enable the generation of the RBAC manifests. If enabled and no other role binding are provided using the properties
+     * `quarkus.kubernetes.rbac.`, it will generate a default role binding using the role "view" and the application
+     * service account.
+     */
+    @WithDefault("true")
+    boolean generateRbac();
+
+    /**
+     * Dev Services
+     */
+    @ConfigDocSection
+    KubernetesDevServicesBuildTimeConfig devservices();
 }

@@ -2,7 +2,7 @@ package io.quarkus.it.amazon.lambda;
 
 import java.util.HashMap;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.Assertions;
@@ -16,6 +16,9 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 public class AmazonLambdaSimpleTestCase {
+
+    // TODO: This is using the old deprecated LambdaClient test API.  I am keeping it here to test backward compatibility
+    // these tests will need to be ported once LambdaClient is removed from Quarkus.
 
     @Test
     public void testCustomIDPSecurityContext() throws Exception {

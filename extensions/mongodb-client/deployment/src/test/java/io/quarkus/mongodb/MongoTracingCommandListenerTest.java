@@ -2,7 +2,7 @@ package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -23,7 +23,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Test the inclusion and config of the {@link MongoTracingCommandListener}.
- * 
+ *
  * @see io.quarkus.smallrye.opentracing.deployment.TracingTest
  */
 public class MongoTracingCommandListenerTest extends MongoTestBase {

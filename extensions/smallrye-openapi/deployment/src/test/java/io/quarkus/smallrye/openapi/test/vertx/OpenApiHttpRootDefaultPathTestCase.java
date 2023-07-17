@@ -1,9 +1,7 @@
 package io.quarkus.smallrye.openapi.test.vertx;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,9 +13,11 @@ public class OpenApiHttpRootDefaultPathTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
-                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo\n" +
+                            "quarkus.http.cors=true\n"
+                            + "quarkus.http.cors.origins=*"), "application.properties"));
 
     @Test
     public void testOpenApiPathAccessResource() {
@@ -35,7 +35,20 @@ public class OpenApiHttpRootDefaultPathTestCase {
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("openapi", Matchers.startsWith("3.0"))
-                .body("info.title", Matchers.equalTo("Generated API"))
+                .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/foo/resource"));
+    }
+
+    @Test
+    public void testCorsFilterProperties() {
+        // make sure CORS are present when path is not attached to main router and CORS are enabled
+        RestAssured
+                .given()
+                .header("Origin", "https://quarkus.io")
+                .get(OPEN_API_PATH)
+                .then()
+                .statusCode(200)
+                .header("access-control-allow-origin", "https://quarkus.io")
+                .header("access-control-allow-credentials", "false");
     }
 }

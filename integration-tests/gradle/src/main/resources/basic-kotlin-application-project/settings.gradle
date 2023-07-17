@@ -1,0 +1,16 @@
+pluginManagement {
+    repositories {
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+        id 'org.jetbrains.kotlin.jvm' version  "${kotlinVersion}"
+    }
+}
+rootProject.name='code-with-quarkus'

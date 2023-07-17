@@ -3,12 +3,11 @@ package io.quarkus.it.cache;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 
@@ -23,8 +22,8 @@ public class CaffeineResource {
      */
     public static boolean hasLoadAll(CacheLoader<String, String> cl) {
         try {
-            Method classLoadAll = cl.getClass().getMethod("loadAll", Iterable.class);
-            Method defaultLoadAll = CacheLoader.class.getMethod("loadAll", Iterable.class);
+            Method classLoadAll = cl.getClass().getMethod("loadAll", Set.class);
+            Method defaultLoadAll = CacheLoader.class.getMethod("loadAll", Set.class);
             return !classLoadAll.equals(defaultLoadAll);
         } catch (NoSuchMethodException | SecurityException e) {
             return false;
@@ -33,11 +32,28 @@ public class CaffeineResource {
 
     @GET
     @Path("/hasLoadAll")
-    public JsonObject hasLoadAll() {
-        return Json.createObjectBuilder()
-                .add("loader", hasLoadAll(new MyCacheLoader()))
-                .add("bulk-loader", hasLoadAll(new MyBulkCacheLoader()))
-                .build();
+    public Result hasLoadAll() {
+        return new Result(hasLoadAll(new MyCacheLoader()),
+                hasLoadAll(new MyBulkCacheLoader()));
+    }
+
+    public static class Result {
+
+        private final boolean loader;
+        private final boolean bulkLoader;
+
+        Result(boolean loader, boolean bulkLoader) {
+            this.loader = loader;
+            this.bulkLoader = bulkLoader;
+        }
+
+        public boolean isLoader() {
+            return loader;
+        }
+
+        public boolean isBulkLoader() {
+            return bulkLoader;
+        }
     }
 
     public static class MyCacheLoader implements CacheLoader<String, String> {
@@ -54,7 +70,7 @@ public class CaffeineResource {
         }
 
         @Override
-        public Map<String, String> loadAll(Iterable<? extends String> unused) throws Exception {
+        public Map<String, String> loadAll(Set<? extends String> unused) throws Exception {
             return Collections.emptyMap();
         }
     }

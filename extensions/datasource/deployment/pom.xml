@@ -29,6 +29,18 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-datasource-deployment-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kubernetes-service-binding-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -1,15 +1,15 @@
 package io.quarkus.it.hibernate.reactive.postgresql.lazy;
 
-import static javax.persistence.CascadeType.PERSIST;
+import static jakarta.persistence.CascadeType.PERSIST;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table

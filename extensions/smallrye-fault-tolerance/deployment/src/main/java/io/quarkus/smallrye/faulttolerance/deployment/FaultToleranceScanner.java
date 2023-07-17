@@ -16,17 +16,21 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
-import io.quarkus.deployment.util.JandexUtil;
+import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
+import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
+import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.CircuitBreakerName;
 import io.smallrye.faulttolerance.api.CustomBackoff;
 import io.smallrye.faulttolerance.api.ExponentialBackoff;
 import io.smallrye.faulttolerance.api.FibonacciBackoff;
+import io.smallrye.faulttolerance.api.RateLimit;
 import io.smallrye.faulttolerance.autoconfig.FaultToleranceMethod;
 import io.smallrye.faulttolerance.autoconfig.MethodDescriptor;
 
@@ -37,12 +41,15 @@ final class FaultToleranceScanner {
     private final AnnotationProxyBuildItem proxy;
     private final ClassOutput output;
 
+    private final RecorderContext recorderContext;
+
     FaultToleranceScanner(IndexView index, AnnotationStore annotationStore, AnnotationProxyBuildItem proxy,
-            ClassOutput output) {
+            ClassOutput output, RecorderContext recorderContext) {
         this.index = index;
         this.annotationStore = annotationStore;
         this.proxy = proxy;
         this.output = output;
+        this.recorderContext = recorderContext;
     }
 
     boolean hasFTAnnotations(ClassInfo clazz) {
@@ -80,6 +87,11 @@ final class FaultToleranceScanner {
                 // synthetic methods can't be intercepted
                 continue;
             }
+            if (annotationStore.hasAnnotation(method, io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS)
+                    && !annotationStore.hasAnyAnnotation(method, DotNames.FT_ANNOTATIONS)) {
+                // methods annotated @NoClassInterceptors and not annotated with an interceptor binding are not intercepted
+                continue;
+            }
 
             action.accept(method);
         }
@@ -100,23 +112,28 @@ final class FaultToleranceScanner {
 
         FaultToleranceMethod result = new FaultToleranceMethod();
 
-        result.beanClass = load(beanClass.name());
+        result.beanClass = getClassProxy(beanClass);
         result.method = createMethodDescriptor(method);
 
+        result.applyFaultTolerance = getAnnotation(ApplyFaultTolerance.class, method, beanClass, annotationsPresentDirectly);
+
         result.asynchronous = getAnnotation(Asynchronous.class, method, beanClass, annotationsPresentDirectly);
+        result.asynchronousNonBlocking = getAnnotation(AsynchronousNonBlocking.class, method, beanClass,
+                annotationsPresentDirectly);
+        result.blocking = getAnnotation(Blocking.class, method, beanClass, annotationsPresentDirectly);
+        result.nonBlocking = getAnnotation(NonBlocking.class, method, beanClass, annotationsPresentDirectly);
+
         result.bulkhead = getAnnotation(Bulkhead.class, method, beanClass, annotationsPresentDirectly);
         result.circuitBreaker = getAnnotation(CircuitBreaker.class, method, beanClass, annotationsPresentDirectly);
+        result.circuitBreakerName = getAnnotation(CircuitBreakerName.class, method, beanClass, annotationsPresentDirectly);
         result.fallback = getAnnotation(Fallback.class, method, beanClass, annotationsPresentDirectly);
+        result.rateLimit = getAnnotation(RateLimit.class, method, beanClass, annotationsPresentDirectly);
         result.retry = getAnnotation(Retry.class, method, beanClass, annotationsPresentDirectly);
         result.timeout = getAnnotation(Timeout.class, method, beanClass, annotationsPresentDirectly);
 
-        result.circuitBreakerName = getAnnotation(CircuitBreakerName.class, method, beanClass, annotationsPresentDirectly);
         result.customBackoff = getAnnotation(CustomBackoff.class, method, beanClass, annotationsPresentDirectly);
         result.exponentialBackoff = getAnnotation(ExponentialBackoff.class, method, beanClass, annotationsPresentDirectly);
         result.fibonacciBackoff = getAnnotation(FibonacciBackoff.class, method, beanClass, annotationsPresentDirectly);
-
-        result.blocking = getAnnotation(Blocking.class, method, beanClass, annotationsPresentDirectly);
-        result.nonBlocking = getAnnotation(NonBlocking.class, method, beanClass, annotationsPresentDirectly);
 
         result.annotationsPresentDirectly = annotationsPresentDirectly;
 
@@ -125,20 +142,20 @@ final class FaultToleranceScanner {
 
     private MethodDescriptor createMethodDescriptor(MethodInfo method) {
         MethodDescriptor result = new MethodDescriptor();
-        result.declaringClass = load(method.declaringClass().name());
+        result.declaringClass = getClassProxy(method.declaringClass());
         result.name = method.name();
-        result.parameterTypes = method.parameters()
+        result.parameterTypes = method.parameterTypes()
                 .stream()
-                .map(JandexUtil::loadRawType)
+                .map(this::getClassProxy)
                 .toArray(Class[]::new);
-        result.returnType = JandexUtil.loadRawType(method.returnType());
+        result.returnType = getClassProxy(method.returnType());
         return result;
     }
 
     private <A extends Annotation> A getAnnotation(Class<A> annotationType, MethodInfo method,
             ClassInfo beanClass, Set<Class<? extends Annotation>> directlyPresent) {
 
-        DotName annotationName = DotName.createSimple(annotationType.getName());
+        DotName annotationName = DotName.createSimple(annotationType);
         if (annotationStore.hasAnnotation(method, annotationName)) {
             directlyPresent.add(annotationType);
             AnnotationInstance annotation = annotationStore.getAnnotation(method, annotationName);
@@ -149,7 +166,7 @@ final class FaultToleranceScanner {
     }
 
     private <A extends Annotation> A getAnnotationFromClass(Class<A> annotationType, ClassInfo clazz) {
-        DotName annotationName = DotName.createSimple(annotationType.getName());
+        DotName annotationName = DotName.createSimple(annotationType);
         if (annotationStore.hasAnnotation(clazz, annotationName)) {
             AnnotationInstance annotation = annotationStore.getAnnotation(clazz, annotationName);
             return createAnnotation(annotationType, annotation);
@@ -171,11 +188,15 @@ final class FaultToleranceScanner {
         return proxy.builder(instance, annotationType).build(output);
     }
 
-    private static Class<?> load(DotName name) {
-        try {
-            return Thread.currentThread().getContextClassLoader().loadClass(name.toString());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+    // using class proxies instead of attempting to load the class, because the class
+    // doesn't have to exist in the deployment classloader at all -- instead, it may be
+    // generated by another Quarkus extension (such as RestClient Reactive)
+    private Class<?> getClassProxy(ClassInfo clazz) {
+        return recorderContext.classProxy(clazz.name().toString());
+    }
+
+    private Class<?> getClassProxy(Type type) {
+        // Type.name() returns the right thing
+        return recorderContext.classProxy(type.name().toString());
     }
 }

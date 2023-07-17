@@ -5,15 +5,17 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.Bean;
 
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 
 import io.quarkus.arc.Arc;
 import io.smallrye.reactive.messaging.Invoker;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
+import io.smallrye.reactive.messaging.MethodParameterDescriptor;
 import io.smallrye.reactive.messaging.Shape;
 import io.smallrye.reactive.messaging.annotations.Merge;
+import io.smallrye.reactive.messaging.keyed.KeyValueExtractor;
 
 public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
@@ -53,6 +55,14 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     private Type ingestedPayload;
 
+    private boolean useReactiveStreams = false;
+
+    private MethodParameterDescriptor descriptor;
+
+    private Type keyType;
+    private Type valueType;
+    private Class<? extends KeyValueExtractor> keyed;
+
     public String getBeanId() {
         return beanId;
     }
@@ -81,15 +91,6 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     public void setReturnType(Class<?> returnType) {
         this.returnType = returnType;
-    }
-
-    @Override
-    public Class<?>[] getParameterTypes() {
-        return parameterTypes;
-    }
-
-    public void setParameterTypes(Class<?>[] parameterTypes) {
-        this.parameterTypes = parameterTypes;
     }
 
     public Shape getShape() {
@@ -202,6 +203,21 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
         return ingestedPayload;
     }
 
+    @Override
+    public Type getKeyType() {
+        return keyType;
+    }
+
+    @Override
+    public Type getValueType() {
+        return valueType;
+    }
+
+    @Override
+    public Class<? extends KeyValueExtractor> getKeyed() {
+        return keyed;
+    }
+
     public void setIngestedPayloadType(Type ingestedPayload) {
         this.ingestedPayload = ingestedPayload;
     }
@@ -212,7 +228,7 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     @Override
     public String methodAsString() {
-        if (Arc.container() != null) {
+        if (Arc.container() != null && getBean() != null) {
             return getBean().getBeanClass().getName() + "#" + getMethodName();
         } else {
             return getMethodName();
@@ -259,5 +275,39 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
 
     public void setWorkerPoolName(String workerPoolName) {
         this.workerPoolName = workerPoolName;
+    }
+
+    public boolean isUseReactiveStreams() {
+        return useReactiveStreams;
+    }
+
+    public void setUseReactiveStreams(boolean usesReactiveStreams) {
+        this.useReactiveStreams = usesReactiveStreams;
+    }
+
+    @Override
+    public boolean usesReactiveStreams() {
+        return useReactiveStreams;
+    }
+
+    @Override
+    public MethodParameterDescriptor getParameterDescriptor() {
+        return descriptor;
+    }
+
+    public void setParameterDescriptor(MethodParameterDescriptor descriptor) {
+        this.descriptor = descriptor;
+    }
+
+    public void setKeyType(Type keyType) {
+        this.keyType = keyType;
+    }
+
+    public void setValueType(Type valueType) {
+        this.valueType = valueType;
+    }
+
+    public void setKeyed(Class<? extends KeyValueExtractor> keyed) {
+        this.keyed = keyed;
     }
 }

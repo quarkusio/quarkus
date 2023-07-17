@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
@@ -19,8 +18,7 @@ public class TestHTTPResourceManager {
 
     public static String getUri() {
         try {
-            Config config = ConfigProvider.getConfig();
-            return config.getValue("test.url", String.class);
+            return sanitizeUri(ConfigProvider.getConfig().getValue("test.url", String.class));
         } catch (IllegalStateException e) {
             //massive hack for dev mode tests, dev mode has not started yet
             //so we don't have any way to load this correctly from config
@@ -29,15 +27,22 @@ public class TestHTTPResourceManager {
     }
 
     public static String getSslUri() {
-        return ConfigProvider.getConfig().getValue("test.url.ssl", String.class);
+        return sanitizeUri(ConfigProvider.getConfig().getValue("test.url.ssl", String.class));
+    }
+
+    private static String sanitizeUri(String result) {
+        if ((result != null) && result.endsWith("/")) {
+            return result.substring(0, result.length() - 1);
+        }
+        return result;
     }
 
     public static String getUri(RunningQuarkusApplication application) {
-        return application.getConfigValue("test.url", String.class).get();
+        return sanitizeUri(application.getConfigValue("test.url", String.class).get());
     }
 
     public static String getSslUri(RunningQuarkusApplication application) {
-        return application.getConfigValue("test.url.ssl", String.class).get();
+        return sanitizeUri(application.getConfigValue("test.url.ssl", String.class).get());
     }
 
     public static void inject(Object testCase) {

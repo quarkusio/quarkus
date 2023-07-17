@@ -2,7 +2,7 @@ package io.quarkus.undertow.runtime;
 
 import java.util.function.Function;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;

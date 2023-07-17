@@ -14,7 +14,7 @@ class SimpleMethodSignatureKey {
         // Notes:
         // - MethodInfo.toString() is not usable here because it includes the declaring class
         // - just parameters() for the second part would include annotations (see Type.toString())
-        key = method.name() + method.parameters().stream()
+        key = method.name() + method.parameterTypes().stream()
                 .map(Type::name)
                 .map(DotName::toString)
                 .collect(Collectors.joining(", ", "(", ")"));

@@ -20,8 +20,8 @@
             <artifactId>logstash-gelf</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -34,7 +34,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -9,15 +9,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.LogFile;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
@@ -27,16 +25,15 @@ public class KubernetesWithMetricsTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("metrics")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setRun(true)
             .setLogFileName("k8s.log")
             .withConfigurationResource("kubernetes-with-metrics.properties")
-            .setForcedDependencies(
-                    List.of(
-                            new AppArtifact("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion()),
-                            new AppArtifact("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-smallrye-metrics", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-kubernetes-client", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;

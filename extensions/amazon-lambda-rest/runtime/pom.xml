@@ -13,6 +13,7 @@
 
     <artifactId>quarkus-amazon-lambda-rest</artifactId>
     <name>Quarkus - Amazon Lambda AWS Gateway REST API- Runtime</name>
+    <description>Build an API Gateway REST API with Lambda integration</description>
 
     <dependencies>
         <dependency>
@@ -32,17 +33,8 @@
             <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-apache-httpclient</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws.serverless</groupId>
-            <artifactId>aws-serverless-java-container-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
-            <scope>provided</scope>
+            <groupId>org.eclipse.microprofile.jwt</groupId>
+            <artifactId>microprofile-jwt-auth-api</artifactId>
         </dependency>
     </dependencies>
 
@@ -50,7 +42,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

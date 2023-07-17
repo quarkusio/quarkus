@@ -12,7 +12,7 @@ import net.bytebuddy.ClassFileVersion;
 /**
  * We need a different implementation of ProxyFactoryFactory during the build than at runtime,
  * so to allow metadata validation. This implementation is then swapped after the metadata has been recorded.
- * 
+ *
  * @see io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactory
  */
 public final class BootstrapOnlyProxyFactoryFactoryInitiator implements StandardServiceInitiator<ProxyFactoryFactory> {
@@ -24,7 +24,7 @@ public final class BootstrapOnlyProxyFactoryFactoryInitiator implements Standard
 
     @Override
     public ProxyFactoryFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        BytecodeProviderImpl bbProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V8);
+        BytecodeProviderImpl bbProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V11);
         return bbProvider.getProxyFactoryFactory();
     }
 

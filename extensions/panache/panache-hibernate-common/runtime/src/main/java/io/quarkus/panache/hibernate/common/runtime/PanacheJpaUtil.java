@@ -61,14 +61,9 @@ public class PanacheJpaUtil {
             return "FROM " + getEntityName(entityClass);
         }
 
-        String trimmed = query.trim();
+        String trimmed = query.replace('\n', ' ').replace('\r', ' ').trim();
         if (trimmed.isEmpty()) {
             return "FROM " + getEntityName(entityClass);
-        }
-
-        if (isNamedQuery(query)) {
-            // we return named query as is
-            return query;
         }
 
         String trimmedLc = trimmed.toLowerCase();
@@ -124,19 +119,23 @@ public class PanacheJpaUtil {
         }
 
         String trimmedLc = trimmed.toLowerCase();
+        // backwards compat trying to be helpful, remove the from
+        if (trimmedLc.startsWith("update from")) {
+            return "update " + trimmed.substring(11);
+        }
         if (trimmedLc.startsWith("update ")) {
             return query;
         }
         if (trimmedLc.startsWith("from ")) {
-            return "UPDATE " + query;
+            return "UPDATE " + trimmed.substring(5);
         }
         if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
         if (trimmedLc.startsWith("set ")) {
-            return "UPDATE FROM " + getEntityName(entityClass) + " " + query;
+            return "UPDATE " + getEntityName(entityClass) + " " + query;
         }
-        return "UPDATE FROM " + getEntityName(entityClass) + " SET " + query;
+        return "UPDATE " + getEntityName(entityClass) + " SET " + query;
     }
 
     public static String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {
@@ -177,8 +176,18 @@ public class PanacheJpaUtil {
             if (i > 0)
                 sb.append(" , ");
             sb.append(column.getName());
-            if (column.getDirection() != Sort.Direction.Ascending)
+            if (column.getDirection() != Sort.Direction.Ascending) {
                 sb.append(" DESC");
+            }
+
+            if (column.getNullPrecedence() != null) {
+                if (column.getNullPrecedence() == Sort.NullPrecedence.NULLS_FIRST) {
+                    sb.append(" NULLS FIRST");
+                } else {
+                    sb.append(" NULLS LAST");
+                }
+            }
+
         }
         return sb.toString();
     }

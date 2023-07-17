@@ -2,11 +2,11 @@ package io.quarkus.resteasy.multipart.runtime;
 
 import java.io.IOException;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.ext.Provider;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 

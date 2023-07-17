@@ -1,0 +1,744 @@
+---
+# The format of this file is documented here:
+# https://github.com/quarkusio/quarkus-github-bot#triage-issues
+features: [ALL]
+workflows:
+  rules:
+    - allow:
+        users:
+          minContributions: 10
+        files:
+          - "**/*.md"
+          - "**/*.adoc"
+workflowRunAnalysis:
+  workflows: ["Quarkus CI"]
+projectsClassic:
+  rules:
+    - labels: [area/documentation]
+      project: 21
+      issues: true
+      pullRequests: true
+      status: To do
+projects:
+  rules:
+    - labels: [area/jakarta]
+      project: 13
+      issues: true
+      pullRequests: true
+      status: Todo
+    - labels: [triage/quarkus-3]
+      project: 13
+      issues: true
+      pullRequests: true
+      status: Todo
+triage:
+  discussions:
+    monitoredCategories: [33575230]
+  rules:
+    - id: amazon-lambda
+      labels: [area/amazon-lambda]
+      title: "lambda"
+      notify: [patriot1burke, matejvasek]
+      directories:
+        - extensions/amazon-lambda
+        - integration-tests/amazon-lambda
+    - id: persistence
+      labels: [area/persistence]
+      title: "persistence"
+      directories:
+        - extensions/jdbc/
+    - id: db2
+      labels: [area/persistence]
+      title: "db2"
+      notify: [mswatosh]
+      directories:
+        - extensions/reactive-db2-client/
+        - extensions/jdbc/jdbc-db2/
+    - id: funqy
+      labels: [area/funqy]
+      titleBody: "funqy"
+      notify: [patriot1burke, matejvasek]
+      directories:
+        - extensions/funqy/
+    - id: devmode
+      labels: [area/devmode]
+      title: "dev mode"
+    - id: devui
+      labels: [area/dev-ui]
+      title: "dev.?ui"
+      notify: [phillip-kruger, cescoffier]
+      notifyInPullRequest: true
+    - labels: [area/gradle]
+      title: "gradle"
+      notify: [quarkusio/devtools, glefloch]
+      directories:
+        - devtools/gradle/
+        - integration-tests/gradle/
+    - id: maven
+      labels: [area/maven]
+      title: "maven"
+      notify: [quarkusio/devtools]
+      directories:
+        - devtools/maven/
+        - integration-tests/maven/
+        - independent-projects/bootstrap/maven-plugin/
+        - integration-tests/maven/
+        - test-framework/maven/
+    - id: jbang
+      labels: [area/jbang]
+      titleBody: "jbang"
+      notify: [quarkusio/devtools, maxandersen]
+      directories:
+        - "**/*JBang*"
+        - "**/*jbang*"
+    - id: codestart
+      labels: [area/codestarts]
+      title: "codestart"
+      notify: [quarkusio/devtools, ia3andy]
+      directories:
+        - independent-projects/tools/codestarts/
+        - devtools/platform-descriptor-json/src/main/resources/bundled-codestarts/
+        - devtools/platform-descriptor-json/src/main/resources/codestarts/
+        - devtools/platform-descriptor-json/src/main/resources/templates/
+    - id: hibernate-reactive
+      labels: [area/hibernate-reactive, area/persistence]
+      title: "hibernate.reactive"
+      expression: |
+        matches("hibernate", title) && matches("reactive", title)
+        && !matches("hibernate.validator", title)
+        && !matches("hibernate.search", titleBody)
+      notify: [DavideD, gavinking, Sanne]
+      directories:
+        - extensions/hibernate-reactive
+    - id: hibernate-orm
+      labels: [area/hibernate-orm, area/persistence]
+      expression: |
+        matches("hibernate", title) && !matches("reactive", title)
+        && !matches("hibernate.validator", title)
+        && !matches("hibernate.search", titleBody)
+        && !matches("hibernate.reactive", titleBody)
+      notify: [gsmet, Sanne, yrodiere]
+      notifyInPullRequest: true
+      directories:
+        # No trailing slashes: we also match sibling directories starting with these names
+        - extensions/hibernate-orm
+        - extensions/hibernate-envers
+        - integration-tests/common-jpa-entities
+        - integration-tests/jpa
+        - integration-tests/hibernate-envers
+        - integration-tests/hibernate-orm-tenancy
+        - integration-tests/infinispan-cache-jpa
+    - id: hibernate-search
+      labels: [area/hibernate-search]
+      title: "hibernate.search"
+      notify: [gsmet, yrodiere]
+      notifyInPullRequest: true
+      directories:
+        # No trailing slashes: we also match sibling directories starting with these names
+        - extensions/hibernate-search
+        - integration-tests/hibernate-search
+    - id: elasticsearch
+      labels: [area/elasticsearch]
+      title: "elasticsearch"
+      notify: [gsmet, yrodiere, loicmathieu]
+      notifyInPullRequest: true
+      directories:
+        # No trailing slashes: we also match sibling directories starting with these names
+        - extensions/elasticsearch
+        - integration-tests/elasticsearch
+    - id: hibernate-validator
+      labels: [area/hibernate-validator]
+      title: "hibernate.validator"
+      notify: [gsmet, yrodiere]
+      directories:
+        # No trailing slashes: we also match sibling directories starting with these names
+        - extensions/hibernate-validator
+        - integration-tests/hibernate-validator
+    - id: jaeger
+      labels: [area/jaeger]
+      title: "jaeger"
+      notify: [radcortez, brunobat]
+      directories:
+        - extensions/jaeger/
+    - id: jackson
+      labels: [area/jackson]
+      title: "jackson"
+      notify: [geoand, gsmet]
+      directories:
+        - extensions/jackson/
+        - integration-tests/jackson/
+    - id: kotlin
+      labels: [area/kotlin]
+      titleBody: "kotlin"
+      notify: [evanchooly, geoand]
+      directories:
+        - extensions/kotlin/
+        - integration-tests/kotlin/
+    - id: mongodb
+      labels: [area/mongodb]
+      title: "mongo"
+      notify: [loicmathieu, evanchooly]
+      directories:
+        - extensions/mongodb-client/
+        - integration-tests/mongodb-client/
+        - integration-tests/mongodb-panache/
+        - extensions/panache/mongodb-panache/
+    - id: openapi
+      labels: [area/openapi, area/smallrye]
+      title: "openapi"
+      notify: [EricWittmann, MikeEdgar, phillip-kruger]
+      directories:
+        - extensions/smallrye-openapi
+    - id: graphql
+      labels: [area/graphql, area/smallrye]
+      title: "graphql"
+      notify: [phillip-kruger, jmartisk]
+      directories:
+        - extensions/smallrye-graphql/
+        - extensions/smallrye-graphql-client/
+        - extensions/vertx-graphql/
+        - integration-tests/vertx-graphql/
+        - integration-tests/smallrye-graphql/
+        - integration-tests/smallrye-graphql-client/
+    - id: tracing
+      labels: [area/tracing, area/smallrye]
+      title: "(trace|tracing)"
+      notify: [radcortez, brunobat]
+      directories:
+        - extensions/smallrye-opentracing/
+    - id: opentelemetry
+      labels: [area/tracing]
+      title: "(trace|opentelemetry)"
+      notify: [radcortez, brunobat]
+      notifyInPullRequest: true
+      directories:
+        - extensions/opentelemetry/
+        - extensions/opentelemetry-exporter-jaeger/
+    - id: jwt
+      labels: [area/security, area/smallrye]
+      title: "jwt"
+      notify: [sberyozkin]
+    - id: security
+      labels: [area/security]
+      title: "security"
+      notify: [sberyozkin]
+      directories:
+        - extensions/security/
+        - extensions/elytron
+        - integration-tests/elytron
+    - id: bearer-token
+      labels: [area/security, area/oidc]
+      title: "bearer"
+      notify: [sberyozkin, pedroigor]
+    - id: metrics
+      labels: [area/metrics, area/smallrye]
+      title: "metrics"
+      notify: [jmartisk, ebullient]
+      notifyInPullRequest: true
+      directories:
+        - extensions/smallrye-metrics
+    - id: micrometer
+      labels: [area/metrics]
+      title: "micrometer"
+      notify: [ebullient, brunobat]
+      notifyInPullRequest: true
+      directories:
+        - extensions/micrometer
+    - id: health
+      labels: [area/health, area/smallrye]
+      title: "health"
+      notify: [jmartisk, xstefank]
+      directories:
+        - extensions/smallrye-health/
+    - id: fault-tolerance
+      labels: [area/fault-tolerance, area/smallrye]
+      title: "fault.tolerance"
+      notify: [Ladicek]
+      directories:
+        - extensions/smallrye-fault-tolerance/
+    - id: mutiny
+      labels: [area/mutiny, area/smallrye]
+      title: "mutiny"
+      notify: [cescoffier, jponge]
+      directories:
+        - extensions/mutiny/
+        - extensions/resteasy-classic/rest-client-mutiny/
+        - extensions/resteasy-classic/resteasy-mutiny-common/
+        - extensions/resteasy-classic/resteasy-mutiny
+    - id: panache
+      labels: [area/panache]
+      title: "panache"
+      notify: [FroMage, loicmathieu]
+      directories:
+        - extensions/panache/
+        - integration-tests/hibernate-orm-panache/
+    - id: rest-data-panache
+      labels: [area/panache]
+      title: "(panache.*resource|rest.data.panache)"
+      notify: [Sgitario]
+    - id: qute
+      labels: [area/qute]
+      title: "qute"
+      notify: [mkouba]
+      directories:
+        - extensions/qute/
+        - extensions/resteasy-classic/resteasy-qute/
+    - id: reactive-messaging
+      labels: [area/reactive-messaging, area/smallrye]
+      title: "reactive.messaging"
+      notify: [cescoffier, ozangunalp]
+      directories:
+        - extensions/smallrye-reactive-messaging
+    - id: rest-client
+      labels: [area/rest-client]
+      title: "rest.client"
+      notify: [cescoffier, geoand, Sgitario]
+      directories:
+        - extensions/rest-client/
+    - id: smallrye
+      labels: [area/smallrye]
+      title: "smallrye"
+      notify: [phillip-kruger, jmartisk, radcortez, Ladicek]
+      directories:
+        - extensions/smallrye-
+    - id: spring
+      labels: [area/spring]
+      title: "spring"
+      notify: [geoand]
+      directories:
+        - extensions/spring-
+        - integration-tests/spring-
+    - id: windows
+      labels: [env/windows]
+      titleBody: "windows"
+    - id: m1
+      labels: [env/m1]
+      titleBody: "\\bm1\\b"
+      notify: [gastaldi]
+    - id: kubernetes
+      labels: [area/kubernetes]
+      titleBody: "kubernetes"
+      notify: [geoand, iocanel, Sgitario]
+      directories:
+        - extensions/kubernetes/
+        - extensions/kubernetes-client/
+        - integration-tests/kubernetes/
+        - integration-tests/kubernetes-client/
+    - id: minikube
+      labels: [area/kubernetes]
+      titleBody: "minikube"
+      notify: [geoand]
+    - id: openshift
+      labels: [area/kubernetes]
+      titleBody: "openshift"
+      notify: [geoand, iocanel]
+    - id: knative
+      labels: [area/kubernetes]
+      titleBody: "knative"
+      notify: [geoand, iocanel]
+    - id: jib
+      labels: [area/container-image]
+      titleBody: "jib"
+      notify: [geoand]
+    - id: kafka
+      labels: [area/kafka]
+      notify: [cescoffier, ozangunalp, alesj]
+      title: "kafka"
+      directories:
+        - extensions/kafka-client/
+        - integration-tests/kafka/
+    - id: kafka-streams
+      labels: [area/kafka-streams]
+      title: "k(afka)?(\\s|-)?stream"
+      notify: [gunnarmorling, rquinio, alesj, ozangunalp]
+      directories:
+        - extensions/kafka-streams
+        - integration-tests/kafka-streams/
+    - id: infinispan
+      labels: [area/infinispan]
+      title: "infinispan"
+      notify: [karesti, wburns]
+      directories:
+        - extensions/infinispan-client/
+        - integration-tests/infinispan-cache-jpa/
+        - integration-tests/infinispan-client/
+    - id: grpc
+      labels: [area/grpc]
+      title: "grpc"
+      notify: [alesj, cescoffier]
+      directories:
+        - extensions/grpc-common
+        - extensions/grpc
+    - id: scheduler
+      labels: [area/scheduler]
+      title: "schedule(r)?"
+      notify: [mkouba]
+      directories:
+        - extensions/scheduler/
+    - id: quartz
+      labels: [area/scheduler]
+      title: "quartz"
+      notify: [mkouba, machi1990]
+      directories:
+        - extensions/quartz/
+        - integration-tests/quartz/
+    - id: redis
+      labels: [area/redis]
+      title: "redis"
+      notify: [machi1990, gsmet, cescoffier]
+      directories:
+        - extensions/redis-client/
+        - integration-tests/redis-client/
+    - id: arc
+      labels: [area/arc]
+      title: "\\b(arc|cdi|injection)\\b"
+      notify: [mkouba, manovotn, Ladicek]
+      directories:
+        - extensions/arc/
+        - independent-projects/arc/
+    - id: google-cloud
+      labels: [area/google-cloud-functions]
+      title: "google.cloud"
+      notify: [loicmathieu]
+      directories:
+        - extensions/google-cloud-functions
+        - integration-tests/google-cloud-functions
+    - id: mandrel
+      labels: [area/mandrel]
+      titleBody: "mandrel"
+      notify: [galderz, zakkak, Karm]
+    - id: awt
+      labels: [area/graphics]
+      expression: |
+              matches("sun.font", titleBody)
+              || matches("sun.java2d", titleBody)
+              || matches("javax.imageio", titleBody)
+              || matches("sun.awt", titleBody)
+      notify: [galderz, zakkak, Karm]
+      notifyInPullRequest: true
+      directories:
+        - extensions/awt/
+        - integration-tests/awt/
+        - integration-tests/no-awt/
+    - id: securepipeline
+      labels: [area/securepipeline]
+      expression: |
+              matches("FIPS", titleBody)
+              || matches("SunPKCS11-NSS-FIPS", titleBody)
+              || matches("NSS module", titleBody)
+              || matches("libnss", titleBody)
+      notify: [jerboaa, Karm]
+      notifyInPullRequest: true
+    - id: artemis
+      labels: [area/artemis]
+      directories:
+        - extensions/artemis-core/
+        - extensions/artemis-jms/
+        - integration-tests/artemis-core/
+        - integration-tests/artemis-jms/
+    - id: cache
+      labels: [area/cache]
+      title: "cache"
+      notify: [gwenneg]
+      directories:
+        - extensions/cache/
+        - integration-tests/cache/
+    - id: cli
+      labels: [area/cli]
+      title: "\\b(cli)\\b"
+      directories:
+        - devtools/cli/
+      notify: [maxandersen,ebullient]
+    - id: picocli
+      labels: [area/picocli]
+      title: "picocli"
+      directories:
+        - extensions/picocli/
+        - integration-tests/picocli/
+        - integration-tests/picocli-native/
+      notify: [ebullient]
+    - id: config
+      labels: [area/config]
+      directories:
+        - extensions/config-yaml/
+        - core/deployment/src/main/java/io/quarkus/deployment/configuration/
+        - core/runtime/src/main/java/io/quarkus/runtime/configuration/
+    - id: core
+      labels: [area/core]
+      notify: [aloubyansky, gsmet, geoand, radcortez, Sanne, stuartwdouglas]
+      directories:
+        - core/
+    - id: dependencies
+      labels: [area/dependencies]
+      directories:
+        - .github/dependabot.yml
+        - bom/
+        - build-parent/
+      allowSecondPass: true
+    - id: devtools
+      labels: [area/devtools]
+      directories:
+        - devtools/
+        - independent-projects/bootstrap/
+        - independent-projects/tools/
+    - id: documentation
+      labels: [area/documentation]
+      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, sheilamjones, MichalMaler, rolfedh]
+      directories:
+        - docs/
+    - id: docstyle
+      labels: [area/docstyle]
+      title: "A tagged source doc has been modified"
+      notify: [ebullient, inoxx03, sunayna15, michelle-purcell, sheilamjones, MichalMaler, rolfedh]
+      directories:
+        - docs/src/main/asciidoc/_attributes.adoc
+        - docs/src/main/asciidoc/_attributes-local.adoc
+        - docs/src/main/asciidoc/datasource.adoc
+        - docs/src/main/asciidoc/deploying-native-executable-openshift.adoc
+        - docs/src/main/asciidoc/deploying-to-openshift.adoc
+        - docs/src/main/asciidoc/deploying-to-openshift-serverless.adoc
+        - docs/src/main/asciidoc/deployment-to-openshift.adoc
+        - docs/src/main/asciidoc/security-architecture.adoc
+        - docs/src/main/asciidoc/security-authentication-mechanisms.adoc
+        - docs/src/main/asciidoc/security-authorize-web-endpoints-reference.adoc
+        - docs/src/main/asciidoc/security-basic-authentication.adoc
+        - docs/src/main/asciidoc/security-basic-authentication-howto.adoc
+        - docs/src/main/asciidoc/security-basic-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-identity-providers.adoc
+        - docs/src/main/asciidoc/security-identity-providers-concept.adoc
+        - docs/src/main/asciidoc/security-jpa.adoc
+        - docs/src/main/asciidoc/security-oidc-bearer-token-authentication.adoc
+        - docs/src/main/asciidoc/security-oidc-bearer-token-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-oidc-code-flow-authentication.adoc
+        - docs/src/main/asciidoc/security-oidc-code-flow-authentication-tutorial.adoc
+        - docs/src/main/asciidoc/security-oidc-configuration-properties-reference.adoc
+        - docs/src/main/asciidoc/security-openid-connect-client-reference.adoc
+        - docs/src/main/asciidoc/security-overview.adoc
+        - docs/src/main/asciidoc/security-proactive-authentication.adoc
+        - docs/src/main/asciidoc/security-vulnerability-detection.adoc
+        - docs/src/main/asciidoc/update-quarkus.adoc
+        - docs/src/main/asciidoc/_includes/compile-quarkus-quickly.adoc
+        - docs/src/main/asciidoc/_includes/duration-format-note.adoc
+        - docs/src/main/asciidoc/_includes/extension-status.adoc
+        - docs/src/main/asciidoc/_includes/platform-include.adoc
+        - docs/src/main/asciidoc/_includes/prerequisites.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native-container.adoc
+        - docs/src/main/asciidoc/_includes/devtools/build-native-container-parameters.adoc
+        - docs/src/main/asciidoc/_includes/devtools/create-app.adoc
+        - docs/src/main/asciidoc/_includes/devtools/create-cli.adoc
+        - docs/src/main/asciidoc/_includes/devtools/dev.adoc
+        - docs/src/main/asciidoc/_includes/devtools/dev-parameters.adoc
+        - docs/src/main/asciidoc/_includes/devtools/extension-add.adoc
+        - docs/src/main/asciidoc/_includes/devtools/extension-list.adoc
+        - docs/src/main/asciidoc/_includes/devtools/maven-opts.adoc
+    - id: infra-automation
+      labels: [area/infra-automation]
+      directories:
+        - .github/
+    - id: jaxb
+      labels: [area/jaxb]
+      title: "jaxb"
+      notify: [gsmet, Sgitario]
+      directories:
+        - extensions/jaxb/
+    - id: logging
+      labels: [area/logging]
+      directories:
+        - extensions/logging-gelf/
+        - extensions/logging-json/
+        - extensions/logging-sentry/
+        - integration-tests/logging-gelf/
+        - core/runtime/src/main/java/io/quarkus/runtime/logging/
+        - core/deployment/src/main/java/io/quarkus/logging/
+    - id: narayana
+      labels: [area/narayana]
+      directories:
+        - extensions/narayana-jta/
+        - extensions/narayana-stm/
+        - integration-tests/narayana-jta/
+        - integration-tests/narayana-stm/
+      notify: [mmusgrov]
+    - id: lra
+      labels: [area/lra]
+      title: "lra"
+      directories:
+        - extensions/narayana-lra/
+        - integration-tests/narayana-lra/
+      notify: [xstefank, mmusgrov]
+    - id: neo4j
+      labels: [area/neo4j]
+      title: "neo4j"
+      notify: [michael-simons]
+      directories:
+        - extensions/neo4j/
+        - integration-tests/neo4j/
+    - id: oidc
+      labels: [area/oidc]
+      title: "oidc"
+      notify: [sberyozkin, pedroigor]
+      directories:
+        - extensions/oidc
+        - integration-tests/oidc/
+        - integration-tests/oidc-code-flow/
+    - id: keycloak
+      labels: [area/keycloak]
+      title: "keycloak"
+      notify: [sberyozkin, pedroigor]
+      directories:
+        - extensions/keycloak
+        - integration-tests/keycloak
+    - id: platform
+      labels: [area/platform]
+      directories:
+        - independent-projects/tools/
+    - id: reactive-streams-operators
+      labels: [area/reactive-streams-operators]
+      directories:
+        - extensions/reactive-streams-operators/
+    - id: resteasy
+      labels: [area/resteasy]
+      directories:
+        - extensions/resteasy-classic/
+        - extensions/resteasy-classic/resteasy
+        - extensions/resteasy-classic/resteasy-common/
+        - extensions/resteasy-classic/resteasy-jackson/
+        - extensions/resteasy-classic/resteasy-jsonb/
+        - extensions/resteasy-classic/resteasy-jaxb/
+        - extensions/resteasy-classic/resteasy-multipart/
+        - extensions/resteasy-classic/resteasy-server-common/
+        - integration-tests/resteasy-jackson/
+        - integration-tests/elytron-resteasy/
+        - integration-tests/virtual-http-resteasy/
+    - id: resteasy-reactive
+      labels: [area/resteasy-reactive]
+      title: resteasy.reactive
+      notify: [geoand, FroMage, stuartwdouglas, Sgitario]
+      directories:
+        - extensions/resteasy-reactive/
+    - id: scala
+      labels: [area/scala]
+      directories:
+        - extensions/scala/
+        - integration-tests/scala/
+    - id: vault
+      labels: [area/vault]
+      title: vault
+      notify: [vsevel]
+      directories:
+        - extensions/vault/
+        - integration-tests/vault
+    - id: vertx
+      labels: [area/vertx]
+      directories:
+        - extensions/vertx
+        - integration-tests/vertx
+    - id: testing
+      title: "quarkusintegrationtest"
+      labels: [area/testing]
+      notify: [geoand]
+      directories:
+        - test-framework/
+    - id: undertow
+      labels: [area/undertow]
+      directories:
+        - extensions/undertow/
+        - integration-tests/elytron-undertow/
+    - id: websockets
+      labels: [area/websockets]
+      directories:
+        - extensions/websockets/
+        - integration-tests/websockets/
+    - id: swagger-ui
+      labels: [area/swagger-ui]
+      title: "swagger"
+      notify: [phillip-kruger, MikeEdgar]
+      directories:
+        - extensions/swagger-ui/
+    - id: flyway
+      labels: [area/flyway]
+      title: "flyway"
+      notify: [cristhiank, geoand, gastaldi, gsmet]
+      directories:
+        - extensions/flyway/
+        - integration-tests/flyway/
+    - id: liquibase
+      labels: [area/liquibase]
+      title: "liquibase"
+      notify: [andrejpetras, geoand, gsmet]
+      directories:
+        - extensions/liquibase/
+        - integration-tests/liquibase/
+    - id: kogito
+      labels: [area/kogito]
+      title: "kogito"
+      notify: [evacchi, mariofusco]
+    - id: optaplanner
+      labels: [area/optaplanner]
+      title: "optaplanner"
+      notify: [ge0ffrey, rsynek, Christopher-Chianelli]
+    - id: extension-proposal
+      labels: [kind/extension-proposal,area/quarkiverse]
+      title: "Extension Proposal"
+      notify: [gastaldi, gsmet, aloubyansky, maxandersen]
+    - id: mailer
+      labels: [area/mailer]
+      title: "\\bmail\\b"
+      notify: [cescoffier]
+      directories:
+        - extensions/mailer/
+        - integration-tests/mailer/
+    - id: agroal
+      labels: [area/agroal]
+      title: "agroal"
+      notify: [barreiro, Sanne, yrodiere]
+      directories:
+        - extensions/agroal/
+    - id: continuous-testing
+      labels: [area/continuous-testing]
+      title: "continuous.testing"
+      notify: [stuartwdouglas]
+    - id: devservices
+      labels: [area/devservices]
+      title: "dev.?services"
+      notify: [stuartwdouglas, geoand]
+    - id: reactive-sql-clients
+      labels: [area/reactive-sql-clients]
+      title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"
+      notify: [tsegismont,vietj]
+      directories:
+        - extensions/reactive-db2-client/
+        - extensions/reactive-mysql-client/
+        - extensions/reactive-mssql-client/
+        - extensions/reactive-pg-client/
+        - integration-tests/reactive-db2-client/
+        - integration-tests/reactive-mysql-client/
+        - integration-tests/reactive-mssql-client/
+        - integration-tests/reactive-pg-client/
+    - id: adr
+      labels: [area/adr]
+      title: "adr"
+      notify: [cescoffier]
+      directories:
+        - adr/
+    - id: context-propagation
+      labels: [area/context-propagation]
+      title: "(context propagation|context-propagation)"
+      notify: [FroMage, manovotn]
+      directories:
+        - extensions/smallrye-context-propagation
+    - id: stork
+      labels: [area/stork]
+      title: "stork"
+      notify: [aureamunoz, cescoffier, Sgitario]
+      directories:
+        - extensions/smallrye-stork/
+    - id: jakarta
+      labels: [area/jakarta]
+      notify: [gsmet]
+      notifyInPullRequest: true
+      directories:
+        - jakarta/
+  qe:
+    notify: [rsvoboda, mjurc]

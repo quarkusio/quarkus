@@ -11,12 +11,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,7 @@ public class RequestContextTerminationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Inject
     EventBus eventBus;

@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -8,14 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import javax.ws.rs.ServiceUnavailableException;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.CompletionCallback;
-import javax.ws.rs.container.ConnectionCallback;
-import javax.ws.rs.container.TimeoutHandler;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
+
+import jakarta.ws.rs.ServiceUnavailableException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.CompletionCallback;
+import jakarta.ws.rs.container.ConnectionCallback;
+import jakarta.ws.rs.container.TimeoutHandler;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.ResponseBuilder;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public class AsyncResponseImpl implements AsyncResponse, Runnable {
@@ -139,8 +142,8 @@ public class AsyncResponseImpl implements AsyncResponse, Runnable {
         Objects.requireNonNull(callback);
         // FIXME: does this mean we should use CDI to look it up?
         try {
-            return register(callback.newInstance());
-        } catch (InstantiationException | IllegalAccessException e) {
+            return register(callback.getDeclaredConstructor().newInstance());
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
@@ -194,7 +197,7 @@ public class AsyncResponseImpl implements AsyncResponse, Runnable {
         if (timeoutHandler != null) {
             timeoutHandler.handleTimeout(this);
             // Spec says:
-            // In case the time-out handler does not take any of the actions mentioned above [resume/new timeout], 
+            // In case the time-out handler does not take any of the actions mentioned above [resume/new timeout],
             // a default time-out strategy is executed by the runtime.
             // Stef picked to do this if the handler did not resume or set a new timeout:
             if (suspended && timerCancelTask == null)

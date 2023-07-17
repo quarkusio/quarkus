@@ -9,3 +9,5 @@ metadata:
     - "cloud"
   status: "preview"
   unlisted: true
+  config:
+  - "quarkus.container-image."

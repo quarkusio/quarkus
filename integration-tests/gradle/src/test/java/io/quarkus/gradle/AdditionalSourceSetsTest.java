@@ -1,6 +1,6 @@
 package io.quarkus.gradle;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +18,6 @@ public class AdditionalSourceSetsTest extends QuarkusGradleWrapperTestBase {
     public void executeFunctionalTest() throws URISyntaxException, IOException, InterruptedException {
         final File projectDir = getProjectDir("additional-source-sets");
         BuildResult result = runGradleWrapper(projectDir, "functionalTest");
-        assertEquals(BuildResult.SUCCESS_OUTCOME, result.getTasks().get(":functionalTest"),
-                "Failed to run tests defined in an alternate test sources directory");
+        assertThat(BuildResult.isSuccessful(result.getTasks().get(":functionalTest"))).isTrue();
     }
 }

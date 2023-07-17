@@ -1,7 +1,9 @@
 package org.jboss.resteasy.reactive.common.headers;
 
 import java.util.Locale;
-import javax.ws.rs.ext.RuntimeDelegate;
+
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.common.util.LocaleHelper;
 
 /**

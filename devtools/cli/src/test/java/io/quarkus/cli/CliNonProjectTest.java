@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
+import io.quarkus.registry.config.RegistriesConfig;
 import picocli.CommandLine;
 
 public class CliNonProjectTest {
@@ -60,7 +61,8 @@ public class CliNonProjectTest {
     @Test
     public void testListPlatformExtensions() throws Exception {
         // List extensions of a specified platform version
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-P=io.quarkus:quarkus-bom:2.0.0.CR3", "-e");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "ext", "list", "-P=io.quarkus:quarkus-bom:2.0.0.CR3", "-e",
+                "--origins");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("Jackson"),
@@ -145,6 +147,7 @@ public class CliNonProjectTest {
         result = CliDriver.execute(workspaceRoot, "registry", "--streams", "-e");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
+
         try (BufferedReader reader = new BufferedReader(new StringReader(result.stdout))) {
             String line = reader.readLine();
             while (line != null && !TEST_QUARKUS_REGISTRY.equals(line)) {
@@ -160,14 +163,13 @@ public class CliNonProjectTest {
 
             line = reader.readLine();
             Assertions.assertNotNull(line);
-            Assertions.assertTrue(line.startsWith("(Read from "), "Expected (Read from ...");
+            Assertions.assertTrue(line.startsWith("(Config source:"), "Expected (Config source: ...");
             Assertions.assertNull(reader.readLine(), "No further content expected");
         }
     }
 
     @Test
     public void testRegistryRefresh() throws Exception {
-
         CliDriver.Result result;
 
         // refresh the local cache and list the registries
@@ -177,7 +179,7 @@ public class CliNonProjectTest {
 
         Path configPath = resolveConfigPath("enabledConfig.yml");
         result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",
-                "--tools-config", configPath.toAbsolutePath().toString());
+                "--config", configPath.toAbsolutePath().toString());
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains(configPath.toString()),
@@ -189,7 +191,7 @@ public class CliNonProjectTest {
 
         configPath = resolveConfigPath("disabledConfig.yml");
         result = CliDriver.execute(workspaceRoot, "registry", "--refresh", "-e",
-                "--tools-config", configPath.toAbsolutePath().toString());
+                "--config", configPath.toAbsolutePath().toString());
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains(configPath.toString()),
@@ -198,6 +200,67 @@ public class CliNonProjectTest {
                 "Should contain '- registry.test.local (disabled)', found: " + result.stdout);
         Assertions.assertTrue(result.stdout.contains("registry.quarkus.io"),
                 "Should contain '- registry.quarkus.io', found: " + result.stdout);
+    }
+
+    @Test
+    public void testRegistryAddRemove() throws Exception {
+        CliDriver.Result result;
+
+        final Path testConfigYaml = workspaceRoot.resolve("test-registry-add-remove.yaml").toAbsolutePath();
+        Files.deleteIfExists(testConfigYaml);
+
+        assertThat(testConfigYaml).doesNotExist();
+        result = CliDriver.execute(workspaceRoot, "registry", "add", "one,two", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        assertThat(testConfigYaml).exists();
+        RegistriesConfig testConfig = RegistriesConfig.fromFile(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(2);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("one");
+        assertThat(testConfig.getRegistries().get(1).getId()).isEqualTo("two");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "add", "two,three", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        testConfig = RegistriesConfig.fromFile(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(3);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("one");
+        assertThat(testConfig.getRegistries().get(1).getId()).isEqualTo("two");
+        assertThat(testConfig.getRegistries().get(2).getId()).isEqualTo("three");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "remove", "one,two", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        testConfig = RegistriesConfig.fromFile(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(1);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("three");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "add", "four", "--config", testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        testConfig = RegistriesConfig.fromFile(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(2);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("three");
+        assertThat(testConfig.getRegistries().get(1).getId()).isEqualTo("four");
+
+        result = CliDriver.execute(workspaceRoot, "registry", "remove", "three,four,five", "--config",
+                testConfigYaml.toString());
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code." + result);
+
+        String contents = Files.readString(testConfigYaml);
+        System.out.println(contents);
+        assertThat(contents).isEqualTo("---\n");
+
+        testConfig = RegistriesConfig.fromFile(testConfigYaml);
+        assertThat(testConfig.getRegistries()).hasSize(1);
+        assertThat(testConfig.getRegistries().get(0).getId()).isEqualTo("registry.quarkus.io");
+
+        Files.delete(testConfigYaml);
     }
 
     private static String getRequiredProperty(String name) {

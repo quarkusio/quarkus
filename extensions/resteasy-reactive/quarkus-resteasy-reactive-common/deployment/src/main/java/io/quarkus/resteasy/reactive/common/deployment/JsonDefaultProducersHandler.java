@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
@@ -30,6 +30,11 @@ public class JsonDefaultProducersHandler implements DefaultProducesHandler {
     }
 
     private boolean isJsonCompatibleType(Context context) {
+        if (context.httpMethod() == null) {
+            // don't warn for subresources
+            return false;
+        }
+
         Type type = context.nonAsyncReturnType();
         // this doesn't catch every single case, but it should be good enough to cover most common cases
         if ((type.kind() != Type.Kind.CLASS) && (type.kind() != Type.Kind.PARAMETERIZED_TYPE)) {

@@ -3,7 +3,7 @@ package io.quarkus.resteasy.mutiny.test;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.spi.ContextInjector;
 

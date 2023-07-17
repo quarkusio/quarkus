@@ -1,8 +1,6 @@
 package io.quarkus.elasticsearch.restclient.common.runtime.graal;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,8 +55,7 @@ final class Substitute_RestClient {
             nodesByHost.put(node.getHost(), node);
             authCache.put(node.getHost(), new BasicScheme());
         }
-        this.nodeTuple = new NodeTuple<>(Collections.unmodifiableList(new ArrayList<>(nodesByHost.values())),
-                authCache);
+        this.nodeTuple = new NodeTuple<>(List.copyOf(nodesByHost.values()), authCache);
         this.blacklist.clear();
     }
 

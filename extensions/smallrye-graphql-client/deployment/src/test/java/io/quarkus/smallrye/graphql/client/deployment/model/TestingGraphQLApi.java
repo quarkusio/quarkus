@@ -2,7 +2,7 @@ package io.quarkus.smallrye.graphql.client.deployment.model;
 
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
@@ -11,6 +11,9 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
 @GraphQLApi
 public class TestingGraphQLApi {
+
+    @Inject
+    CurrentVertxRequest request;
 
     @Query
     public List<Person> people() {
@@ -24,9 +27,6 @@ public class TestingGraphQLApi {
 
         return List.of(person1, person2);
     }
-
-    @Inject
-    CurrentVertxRequest request;
 
     /**
      * Returns the value of the HTTP header denoted by 'key'.

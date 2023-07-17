@@ -8,9 +8,9 @@ import java.net.URLConnection;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ public class OpenApiTestCase {
         Assertions.assertNotNull(obj);
 
         Assertions.assertEquals("3.0.3", obj.getString("openapi"));
-        Assertions.assertEquals("Generated API", obj.getJsonObject("info").getString("title"));
+        Assertions.assertEquals("main-integration-test API", obj.getJsonObject("info").getString("title"));
         Assertions.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
 
         JsonObject paths = obj.getJsonObject("paths");

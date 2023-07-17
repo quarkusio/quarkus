@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors.bindings.multiple;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 @BarBinding

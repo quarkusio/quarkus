@@ -3,7 +3,7 @@ package io.quarkus.resteasy.reactive.spi;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.RuntimeType;
 
 public interface RuntimeTypeItem {
 

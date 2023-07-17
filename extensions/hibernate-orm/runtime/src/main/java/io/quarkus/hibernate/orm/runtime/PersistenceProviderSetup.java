@@ -12,13 +12,13 @@ public final class PersistenceProviderSetup {
     }
 
     public static void registerStaticInitPersistenceProvider() {
-        javax.persistence.spi.PersistenceProviderResolverHolder
+        jakarta.persistence.spi.PersistenceProviderResolverHolder
                 .setPersistenceProviderResolver(new StaticInitHibernatePersistenceProviderResolver());
     }
 
     public static void registerRuntimePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
-        javax.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver(
+        jakarta.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver(
                 new SingletonPersistenceProviderResolver(
                         new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors)));
     }

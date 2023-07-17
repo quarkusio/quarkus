@@ -6,12 +6,15 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.InboundSseEvent;
-import javax.ws.rs.sse.SseEvent;
+
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.InboundSseEvent;
+import jakarta.ws.rs.sse.SseEvent;
+
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 public class InboundSseEventImpl implements InboundSseEvent {
 
@@ -118,7 +121,7 @@ public class InboundSseEventImpl implements InboundSseEvent {
         InputStream in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
         try {
             return (T) ClientSerialisers.invokeClientReader(null, type.getRawType(), type.getType(),
-                    mediaType, null, Serialisers.EMPTY_MULTI_MAP,
+                    mediaType, null, null, new QuarkusMultivaluedHashMap<>(),
                     serialisers, in, Serialisers.NO_READER_INTERCEPTOR, configuration);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

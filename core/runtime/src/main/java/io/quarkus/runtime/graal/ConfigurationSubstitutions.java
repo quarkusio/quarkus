@@ -3,7 +3,6 @@ package io.quarkus.runtime.graal;
 import org.eclipse.microprofile.config.Config;
 
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.AlwaysInline;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -23,7 +22,6 @@ final class Target_io_smallrye_config_SmallRyeConfigProviderResolver {
     }
 
     @Substitute
-    @AlwaysInline("trivial")
     public Config getConfig(ClassLoader classLoader) {
         return getConfig();
     }

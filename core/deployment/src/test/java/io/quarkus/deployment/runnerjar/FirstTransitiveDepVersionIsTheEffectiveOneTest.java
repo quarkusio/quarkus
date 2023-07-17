@@ -3,10 +3,10 @@ package io.quarkus.deployment.runnerjar;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class FirstTransitiveDepVersionIsTheEffectiveOneTest extends ExecutableOutputOutcomeTestBase {
+public class FirstTransitiveDepVersionIsTheEffectiveOneTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected TsArtifact composeApplication() {
 
         final TsArtifact common1 = TsArtifact.jar("common", "1");
         addToExpectedLib(common1);

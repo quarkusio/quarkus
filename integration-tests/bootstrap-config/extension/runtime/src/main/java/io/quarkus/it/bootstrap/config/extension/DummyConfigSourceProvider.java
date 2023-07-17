@@ -1,77 +1,29 @@
 package io.quarkus.it.bootstrap.config.extension;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
-import io.quarkus.runtime.ApplicationConfig;
+import io.smallrye.config.common.MapBackedConfigSource;
 
-/**
- * A dummy provider that returns a single ConfigSource which contains
- * as many properties as DummyConfig.times indicates and where the
- * key depends on DummyConfig.name
- */
 public class DummyConfigSourceProvider implements ConfigSourceProvider {
-
     private final DummyConfig dummyConfig;
-    private final ApplicationConfig applicationConfig;
 
-    public DummyConfigSourceProvider(DummyConfig dummyConfig, ApplicationConfig applicationConfig) {
+    public DummyConfigSourceProvider(DummyConfig dummyConfig) {
         this.dummyConfig = dummyConfig;
-        this.applicationConfig = applicationConfig;
     }
 
     @Override
     public Iterable<ConfigSource> getConfigSources(ClassLoader forClassLoader) {
-        InMemoryConfigSource configSource = new InMemoryConfigSource(Integer.MIN_VALUE, "dummy config source");
-        for (int i = 0; i < dummyConfig.times; i++) {
-            configSource.add(dummyConfig.name + ".key.i" + (i + 1), applicationConfig.name.get() + (i + 1));
-        }
-        return Collections.singletonList(configSource);
-    }
-
-    private static final class InMemoryConfigSource implements ConfigSource {
-
-        private final Map<String, String> values = new HashMap<>();
-        private final int ordinal;
-        private final String name;
-
-        private InMemoryConfigSource(int ordinal, String name) {
-            this.ordinal = ordinal;
-            this.name = name;
-        }
-
-        public void add(String key, String value) {
-            values.put(key, value);
-        }
-
-        @Override
-        public Map<String, String> getProperties() {
-            return values;
-        }
-
-        @Override
-        public Set<String> getPropertyNames() {
-            return values.keySet();
-        }
-
-        @Override
-        public int getOrdinal() {
-            return ordinal;
-        }
-
-        @Override
-        public String getValue(String propertyName) {
-            return values.get(propertyName);
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
+        // Just copy the bootstrap config values to a new source
+        Map<String, String> properties = new HashMap<>();
+        properties.put("quarkus.dummy.name", dummyConfig.name);
+        properties.put("quarkus.dummy.times", dummyConfig.times.toString());
+        dummyConfig.map.forEach((key, mapConfig) -> properties.put("quarkus.dummy.map." + key, mapConfig.value));
+        return List.of(new MapBackedConfigSource("bootstrap", properties, Integer.MAX_VALUE) {
+        });
     }
 }

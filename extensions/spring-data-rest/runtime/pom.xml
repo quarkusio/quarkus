@@ -11,8 +11,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-spring-data-rest</artifactId>
-    <name>Quarkus - Spring - Data REST - Runtime</name>
-    <description>Generate JAX-RS resources for a Spring Data application</description>
+    <name>Quarkus - Spring Data - REST - Runtime</name>
+    <description>Generate Jakarta REST resources for a Spring Data application</description>
 
     <dependencies>
         <dependency>
@@ -33,7 +33,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

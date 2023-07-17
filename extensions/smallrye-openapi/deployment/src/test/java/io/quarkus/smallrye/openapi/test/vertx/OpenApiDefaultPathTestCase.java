@@ -1,8 +1,6 @@
 package io.quarkus.smallrye.openapi.test.vertx;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class OpenApiDefaultPathTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class));
 
     @Test
@@ -33,7 +31,7 @@ public class OpenApiDefaultPathTestCase {
                 .then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("openapi", Matchers.startsWith("3.0"))
-                .body("info.title", Matchers.equalTo("Generated API"))
+                .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/resource"));
     }
 }

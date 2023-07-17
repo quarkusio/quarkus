@@ -9,3 +9,5 @@ metadata:
   categories:
   - "security"
   status: "preview"
+  config:
+  - "quarkus.security.ldap."

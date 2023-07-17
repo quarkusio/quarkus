@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.amqp;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 

@@ -10,8 +10,6 @@ import org.eclipse.microprofile.metrics.MetricType;
 import org.hamcrest.Matchers;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,7 +29,7 @@ public class MetricsFromExtensionTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MetricResource.class))
             .addBuildChainCustomizer(buildCustomizer());
 

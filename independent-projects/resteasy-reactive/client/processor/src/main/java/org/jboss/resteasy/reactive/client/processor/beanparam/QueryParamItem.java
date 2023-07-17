@@ -7,8 +7,8 @@ public class QueryParamItem extends Item {
     private final String name;
     private final Type valueType;
 
-    public QueryParamItem(String name, ValueExtractor extractor, Type valueType) {
-        super(ItemType.QUERY_PARAM, extractor);
+    public QueryParamItem(String fieldName, String name, boolean encoded, ValueExtractor extractor, Type valueType) {
+        super(fieldName, ItemType.QUERY_PARAM, encoded, extractor);
         this.name = name;
         this.valueType = valueType;
     }

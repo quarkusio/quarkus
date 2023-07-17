@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option java_package = "com.example";
+
+service Simple {
+  rpc go(Msg) returns (Msg);
+}
+
+message Msg {
+  string text = 1;
+}

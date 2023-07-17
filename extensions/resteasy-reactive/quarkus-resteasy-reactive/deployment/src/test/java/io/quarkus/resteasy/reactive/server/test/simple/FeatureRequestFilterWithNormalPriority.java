@@ -2,8 +2,8 @@ package io.quarkus.resteasy.reactive.server.test.simple;
 
 import java.io.IOException;
 
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
 
 public class FeatureRequestFilterWithNormalPriority implements ContainerRequestFilter {
 

@@ -5,11 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.stream.Collectors;
 
-import javax.enterprise.inject.spi.DefinitionException;
+import jakarta.enterprise.inject.spi.DefinitionException;
 
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.streams.operators.ProcessorBuilder;
@@ -30,8 +28,8 @@ import io.quarkus.smallrye.reactivemessaging.deployment.QuarkusMediatorConfigura
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
-import io.smallrye.reactive.messaging.MediatorConfigurationSupport;
 import io.smallrye.reactive.messaging.Shape;
+import io.smallrye.reactive.messaging.providers.MediatorConfigurationSupport;
 
 @SuppressWarnings("ConstantConditions")
 public class MediatorConfigurationSupportTest {
@@ -53,14 +51,12 @@ public class MediatorConfigurationSupportTest {
     private MediatorConfigurationSupport create(String method) {
         for (MethodInfo m : classInfo.methods()) {
             if (m.name().equalsIgnoreCase(method)) {
-                List<? extends Class<?>> list = m.parameters().stream().map(t -> load(t.name().toString()))
-                        .collect(Collectors.toList());
                 return new MediatorConfigurationSupport(
                         method,
                         load(m.returnType().name().toString()),
-                        list.toArray(new Class[0]),
+                        m.parameterTypes().stream().map(t -> load(t.name().toString())).toArray(Class[]::new),
                         new QuarkusMediatorConfigurationUtil.ReturnTypeGenericTypeAssignable(m, classLoader),
-                        m.parameters().size() == 0
+                        m.parametersCount() == 0
                                 ? new QuarkusMediatorConfigurationUtil.AlwaysInvalidIndexGenericTypeAssignable()
                                 : new QuarkusMediatorConfigurationUtil.MethodParamGenericTypeAssignable(m, 0,
                                         classLoader));

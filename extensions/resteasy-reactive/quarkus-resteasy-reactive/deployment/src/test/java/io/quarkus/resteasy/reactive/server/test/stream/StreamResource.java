@@ -1,14 +1,18 @@
 package io.quarkus.resteasy.reactive.server.test.stream;
 
 import java.util.Date;
+import java.util.concurrent.Flow;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
 
 import org.jboss.resteasy.reactive.common.util.MultiCollectors;
 import org.reactivestreams.Publisher;
@@ -17,6 +21,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.buffer.Buffer;
+import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 
 @Path("stream")
 public class StreamResource {
@@ -40,8 +45,15 @@ public class StreamResource {
     @Path("text/stream/publisher")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public Publisher<String> getStreamedTextPublisher() {
+    public Flow.Publisher<String> getStreamedTextPublisher() {
         return Multi.createFrom().items("foo", "bar");
+    }
+
+    @Path("text/stream/legacy-publisher")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public Publisher<String> getStreamedTextLegacyPublisher() {
+        return AdaptersToReactiveStreams.publisher(Multi.createFrom().items("foo", "bar"));
     }
 
     @Path("byte-arrays/collect")
@@ -75,7 +87,7 @@ public class StreamResource {
     @Path("char-arrays/stream/publisher")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public Publisher<char[]> getStreamedCharArraysPublisher() {
+    public Flow.Publisher<char[]> getStreamedCharArraysPublisher() {
         return Multi.createFrom().items("foo".toCharArray(), "bar".toCharArray());
     }
 
@@ -151,5 +163,15 @@ public class StreamResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Multi<String> sseThrows() {
         throw new IllegalStateException("STOP");
+    }
+
+    @Path("sse/raw")
+    @GET
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public Multi<OutboundSseEvent> sseRaw(@Context Sse sse) {
+        return Multi.createFrom().items(sse.newEventBuilder().comment("dummy").build(),
+                sse.newEventBuilder().id("one").data("uno").name("eins").build(),
+                sse.newEventBuilder().id("two").data("dos").name("zwei").build(),
+                sse.newEventBuilder().id("three").data("tres").name("drei").build());
     }
 }

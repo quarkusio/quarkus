@@ -15,21 +15,21 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss</groupId>
+            <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
         </dependency>
+
         <dependency>
             <groupId>io.quarkus.resteasy.reactive</groupId>
             <artifactId>resteasy-reactive-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
         <dependency>
             <groupId>jakarta.enterprise</groupId>
@@ -54,4 +54,12 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>de.thetaphi</groupId>
+                <artifactId>forbiddenapis</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

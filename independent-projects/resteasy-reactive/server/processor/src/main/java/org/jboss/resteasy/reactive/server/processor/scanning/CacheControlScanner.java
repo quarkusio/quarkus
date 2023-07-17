@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -11,6 +12,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.resteasy.reactive.Cache;
 import org.jboss.resteasy.reactive.NoCache;
+import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
 import org.jboss.resteasy.reactive.server.handlers.CacheControlHandler;
 import org.jboss.resteasy.reactive.server.model.FixedHandlerChainCustomizer;
@@ -24,7 +27,8 @@ public class CacheControlScanner implements MethodScanner {
     @Override
     public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
-        ExtendedCacheControl cacheControl = noCacheToCacheControl(method.annotation(NO_CACHE));
+        AnnotationStore annotationStore = (AnnotationStore) methodContext.get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+        ExtendedCacheControl cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(method, NO_CACHE));
         if (cacheControl != null) {
             if (method.annotation(CACHE) != null) {
                 throw new IllegalStateException(
@@ -33,9 +37,9 @@ public class CacheControlScanner implements MethodScanner {
             }
             return cacheControlToCustomizerList(cacheControl);
         } else {
-            cacheControl = noCacheToCacheControl(actualEndpointClass.classAnnotation(NO_CACHE));
+            cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(actualEndpointClass, NO_CACHE));
             if (cacheControl != null) {
-                if (actualEndpointClass.classAnnotation(CACHE) != null) {
+                if (actualEndpointClass.declaredAnnotation(CACHE) != null) {
                     throw new IllegalStateException(
                             "A resource class cannot be simultaneously annotated with '@Cache' and '@NoCache'. Offending class is '"
                                     + actualEndpointClass.name() + "'");
@@ -48,7 +52,7 @@ public class CacheControlScanner implements MethodScanner {
         if (cacheControl != null) {
             return cacheControlToCustomizerList(cacheControl);
         } else {
-            cacheControl = cacheToCacheControl(actualEndpointClass.classAnnotation(CACHE));
+            cacheControl = cacheToCacheControl(actualEndpointClass.declaredAnnotation(CACHE));
             if (cacheControl != null) {
                 return cacheControlToCustomizerList(cacheControl);
             }
@@ -61,18 +65,18 @@ public class CacheControlScanner implements MethodScanner {
         if (noCacheInstance == null) {
             return null;
         }
+        ExtendedCacheControl cacheControl = new ExtendedCacheControl();
+        cacheControl.setNoCache(true);
+        cacheControl.setNoTransform(false);
         AnnotationValue fieldsValue = noCacheInstance.value("fields");
         if (fieldsValue != null) {
             String[] fields = fieldsValue.asStringArray();
             if ((fields != null) && (fields.length > 0)) {
-                ExtendedCacheControl cacheControl = new ExtendedCacheControl();
-                cacheControl.setNoCache(true);
-                cacheControl.setNoTransform(false);
                 cacheControl.getNoCacheFields().addAll(Arrays.asList(fields));
-                return cacheControl;
+
             }
         }
-        return null;
+        return cacheControl;
     }
 
     private ExtendedCacheControl cacheToCacheControl(AnnotationInstance cacheInstance) {

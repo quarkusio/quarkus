@@ -16,13 +16,6 @@
         <dependency>
             <groupId>org.eclipse</groupId>
             <artifactId>yasson</artifactId>
-            <exclusions>
-                <!-- this is a "module" dependency and dependency management does not work correctly -->
-                <exclusion>
-                    <groupId>org.glassfish</groupId>
-                    <artifactId>jakarta.json</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -47,7 +40,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.jsonb</provides>

@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -42,8 +45,8 @@ class CovariantTypes {
             if (type2 instanceof Class<?>) {
                 return isAssignableFrom((Class<?>) type1, (Class<?>) type2);
             }
-            if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((Class<?>) type1, (ParameterizedType) type2);
+            if (isParameterizedType(type2)) {
+                return isAssignableFrom((Class<?>) type1, asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
                 return isAssignableFrom((Class<?>) type1, (TypeVariable<?>) type2);
@@ -56,21 +59,21 @@ class CovariantTypes {
             }
             throw InvariantTypes.unknownType(type2);
         }
-        if (type1 instanceof ParameterizedType) {
+        if (isParameterizedType(type1)) {
             if (type2 instanceof Class<?>) {
-                return isAssignableFrom((ParameterizedType) type1, (Class<?>) type2);
+                return isAssignableFrom(asParameterizedType(type1), (Class<?>) type2);
             }
             if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((ParameterizedType) type1, (ParameterizedType) type2);
+                return isAssignableFrom(asParameterizedType(type1), asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
-                return isAssignableFrom((ParameterizedType) type1, (TypeVariable<?>) type2);
+                return isAssignableFrom(asParameterizedType(type1), (TypeVariable<?>) type2);
             }
             if (type2 instanceof WildcardType) {
-                return isAssignableFrom((ParameterizedType) type1, (WildcardType) type2);
+                return isAssignableFrom(asParameterizedType(type1), (WildcardType) type2);
             }
             if (type2 instanceof GenericArrayType) {
-                return isAssignableFrom((ParameterizedType) type1, (GenericArrayType) type2);
+                return isAssignableFrom(asParameterizedType(type1), (GenericArrayType) type2);
             }
             throw InvariantTypes.unknownType(type2);
         }
@@ -79,7 +82,7 @@ class CovariantTypes {
                 return isAssignableFrom((TypeVariable<?>) type1, (Class<?>) type2);
             }
             if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((TypeVariable<?>) type1, (ParameterizedType) type2);
+                return isAssignableFrom((TypeVariable<?>) type1, asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
                 return isAssignableFrom((TypeVariable<?>) type1, (TypeVariable<?>) type2);
@@ -109,7 +112,7 @@ class CovariantTypes {
                 return isAssignableFrom((GenericArrayType) type1, (Class<?>) type2);
             }
             if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((GenericArrayType) type1, (ParameterizedType) type2);
+                return isAssignableFrom((GenericArrayType) type1, asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
                 return isAssignableFrom((GenericArrayType) type1, (TypeVariable<?>) type2);
@@ -185,7 +188,7 @@ class CovariantTypes {
 
     private static boolean matches(ParameterizedType type1, HierarchyDiscovery type2) {
         for (Type type : type2.getTypeClosure()) {
-            if (type instanceof ParameterizedType && matches(type1, (ParameterizedType) type)) {
+            if (isParameterizedType(type) && matches(type1, asParameterizedType(type))) {
                 return true;
             }
         }
@@ -207,12 +210,45 @@ class CovariantTypes {
             throw new IllegalArgumentException("Invalida argument combination: " + type1 + " and " + type2);
         }
         for (int i = 0; i < type1.getActualTypeArguments().length; i++) {
+            // if `type1` is recursive in its type argument `types1[i]`, we treat types1[i] and types2[i] as assignable
+            // (checking the same for type2 doesn't seem necessary)
+            if (types1[i] instanceof TypeVariable && isTypeRecursiveIn(type1, (TypeVariable<?>) types1[i])) {
+                continue;
+            }
             // Generics are invariant
             if (!InvariantTypes.isAssignableFrom(types1[i], types2[i])) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Determines if given parameterized type is recursive in given type variable, which is
+     * a type argument of the parameterized type.
+     *
+     * @param type a parameterized type
+     * @param typeArgument a type variable which is a type argument of {@code type}
+     * @return whether {@code type} is recursive in {@code typeArgument}
+     */
+    private static boolean isTypeRecursiveIn(ParameterizedType type, TypeVariable<?> typeArgument) {
+        for (Type bound : BeanTypeAssignabilityRules.getUppermostTypeVariableBounds(typeArgument)) {
+            if (isParameterizedType(bound)) {
+                if (type.equals(bound)) {
+                    // found bound equal to original type, this is recursive generic type
+                    return true;
+                } else {
+                    ParameterizedType castBound = asParameterizedType(bound);
+                    // recursive search through all found type args
+                    for (Type typeArg : castBound.getActualTypeArguments()) {
+                        if (typeArg instanceof TypeVariable && isTypeRecursiveIn(castBound, (TypeVariable<?>) typeArg)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean isAssignableFrom(ParameterizedType type1, TypeVariable<?> type2) {

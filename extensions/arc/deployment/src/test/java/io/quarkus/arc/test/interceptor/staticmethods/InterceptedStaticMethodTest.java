@@ -12,17 +12,15 @@ import java.lang.reflect.Modifier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import javax.annotation.Priority;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InterceptorBinding;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InterceptorBinding;
+import jakarta.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opentest4j.AssertionFailedError;
@@ -38,7 +36,7 @@ public class InterceptedStaticMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(InterceptMe.class, Simple.class, AnotherSimple.class, SimpleInterceptor.class))
             .addBuildChainCustomizer(buildCustomizer());
 

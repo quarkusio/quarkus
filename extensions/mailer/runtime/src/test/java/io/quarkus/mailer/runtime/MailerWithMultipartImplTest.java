@@ -5,13 +5,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.UUID;
 
-import javax.mail.BodyPart;
-import javax.mail.MessagingException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
+import jakarta.mail.BodyPart;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,8 +46,7 @@ class MailerWithMultipartImplTest {
 
     @BeforeAll
     static void startWiser() {
-        wiser = new Wiser();
-        wiser.setPort(0);
+        wiser = Wiser.port(SocketUtil.findAvailablePort());
         wiser.start();
 
         vertx = Vertx.vertx();
@@ -56,11 +60,9 @@ class MailerWithMultipartImplTest {
 
     @BeforeEach
     void init() {
-        mailer = new MutinyMailerImpl();
-        mailer.mailerSupport = new MailerSupport(FROM, null, false);
-        mailer.vertx = vertx;
-        mailer.client = MailClient.createShared(mailer.vertx,
-                new MailConfig().setPort(wiser.getServer().getPort()).setMultiPartOnly(true));
+        mailer = new MutinyMailerImpl(vertx, MailClient.createShared(vertx,
+                new MailConfig().setPort(wiser.getServer().getPort()).setMultiPartOnly(true)), null,
+                FROM, null, false, List.of(), false);
 
         wiser.getMessages().clear();
     }
@@ -296,10 +298,4 @@ class MailerWithMultipartImplTest {
         }
         return types;
     }
-
-    private List<String> getContentTypesFromMimeMultipart(
-            String content) throws MessagingException, IOException {
-        return Collections.singletonList(content);
-    }
-
 }

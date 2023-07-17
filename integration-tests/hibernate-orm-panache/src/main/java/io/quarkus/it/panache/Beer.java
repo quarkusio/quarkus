@@ -1,7 +1,7 @@
 package io.quarkus.it.panache;
 
-import javax.persistence.Entity;
-import javax.transaction.Transactional;
+import jakarta.persistence.Entity;
+import jakarta.transaction.Transactional;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 

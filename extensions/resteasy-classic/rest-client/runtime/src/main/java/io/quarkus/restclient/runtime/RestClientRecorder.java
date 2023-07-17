@@ -2,7 +2,7 @@ package io.quarkus.restclient.runtime;
 
 import java.util.Set;
 
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.RuntimeType;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
@@ -46,6 +46,10 @@ public class RestClientRecorder {
         providerFactory = clientProviderFactory;
     }
 
+    public void setResteasyProviderFactoryInstance() {
+        ResteasyProviderFactory.setInstance(providerFactory);
+    }
+
     private static void registerProviders(ResteasyProviderFactory providerFactory, boolean useBuiltIn,
             Set<String> providersToRegister,
             Set<String> contributedProviders) {
@@ -63,7 +67,8 @@ public class RestClientRecorder {
         for (String providerToRegister : providersToRegister) {
             try {
                 providerFactory
-                        .registerProvider(Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()),
+                        .registerProvider(
+                                Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()),
                                 isBuiltIn);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to find class for provider " + providerToRegister, e);

@@ -5,6 +5,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
 public class ListConverter implements ParameterConverter {
@@ -42,6 +43,11 @@ public class ListConverter implements ParameterConverter {
             delegate.init(deployment, rawType, genericType, annotations);
     }
 
+    @Override
+    public boolean isForSingleObjectContainer() {
+        return true;
+    }
+
     public ParameterConverter getDelegate() {
         return delegate;
     }
@@ -52,6 +58,7 @@ public class ListConverter implements ParameterConverter {
         public ListSupplier() {
         }
 
+        // invoked by reflection for BeanParam in ClassInjectorTransformer
         public ListSupplier(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
         }

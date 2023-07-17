@@ -10,7 +10,7 @@ package goodbyeworld;
 // The farewell service definition.
 service Farewell {
     // Sends a farewell
-    rpc SayGoodbye (GoodbyeRequest) returns (GoodbyeReply) {}
+    rpc Say_goodbye (GoodbyeRequest) returns (GoodbyeReply) {}
 }
 
 // The request message containing the user's name.

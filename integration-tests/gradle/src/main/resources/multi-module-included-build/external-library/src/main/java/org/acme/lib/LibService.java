@@ -1,6 +1,6 @@
 package org.acme.lib;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class LibService {

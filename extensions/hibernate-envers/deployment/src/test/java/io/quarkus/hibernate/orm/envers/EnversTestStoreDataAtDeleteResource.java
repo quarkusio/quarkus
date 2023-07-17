@@ -2,13 +2,13 @@ package io.quarkus.hibernate.orm.envers;
 
 import java.util.List;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.resource.spi.IllegalStateException;
-import javax.transaction.UserTransaction;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.resource.spi.IllegalStateException;
+import jakarta.transaction.UserTransaction;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.Path;
 
 import org.hibernate.envers.AuditReader;
 import org.hibernate.envers.AuditReaderFactory;

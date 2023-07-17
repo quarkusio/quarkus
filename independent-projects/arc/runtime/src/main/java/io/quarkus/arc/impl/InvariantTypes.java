@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -40,8 +43,8 @@ class InvariantTypes {
             if (type2 instanceof Class<?>) {
                 return isAssignableFrom((Class<?>) type1, (Class<?>) type2);
             }
-            if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((Class<?>) type1, (ParameterizedType) type2);
+            if (isParameterizedType(type2)) {
+                return isAssignableFrom((Class<?>) type1, asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
                 return isAssignableFrom((Class<?>) type1, (TypeVariable<?>) type2);
@@ -51,18 +54,18 @@ class InvariantTypes {
             }
             throw unknownType(type2);
         }
-        if (type1 instanceof ParameterizedType) {
+        if (isParameterizedType(type1)) {
             if (type2 instanceof Class<?>) {
-                return isAssignableFrom((ParameterizedType) type1, (Class<?>) type2);
+                return isAssignableFrom(asParameterizedType(type1), (Class<?>) type2);
             }
             if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((ParameterizedType) type1, (ParameterizedType) type2);
+                return isAssignableFrom(asParameterizedType(type1), asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
-                return isAssignableFrom((ParameterizedType) type1, (TypeVariable<?>) type2);
+                return isAssignableFrom(asParameterizedType(type1), (TypeVariable<?>) type2);
             }
             if (type2 instanceof GenericArrayType) {
-                return isAssignableFrom((ParameterizedType) type1, (GenericArrayType) type2);
+                return isAssignableFrom(asParameterizedType(type1), (GenericArrayType) type2);
             }
             throw unknownType(type2);
         }
@@ -70,8 +73,8 @@ class InvariantTypes {
             if (type2 instanceof Class<?>) {
                 return isAssignableFrom((TypeVariable<?>) type1, (Class<?>) type2);
             }
-            if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((TypeVariable<?>) type1, (ParameterizedType) type2);
+            if (isParameterizedType(type2)) {
+                return isAssignableFrom((TypeVariable<?>) type1, asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
                 return isAssignableFrom((TypeVariable<?>) type1, (TypeVariable<?>) type2);
@@ -85,8 +88,8 @@ class InvariantTypes {
             if (type2 instanceof Class<?>) {
                 return isAssignableFrom((GenericArrayType) type1, (Class<?>) type2);
             }
-            if (type2 instanceof ParameterizedType) {
-                return isAssignableFrom((GenericArrayType) type1, (ParameterizedType) type2);
+            if (isParameterizedType(type2)) {
+                return isAssignableFrom((GenericArrayType) type1, asParameterizedType(type2));
             }
             if (type2 instanceof TypeVariable<?>) {
                 return isAssignableFrom((GenericArrayType) type1, (TypeVariable<?>) type2);

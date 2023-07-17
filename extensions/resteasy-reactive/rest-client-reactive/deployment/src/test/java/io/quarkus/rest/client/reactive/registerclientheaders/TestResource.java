@@ -1,15 +1,15 @@
 package io.quarkus.rest.client.reactive.registerclientheaders;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -23,6 +23,8 @@ public class TestResource {
 
     @RestClient
     HeaderPassingClient headerPassingClient;
+    @RestClient
+    HeaderNoPassingClient headerNoPassingClient;
 
     @GET
     @Path("/echo")
@@ -30,7 +32,7 @@ public class TestResource {
     @Consumes(MediaType.TEXT_PLAIN)
     public String echo(@QueryParam("message") String message,
             @HeaderParam("foo") String foo) {
-        return message + foo;
+        return message + (foo == null ? "_null_" : foo);
     }
 
     @GET
@@ -45,8 +47,14 @@ public class TestResource {
     @Path("/with-incoming-header")
     @Blocking
     public RequestData callThroughClient() {
-        RequestData data = headerPassingClient.call();
-        return data;
+        return headerPassingClient.call();
+    }
+
+    @GET
+    @Path("/with-incoming-header/no-passing")
+    @Blocking
+    public RequestData callThroughNotPassingClient() {
+        return headerNoPassingClient.call();
     }
 
 }

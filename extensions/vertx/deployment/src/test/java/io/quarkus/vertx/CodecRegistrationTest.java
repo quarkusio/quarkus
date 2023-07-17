@@ -8,9 +8,10 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.vertx.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.eventbus.Message;
 
@@ -83,6 +85,8 @@ public class CodecRegistrationTest {
 
     @Test
     public void testCodecRegistrationBasedOnParameterType() {
+        assertThat(bean.getSink().size()).isEqualTo(0);
+
         String address = "address-5";
         vertx.eventBus().send(address, new CustomType1("foo"));
         vertx.eventBus().send(address, new CustomType1("bar"));
@@ -104,6 +108,20 @@ public class CodecRegistrationTest {
         set = bean.getSink().stream().map(x -> (CustomType1) x).map(CustomType1::getName)
                 .collect(Collectors.toSet());
         assertThat(set).contains("foo-x", "bar-x", "baz-x");
+        bean.getSink().clear();
+    }
+
+    @Test
+    public void testCodecRegistrationBasedOnHeadersAndParameterType() {
+        assertThat(bean.getSink().size()).isEqualTo(0);
+
+        vertx.eventBus().send("address-9", new CustomType5("foo-x"));
+
+        await().timeout(5, TimeUnit.SECONDS).until(() -> bean.getSink().size() == 1);
+        Set<String> set = bean.getSink().stream().map(x -> (CustomType5) x).map(CustomType5::getName)
+                .collect(Collectors.toSet());
+        assertThat(set).contains("foo-x");
+        bean.getSink().clear();
     }
 
     @Test
@@ -199,6 +217,11 @@ public class CodecRegistrationTest {
             return CompletableFuture.completedFuture(new CustomType4(n));
         }
 
+        @ConsumeEvent("address-9")
+        void codecRegistrationBasedOnHeadersParam(MultiMap headers, CustomType5 ct) {
+            sink.add(ct);
+        }
+
         public List<Object> getSink() {
             return sink;
         }
@@ -252,6 +275,18 @@ public class CodecRegistrationTest {
         private final String name;
 
         CustomType4(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    static class CustomType5 {
+        private final String name;
+
+        CustomType5(String name) {
             this.name = name;
         }
 

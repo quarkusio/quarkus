@@ -4,23 +4,24 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.bind.annotation.JsonbDateFormat;
-
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
+
 import io.quarkus.it.mongodb.panache.book.BookDetail;
-import io.quarkus.mongodb.panache.MongoEntity;
+import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.reactive.ReactivePanacheMongoEntity;
 
-@MongoEntity(collection = "TheBookEntity", clientName = "cl2")
+@MongoEntity(collection = "TheBookEntity", clientName = "cl2", readPreference = "primary")
 public class ReactiveBookEntity extends ReactivePanacheMongoEntity {
     @BsonProperty("bookTitle")
     private String title;
     private String author;
     @BsonIgnore
     private String transientDescription;
-    @JsonbDateFormat("yyyy-MM-dd")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate creationDate;
 
     private List<String> categories = new ArrayList<>();

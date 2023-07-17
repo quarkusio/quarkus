@@ -31,7 +31,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jboss</groupId>
+            <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
 
@@ -54,6 +54,12 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus.gizmo</groupId>
+            <artifactId>gizmo</artifactId>
+            <type>test-jar</type>
         </dependency>
 
     </dependencies>

@@ -1,8 +1,8 @@
 package io.quarkus.it.rest;
 
-import javax.enterprise.context.Dependent;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.enterprise.context.Dependent;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 

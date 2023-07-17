@@ -23,7 +23,6 @@ import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ContinuousTestingWebSocketListener;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.Json;
 import io.vertx.core.Handler;
@@ -58,10 +57,9 @@ public class TestsProcessor {
         if (TestSupport.instance().isPresent()) {
             // Add continuous testing
             routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .route("dev/test")
-                    .handler(recorder.continousTestHandler(shutdownContextBuildItem))
+                    .route("dev-v1/test")
+                    .handler(recorder.continuousTestHandler(shutdownContextBuildItem))
                     .build());
-            testListenerBuildItemBuildProducer.produce(new TestListenerBuildItem(new ContinuousTestingWebSocketListener()));
         }
 
     }
@@ -148,6 +146,7 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().runAllTests();
+                event.response().setStatusCode(204).end();
             }
         });
     }
@@ -180,6 +179,7 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().runFailedTests();
+                event.response().setStatusCode(204).end();
             }
         });
     }
@@ -194,20 +194,17 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 ts.get().printFullResults();
+                event.response().setStatusCode(204).end();
             }
         });
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     DevConsoleRouteBuildItem toggleInstrumentation(LaunchModeBuildItem launchModeBuildItem) {
-        Optional<TestSupport> ts = TestSupport.instance();
-        if (testsDisabled(launchModeBuildItem, ts)) {
-            return null;
-        }
         return new DevConsoleRouteBuildItem("tests/toggle-instrumentation", "POST", new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
-                boolean instrumentationEnabled = ts.get().toggleInstrumentation();
+                boolean instrumentationEnabled = RuntimeUpdatesProcessor.INSTANCE.toggleInstrumentation();
                 Json.JsonObjectBuilder object = Json.object();
                 object.put("instrumentationEnabled", instrumentationEnabled);
                 event.response().putHeader("Content-Type", "application/json; charset=utf-8").end(object.build());
@@ -241,6 +238,7 @@ public class TestsProcessor {
             @Override
             public void handle(RoutingContext event) {
                 RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                event.response().setStatusCode(204).end();
             }
         });
     }

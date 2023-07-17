@@ -5,28 +5,40 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
+import org.jboss.logging.Logger;
+
 /**
  * This node holds a single expression such as {@code foo.bar}.
  */
 class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<ResultNode>> {
 
+    private static final Logger LOG = Logger.getLogger("io.quarkus.qute.nodeResolve");
+
     final ExpressionImpl expression;
     private final Engine engine;
-    private final Origin origin;
+    private final boolean traceLevel;
+    private final boolean hasEngineResultMappers;
 
-    public ExpressionNode(ExpressionImpl expression, Engine engine, Origin origin) {
+    ExpressionNode(ExpressionImpl expression, Engine engine) {
         this.expression = expression;
         this.engine = engine;
-        this.origin = origin;
+        this.traceLevel = LOG.isTraceEnabled();
+        this.hasEngineResultMappers = !engine.getResultMappers().isEmpty();
     }
 
     @Override
     public CompletionStage<ResultNode> resolve(ResolutionContext context) {
+        if (traceLevel) {
+            LOG.tracef("Resolve {%s} started:%s", expression.toOriginalString(), expression.getOrigin());
+        }
         return context.evaluate(expression).thenCompose(this);
     }
 
     @Override
     public CompletionStage<ResultNode> apply(Object result) {
+        if (traceLevel) {
+            LOG.tracef("Resolve {%s} completed:%s", expression.toOriginalString(), expression.getOrigin());
+        }
         if (result instanceof ResultNode) {
             return CompletedStage.of((ResultNode) result);
         } else if (result instanceof CompletionStage) {
@@ -37,7 +49,7 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
     }
 
     public Origin getOrigin() {
-        return origin;
+        return expression.getOrigin();
     }
 
     @Override
@@ -58,6 +70,14 @@ class ExpressionNode implements TemplateNode, Function<Object, CompletionStage<R
         StringBuilder builder = new StringBuilder();
         builder.append("ExpressionNode [expression=").append(expression).append("]");
         return builder.toString();
+    }
+
+    boolean hasEngineResultMappers() {
+        return hasEngineResultMappers;
+    }
+
+    String mapResult(Object result) {
+        return engine.mapResult(result, expression);
     }
 
 }

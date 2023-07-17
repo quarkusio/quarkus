@@ -3,12 +3,10 @@ package io.quarkus.hibernate.orm.multiplepersistenceunits;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,7 +21,7 @@ public class MultiplePersistenceUnitsPackageAnnotationsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addPackage(Plane.class.getPackage().getName())
                     .addPackage(SharedEntity.class.getPackage().getName())
                     .addPackage(User.class.getPackage().getName())
@@ -95,6 +93,6 @@ public class MultiplePersistenceUnitsPackageAnnotationsTest {
     public void testUserInInventoryEntityManager() {
         User user = new User("gsmet");
         assertThatThrownBy(() -> inventoryEntityManager.persist(user)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown entity");
+                .hasMessageContaining("Unable to locate persister");
     }
 }

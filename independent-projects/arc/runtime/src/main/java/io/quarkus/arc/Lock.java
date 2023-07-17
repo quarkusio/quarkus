@@ -9,8 +9,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
-import javax.enterprise.util.Nonbinding;
-import javax.interceptor.InterceptorBinding;
+
+import jakarta.enterprise.util.Nonbinding;
+import jakarta.interceptor.InterceptorBinding;
 
 /**
  * Defines a concurrency lock for a bean.
@@ -25,7 +26,7 @@ import javax.interceptor.InterceptorBinding;
 public @interface Lock {
 
     /**
-     * 
+     *
      * @return the type of the lock
      */
     @Nonbinding
@@ -33,7 +34,7 @@ public @interface Lock {
 
     /**
      * If it's not possible to acquire the lock in the given time a {@link LockException} is thrown.
-     * 
+     *
      * @see java.util.concurrent.locks.Lock#tryLock(long, TimeUnit)
      * @return the wait time
      */
@@ -41,7 +42,7 @@ public @interface Lock {
     long time() default -1l;
 
     /**
-     * 
+     *
      * @return the wait time unit
      */
     @Nonbinding

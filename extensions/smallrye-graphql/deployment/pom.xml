@@ -14,11 +14,9 @@
     <name>Quarkus - SmallRye GraphQL - Deployment</name>
 
     <dependencies>
-        
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-graphql</artifactId>
-            <version>${project.version}</version>
         </dependency>
         
         <dependency>
@@ -54,6 +52,11 @@
             <artifactId>quarkus-smallrye-context-propagation-deployment</artifactId>
         </dependency>
         
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
+        </dependency>
+        
         <!--  Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -72,12 +75,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -90,12 +88,6 @@
             <artifactId>quarkus-elytron-security-properties-file-deployment</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>io.opentracing</groupId>
-            <artifactId>opentracing-mock</artifactId>
-            <scope>test</scope>
-        </dependency>
-        
     </dependencies>
 
     <build>
@@ -115,5 +107,32 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Disabled pending fix of #28033 -->
+        <profile>
+            <id>mac-m1</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+                <property>
+                    <name>env.GITHUB_ACTIONS</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

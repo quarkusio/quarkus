@@ -1,0 +1,6 @@
+This is a sentence without a repeated word.
+This is a sentence with two instances of a word.
+Allow searches to be performed on type, contributor, contributor type, and others.
+This is a Text. Text is nice.
+This is a text. Text is nice.
+Select the THE checkbox.

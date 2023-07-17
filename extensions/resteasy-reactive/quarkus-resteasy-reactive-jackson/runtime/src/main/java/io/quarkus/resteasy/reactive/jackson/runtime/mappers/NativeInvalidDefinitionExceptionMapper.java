@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -30,6 +30,8 @@ public class NativeInvalidDefinitionExceptionMapper {
                 // we were not able to determine the type, so just log the exception
                 log.error(e);
             }
+        } else {
+            log.error(e);
         }
         return Response.serverError().build();
     }

@@ -3,12 +3,10 @@ plugins {
 }
 
 repositories {
-    if (System.properties.containsKey('maven.repo.local')) {
-        maven {
-            url System.properties.get('maven.repo.local')
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
         }
-    } else {
-        mavenLocal()
     }
     mavenCentral()
 }
@@ -16,6 +14,7 @@ repositories {
 dependencies {
     api enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     api 'io.quarkus:quarkus-kubernetes-client'
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.72'
 }
 
 compileJava {

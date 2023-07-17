@@ -3,19 +3,15 @@
  */
 package io.quarkus.bootstrap.resolver.maven;
 
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.util.PropertyUtils;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -47,6 +43,11 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.eclipse.aether.util.version.GenericVersionScheme;
 import org.eclipse.aether.version.InvalidVersionSpecificationException;
 import org.eclipse.aether.version.Version;
+
+import io.quarkus.bootstrap.resolver.maven.workspace.ProjectModuleResolver;
+import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  *
@@ -115,6 +116,10 @@ public class MavenArtifactResolver {
         localRepoManager = null;
         this.remoteRepos = mvnSettings.getRemoteRepositories();
         this.remoteRepoManager = mvnSettings.getRemoteRepositoryManager();
+    }
+
+    public ProjectModuleResolver getProjectModuleResolver() {
+        return context.getWorkspace() == null ? null : context.getWorkspace();
     }
 
     public BootstrapMavenContext getMavenContext() {
@@ -228,27 +233,26 @@ public class MavenArtifactResolver {
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {
-        return collectDependencies(artifact, deps, Collections.emptyList());
+        return collectDependencies(artifact, deps, List.of());
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
             throws BootstrapMavenException {
-        return collectDependencies(artifact, deps, mainRepos, Collections.emptyList());
+        return collectDependencies(artifact, deps, mainRepos, List.of());
     }
 
     public CollectResult collectDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos,
             Collection<Exclusion> exclusions) throws BootstrapMavenException {
-        final CollectRequest request = newCollectRequest(artifact, mainRepos, exclusions);
-        request.setDependencies(deps);
         try {
-            return repoSystem.collectDependencies(repoSession, request);
+            return repoSystem.collectDependencies(repoSession,
+                    newCollectRequest(artifact, mainRepos, exclusions).setDependencies(deps));
         } catch (DependencyCollectionException e) {
             throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }
     }
 
     public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps) throws BootstrapMavenException {
-        return resolveDependencies(artifact, deps, Collections.emptyList());
+        return resolveDependencies(artifact, deps, List.of());
     }
 
     public DependencyResult resolveDependencies(Artifact artifact, List<Dependency> deps, List<RemoteRepository> mainRepos)
@@ -258,17 +262,6 @@ public class MavenArtifactResolver {
         try {
             return repoSystem.resolveDependencies(repoSession,
                     new DependencyRequest().setCollectRequest(request));
-        } catch (DependencyResolutionException e) {
-            throw new BootstrapMavenException("Failed to resolve dependencies for " + artifact, e);
-        }
-    }
-
-    public DependencyResult resolveManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
-        try {
-            return repoSystem.resolveDependencies(repoSession,
-                    new DependencyRequest().setCollectRequest(
-                            newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, excludedScopes)));
         } catch (DependencyResolutionException e) {
             throw new BootstrapMavenException("Failed to resolve dependencies for " + artifact, e);
         }
@@ -289,7 +282,7 @@ public class MavenArtifactResolver {
     public DependencyResult toDependencyTree(List<Dependency> deps, List<RemoteRepository> mainRepos)
             throws BootstrapMavenException {
         DependencyResult result = new DependencyResult(
-                new DependencyRequest().setCollectRequest(new CollectRequest(deps, Collections.emptyList(), mainRepos)));
+                new DependencyRequest().setCollectRequest(new CollectRequest(deps, List.of(), mainRepos)));
         DefaultDependencyNode root = new DefaultDependencyNode((Dependency) null);
         result.setRoot(root);
         GenericVersionScheme vs = new GenericVersionScheme();
@@ -306,69 +299,53 @@ public class MavenArtifactResolver {
         return result;
     }
 
-    public CollectResult collectManagedDependencies(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
+    public CollectResult collectManagedDependencies(Artifact artifact, List<Dependency> directDeps,
+            List<Dependency> managedDeps,
             List<RemoteRepository> mainRepos, Collection<Exclusion> exclusions, String... excludedScopes)
             throws BootstrapMavenException {
         try {
             return repoSystem.collectDependencies(repoSession,
-                    newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, exclusions, excludedScopes));
+                    newCollectManagedRequest(artifact, List.of(), managedDeps, mainRepos, exclusions, Set.of(excludedScopes)));
         } catch (DependencyCollectionException e) {
             throw new BootstrapMavenException("Failed to collect dependencies for " + artifact, e);
         }
     }
 
-    private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, String... excludedScopes) throws BootstrapMavenException {
-        return newCollectManagedRequest(artifact, deps, managedDeps, mainRepos, Collections.emptyList(), excludedScopes);
-    }
-
-    private CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> deps, List<Dependency> managedDeps,
-            List<RemoteRepository> mainRepos, Collection<Exclusion> exclusions, String... excludedScopes)
+    public CollectRequest newCollectManagedRequest(Artifact artifact, List<Dependency> directDeps, List<Dependency> managedDeps,
+            List<RemoteRepository> mainRepos, Collection<Exclusion> exclusions, Set<String> excludedScopes)
             throws BootstrapMavenException {
-        final List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
+        List<RemoteRepository> aggregatedRepos = aggregateRepositories(mainRepos, remoteRepos);
         final ArtifactDescriptorResult descr = resolveDescriptorInternal(artifact, aggregatedRepos);
-        Collection<String> excluded;
-        if (excludedScopes.length == 0) {
-            excluded = Collections.emptyList();
-        } else if (excludedScopes.length == 1) {
-            excluded = Collections.singleton(excludedScopes[0]);
-        } else {
-            excluded = Arrays.asList(excludedScopes);
-            if (excludedScopes.length > 3) {
-                excluded = new HashSet<>(Arrays.asList(excludedScopes));
-            }
-        }
-        final List<Dependency> originalDeps = new ArrayList<>(descr.getDependencies().size());
-        for (Dependency dep : descr.getDependencies()) {
-            if (excluded.contains(dep.getScope())) {
-                continue;
-            }
-            originalDeps.add(dep);
-        }
-
-        final List<Dependency> mergedManagedDeps = new ArrayList<Dependency>(
-                managedDeps.size() + descr.getManagedDependencies().size());
-        Map<AppArtifactKey, String> managedVersions = Collections.emptyMap();
+        final List<Dependency> mergedManagedDeps;
+        Map<ArtifactKey, String> managedVersions = Map.of();
         if (!managedDeps.isEmpty()) {
+            mergedManagedDeps = new ArrayList<Dependency>(managedDeps.size() + descr.getManagedDependencies().size());
             managedVersions = new HashMap<>(managedDeps.size());
             for (Dependency dep : managedDeps) {
-                managedVersions.put(getId(dep.getArtifact()), dep.getArtifact().getVersion());
+                managedVersions.put(getKey(dep.getArtifact()), dep.getArtifact().getVersion());
                 mergedManagedDeps.add(dep);
             }
-        }
-        if (!descr.getManagedDependencies().isEmpty()) {
             for (Dependency dep : descr.getManagedDependencies()) {
-                final AppArtifactKey key = getId(dep.getArtifact());
+                final ArtifactKey key = getKey(dep.getArtifact());
                 if (!managedVersions.containsKey(key)) {
                     mergedManagedDeps.add(dep);
                 }
             }
+        } else {
+            mergedManagedDeps = descr.getManagedDependencies();
         }
 
+        directDeps = DependencyUtils.mergeDeps(directDeps, descr.getDependencies(), managedVersions, excludedScopes);
+        aggregatedRepos = aggregateRepositories(aggregatedRepos, newResolutionRepositories(descr.getRepositories()));
+        return newCollectRequest(artifact, directDeps, mergedManagedDeps, exclusions, aggregatedRepos);
+    }
+
+    public static CollectRequest newCollectRequest(Artifact artifact, List<Dependency> directDeps, List<Dependency> managedDeps,
+            Collection<Exclusion> exclusions, List<RemoteRepository> repos) {
         final CollectRequest request = new CollectRequest()
-                .setDependencies(mergeDeps(deps, originalDeps, managedVersions))
-                .setManagedDependencies(mergedManagedDeps)
-                .setRepositories(aggregateRepositories(aggregatedRepos, newResolutionRepositories(descr.getRepositories())));
+                .setDependencies(directDeps)
+                .setManagedDependencies(managedDeps)
+                .setRepositories(repos);
         if (exclusions.isEmpty()) {
             request.setRootArtifact(artifact);
         } else {
@@ -378,7 +355,7 @@ public class MavenArtifactResolver {
     }
 
     public List<RemoteRepository> newResolutionRepositories(List<RemoteRepository> repos) {
-        return repos.isEmpty() ? Collections.emptyList() : repoSystem.newResolutionRepositories(repoSession, repos);
+        return repos.isEmpty() ? List.of() : repoSystem.newResolutionRepositories(repoSession, repos);
     }
 
     public List<RemoteRepository> aggregateRepositories(List<RemoteRepository> dominant, List<RemoteRepository> recessive) {
@@ -395,7 +372,7 @@ public class MavenArtifactResolver {
     }
 
     private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos) {
-        return newCollectRequest(artifact, mainRepos, Collections.emptyList());
+        return newCollectRequest(artifact, mainRepos, List.of());
     }
 
     private CollectRequest newCollectRequest(Artifact artifact, List<RemoteRepository> mainRepos,
@@ -405,37 +382,7 @@ public class MavenArtifactResolver {
                 .setRepositories(aggregateRepositories(mainRepos, remoteRepos));
     }
 
-    private List<Dependency> mergeDeps(List<Dependency> dominant, List<Dependency> recessive,
-            Map<AppArtifactKey, String> managedVersions) {
-        final int initialCapacity = dominant.size() + recessive.size();
-        if (initialCapacity == 0) {
-            return Collections.emptyList();
-        }
-        final List<Dependency> result = new ArrayList<Dependency>(initialCapacity);
-        final Set<AppArtifactKey> ids = new HashSet<AppArtifactKey>(initialCapacity, 1.0f);
-        for (Dependency dependency : dominant) {
-            final AppArtifactKey id = getId(dependency.getArtifact());
-            ids.add(id);
-            final String managedVersion = managedVersions.get(id);
-            if (managedVersion != null) {
-                dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
-            }
-            result.add(dependency);
-        }
-        for (Dependency dependency : recessive) {
-            final AppArtifactKey id = getId(dependency.getArtifact());
-            if (!ids.contains(id)) {
-                final String managedVersion = managedVersions.get(id);
-                if (managedVersion != null) {
-                    dependency = dependency.setArtifact(dependency.getArtifact().setVersion(managedVersion));
-                }
-                result.add(dependency);
-            }
-        }
-        return result;
-    }
-
-    private static AppArtifactKey getId(Artifact a) {
-        return new AppArtifactKey(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getExtension());
+    private static ArtifactKey getKey(Artifact a) {
+        return DependencyUtils.getKey(a);
     }
 }

@@ -5,11 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,8 +20,8 @@ public class MultiTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TemplateDataTest.Foo.class)
+            .withApplicationRoot((jar) -> jar
+                    .addClass(Foo.class)
                     .addAsResource(new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"),
                             "templates/foo.txt"));
 
@@ -33,7 +31,7 @@ public class MultiTest {
     @Test
     public void testCreateMulti() {
         Multi<String> multi = foo.data("roundingMode", RoundingMode.HALF_UP)
-                .data("foo", new TemplateDataTest.Foo(new BigDecimal("123.4563"))).createMulti();
+                .data("foo", new Foo(new BigDecimal("123.4563"))).createMulti();
         assertEquals("123.4563 is not 123.46", multi
                 .collect().in(StringBuffer::new, StringBuffer::append)
                 .onItem().transform(StringBuffer::toString)

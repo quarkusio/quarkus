@@ -5,9 +5,7 @@ import static org.hamcrest.Matchers.is;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -18,7 +16,7 @@ import io.restassured.RestAssured;
 public class NoSrcMainUnitTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(NoSrcMainResource.class)
                     .addAsResource(new StringAsset("test.message = Hello from NoSrcMainUnitTest\n"
                             + "quarkus.oidc.tenant-enabled=false"),

@@ -16,7 +16,7 @@ public class ClassLoaderExceptionTransformer {
 
     @Inject
     @DeploymentScoped
-    Instance<ClassLoader> classLoaderInstance;
+    Instance<QuarkusDeployment> deployment;
 
     @Inject
     Instance<TestResult> testResultInstance;
@@ -29,7 +29,7 @@ public class ClassLoaderExceptionTransformer {
                 try {
                     if (res.getClass().getClassLoader() != null
                             && res.getClass().getClassLoader() != getClass().getClassLoader()) {
-                        if (res.getClass() == classLoaderInstance.get().loadClass(res.getClass().getName())) {
+                        if (res.getClass() == deployment.get().getAppClassLoader().loadClass(res.getClass().getName())) {
                             ByteArrayOutputStream out = new ByteArrayOutputStream();
                             ObjectOutputStream oo = new ObjectOutputStream(out);
                             oo.writeObject(res);

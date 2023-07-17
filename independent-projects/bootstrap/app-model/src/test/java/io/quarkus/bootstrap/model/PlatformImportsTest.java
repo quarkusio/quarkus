@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.bootstrap.util.IoUtils;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -17,8 +16,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
 
 public class PlatformImportsTest {
 
@@ -50,20 +54,20 @@ public class PlatformImportsTest {
         assertEquals("io.playground", release.getPlatformKey());
         assertEquals("1.1", release.getStream());
         assertEquals("1", release.getVersion());
-        final List<AppArtifactCoords> boms = release.getBoms();
-        assertEquals(Arrays.asList(AppArtifactCoords.fromString("io.playground:playground-bom::pom:1.1.1"),
-                AppArtifactCoords.fromString("io.playground:acme-bom::pom:2.2.2"),
-                AppArtifactCoords.fromString("io.playground:foo-bom::pom:3.3.3")), boms);
+        final List<ArtifactCoords> boms = release.getBoms();
+        assertEquals(Arrays.asList(GACTV.fromString("io.playground:playground-bom::pom:1.1.1"),
+                GACTV.fromString("io.playground:acme-bom::pom:2.2.2"),
+                GACTV.fromString("io.playground:foo-bom::pom:3.3.3")), boms);
         assertEquals(1, stream.getReleases().size());
         assertEquals(1, platform.getStreams().size());
         assertEquals(1, pi.getPlatforms().size());
 
         assertTrue(pi.isAligned(Collections.singletonMap("io.playground",
-                Arrays.asList(AppArtifactCoords.fromString("io.playground:playground-bom::pom:1.1.1"),
-                        AppArtifactCoords.fromString("io.playground:acme-bom::pom:2.2.2")))));
+                Arrays.asList(GACTV.fromString("io.playground:playground-bom::pom:1.1.1"),
+                        GACTV.fromString("io.playground:acme-bom::pom:2.2.2")))));
         assertFalse(pi.isAligned(Collections.singletonMap("io.playground",
-                Arrays.asList(AppArtifactCoords.fromString("io.playground:playground-bom::pom:1.1.2"),
-                        AppArtifactCoords.fromString("io.playground:acme-bom::pom:2.2.2")))));
+                Arrays.asList(GACTV.fromString("io.playground:playground-bom::pom:1.1.2"),
+                        GACTV.fromString("io.playground:acme-bom::pom:2.2.2")))));
     }
 
     @Test
@@ -91,23 +95,23 @@ public class PlatformImportsTest {
         assertEquals("io.playground", release.getPlatformKey());
         assertEquals("1.1", release.getStream());
         assertEquals("1", release.getVersion());
-        final List<AppArtifactCoords> boms = release.getBoms();
-        assertEquals(Arrays.asList(AppArtifactCoords.fromString("io.playground:playground-bom::pom:1.1.1"),
-                AppArtifactCoords.fromString("io.playground:acme-bom::pom:2.2.2"),
-                AppArtifactCoords.fromString("io.playground:foo-bom::pom:3.3.3")), boms);
+        final List<ArtifactCoords> boms = release.getBoms();
+        assertEquals(Arrays.asList(GACTV.fromString("io.playground:playground-bom::pom:1.1.1"),
+                GACTV.fromString("io.playground:acme-bom::pom:2.2.2"),
+                GACTV.fromString("io.playground:foo-bom::pom:3.3.3")), boms);
         assertEquals(2, stream.getReleases().size());
         assertEquals(1, platform.getStreams().size());
         assertEquals(1, pi.getPlatforms().size());
 
         assertTrue(pi.isAligned(Collections.singletonMap("io.playground",
-                Arrays.asList(AppArtifactCoords.fromString("io.playground:playground-bom::pom:1.1.1"),
-                        AppArtifactCoords.fromString("io.playground:acme-bom::pom:2.2.2")))));
+                Arrays.asList(GACTV.fromString("io.playground:playground-bom::pom:1.1.1"),
+                        GACTV.fromString("io.playground:acme-bom::pom:2.2.2")))));
         assertTrue(pi.isAligned(Collections.singletonMap("io.playground",
-                Arrays.asList(AppArtifactCoords.fromString("io.playground:playground-bom::pom:1.1.2"),
-                        AppArtifactCoords.fromString("io.playground:acme-bom::pom:2.2.3")))));
+                Arrays.asList(GACTV.fromString("io.playground:playground-bom::pom:1.1.2"),
+                        GACTV.fromString("io.playground:acme-bom::pom:2.2.3")))));
         assertFalse(pi.isAligned(Collections.singletonMap("io.playground",
-                Arrays.asList(AppArtifactCoords.fromString("io.playground:playground-bom::pom:1.1.2"),
-                        AppArtifactCoords.fromString("io.playground:acme-bom::pom:2.2.2")))));
+                Arrays.asList(GACTV.fromString("io.playground:playground-bom::pom:1.1.2"),
+                        GACTV.fromString("io.playground:acme-bom::pom:2.2.2")))));
     }
 
     private PlatformProps newPlatformProps() throws IOException {

@@ -4,12 +4,17 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.ext.ParamConverter;
-import javax.ws.rs.ext.ParamConverterProvider;
+
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.ext.ParamConverter;
+import jakarta.ws.rs.ext.ParamConverterProvider;
+
+import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.util.types.Types;
@@ -20,7 +25,8 @@ import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
-import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -38,8 +44,14 @@ public class Deployment {
     private final ThreadSetupAction threadSetupAction;
     private final RequestContextFactory requestContextFactory;
     private final List<ServerRestHandler> preMatchHandlers;
-    private final List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
-    private final List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers;
+    private final ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
+    private final List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers;
+    private final RuntimeExceptionMapper exceptionMapper;
+    private final boolean resumeOn404;
+    private final ResteasyReactiveConfig resteasyReactiveConfig;
+    private final Map<String, List<String>> disabledEndpoints;
+    //this is not final, as it is set after startup
+    private RuntimeConfiguration runtimeConfiguration;
 
     public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
@@ -48,8 +60,12 @@ public class Deployment {
             ConfigurationImpl configuration, Supplier<Application> applicationSupplier,
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
             List<ServerRestHandler> preMatchHandlers,
-            List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
-            List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers) {
+            ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
+            List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers,
+            RuntimeExceptionMapper exceptionMapper,
+            boolean resumeOn404,
+            ResteasyReactiveConfig resteasyReactiveConfig,
+            Map<String, List<String>> disabledEndpoints) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -64,6 +80,14 @@ public class Deployment {
         this.preMatchHandlers = preMatchHandlers;
         this.classMappers = classMappers;
         this.runtimeConfigurableServerRestHandlers = runtimeConfigurableServerRestHandlers;
+        this.exceptionMapper = exceptionMapper;
+        this.resumeOn404 = resumeOn404;
+        this.resteasyReactiveConfig = resteasyReactiveConfig;
+        this.disabledEndpoints = disabledEndpoints;
+    }
+
+    public RuntimeExceptionMapper getExceptionMapper() {
+        return exceptionMapper;
     }
 
     public Supplier<Application> getApplicationSupplier() {
@@ -72,6 +96,10 @@ public class Deployment {
 
     public ConfigurationImpl getConfiguration() {
         return configuration;
+    }
+
+    public ResteasyReactiveConfig getResteasyReactiveConfig() {
+        return resteasyReactiveConfig;
     }
 
     public ExceptionMapping getExceptionMapping() {
@@ -94,9 +122,13 @@ public class Deployment {
         return dynamicEntityWriter;
     }
 
+    public boolean isResumeOn404() {
+        return resumeOn404;
+    }
+
     /**
      * Application path prefix. Must start with "/" and not end with a "/". Cannot be null.
-     * 
+     *
      * @return the application path prefix, or an empty string.
      */
     public String getPrefix() {
@@ -111,7 +143,7 @@ public class Deployment {
         return preMatchHandlers;
     }
 
-    public List<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> getClassMappers() {
+    public ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> getClassMappers() {
         return classMappers;
     }
 
@@ -163,7 +195,23 @@ public class Deployment {
         return requestContextFactory;
     }
 
-    public List<RuntimeConfigurableServerRestHandler> getRuntimeConfigurableServerRestHandlers() {
+    public List<GenericRuntimeConfigurableServerRestHandler<?>> getRuntimeConfigurableServerRestHandlers() {
         return runtimeConfigurableServerRestHandlers;
+    }
+
+    public RuntimeConfiguration getRuntimeConfiguration() {
+        return runtimeConfiguration;
+    }
+
+    public Deployment setRuntimeConfiguration(RuntimeConfiguration runtimeConfiguration) {
+        if (this.runtimeConfiguration != null) {
+            throw new IllegalStateException("runtime config has already been set");
+        }
+        this.runtimeConfiguration = runtimeConfiguration;
+        return this;
+    }
+
+    public Map<String, List<String>> getDisabledEndpoints() {
+        return disabledEndpoints;
     }
 }

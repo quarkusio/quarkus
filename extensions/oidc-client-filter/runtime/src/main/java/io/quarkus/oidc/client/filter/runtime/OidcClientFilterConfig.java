@@ -16,7 +16,8 @@ public class OidcClientFilterConfig {
     public boolean registerFilter;
 
     /**
-     * Name of the configured OidcClient.
+     * Name of the configured OidcClient used by the OidcClientRequestFilter. You can override this configuration for
+     * individual MP RestClient with the `io.quarkus.oidc.client.filter.OidcClientFilter` annotation.
      */
     @ConfigItem
     public Optional<String> clientName;

@@ -1,11 +1,15 @@
 package io.quarkus.deployment;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import org.eclipse.microprofile.config.Config;
 import org.wildfly.common.annotation.NotNull;
 
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 
 /**
- * Service providers for this interfaces are triggered during generate-sources phase of build of Quarkus applications
+ * Service providers for this interface are triggered during generate-sources phase of build of Quarkus applications
  */
 public interface CodeGenProvider {
     /**
@@ -24,8 +28,10 @@ public interface CodeGenProvider {
     String inputExtension();
 
     /**
-     * Name of the directory containing the input files for the CodeGenProvider
-     * for <code>foo</code>, <code>src/main/foo</code> for application and <code>src/test/foo</code> for test resources
+     * Name of the directory containing input files for a given {@link CodeGenProvider} implementation
+     * relative to a sources root directory. For example, if an input directory is configured as <code>foo</code>,
+     * for a production build of an application the sources will be looked up at <code>src/main/foo</code> path
+     * and at <code>src/test/foo</code> for tests.
      *
      * @return the input directory
      */
@@ -34,10 +40,13 @@ public interface CodeGenProvider {
 
     /**
      * Trigger code generation
-     * 
+     *
      * @param context code generation context
      * @return true if files were generated/modified
      */
     boolean trigger(CodeGenContext context) throws CodeGenException;
 
+    default boolean shouldRun(Path sourceDir, Config config) {
+        return Files.isDirectory(sourceDir);
+    }
 }

@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.common.jaxrs.RestResponseImpl;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
@@ -41,7 +43,7 @@ public class ClientRestResponseImpl<T> extends RestResponseImpl<T> {
                 entityStream.reset();
             } else if (consumed) {
                 throw new IllegalStateException(
-                        "Entity stream has already been read and is not buffered: call Reponse.bufferEntity()");
+                        "Entity stream has already been read and is not buffered: call Response.bufferEntity()");
             }
         } catch (IOException e) {
             throw new ProcessingException(e);
@@ -55,7 +57,7 @@ public class ClientRestResponseImpl<T> extends RestResponseImpl<T> {
         MediaType mediaType = getMediaType();
         try {
             entity = (T) ClientSerialisers.invokeClientReader(annotations, entityType, genericType, mediaType,
-                    restClientRequestContext.properties, getStringHeaders(),
+                    restClientRequestContext.properties, restClientRequestContext, getStringHeaders(),
                     restClientRequestContext.getRestClient().getClientContext().getSerialisers(),
                     entityStream, restClientRequestContext.getReaderInterceptors(), restClientRequestContext.configuration);
             consumed = true;

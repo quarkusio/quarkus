@@ -14,7 +14,7 @@ public class ElytronCommonRecorder {
 
     public void registerPasswordProvider() {
         //we don't remove this, as there is no correct place where it can be removed
-        //as continuous testing can be running along side the dev mode app, but there is
+        //as continuous testing can be running alongside the dev mode app, but there is
         //only ever one provider
         WildFlyElytronPasswordProvider provider = new WildFlyElytronPasswordProvider();
         if (Security.getProvider(provider.getName()) == null) {

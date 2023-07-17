@@ -2,8 +2,6 @@ package io.quarkus.spring.data.devmode;
 
 import static org.hamcrest.CoreMatchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class RepositoryReloadTest {
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
                     .addAsResource("import_books.sql", "import.sql")
                     .addClasses(Book.class, BookRepository.class, BookResource.class));
@@ -30,7 +28,7 @@ public class RepositoryReloadTest {
 
         TEST.modifySourceFile("BookResource.java", s -> s.replace("// <placeholder>",
                 "@GET @Path(\"/{id}\") @Produces(MediaType.APPLICATION_JSON)\n" +
-                        "    public java.util.Optional<Book> findById(@javax.ws.rs.PathParam(\"id\") Integer id) {\n" +
+                        "    public java.util.Optional<Book> findById(@jakarta.ws.rs.PathParam(\"id\") Integer id) {\n" +
                         "        return bookRepository.findById(id);\n" +
                         "    }"));
 

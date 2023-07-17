@@ -1,0 +1,23 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Elasticsearch Java Client"
+metadata:
+  keywords:
+  - "elasticsearch"
+  - "full text"
+  - "search"
+  guide: "https://quarkus.io/guides/elasticsearch"
+  categories:
+  - "data"
+  # WARNING: Before leaving preview, we will need to discuss backwards compatibility.
+  # These clients are forward-compatible, not backward-compatible, quoting:
+  # > The Elasticsearch Java client is forward compatible; meaning that the client supports
+  # > communicating with greater or equal minor versions of Elasticsearch.
+  # > Elasticsearch language clients are only backwards compatible with default distributions
+  # > and without guarantees made.
+  # Source: https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/introduction.html
+  # This means that upgrading the version of the client in Quarkus will force users to upgrade their cluster.
+  # We will need to discuss whether this is acceptable and how to mitigate it.
+  status: "preview"
+  config:
+  - "quarkus.elasticsearch."

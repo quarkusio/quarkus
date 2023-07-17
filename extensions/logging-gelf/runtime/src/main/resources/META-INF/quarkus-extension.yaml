@@ -10,3 +10,5 @@ metadata:
   categories:
   - "core"
   status: "preview"
+  config:
+  - "quarkus.log.handler.gelf."

@@ -13,7 +13,11 @@ public enum ConfigPhase {
     /**
      * Values are read and available for usage at run time and are re-read on each program execution. These values
      * are used to configure ConfigSourceProvider implementations
+     *
+     * @deprecated Please use {@link io.smallrye.config.ConfigSourceFactory.ConfigurableConfigSourceFactory} and
+     *             register it in a {@link io.quarkus.runtime.configuration.ConfigBuilder}.
      */
+    @Deprecated
     BOOTSTRAP(false, true, true, "Bootstrap"),
 
     /**

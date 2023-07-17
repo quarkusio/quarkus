@@ -6,12 +6,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +24,7 @@ public class TrustAllTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Client.class))
             .withConfigurationResource("trust-all-test-application.properties");
 

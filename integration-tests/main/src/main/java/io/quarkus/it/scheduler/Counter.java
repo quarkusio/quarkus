@@ -2,8 +2,8 @@ package io.quarkus.it.scheduler;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.scheduler.Scheduled;
 

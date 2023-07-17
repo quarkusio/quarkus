@@ -1,8 +1,6 @@
 package io.quarkus.test.devconsole;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,14 +15,14 @@ public class DevConsoleResteastyReactiveSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyResource.class));
+            .withApplicationRoot((jar) -> jar.addClass(MyResource.class));
 
     @Test
     public void testTemplates() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-resteasy-reactive/endpoints")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-resteasy-reactive/endpoints")
                 .then()
                 .statusCode(200).body(Matchers.containsString("GET /me/message"));
-        RestAssured.get("q/dev/io.quarkus.quarkus-resteasy-reactive/scores")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-resteasy-reactive/scores")
                 .then()
                 .statusCode(200).body(Matchers.containsString("GET /me/message"));
     }

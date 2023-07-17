@@ -2,8 +2,6 @@ package io.quarkus.jwt.test;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -14,6 +12,7 @@ import io.restassured.RestAssured;
 public class DefaultGroupsUnitTest {
     private static Class<?>[] testClasses = {
             DefaultGroupsEndpoint.class,
+            CustomSecurityIdentityAugmentor.class,
             TokenUtils.class
     };
     /**
@@ -23,7 +22,7 @@ public class DefaultGroupsUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("publicKey.pem")
                     .addAsResource("privateKey.pem")
@@ -47,6 +46,15 @@ public class DefaultGroupsUnitTest {
                 .get("/endp/echo")
                 .then().assertThat().statusCode(200)
                 .body(equalTo("User"));
+    }
+
+    @Test
+    public void checkRoutingContext() {
+        RestAssured.given().auth()
+                .oauth2(token)
+                .get("/endp/routingContext")
+                .then().assertThat().statusCode(200)
+                .body(equalTo("User; routing-context-available:true"));
     }
 
     @Test

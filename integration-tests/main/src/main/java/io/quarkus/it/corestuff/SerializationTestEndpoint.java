@@ -6,13 +6,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.graalvm.home.Version;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import io.quarkus.it.corestuff.serialization.ExternalizablePerson;
 import io.quarkus.it.corestuff.serialization.Person;
@@ -30,18 +30,13 @@ public class SerializationTestEndpoint extends HttpServlet {
     }
 
     private void reflectiveSetterInvoke(HttpServletResponse resp) throws IOException {
-        // we don't test serialization for GraalVM < 21 as they don't support it
-        if (Version.getCurrent().compareTo(21) < 0) {
-            resp.getWriter().write("OK");
-            return;
-        }
-
         try {
             SomeSerializationObject instance = new SomeSerializationObject();
             instance.setPerson(new Person("Sheldon"));
             ExternalizablePerson ep = new ExternalizablePerson();
             ep.setName("Sheldon 2.0");
             instance.setExternalizablePerson(ep);
+            instance.setList(new ArrayList<>(List.of("Hello World!")));
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ObjectOutputStream os = new ObjectOutputStream(out);
             os.writeObject(instance);
@@ -49,7 +44,8 @@ public class SerializationTestEndpoint extends HttpServlet {
             ObjectInputStream is = new ObjectInputStream(bais);
             SomeSerializationObject result = (SomeSerializationObject) is.readObject();
             if (result.getPerson().getName().equals("Sheldon")
-                    && result.getExternalizablePerson().getName().equals("Sheldon 2.0")) {
+                    && result.getExternalizablePerson().getName().equals("Sheldon 2.0")
+                    && result.getList().toString().equals("[Hello World!]")) {
                 resp.getWriter().write("OK");
             } else {
                 reportException("Serialized output differs from input", null, resp);

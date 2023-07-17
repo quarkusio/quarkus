@@ -1,17 +1,18 @@
 package io.quarkus.liquibase.test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.h2.jdbc.JdbcSQLException;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.h2.jdbc.JdbcSQLSyntaxErrorException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,7 +33,7 @@ public class LiquibaseExtensionCleanAndMigrateAtStartTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("clean-and-migrate-at-start-config.properties", "application.properties"));
 
@@ -44,7 +45,7 @@ public class LiquibaseExtensionCleanAndMigrateAtStartTest {
             try (ResultSet executeQuery = stat
                     .executeQuery("select * from fake_existing_tbl")) {
                 fail("fake_existing_tbl should not exist");
-            } catch (JdbcSQLException e) {
+            } catch (JdbcSQLSyntaxErrorException e) {
                 // expected fake_existing_tbl does not exist
             }
         }

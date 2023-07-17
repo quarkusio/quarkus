@@ -16,24 +16,25 @@ public class BigIntType extends AbstractCustomUserType<BigInteger> {
     }
 
     @Override
-    public int[] sqlTypes() {
-        return new int[] { Types.BIGINT };
+    public int getSqlType() {
+        return Types.BIGINT;
     }
 
     @Override
-    public BigInteger get(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
+    public BigInteger nullSafeGet(ResultSet result, int position, SharedSessionContractImplementor session, Object owner)
             throws SQLException {
-        BigDecimal bigDecimal = rs.getBigDecimal(names[0]);
+        BigDecimal bigDecimal = result.getBigDecimal(position);
         return bigDecimal != null ? bigDecimal.toBigIntegerExact() : null;
     }
 
     @Override
-    public void set(PreparedStatement st, BigInteger value, int index, SharedSessionContractImplementor session)
+    public void nullSafeSet(PreparedStatement preparedStatement, BigInteger value, int index,
+            SharedSessionContractImplementor session)
             throws SQLException {
         if (value == null) {
-            st.setNull(index, Types.BIGINT);
+            preparedStatement.setNull(index, Types.BIGINT);
         } else {
-            st.setBigDecimal(index, new BigDecimal(String.valueOf(value)));
+            preparedStatement.setBigDecimal(index, new BigDecimal(String.valueOf(value)));
         }
     }
 }

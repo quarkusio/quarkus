@@ -3,6 +3,7 @@ package io.quarkus.agroal.runtime;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -12,19 +13,21 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-import javax.enterprise.inject.Instance;
-import javax.inject.Singleton;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionSynchronizationRegistry;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Default;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.logging.Logger;
+import org.jboss.tm.XAResourceRecoveryRegistry;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.ConnectionValidator;
+import io.agroal.api.configuration.AgroalConnectionPoolConfiguration.TransactionRequirement;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration.DataSourceImplementation;
 import io.agroal.api.configuration.supplier.AgroalConnectionFactoryConfigurationSupplier;
@@ -46,6 +49,7 @@ import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
+import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
@@ -61,31 +65,45 @@ public class DataSources {
 
     private static final Logger log = Logger.getLogger(DataSources.class.getName());
 
+    public static final String TRACING_DRIVER_CLASSNAME = "io.opentracing.contrib.jdbc.TracingDriver";
+    private static final String JDBC_URL_PREFIX = "jdbc:";
+    private static final String JDBC_TRACING_URL_PREFIX = "jdbc:tracing:";
+
     private final DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig;
     private final DataSourcesRuntimeConfig dataSourcesRuntimeConfig;
     private final DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig;
     private final DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig;
+    private final TransactionManagerConfiguration transactionRuntimeConfig;
     private final TransactionManager transactionManager;
+    private final XAResourceRecoveryRegistry xaResourceRecoveryRegistry;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
     private final DataSourceSupport dataSourceSupport;
     private final Instance<AgroalPoolInterceptor> agroalPoolInterceptors;
+    private final Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper;
 
     private final ConcurrentMap<String, AgroalDataSource> dataSources = new ConcurrentHashMap<>();
 
     public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
+            TransactionManagerConfiguration transactionRuntimeConfig,
             TransactionManager transactionManager,
-            TransactionSynchronizationRegistry transactionSynchronizationRegistry, DataSourceSupport dataSourceSupport,
-            @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors) {
+            XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry,
+            DataSourceSupport dataSourceSupport,
+            @Any Instance<AgroalPoolInterceptor> agroalPoolInterceptors,
+            Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper) {
         this.dataSourcesBuildTimeConfig = dataSourcesBuildTimeConfig;
         this.dataSourcesRuntimeConfig = dataSourcesRuntimeConfig;
         this.dataSourcesJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig;
         this.dataSourcesJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig;
+        this.transactionRuntimeConfig = transactionRuntimeConfig;
         this.transactionManager = transactionManager;
+        this.xaResourceRecoveryRegistry = xaResourceRecoveryRegistry;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.dataSourceSupport = dataSourceSupport;
         this.agroalPoolInterceptors = agroalPoolInterceptors;
+        this.agroalOpenTelemetryWrapper = agroalOpenTelemetryWrapper;
     }
 
     /**
@@ -113,6 +131,7 @@ public class DataSources {
         });
     }
 
+    @SuppressWarnings("resource")
     public AgroalDataSource doCreateDataSource(String dataSourceName) {
         if (!dataSourceSupport.entries.containsKey(dataSourceName)) {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
@@ -124,16 +143,10 @@ public class DataSources {
 
         DataSourceSupport.Entry matchingSupportEntry = dataSourceSupport.entries.get(dataSourceName);
         if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
-            String errorMessage;
-            // we don't have any URL configuration so using a standard message
-            if (DataSourceUtil.isDefault(dataSourceName)) {
-                errorMessage = "quarkus.datasource.jdbc.url has not been defined";
-            } else {
-                errorMessage = "quarkus.datasource." + dataSourceName + ".jdbc.url has not been defined";
-            }
             //this is not an error situation, because we want to allow the situation where a JDBC extension
             //is installed but has not been configured
-            return new UnconfiguredDataSource(errorMessage);
+            return new UnconfiguredDataSource(
+                    DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc.url") + " has not been defined");
         }
 
         // we first make sure that all available JDBC drivers are loaded in the current TCCL
@@ -146,6 +159,46 @@ public class DataSources {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(
                     "Unable to load the datasource driver " + resolvedDriverClass + " for datasource " + dataSourceName, e);
+        }
+
+        String jdbcUrl = dataSourceJdbcRuntimeConfig.url.get();
+
+        if (dataSourceJdbcBuildTimeConfig.tracing) {
+            boolean tracingEnabled = dataSourceJdbcRuntimeConfig.tracing.enabled.orElse(dataSourceJdbcBuildTimeConfig.tracing);
+
+            if (tracingEnabled) {
+                String rootTracingUrl = !jdbcUrl.startsWith(JDBC_TRACING_URL_PREFIX)
+                        ? jdbcUrl.replace(JDBC_URL_PREFIX, JDBC_TRACING_URL_PREFIX)
+                        : jdbcUrl;
+
+                StringBuilder tracingURL = new StringBuilder(rootTracingUrl);
+
+                if (dataSourceJdbcRuntimeConfig.tracing.traceWithActiveSpanOnly) {
+                    if (!tracingURL.toString().contains("?")) {
+                        tracingURL.append("?");
+                    }
+
+                    tracingURL.append("traceWithActiveSpanOnly=true");
+                }
+
+                if (dataSourceJdbcRuntimeConfig.tracing.ignoreForTracing.isPresent()) {
+                    if (!tracingURL.toString().contains("?")) {
+                        tracingURL.append("?");
+                    }
+
+                    Arrays.stream(dataSourceJdbcRuntimeConfig.tracing.ignoreForTracing.get().split(";"))
+                            .filter(query -> !query.isEmpty())
+                            .forEach(query -> tracingURL.append("ignoreForTracing=")
+                                    .append(query.replaceAll("\"", "\\\""))
+                                    .append(";"));
+                }
+
+                // Override datasource URL with tracing driver prefixed URL
+                jdbcUrl = tracingURL.toString();
+
+                //remove driver class so that agroal connectionFactory will use the tracking driver anyway
+                driver = null;
+            }
         }
 
         String resolvedDbKind = matchingSupportEntry.resolvedDbKind;
@@ -165,8 +218,10 @@ public class DataSources {
                 .connectionFactoryConfiguration();
 
         boolean mpMetricsPresent = dataSourceSupport.mpMetricsPresent;
-        applyNewConfiguration(dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration, driver,
-                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, mpMetricsPresent);
+        applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration,
+                driver, jdbcUrl,
+                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, transactionRuntimeConfig,
+                mpMetricsPresent);
 
         if (dataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration);
@@ -174,14 +229,21 @@ public class DataSources {
         //we use a custom cache for two reasons:
         //fast thread local cache should be faster
         //and it prevents a thread local leak
-        dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusConnectionCache());
+        try {
+            Class.forName("io.netty.util.concurrent.FastThreadLocal", true, Thread.currentThread().getContextClassLoader());
+            dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusNettyConnectionCache());
+        } catch (ClassNotFoundException e) {
+            dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusSimpleConnectionCache());
+        }
 
         agroalConnectionConfigurer.setExceptionSorter(resolvedDbKind, dataSourceConfiguration);
 
         // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
         AgroalDataSourceConfiguration agroalConfiguration = dataSourceConfiguration.get();
         AgroalDataSource dataSource = new io.agroal.pool.DataSource(agroalConfiguration,
-                new AgroalEventLoggingListener(dataSourceName));
+                new AgroalEventLoggingListener(dataSourceName,
+                        agroalConfiguration.connectionPoolConfiguration()
+                                .transactionRequirement() == TransactionRequirement.WARN));
         log.debugv("Started datasource {0} connected to {1}", dataSourceName,
                 agroalConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl());
 
@@ -195,15 +257,22 @@ public class DataSources {
             dataSource.setPoolInterceptors(interceptorList);
         }
 
+        if (dataSourceJdbcBuildTimeConfig.telemetry && dataSourceJdbcRuntimeConfig.telemetry.orElse(true)) {
+            // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
+            // use an optional CDI bean as we can't reference optional OpenTelemetry classes here
+            dataSource = agroalOpenTelemetryWrapper.get().apply(dataSource);
+        }
+
         return dataSource;
     }
 
-    private void applyNewConfiguration(AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+    private void applyNewConfiguration(String dataSourceName, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
             AgroalConnectionPoolConfigurationSupplier poolConfiguration,
-            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver,
+            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver, String jdbcUrl,
             DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, boolean mpMetricsPresent) {
-        connectionFactoryConfiguration.jdbcUrl(dataSourceJdbcRuntimeConfig.url.get());
+            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, TransactionManagerConfiguration transactionRuntimeConfig,
+            boolean mpMetricsPresent) {
+        connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
 
@@ -215,7 +284,17 @@ public class DataSources {
 
         if (dataSourceJdbcBuildTimeConfig.transactions != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
-                    transactionSynchronizationRegistry);
+                    transactionSynchronizationRegistry, null, false,
+                    dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+                            && transactionRuntimeConfig.enableRecovery
+                                    ? xaResourceRecoveryRegistry
+                                    : null);
+            if (dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+                    && !transactionRuntimeConfig.enableRecovery) {
+                log.warnv(
+                        "Datasource {0} enables XA but transaction recovery is not enabled. Please enable transaction recovery by setting quarkus.transaction-manager.enable-recovery=true, otherwise data may be lost if the application is terminated abruptly",
+                        dataSourceName);
+            }
             poolConfiguration.transactionIntegration(txIntegration);
         }
 
@@ -234,12 +313,14 @@ public class DataSources {
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {
+            NamePrincipal username = new NamePrincipal(dataSourceRuntimeConfig.username.get());
             connectionFactoryConfiguration
-                    .principal(new NamePrincipal(dataSourceRuntimeConfig.username.get()));
+                    .principal(username).recoveryPrincipal(username);
         }
         if (dataSourceRuntimeConfig.password.isPresent()) {
+            SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password.get());
             connectionFactoryConfiguration
-                    .credential(new SimplePassword(dataSourceRuntimeConfig.password.get()));
+                    .credential(password).recoveryCredential(password);
         }
 
         // credentials provider
@@ -271,6 +352,9 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.backgroundValidationInterval.isPresent()) {
             poolConfiguration.validationTimeout(dataSourceJdbcRuntimeConfig.backgroundValidationInterval.get());
         }
+        if (dataSourceJdbcRuntimeConfig.foregroundValidationInterval.isPresent()) {
+            poolConfiguration.idleValidationTimeout(dataSourceJdbcRuntimeConfig.foregroundValidationInterval.get());
+        }
         if (dataSourceJdbcRuntimeConfig.validationQuerySql.isPresent()) {
             String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql.get();
             poolConfiguration.connectionValidator(new ConnectionValidator() {
@@ -296,6 +380,11 @@ public class DataSources {
         if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
             poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
         }
+        if (dataSourceJdbcRuntimeConfig.transactionRequirement.isPresent()) {
+            poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement.get());
+        }
+        poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport);
+        poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose);
     }
 
     public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
@@ -366,5 +455,4 @@ public class DataSources {
             }
         }
     }
-
 }

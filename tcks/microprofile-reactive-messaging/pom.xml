@@ -13,6 +13,10 @@
     <artifactId>quarkus-tck-microprofile-reactive-messaging</artifactId>
     <name>Quarkus - TCK - MicroProfile Reactive Messaging</name>
 
+    <properties>
+        <microprofile-reactive-messaging-tck.version>3.0</microprofile-reactive-messaging-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -58,20 +62,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.reactive.messaging</groupId>
             <artifactId>microprofile-reactive-messaging-tck</artifactId>
-            <version>${microprofile-reactive-messaging-api.version}</version>
-            <exclusions>
-                <!-- fix convergence: assertj is bumped to >= 3.19.0 via Quarkus BOM which is too new (see futher down) -->
-                <exclusion>
-                    <groupId>org.assertj</groupId>
-                    <artifactId>assertj-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <!-- latest version of assertj that is known to work -->
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.19.0</version>
+            <version>${microprofile-reactive-messaging-tck.version}</version>
         </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->

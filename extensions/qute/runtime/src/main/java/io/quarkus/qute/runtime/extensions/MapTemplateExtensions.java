@@ -4,7 +4,7 @@ import static io.quarkus.qute.TemplateExtension.ANY;
 
 import java.util.Map;
 
-import javax.enterprise.inject.Vetoed;
+import jakarta.enterprise.inject.Vetoed;
 
 import io.quarkus.qute.Results;
 import io.quarkus.qute.TemplateExtension;

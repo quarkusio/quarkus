@@ -2,9 +2,7 @@ package io.quarkus.funqy.test;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +17,7 @@ public class RootPathTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(PrimitiveFunctions.class));
 

@@ -1,11 +1,11 @@
 package io.quarkus.it.validator;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.transaction.Transactional;
-import javax.validation.Validator;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
+import jakarta.validation.Validator;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 /**
  * Verifies that Hibernate Validator can use Hibernate ORM's PersistenceUtilHelper

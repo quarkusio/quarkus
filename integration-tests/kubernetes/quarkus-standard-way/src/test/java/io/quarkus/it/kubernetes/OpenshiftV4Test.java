@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.assertj.core.api.AbstractObjectAssert;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class OpenshiftV4Test {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift-v4")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-v4.properties");
@@ -45,7 +43,7 @@ public class OpenshiftV4Test {
         assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
                 assertThat(m.getName()).isEqualTo("openshift-v4");
-                assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("quarkus");
+                assertThat(m.getLabels().get("app.openshift.io/runtime")).isEqualTo("test");
                 assertThat(m.getLabels().get("app.kubernetes.io/name")).isEqualTo("openshift-v4");
                 assertThat(m.getLabels().get("app")).isNull();
                 assertThat(m.getNamespace()).isNull();

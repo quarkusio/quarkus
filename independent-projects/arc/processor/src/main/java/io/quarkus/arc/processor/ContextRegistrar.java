@@ -1,7 +1,8 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.InjectableContext;
 import java.lang.annotation.Annotation;
+
+import io.quarkus.arc.InjectableContext;
 
 /**
  * Use this extension point to register a custom {@link InjectableContext} implementation.

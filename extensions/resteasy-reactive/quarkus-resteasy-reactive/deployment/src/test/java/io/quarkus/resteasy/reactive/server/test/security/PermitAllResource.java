@@ -1,8 +1,10 @@
 package io.quarkus.resteasy.reactive.server.test.security;
 
-import javax.annotation.security.PermitAll;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.smallrye.common.annotation.NonBlocking;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
@@ -14,6 +16,13 @@ public class PermitAllResource {
     @GET
     public String defaultSecurity() {
         return "defaultSecurity";
+    }
+
+    @NonBlocking
+    @Path("/defaultSecurityNonBlocking")
+    @GET
+    public String defaultSecurityNonBlocking() {
+        return "defaultSecurityNonBlocking";
     }
 
     @Path("/sub")

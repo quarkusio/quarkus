@@ -3,7 +3,8 @@ package io.quarkus.cli.create;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
+import picocli.CommandLine.TypeConversionException;
 
 public class TargetGAVGroupTest {
 
@@ -91,5 +92,17 @@ public class TargetGAVGroupTest {
         Assertions.assertEquals("g", gav.getGroupId());
         Assertions.assertEquals("a", gav.getArtifactId());
         Assertions.assertEquals("v", gav.getVersion());
+    }
+
+    @Test
+    void testBadArtifactId() {
+        gav.gav = "g:a/x:v";
+        Assertions.assertThrows(TypeConversionException.class, () -> gav.getArtifactId());
+    }
+
+    @Test
+    void testBadGroupId() {
+        gav.gav = "g,x:a:v";
+        Assertions.assertThrows(TypeConversionException.class, () -> gav.getGroupId());
     }
 }

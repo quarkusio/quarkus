@@ -1,6 +1,7 @@
 package io.quarkus.smallrye.openapi.test.jaxrs;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class ResourceBean {
@@ -8,4 +9,10 @@ public class ResourceBean {
     public String toString() {
         return "resource";
     }
+
+    @RolesAllowed("admin")
+    public String anotherMethod() {
+        return "bla";
+    }
+
 }

@@ -12,7 +12,7 @@ public class KotlinGRPCProjectBuildTest extends QuarkusGradleWrapperTestBase {
     public void testBasicMultiModuleBuild() throws Exception {
         final File projectDir = getProjectDir("kotlin-grpc-project");
         final BuildResult build = runGradleWrapper(projectDir, "clean", "build");
-        assertThat(build.getTasks().get(":quarkusGenerateCode")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
-        assertThat(build.getTasks().get(":compileKotlin")).isEqualTo(BuildResult.SUCCESS_OUTCOME);
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":quarkusGenerateCode"))).isTrue();
+        assertThat(BuildResult.isSuccessful(build.getTasks().get(":compileKotlin"))).isTrue();
     }
 }

@@ -5,14 +5,12 @@ plugins {
 }
 
 repositories {
-    mavenCentral()
-    if (System.properties.containsKey('maven.repo.local')) {
-        maven {
-            url System.properties.get('maven.repo.local')
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
         }
-    } else {
-        mavenLocal()
     }
+    mavenCentral()
 }
 
 dependencies {
@@ -36,4 +34,8 @@ run {
     if (System.properties.containsKey('maven.repo.local')) {
         systemProperty 'maven.repo.local', System.properties.get('maven.repo.local')
     }
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }

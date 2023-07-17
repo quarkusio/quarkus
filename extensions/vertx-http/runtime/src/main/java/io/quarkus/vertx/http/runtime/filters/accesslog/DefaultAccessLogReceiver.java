@@ -76,7 +76,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
     private final Path defaultLogFile;
 
     private final String logBaseName;
-    private final String logNameSuffix;
+    private final String logNameSuffix; // always starts with a '.' character
 
     private Writer writer = null;
 
@@ -120,10 +120,18 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
         this.logBaseName = logBaseName;
         this.rotate = rotate;
         this.fileHeaderGenerator = fileHeader;
-        this.logNameSuffix = (logNameSuffix != null) ? logNameSuffix : DEFAULT_LOG_SUFFIX;
+        this.logNameSuffix = effectiveLogNameSuffix(logNameSuffix);
         this.pendingMessages = new ConcurrentLinkedDeque<>();
         this.defaultLogFile = outputDirectory.resolve(logBaseName + this.logNameSuffix);
         calculateChangeOverPoint();
+    }
+
+    private static String effectiveLogNameSuffix(String logNameSuffix) {
+        var result = (logNameSuffix != null) ? logNameSuffix : DEFAULT_LOG_SUFFIX;
+        if (result.charAt(0) != '.') {
+            return '.' + result;
+        }
+        return result;
     }
 
     private void calculateChangeOverPoint() {
@@ -275,11 +283,11 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
             if (!Files.exists(defaultLogFile)) {
                 return;
             }
-            Path newFile = outputDirectory.resolve(logBaseName + currentDateString + "." + logNameSuffix);
+            Path newFile = outputDirectory.resolve(logBaseName + currentDateString + logNameSuffix);
             int count = 0;
             while (Files.exists(newFile)) {
                 ++count;
-                newFile = outputDirectory.resolve(logBaseName + currentDateString + "-" + count + "." + logNameSuffix);
+                newFile = outputDirectory.resolve(logBaseName + currentDateString + "-" + count + logNameSuffix);
             }
             Files.move(defaultLogFile, newFile);
         } catch (IOException e) {

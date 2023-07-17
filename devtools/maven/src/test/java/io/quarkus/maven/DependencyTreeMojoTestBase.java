@@ -20,7 +20,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsDependency;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
@@ -48,7 +47,7 @@ public abstract class DependencyTreeMojoTestBase {
                 .setRemoteRepositories(Collections.emptyList())
                 .build();
 
-        repoBuilder = TsRepoBuilder.getInstance(new BootstrapAppModelResolver(mvnResolver), workDir);
+        repoBuilder = TsRepoBuilder.getInstance(mvnResolver, workDir);
         initRepo();
     }
 

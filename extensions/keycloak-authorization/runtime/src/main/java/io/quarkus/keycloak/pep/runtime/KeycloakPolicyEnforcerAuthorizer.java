@@ -6,13 +6,13 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.keycloak.AuthorizationContext;
-import org.keycloak.adapters.authorization.KeycloakAdapterPolicyEnforcer;
+import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.authorization.client.AuthzClient;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.EnforcementMode;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig.PathConfig;
@@ -59,9 +59,8 @@ public class KeycloakPolicyEnforcerAuthorizer
 
         VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, credential.getToken(), resolver.getReadTimeout());
 
-        KeycloakAdapterPolicyEnforcer adapterPolicyEnforcer = new KeycloakAdapterPolicyEnforcer(
-                resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE)));
-        AuthorizationContext result = adapterPolicyEnforcer.authorize(httpFacade);
+        PolicyEnforcer policyEnforcer = resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE));
+        AuthorizationContext result = policyEnforcer.enforce(httpFacade, httpFacade);
 
         if (result.isGranted()) {
             SecurityIdentity newIdentity = enhanceSecurityIdentity(identity, result);
@@ -75,7 +74,7 @@ public class KeycloakPolicyEnforcerAuthorizer
     @RequestScoped
     public AuthzClient getAuthzClient() {
         SecurityIdentity identity = (SecurityIdentity) Arc.container().instance(SecurityIdentity.class).get();
-        return resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE)).getClient();
+        return resolver.getPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE)).getAuthzClient();
     }
 
     private SecurityIdentity enhanceSecurityIdentity(SecurityIdentity current,

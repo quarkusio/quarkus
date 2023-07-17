@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
 public @interface MethodProperties {
 
     /**
-     * Expose this operations as a JAX-RS endpoint.
+     * Expose this operation as a JAX-RS endpoint.
      * <p>
      * Default: true
      */
@@ -30,4 +30,11 @@ public @interface MethodProperties {
      * Default: ""
      */
     String path() default "";
+
+    /**
+     * List of the security roles permitted to access this operation.
+     * <p>
+     * Default: ""
+     */
+    String[] rolesAllowed() default {};
 }

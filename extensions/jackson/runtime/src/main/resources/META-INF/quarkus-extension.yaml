@@ -8,3 +8,5 @@ metadata:
   categories:
   - "serialization"
   status: "stable"
+  config:
+  - "quarkus.jackson."

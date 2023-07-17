@@ -15,13 +15,13 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.impl.LazyValue;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingRecorder.SmallRyeReactiveMessagingContext;
+import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.MediatorConfiguration;
-import io.smallrye.reactive.messaging.extension.ChannelConfiguration;
-import io.smallrye.reactive.messaging.extension.EmitterConfiguration;
+import io.smallrye.reactive.messaging.providers.extension.ChannelConfiguration;
 
 public class DevReactiveMessagingInfos {
 
-    // We must use a lazy value because MediatorManager is initialized when the app starts 
+    // We must use a lazy value because MediatorManager is initialized when the app starts
     private final LazyValue<List<DevChannelInfo>> channels;
 
     public DevReactiveMessagingInfos() {
@@ -40,19 +40,17 @@ public class DevReactiveMessagingInfos {
 
                 // Unfortunately, there is no easy way to obtain the connectors metadata
                 Connectors connectors = container.instance(Connectors.class).get();
-                for (Entry<String, Component> entry : connectors.outgoingConnectors.entrySet()) {
-                    publishers.put(entry.getKey(), entry.getValue());
-                }
+                publishers.putAll(connectors.outgoingConnectors);
                 for (Entry<String, Component> entry : connectors.incomingConnectors.entrySet()) {
                     consumers.computeIfAbsent(entry.getKey(), fun)
                             .add(entry.getValue());
                 }
 
                 for (EmitterConfiguration emitter : context.getEmitterConfigurations()) {
-                    publishers.put(emitter.name,
+                    publishers.put(emitter.name(),
                             new Component(ComponentType.EMITTER,
-                                    emitter.broadcast ? "<span class=\"annotation\">&#64;Broadcast</span> "
-                                            : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name))));
+                                    emitter.broadcast() ? "<span class=\"annotation\">&#64;Broadcast</span> "
+                                            : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name()))));
                 }
                 for (ChannelConfiguration channel : context.getChannelConfigurations()) {
                     consumers.computeIfAbsent(channel.channelName, fun)
@@ -151,10 +149,10 @@ public class DevReactiveMessagingInfos {
                 }
             }
             // consumer connectors last
-            long consumerConnetors = consumers.stream().filter(Component::isConnector).count();
+            long consumerConnectors = consumers.stream().filter(Component::isConnector).count();
             long otherConsumersConnectors = other.consumers.stream().filter(Component::isConnector).count();
-            if (consumerConnetors != otherConsumersConnectors) {
-                return Long.compare(otherConsumersConnectors, consumerConnetors);
+            if (consumerConnectors != otherConsumersConnectors) {
+                return Long.compare(otherConsumersConnectors, consumerConnectors);
             }
             if (publisher != other.publisher && publisher.type == ComponentType.CONNECTOR
                     && other.publisher.type != ComponentType.CONNECTOR) {

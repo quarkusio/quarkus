@@ -1,17 +1,28 @@
 package io.quarkus.it.amazon.lambda;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 
 @Path("/hello")
 public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("comma")
+    public String comma(@HeaderParam("Access-Control-Request-Headers") String access) {
+        if (access == null || !access.contains(","))
+            throw new RuntimeException("should have comma");
+        return "ok";
+    }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -57,7 +68,18 @@ public class GreetingResource {
     @Path("proxyRequestContext")
     @Produces(MediaType.TEXT_PLAIN)
     public void proxyRequestContext(@Context APIGatewayV2HTTPEvent ctx) {
-        if (ctx == null)
+        if (ctx == null || ctx.getRequestContext().getHttp().getMethod() == null)
+            throw new RuntimeException();
+    }
+
+    @Inject
+    APIGatewayV2HTTPEvent event;
+
+    @GET
+    @Path("inject-event")
+    @Produces(MediaType.TEXT_PLAIN)
+    public void injectEvent() {
+        if (event == null)
             throw new RuntimeException();
     }
 

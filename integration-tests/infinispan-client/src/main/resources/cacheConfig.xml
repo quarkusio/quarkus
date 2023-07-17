@@ -1,0 +1,3 @@
+<distributed-cache>
+    <encoding media-type="application/x-protostream"/>
+</distributed-cache>

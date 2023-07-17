@@ -1,9 +1,7 @@
 package io.quarkus.reactive.pg.client;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class ReactivePgReloadTest {
 
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(DevModeResource.class)
                     .add(new StringAsset("quarkus.datasource.db-kind=postgresql\n" +
                             "quarkus.datasource.reactive.url=vertx-reactive:postgres://localhost:2345/reload_test"),

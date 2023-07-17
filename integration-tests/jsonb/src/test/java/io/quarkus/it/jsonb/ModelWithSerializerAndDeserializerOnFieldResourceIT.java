@@ -1,8 +1,8 @@
 package io.quarkus.it.jsonb;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class ModelWithSerializerAndDeserializerOnFieldResourceIT extends ModelWithSerializerAndDeserializerOnFieldResourceTest {
 
 }

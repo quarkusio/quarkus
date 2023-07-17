@@ -2,19 +2,23 @@ package org.jboss.resteasy.reactive.server.core.multipart;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
+import org.jboss.resteasy.reactive.server.multipart.FileItem;
+import org.jboss.resteasy.reactive.server.multipart.FormValue;
+import org.jboss.resteasy.reactive.server.multipart.MultipartFormDataInput;
 
 /**
  * Representation of form data.
@@ -30,6 +34,17 @@ public final class FormData implements Iterable<String> {
 
     public FormData(final int maxValues) {
         this.maxValues = maxValues;
+    }
+
+    public MultipartFormDataInput toMultipartFormDataInput() {
+        return new MultipartFormDataInput() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public Map<String, Collection<FormValue>> getValues() {
+                Map<String, ? extends Collection<FormValue>> result = new LinkedHashMap<>(values);
+                return (Map<String, Collection<FormValue>>) result;
+            }
+        };
     }
 
     public Iterator<String> iterator() {
@@ -152,84 +167,40 @@ public final class FormData implements Iterable<String> {
             for (FormValue j : i) {
                 if (j.isFileItem() && !j.getFileItem().isInMemory()) {
                     try {
-                        Files.deleteIfExists(j.getFileItem().file);
+                        Files.deleteIfExists(j.getFileItem().getFile());
                     } catch (IOException e) {
-                        log.error("Cannot remove uploaded file " + j.getFileItem().file, e);
+                        log.error("Cannot remove uploaded file " + j.getFileItem().getFile(), e);
                     }
                 }
             }
         }
     }
 
-    public interface FormValue {
-
-        /**
-         * @return the simple string value.
-         * @throws IllegalStateException If this is not a simple string value
-         */
-        String getValue();
-
-        /**
-         * @return The charset of the simple string value
-         */
-        String getCharset();
-
-        /**
-         * Returns true if this is a file and not a simple string
-         *
-         * @return
-         */
-        @Deprecated
-        boolean isFile();
-
-        /**
-         * @return The temp file that the file data was saved to
-         *
-         * @throws IllegalStateException if this is not a file
-         */
-        @Deprecated
-        Path getPath();
-
-        @Deprecated
-        File getFile();
-
-        FileItem getFileItem();
-
-        boolean isFileItem();
-
-        /**
-         * @return The filename specified in the disposition header.
-         */
-        String getFileName();
-
-        /**
-         * @return The headers that were present in the multipart request, or null if this was not a multipart request
-         */
-        CaseInsensitiveMap<String> getHeaders();
-    }
-
-    public static class FileItem {
+    public static class FileItemImpl implements FileItem {
         private final Path file;
         private final byte[] content;
 
-        public FileItem(Path file) {
+        public FileItemImpl(Path file) {
             this.file = file;
             this.content = null;
         }
 
-        public FileItem(byte[] content) {
+        public FileItemImpl(byte[] content) {
             this.file = null;
             this.content = content;
         }
 
+        @Override
         public boolean isInMemory() {
             return file == null;
         }
 
+        @Override
         public Path getFile() {
             return file;
         }
 
+        @Override
         public long getFileSize() throws IOException {
             if (isInMemory()) {
                 return content.length;
@@ -238,6 +209,7 @@ public final class FormData implements Iterable<String> {
             }
         }
 
+        @Override
         public InputStream getInputStream() throws IOException {
             if (file != null) {
                 return new BufferedInputStream(Files.newInputStream(file));
@@ -246,6 +218,7 @@ public final class FormData implements Iterable<String> {
             }
         }
 
+        @Override
         public void delete() throws IOException {
             if (file != null) {
                 try {
@@ -255,6 +228,7 @@ public final class FormData implements Iterable<String> {
             }
         }
 
+        @Override
         public void write(Path target) throws IOException {
             if (file != null) {
                 try {
@@ -276,14 +250,14 @@ public final class FormData implements Iterable<String> {
         private final String value;
         private final String fileName;
         private final CaseInsensitiveMap<String> headers;
-        private final FileItem fileItem;
+        private final FileItemImpl fileItemImpl;
         private final String charset;
 
         FormValueImpl(String value, CaseInsensitiveMap<String> headers) {
             this.value = value;
             this.headers = headers;
             this.fileName = null;
-            this.fileItem = null;
+            this.fileItemImpl = null;
             this.charset = null;
         }
 
@@ -292,11 +266,11 @@ public final class FormData implements Iterable<String> {
             this.charset = charset;
             this.headers = headers;
             this.fileName = null;
-            this.fileItem = null;
+            this.fileItemImpl = null;
         }
 
         FormValueImpl(Path file, final String fileName, CaseInsensitiveMap<String> headers) {
-            this.fileItem = new FileItem(file);
+            this.fileItemImpl = new FileItemImpl(file);
             this.headers = headers;
             this.fileName = fileName;
             this.value = null;
@@ -304,7 +278,7 @@ public final class FormData implements Iterable<String> {
         }
 
         FormValueImpl(byte[] data, String fileName, CaseInsensitiveMap<String> headers) {
-            this.fileItem = new FileItem(data);
+            this.fileItemImpl = new FileItemImpl(data);
             this.fileName = fileName;
             this.headers = headers;
             this.value = null;
@@ -325,37 +299,16 @@ public final class FormData implements Iterable<String> {
         }
 
         @Override
-        public boolean isFile() {
-            return fileItem != null && !fileItem.isInMemory();
-        }
-
-        @Override
-        public Path getPath() {
-            if (fileItem == null) {
+        public FileItemImpl getFileItem() {
+            if (fileItemImpl == null) {
                 throw new RuntimeException("Form value is a string");
             }
-            if (fileItem.isInMemory()) {
-                throw new RuntimeException("Form value is a memory file");
-            }
-            return fileItem.getFile();
-        }
-
-        @Override
-        public File getFile() {
-            return getPath().toFile();
-        }
-
-        @Override
-        public FileItem getFileItem() {
-            if (fileItem == null) {
-                throw new RuntimeException("Form value is a string");
-            }
-            return fileItem;
+            return fileItemImpl;
         }
 
         @Override
         public boolean isFileItem() {
-            return fileItem != null;
+            return fileItemImpl != null;
         }
 
         @Override

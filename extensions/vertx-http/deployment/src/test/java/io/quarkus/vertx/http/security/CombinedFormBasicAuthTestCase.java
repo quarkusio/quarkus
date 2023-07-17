@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.security;
 
+import static io.restassured.matcher.RestAssuredMatchers.detailedCookie;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -23,6 +24,7 @@ public class CombinedFormBasicAuthTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.auth.basic=true\n" +
+            "quarkus.http.auth.realm=TestRealm\n" +
             "quarkus.http.auth.form.enabled=true\n" +
             "quarkus.http.auth.form.login-page=login\n" +
             "quarkus.http.auth.form.error-page=error\n" +
@@ -32,7 +34,7 @@ public class CombinedFormBasicAuthTestCase {
             "quarkus.http.auth.permission.roles1.policy=r1\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
@@ -61,7 +63,8 @@ public class CombinedFormBasicAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location", containsString("/admin"));
+                .cookie("quarkus-redirect-location",
+                        detailedCookie().sameSite("Strict").path(equalTo("/")).value(containsString("/admin")));
 
         RestAssured
                 .given()
@@ -75,7 +78,7 @@ public class CombinedFormBasicAuthTestCase {
                 .assertThat()
                 .statusCode(302)
                 .header("location", containsString("/admin"))
-                .cookie("quarkus-credential", notNullValue());
+                .cookie("quarkus-credential", detailedCookie().sameSite("Strict").path(equalTo("/")));
 
         RestAssured
                 .given()
@@ -154,7 +157,7 @@ public class CombinedFormBasicAuthTestCase {
                 .then()
                 .assertThat()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("basic realm=\"Quarkus\""));
+                .header("WWW-Authenticate", equalTo("basic realm=\"TestRealm\""));
 
     }
 }

@@ -1,11 +1,13 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.dekorate.kubernetes.annotation.ServiceType;
+import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
@@ -22,13 +24,13 @@ public class KnativeConfig implements PlatformConfiguration {
      * The name of the application. This value will be used for naming Kubernetes
      * resources like: - Deployment - Service and so on ...
      */
-    @ConfigItem(defaultValue = "${quarkus.container-image.name}")
+    @ConfigItem
     Optional<String> name;
 
     /**
      * The version of the application.
      */
-    @ConfigItem(defaultValue = "${quarkus.container-image.tag}")
+    @ConfigItem
     Optional<String> version;
 
     /**
@@ -56,7 +58,7 @@ public class KnativeConfig implements PlatformConfiguration {
     Map<String, String> annotations;
 
     /**
-     * Whether or not to add the build timestamp to the Kubernetes annotations
+     * Whether to add the build timestamp to the Kubernetes annotations
      * This is a very useful way to have manifests of successive builds of the same
      * application differ - thus ensuring that Kubernetes will apply the updated resources
      */
@@ -88,13 +90,6 @@ public class KnativeConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Optional<String> serviceAccount;
-
-    /**
-     * The host under which the application is going to be exposed
-     *
-     */
-    @ConfigItem
-    Optional<String> host;
 
     /**
      * The application ports
@@ -133,6 +128,12 @@ public class KnativeConfig implements PlatformConfiguration {
     ProbeConfig readinessProbe;
 
     /**
+     * The startup probe
+     */
+    @ConfigItem
+    ProbeConfig startupProbe;
+
+    /**
      * Prometheus configuration
      */
     @ConfigItem
@@ -155,6 +156,12 @@ public class KnativeConfig implements PlatformConfiguration {
      */
     @ConfigItem
     Map<String, ConfigMapVolumeConfig> configMapVolumes;
+
+    /**
+     * EmptyDir volumes
+     */
+    @ConfigItem
+    Optional<List<String>> emptyDirVolumes;
 
     /**
      * Git Repository volumes
@@ -187,6 +194,12 @@ public class KnativeConfig implements PlatformConfiguration {
     Map<String, AzureDiskVolumeConfig> azureDiskVolumes;
 
     /**
+     * If set, it will change the name of the container according to the configuration
+     */
+    @ConfigItem
+    Optional<String> containerName;
+
+    /**
      * Init containers
      */
     @ConfigItem
@@ -209,6 +222,31 @@ public class KnativeConfig implements PlatformConfiguration {
      */
     @ConfigItem
     ResourcesConfig resources;
+
+    /**
+     * RBAC configuration
+     */
+    @ConfigItem
+    RbacConfig rbac;
+
+    /**
+     * If true, the 'app.kubernetes.io/version' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addVersionToLabelSelectors;
+
+    /**
+     * If true, the 'app.kubernetes.io/name' label will be part of the selectors of Service and Deployment
+     */
+    @ConfigItem(defaultValue = "true")
+    boolean addNameToLabelSelectors;
+
+    /**
+     * Switch used to control whether non-idempotent fields are included in generated kubernetes resources to improve
+     * git-ops compatibility
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean idempotent;
 
     public Optional<String> getPartOf() {
         return partOf;
@@ -240,6 +278,16 @@ public class KnativeConfig implements PlatformConfiguration {
     }
 
     @Override
+    public boolean isAddNameToLabelSelectors() {
+        return addNameToLabelSelectors;
+    }
+
+    @Override
+    public boolean isAddVersionToLabelSelectors() {
+        return addVersionToLabelSelectors;
+    }
+
+    @Override
     public String getTargetPlatformName() {
         return Constants.KNATIVE;
     }
@@ -260,8 +308,9 @@ public class KnativeConfig implements PlatformConfiguration {
         return serviceAccount;
     }
 
-    public Optional<String> getHost() {
-        return host;
+    @Override
+    public Optional<String> getContainerName() {
+        return containerName;
     }
 
     public Map<String, PortConfig> getPorts() {
@@ -288,6 +337,10 @@ public class KnativeConfig implements PlatformConfiguration {
         return readinessProbe;
     }
 
+    public ProbeConfig getStartupProbe() {
+        return startupProbe;
+    }
+
     public PrometheusConfig getPrometheusConfig() {
         return prometheus;
     }
@@ -302,6 +355,10 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Map<String, ConfigMapVolumeConfig> getConfigMapVolumes() {
         return configMapVolumes;
+    }
+
+    public List<String> getEmptyDirVolumes() {
+        return emptyDirVolumes.orElse(Collections.emptyList());
     }
 
     public Map<String, GitRepoVolumeConfig> getGitRepoVolumes() {
@@ -375,15 +432,16 @@ public class KnativeConfig implements PlatformConfiguration {
     }
 
     /**
-     * Whether or not this service is cluster-local.
+     * Whether this service is cluster-local.
      * Cluster local services are not exposed to the outside world.
+     * More information in <a href="https://knative.dev/docs/serving/services/private-services/">this link</a>.
      */
     @ConfigItem
     public boolean clusterLocal;
 
     /**
      * This value controls the minimum number of replicas each revision should have.
-     * Knative will attempt to never have less than this number of replicas at any one point in time.
+     * Knative will attempt to never have less than this number of replicas at any point in time.
      */
     @ConfigItem
     Optional<Integer> minScale;
@@ -391,7 +449,7 @@ public class KnativeConfig implements PlatformConfiguration {
     /**
      * This value controls the maximum number of replicas each revision should have.
      * Knative will attempt to never have more than this number of replicas running, or in the process of being created, at any
-     * one point in time.
+     * point in time.
      **/
     @ConfigItem
     Optional<Integer> maxScale;
@@ -429,11 +487,29 @@ public class KnativeConfig implements PlatformConfiguration {
     Optional<String> appSecret;
 
     /**
-     * If set, the config amp will mounted to the application container and its contents will be used for application
+     * If set, the config map will be mounted to the application container and its contents will be used for application
      * configuration.
      */
     @ConfigItem
     Optional<String> appConfigMap;
+
+    /**
+     * If set, it will copy the security context configuration provided into the generated pod settings.
+     */
+    @ConfigItem
+    SecurityContextConfig securityContext;
+
+    /**
+     * If set to true, Quarkus will attempt to deploy the application to the target knative cluster
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean deploy;
+
+    /**
+     * If deploy is enabled, it will follow this strategy to update the resources to the target Knative cluster.
+     */
+    @ConfigItem(defaultValue = "CreateOrUpdate")
+    DeployStrategy deployStrategy;
 
     public Optional<String> getAppSecret() {
         return this.appSecret;
@@ -441,5 +517,20 @@ public class KnativeConfig implements PlatformConfiguration {
 
     public Optional<String> getAppConfigMap() {
         return this.appConfigMap;
+    }
+
+    @Override
+    public SecurityContextConfig getSecurityContext() {
+        return securityContext;
+    }
+
+    @Override
+    public boolean isIdempotent() {
+        return idempotent;
+    }
+
+    @Override
+    public RbacConfig getRbacConfig() {
+        return rbac;
     }
 }

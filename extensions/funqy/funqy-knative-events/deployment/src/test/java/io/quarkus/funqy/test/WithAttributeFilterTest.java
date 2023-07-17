@@ -2,8 +2,6 @@ package io.quarkus.funqy.test;
 
 import static org.hamcrest.Matchers.equalTo;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,8 +12,21 @@ public class WithAttributeFilterTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(WithAttributeFilter.class, Identity.class));
+
+    @Test
+    public void testTriggerAsFuncNameFilterMatch() {
+        RestAssured.given().contentType("application/json")
+                .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
+                .header("ce-id", "42")
+                .header("ce-type", "listOfStrings")
+                .header("ce-source", "mytestvalue")
+                .header("ce-specversion", "1.0")
+                .post("/")
+                .then().statusCode(200)
+                .body(equalTo("\"Bill:Matej\""));
+    }
 
     @Test
     public void testAttributeFilterMatch() {

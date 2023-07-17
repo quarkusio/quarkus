@@ -1,0 +1,252 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="telemetry-micrometer-tutorial"]
+= Collect metrics using Micrometer
+:categories: observability
+:diataxis-type: tutorial
+include::_attributes.adoc[]
+
+Create an application that uses the Micrometer metrics library to collect runtime, extension and application metrics and expose them as a Prometheus (OpenMetrics) endpoint.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+
+== Solution
+
+We recommend that you follow the instructions to create the application step by step, but you can skip right to the solution if you prefer.
+Either:
+
+* Clone the git repository: `git clone {quickstarts-clone-url}`, or
+* Download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/micrometer-quickstart[directory].
+
+:sectnums:
+:sectnumlevels: 3
+== Create the Maven project
+
+Create a new project with the following command:
+
+:create-app-artifact-id: micrometer-quickstart
+:create-app-extensions: resteasy-reactive,micrometer-registry-prometheus
+include::{includes}/devtools/create-app.adoc[]
+
+This command generates a Maven project, that imports the `micrometer-registry-prometheus` extension as a dependency.
+This extension will load the core `micrometer` extension as well as additional library dependencies required to support prometheus.
+
+== Create a REST endpoint
+
+Let's first add a simple endpoint that calculates prime numbers.
+
+[source,java]
+----
+include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=example;!ignore;!registry;!gauge;!counted;!timed]
+----
+
+Start your application in dev mode:
+
+include::{includes}/devtools/dev.adoc[]
+
+=== Review automatically generated metrics
+
+The Micrometer extension automatically times HTTP server requests.
+
+Let's use `curl` (or a browser) to visit our endpoint a few times:
+
+[source,shell]
+----
+curl http://localhost:8080/example/prime/256
+curl http://localhost:8080/example/prime/7919
+----
+
+The Micrometer Prometheus MeterRegistry extension creates an endpoint we can use to observe collected metrics.
+Let's take a look at the metrics that have been collected:
+
+[source,shell]
+----
+curl http://localhost:8080/q/metrics
+----
+
+Look for `http_server_requests_seconds_count`, `http_server_requests_seconds_sum`, and
+`http_server_requests_seconds_max` in the output.
+
+Dimensional labels are added for the request uri, the HTTP method
+(GET, POST, etc.), the status code (200, 302, 404, etc.), and a more general outcome field.
+You should find something like this:
+
+[source,text]
+----
+# HELP http_server_requests_seconds
+# TYPE http_server_requests_seconds summary
+http_server_requests_seconds_count{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 2.0
+http_server_requests_seconds_sum{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 0.017385896
+# HELP http_server_requests_seconds_max
+# TYPE http_server_requests_seconds_max gauge
+http_server_requests_seconds_max{method="GET",outcome="SUCCESS",status="200",uri="/example/prime/{number}"} 0.017385896
+#
+----
+
+NOTE: Metrics appear lazily, you often won't see any data for your endpoint until it is accessed.
+
+.Exported metrics format
+
+By default, the  metrics are exported using the Prometheus format `application/openmetrics-text`,
+you can revert to the former format by specifying the `Accept` request header to `text/plain` (`curl -H "Accept: text/plain" localhost:8080/q/metrics/`).
+
+== Inject the MeterRegistry
+
+To register meters, you need a reference to the `MeterRegistry` that is configured and maintained by the Micrometer extension.
+
+The `MeterRegistry` can be injected into your application as follows:
+
+[source,java]
+----
+include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=registry;!gauge]
+----
+
+== Add a Counter
+
+Counters are used to measure values that only increase.
+
+Let's add a counter that tracks how often we test a number to see if it is prime.
+We'll add a dimensional label (also called an attribute or a tag) that will allow us to aggregate this counter value in different ways.
+
+[source,java]
+----
+include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;!ignore;!timed]
+----
+
+<1> Find or create a counter called `example.prime.number` that has a `type` label with the specified value.
+<2> Increment that counter.
+
+=== Review collected metrics
+
+If you did not leave Quarkus running in dev mode, start it again:
+
+include::{includes}/devtools/dev.adoc[]
+
+Try the following sequence and look for `example_prime_number_total` in the plain text
+output.
+
+Note that the `_total` suffix is added when Micrometer applies Prometheus naming conventions to
+`example.prime.number`, the originally specified counter name.
+
+[source,shell]
+----
+curl http://localhost:8080/example/prime/-1
+curl http://localhost:8080/example/prime/0
+curl http://localhost:8080/example/prime/1
+curl http://localhost:8080/example/prime/2
+curl http://localhost:8080/example/prime/3
+curl http://localhost:8080/example/prime/15
+curl http://localhost:8080/q/metrics
+----
+
+Notice that there is one measured value for each unique combination of `example_prime_number_total` and `type` value.
+
+Looking at the dimensional data produced by this counter, you can count:
+
+- how often a negative number was checked: `type="not-natural"`
+- how often the number one was checked: `type="one"`
+- how often an even number was checked: `type="even"`
+- how often a prime number was checked: `type="prime"`
+- how often a non-prime number was checked: `type="not-prime"`
+
+You can also count how often a number was checked (generally) by aggregating all of these values together.
+
+== Add a Timer
+
+Timers are a specialized abstraction for measuring duration.
+Let's add a timer to measure how long it takes to determine if a number is prime.
+
+[source,java]
+----
+include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;timed;!ignore;!default]
+----
+
+<1> Find or create a counter called `example.prime.number` that has a `type` label with the specified value.
+<2> Increment that counter.
+<3> Call a method that wraps the original `testPrimeNumber` method.
+<4> Create a `Timer.Sample` that tracks the start time
+<5> Call the method to be timed and store the boolean result
+<6> Find or create a `Timer` using the specified id and a `prime` label with the result value, and record the duration captured by the `Timer.Sample`.
+
+=== Review collected metrics
+
+If you did not leave Quarkus running in dev mode, start it again:
+
+include::{includes}/devtools/dev.adoc[]
+
+Micrometer will apply Prometheus conventions when emitting metrics for this timer.
+Specifically, measured durations are converted into seconds and this unit is included in the metric name.
+
+Try the following sequence and look for the following entries in the plain text output:
+
+- `example_prime_number_test_seconds_count` -- how many times the method was called
+- `example_prime_number_test_seconds_sum` -- the total duration of all method calls
+- `example_prime_number_test_seconds_max` -- the maximum observed duration within a decaying interval.
+This value will return to 0 if the method is not invoked frequently.
+
+[source,shell]
+----
+curl http://localhost:8080/example/prime/256
+curl http://localhost:8080/q/metrics
+curl http://localhost:8080/example/prime/7919
+curl http://localhost:8080/q/metrics
+----
+
+Looking at the dimensional data produced by this counter, you can use the sum and the count to calculate how long (on average) it takes to determine if a number is prime.
+Using the dimensional label, you might be able to understand if there is a significant difference in duration for numbers that are prime when compared with numbers that are not.
+
+== Add a Gauge
+
+Gauges measure a value that can increase or decrease over time, like the speedometer on a car.
+The value of a gauge is not accumulated, it is observed at collection time.
+Use a gauge to observe the size of a collection, or the value returned from a function.
+
+[source,java]
+----
+include::{code-examples}/telemetry-micrometer-tutorial-example-resource.java[tags=ctor;gauge]
+----
+
+<1> Define list that will hold arbitrary numbers.
+<2> Register a gauge that will track the size of the list.
+<3> Create a REST endpoint to populate the list.
+Even numbers are added to the list, and odd numbers remove an element from the list.
+
+=== Review collected metrics
+
+If you did not leave Quarkus running in dev mode, start it again:
+
+include::{includes}/devtools/dev.adoc[]
+
+Then try the following sequence and look for `example_list_size` in the plain text output:
+
+[source,shell]
+----
+curl http://localhost:8080/example/gauge/1
+curl http://localhost:8080/example/gauge/2
+curl http://localhost:8080/example/gauge/4
+curl http://localhost:8080/q/metrics
+curl http://localhost:8080/example/gauge/6
+curl http://localhost:8080/example/gauge/5
+curl http://localhost:8080/example/gauge/7
+curl http://localhost:8080/q/metrics
+----
+
+
+:sectnums!:
+== Summary
+
+Congratulations!
+
+You have created a project that uses the Micrometer and Prometheus Meter Registry extensions to collect metrics.
+You've observed some of the metrics that Quarkus captures automatically, and have added a `Counter` and `Timer` that are unique to the application.
+You've also added dimensional labels to metrics, and have observed how those labels shape the data emitted by the prometheus endpoint.
+
+
+

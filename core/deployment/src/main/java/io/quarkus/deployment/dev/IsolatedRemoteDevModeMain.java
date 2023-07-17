@@ -90,12 +90,14 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             //ok, we have resolved all the deps
             try {
                 AugmentResult start = augmentAction.createProductionApplication();
-                if (!start.getJar().getType().equalsIgnoreCase(PackageConfig.MUTABLE_JAR)) {
+                if (!start.getJar().getType().equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue())) {
                     throw new RuntimeException(
-                            "remote-dev can only be used with mutable applications generated with the fast-jar format");
+                            "remote-dev can only be used with mutable applications i.e. " +
+                                    "using the mutable-jar package type");
                 }
                 //now extract the artifacts, to mirror the remote side
-                DevModeTask.extractDevModeClasses(start.getJar().getPath().getParent(), curatedApplication.getAppModel(), null);
+                DevModeTask.extractDevModeClasses(start.getJar().getPath().getParent(),
+                        curatedApplication.getApplicationModel(), null);
                 return start.getJar();
             } catch (Throwable t) {
                 deploymentProblem = t;

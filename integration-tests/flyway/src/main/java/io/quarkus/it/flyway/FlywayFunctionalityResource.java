@@ -3,10 +3,10 @@ package io.quarkus.it.flyway;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.inject.Inject;
-import javax.persistence.EntityManager;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
@@ -59,7 +59,7 @@ public class FlywayFunctionalityResource {
     @GET
     @Path("create-schemas")
     public boolean returnCreateSchema() {
-        return flyway.getConfiguration().getCreateSchemas();
+        return flyway.getConfiguration().isCreateSchemas();
     }
 
     @GET
@@ -71,8 +71,15 @@ public class FlywayFunctionalityResource {
     @GET
     @Path("init-sql-result")
     public Integer returnInitSqlResult() {
-        return (Integer) entityManager.createNativeQuery("SELECT ONE_HUNDRED")
+        return (Integer) entityManager.createNativeQuery("SELECT f_my_constant()")
                 .getSingleResult();
+    }
+
+    @GET
+    @Path("created-by")
+    public String returnCreatedByUser() {
+        return entityManager.createQuery("select a from AppEntity a where a.id = 1", AppEntity.class)
+                .getSingleResult().getCreatedBy();
     }
 
 }

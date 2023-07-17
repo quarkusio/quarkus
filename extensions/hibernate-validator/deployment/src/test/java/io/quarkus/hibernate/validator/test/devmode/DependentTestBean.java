@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.validator.test.devmode;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
 @Dependent
 public class DependentTestBean {

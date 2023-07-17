@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "SmallRye Reactive Messaging - RabbitMQ Connector"
+metadata:
+  short-name: "rabbitmq"
+  keywords:
+  - "rabbitmq"
+  - "reactive-rabbitmq"
+  guide: "https://quarkus.io/guides/rabbitmq"
+  categories:
+  - "messaging"
+  status: "experimental"
+  config:
+  - "mp.messaging."
+  - "quarkus.reactive-messaging."
+  - "quarkus.rabbitmq."

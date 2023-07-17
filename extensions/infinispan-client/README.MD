@@ -2,7 +2,7 @@
 
 ## Status
 
-The RemoteCache by default only supports byte[] key and values. However a user can plug in a Marshaller to workaround
+The RemoteCache by default only supports byte[] key and values. However, a user can plug in a Marshaller to work around
 that. Please see the next few sections about features that currently work and those that don't
 
 ## Things that work
@@ -16,7 +16,7 @@ hotrod.client-properties file to be `infinispan.client.hotrod.marshaller=org.inf
 which allows support for protobuf marshalling. You can also provide `org.infinispan.protostream.MessageMarshaller` via @Produces
 and we will automatically register those marshallers with the global ProtoStreamMarshaller.
 
-### Protobuf Marshalling 
+### Protobuf Marshalling
 
 A user can define Injected protobuf Marshaller and FileDescriptorSource to configure the
 ProtoStreamMarshaller if it is in use.
@@ -60,7 +60,7 @@ that the programmatic way via @Produces will overwrite any same named files (ie.
 ### CDI
 
 RemoteCache and RemoteCacheManager can both be injected via @Inject. The former allows named cache injection by
-adding the Remote annotation, specifying the name of the cache. Currently the RemoteCacheManager is configured via the
+adding the Remote annotation, specifying the name of the cache. Currently, the RemoteCacheManager is configured via the
 hotrod-client.properties and/or microprofile-config.properties (with micro profile config replacing properties if both
 are present).
 
@@ -82,12 +82,6 @@ java cacerts file.
 
 The keystore is configured via hotrod-client.properties file located in META-INF.
 
-#### Configure your project to allow security services
-
-You (currently) need to enable all security services in Substrate
-(https://github.com/oracle/graal/blob/master/substratevm/JCASecurityServices.md). This can be done by adding
-`<enableAllSecurityServices>true</enableAllSecurityServices>` to the quarkus-maven-plugin configuration values.
-
 ### Authentication
 
 DIGEST_MD5, PLAIN, EXTERNAL were all tested to work.
@@ -96,7 +90,7 @@ DIGEST_MD5, PLAIN, EXTERNAL were all tested to work.
 
 Querying is also supported. To be able to do DSL based queries you need to add the infinispan-query-dsl artifact to your
 list of dependencies and then you can use it as normal. A simple example can be seen at
-http://infinispan.org/docs/dev/user_guide/user_guide.html#a_remote_query_example
+https://infinispan.org/docs/stable/titles/query/query.html#ickle-query-language
 
 ### Counters
 

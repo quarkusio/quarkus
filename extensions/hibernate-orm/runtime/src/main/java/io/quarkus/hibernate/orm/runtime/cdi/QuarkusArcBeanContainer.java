@@ -6,10 +6,10 @@
  */
 package io.quarkus.hibernate.orm.runtime.cdi;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.inject.spi.BeanManager;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.inject.spi.BeanManager;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.hibernate.resource.beans.container.spi.AbstractCdiBeanContainer;
 import org.hibernate.resource.beans.container.spi.BeanLifecycleStrategy;

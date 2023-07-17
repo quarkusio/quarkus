@@ -7,7 +7,7 @@ import io.quarkus.deployment.util.ClassOutputUtil;
 import io.quarkus.gizmo.ClassOutput;
 
 /**
- * A Gizmo {@link ClassOutput} that is able to write the inject the bytecode directly into the classloader
+ * A Gizmo {@link ClassOutput} that is able to inject the bytecode directly into the classloader
  *
  * The {@link ClassLoader} passed to the constructor MUST contain a public visibleDefineClass method
  * This ensures that generating proxies works in any JDK version

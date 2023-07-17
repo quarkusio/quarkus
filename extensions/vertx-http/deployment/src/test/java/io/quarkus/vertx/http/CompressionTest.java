@@ -3,18 +3,17 @@ package io.quarkus.vertx.http;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.ext.web.Router;
 
 public class CompressionTest {
@@ -33,7 +32,7 @@ public class CompressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(BeanRegisteringRouteUsingObserves.class));
 
@@ -59,10 +58,13 @@ public class CompressionTest {
         public void register(@Observes Router router) {
 
             router.route("/compress").handler(rc -> {
+                // The content-encoding header must be removed
+                rc.response().headers().remove(HttpHeaders.CONTENT_ENCODING);
                 rc.response().end(longString);
             });
             router.route("/nocompress").handler(rc -> {
-                rc.response().headers().set("content-encoding", "identity");
+                // This header is set by default
+                // rc.response().headers().set("content-encoding", "identity");
                 rc.response().end(longString);
             });
         }

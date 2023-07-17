@@ -1,9 +1,9 @@
 package io.quarkus.oidc.test;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -27,5 +27,11 @@ public class ProtectedResource {
     @Path("tenant/{id}")
     public String getTenantName(@PathParam("id") String tenantId) {
         return tenantId + ":" + idToken.getName();
+    }
+
+    @GET
+    @Path("logout")
+    public void logout() {
+        throw new RuntimeException("Logout must be handled by CodeAuthenticationMechanism");
     }
 }

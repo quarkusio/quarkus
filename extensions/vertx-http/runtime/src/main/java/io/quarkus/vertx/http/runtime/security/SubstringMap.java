@@ -9,7 +9,7 @@ import java.util.NoSuchElementException;
  * A string keyed map that can be accessed as a substring, eliminating the need to allocate a new string
  * to do a key comparison against.
  * <p>
- * This class uses linear probing and is thread safe due to copy on write semantics. As such it is not recomended
+ * This class uses linear probing and is thread safe due to copy on write semantics. As such it is not recommended
  * for data that changes frequently.
  * <p>
  * This class does not actually implement the map interface to avoid implementing unnecessary operations.

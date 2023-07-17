@@ -1,67 +1,88 @@
 package io.quarkus.it.panache.reactive;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.util.Collections;
 
-import javax.inject.Inject;
-import javax.persistence.LockModeType;
-import javax.ws.rs.WebApplicationException;
+import jakarta.inject.Inject;
+import jakarta.persistence.LockModeType;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
 
 @QuarkusTest
 public class PanacheMockingTest {
 
+    @SuppressWarnings("static-access")
     @Test
+    @RunOnVertxContext
     @Order(1)
-    public void testPanacheMocking() {
-        PanacheMock.mock(Person.class);
+    public void testPanacheMocking(UniAsserter asserter) {
+        String key = "person";
 
-        Assertions.assertEquals(0, Person.count().await().indefinitely());
+        asserter.execute(() -> PanacheMock.mock(Person.class));
+        asserter.assertEquals(() -> Person.count(), 0l);
 
-        Mockito.when(Person.count()).thenReturn(Uni.createFrom().item(23l));
-        Assertions.assertEquals(23, Person.count().await().indefinitely());
+        asserter.execute(() -> Mockito.when(Person.count()).thenReturn(Uni.createFrom().item(23l)));
+        asserter.assertEquals(() -> Person.count(), 23l);
 
-        Mockito.when(Person.count()).thenReturn(Uni.createFrom().item(42l));
-        Assertions.assertEquals(42, Person.count().await().indefinitely());
+        asserter.execute(() -> Mockito.when(Person.count()).thenReturn(Uni.createFrom().item(42l)));
+        asserter.assertEquals(() -> Person.count(), 42l);
 
-        Mockito.when(Person.count()).thenCallRealMethod();
-        Assertions.assertEquals(0, Person.count().await().indefinitely());
+        asserter.execute(() -> Mockito.when(Person.count()).thenCallRealMethod());
+        asserter.assertEquals(() -> Person.count(), 0l);
 
-        PanacheMock.verify(Person.class, Mockito.times(4)).count();
+        asserter.execute(() -> {
+            // use block lambda here, otherwise mutiny fails with NPE
+            PanacheMock.verify(Person.class, Mockito.times(4)).count();
+        });
 
-        Person p = new Person();
-        Mockito.when(Person.findById(12l)).thenReturn(Uni.createFrom().item(p));
-        Assertions.assertSame(p, Person.findById(12l).await().indefinitely());
-        Assertions.assertNull(Person.findById(42l).await().indefinitely());
+        asserter.execute(() -> {
+            Person p = new Person();
+            Mockito.when(Person.findById(12l)).thenReturn(Uni.createFrom().item(p));
+            asserter.putData(key, p);
+        });
+        asserter.assertThat(() -> Person.findById(12l), p -> Assertions.assertSame(p, asserter.getData(key)));
+        asserter.assertNull(() -> Person.findById(42l));
 
-        Person.persist(p).await().indefinitely();
-        Assertions.assertNull(p.id);
+        asserter.execute(() -> Person.persist(asserter.getData(key)));
+        asserter.execute(() -> assertNull(((Person) asserter.getData(key)).id));
 
-        Mockito.when(Person.findById(12l)).thenThrow(new WebApplicationException());
-        try {
-            Person.findById(12l);
-            Assertions.fail();
-        } catch (WebApplicationException x) {
-        }
+        asserter.execute(() -> Mockito.when(Person.findById(12l)).thenThrow(new WebApplicationException()));
+        asserter.assertFailedWith(() -> {
+            try {
+                return Person.findById(12l);
+            } catch (Exception e) {
+                return Uni.createFrom().failure(e);
+            }
+        }, t -> assertEquals(WebApplicationException.class, t.getClass()));
 
-        Mockito.when(Person.findOrdered()).thenReturn(Uni.createFrom().item(Collections.emptyList()));
-        Assertions.assertTrue(Person.findOrdered().await().indefinitely().isEmpty());
+        asserter.execute(() -> Mockito.when(Person.findOrdered()).thenReturn(Uni.createFrom().item(Collections.emptyList())));
+        asserter.assertThat(() -> Person.findOrdered(), list -> list.isEmpty());
 
-        PanacheMock.verify(Person.class).findOrdered();
-        PanacheMock.verify(Person.class).persist(Mockito.<Object> any(), Mockito.<Object> any());
-        PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
-        PanacheMock.verifyNoMoreInteractions(Person.class);
+        asserter.execute(() -> {
+            PanacheMock.verify(Person.class).findOrdered();
+            PanacheMock.verify(Person.class).persist(Mockito.<Object> any(), Mockito.<Object> any());
+            PanacheMock.verify(Person.class, Mockito.atLeastOnce()).findById(Mockito.any());
+            PanacheMock.verifyNoMoreInteractions(Person.class);
+            Assertions.assertEquals(0, Person.methodWithPrimitiveParams(true, (byte) 0, (short) 0, 0, 2, 2.0f, 2.0, 'c'));
+        });
 
-        Assertions.assertEquals(0, Person.methodWithPrimitiveParams(true, (byte) 0, (short) 0, 0, 2, 2.0f, 2.0, 'c'));
+        // Execute the asserter within a reactive session
+        asserter.surroundWith(u -> Panache.withSession(() -> u));
     }
 
     @Test
@@ -73,63 +94,85 @@ public class PanacheMockingTest {
     @InjectMock
     MockablePersonRepository mockablePersonRepository;
 
+    @RunOnVertxContext
     @Test
-    public void testPanacheRepositoryMocking() throws Throwable {
-        Assertions.assertEquals(0, mockablePersonRepository.count().await().indefinitely());
+    public void testPanacheRepositoryMocking(UniAsserter asserter) throws Throwable {
+        String key = "person";
 
-        Mockito.when(mockablePersonRepository.count()).thenReturn(Uni.createFrom().item(23l));
-        Assertions.assertEquals(23, mockablePersonRepository.count().await().indefinitely());
+        asserter.assertEquals(() -> mockablePersonRepository.count(), 0l);
 
-        Mockito.when(mockablePersonRepository.count()).thenReturn(Uni.createFrom().item(42l));
-        Assertions.assertEquals(42, mockablePersonRepository.count().await().indefinitely());
+        asserter.execute(() -> Mockito.when(mockablePersonRepository.count()).thenReturn(Uni.createFrom().item(23l)));
+        asserter.assertEquals(() -> mockablePersonRepository.count(), 23l);
 
-        Mockito.when(mockablePersonRepository.count()).thenCallRealMethod();
-        Assertions.assertEquals(0, mockablePersonRepository.count().await().indefinitely());
+        asserter.execute(() -> Mockito.when(mockablePersonRepository.count()).thenReturn(Uni.createFrom().item(42l)));
+        asserter.assertEquals(() -> mockablePersonRepository.count(), 42l);
 
-        Mockito.verify(mockablePersonRepository, Mockito.times(4)).count();
+        asserter.execute(() -> Mockito.when(mockablePersonRepository.count()).thenCallRealMethod());
+        asserter.assertEquals(() -> mockablePersonRepository.count(), 0l);
 
-        Person p = new Person();
-        Mockito.when(mockablePersonRepository.findById(12l)).thenReturn(Uni.createFrom().item(p));
-        Assertions.assertSame(p, mockablePersonRepository.findById(12l).await().indefinitely());
-        Assertions.assertNull(mockablePersonRepository.findById(42l).await().indefinitely());
+        asserter.execute(() -> {
+            // use block lambda here, otherwise mutiny fails with NPE
+            Mockito.verify(mockablePersonRepository, Mockito.times(4)).count();
+        });
 
-        mockablePersonRepository.persist(p).await().indefinitely();
-        Assertions.assertNull(p.id);
+        asserter.execute(() -> {
+            Person p = new Person();
+            Mockito.when(mockablePersonRepository.findById(12l)).thenReturn(Uni.createFrom().item(p));
+            asserter.putData(key, p);
+        });
 
-        Mockito.when(mockablePersonRepository.findById(12l)).thenThrow(new WebApplicationException());
-        try {
-            mockablePersonRepository.findById(12l);
-            Assertions.fail();
-        } catch (WebApplicationException x) {
-        }
+        asserter.assertThat(() -> mockablePersonRepository.findById(12l), p -> Assertions.assertSame(p, asserter.getData(key)));
+        asserter.assertNull(() -> mockablePersonRepository.findById(42l));
 
-        Mockito.when(mockablePersonRepository.findOrdered()).thenReturn(Uni.createFrom().item(Collections.emptyList()));
-        Assertions.assertTrue(mockablePersonRepository.findOrdered().await().indefinitely().isEmpty());
+        asserter.execute(() -> mockablePersonRepository.persist((Person) asserter.getData(key)));
+        asserter.execute(() -> assertNull(((Person) asserter.getData(key)).id));
 
-        Mockito.verify(mockablePersonRepository).findOrdered();
-        Mockito.verify(mockablePersonRepository, Mockito.atLeastOnce()).findById(Mockito.any());
-        Mockito.verify(mockablePersonRepository).persist(Mockito.<Person> any());
-        Mockito.verifyNoMoreInteractions(mockablePersonRepository);
+        asserter.execute(() -> Mockito.when(mockablePersonRepository.findById(12l)).thenThrow(new WebApplicationException()));
+        asserter.assertFailedWith(() -> {
+            try {
+                return mockablePersonRepository.findById(12l);
+            } catch (Exception e) {
+                return Uni.createFrom().failure(e);
+            }
+        }, t -> assertEquals(WebApplicationException.class, t.getClass()));
+
+        asserter.execute(() -> Mockito.when(mockablePersonRepository.findOrdered())
+                .thenReturn(Uni.createFrom().item(Collections.emptyList())));
+        asserter.assertThat(() -> mockablePersonRepository.findOrdered(), list -> list.isEmpty());
+
+        asserter.execute(() -> {
+            Mockito.verify(mockablePersonRepository).findOrdered();
+            Mockito.verify(mockablePersonRepository, Mockito.atLeastOnce()).findById(Mockito.any());
+            Mockito.verify(mockablePersonRepository).persist(Mockito.<Person> any());
+            Mockito.verifyNoMoreInteractions(mockablePersonRepository);
+        });
+
+        // Execute the asserter within a reactive session
+        asserter.surroundWith(u -> Panache.withSession(() -> u));
     }
 
     @Inject
     PersonRepository realPersonRepository;
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @RunOnVertxContext
     @Test
-    public void testPanacheRepositoryBridges() {
+    public void testPanacheRepositoryBridges(UniAsserter asserter) {
         // normal method call
-        Assertions.assertNull(realPersonRepository.findById(0l).await().indefinitely());
+        asserter.assertNull(() -> realPersonRepository.findById(0l));
         // bridge call
-        Assertions.assertNull(((PanacheRepositoryBase) realPersonRepository).findById(0l).await().indefinitely());
+        asserter.assertNull(() -> ((PanacheRepositoryBase) realPersonRepository).findById(0l));
         // normal method call
-        Assertions.assertNull(realPersonRepository.findById(0l, LockModeType.NONE).await().indefinitely());
+        asserter.assertNull(() -> realPersonRepository.findById(0l, LockModeType.NONE));
         // bridge call
-        Assertions.assertNull(
-                ((PanacheRepositoryBase) realPersonRepository).findById(0l, LockModeType.NONE).await().indefinitely());
+        asserter.assertNull(() -> ((PanacheRepositoryBase) realPersonRepository).findById(0l, LockModeType.NONE));
 
         // normal method call
-        Assertions.assertEquals(false, realPersonRepository.deleteById(0l).await().indefinitely());
+        asserter.assertFalse(() -> realPersonRepository.deleteById(0l));
         // bridge call
-        Assertions.assertEquals(false, ((PanacheRepositoryBase) realPersonRepository).deleteById(0l).await().indefinitely());
+        asserter.assertFalse(() -> ((PanacheRepositoryBase) realPersonRepository).deleteById(0l));
+
+        // Execute the asserter within a reactive session
+        asserter.surroundWith(u -> Panache.withSession(() -> u));
     }
 }

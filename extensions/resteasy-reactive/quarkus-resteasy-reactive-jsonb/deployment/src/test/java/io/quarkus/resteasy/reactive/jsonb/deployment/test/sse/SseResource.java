@@ -2,15 +2,17 @@ package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
 
 import java.io.IOException;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.Sse;
-import javax.ws.rs.sse.SseBroadcaster;
-import javax.ws.rs.sse.SseEventSink;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseBroadcaster;
+import jakarta.ws.rs.sse.SseEventSink;
 
+// Using `@RestStreamElementType` on purpose to ensure the backward compatibility.
 import org.jboss.resteasy.reactive.RestSseElementType;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
@@ -102,6 +104,22 @@ public class SseResource {
     @GET
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public Multi<Message> multiDefaultElementType() {
+        return Multi.createFrom().items(new Message("hello"), new Message("stef"));
+    }
+
+    @Path("ndjson/multi")
+    @GET
+    @Produces(RestMediaType.APPLICATION_NDJSON)
+    @RestSseElementType(MediaType.APPLICATION_JSON)
+    public Multi<Message> multiNdJson() {
+        return Multi.createFrom().items(new Message("hello"), new Message("stef"));
+    }
+
+    @Path("stream-json/multi")
+    @GET
+    @Produces(RestMediaType.APPLICATION_STREAM_JSON)
+    @RestSseElementType(MediaType.APPLICATION_JSON)
+    public Multi<Message> multiStreamJson() {
         return Multi.createFrom().items(new Message("hello"), new Message("stef"));
     }
 

@@ -2,9 +2,7 @@ package io.quarkus.undertow.test;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -58,7 +56,7 @@ public class ServletWebFragmentXmlMergingTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(WebXmlServlet.class, WebXmlFilter.class)
                     .addAsManifestResource(new StringAsset(WEB_FRAGMENT_XML), "web-fragment.xml")
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));

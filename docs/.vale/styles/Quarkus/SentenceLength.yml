@@ -1,0 +1,9 @@
+---
+extends: occurrence
+level: suggestion
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "Try to keep sentences to an average of 32 words or fewer."
+scope: sentence
+# source: Quarkus contributor guide
+max: 32
+token: \b(\w+)\b

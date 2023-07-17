@@ -1,10 +1,18 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateNode.Origin;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.quarkus.qute.TemplateNode.Origin;
+
 public class HtmlEscaper implements ResultMapper {
+
+    private final List<String> escapedContentTypes;
+
+    public HtmlEscaper(List<String> escapedContentTypes) {
+        this.escapedContentTypes = escapedContentTypes;
+    }
 
     @Override
     public boolean appliesTo(Origin origin, Object result) {
@@ -37,10 +45,17 @@ public class HtmlEscaper implements ResultMapper {
         return value.toString();
     }
 
-    static boolean requiresDefaultEscaping(Variant variant) {
-        return variant.getContentType() != null
-                ? (Variant.TEXT_HTML.equals(variant.getContentType()) || Variant.TEXT_XML.equals(variant.getContentType()))
-                : false;
+    private boolean requiresDefaultEscaping(Variant variant) {
+        String contentType = variant.getContentType();
+        if (contentType == null) {
+            return false;
+        }
+        for (String escaped : escapedContentTypes) {
+            if (contentType.startsWith(escaped)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String doEscape(CharSequence value, int index, StringBuilder builder) {

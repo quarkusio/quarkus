@@ -2,11 +2,14 @@ package io.quarkus.vertx.deployment;
 
 import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE_HEADERS;
 import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
+import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE_HEADERS;
 import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
@@ -35,6 +38,7 @@ import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 import io.vertx.core.eventbus.Message;
 
 class EventBusConsumer {
@@ -56,6 +60,11 @@ class EventBusConsumer {
     private static final MethodDescriptor MUTINY_MESSAGE_NEW_INSTANCE = MethodDescriptor.ofMethod(
             io.vertx.mutiny.core.eventbus.Message.class,
             "newInstance", io.vertx.mutiny.core.eventbus.Message.class, Message.class);
+    private static final MethodDescriptor MUTINY_MESSAGE_HEADERS_NEW_INSTANCE = MethodDescriptor.ofMethod(
+            io.vertx.mutiny.core.MultiMap.class,
+            "newInstance", io.vertx.mutiny.core.MultiMap.class, io.vertx.core.MultiMap.class);
+    private static final MethodDescriptor MESSAGE_HEADERS = MethodDescriptor.ofMethod(Message.class, "headers",
+            io.vertx.core.MultiMap.class);
     private static final MethodDescriptor MESSAGE_BODY = MethodDescriptor.ofMethod(Message.class, "body", Object.class);
     private static final MethodDescriptor INSTANCE_HANDLE_DESTROY = MethodDescriptor
             .ofMethod(InstanceHandle.class, "destroy",
@@ -85,7 +94,7 @@ class EventBusConsumer {
 
         StringBuilder sigBuilder = new StringBuilder();
         sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
-        for (Type i : method.parameters()) {
+        for (Type i : method.parameterTypes()) {
             sigBuilder.append(i.name().toString());
         }
         String generatedName = targetPackage + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
@@ -156,7 +165,19 @@ class EventBusConsumer {
         ResultHandle messageHandle = invoke.getMethodParam(0);
         ResultHandle result;
 
-        Type paramType = method.parameters().get(0);
+        // Determine if the method is consuming a Message, body, or headers + body.
+        // https://github.com/quarkusio/quarkus/issues/21621
+        Optional<Type> headerType = Optional.empty();
+        Type paramType;
+        if (method.parametersCount() == 2) {
+            Type firstParamType = method.parameterType(0);
+            if (VertxConstants.isMessageHeaders(firstParamType.name())) {
+                headerType = Optional.of(firstParamType);
+            }
+            paramType = method.parameterType(1);
+        } else {
+            paramType = method.parameterType(0);
+        }
         if (paramType.name().equals(MESSAGE)) {
             // io.vertx.core.eventbus.Message
             invoke.invokeVirtualMethod(
@@ -175,10 +196,25 @@ class EventBusConsumer {
         } else {
             // Parameter is payload
             ResultHandle bodyHandle = invoke.invokeInterfaceMethod(MESSAGE_BODY, messageHandle);
-            ResultHandle returnHandle = invoke.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(),
-                            method.returnType().name().toString(), paramType.name().toString()),
-                    beanInstanceHandle, bodyHandle);
+            ResultHandle returnHandle;
+            if (headerType.isPresent()) {
+                ResultHandle headerHandle = invoke.invokeInterfaceMethod(MESSAGE_HEADERS, messageHandle);
+                // If the method expects Mutiny MultiMap, wrap the Vertx MultiMap.
+                Type header = headerType.get();
+                if (header.name().equals(MUTINY_MESSAGE_HEADERS)) {
+                    headerHandle = invoke.invokeStaticMethod(MUTINY_MESSAGE_HEADERS_NEW_INSTANCE, headerHandle);
+                }
+                returnHandle = invoke.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(),
+                                method.returnType().name().toString(), headerType.get().name().toString(),
+                                paramType.name().toString()),
+                        beanInstanceHandle, headerHandle, bodyHandle);
+            } else {
+                returnHandle = invoke.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(),
+                                method.returnType().name().toString(), paramType.name().toString()),
+                        beanInstanceHandle, bodyHandle);
+            }
             if (returnHandle != null) {
                 if (method.returnType().name().equals(COMPLETION_STAGE)) {
                     result = returnHandle;

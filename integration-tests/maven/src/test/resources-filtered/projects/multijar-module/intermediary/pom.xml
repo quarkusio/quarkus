@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.acme</groupId>
+        <artifactId>acme-parent</artifactId>
+        <version>\${revision}.\${changelist}\${sha1}</version>
+    </parent>
+    <artifactId>acme-intermediary</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.acme</groupId>
+            <artifactId>acme-beans</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.acme</groupId>
+            <artifactId>acme-beans</artifactId>
+            <classifier>other</classifier>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jar-jdk11</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classesDirectory>\${project.build.outputDirectory}/jdk11</classesDirectory>
+                            <classifier>jdk11</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>jdk11/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

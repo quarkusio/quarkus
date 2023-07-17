@@ -32,6 +32,8 @@ import io.smallrye.openapi.api.models.responses.APIResponsesImpl;
  */
 public class HealthOpenAPIFilter implements OASFilter {
     private static final List<String> MICROPROFILE_HEALTH_TAG = Collections.singletonList("MicroProfile Health");
+    private static final String SCHEMA_HEALTH_RESPONSE = "HealthCheckResponse";
+    private static final String SCHEMA_HEALTH_STATUS = "HealthCheckStatus";
 
     private final String rootPath;
     private final String livenessPath;
@@ -50,8 +52,8 @@ public class HealthOpenAPIFilter implements OASFilter {
         if (openAPI.getComponents() == null) {
             openAPI.setComponents(new ComponentsImpl());
         }
-        openAPI.getComponents().addSchema("HealthCheckResponse", createHealthCheckResponse());
-        openAPI.getComponents().addSchema("State", createState());
+        openAPI.getComponents().addSchema(SCHEMA_HEALTH_RESPONSE, createHealthCheckResponse());
+        openAPI.getComponents().addSchema(SCHEMA_HEALTH_STATUS, createHealthCheckStatus());
 
         if (openAPI.getPaths() == null) {
             openAPI.setPaths(new PathsImpl());
@@ -170,7 +172,7 @@ public class HealthOpenAPIFilter implements OASFilter {
 
     private MediaType createMediaType() {
         MediaType mediaType = new MediaTypeImpl();
-        mediaType.setSchema(new SchemaImpl().ref("#/components/schemas/HealthCheckResponse"));
+        mediaType.setSchema(new SchemaImpl().ref("#/components/schemas/" + SCHEMA_HEALTH_RESPONSE));
         return mediaType;
     }
 
@@ -183,13 +185,13 @@ public class HealthOpenAPIFilter implements OASFilter {
      * nullable: true
      * name:
      * type: string
-     * state:
-     * $ref: '#/components/schemas/State'
-     * 
+     * status:
+     * $ref: '#/components/schemas/HealthCheckStatus'
+     *
      * @return Schema representing HealthCheckResponse
      */
     private Schema createHealthCheckResponse() {
-        Schema schema = new SchemaImpl("HealthCheckResponse");
+        Schema schema = new SchemaImpl(SCHEMA_HEALTH_RESPONSE);
         schema.setType(Schema.SchemaType.OBJECT);
         schema.setProperties(createProperties());
         return schema;
@@ -199,7 +201,7 @@ public class HealthOpenAPIFilter implements OASFilter {
         Map<String, Schema> map = new HashMap<>();
         map.put("data", createData());
         map.put("name", createName());
-        map.put("state", new SchemaImpl().ref("#/components/schemas/State"));
+        map.put("status", new SchemaImpl().ref("#/components/schemas/" + SCHEMA_HEALTH_STATUS));
         return map;
     }
 
@@ -217,16 +219,16 @@ public class HealthOpenAPIFilter implements OASFilter {
     }
 
     /**
-     * State:
+     * HealthCheckStatus:
      * enum:
      * - DOWN
      * - UP
      * type: string
-     * 
-     * @return Schema representing State
+     *
+     * @return Schema representing Status
      */
-    private Schema createState() {
-        Schema schema = new SchemaImpl("State");
+    private Schema createHealthCheckStatus() {
+        Schema schema = new SchemaImpl(SCHEMA_HEALTH_STATUS);
         schema.setEnumeration(createStateEnumValues());
         schema.setType(Schema.SchemaType.STRING);
         return schema;

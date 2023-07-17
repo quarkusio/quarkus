@@ -10,3 +10,5 @@ metadata:
   categories:
   - "web"
   status: "stable"
+  config:
+  - "quarkus.servlet."

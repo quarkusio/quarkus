@@ -14,6 +14,7 @@
     <name>Quarkus - Hibernate ORM</name>
     <packaging>pom</packaging>
     <modules>
+        <module>deployment-spi</module>
         <module>deployment</module>
         <module>runtime</module>
     </modules>
@@ -24,7 +25,6 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>${forbiddenapis-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>verify-forbidden-apis</id>
@@ -44,33 +44,31 @@
                                     <!-- The jdk-reflection is not yet something we can avoid -->
                                     <!--<bundledSignature>jdk-reflection</bundledSignature>-->
 
-                                    <!-- All following signatures should be replicated for each target JDK version we intend to support -->
-                                    <bundledSignature>jdk-unsafe-1.8</bundledSignature>
-                                    <bundledSignature>jdk-unsafe-9</bundledSignature>
-                                    <bundledSignature>jdk-unsafe-10</bundledSignature>
-                                    <bundledSignature>jdk-unsafe-11</bundledSignature>
-                                    <bundledSignature>jdk-unsafe-12</bundledSignature>
-                                    <bundledSignature>jdk-unsafe-13</bundledSignature>
-                                    <bundledSignature>jdk-unsafe-14</bundledSignature>
-                                    <bundledSignature>jdk-unsafe-15</bundledSignature>
+                                    <!-- These signatures can safely be limited to the current JDK;
+                                         see https://github.com/policeman-tools/forbidden-apis/issues/197#issuecomment-1080370368
+                                     -->
+                                    <bundledSignature>jdk-unsafe</bundledSignature>
 
-                                    <bundledSignature>jdk-deprecated-1.8</bundledSignature>
-                                    <bundledSignature>jdk-deprecated-9</bundledSignature>
-                                    <bundledSignature>jdk-deprecated-10</bundledSignature>
+                                    <!-- All following signatures should be replicated for each target JDK version we intend to support -->
                                     <bundledSignature>jdk-deprecated-11</bundledSignature>
                                     <bundledSignature>jdk-deprecated-12</bundledSignature>
                                     <bundledSignature>jdk-deprecated-13</bundledSignature>
                                     <bundledSignature>jdk-deprecated-14</bundledSignature>
                                     <bundledSignature>jdk-deprecated-15</bundledSignature>
+                                    <bundledSignature>jdk-deprecated-16</bundledSignature>
+                                    <bundledSignature>jdk-deprecated-17</bundledSignature>
+                                    <bundledSignature>jdk-deprecated-18</bundledSignature>
+                                    <bundledSignature>jdk-deprecated-19</bundledSignature>
 
-                                    <bundledSignature>jdk-internal-1.8</bundledSignature>
-                                    <bundledSignature>jdk-internal-9</bundledSignature>
-                                    <bundledSignature>jdk-internal-10</bundledSignature>
                                     <bundledSignature>jdk-internal-11</bundledSignature>
                                     <bundledSignature>jdk-internal-12</bundledSignature>
                                     <bundledSignature>jdk-internal-13</bundledSignature>
                                     <bundledSignature>jdk-internal-14</bundledSignature>
                                     <bundledSignature>jdk-internal-15</bundledSignature>
+                                    <bundledSignature>jdk-internal-16</bundledSignature>
+                                    <bundledSignature>jdk-internal-17</bundledSignature>
+                                    <bundledSignature>jdk-internal-18</bundledSignature>
+                                    <bundledSignature>jdk-internal-19</bundledSignature>
                                 </bundledSignatures>
                                 <signaturesFiles>
                                     <signaturesFile>./banned-signatures.txt</signaturesFile>
@@ -90,7 +88,10 @@
                                 <failOnUnsupportedJava>false</failOnUnsupportedJava>
                                 <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
                                 <bundledSignatures>
-                                    <!-- This will automatically choose the right signatures based on 'targetVersion': -->
+                                    <!--
+                                      This will automatically choose the right
+                                      signatures based on 'maven.compiler.release':
+                                    -->
                                     <bundledSignature>jdk-unsafe</bundledSignature>
                                     <bundledSignature>jdk-deprecated</bundledSignature>
                                     <bundledSignature>jdk-non-portable</bundledSignature>

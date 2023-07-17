@@ -6,7 +6,7 @@ metadata:
   keywords:
   - "web"
   - "webjar"
-  guide: ""
+  guide: "https://quarkus.io/guides/http-reference#webjar-locator-support"
   categories:
   - "web"
   status: "stable"

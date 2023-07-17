@@ -1,11 +1,12 @@
 package io.quarkus.devtools.project.buildfile;
 
-import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
-import io.quarkus.devtools.project.extensions.ExtensionManager;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
 import java.io.IOException;
 import java.util.Collection;
+
+import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
+import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * TODO We need to find a way to use the gradle api outside of a gradle plugin

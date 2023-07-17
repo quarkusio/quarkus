@@ -12,6 +12,15 @@ import io.smallrye.mutiny.Uni;
 public class WithAttributeFilter {
 
     @Funq
+    @CloudEventMapping(attributes = { @EventAttribute(name = "source", value = "mytestvalue") })
+    public String listOfStrings(List<Identity> identityList) {
+        return identityList
+                .stream()
+                .map(Identity::getName)
+                .collect(Collectors.joining(":"));
+    }
+
+    @Funq
     @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "testvalue") })
     public String toCommaSeparated(List<Identity> identityList) {
         return identityList

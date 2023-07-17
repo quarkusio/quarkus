@@ -1,9 +1,12 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -13,8 +16,10 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -28,13 +33,13 @@ import io.vertx.core.Vertx;
 public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean> {
 
     private final Vertx vertx;
-    private final List<String> blockingMethods;
-    private final Map<String, Boolean> cache = new HashMap<>();
+    private final Set<String> blockingMethods;
+    private final Map<String, Boolean> cache = new ConcurrentHashMap<>();
     private final boolean devMode;
 
     public BlockingServerInterceptor(Vertx vertx, List<String> blockingMethods, boolean devMode) {
         this.vertx = vertx;
-        this.blockingMethods = new ArrayList<>();
+        this.blockingMethods = new HashSet<>();
         this.devMode = devMode;
         for (String method : blockingMethods) {
             this.blockingMethods.add(method.toLowerCase());
@@ -54,7 +59,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         // We need to check if the method is annotated with @Blocking.
         // Unfortunately, we can't have the Java method object, we can only have the gRPC full method name.
-        // We extract the method name, and check if the name if is the list.
+        // We extract the method name, and check if the name is in the list.
         // This makes the following assumptions:
         // 1. the code generator does not change the method name (which makes sense)
         // 2. the method name is unique, which is a constraint of gRPC
@@ -70,20 +75,17 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
             ReplayListener<ReqT> replay = new ReplayListener<>(state);
-            vertx.executeBlocking(new Handler<Promise<Object>>() {
-                @Override
-                public void handle(Promise<Object> f) {
-                    ServerCall.Listener<ReqT> listener;
-                    try {
-                        requestContext.activate(state);
-                        listener = next.startCall(call, headers);
-                    } finally {
-                        requestContext.deactivate();
-                    }
-                    replay.setDelegate(listener, requestContext);
-                    f.complete(null);
+            vertx.executeBlocking(f -> {
+                ServerCall.Listener<ReqT> listener;
+                try {
+                    requestContext.activate(state);
+                    listener = next.startCall(call, headers);
+                } finally {
+                    requestContext.deactivate();
                 }
-            }, null);
+                f.complete(listener);
+            }, false,
+                    (Handler<AsyncResult<ServerCall.Listener<ReqT>>>) event -> replay.setDelegate(event.result()));
 
             return replay;
         } else {
@@ -95,58 +97,74 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
      * Stores the incoming events until the listener is injected.
      * When injected, replay the events.
      *
-     * Note that event must be executed in order, explaining the `ordered:true`.
+     * Note that event must be executed in order, explaining why incomingEvents
+     * are executed sequentially
      */
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
-        private ServerCall.Listener<ReqT> delegate;
-        private final List<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new ArrayList<>();
-        private final ContextState requestContextState;
+        private final InjectableContext.ContextState requestContextState;
 
-        private ReplayListener(ContextState requestContextState) {
+        // exclusive to event loop context
+        private ServerCall.Listener<ReqT> delegate;
+        private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
+        private boolean isConsumingFromIncomingEvents = false;
+
+        private ReplayListener(InjectableContext.ContextState requestContextState) {
             this.requestContextState = requestContextState;
         }
 
-        synchronized void setDelegate(ServerCall.Listener<ReqT> delegate,
-                ManagedContext requestContext) {
+        /**
+         * Must be called from within the event loop context
+         * If there are deferred events will start executing them in the shared worker context
+         *
+         * @param delegate the original
+         */
+        void setDelegate(ServerCall.Listener<ReqT> delegate) {
             this.delegate = delegate;
-            requestContext.activate(requestContextState);
-            try {
-                for (Consumer<ServerCall.Listener<ReqT>> event : incomingEvents) {
-                    event.accept(delegate);
+            if (!this.isConsumingFromIncomingEvents) {
+                Consumer<ServerCall.Listener<ReqT>> consumer = incomingEvents.poll();
+                if (consumer != null) {
+                    executeBlockingWithRequestContext(consumer);
                 }
-            } finally {
-                requestContext.deactivate();
             }
-            incomingEvents.clear();
         }
 
-        private synchronized void executeOnContextOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
-            if (this.delegate != null) {
+        private void executeOnContextOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
+            if (this.delegate != null && !this.isConsumingFromIncomingEvents) {
                 executeBlockingWithRequestContext(consumer);
             } else {
                 incomingEvents.add(consumer);
             }
         }
 
+        /**
+         * Will execute the consumer in a worker context
+         * Once complete will enqueue the next consumer for execution.
+         * This method guarantees ordered execution per request.
+         *
+         * @param consumer the original
+         */
         private void executeBlockingWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
             final Context grpcContext = Context.current();
             Handler<Promise<Object>> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
-                    requestContextState, getRequestContext());
+                    requestContextState, getRequestContext(), this);
             if (devMode) {
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
             }
-            vertx.executeBlocking(blockingHandler, true, null);
+            this.isConsumingFromIncomingEvents = true;
+            vertx.executeBlocking(blockingHandler, false, p -> {
+                Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
+                if (next != null) {
+                    executeBlockingWithRequestContext(next);
+                } else {
+                    this.isConsumingFromIncomingEvents = false;
+                }
+            });
         }
 
         @Override
         public void onMessage(ReqT message) {
-            executeOnContextOrEnqueue(new Consumer<ServerCall.Listener<ReqT>>() {
-                @Override
-                public void accept(ServerCall.Listener<ReqT> t) {
-                    t.onMessage(message);
-                }
-            });
+            executeOnContextOrEnqueue(t -> t.onMessage(message));
         }
 
         @Override

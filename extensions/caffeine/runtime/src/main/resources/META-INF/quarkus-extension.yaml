@@ -1,6 +1,7 @@
 ---
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "Caffeine"
+description: "Caffeine is a high performance, near optimal caching library."
 metadata:
   keywords:
   - "cache"
@@ -8,3 +9,5 @@ metadata:
   - "data"
   status: "stable"
   unlisted: "true"
+  config:
+  - "quarkus.cache."

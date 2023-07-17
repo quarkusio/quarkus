@@ -2,8 +2,8 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
 import java.util.List;
 
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 
 public class SubResourceLocatorPlatformServiceImpl implements SubResourceLocatorPlatformServiceResource {
     @Override

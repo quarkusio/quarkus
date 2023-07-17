@@ -16,19 +16,6 @@ public class DevServicesBuildTimeConfig {
      *
      * When DevServices is enabled Quarkus will attempt to automatically configure and start
      * a database when running in Dev or Test mode.
-     *
-     * @deprecated Use .enabled instead.
-     */
-    @ConfigItem(name = ConfigItem.PARENT)
-    @Deprecated(forRemoval = true, since = "2.1")
-    public Optional<Boolean> enabledDeprecated = Optional.empty();
-
-    /**
-     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
-     * by default, unless there is an existing configuration present.
-     *
-     * When DevServices is enabled Quarkus will attempt to automatically configure and start
-     * a database when running in Dev or Test mode.
      */
     @ConfigItem
     public Optional<Boolean> enabled = Optional.empty();
@@ -40,6 +27,21 @@ public class DevServicesBuildTimeConfig {
      */
     @ConfigItem
     public Optional<String> imageName;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
+
+    /**
+     * Generic properties that are passed for additional container configuration.
+     * <p>
+     * Properties defined here are database specific and are interpreted specifically in each database dev service
+     * implementation.
+     */
+    @ConfigItem
+    public Map<String, String> containerProperties;
 
     /**
      * Generic properties that are added to the database connection URL.
@@ -54,4 +56,51 @@ public class DevServicesBuildTimeConfig {
      */
     @ConfigItem
     public OptionalInt port;
+
+    /**
+     * The container start command to use, for container based DevServices providers.
+     *
+     * If the provider is not container based (e.g. a H2 Database) then this has no effect.
+     */
+    @ConfigItem
+    public Optional<String> command;
+
+    /**
+     * The name of the database to use if this Dev Service supports overriding it.
+     */
+    @ConfigItem
+    public Optional<String> dbName;
+
+    /**
+     * The username to use if this Dev Service supports overriding it.
+     */
+    @ConfigItem
+    public Optional<String> username;
+
+    /**
+     * The password to use if this Dev Service supports overriding it.
+     */
+    @ConfigItem
+    public Optional<String> password;
+
+    /**
+     * Path to a SQL script that will be loaded from the classpath and applied to the Dev Service database
+     *
+     * If the provider is not container based (e.g. an H2 or Derby Database) then this has no effect.
+     */
+    @ConfigItem
+    public Optional<String> initScriptPath;
+
+    /**
+     * The volumes to be mapped to the container. The map key corresponds to the host location and the map value is the
+     * container location. If the host location starts with "classpath:", then the mapping will load the resource from the
+     * classpath with read-only permission.
+     *
+     * When using a file system location, the volume will be created with read-write permission, so the data in your file
+     * system might be wiped out or altered.
+     *
+     * If the provider is not container based (e.g. an H2 or Derby Database) then this has no effect.
+     */
+    @ConfigItem
+    public Map<String, String> volumes;
 }

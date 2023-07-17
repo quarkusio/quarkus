@@ -1,7 +1,5 @@
 package io.quarkus.kubernetes.spi;
 
-import java.util.Optional;
-
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -26,13 +24,5 @@ public final class ConfiguratorBuildItem extends MultiBuildItem {
 
     public boolean matches(Class type) {
         return type.isInstance(configurator);
-
-    }
-
-    public <C> Optional<C> getConfigurator(Class<C> type) {
-        if (matches(type)) {
-            return Optional.<C> of((C) configurator);
-        }
-        return Optional.empty();
     }
 }

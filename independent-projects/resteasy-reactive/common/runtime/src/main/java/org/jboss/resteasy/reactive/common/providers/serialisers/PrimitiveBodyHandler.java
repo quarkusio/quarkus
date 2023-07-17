@@ -5,7 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import javax.ws.rs.core.NoContentException;
+
+import jakarta.ws.rs.core.NoContentException;
 
 public abstract class PrimitiveBodyHandler {
 

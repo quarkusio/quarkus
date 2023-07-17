@@ -4,22 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.UncheckedIOException;
 import java.net.URLConnection;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +35,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -52,25 +45,29 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.WebSocketLogHandlerBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
+import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.ArtifactInfoUtil;
-import io.quarkus.deployment.util.WebJarUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
+import io.quarkus.devui.deployment.DevUIConfig;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.GACT;
 import io.quarkus.netty.runtime.virtual.VirtualChannel;
 import io.quarkus.netty.runtime.virtual.VirtualServerChannel;
 import io.quarkus.qute.Engine;
@@ -93,15 +90,23 @@ import io.quarkus.qute.Variant;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TemplateHtmlBuilder;
 import io.quarkus.utilities.OS;
+import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
+import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.DevConsoleCORSFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleFilter;
 import io.quarkus.vertx.http.runtime.devmode.DevConsoleRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RedirectHandler;
 import io.quarkus.vertx.http.runtime.devmode.RuntimeDevConsoleRoute;
-import io.quarkus.vertx.http.runtime.logstream.HistoryHandler;
 import io.quarkus.vertx.http.runtime.logstream.LogStreamRecorder;
+import io.quarkus.vertx.http.runtime.logstream.WebSocketLogHandler;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.config.common.utils.StringUtil;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -109,12 +114,13 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.Http1xServerConnection;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.impl.VertxThread;
+import io.vertx.core.impl.transports.JDKTransport;
 import io.vertx.core.net.impl.VertxHandler;
-import io.vertx.core.net.impl.transport.Transport;
 import io.vertx.core.spi.VertxThreadFactory;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -125,7 +131,9 @@ public class DevConsoleProcessor {
 
     private static final Logger log = Logger.getLogger(DevConsoleProcessor.class);
 
-    private static final String STATIC_RESOURCES_PATH = "dev-static/";
+    private static final GACT DEVCONSOLE_WEBJAR_ARTIFACT_KEY = new GACT("io.quarkus", "quarkus-vertx-http-deployment", null,
+            "jar");
+    private static final String DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH = "dev-static/";
     private static final Object EMPTY = new Object();
 
     // FIXME: config, take from Qute?
@@ -175,27 +183,15 @@ public class DevConsoleProcessor {
                         // Vert.x 4 Migration: Verify this behavior
                         EventLoopContext context = vertx.createEventLoopContext();
 
-                        //                                ContextInternal context = (ContextInternal) vertx
-                        //                                        .createEventLoopContext(null, null, new JsonObject(),
-                        //                                                Thread.currentThread().getContextClassLoader());
                         VertxHandler<Http1xServerConnection> handler = VertxHandler.create(chctx -> {
                             Http1xServerConnection connection = new Http1xServerConnection(
-                                    () -> context,
+                                    () -> (ContextInternal) VertxContext.getOrCreateDuplicatedContext(context),
                                     null,
                                     new HttpServerOptions(),
                                     chctx,
                                     context,
                                     "localhost",
                                     null);
-
-                            //                                    Http1xServerConnection conn = new Http1xServerConnection(
-                            //                                            context.owner(),
-                            //                                            null,
-                            //                                            new HttpServerOptions(),
-                            //                                            chctx,
-                            //                                            context,
-                            //                                            "localhost",
-                            //                                            null);
                             connection.handler(new Handler<HttpServerRequest>() {
                                 @Override
                                 public void handle(HttpServerRequest event) {
@@ -222,7 +218,7 @@ public class DevConsoleProcessor {
     /**
      * Boots the Vert.x instance used by the DevConsole,
      * applying some minimal tuning and customizations.
-     * 
+     *
      * @return the initialized Vert.x instance
      */
     private static Vertx initializeDevConsoleVertx() {
@@ -234,6 +230,7 @@ public class DevConsoleProcessor {
         vertxOptions.getMetricsOptions().setEnabled(false);
         //Not good for development:
         vertxOptions.getFileSystemOptions().setFileCachingEnabled(false);
+        vertxOptions.getFileSystemOptions().setClassPathResolvingEnabled(false);
         VertxBuilder builder = new VertxBuilder(vertxOptions);
         builder.threadFactory(new VertxThreadFactory() {
             @Override
@@ -243,7 +240,7 @@ public class DevConsoleProcessor {
                 return new VertxThread(target, "[DevConsole]" + name, worker, maxExecTime, maxExecTimeUnit);
             }
         });
-        builder.transport(Transport.JDK);
+        builder.findTransport(JDKTransport.INSTANCE);
         builder.init();
         return builder.vertx();
     }
@@ -268,6 +265,7 @@ public class DevConsoleProcessor {
         };
         router = Router.router(devConsoleVertx);
         router.errorHandler(500, errorHandler);
+
         router.route()
                 .order(Integer.MIN_VALUE)
                 .handler(new FlashScopeHandler());
@@ -277,7 +275,7 @@ public class DevConsoleProcessor {
                 .handler(new DevConsole(engine, httpRootPath, frameworkRootPath));
         mainRouter = Router.router(devConsoleVertx);
         mainRouter.errorHandler(500, errorHandler);
-        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev*")).subRouter(router);
+        mainRouter.route(nonApplicationRootPathBuildItem.resolvePath("dev-v1*")).subRouter(router);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -322,15 +320,18 @@ public class DevConsoleProcessor {
         for (DevConsoleRuntimeTemplateInfoBuildItem i : items) {
             recorder.addInfo(i.getGroupId(), i.getArtifactId(), i.getName(), i.getObject());
         }
+        recorder.initConfigFun();
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
-    public HistoryHandlerBuildItem handler(BuildProducer<LogHandlerBuildItem> logHandlerBuildItemBuildProducer,
+    public void handler(BuildProducer<HistoryHandlerBuildItem> historyProducer,
+            BuildProducer<WebSocketLogHandlerBuildItem> webSocketLogHandlerBuildItem,
             LogStreamRecorder recorder, DevUIConfig devUiConfig) {
-        RuntimeValue<Optional<HistoryHandler>> handler = recorder.handler(devUiConfig.historySize);
-        logHandlerBuildItemBuildProducer.produce(new LogHandlerBuildItem((RuntimeValue) handler));
-        return new HistoryHandlerBuildItem(handler);
+        RuntimeValue<Optional<WebSocketLogHandler>> handler = recorder.logHandler(devUiConfig.historySize);
+
+        webSocketLogHandlerBuildItem.produce(new WebSocketLogHandlerBuildItem((RuntimeValue) handler));
+        historyProducer.produce(new HistoryHandlerBuildItem(handler));
     }
 
     @Consume(LoggingSetupBuildItem.class)
@@ -341,7 +342,10 @@ public class DevConsoleProcessor {
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
             List<RouteBuildItem> allRoutes,
             List<DevConsoleRouteBuildItem> routes,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, LaunchModeBuildItem launchModeBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
+            LaunchModeBuildItem launchModeBuildItem) {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
@@ -352,6 +356,8 @@ public class DevConsoleProcessor {
                 buildSystemTargetBuildItem,
                 effectiveIdeBuildItem,
                 nonApplicationRootPathBuildItem,
+                managementInterfaceBuildTimeConfig,
+                configDescriptionBuildItems,
                 launchModeBuildItem);
         newRouter(quteEngine, nonApplicationRootPathBuildItem);
 
@@ -367,48 +373,104 @@ public class DevConsoleProcessor {
                 if (i.isBodyHandlerRequired()) {
                     route.handler(BodyHandler.create());
                 }
-                route.handler(i.getHandler());
+                if (i.isBlockingHandler()) {
+                    route.blockingHandler(i.getHandler());
+                } else {
+                    route.handler(i.getHandler());
+                }
             }
         }
 
         return null;
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public WebJarBuildItem setupWebJar(
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return null;
+        }
+        return WebJarBuildItem.builder().artifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY) //
+                .root(DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH) //
+                .build();
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void setupDevConsoleWebjar(
+            List<DevConsoleWebjarBuildItem> devConsoleWebjarBuildItems,
+            BuildProducer<WebJarBuildItem> webJarBuildItemBuildProducer,
+            LaunchModeBuildItem launchModeBuildItem) {
+        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            return;
+        }
+        for (DevConsoleWebjarBuildItem devConsoleWebjar : devConsoleWebjarBuildItems) {
+            webJarBuildItemBuildProducer.produce(WebJarBuildItem.builder()
+                    .artifactKey(devConsoleWebjar.getArtifactKey())
+                    .root(devConsoleWebjar.getRoot())
+                    .useDefaultQuarkusBranding(devConsoleWebjar.getUseDefaultQuarkusBranding())
+                    .onlyCopyNonArtifactFiles(devConsoleWebjar.getOnlyCopyNonArtifactFiles())
+                    .build());
+        }
+    }
+
+    @Record(ExecutionTime.RUNTIME_INIT)
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public void setupDevConsoleRoutes(
+            List<DevConsoleWebjarBuildItem> devConsoleWebjarBuildItems,
+            DevConsoleRecorder recorder,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            ShutdownContextBuildItem shutdownContext,
+            BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
+            WebJarResultsBuildItem webJarResultsBuildItem) {
+
+        for (DevConsoleWebjarBuildItem webjarBuildItem : devConsoleWebjarBuildItems) {
+            WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(webjarBuildItem.getArtifactKey());
+            if (result == null) {
+                continue;
+            }
+            routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .route("dev-v1/" + webjarBuildItem.getRouteRoot() + "/*")
+                    .handler(recorder.fileSystemStaticHandler(result.getWebRootConfigurations(), shutdownContext))
+                    .build());
+        }
+    }
+
+    @BuildStep(onlyIf = { IsDevelopment.class })
+    public DevConsoleTemplateInfoBuildItem config(List<DevServiceDescriptionBuildItem> serviceDescriptions) {
+        return new DevConsoleTemplateInfoBuildItem("devServices", serviceDescriptions);
+    }
+
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(LoggingSetupBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
     public void setupDevConsoleRoutes(
+            DevUIConfig devUIConfig,
             DevConsoleRecorder recorder,
             LogStreamRecorder logStreamRecorder,
             List<DevConsoleRouteBuildItem> routes,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
             HistoryHandlerBuildItem historyHandlerBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
             ShutdownContextBuildItem shutdownContext,
             BuildProducer<RouteBuildItem> routeBuildItemBuildProducer,
-            LiveReloadBuildItem liveReloadBuildItem) throws IOException {
-        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
+            WebJarResultsBuildItem webJarResultsBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BodyHandlerBuildItem bodyHandlerBuildItem) {
+
+        WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY);
+
+        if (result == null) {
             return;
         }
 
-        // Add the static resources
-        AppArtifact devConsoleResourcesArtifact = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, "io.quarkus",
-                "quarkus-vertx-http-deployment");
-
-        Path devConsoleStaticResourcesDeploymentPath = WebJarUtil.copyResourcesForDevOrTest(liveReloadBuildItem,
-                curateOutcomeBuildItem,
-                launchModeBuildItem,
-                devConsoleResourcesArtifact, STATIC_RESOURCES_PATH);
-
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/resources/*")
-                .handler(recorder.devConsoleHandler(devConsoleStaticResourcesDeploymentPath.toString(), shutdownContext))
+                .route("dev-v1/resources/*")
+                .handler(recorder.fileSystemStaticHandler(
+                        result.getWebRootConfigurations(), shutdownContext))
                 .build());
 
         // Add the log stream
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/logstream")
+                .route("dev-v1/logstream")
                 .handler(logStreamRecorder.websocketHandler(historyHandlerBuildItem.value))
                 .build());
 
@@ -417,24 +479,35 @@ public class DevConsoleProcessor {
             // if the handler is a proxy, then that means it's been produced by a recorder and therefore belongs in the regular runtime Vert.x instance
             // otherwise this is handled in the setupDeploymentSideHandling method
             if (!i.isDeploymentSide()) {
-                routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
                         .routeFunction(
-                                "dev/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
-                                new RuntimeDevConsoleRoute(i.getMethod()))
-                        .handler(i.getHandler())
-                        .build());
+                                "dev-v1/" + groupAndArtifact.getKey() + "." + groupAndArtifact.getValue() + "/" + i.getPath(),
+                                new RuntimeDevConsoleRoute(i.getMethod(),
+                                        i.isBodyHandlerRequired() ? bodyHandlerBuildItem.getHandler() : null));
+                if (i.isBlockingHandler()) {
+                    builder.blockingRoute();
+                }
+                builder.handler(i.getHandler());
+                routeBuildItemBuildProducer.produce(builder.build());
             }
+        }
+
+        if (devUIConfig.cors.enabled) {
+            routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                    .orderedRoute("dev-v1/*", -1 * FilterBuildItem.CORS)
+                    .handler(new DevConsoleCORSFilter())
+                    .build());
         }
 
         DevConsoleManager.registerHandler(new DevConsoleHttpHandler());
         //must be last so the above routes have precedence
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev/*")
+                .route("dev-v1/*")
                 .handler(new DevConsoleFilter())
                 .build());
         routeBuildItemBuildProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev")
-                .displayOnNotFoundPage("Dev UI")
+                .route("dev-v1")
+                .displayOnNotFoundPage("Dev UI (v1)")
                 .handler(new RedirectHandler())
                 .build());
     }
@@ -458,44 +531,56 @@ public class DevConsoleProcessor {
         if (context == null) {
             context = ConsoleStateManager.INSTANCE.createContext("HTTP");
         }
+        Config c = ConfigProvider.getConfig();
+        String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
+        String port = c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
         context.reset(
-                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/")),
-                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev")));
+                new ConsoleCommand('w', "Open the application in a browser", null, () -> openBrowser(rp, np, "/", host, port)),
+                new ConsoleCommand('d', "Open the Dev UI in a browser", null, () -> openBrowser(rp, np, "/q/dev", host, port)));
     }
 
-    private void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String s) {
-        if (s.startsWith("/q")) {
-            s = np.resolvePath(s.substring(3));
+    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
+            String port) {
+        if (path.startsWith("/q")) {
+            path = np.resolvePath(path.substring(3));
         } else {
-            s = rp.resolvePath(s.substring(1));
+            path = rp.resolvePath(path.substring(1));
         }
 
         StringBuilder sb = new StringBuilder("http://");
         Config c = ConfigProvider.getConfig();
-        sb.append(c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost"));
+        sb.append(host);
         sb.append(":");
-        sb.append(c.getOptionalValue("quarkus.http.port", String.class).orElse("8080"));
-        sb.append(s);
+        sb.append(port);
+        sb.append(path);
         String url = sb.toString();
 
         Runtime rt = Runtime.getRuntime();
         OS os = OS.determineOS();
+        String[] command = null;
         try {
             switch (os) {
                 case MAC:
-                    rt.exec(new String[] { "open", url });
+                    command = new String[] { "open", url };
                     break;
                 case LINUX:
-                    rt.exec(new String[] { "xdg-open", url });
+                    command = new String[] { "xdg-open", url };
                     break;
                 case WINDOWS:
-                    rt.exec(new String[] { "rundll32 url.dll,FileProtocolHandler", url });
+                    command = new String[] { "rundll32", "url.dll,FileProtocolHandler", url };
                     break;
                 case OTHER:
                     log.error("Cannot launch browser on this operating system");
             }
+            if (command != null) {
+                rt.exec(command);
+            }
         } catch (Exception e) {
-            log.error("Failed to launch browser", e);
+            log.debug("Failed to launch browser", e);
+            if (command != null) {
+                log.warn("Unable to open browser using command: '" + String.join(" ", command) + "'. Failure is: '"
+                        + e.getMessage() + "'");
+            }
         }
 
     }
@@ -504,11 +589,14 @@ public class DevConsoleProcessor {
             List<RouteBuildItem> allRoutes,
             BuildSystemTargetBuildItem buildSystemTargetBuildItem,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, LaunchModeBuildItem launchModeBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
+            List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
+            LaunchModeBuildItem launchModeBuildItem) {
         EngineBuilder builder = Engine.builder().addDefaults();
 
         // Escape some characters for HTML templates
-        builder.addResultMapper(new HtmlEscaper());
+        builder.addResultMapper(new HtmlEscaper(List.of(Variant.TEXT_HTML)));
 
         builder.strictRendering(true)
                 .addValueResolver(new ReflectionValueResolver())
@@ -535,12 +623,15 @@ public class DevConsoleProcessor {
         // Create map of resolved paths
         Map<String, String> resolvedPaths = new HashMap<>();
         for (RouteBuildItem item : allRoutes) {
-            ConfiguredPathInfo resolvedPathBuildItem = item.getDevConsoleResolvedPath();
+            ConfiguredPathInfo resolvedPathBuildItem = item.getConfiguredPathInfo();
             if (resolvedPathBuildItem != null) {
-                resolvedPaths.put(resolvedPathBuildItem.getName(),
-                        resolvedPathBuildItem.getEndpointPath(nonApplicationRootPathBuildItem));
+                String path = resolvedPathBuildItem.getEndpointPath(nonApplicationRootPathBuildItem,
+                        managementInterfaceBuildTimeConfig, launchModeBuildItem);
+                resolvedPaths.put(resolvedPathBuildItem.getName(), path);
             }
         }
+
+        Map<String, String> defaultValues = getDefaultValues(configDescriptionBuildItems);
 
         // {config:property('quarkus.lambda.handler')}
         // {config:http-path('quarkus.smallrye-graphql.ui.root-path')}
@@ -557,14 +648,19 @@ public class DevConsoleProcessor {
                 });
             } else {
                 return ctx.evaluate(params.get(0)).thenCompose(propertyName -> {
-                    Optional<String> val = ConfigProvider.getConfig().getOptionalValue(propertyName.toString(), String.class);
-                    return CompletableFuture.completedFuture(val.isPresent() ? val.get() : Results.NotFound.from(ctx));
+                    // Use the function stored in the DevConsoleRecorder to make sure the config is obtained using the correct TCCL
+                    Function<String, Optional<String>> configFun = DevConsoleManager.getGlobal("devui-config-fun");
+                    String val = configFun.apply(propertyName.toString()).orElse(defaultValues.get(propertyName.toString()));
+                    return CompletableFuture.completedFuture(val != null ? val : Results.NotFound.from(ctx));
                 });
             }
         }).build());
 
         // JavaDoc formatting
         builder.addValueResolver(new JavaDocResolver());
+
+        // Config/System property -> Environment variable
+        builder.addValueResolver(new PropertyToEnvVarConverter());
 
         // Add templates and tags
         Map<String, String> templates = new HashMap<>();
@@ -619,13 +715,24 @@ public class DevConsoleProcessor {
 
         Engine engine = builder.build();
 
-        // pre-load all templates
+        // preload all templates
         for (DevTemplatePathBuildItem devTemplatePath : devTemplatePaths) {
             if (!devTemplatePath.isTag()) {
                 engine.getTemplate(devTemplatePath.getPath());
             }
         }
         return engine;
+    }
+
+    private Map<String, String> getDefaultValues(List<ConfigDescriptionBuildItem> configDescriptionBuildItems) {
+        Map<String, String> defaultValues = new HashMap<>();
+
+        for (ConfigDescriptionBuildItem configDescriptionBuildItem : configDescriptionBuildItems) {
+            if (configDescriptionBuildItem.getDefaultValue() != null) {
+                defaultValues.put(configDescriptionBuildItem.getPropertyName(), configDescriptionBuildItem.getDefaultValue());
+            }
+        }
+        return defaultValues;
     }
 
     private static Optional<TemplateLocator.TemplateLocation> locateTemplate(String id, Map<String, String> templates) {
@@ -679,87 +786,76 @@ public class DevConsoleProcessor {
 
     @BuildStep
     void collectTemplates(BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
-        try {
-            ClassLoader classLoader = DevConsoleProcessor.class.getClassLoader();
-            Enumeration<URL> devTemplateURLs = classLoader.getResources("/dev-templates");
-            while (devTemplateURLs.hasMoreElements()) {
-                URL devTemplatesURL = devTemplateURLs.nextElement();
-                String devTemplatesURLStr = devTemplatesURL.toExternalForm();
-                if (devTemplatesURLStr.startsWith("jar:file:") && devTemplatesURLStr.endsWith("!/dev-templates")) {
-                    String jarPath = devTemplatesURLStr.substring(9, devTemplatesURLStr.length() - 15);
-                    if (File.separatorChar == '\\') {
-                        // on Windows this will be /C:/some/path, so turn it into C:\some\path
-                        jarPath = jarPath.substring(1).replace('/', '\\');
-                    }
-                    try (FileSystem fs = FileSystems
-                            .newFileSystem(Paths.get(URLDecoder.decode(jarPath, StandardCharsets.UTF_8.name())), classLoader)) {
-                        scanTemplates(fs, null, fs.getRootDirectories(), devTemplatePaths);
-                    }
-                } else if ("file".equals(devTemplatesURL.getProtocol())) {
-                    // This can happen if you run an example app in dev mode 
-                    // and this app is part of a multi-module project which also declares the extension
-                    // Just try to locate the pom.properties file in the target/maven-archiver directory
-                    // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overriden
-                    Path classes = Paths.get(devTemplatesURL.toURI()).getParent();
-                    Path target = classes != null ? classes.getParent() : null;
-                    if (target != null) {
-                        Path mavenArchiver = target.resolve("maven-archiver");
-                        if (mavenArchiver.toFile().canRead()) {
-                            scanTemplates(null, mavenArchiver, Collections.singleton(classes), devTemplatePaths);
-                        }
-                    }
-                }
-            }
-        } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
+        for (ClassPathElement pe : QuarkusClassLoader.getElements("dev-templates", false)) {
+            scanTemplates(pe, devTemplatePaths);
         }
     }
 
-    private void scanTemplates(FileSystem fs, Path pomPropertiesPath, Iterable<Path> rootDirectories,
-            BuildProducer<DevTemplatePathBuildItem> devTemplatePaths)
-            throws IOException {
-        Entry<String, String> entry = fs != null ? ArtifactInfoUtil.groupIdAndArtifactId(fs)
-                : ArtifactInfoUtil.groupIdAndArtifactId(pomPropertiesPath);
-        if (entry == null) {
-            throw new RuntimeException("Missing pom metadata [fileSystem: " + fs + ", rootDirectories: " + rootDirectories
-                    + ", pomPath: " + pomPropertiesPath + "]");
+    private void scanTemplates(ClassPathElement cpe, BuildProducer<DevTemplatePathBuildItem> devTemplatePaths) {
+        final ArtifactKey key = cpe.getDependencyKey();
+        if (key == null) {
+            return;
         }
         String prefix;
         // don't move stuff for our "root" dev console artifact, since it includes the main template
-        if (entry.getKey().equals("io.quarkus")
-                && entry.getValue().equals("quarkus-vertx-http"))
+        if (key.getArtifactId().equals("quarkus-vertx-http-deployment") && key.getGroupId().equals("io.quarkus")) {
             prefix = "";
-        else
-            prefix = entry.getKey() + "." + entry.getValue() + "/";
-
-        for (Path root : rootDirectories) {
-            Path devTemplatesPath = root.resolve("dev-templates");
-            Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                    if (dir.equals(root) || dir.toString().equals("/") || dir.startsWith(devTemplatesPath))
-                        return FileVisitResult.CONTINUE;
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    String contents = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-                    // don't move tags yet, since we don't know how to use them afterwards
-                    String relativePath = devTemplatesPath.relativize(file).toString();
-                    String correctedPath;
-                    if (File.separatorChar == '\\') {
-                        relativePath = relativePath.replace('\\', '/');
+        } else {
+            final StringBuilder sb = new StringBuilder()
+                    .append(key.getGroupId()).append('.');
+            if (key.getArtifactId().endsWith(ArtifactInfoUtil.DEPLOYMENT)) {
+                sb.append(
+                        key.getArtifactId().substring(0, key.getArtifactId().length() - ArtifactInfoUtil.DEPLOYMENT.length()));
+            } else {
+                sb.append(key.getArtifactId());
+            }
+            prefix = sb.append('/').toString();
+        }
+        cpe.apply(tree -> {
+            final Path devTemplatesPath = tree.getPath("dev-templates");
+            try {
+                Files.walkFileTree(devTemplatesPath, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        String contents = Files.readString(file);
+                        // don't move tags yet, since we don't know how to use them afterwards
+                        String relativePath = devTemplatesPath.relativize(file).toString();
+                        String correctedPath;
+                        if (File.separatorChar == '\\') {
+                            relativePath = relativePath.replace('\\', '/');
+                        }
+                        if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS)) {
+                            correctedPath = relativePath;
+                        } else {
+                            correctedPath = prefix + relativePath;
+                        }
+                        devTemplatePaths.produce(new DevTemplatePathBuildItem(correctedPath, contents));
+                        return super.visitFile(file, attrs);
                     }
-                    if (relativePath.startsWith(DevTemplatePathBuildItem.TAGS))
-                        correctedPath = relativePath;
-                    else
-                        correctedPath = prefix + relativePath;
-                    devTemplatePaths
-                            .produce(new DevTemplatePathBuildItem(correctedPath, contents));
-                    return super.visitFile(file, attrs);
-                }
-            });
+                });
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Convert a config/system property name to an environment variable name
+     */
+    private static final class PropertyToEnvVarConverter implements ValueResolver {
+
+        @Override
+        public boolean appliesTo(EvalContext context) {
+            return context.getBase() instanceof String && context.getName().equals("toEnvVar");
+        }
+
+        @Override
+        public CompletionStage<Object> resolve(EvalContext context) {
+            return CompletableFuture.completedFuture(
+                    StringUtil
+                            .replaceNonAlphanumericByUnderscores(context.getBase().toString())
+                            .toUpperCase());
         }
     }
 
@@ -788,9 +884,9 @@ public class DevConsoleProcessor {
     }
 
     public static final class HistoryHandlerBuildItem extends SimpleBuildItem {
-        final RuntimeValue<Optional<HistoryHandler>> value;
+        final RuntimeValue<Optional<WebSocketLogHandler>> value;
 
-        public HistoryHandlerBuildItem(RuntimeValue<Optional<HistoryHandler>> value) {
+        public HistoryHandlerBuildItem(RuntimeValue<Optional<WebSocketLogHandler>> value) {
             this.value = value;
         }
     }
@@ -826,14 +922,12 @@ public class DevConsoleProcessor {
         private static final String[] SUPPORTED_LANGS = { "java", "kotlin" };
 
         private final Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem;
-        private final Path srcMainPath;
         private final boolean disable;
 
         public IdeInfoContextFunction(BuildSystemTargetBuildItem buildSystemTargetBuildItem,
                 Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
                 LaunchModeBuildItem launchModeBuildItem) {
             this.effectiveIdeBuildItem = effectiveIdeBuildItem;
-            srcMainPath = buildSystemTargetBuildItem.getOutputDirectory().getParent().resolve("src").resolve("main");
             disable = launchModeBuildItem.getDevModeType().orElse(DevModeType.LOCAL) != DevModeType.LOCAL;
         }
 
@@ -841,29 +935,44 @@ public class DevConsoleProcessor {
         public Object apply(EvalContext ctx) {
             String ctxName = ctx.getName();
 
-            if (ctxName.equals("sourcePackages")) {
+            List<Path> sourcesDir = DevConsoleManager.getHotReplacementContext().getSourcesDir();
+            if (ctxName.endsWith("sourcePackages")) {
                 if (disable) {
                     return Collections.emptyList(); // we need this here because the result needs to be iterable
                 }
                 Map<String, List<String>> sourcePackagesByLang = new HashMap<>();
 
-                for (String lang : SUPPORTED_LANGS) {
-                    List<String> packages = sourcePackagesForLang(srcMainPath, lang);
+                for (Path sourcePaths : sourcesDir) {
+                    String lang = sourcePaths.getFileName().toString();
+                    List<String> packages = sourcePackagesForRoot(sourcePaths);
                     if (!packages.isEmpty()) {
-                        sourcePackagesByLang.put(lang, packages);
+                        // The `replace` is used to avoid invalid JavaScript identifier (using `-`)
+                        // It happens when using Gradle and extensions generating code (Avro, gRPC...)
+                        // See https://github.com/quarkusio/quarkus/issues/30288.
+                        sourcePackagesByLang.put(lang.replace("-", "_"), packages);
                     }
                 }
                 return sourcePackagesByLang;
             }
+            if (ctxName.endsWith("locationPackages")) {
+                if (disable) {
+                    return Collections.emptyList(); // we need this here because the result needs to be iterable
+                }
+                Map<String, List<String>> sourcePackagesByDir = new HashMap<>();
 
+                for (Path sourcePaths : sourcesDir) {
+                    List<String> packages = sourcePackagesForRoot(sourcePaths);
+                    if (!packages.isEmpty()) {
+                        sourcePackagesByDir.put(sourcePaths.toAbsolutePath().toString().replace("\\", "/"), packages);
+                    }
+                }
+                return sourcePackagesByDir;
+            }
             if (disable) { // all the other values are Strings
                 return EMPTY;
             }
 
             switch (ctxName) {
-                case "srcMainPath": {
-                    return srcMainPath.toAbsolutePath().toString().replace("\\", "/");
-                }
                 case "ideLinkType":
                     if (!effectiveIdeBuildItem.isPresent()) {
                         return "none";
@@ -892,8 +1001,7 @@ public class DevConsoleProcessor {
          * <p>
          * TODO: this likely covers almost all typical use cases, but probably needs some tweaks for extreme corner cases
          */
-        private List<String> sourcePackagesForLang(Path srcMainPath, String lang) {
-            Path langPath = srcMainPath.resolve(lang);
+        private List<String> sourcePackagesForRoot(Path langPath) {
             if (!Files.exists(langPath)) {
                 return Collections.emptyList();
             }
@@ -907,7 +1015,7 @@ public class DevConsoleProcessor {
                 }
             }
             if (rootPackages.isEmpty()) {
-                return Collections.emptyList();
+                return List.of("");
             }
             List<String> result = new ArrayList<>(rootPackages.size());
             for (Path rootPackage : rootPackages) {

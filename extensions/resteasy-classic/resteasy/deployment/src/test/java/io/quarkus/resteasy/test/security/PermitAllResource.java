@@ -1,8 +1,8 @@
 package io.quarkus.resteasy.test.security;
 
-import javax.annotation.security.PermitAll;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.PermitAll;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com

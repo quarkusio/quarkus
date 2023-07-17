@@ -6,13 +6,14 @@ import static io.quarkus.security.test.utils.IdentityMock.USER;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import java.util.concurrent.ExecutionException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.function.Executable;
 
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.UnauthorizedException;
@@ -20,6 +21,7 @@ import io.quarkus.security.test.cdi.app.BeanWithSecuredMethods;
 import io.quarkus.security.test.cdi.app.SubclassWithDenyAll;
 import io.quarkus.security.test.cdi.app.SubclassWithPermitAll;
 import io.quarkus.security.test.cdi.app.SubclassWithoutAnnotations;
+import io.quarkus.security.test.cdi.app.TestException;
 import io.quarkus.security.test.utils.AuthData;
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
@@ -46,12 +48,13 @@ public class CDIAccessDefaultTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(BeanWithSecuredMethods.class,
                             IdentityMock.class,
                             AuthData.class,
                             SubclassWithDenyAll.class,
                             SubclassWithoutAnnotations.class,
+                            TestException.class,
                             SubclassWithPermitAll.class,
                             SecurityTestUtils.class));
 
@@ -71,6 +74,45 @@ public class CDIAccessDefaultTest {
         assertFailureFor(() -> bean.securedMethod(), UnauthorizedException.class, ANONYMOUS);
         assertFailureFor(() -> bean.securedMethod(), ForbiddenException.class, USER);
         assertSuccess(() -> bean.securedMethod(), "accessibleForAdminOnly", ADMIN);
+    }
+
+    @Test
+    public void shouldRestrictAccessToSpecificRoleUni() {
+        assertFailureFor(() -> bean.securedMethodUni().await().indefinitely(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> bean.securedMethodUni().await().indefinitely(), ForbiddenException.class, USER);
+        assertSuccess(() -> bean.securedMethodUni().await().indefinitely(), "accessibleForAdminOnly", ADMIN);
+    }
+
+    @Test
+    public void shouldRestrictAccessToSpecificRoleCompletionState() {
+        Executable executable = () -> {
+            try {
+                bean.securedMethodCompletionStage().toCompletableFuture().get();
+            } catch (ExecutionException e) {
+                throw e.getCause();
+            }
+        };
+        assertFailureFor(executable, UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(executable, ForbiddenException.class, USER);
+        assertSuccess(() -> {
+            try {
+                return bean.securedMethodCompletionStage().toCompletableFuture().get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }, "accessibleForAdminOnly", ADMIN);
+    }
+
+    @Test
+    public void testExceptionWrapping() {
+        Executable executable = () -> {
+            try {
+                bean.securedMethodCompletionStageException().toCompletableFuture().get();
+            } catch (ExecutionException e) {
+                throw e.getCause();
+            }
+        };
+        assertFailureFor(executable, TestException.class, ADMIN);
     }
 
     @Test

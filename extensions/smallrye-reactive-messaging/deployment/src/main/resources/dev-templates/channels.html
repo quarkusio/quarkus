@@ -18,7 +18,7 @@
    <tbody>
     {#for channel in info:reactiveMessagingInfos.channels}
     <tr>
-      <td>{count}.</td>
+      <td>{channel_count}.</td>
       <td><strong>{channel.name}</strong></td>
       <td>{#componentDescription channel.publisher /}</td>
       <td>

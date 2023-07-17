@@ -13,13 +13,20 @@ public class QuteDevConsoleRecorder {
     public static final String RENDER_HANDLER = QuteDevConsoleRecorder.class.getName() + ".RENDER_HANDLER";
 
     public void setupRenderer() {
-        //setup the render handler that is used to handle the template
+        //set up the render handler that is used to handle the template
         //this is invoked from the deployment side
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         DevConsoleManager.setGlobal(RENDER_HANDLER, new BiFunction<String, Object, String>() {
             @Override
             public String apply(String template, Object data) {
-                Engine engine = Arc.container().instance(Engine.class).get();
-                return engine.getTemplate(template).render(data);
+                var old = Thread.currentThread().getContextClassLoader();
+                try {
+                    Thread.currentThread().setContextClassLoader(tccl);
+                    Engine engine = Arc.container().instance(Engine.class).get();
+                    return engine.getTemplate(template).render(data);
+                } finally {
+                    Thread.currentThread().setContextClassLoader(old);
+                }
             }
         });
     }

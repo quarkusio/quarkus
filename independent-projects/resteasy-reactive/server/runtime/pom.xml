@@ -24,8 +24,8 @@
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <groupId>jakarta.ws.rs</groupId>
+            <artifactId>jakarta.ws.rs-api</artifactId>
         </dependency>
 
         <dependency>
@@ -44,5 +44,14 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>net.bytebuddy</groupId>
+                <artifactId>byte-buddy-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

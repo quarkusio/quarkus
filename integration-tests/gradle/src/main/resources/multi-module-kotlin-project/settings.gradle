@@ -1,15 +1,12 @@
 pluginManagement {
     repositories {
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
-        // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
-        if (System.properties.containsKey('maven.repo.local')) {
-            maven {
-                url System.properties.get('maven.repo.local')
-            }
-        } else {
-            mavenLocal()
-        }
     }
     plugins {
       id 'io.quarkus' version "${quarkusPluginVersion}"

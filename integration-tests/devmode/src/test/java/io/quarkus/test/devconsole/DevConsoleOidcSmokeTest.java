@@ -1,8 +1,6 @@
 package io.quarkus.test.devconsole;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,12 +15,12 @@ public class DevConsoleOidcSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+            .withEmptyApplication();
 
     @Test
-    public void testCaches() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-oidc/provider")
+    public void testOidcProviderTemplate() {
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-oidc/provider")
                 .then()
-                .statusCode(200).body(Matchers.containsString("Keycloak"));
+                .statusCode(200).body(Matchers.containsString("OpenId Connect Dev Console"));
     }
 }

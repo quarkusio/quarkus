@@ -1,18 +1,18 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.Qute;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.MessageBundles;
@@ -22,7 +22,7 @@ public class MessageBundleTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(AppMessages.class, OtherMessages.class, AlphaMessages.class, Item.class)
                     .addAsResource(new StringAsset(
                             "{msg:hello} {msg:hello_name('Jachym')} {msg:hello_with_if_section(3)} {alpha:hello-alpha} {alpha:hello_alpha} {alpha:hello-with-param('foo')}"),
@@ -51,9 +51,21 @@ public class MessageBundleTest {
     Engine engine;
 
     @Test
-    public void testMessages() {
+    public void testMessageBundles() {
         assertEquals("Hello Jachym!", MessageBundles.get(AppMessages.class).hello_name("Jachym"));
         assertEquals("Hello you guy!", MessageBundles.get(AppMessages.class, Localized.Literal.of("cs")).helloWithIfSection(1));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> MessageBundles.get(String.class))
+                .withMessage(
+                        "Not a message bundle interface: java.lang.String");
+        assertThatExceptionOfType(IllegalArgumentException.class)
+                .isThrownBy(() -> MessageBundles.get(Engine.class))
+                .withMessage(
+                        "Message bundle interface must be annotated either with @MessageBundle or with @Localized: io.quarkus.qute.Engine");
+        assertThatExceptionOfType(IllegalStateException.class)
+                .isThrownBy(() -> MessageBundles.get(AppMessages.class, Localized.Literal.of("hu")))
+                .withMessage(
+                        "Unable to obtain a message bundle for interface [io.quarkus.qute.deployment.i18n.AppMessages] and locale [hu]");
     }
 
     @Test
@@ -84,6 +96,9 @@ public class MessageBundleTest {
         assertEquals("There are 100 files on E.",
                 engine.parse("{msg:files(100,'E')}").render());
 
+        // Test the convenient Qute class
+        assertEquals("There are no files on C.", Qute.fmt("{msg:files(0,'C')}").render());
+        assertEquals("Hallo Welt!", Qute.fmt("{msg:hello}").attribute("locale", Locale.GERMAN).render());
     }
 
 }

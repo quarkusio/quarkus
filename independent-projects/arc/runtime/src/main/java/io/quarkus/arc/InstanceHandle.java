@@ -1,7 +1,8 @@
 package io.quarkus.arc;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.spi.AlterableContext;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.AlterableContext;
+import jakarta.enterprise.inject.Instance;
 
 /**
  * Represents an instance handle.
@@ -10,7 +11,7 @@ import javax.enterprise.context.spi.AlterableContext;
  *
  * @param <T>
  */
-public interface InstanceHandle<T> extends AutoCloseable {
+public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
 
     /**
      *
@@ -29,7 +30,7 @@ public interface InstanceHandle<T> extends AutoCloseable {
     /**
      * If an instance is available, returns the value, otherwise returns
      * {@code other}.
-     * 
+     *
      * @param other
      * @return the instance if available, otherwise {@code other}
      */
@@ -40,10 +41,10 @@ public interface InstanceHandle<T> extends AutoCloseable {
 
     /**
      * Destroy the instance as defined by
-     * {@link javax.enterprise.context.spi.Contextual#destroy(Object, javax.enterprise.context.spi.CreationalContext)}. If this
-     * is a CDI contextual instance it is also removed from the underlying context.
-     * 
-     * @see AlterableContext#destroy(javax.enterprise.context.spi.Contextual)
+     * {@link jakarta.enterprise.context.spi.Contextual#destroy(Object, jakarta.enterprise.context.spi.CreationalContext)}.
+     * If this is a CDI contextual instance, it is also removed from the underlying context.
+     *
+     * @see AlterableContext#destroy(jakarta.enterprise.context.spi.Contextual)
      */
     default void destroy() {
         // No-op
@@ -63,6 +64,12 @@ public interface InstanceHandle<T> extends AutoCloseable {
      */
     @Override
     default void close() {
+        // https://github.com/quarkusio/quarkus/issues/33665
+        if (Arc.container().strictCompatibility()) {
+            destroy();
+            return;
+        }
+
         InjectableBean<T> bean = getBean();
         if (bean == null || Dependent.class.equals(bean.getScope())) {
             destroy();

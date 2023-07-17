@@ -1,6 +1,6 @@
 package io.quarkus.jsonp.deployment;
 
-import org.glassfish.json.JsonProviderImpl;
+import org.eclipse.parsson.JsonProviderImpl;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -14,6 +14,7 @@ public class JsonpProcessor {
     void build(BuildProducer<FeatureBuildItem> feature,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JsonProviderImpl.class.getName()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(JsonProviderImpl.class.getName()).build());
     }
 }

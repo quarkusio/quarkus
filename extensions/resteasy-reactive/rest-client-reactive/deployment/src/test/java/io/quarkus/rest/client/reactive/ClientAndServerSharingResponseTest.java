@@ -9,20 +9,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -37,7 +34,7 @@ public class ClientAndServerSharingResponseTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Endpoint.class, HeadersService.class));
 
     @Test
@@ -67,11 +64,10 @@ public class ClientAndServerSharingResponseTest {
                 @ConfigProperty(name = "quarkus.http.test-port", defaultValue = "8081") Integer testPort)
                 throws MalformedURLException {
             this.mapper = mapper;
-            this.headersService = RestClientBuilder.newBuilder()
+            this.headersService = QuarkusRestClientBuilder.newBuilder()
                     .baseUrl(new URL(String.format("http://localhost:%d", testPort)))
                     .readTimeout(1, TimeUnit.SECONDS)
                     .build(HeadersService.class);
-            ;
         }
 
         @POST

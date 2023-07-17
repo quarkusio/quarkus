@@ -10,13 +10,13 @@ import io.vertx.ext.web.RoutingContext;
 @Recorder
 public class LogStreamRecorder {
 
-    public RuntimeValue<Optional<HistoryHandler>> handler(int size) {
-        return new RuntimeValue<>(Optional.of(new HistoryHandler(size)));
+    public RuntimeValue<Optional<WebSocketLogHandler>> logHandler(int size) {
+        return new RuntimeValue<>(Optional.of(new WebSocketLogHandler(size)));
     }
 
-    public Handler<RoutingContext> websocketHandler(RuntimeValue<Optional<HistoryHandler>> historyHandler) {
+    public Handler<RoutingContext> websocketHandler(RuntimeValue<Optional<WebSocketLogHandler>> handler) {
         //we need to make sure this is created after logging
         //is initialized, as it sets up a handler
-        return new LogStreamWebSocket(historyHandler.getValue().get());
+        return new LogStreamWebSocket(handler.getValue().get());
     }
 }

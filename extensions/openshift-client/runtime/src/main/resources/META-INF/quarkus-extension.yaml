@@ -9,3 +9,5 @@ metadata:
   categories:
   - "cloud"
   status: "stable"
+  config:
+  - "quarkus.kubernetes-client."

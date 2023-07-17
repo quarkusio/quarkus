@@ -1,10 +1,6 @@
 package io.quarkus.it.hibernate.orm.rest.data.panache;
 
-import java.time.LocalDate;
-
-import javax.persistence.Entity;
-
-import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.Entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
@@ -13,6 +9,5 @@ public class Author extends PanacheEntity {
 
     public String name;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    public LocalDate dob;
+    public String dob;
 }

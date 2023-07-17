@@ -1,8 +1,6 @@
 package io.quarkus.hibernate.orm.sql_load_script;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ import io.restassured.RestAssured;
 public class SqlLoadScriptPresentTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
                     .addAsResource("application-other-load-script-test.properties", "application.properties")
                     .addAsResource("load-script-test.sql"));

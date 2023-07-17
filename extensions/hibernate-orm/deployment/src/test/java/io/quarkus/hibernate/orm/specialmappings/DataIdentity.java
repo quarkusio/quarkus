@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.orm.specialmappings;
 
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 @IdClass(IdVersionPK.class)

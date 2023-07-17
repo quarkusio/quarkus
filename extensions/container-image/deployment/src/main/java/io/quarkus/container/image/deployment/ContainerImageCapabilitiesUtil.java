@@ -1,6 +1,5 @@
 package io.quarkus.container.image.deployment;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -11,13 +10,19 @@ import io.quarkus.deployment.Capability;
 
 public final class ContainerImageCapabilitiesUtil {
 
-    public final static Map<String, String> CAPABILITY_TO_EXTENSION_NAME = new HashMap<>();
-    static {
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_JIB, "quarkus-container-image-jib");
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_DOCKER, "quarkus-container-image-docker");
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_S2I, "quarkus-container-image-s2i");
-        CAPABILITY_TO_EXTENSION_NAME.put(Capability.CONTAINER_IMAGE_OPENSHIFT, "quarkus-container-image-openshift");
-    }
+    public final static Map<String, String> CAPABILITY_TO_EXTENSION_NAME = Map.of(
+            Capability.CONTAINER_IMAGE_JIB, "quarkus-container-image-jib",
+            Capability.CONTAINER_IMAGE_DOCKER, "quarkus-container-image-docker",
+            Capability.CONTAINER_IMAGE_S2I, "quarkus-container-image-s2i",
+            Capability.CONTAINER_IMAGE_OPENSHIFT, "quarkus-container-image-openshift",
+            Capability.CONTAINER_IMAGE_BUILDPACK, "quarkus-container-image-buildpack");
+
+    private final static Map<String, String> CAPABILITY_TO_BUILDER_NAME = Map.of(
+            Capability.CONTAINER_IMAGE_JIB, "jib",
+            Capability.CONTAINER_IMAGE_DOCKER, "docker",
+            Capability.CONTAINER_IMAGE_S2I, "s2i",
+            Capability.CONTAINER_IMAGE_OPENSHIFT, "openshift",
+            Capability.CONTAINER_IMAGE_BUILDPACK, "buildpack");
 
     private ContainerImageCapabilitiesUtil() {
     }
@@ -31,16 +36,34 @@ public final class ContainerImageCapabilitiesUtil {
         if (activeContainerImageCapabilities.size() > 1) {
             throw new IllegalStateException(String.join(" and ", activeContainerImageCapabilities)
                     + " were detected, at most one container-image extension can be present.\n"
-                    + "Either remove the unneeded ones, or select one by adding the property 'quarkus.container-image.builder=<extension name (without the `container-image-` prefix)>' in application.properties or as a system property.");
+                    + "Either remove the unneeded ones, or select one by setting any of the following configuration properties: "
+                    + createBuilderSelectionPropertySuggestion(capabilities));
         }
         return activeContainerImageCapabilities.isEmpty() ? Optional.empty()
                 : Optional.of(activeContainerImageCapabilities.iterator().next());
     }
 
+    private static StringBuilder createBuilderSelectionPropertySuggestion(Capabilities capabilities) {
+        StringBuilder suggestion = new StringBuilder();
+        boolean isFirst = true;
+        for (String capability : capabilities.getCapabilities()) {
+            if (!isContainerImageCapability(capability)) {
+                continue;
+            }
+            if (!isFirst) {
+                suggestion.append(", ");
+            }
+            isFirst = false;
+            suggestion.append('\'').append("quarkus.container-image.builder=")
+                    .append(CAPABILITY_TO_BUILDER_NAME.get(capability)).append('\'');
+        }
+        return suggestion;
+    }
+
     private static Set<String> getContainerImageCapabilities(Capabilities capabilities) {
         Set<String> activeContainerImageCapabilities = new HashSet<>();
         for (String capability : capabilities.getCapabilities()) {
-            if (capability.toLowerCase().contains("container.image")) {
+            if (isContainerImageCapability(capability)) {
                 if (!CAPABILITY_TO_EXTENSION_NAME.containsKey(capability)) {
                     throw new IllegalArgumentException("Unknown container image capability: " + capability);
                 }
@@ -48,5 +71,9 @@ public final class ContainerImageCapabilitiesUtil {
             }
         }
         return activeContainerImageCapabilities;
+    }
+
+    private static boolean isContainerImageCapability(String capability) {
+        return capability.toLowerCase().contains("container.image");
     }
 }

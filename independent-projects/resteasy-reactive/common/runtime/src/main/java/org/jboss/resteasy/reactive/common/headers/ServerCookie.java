@@ -92,7 +92,7 @@ public class ServerCookie implements Serializable {
 
     /**
      * Return the header name to set the cookie, based on cookie version.
-     * 
+     *
      * @param version cookie version
      * @return cookie header name
      */

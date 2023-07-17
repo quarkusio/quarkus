@@ -17,12 +17,17 @@
                 {#if it.metadata.status?? == 'experimental'}
                 <span class="float-right badge badge-warning">EXPERIMENTAL</span>
                 {/if}
-                <span class="card-subtitle mb-2 text-muted">{it.description}</span>
+                <span class="card-subtitle mb-2 text-muted">{it.description??}</span>
                 <br/>
                 {#if it._dev??}
                 {it._dev.raw}
                 {/if}
             </p>
         </div>
+        {#if it.metadata.config??}
+        <div class="card-footer border-0 bg-white">
+            <a href='io.quarkus.quarkus-vertx-http/config?filterByExtension={it.name}&filterConfigKeys={it.metadata.config.toString().replace("[", "").replace("]", "").replace(" ", "")}' class='float-right text-secondary' title='Config Editor'><i class='fas fa-edit'></i></a>
+        </div>
+        {/if}
     </div>
 </div>

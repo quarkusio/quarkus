@@ -1,6 +1,6 @@
 package io.quarkus.it.mongodb.panache.reactive
 
-import io.quarkus.test.junit.NativeImageTest
+import io.quarkus.test.junit.QuarkusIntegrationTest
 
-@NativeImageTest
+@QuarkusIntegrationTest
 internal class NativeReactiveMongodbPanacheResourceIT : ReactiveMongodbPanacheResourceTest()

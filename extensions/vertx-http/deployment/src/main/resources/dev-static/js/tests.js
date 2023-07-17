@@ -1,10 +1,10 @@
 var testsPathname = window.location.pathname;
-var testsFrameworkRootPath = testsPathname.substr(0, testsPathname.indexOf('/dev/'));
+var testsFrameworkRootPath = testsPathname.substr(0, testsPathname.indexOf('/dev-v1/'));
 // Get the streaming path
-var testsStreamingPath = "/dev/test";
+var testsStreamingPath = "/dev-v1/test";
 var testsWebSocket;
 
-var testBackendUrl = window.location.protocol + "//" + window.location.host + testsFrameworkRootPath + "/dev/io.quarkus.quarkus-vertx-http/tests/";
+var testBackendUrl = window.location.protocol + "//" + window.location.host + testsFrameworkRootPath + "/dev-v1/io.quarkus.quarkus-vertx-http/tests/";
 var testsInProgress = false;
 var testsIsRunning = false;
 var hasFailingTests = false;

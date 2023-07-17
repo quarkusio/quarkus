@@ -5,12 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.assertj.core.api.AbstractObjectAssert;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,8 +16,8 @@ import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.openshift.api.model.ImageStream;
-import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.builder.Version;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
@@ -29,12 +26,11 @@ public class OpenshiftWithS2iTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("openshift-s2i")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("openshift-with-s2i.properties")
-            .setForcedDependencies(Collections.singletonList(
-                    new AppArtifact("io.quarkus", "quarkus-openshift", Version.getVersion())));
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -60,6 +56,20 @@ public class OpenshiftWithS2iTest {
                 });
 
         assertThat(openshiftList).filteredOn(h -> "BuildConfig".equals(h.getKind())).hasSize(1);
+        // Has output image stream
+        assertThat(openshiftList)
+                .filteredOn(h -> "ImageStream".equals(h.getKind()) && h.getMetadata().getName().equals("openshift-s2i"))
+                .hasSize(1);
+
+        // Has builder image stream
+        assertThat(openshiftList)
+                .filteredOn(h -> "ImageStream".equals(h.getKind()) && !h.getMetadata().getName().equals("openshift-s2i"))
+                .singleElement().satisfies(r -> {
+                    assertThat(r).isInstanceOfSatisfying(ImageStream.class, i -> {
+                        assertThat(i.getSpec()).isNotNull();
+                        assertThat(i.getSpec().getDockerImageRepository()).isNotNull();
+                    });
+                });
 
         assertThat(openshiftList).filteredOn(h -> "DeploymentConfig".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h.getMetadata()).satisfies(m -> {
@@ -92,7 +102,7 @@ public class OpenshiftWithS2iTest {
         assertThat(openshiftList).filteredOn(h -> "Service".equals(h.getKind())).singleElement().satisfies(h -> {
             assertThat(h).isInstanceOfSatisfying(Service.class, s -> {
                 assertThat(s.getSpec()).satisfies(spec -> {
-                    assertThat(spec.getPorts()).hasSize(1).singleElement().satisfies(p -> {
+                    assertThat(spec.getPorts()).hasSize(1).anySatisfy(p -> {
                         assertThat(p.getPort()).isEqualTo(80);
                         assertThat(p.getTargetPort().getIntVal()).isEqualTo(8080);
                     });

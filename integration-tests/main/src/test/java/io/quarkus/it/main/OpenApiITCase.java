@@ -1,11 +1,11 @@
 package io.quarkus.it.main;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**
  * @author Ken Finnigan
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class OpenApiITCase extends OpenApiTestCase {
 
 }

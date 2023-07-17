@@ -3,9 +3,9 @@ package org.acme.app;
 import org.acme.common.health.HealthStatus;
 import org.acme.common.health.HealthStatusProducer;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 @ApplicationScoped
 public class Service2 {

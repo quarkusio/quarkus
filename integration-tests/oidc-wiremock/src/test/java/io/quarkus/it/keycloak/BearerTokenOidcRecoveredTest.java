@@ -16,13 +16,45 @@ import io.smallrye.jwt.build.Jwt;
 public class BearerTokenOidcRecoveredTest {
 
     @Test
-    public void testSecureAccessSuccessPreferredUsername() {
+    public void testOidcRecoveredWithDiscovery() {
+        String token = getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin")));
 
+        // Server has not started
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/recovered/api/users/preferredUserName")
+                .then()
+                .statusCode(500);
+
+        // Server is starting now
         WiremockTestResource server = new WiremockTestResource();
         server.start();
         try {
-            RestAssured.given().auth().oauth2(getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin"))))
+            RestAssured.given().auth().oauth2(token)
                     .when().get("/recovered/api/users/preferredUserName")
+                    .then()
+                    .statusCode(200)
+                    .body("userName", equalTo("alice"));
+        } finally {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testOidcRecoveredWithNoDiscovery() {
+        String token = getAccessToken("alice", new HashSet<>(Arrays.asList("user", "admin")));
+
+        // Server has not started
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/recovered-no-discovery/api/users/preferredUserName")
+                .then()
+                .statusCode(500);
+
+        // Server is starting now
+        WiremockTestResource server = new WiremockTestResource();
+        server.start();
+        try {
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/recovered-no-discovery/api/users/preferredUserName")
                     .then()
                     .statusCode(200)
                     .body("userName", equalTo("alice"));

@@ -160,15 +160,16 @@ public class GrpcServiceTestBase {
     public void testUnimplementedMethodWithBlockingClient() {
         assertThatThrownBy(
                 () -> TestServiceGrpc.newBlockingStub(channel).unimplementedCall(EmptyProtos.Empty.newBuilder().build()))
-                        .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("UNIMPLEMENTED");
+                .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("UNIMPLEMENTED");
     }
 
     @Test
     public void testUnimplementedMethodWithMutinyClient() {
         assertThatThrownBy(
                 () -> MutinyTestServiceGrpc.newMutinyStub(channel).unimplementedCall(EmptyProtos.Empty.newBuilder().build())
-                        .await().atMost(TIMEOUT)).isInstanceOf(StatusRuntimeException.class)
-                                .hasMessageContaining("UNIMPLEMENTED");
+                        .await().atMost(TIMEOUT))
+                .isInstanceOf(StatusRuntimeException.class)
+                .hasMessageContaining("UNIMPLEMENTED");
     }
 
     @Test

@@ -1,10 +1,16 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id 'io.quarkus.extension'
 }
 
 dependencies {
-    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+}
+
+quarkusExtension {
+    deploymentArtifact = "org.acme:ext-o-deployment:1.0-SNAPSHOT"
+    dependencyConditions = ["org.acme:ext-h::jar"]
 }
 
 publishing {

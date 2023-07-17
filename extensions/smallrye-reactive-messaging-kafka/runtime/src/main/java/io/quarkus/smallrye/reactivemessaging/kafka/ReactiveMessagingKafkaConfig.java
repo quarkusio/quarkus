@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.reactivemessaging.kafka;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "reactive-messaging.kafka")
@@ -13,7 +12,7 @@ public class ReactiveMessagingKafkaConfig {
      * While this setting is highly recommended in production, in dev and test modes, it's disabled by default.
      * This setting allows to re-enable it.
      */
-    @ConfigProperty(defaultValue = "false")
+    @ConfigItem(defaultValue = "false")
     public boolean enableGracefulShutdownInDevAndTestMode;
 
 }

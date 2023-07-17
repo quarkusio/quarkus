@@ -11,7 +11,7 @@ public class PolicyMappingConfig {
 
     /**
      * Determines whether the entire permission set is enabled, or not.
-     * 
+     *
      * By default, if the permission set is defined, it is enabled.
      */
     @ConfigItem
@@ -48,7 +48,7 @@ public class PolicyMappingConfig {
      * Matches are done on a length basis, so the most specific path match takes precedence.
      *
      * If multiple permission sets match the same path then explicit methods matches take precedence
-     * over over matches without methods set, otherwise the most restrictive permissions are applied.
+     * over matches without methods set, otherwise the most restrictive permissions are applied.
      *
      */
     @ConfigItem

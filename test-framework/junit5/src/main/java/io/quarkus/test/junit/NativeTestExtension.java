@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
 import io.quarkus.test.common.DefaultNativeImageLauncher;
@@ -37,7 +38,7 @@ import io.quarkus.test.common.TestScopeManager;
 import io.quarkus.test.junit.launcher.ConfigUtil;
 import io.quarkus.test.junit.launcher.NativeImageLauncherProvider;
 
-public class NativeTestExtension
+public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestInstancePostProcessor {
 
     private static boolean failedBoot;
@@ -75,14 +76,11 @@ public class NativeTestExtension
         ensureStarted(extensionContext);
     }
 
-    private IntegrationTestExtensionState ensureStarted(ExtensionContext extensionContext) {
+    private QuarkusTestExtensionState ensureStarted(ExtensionContext extensionContext) {
         Class<?> testClass = extensionContext.getRequiredTestClass();
         ensureNoInjectAnnotationIsUsed(testClass);
 
-        ExtensionContext root = extensionContext.getRoot();
-        ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
-        IntegrationTestExtensionState state = store.get(IntegrationTestExtensionState.class.getName(),
-                IntegrationTestExtensionState.class);
+        QuarkusTestExtensionState state = getState(extensionContext);
         Class<? extends QuarkusTestProfile> selectedProfile = IntegrationTestUtil.findProfile(testClass);
         boolean wrongProfile = !Objects.equals(selectedProfile, quarkusTestProfile);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
@@ -100,7 +98,7 @@ public class NativeTestExtension
             }
             try {
                 state = doNativeStart(extensionContext, selectedProfile);
-                store.put(IntegrationTestExtensionState.class.getName(), state);
+                setState(extensionContext, state);
 
             } catch (Throwable e) {
                 failedBoot = true;
@@ -110,7 +108,7 @@ public class NativeTestExtension
         return state;
     }
 
-    private IntegrationTestExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
+    private QuarkusTestExtensionState doNativeStart(ExtensionContext context, Class<? extends QuarkusTestProfile> profile)
             throws Throwable {
         Map<String, String> devServicesProps = handleDevServices(context, false).properties();
         quarkusTestProfile = profile;
@@ -120,19 +118,26 @@ public class NativeTestExtension
             Class<?> requiredTestClass = context.getRequiredTestClass();
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
+            for (String devServicesProp : devServicesProps.keySet()) {
+                sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
+            }
             TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
                     getAdditionalTestResources(testProfileAndProperties.testProfile, currentJUnitTestClass.getClassLoader()),
                     testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources());
-            testResourceManager.init();
+            testResourceManager.init(
+                    testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
+                            : null);
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-            additionalProperties.putAll(devServicesProps);
-            Map<String, String> resourceManagerProps = testResourceManager.start();
+            Map<String, String> resourceManagerProps = new HashMap<>(devServicesProps);
+            // Allow override of dev services props by integration test extensions
+            resourceManagerProps.putAll(testResourceManager.start());
             Map<String, String> old = new HashMap<>();
+            //we also make the dev services config accessible from the test itself
             for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
                 old.put(i.getKey(), System.getProperty(i.getKey()));
                 if (i.getValue() == null) {
@@ -155,6 +160,7 @@ public class NativeTestExtension
                             }
                         }
                     });
+            //this includes dev services props
             additionalProperties.putAll(resourceManagerProps);
 
             NativeImageLauncher launcher = createLauncher(requiredTestClass);
@@ -188,6 +194,7 @@ public class NativeTestExtension
                 ConfigUtil.waitTimeValue(config),
                 config.getOptionalValue("quarkus.test.native-image-profile", String.class).orElse(null),
                 ConfigUtil.argLineValue(config),
+                ConfigUtil.env(config),
                 new ArtifactLauncher.InitContext.DevServicesLaunchResult() {
                     @Override
                     public Map<String, String> properties() {
@@ -198,14 +205,31 @@ public class NativeTestExtension
                     public String networkId() {
                         return null;
                     }
+
+                    @Override
+                    public boolean manageNetwork() {
+                        return false;
+                    }
+
+                    @Override
+                    public void close() {
+
+                    }
+
+                    @Override
+                    public CuratedApplication getCuratedApplication() {
+                        return null;
+                    }
                 },
                 System.getProperty("native.image.path"),
+                config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),
                 requiredTestClass));
         return launcher;
     }
 
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) {
+        ensureStarted(context);
         if (!failedBoot) {
             doProcessTestInstance(testInstance, context);
         }

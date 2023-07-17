@@ -9,8 +9,8 @@ public class BlockingOperationControl {
     }
 
     public static boolean isBlockingAllowed() {
-        for (int i = 0; i < ioThreadDetectors.length; ++i) {
-            if (ioThreadDetectors[i].isInIOThread()) {
+        for (IOThreadDetector ioThreadDetector : ioThreadDetectors) {
+            if (ioThreadDetector.isInIOThread()) {
                 return false;
             }
         }

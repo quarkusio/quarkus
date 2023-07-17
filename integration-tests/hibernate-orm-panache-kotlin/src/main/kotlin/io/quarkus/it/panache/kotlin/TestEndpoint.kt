@@ -5,32 +5,34 @@ import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import io.quarkus.panache.common.exception.PanacheQueryException
-import org.hibernate.engine.spi.SelfDirtinessTracker
-import org.hibernate.jpa.QueryHints
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.fail
+import io.quarkus.runtime.annotations.RegisterForReflection
+import jakarta.inject.Inject
+import jakarta.persistence.LockModeType
+import jakarta.persistence.NoResultException
+import jakarta.persistence.NonUniqueResultException
+import jakarta.persistence.PersistenceException
+import jakarta.transaction.Transactional
+import jakarta.ws.rs.GET
+import jakarta.ws.rs.Path
+import jakarta.ws.rs.Produces
+import jakarta.ws.rs.core.MediaType
+import jakarta.xml.bind.annotation.XmlAttribute
+import jakarta.xml.bind.annotation.XmlElements
+import jakarta.xml.bind.annotation.XmlTransient
 import java.lang.UnsupportedOperationException
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.UUID
 import java.util.stream.Collectors
 import java.util.stream.Stream
-import javax.inject.Inject
-import javax.persistence.LockModeType
-import javax.persistence.NoResultException
-import javax.persistence.NonUniqueResultException
-import javax.persistence.PersistenceException
-import javax.transaction.Transactional
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
-import javax.ws.rs.core.MediaType
-import javax.xml.bind.annotation.XmlAttribute
-import javax.xml.bind.annotation.XmlElements
-import javax.xml.bind.annotation.XmlTransient
+import org.hibernate.engine.spi.SelfDirtinessTracker
+import org.hibernate.jpa.QueryHints
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.fail
 
 /**
- * Various tests covering Panache functionality. All tests should work in both standard JVM and in native mode.
+ * Various tests covering Panache functionality. All tests should work in both standard JVM and in
+ * native mode.
  */
 @Path("test")
 class TestEndpoint {
@@ -39,17 +41,16 @@ class TestEndpoint {
     @Transactional
     fun testModel(): String {
         Person.flush()
-        Assertions.assertNotNull(Person.getEntityManager());
+        Assertions.assertNotNull(Person.getEntityManager())
 
-        Assertions.assertDoesNotThrow {
-            Person.findById(Long.MIN_VALUE)
-        }
+        Assertions.assertDoesNotThrow { Person.findById(Long.MIN_VALUE) }
         Assertions.assertDoesNotThrow {
             Person.find("name = ?1", UUID.randomUUID().toString()).firstResult()
         }
-        Assertions.assertThrows(NoResultException::class.java, {
-            Person.find("name = ?1", UUID.randomUUID().toString()).singleResult()
-        })
+        Assertions.assertThrows(
+            NoResultException::class.java,
+            { Person.find("name = ?1", UUID.randomUUID().toString()).singleResult() }
+        )
 
         var persons: List<Person> = Person.findAll().list()
         Assertions.assertEquals(0, persons.size)
@@ -65,8 +66,7 @@ class TestEndpoint {
         try {
             Person.findAll().singleResult()
             Assertions.fail<Any>("singleResult should have thrown")
-        } catch (x: NoResultException) {
-        }
+        } catch (x: NoResultException) {}
 
         Assertions.assertNull(Person.findAll().firstResult())
 
@@ -75,7 +75,10 @@ class TestEndpoint {
 
         Assertions.assertEquals(1, Person.count())
         Assertions.assertEquals(1, Person.count("name = ?1", "stef"))
-        Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef").map()))
+        Assertions.assertEquals(
+            1,
+            Person.count("name = :name", Parameters.with("name", "stef").map())
+        )
         Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef")))
         Assertions.assertEquals(1, Person.count("name", "stef"))
 
@@ -108,7 +111,8 @@ class TestEndpoint {
         Assertions.assertEquals(person, persons[0])
 
         // next calls to this query will be cached
-        persons = Person.find("name = ?1", "stef").withHint(QueryHints.HINT_CACHEABLE, "true").list()
+        persons =
+            Person.find("name = ?1", "stef").withHint(QueryHints.HINT_CACHEABLE, "true").list()
         Assertions.assertEquals(1, persons.size)
         Assertions.assertEquals(person, persons[0])
 
@@ -155,11 +159,17 @@ class TestEndpoint {
 
         var byId: Person? = person.id?.let { Person.findById(it) }
         Assertions.assertEquals(person, byId)
-        Assertions.assertEquals("Person(id=${person.id}, name=${person.name}, status=${person.status})", byId.toString())
+        Assertions.assertEquals(
+            "Person(id=${person.id}, name=${person.name}, status=${person.status})",
+            byId.toString()
+        )
 
         byId = person.id?.let { Person.findById(it, LockModeType.PESSIMISTIC_READ) }
         Assertions.assertEquals(person, byId)
-        Assertions.assertEquals("Person(id=${person.id}, name=${person.name}, status=${person.status})", byId.toString())
+        Assertions.assertEquals(
+            "Person(id=${person.id}, name=${person.name}, status=${person.status})",
+            byId.toString()
+        )
         Assertions.assertNotNull(person.dogs.toString())
 
         person.delete()
@@ -171,7 +181,10 @@ class TestEndpoint {
         Assertions.assertEquals(1, Dog.delete("owner = ?1", person))
         Assertions.assertEquals(1, Person.delete("name", "stef"))
         person = makeSavedPerson()
-        Assertions.assertEquals(1, Dog.delete("owner = :owner", Parameters.with("owner", person).map()))
+        Assertions.assertEquals(
+            1,
+            Dog.delete("owner = :owner", Parameters.with("owner", person).map())
+        )
         Assertions.assertEquals(1, Person.delete("name", "stef"))
         person = makeSavedPerson()
         Assertions.assertEquals(1, Dog.delete("owner = :owner", Parameters.with("owner", person)))
@@ -200,8 +213,7 @@ class TestEndpoint {
         try {
             Person.findAll().singleResult()
             Assertions.fail<Any>("singleResult should have thrown")
-        } catch (x: NonUniqueResultException) {
-        }
+        } catch (x: NonUniqueResultException) {}
 
         Assertions.assertNotNull(Person.findAll().firstResult())
 
@@ -221,7 +233,7 @@ class TestEndpoint {
             person2.persistAndFlush()
             Assertions.fail<Any>()
         } catch (pe: PersistenceException) {
-            //this is expected
+            // this is expected
         }
         return "OK"
     }
@@ -230,11 +242,18 @@ class TestEndpoint {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        var updateByIndexParameter: Int = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
+        var updateByIndexParameter: Int =
+            Person.update(
+                "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+                "stefp1"
+            )
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        var updateByNamedParameter: Int = Person.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        var updateByNamedParameter: Int =
+            Person.update(
+                "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -242,11 +261,15 @@ class TestEndpoint {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        updateByIndexParameter = Person.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
+        updateByIndexParameter =
+            Person.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter =
+            Person.update(
+                "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -257,8 +280,11 @@ class TestEndpoint {
         updateByIndexParameter = Person.update("set name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("set name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter =
+            Person.update(
+                "set name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -269,8 +295,11 @@ class TestEndpoint {
         updateByIndexParameter = Person.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter =
+            Person.update(
+                "name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
@@ -281,29 +310,42 @@ class TestEndpoint {
         updateByIndexParameter = Person.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = Person.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2"))
+        updateByNamedParameter =
+            Person.update(
+                "name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2")
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, Person.deleteAll())
 
-//        Assertions.assertThrows(PanacheQueryException::class.java, { Person.update(null) },
-//                "PanacheQueryException should have thrown")
+        //        Assertions.assertThrows(PanacheQueryException::class.java, { Person.update(null)
+        // },
+        //                "PanacheQueryException should have thrown")
 
-        Assertions.assertThrows(PanacheQueryException::class.java, { Person.update(" ") },
-                "PanacheQueryException should have thrown")
+        Assertions.assertThrows(
+            PanacheQueryException::class.java,
+            { Person.update(" ") },
+            "PanacheQueryException should have thrown"
+        )
     }
 
     private fun testUpdateDAO() {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        var updateByIndexParameter: Int = personRepository.update("update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                "stefp1")
+        var updateByIndexParameter: Int =
+            personRepository.update(
+                "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+                "stefp1"
+            )
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        var updateByNamedParameter: Int = personRepository.update("update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        var updateByNamedParameter: Int =
+            personRepository.update(
+                "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -311,11 +353,18 @@ class TestEndpoint {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        updateByIndexParameter = personRepository.update("from Person2 p set p.name = 'stefNEW' where p.name = ?1", "stefp1")
+        updateByIndexParameter =
+            personRepository.update(
+                "from Person2 p set p.name = 'stefNEW' where p.name = ?1",
+                "stefp1"
+            )
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter =
+            personRepository.update(
+                "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -323,11 +372,15 @@ class TestEndpoint {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        updateByIndexParameter = personRepository.update("set name = 'stefNEW' where name = ?1", "stefp1")
+        updateByIndexParameter =
+            personRepository.update("set name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("set name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter =
+            personRepository.update(
+                "set name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -335,11 +388,15 @@ class TestEndpoint {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        updateByIndexParameter = personRepository.update("name = 'stefNEW' where name = ?1", "stefp1")
+        updateByIndexParameter =
+            personRepository.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2").map())
+        updateByNamedParameter =
+            personRepository.update(
+                "name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2").map()
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
@@ -347,20 +404,28 @@ class TestEndpoint {
         makeSavedPerson("p1")
         makeSavedPerson("p2")
 
-        updateByIndexParameter = personRepository.update("name = 'stefNEW' where name = ?1", "stefp1")
+        updateByIndexParameter =
+            personRepository.update("name = 'stefNEW' where name = ?1", "stefp1")
         Assertions.assertEquals(1, updateByIndexParameter, "More than one Person updated")
 
-        updateByNamedParameter = personRepository.update("name = 'stefNEW' where name = :pName",
-                Parameters.with("pName", "stefp2"))
+        updateByNamedParameter =
+            personRepository.update(
+                "name = 'stefNEW' where name = :pName",
+                Parameters.with("pName", "stefp2")
+            )
         Assertions.assertEquals(1, updateByNamedParameter, "More than one Person updated")
 
         Assertions.assertEquals(2, personRepository.deleteAll())
 
-//        Assertions.assertThrows(PanacheQueryException::class.java, { personDao.update(null) },
-//                "PanacheQueryException should have thrown")
+        //        Assertions.assertThrows(PanacheQueryException::class.java, {
+        // personDao.update(null) },
+        //                "PanacheQueryException should have thrown")
 
-        Assertions.assertThrows(PanacheQueryException::class.java, { personRepository.update(" ") },
-                "PanacheQueryException should have thrown")
+        Assertions.assertThrows(
+            PanacheQueryException::class.java,
+            { personRepository.update(" ") },
+            "PanacheQueryException should have thrown"
+        )
     }
 
     private fun testSorting() {
@@ -409,7 +474,8 @@ class TestEndpoint {
         list = Person.list("name = :name", sort2, Parameters.with("name", "stef").map())
         Assertions.assertEquals(order2, list)
 
-        list = Person.stream("name = :name", sort2, Parameters.with("name", "stef").map())
+        list =
+            Person.stream("name = :name", sort2, Parameters.with("name", "stef").map())
                 .collect(Collectors.toList())
         Assertions.assertEquals(order2, list)
 
@@ -419,7 +485,9 @@ class TestEndpoint {
         list = Person.list("name = :name", sort2, Parameters.with("name", "stef"))
         Assertions.assertEquals(order2, list)
 
-        list = Person.stream("name = :name", sort2, Parameters.with("name", "stef")).collect(Collectors.toList())
+        list =
+            Person.stream("name = :name", sort2, Parameters.with("name", "stef"))
+                .collect(Collectors.toList())
         Assertions.assertEquals(order2, list)
 
         Assertions.assertEquals(3, Person.deleteAll())
@@ -463,21 +531,18 @@ class TestEndpoint {
         Assertions.assertTrue(person2.isPersistent())
     }
 
-    @Inject
-    lateinit var personRepository: PersonRepository
+    @Inject lateinit var personRepository: PersonRepository
 
-    @Inject
-    lateinit var dogDao: DogDao
+    @Inject lateinit var dogDao: DogDao
 
-    @Inject
-    lateinit var addressDao: AddressDao
+    @Inject lateinit var addressDao: AddressDao
 
     @GET
     @Path("model-dao")
     @Transactional
     fun testModelDao(): String {
         personRepository.flush()
-        Assertions.assertNotNull(personRepository.getEntityManager());
+        Assertions.assertNotNull(personRepository.getEntityManager())
 
         var persons = personRepository.findAll().list()
         Assertions.assertEquals(0, persons.size)
@@ -488,8 +553,7 @@ class TestEndpoint {
         try {
             personRepository.findAll().singleResult()
             Assertions.fail<Any>("singleResult should have thrown")
-        } catch (x: NoResultException) {
-        }
+        } catch (x: NoResultException) {}
 
         Assertions.assertNull(personRepository.findAll().firstResult())
 
@@ -498,8 +562,14 @@ class TestEndpoint {
 
         Assertions.assertEquals(1, personRepository.count())
         Assertions.assertEquals(1, personRepository.count("name = ?1", "stef"))
-        Assertions.assertEquals(1, personRepository.count("name = :name", Parameters.with("name", "stef").map()))
-        Assertions.assertEquals(1, personRepository.count("name = :name", Parameters.with("name", "stef")))
+        Assertions.assertEquals(
+            1,
+            personRepository.count("name = :name", Parameters.with("name", "stef").map())
+        )
+        Assertions.assertEquals(
+            1,
+            personRepository.count("name = :name", Parameters.with("name", "stef"))
+        )
         Assertions.assertEquals(1, personRepository.count("name", "stef"))
 
         Assertions.assertEquals(1, dogDao.count())
@@ -526,7 +596,11 @@ class TestEndpoint {
         Assertions.assertEquals(1, persons.size)
         Assertions.assertEquals(person, persons[0])
 
-        persons = personRepository.find("name = ?1", "stef").withLock(LockModeType.PESSIMISTIC_READ).list()
+        persons =
+            personRepository
+                .find("name = ?1", "stef")
+                .withLock(LockModeType.PESSIMISTIC_READ)
+                .list()
         Assertions.assertEquals(1, persons.size)
         Assertions.assertEquals(person, persons[0])
 
@@ -534,7 +608,8 @@ class TestEndpoint {
         Assertions.assertEquals(1, persons.size)
         Assertions.assertEquals(person, persons[0])
 
-        persons = personRepository.find("name = :name", Parameters.with("name", "stef").map()).list()
+        persons =
+            personRepository.find("name = :name", Parameters.with("name", "stef").map()).list()
         Assertions.assertEquals(1, persons.size)
         Assertions.assertEquals(person, persons[0])
 
@@ -560,7 +635,8 @@ class TestEndpoint {
         personStream = personRepository.stream("name = ?1", "stef")
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()))
 
-        personStream = personRepository.stream("name = :name", Parameters.with("name", "stef").map())
+        personStream =
+            personRepository.stream("name = :name", Parameters.with("name", "stef").map())
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()))
 
         personStream = personRepository.stream("name = :name", Parameters.with("name", "stef"))
@@ -587,10 +663,16 @@ class TestEndpoint {
         Assertions.assertEquals(1, dogDao.delete("owner = ?1", person))
         Assertions.assertEquals(1, personRepository.delete("name", "stef"))
         person = makeSavedPerson()
-        Assertions.assertEquals(1, dogDao.delete("owner = :owner", Parameters.with("owner", person).map()))
+        Assertions.assertEquals(
+            1,
+            dogDao.delete("owner = :owner", Parameters.with("owner", person).map())
+        )
         Assertions.assertEquals(1, personRepository.delete("name", "stef"))
         person = makeSavedPerson()
-        Assertions.assertEquals(1, dogDao.delete("owner = :owner", Parameters.with("owner", person)))
+        Assertions.assertEquals(
+            1,
+            dogDao.delete("owner = :owner", Parameters.with("owner", person))
+        )
         Assertions.assertEquals(1, personRepository.delete("name", "stef"))
 
         Assertions.assertEquals(0, personRepository.deleteAll())
@@ -616,8 +698,7 @@ class TestEndpoint {
         try {
             personRepository.findAll().singleResult()
             Assertions.fail<Any>("singleResult should have thrown")
-        } catch (x: NonUniqueResultException) {
-        }
+        } catch (x: NonUniqueResultException) {}
 
         Assertions.assertNotNull(personRepository.findAll().firstResult())
 
@@ -625,7 +706,7 @@ class TestEndpoint {
 
         testUpdateDAO()
 
-        //flush
+        // flush
         val person1 = Person()
         person1.name = "testFlush1"
         person1.uniqueName = "unique"
@@ -637,7 +718,7 @@ class TestEndpoint {
             personRepository.persistAndFlush(person2)
             Assertions.fail<Any>()
         } catch (pe: PersistenceException) {
-            //this is expected
+            // this is expected
         }
 
         return "OK"
@@ -660,7 +741,7 @@ class TestEndpoint {
         personRepository.persist(person3)
 
         val sort1 = Sort.by("name", "status")
-        val order1: List<Person> = listOf(person3, person2, person1 )
+        val order1: List<Person> = listOf(person3, person2, person1)
 
         var list = personRepository.findAll(sort1).list()
         Assertions.assertEquals(order1, list)
@@ -683,13 +764,19 @@ class TestEndpoint {
         list = personRepository.stream("name", sort2, "stef").collect(Collectors.toList())
         Assertions.assertEquals(order2, list)
 
-        list = personRepository.find("name = :name", sort2, Parameters.with("name", "stef").map()).list()
+        list =
+            personRepository
+                .find("name = :name", sort2, Parameters.with("name", "stef").map())
+                .list()
         Assertions.assertEquals(order2, list)
 
         list = personRepository.list("name = :name", sort2, Parameters.with("name", "stef").map())
         Assertions.assertEquals(order2, list)
 
-        list = personRepository.stream("name = :name", sort2, Parameters.with("name", "stef").map()).collect(Collectors.toList())
+        list =
+            personRepository
+                .stream("name = :name", sort2, Parameters.with("name", "stef").map())
+                .collect(Collectors.toList())
         Assertions.assertEquals(order2, list)
 
         list = personRepository.find("name = :name", sort2, Parameters.with("name", "stef")).list()
@@ -698,14 +785,19 @@ class TestEndpoint {
         list = personRepository.list("name = :name", sort2, Parameters.with("name", "stef"))
         Assertions.assertEquals(order2, list)
 
-        list = personRepository.stream("name = :name", sort2, Parameters.with("name", "stef")).collect(Collectors.toList())
+        list =
+            personRepository
+                .stream("name = :name", sort2, Parameters.with("name", "stef"))
+                .collect(Collectors.toList())
         Assertions.assertEquals(order2, list)
 
         Assertions.assertEquals(3, Person.deleteAll())
     }
 
     internal enum class PersistTest {
-        Iterable, Variadic, Stream
+        Iterable,
+        Variadic,
+        Stream
     }
 
     private fun testPersistDao(persistTest: PersistTest) {
@@ -842,13 +934,23 @@ class TestEndpoint {
         checkMethod(AccessorEntity::class.java, "getT2", Any::class.java)
 
         checkMethod(AccessorEntity::class.java, "setString", Void.TYPE, String::class.java)
-        checkMethod(AccessorEntity::class.java, "setBool", Void.TYPE, Boolean::class.javaPrimitiveType!!)
+        checkMethod(
+            AccessorEntity::class.java,
+            "setBool",
+            Void.TYPE,
+            Boolean::class.javaPrimitiveType!!
+        )
         checkMethod(AccessorEntity::class.java, "setC", Void.TYPE, Char::class.javaPrimitiveType!!)
         checkMethod(AccessorEntity::class.java, "setS", Void.TYPE, Short::class.javaPrimitiveType!!)
         checkMethod(AccessorEntity::class.java, "setI", Void.TYPE, Int::class.javaPrimitiveType!!)
         checkMethod(AccessorEntity::class.java, "setL", Void.TYPE, Long::class.javaPrimitiveType!!)
         checkMethod(AccessorEntity::class.java, "setF", Void.TYPE, Float::class.javaPrimitiveType!!)
-        checkMethod(AccessorEntity::class.java, "setD", Void.TYPE, Double::class.javaPrimitiveType!!)
+        checkMethod(
+            AccessorEntity::class.java,
+            "setD",
+            Void.TYPE,
+            Double::class.javaPrimitiveType!!
+        )
         checkMethod(AccessorEntity::class.java, "setT", Void.TYPE, Any::class.java)
         checkMethod(AccessorEntity::class.java, "setT2", Void.TYPE, Any::class.java)
 
@@ -870,7 +972,12 @@ class TestEndpoint {
         return "OK"
     }
 
-    private fun checkMethod(klass: Class<*>, name: String, returnType: Class<*>?, vararg params: Class<*>) {
+    private fun checkMethod(
+        klass: Class<*>,
+        name: String,
+        returnType: Class<*>?,
+        vararg params: Class<*>
+    ) {
         val method = klass.getMethod(name, *params)
         Assertions.assertEquals(returnType, method.returnType)
     }
@@ -906,7 +1013,7 @@ class TestEndpoint {
         val person = Person.findAll().firstResult()
         Assertions.assertEquals("1", person?.name)
 
-        if(person != null) {
+        if (person != null) {
             person.name = "2"
         }
         return "OK"
@@ -929,7 +1036,7 @@ class TestEndpoint {
         return "OK"
     }
 
-    @Produces(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML)
+    @Produces(MediaType.APPLICATION_XML)
     @GET
     @Path("ignored-properties")
     fun ignoredProperties(): Person {
@@ -938,8 +1045,7 @@ class TestEndpoint {
         try {
             Person::class.java.getMethod("\$\$_hibernate_read_persistent")
             Assertions.fail<Any>()
-        } catch (e: NoSuchMethodException) {
-        }
+        } catch (e: NoSuchMethodException) {}
 
         // no need to persist it, we can fake it
         val person = Person()
@@ -949,8 +1055,7 @@ class TestEndpoint {
         return person
     }
 
-    @Inject
-    lateinit var bug5274EntityRepository: Bug5274EntityRepository
+    @Inject lateinit var bug5274EntityRepository: Bug5274EntityRepository
 
     @GET
     @Path("5274")
@@ -960,8 +1065,7 @@ class TestEndpoint {
         return "OK"
     }
 
-    @Inject
-    lateinit var bug5885EntityRepository: Bug5885EntityRepository
+    @Inject lateinit var bug5885EntityRepository: Bug5885EntityRepository
 
     @GET
     @Path("5885")
@@ -1006,7 +1110,8 @@ class TestEndpoint {
         Assertions.assertEquals("array1", elementsAnnotation.value[0].name)
         Assertions.assertEquals("array2", elementsAnnotation.value[1].name)
 
-        // Ensure that all original fields were labeled @XmlTransient and had their original JAX-B annotations removed
+        // Ensure that all original fields were labeled @XmlTransient and had their original JAX-B
+        // annotations removed
         ensureFieldSanitized("namedAnnotatedProp")
         ensureFieldSanitized("transientProp")
         ensureFieldSanitized("defaultAnnotatedProp")
@@ -1021,7 +1126,6 @@ class TestEndpoint {
         Assertions.assertNull(f.getAnnotation(XmlAttribute::class.java))
         Assertions.assertNotNull(f.getAnnotation(XmlTransient::class.java))
     }
-
 
     @GET
     @Path("9036")
@@ -1046,7 +1150,8 @@ class TestEndpoint {
         Assertions.assertEquals(3, Person.listAll().size)
 
         // should be filtered
-        val query = Person.findAll(Sort.by("id"))
+        val query =
+            Person.findAll(Sort.by("id"))
                 .filter("Person.isAlive")
                 .filter("Person.hasName", Parameters.with("name", "Stef"))
         Assertions.assertEquals(1, query.count())
@@ -1059,6 +1164,52 @@ class TestEndpoint {
         // these should be unaffected
         Assertions.assertEquals(3, Person.count())
         Assertions.assertEquals(3, Person.listAll().size)
+
+        Person.deleteAll()
+
+        return "OK"
+    }
+
+    @GET
+    @Path("project")
+    @Transactional
+    fun testProject(): String {
+        @RegisterForReflection data class MyProjection(val projectedName: String)
+
+        val mark = Person()
+        mark.name = "Mark"
+        mark.persistAndFlush()
+
+        val hqlWithoutSpace =
+            """
+            select
+                name as projectedName
+            from
+                io.quarkus.it.panache.kotlin.Person
+            where
+                name = ?1
+        """
+                .trimIndent()
+        val withoutSpace =
+            Person.find(hqlWithoutSpace, "Mark").project(MyProjection::class.java).firstResult()
+        Assertions.assertNotNull(withoutSpace)
+        Assertions.assertEquals(mark.name, withoutSpace?.projectedName)
+
+        // There is a space behind "select "
+        val hqlWithSpace =
+            """
+            select 
+                name as projectedName
+            from
+                io.quarkus.it.panache.kotlin.Person
+            where
+                name = ?1
+        """
+                .trimIndent()
+        val withSpace =
+            Person.find(hqlWithSpace, "Mark").project(MyProjection::class.java).firstResult()
+        Assertions.assertNotNull(withSpace)
+        Assertions.assertEquals(mark.name, withSpace?.projectedName)
 
         Person.deleteAll()
 

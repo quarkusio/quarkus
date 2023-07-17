@@ -5,14 +5,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.RuntimeType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyWriter;
+
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class ResourceWriter {
 
     private BeanFactory<MessageBodyWriter<?>> factory;
@@ -55,16 +58,18 @@ public class ResourceWriter {
         return builtin;
     }
 
-    public void setBuiltin(boolean builtin) {
+    public ResourceWriter setBuiltin(boolean builtin) {
         this.builtin = builtin;
+        return this;
     }
 
     public Integer getPriority() {
         return priority;
     }
 
-    public void setPriority(Integer priority) {
+    public ResourceWriter setPriority(Integer priority) {
         this.priority = priority;
+        return this;
     }
 
     public MessageBodyWriter<?> instance() {
@@ -97,7 +102,7 @@ public class ResourceWriter {
         if (serverMediaType == null) {
             synchronized (this) {
                 // a MessageBodyWriter should always return its configured media type when negotiating, hence the 'false' for 'useSuffix'
-                serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name(), false, false);
+                serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name(), false);
             }
         }
         return serverMediaType;
@@ -127,7 +132,15 @@ public class ResourceWriter {
      */
     public static class ResourceWriterComparator implements Comparator<ResourceWriter> {
 
-        public static final ResourceWriterComparator INSTANCE = new ResourceWriterComparator();
+        private final List<MediaType> produces;
+
+        public ResourceWriterComparator() {
+            this(Collections.emptyList());
+        }
+
+        public ResourceWriterComparator(List<MediaType> produces) {
+            this.produces = produces;
+        }
 
         @Override
         public int compare(ResourceWriter o1, ResourceWriter o2) {
@@ -155,6 +168,14 @@ public class ResourceWriter {
             int mediaTypeCompare = MediaTypeHelper.compareWeight(mediaTypes1.get(0), mediaTypes2.get(0));
             if (mediaTypeCompare != 0) {
                 return mediaTypeCompare;
+            }
+
+            // try to compare using the number of matching produces media types
+            if (!produces.isEmpty()) {
+                mediaTypeCompare = MediaTypeHelper.compareMatchingMediaTypes(produces, mediaTypes1, mediaTypes2);
+                if (mediaTypeCompare != 0) {
+                    return mediaTypeCompare;
+                }
             }
 
             // done to make the sorting result deterministic

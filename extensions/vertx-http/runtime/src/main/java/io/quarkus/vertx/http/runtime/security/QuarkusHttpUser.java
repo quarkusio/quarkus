@@ -25,7 +25,7 @@ public class QuarkusHttpUser implements User {
     /**
      * The key that stores a BiConsumer that handles auth failures
      *
-     * This can be overriden by downstream handlers such as Undertow to control auth failure handling.
+     * This can be overridden by downstream handlers such as Undertow to control auth failure handling.
      */
     public static final String AUTH_FAILURE_HANDLER = "io.quarkus.vertx.http.auth-failure-handler";
 
@@ -53,6 +53,7 @@ public class QuarkusHttpUser implements User {
     }
 
     @Override
+    @Deprecated
     public User clearCache() {
         return this;
     }
@@ -65,6 +66,7 @@ public class QuarkusHttpUser implements User {
     }
 
     @Override
+    @Deprecated
     public void setAuthProvider(AuthProvider authProvider) {
 
     }
@@ -93,6 +95,19 @@ public class QuarkusHttpUser implements User {
             return identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
         }
         return null;
+    }
+
+    @Override
+    public User merge(User other) {
+        if (other == null) {
+            return this;
+        }
+
+        principal()
+                // merge in the rhs
+                .mergeIn(other.principal());
+
+        return this;
     }
 
     /**

@@ -3,6 +3,12 @@ package io.quarkus.devtools.commands.handlers;
 import static io.quarkus.devtools.commands.RemoveExtensions.EXTENSION_MANAGER;
 import static io.quarkus.devtools.commands.handlers.QuarkusCommandHandlers.computeCoordsFromQuery;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import io.quarkus.devtools.commands.RemoveExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
@@ -10,13 +16,8 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.devtools.project.extensions.ExtensionManager.UninstallResult;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * This class is thread-safe. It extracts extensions to be removed from the project from an instance of
@@ -43,7 +44,7 @@ public class RemoveExtensionsCommandHandler implements QuarkusCommandHandler {
             final UninstallResult result = extensionManager.uninstall(keys);
             result.getUninstalled()
                     .forEach(a -> invocation.log()
-                            .info(MessageIcons.OK_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
+                            .info(MessageIcons.SUCCESS_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                     + " has been uninstalled"));
             return new QuarkusCommandOutcome(true).setValue(RemoveExtensions.OUTCOME_UPDATED, result.isSourceUpdated());
         } catch (IOException e) {

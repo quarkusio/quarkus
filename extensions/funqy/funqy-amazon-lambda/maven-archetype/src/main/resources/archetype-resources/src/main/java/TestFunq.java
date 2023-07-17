@@ -1,6 +1,6 @@
 package ${package};
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import io.quarkus.funqy.Funq;
 
 public class TestFunq {

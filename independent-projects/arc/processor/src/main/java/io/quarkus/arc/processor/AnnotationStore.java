@@ -1,8 +1,7 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -10,12 +9,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
+
+import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
 
 /**
  * Applies {@link AnnotationsTransformer}s and caches the results of transformations.
@@ -47,7 +52,7 @@ public final class AnnotationStore {
 
     /**
      * All {@link AnnotationsTransformer}s are applied and the result is cached.
-     * 
+     *
      * @param target
      * @return the annotation instance for the given target
      */
@@ -59,7 +64,7 @@ public final class AnnotationStore {
     }
 
     /**
-     * 
+     *
      * @param target
      * @param name
      * @return the annotation instance if present, {@code null} otherwise
@@ -70,7 +75,7 @@ public final class AnnotationStore {
     }
 
     /**
-     * 
+     *
      * @param target
      * @param name
      * @return {@code true} if the specified target contains the specified annotation, @{code false} otherwise
@@ -81,7 +86,7 @@ public final class AnnotationStore {
     }
 
     /**
-     * 
+     *
      * @param target
      * @param names
      * @return {@code true} if the specified target contains any of the specified annotations, @{code false} otherwise
@@ -106,17 +111,23 @@ public final class AnnotationStore {
     }
 
     private Collection<AnnotationInstance> getOriginalAnnotations(AnnotationTarget target) {
+        Collection<AnnotationInstance> annotations;
         switch (target.kind()) {
             case CLASS:
-                return target.asClass().classAnnotations();
+                annotations = target.asClass().declaredAnnotations();
+                break;
             case METHOD:
                 // Note that the returning collection also contains method params annotations
-                return target.asMethod().annotations();
+                annotations = target.asMethod().annotations();
+                break;
             case FIELD:
-                return target.asField().annotations();
+                annotations = target.asField().annotations();
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported annotation target");
         }
+
+        return Annotations.onlyRuntimeVisible(annotations);
     }
 
     private List<AnnotationsTransformer> initTransformers(Kind kind, Collection<AnnotationsTransformer> transformers) {
@@ -136,6 +147,8 @@ public final class AnnotationStore {
     static class TransformationContextImpl extends AnnotationsTransformationContext<Collection<AnnotationInstance>>
             implements TransformationContext {
 
+        private static final Logger LOG = Logger.getLogger(TransformationContextImpl.class);
+
         public TransformationContextImpl(BuildContext buildContext, AnnotationTarget target,
                 Collection<AnnotationInstance> annotations) {
             super(buildContext, target, annotations);
@@ -143,6 +156,14 @@ public final class AnnotationStore {
 
         @Override
         public Transformation transform() {
+            if (LOG.isTraceEnabled()) {
+                String stack = Arrays.stream(Thread.currentThread().getStackTrace())
+                        .skip(2)
+                        .limit(7)
+                        .map(se -> "\n\t" + se.toString())
+                        .collect(Collectors.joining());
+                LOG.tracef("Transforming annotations of %s %s\n\t...", target, stack);
+            }
             return new Transformation(new ArrayList<>(getAnnotations()), getTarget(), this::setAnnotations);
         }
 

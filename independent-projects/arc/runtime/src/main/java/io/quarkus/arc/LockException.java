@@ -1,7 +1,7 @@
 package io.quarkus.arc;
 
 /**
- * 
+ *
  * @see Lock
  */
 public class LockException extends RuntimeException {

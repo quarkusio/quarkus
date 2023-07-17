@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.common.model;
 
 import java.util.function.Function;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
+
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptor;
+
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class ResourceInterceptors {
@@ -67,6 +69,59 @@ public class ResourceInterceptors {
         writerInterceptors.sort();
         readerInterceptors.sort();
         return this;
+    }
+
+    public void visitFilters(FiltersVisitor visitor) {
+        for (var f : containerRequestFilters.getPreMatchInterceptors()) {
+            var visitResult = visitor.visitPreMatchRequestFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+        for (var f : containerRequestFilters.getGlobalResourceInterceptors()) {
+            var visitResult = visitor.visitGlobalRequestFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+
+        }
+        for (var f : containerRequestFilters.getNameResourceInterceptors()) {
+            var visitResult = visitor.visitNamedRequestFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+
+        for (var f : containerResponseFilters.getGlobalResourceInterceptors()) {
+            var visitResult = visitor.visitGlobalResponseFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+        for (var f : containerResponseFilters.getNameResourceInterceptors()) {
+            var visitResult = visitor.visitNamedResponseFilter(f);
+            if (visitResult == FiltersVisitor.VisitResult.ABORT) {
+                return;
+            }
+        }
+    }
+
+    public interface FiltersVisitor {
+
+        VisitResult visitPreMatchRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor);
+
+        VisitResult visitGlobalRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor);
+
+        VisitResult visitNamedRequestFilter(ResourceInterceptor<ContainerRequestFilter> interceptor);
+
+        VisitResult visitGlobalResponseFilter(ResourceInterceptor<ContainerResponseFilter> interceptor);
+
+        VisitResult visitNamedResponseFilter(ResourceInterceptor<ContainerResponseFilter> interceptor);
+
+        enum VisitResult {
+            CONTINUE,
+            ABORT
+        }
     }
 
 }

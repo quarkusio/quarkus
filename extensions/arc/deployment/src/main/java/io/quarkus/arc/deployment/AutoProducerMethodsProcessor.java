@@ -3,11 +3,11 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.arc.processor.Annotations.contains;
 import static io.quarkus.arc.processor.Annotations.containsAny;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Produces;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -32,20 +32,20 @@ public class AutoProducerMethodsProcessor {
     @BuildStep
     void annotationTransformer(ArcConfig config, BeanArchiveIndexBuildItem beanArchiveIndex,
             CustomScopeAnnotationsBuildItem scopes,
-            List<AdditionalStereotypeBuildItem> additionalStereotypes,
+            List<StereotypeRegistrarBuildItem> stereotypeRegistrars,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
         if (!config.autoProducerMethods) {
             return;
         }
-        List<DotName> qualifiersAndStereotypes = new ArrayList<>();
+        Set<DotName> qualifiersAndStereotypes = new HashSet<>();
         for (AnnotationInstance qualifier : beanArchiveIndex.getIndex().getAnnotations(DotNames.QUALIFIER)) {
             qualifiersAndStereotypes.add(qualifier.target().asClass().name());
         }
-        for (AnnotationInstance qualifier : beanArchiveIndex.getIndex().getAnnotations(DotNames.STEREOTYPE)) {
-            qualifiersAndStereotypes.add(qualifier.target().asClass().name());
+        for (AnnotationInstance stereotype : beanArchiveIndex.getIndex().getAnnotations(DotNames.STEREOTYPE)) {
+            qualifiersAndStereotypes.add(stereotype.target().asClass().name());
         }
-        for (AdditionalStereotypeBuildItem additionalStereotype : additionalStereotypes) {
-            qualifiersAndStereotypes.addAll(additionalStereotype.getStereotypes().keySet());
+        for (StereotypeRegistrarBuildItem stereotypeRegistrar : stereotypeRegistrars) {
+            qualifiersAndStereotypes.addAll(stereotypeRegistrar.getStereotypeRegistrar().getAdditionalStereotypes());
         }
         LOGGER.debugf("Add missing @Produces to methods annotated with %s", qualifiersAndStereotypes);
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -69,7 +69,7 @@ public class AutoProducerMethodsProcessor {
                 Set<AnnotationInstance> methodAnnotations = Annotations.getAnnotations(Kind.METHOD, ctx.getAnnotations());
                 if (methodAnnotations.isEmpty() || contains(methodAnnotations, DotNames.PRODUCES)
                         || contains(methodAnnotations, DotNames.INJECT)) {
-                    // Skip methods with no annotations, initializers and methods already annotated with @Produces 
+                    // Skip methods with no annotations, initializers and methods already annotated with @Produces
                     return;
                 }
                 Set<AnnotationInstance> parameterAnnotations = Annotations.getAnnotations(Kind.METHOD_PARAMETER,

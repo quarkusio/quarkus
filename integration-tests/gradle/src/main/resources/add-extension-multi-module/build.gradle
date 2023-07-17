@@ -1,12 +1,10 @@
 buildscript {
 
     repositories {
-        if (System.properties.containsKey('maven.repo.local')) {
-            maven {
-                url System.properties.get('maven.repo.local')
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
             }
-        } else {
-            mavenLocal()
         }
         mavenCentral()
         gradlePluginPortal()
@@ -33,15 +31,14 @@ subprojects {
         dependsOn 'cleanTest'
         useJUnitPlatform()
         forkEvery 1
+        systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
     }
 
     repositories {
-        if (System.properties.containsKey('maven.repo.local')) {
-            maven {
-                url System.properties.get('maven.repo.local')
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
             }
-        } else {
-            mavenLocal()
         }
         mavenCentral()
     }

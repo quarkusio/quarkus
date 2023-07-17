@@ -4,11 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class PropertyNotFoundThrowExceptionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("foos:{foos}"), "templates/test.html")
                     .addAsResource(new StringAsset("quarkus.qute.property-not-found-strategy=throw-exception"
                             + "\nquarkus.qute.strict-rendering=false"),
@@ -38,7 +36,7 @@ public class PropertyNotFoundThrowExceptionTest {
         } catch (Exception expected) {
             Throwable rootCause = ExceptionUtil.getRootCause(expected);
             assertEquals(TemplateException.class, rootCause.getClass());
-            assertTrue(rootCause.getMessage().contains("{foos}"));
+            assertTrue(rootCause.getMessage().contains("Entry \"foos\" not found in the data map"), rootCause.getMessage());
         }
     }
 

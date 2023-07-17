@@ -6,7 +6,11 @@ import java.security.ProtectionDomain;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.jar.Manifest;
+
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.paths.OpenPathTree;
 
 public class FilteredClassPathElement implements ClassPathElement {
 
@@ -16,6 +20,21 @@ public class FilteredClassPathElement implements ClassPathElement {
     public FilteredClassPathElement(ClassPathElement delegate, Collection<String> removed) {
         this.delegate = delegate;
         this.removed = new HashSet<>(removed);
+    }
+
+    @Override
+    public ArtifactKey getDependencyKey() {
+        return delegate.getDependencyKey();
+    }
+
+    @Override
+    public boolean isRuntime() {
+        return delegate.isRuntime();
+    }
+
+    @Override
+    public <T> T apply(Function<OpenPathTree, T> func) {
+        return delegate.apply(func);
     }
 
     @Override

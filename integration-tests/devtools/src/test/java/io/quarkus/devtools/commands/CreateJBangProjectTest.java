@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.devtools.commands.CreateJBangProject.CreateJBangProjectKey;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
@@ -25,7 +26,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
         assertCreateJBangProject(newCreateJBangProject(projectDir)
-                .setValue("noJBangWrapper", false));
+                .setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, false));
 
         assertThat(projectDir.resolve("jbang")).exists();
 
@@ -41,7 +42,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
         assertCreateJBangProject(newCreateJBangProject(projectDir)
-                .setValue("noJBangWrapper", true));
+                .setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, true));
 
         assertThat(projectDir.resolve("jbang")).doesNotExist();
 
@@ -61,7 +62,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
 
         assertCreateJBangProject(newCreateJBangProject(projectDir)
                 .extensions(extensions)
-                .setValue("noJBangWrapper", false));
+                .setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, false));
 
         assertThat(projectDir.resolve("jbang")).exists();
 

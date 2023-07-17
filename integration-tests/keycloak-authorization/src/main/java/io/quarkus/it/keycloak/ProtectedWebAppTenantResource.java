@@ -2,11 +2,9 @@ package io.quarkus.it.keycloak;
 
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.security.auth.AuthPermission;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.keycloak.representations.idm.authorization.Permission;
 
@@ -23,12 +21,6 @@ public class ProtectedWebAppTenantResource {
 
     @GET
     public Uni<List<Permission>> permissions() {
-        return identity.checkPermission(new AuthPermission("Permission Resource WebApp")).onItem()
-                .transform(granted -> {
-                    if (granted) {
-                        return identity.getAttribute("permissions");
-                    }
-                    throw new ForbiddenException();
-                });
+        return Uni.createFrom().item(identity.<List<Permission>> getAttribute("permissions"));
     }
 }

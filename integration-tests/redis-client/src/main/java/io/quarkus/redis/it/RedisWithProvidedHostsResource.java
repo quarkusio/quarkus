@@ -1,62 +1,56 @@
 package io.quarkus.redis.it;
 
-import java.util.Arrays;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-
-import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.client.RedisClientName;
-import io.quarkus.redis.client.reactive.ReactiveRedisClient;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.value.ReactiveValueCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 import io.smallrye.mutiny.Uni;
-import io.vertx.redis.client.Response;
 
 @Path("/quarkus-redis-provided-hosts")
 @ApplicationScoped
 public class RedisWithProvidedHostsResource {
-    private RedisClient redisClient;
-    private ReactiveRedisClient reactiveRedisClient;
+
+    private final ValueCommands<String, String> blocking;
+    private final ReactiveValueCommands<String, String> reactive;
 
     @Inject
-    public RedisWithProvidedHostsResource(@RedisClientName("provided-hosts") RedisClient redisClient,
-            @RedisClientName("provided-hosts") ReactiveRedisClient reactiveRedisClient) {
-        this.redisClient = redisClient;
-        this.reactiveRedisClient = reactiveRedisClient;
+    public RedisWithProvidedHostsResource(@RedisClientName("provided-hosts") RedisDataSource ds,
+            @RedisClientName("provided-hosts") ReactiveRedisDataSource reactiveDs) {
+        blocking = ds.value(String.class);
+        reactive = reactiveDs.value(String.class);
     }
 
-    // synchronous
     @GET
     @Path("/sync/{key}")
     public String getSync(@PathParam("key") String key) {
-        Response response = redisClient.get(key);
-        return response == null ? null : response.toString();
+        return blocking.get(key);
     }
 
     @POST
     @Path("/sync/{key}")
     public void setSync(@PathParam("key") String key, String value) {
-        this.redisClient.set(Arrays.asList(key, value));
+        blocking.set(key, value);
     }
 
     // reactive
     @GET
     @Path("/reactive/{key}")
     public Uni<String> getReactive(@PathParam("key") String key) {
-        return reactiveRedisClient
-                .get(key)
-                .map(response -> response == null ? null : response.toString());
+        return reactive.get(key);
     }
 
     @POST
     @Path("/reactive/{key}")
     public Uni<Void> setReactive(@PathParam("key") String key, String value) {
-        return this.reactiveRedisClient
-                .set(Arrays.asList(key, value))
-                .map(response -> null);
+        return this.reactive.set(key, value);
     }
 
 }

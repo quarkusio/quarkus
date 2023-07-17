@@ -6,12 +6,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
-import org.apache.commons.compress.utils.IOUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.IsNormal;
@@ -22,6 +22,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 /**
@@ -103,6 +104,7 @@ public class FunctionZipProcessor {
      */
     @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
     public void nativeZip(OutputTargetBuildItem target,
+            Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             NativeImageBuildItem nativeImage) throws Exception {
         Path zipDir = findNativeZipDir(target.getOutputDirectory());
@@ -142,7 +144,7 @@ public class FunctionZipProcessor {
     private void copyZipEntry(ZipArchiveOutputStream zip, InputStream zinput, ZipArchiveEntry from) throws Exception {
         ZipArchiveEntry entry = new ZipArchiveEntry(from);
         zip.putArchiveEntry(entry);
-        IOUtils.copy(zinput, zip);
+        zinput.transferTo(zip);
         zip.closeArchiveEntry();
     }
 
@@ -151,7 +153,7 @@ public class FunctionZipProcessor {
         entry.setUnixMode(mode);
         zip.putArchiveEntry(entry);
         try (InputStream i = Files.newInputStream(path)) {
-            IOUtils.copy(i, zip);
+            i.transferTo(zip);
         }
         zip.closeArchiveEntry();
     }

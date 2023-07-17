@@ -10,8 +10,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -28,7 +26,7 @@ public class DevConsoleUnaryMethodTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(MutinyGreeterGrpc.class.getPackage())
+            .withApplicationRoot((jar) -> jar.addPackage(MutinyGreeterGrpc.class.getPackage())
                     .addClass(MutinyHelloService.class));
 
     @Test
@@ -39,7 +37,7 @@ public class DevConsoleUnaryMethodTest {
             List<String> incomingMessages = new CopyOnWriteArrayList<>();
             HttpClient client = vertx.createHttpClient();
 
-            client.webSocket(8080, "localhost", "/q/dev/grpc-test", result -> {
+            client.webSocket(8080, "localhost", "/q/dev-v1/io.quarkus.quarkus-grpc/grpc-test", result -> {
                 if (result.failed()) {
                     log.error("failure making a web socket connection", result.cause());
                     return;
@@ -52,7 +50,7 @@ public class DevConsoleUnaryMethodTest {
             });
 
             await().atMost(5, TimeUnit.SECONDS)
-                    .until(() -> incomingMessages.size() > 0);
+                    .until(() -> incomingMessages.size() > 1);
 
             assertThat(incomingMessages).hasSize(2);
 

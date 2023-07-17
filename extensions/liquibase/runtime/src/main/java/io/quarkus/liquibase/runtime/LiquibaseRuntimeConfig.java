@@ -15,7 +15,7 @@ public final class LiquibaseRuntimeConfig {
 
     /**
      * Gets the default runtime configuration
-     * 
+     *
      * @return the liquibase runtime default configuration
      */
     public static LiquibaseRuntimeConfig defaultConfig() {
@@ -28,6 +28,13 @@ public final class LiquibaseRuntimeConfig {
     public LiquibaseDataSourceRuntimeConfig getConfigForDataSourceName(String dataSourceName) {
         return namedDataSources.getOrDefault(dataSourceName, LiquibaseDataSourceRuntimeConfig.defaultConfig());
     }
+
+    /**
+     * Flag to enable / disable Liquibase.
+     *
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
 
     /**
      * Liquibase configuration for the default datasource.

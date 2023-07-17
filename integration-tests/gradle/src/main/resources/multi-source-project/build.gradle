@@ -1,20 +1,17 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.kotlin.jvm' version "1.5.21"
-    id "org.jetbrains.kotlin.plugin.allopen" version "1.5.21"
+    id 'org.jetbrains.kotlin.jvm'
+    id 'org.jetbrains.kotlin.plugin.allopen'
     id 'io.quarkus'
 }
 
 repositories {
-    mavenCentral()
-    // in case a custom local repo is configured we are going to use that instead of the default mavenLocal()
-    if (System.properties.containsKey('maven.repo.local')) {
-        maven {
-            url System.properties.get('maven.repo.local')
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
         }
-    } else {
-        mavenLocal()
     }
+    mavenCentral()
 }
 
 dependencies {
@@ -31,8 +28,8 @@ group 'org.acme'
 version '1.0.0-SNAPSHOT'
 
 allOpen {
-    annotation("javax.ws.rs.Path")
-    annotation("javax.enterprise.context.ApplicationScoped")
+    annotation("jakarta.ws.rs.Path")
+    annotation("jakarta.enterprise.context.ApplicationScoped")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 

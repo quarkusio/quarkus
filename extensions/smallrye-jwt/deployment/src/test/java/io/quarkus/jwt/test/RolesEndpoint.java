@@ -3,18 +3,20 @@ package io.quarkus.jwt.test;
 import java.security.Principal;
 import java.util.Date;
 
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.SecurityContext;
 
 import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
@@ -61,7 +63,7 @@ public class RolesEndpoint {
 
     /**
      * Validate that the SecurityContext#getUserPrincipal is a JsonWebToken
-     * 
+     *
      * @param sec
      * @return
      */
@@ -76,7 +78,7 @@ public class RolesEndpoint {
 
     /**
      * This endpoint requires a role that is mapped to the group1 role
-     * 
+     *
      * @return principal name
      */
     @GET
@@ -142,6 +144,21 @@ public class RolesEndpoint {
     public String getInjectedPrincipal(@Context SecurityContext sec) {
         boolean isJsonWebToken = this.jwtPrincipal instanceof JsonWebToken;
         return "isJsonWebToken:" + isJsonWebToken;
+    }
+
+    @POST
+    @Path("/postInjectedPrincipal")
+    @RolesAllowed("Tester")
+    public String postInjectedPrincipal(String body) {
+        return body + jwtPrincipal.getName();
+    }
+
+    @POST
+    @Path("/postInjectedPrincipalJson")
+    @RolesAllowed("Tester")
+    @Consumes("application/json")
+    public String postInjectedPrincipalJson(User user) {
+        return "name:" + user.getName() + ",principal:" + jwtPrincipal.getName();
     }
 
     @GET

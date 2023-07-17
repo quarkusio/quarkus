@@ -2,9 +2,7 @@ package io.quarkus.hibernate.orm.envers;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ public class EnversValidationTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyAuditedEntity.class, MyRevisionEntity.class, MyRevisionListener.class,
                             EnversTestValidationResource.class)
                     .addAsResource("application.properties")

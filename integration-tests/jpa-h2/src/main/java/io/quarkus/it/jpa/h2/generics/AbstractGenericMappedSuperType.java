@@ -1,8 +1,8 @@
 package io.quarkus.it.jpa.h2.generics;
 
-import javax.persistence.Basic;
-import javax.persistence.Lob;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Lob;
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public abstract class AbstractGenericMappedSuperType<T> {

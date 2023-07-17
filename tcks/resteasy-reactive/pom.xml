@@ -17,7 +17,7 @@
     <properties>
 
         <!-- to avoid sudden surprises, checkout is pinned to a specific commit -->
-        <resteasy-reactive-testsuite.repo.ref>e3cd2c5e5b9262ae5d1197005c542fdd02f9d4ff</resteasy-reactive-testsuite.repo.ref>
+        <resteasy-reactive-testsuite.repo.ref>8937bc59acc21658d1c9acf59dc3e8960fd98869</resteasy-reactive-testsuite.repo.ref>
 
         <exec.skip>${skipTests}</exec.skip>
         <resteasy-reactive-testsuite.clone.skip>${exec.skip}</resteasy-reactive-testsuite.clone.skip>
@@ -72,7 +72,7 @@
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>mvnw</executable>
+                            <executable>${maven.multiModuleProjectDirectory}/mvnw</executable>
                             <commandlineArgs>-e -B --settings ${session.request.userSettingsFile.path} clean install ${resteasy-reactive-testsuite.mvn.args}</commandlineArgs>
                             <skip>${resteasy-reactive-testsuite.test.skip}</skip>
                         </configuration>

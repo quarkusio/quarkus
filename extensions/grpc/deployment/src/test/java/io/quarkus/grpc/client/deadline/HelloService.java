@@ -17,4 +17,9 @@ public class HelloService implements Greeter {
                 .by(Duration.ofMillis(400));
     }
 
+    @Override
+    public Uni<HelloReply> wEIRD(HelloRequest request) {
+        return sayHello(request);
+    }
+
 }

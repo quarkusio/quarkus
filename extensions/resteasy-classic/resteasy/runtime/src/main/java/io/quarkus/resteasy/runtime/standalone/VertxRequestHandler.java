@@ -1,15 +1,18 @@
 package io.quarkus.resteasy.runtime.standalone;
 
+import static io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder.RESTEASY_URI_INFO;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.ws.rs.core.SecurityContext;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.ResteasyContext;
@@ -19,8 +22,8 @@ import org.jboss.resteasy.specimpl.ResteasyUriInfo;
 import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.resteasy.runtime.ContextUtil;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
@@ -45,19 +48,16 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final RequestDispatcher dispatcher;
     protected final String rootPath;
     protected final BufferAllocator allocator;
-    protected final BeanContainer beanContainer;
     protected final CurrentIdentityAssociation association;
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
     protected final long readTimeout;
 
     public VertxRequestHandler(Vertx vertx,
-            BeanContainer beanContainer,
             ResteasyDeployment deployment,
             String rootPath,
             BufferAllocator allocator, Executor executor, long readTimeout) {
         this.vertx = vertx;
-        this.beanContainer = beanContainer;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
                 deployment.getProviderFactory(), null, Thread.currentThread().getContextClassLoader());
         this.rootPath = rootPath;
@@ -101,23 +101,32 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     }
 
     private void dispatch(RoutingContext routingContext, InputStream is, VertxOutput output) {
-        ManagedContext requestContext = beanContainer.requestContext();
-        requestContext.activate();
-        routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-        if (association != null) {
-            QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
-            if (existing != null) {
-                SecurityIdentity identity = existing.getSecurityIdentity();
-                association.setIdentity(identity);
-            } else {
-                association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
+        ResteasyUriInfo uriInfo = routingContext.get(RESTEASY_URI_INFO);
+        if (uriInfo == null) {
+            try {
+                uriInfo = VertxUtil.extractUriInfo(routingContext.request(), rootPath);
+            } catch (Exception e) {
+                if (e.getCause() instanceof MalformedInputException) {
+                    log.debug(e.getCause());
+                    routingContext.response().setStatusCode(400);
+                } else {
+                    log.debug(e);
+                    routingContext.response().setStatusCode(500);
+                }
+                routingContext.response().end();
+                return;
             }
         }
+
+        ManagedContext requestContext = Arc.container().requestContext();
+        requestContext.activate();
+        routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+        setCurrentIdentityAssociation(routingContext);
         currentVertxRequest.setCurrent(routingContext);
         try {
             Context ctx = vertx.getOrCreateContext();
             HttpServerRequest request = routingContext.request();
-            ResteasyUriInfo uriInfo = VertxUtil.extractUriInfo(request, rootPath);
+
             ResteasyHttpHeaders headers = VertxUtil.extractHttpHeaders(request);
             HttpServerResponse response = request.response();
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
@@ -135,7 +144,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             map.put(RoutingContext.class, routingContext);
             try (ResteasyContext.CloseableContext restCtx = ResteasyContext.addCloseableContextDataLevel(map)) {
                 ContextUtil.pushContext(routingContext);
-                dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true);
+                dispatcher.service(ctx, request, response, vertxRequest, vertxResponse, true, routingContext.failure());
             } catch (Failure e1) {
                 vertxResponse.setStatus(e1.getErrorCode());
                 if (e1.isLoggable()) {
@@ -170,6 +179,18 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 if (requestContext.isActive()) {
                     requestContext.terminate();
                 }
+            }
+        }
+    }
+
+    protected void setCurrentIdentityAssociation(RoutingContext routingContext) {
+        if (association != null) {
+            QuarkusHttpUser existing = (QuarkusHttpUser) routingContext.user();
+            if (existing != null) {
+                SecurityIdentity identity = existing.getSecurityIdentity();
+                association.setIdentity(identity);
+            } else {
+                association.setIdentity(QuarkusHttpUser.getSecurityIdentity(routingContext, null));
             }
         }
     }

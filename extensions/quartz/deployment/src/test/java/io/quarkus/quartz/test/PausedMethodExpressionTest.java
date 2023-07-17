@@ -5,13 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Priority;
-import javax.enterprise.event.Observes;
-import javax.interceptor.Interceptor;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.event.Observes;
+import jakarta.interceptor.Interceptor;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class PausedMethodExpressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PausedMethodExpressionTest.Jobs.class)
                     .addAsResource(new StringAsset("scheduler.identity=myIdentity"),
                             "application.properties"));

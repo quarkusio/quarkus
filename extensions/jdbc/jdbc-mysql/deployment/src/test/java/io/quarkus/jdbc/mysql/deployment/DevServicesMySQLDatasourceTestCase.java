@@ -9,10 +9,8 @@ import java.sql.Connection;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,7 +23,7 @@ public class DevServicesMySQLDatasourceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+            .withEmptyApplication()
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     // There are other warnings: JDK8, TestContainers, drivers, ...
@@ -46,7 +44,7 @@ public class DevServicesMySQLDatasourceTestCase {
         try {
             configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         } catch (NullPointerException e) {
-            // we catch the NPE here as we have a proxycd  and we can't test dataSource directly
+            // we catch the NPE here as we have a proxycd and we can't test dataSource directly
             fail("Datasource should not be null");
         }
         assertTrue(configuration.connectionFactoryConfiguration().jdbcUrl().contains("jdbc:mysql:"));

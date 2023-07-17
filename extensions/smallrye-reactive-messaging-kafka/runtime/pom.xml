@@ -26,26 +26,27 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jackson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-kafka-client</artifactId>
-            <exclusions>
-               <exclusion>
-	                <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-               </exclusion>
-               <exclusion>
-                    <groupId>log4j</groupId>
-                    <artifactId>log4j</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
@@ -70,8 +71,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -80,7 +81,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

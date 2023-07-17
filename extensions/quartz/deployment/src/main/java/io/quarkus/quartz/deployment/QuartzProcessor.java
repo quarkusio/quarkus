@@ -4,33 +4,34 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 import org.quartz.Job;
+import org.quartz.JobDataMap;
 import org.quartz.JobListener;
 import org.quartz.TriggerListener;
 import org.quartz.core.QuartzSchedulerThread;
 import org.quartz.core.SchedulerSignalerImpl;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.jdbcjobstore.AttributeRestoringConnectionInvocationHandler;
-import org.quartz.impl.jdbcjobstore.DB2v8Delegate;
-import org.quartz.impl.jdbcjobstore.HSQLDBDelegate;
 import org.quartz.impl.jdbcjobstore.JobStoreSupport;
-import org.quartz.impl.jdbcjobstore.MSSQLDelegate;
-import org.quartz.impl.jdbcjobstore.PostgreSQLDelegate;
-import org.quartz.impl.jdbcjobstore.StdJDBCDelegate;
 import org.quartz.impl.triggers.AbstractTrigger;
 import org.quartz.impl.triggers.SimpleTriggerImpl;
 import org.quartz.simpl.CascadingClassLoadHelper;
+import org.quartz.simpl.InitThreadContextClassLoadHelper;
 import org.quartz.simpl.SimpleInstanceIdGenerator;
 import org.quartz.simpl.SimpleThreadPool;
+import org.quartz.spi.InstanceIdGenerator;
 import org.quartz.spi.SchedulerPlugin;
+import org.quartz.utils.DirtyFlagMap;
+import org.quartz.utils.StringKeyDirtyFlagMap;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
@@ -49,15 +50,20 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
 import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
 import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
-import io.quarkus.quartz.runtime.QuartzScheduler;
+import io.quarkus.quartz.runtime.QuartzSchedulerImpl;
 import io.quarkus.quartz.runtime.QuartzSupport;
+import io.quarkus.quartz.runtime.jdbc.QuarkusDBv8Delegate;
+import io.quarkus.quartz.runtime.jdbc.QuarkusHSQLDBDelegate;
+import io.quarkus.quartz.runtime.jdbc.QuarkusMSSQLDelegate;
+import io.quarkus.quartz.runtime.jdbc.QuarkusPostgreSQLDelegate;
+import io.quarkus.quartz.runtime.jdbc.QuarkusStdJDBCDelegate;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
  *
@@ -73,7 +79,7 @@ public class QuartzProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem beans() {
-        return new AdditionalBeanBuildItem(QuartzScheduler.class);
+        return new AdditionalBeanBuildItem(QuartzSchedulerImpl.class);
     }
 
     @BuildStep
@@ -97,14 +103,14 @@ public class QuartzProcessor {
             Capabilities capabilities) {
         if (!config.storeType.isDbStore()) {
             if (config.clustered) {
-                throw new ConfigurationError("Clustered jobs configured with unsupported job store option");
+                throw new ConfigurationException("Clustered jobs configured with unsupported job store option");
             }
 
             return new QuartzJDBCDriverDialectBuildItem(Optional.empty());
         }
 
         if (capabilities.isMissing(Capability.AGROAL)) {
-            throw new ConfigurationError(
+            throw new ConfigurationException(
                     "The Agroal extension is missing and it is required when a Quartz JDBC store is used.");
         }
 
@@ -117,7 +123,7 @@ public class QuartzProcessor {
             String message = String.format(
                     "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
                     config.dataSourceName.isPresent() ? config.dataSourceName.get() : "default");
-            throw new ConfigurationError(message);
+            throw new ConfigurationException(message);
         }
 
         return new QuartzJDBCDriverDialectBuildItem(Optional.of(guessDriver(selectedJdbcDataSourceBuildItem)));
@@ -125,25 +131,24 @@ public class QuartzProcessor {
 
     private String guessDriver(Optional<JdbcDataSourceBuildItem> jdbcDataSource) {
         if (!jdbcDataSource.isPresent()) {
-            return StdJDBCDelegate.class.getName();
+            return QuarkusStdJDBCDelegate.class.getName();
         }
 
         String dataSourceKind = jdbcDataSource.get().getDbKind();
         if (DatabaseKind.isPostgreSQL(dataSourceKind)) {
-            return PostgreSQLDelegate.class.getName();
+            return QuarkusPostgreSQLDelegate.class.getName();
         }
         if (DatabaseKind.isH2(dataSourceKind)) {
-            return HSQLDBDelegate.class.getName();
+            return QuarkusHSQLDBDelegate.class.getName();
         }
         if (DatabaseKind.isMsSQL(dataSourceKind)) {
-            return MSSQLDelegate.class.getName();
+            return QuarkusMSSQLDelegate.class.getName();
         }
         if (DatabaseKind.isDB2(dataSourceKind)) {
-            return DB2v8Delegate.class.getName();
+            return QuarkusDBv8Delegate.class.getName();
         }
 
-        return StdJDBCDelegate.class.getName();
-
+        return QuarkusStdJDBCDelegate.class.getName();
     }
 
     @BuildStep
@@ -151,25 +156,47 @@ public class QuartzProcessor {
             QuartzJDBCDriverDialectBuildItem driverDialect) {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
 
-        reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleThreadPool.class.getName()));
-        reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleInstanceIdGenerator.class.getName()));
-        reflectiveClasses.add(new ReflectiveClassBuildItem(false, false, CascadingClassLoadHelper.class.getName()));
-        reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, config.storeType.clazz));
-        reflectiveClasses
-                .add(new ReflectiveClassBuildItem(false, false, org.quartz.simpl.InitThreadContextClassLoadHelper.class));
-
-        if (config.storeType.isDbStore()) {
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, JobStoreSupport.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, true, Connection.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, AbstractTrigger.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, SimpleTriggerImpl.class.getName()));
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, driverDialect.getDriver().get()));
-            reflectiveClasses
-                    .add(new ReflectiveClassBuildItem(true, true, "io.quarkus.quartz.runtime.QuartzScheduler$InvokerJob"));
-            reflectiveClasses
-                    .add(new ReflectiveClassBuildItem(true, false, QuarkusQuartzConnectionPoolProvider.class.getName()));
+        if (config.serializeJobData.orElse(false)) {
+            reflectiveClasses.add(ReflectiveClassBuildItem.builder(
+                    String.class,
+                    JobDataMap.class,
+                    DirtyFlagMap.class,
+                    StringKeyDirtyFlagMap.class,
+                    HashMap.class).serialization(true).build());
         }
 
+        reflectiveClasses
+                .add(ReflectiveClassBuildItem.builder(SimpleThreadPool.class.getName()).methods().build());
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(SimpleInstanceIdGenerator.class.getName()).methods()
+                .build());
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(CascadingClassLoadHelper.class.getName())
+                .build());
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(config.storeType.clazz).methods().fields().build());
+        reflectiveClasses
+                .add(ReflectiveClassBuildItem.builder(InitThreadContextClassLoadHelper.class)
+                        .build());
+
+        if (config.storeType.isDbStore()) {
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(JobStoreSupport.class.getName()).methods().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(Connection.class.getName()).methods().fields().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(AbstractTrigger.class.getName()).methods().build());
+            reflectiveClasses.add(
+                    ReflectiveClassBuildItem.builder(SimpleTriggerImpl.class.getName()).methods().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get()).methods().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
+                            .methods().fields().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder(QuarkusQuartzConnectionPoolProvider.class.getName()).methods()
+                            .build());
+        }
+
+        reflectiveClasses
+                .addAll(getAdditionalConfigurationReflectiveClasses(config.instanceIdGenerators, InstanceIdGenerator.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners, TriggerListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners, JobListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins, SchedulerPlugin.class));
@@ -189,7 +216,7 @@ public class QuartzProcessor {
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException(e);
             }
-            reflectiveClasses.add(new ReflectiveClassBuildItem(true, false, props.clazz));
+            reflectiveClasses.add(ReflectiveClassBuildItem.builder(props.clazz).methods().build());
         }
         return reflectiveClasses;
     }

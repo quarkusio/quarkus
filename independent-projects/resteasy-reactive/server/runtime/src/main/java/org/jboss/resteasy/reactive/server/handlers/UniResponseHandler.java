@@ -1,9 +1,11 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
-import io.smallrye.mutiny.Uni;
 import java.util.function.Consumer;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
+
+import io.smallrye.mutiny.Uni;
 
 public class UniResponseHandler implements ServerRestHandler {
 

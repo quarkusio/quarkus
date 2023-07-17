@@ -7,6 +7,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -33,6 +34,11 @@ public class OracleProcessor {
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver) {
         jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.ORACLE, "oracle.jdbc.driver.OracleDriver",
                 "oracle.jdbc.xa.client.OracleXADataSource"));
+    }
+
+    @BuildStep
+    DevServicesDatasourceConfigurationHandlerBuildItem devDbHandler() {
+        return DevServicesDatasourceConfigurationHandlerBuildItem.jdbc(DatabaseKind.ORACLE);
     }
 
     @BuildStep

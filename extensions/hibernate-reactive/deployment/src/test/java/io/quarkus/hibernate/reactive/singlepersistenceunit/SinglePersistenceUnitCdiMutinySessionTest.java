@@ -2,23 +2,22 @@ package io.quarkus.hibernate.reactive.singlepersistenceunit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.enterprise.context.control.ActivateRequestContext;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 
 public class SinglePersistenceUnitCdiMutinySessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(DefaultEntity.class)
                     .addAsResource("application.properties"));
 
@@ -26,16 +25,13 @@ public class SinglePersistenceUnitCdiMutinySessionTest {
     Mutiny.SessionFactory sessionFactory;
 
     @Test
-    @ActivateRequestContext
-    public void test() {
+    @RunOnVertxContext
+    public void test(UniAsserter asserter) {
         DefaultEntity entity = new DefaultEntity("default");
-
-        DefaultEntity retrievedEntity = sessionFactory.withTransaction((session, tx) -> session.persist(entity))
-                .chain(() -> sessionFactory.withSession(session -> session.find(DefaultEntity.class, entity.getId())))
-                .await().indefinitely();
-
-        assertThat(retrievedEntity)
-                .isNotSameAs(entity)
-                .returns(entity.getName(), DefaultEntity::getName);
+        asserter.assertThat(() -> sessionFactory.withTransaction((session, tx) -> session.persist(entity))
+                .chain(() -> sessionFactory.withSession(session -> session.find(DefaultEntity.class, entity.getId()))),
+                retrievedEntity -> assertThat(retrievedEntity)
+                        .isNotSameAs(entity)
+                        .returns(entity.getName(), DefaultEntity::getName));
     }
 }

@@ -8,4 +8,6 @@ metadata:
   guide: "https://quarkus.io/guides/cache"
   categories:
   - "data"
-  status: "preview"
+  status: "stable"
+  config:
+  - "quarkus.cache."

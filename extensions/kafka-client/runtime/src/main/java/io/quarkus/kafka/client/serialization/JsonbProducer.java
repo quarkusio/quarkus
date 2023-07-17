@@ -1,7 +1,7 @@
 package io.quarkus.kafka.client.serialization;
 
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
+import jakarta.json.bind.Jsonb;
+import jakarta.json.bind.JsonbBuilder;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;

@@ -1,0 +1,55 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Kubernetes
+include::_attributes.adoc[]
+:categories: cloud
+:summary: Start a Kubernetes API server automatically in dev and test modes.
+
+Dev Services for Kubernetes automatically starts a Kubernetes API server in dev mode and when running tests.
+So you don't have to start a Kubernetes cluster manually.
+The application is configured automatically.
+
+== Enabling / Disabling Dev Services for Kubernetes
+
+Dev Services for Kubernetes is automatically enabled unless:
+
+- `quarkus.kubernetes-client.devservices.enabled` is set to `false`
+- the `api-server-url` is configured
+- a valid Kube config file is found and `quarkus.kubernetes-client.devservices.override-kubeconfig` is not set to `true`
+- you include the `quarkus-test-kubernetes-client` dependency 
+
+Dev Services for Kubernetes relies on Docker to start the API server.
+If your environment does not support Docker, you will need to start the Kubernetes cluster manually, or connect to an already running Kubernetes cluster.
+You can configure the Kubernetes cluster access using either a Kube config file or the various properties available in the https://github.com/quarkusio/quarkus/blob/main/extensions/kubernetes-client/runtime-internal/src/main/java/io/quarkus/kubernetes/client/runtime/KubernetesClientBuildConfig.java[KubernetesClientBuildConfig] class.
+
+== Shared cluster
+
+Most of the time you need to share the cluster between applications.
+Dev Services for Kubernetes implements a _service discovery_ mechanism for your multiple Quarkus applications running in dev mode to share a single cluster.
+
+NOTE: Dev Services for Kubernetes starts the container with the `quarkus-dev-service-kubernetes` label which is used to identify the container.
+
+If you need multiple (shared) clusters, you can configure the `quarkus.kubernetes-client.devservices.service-name` configuration property and indicate the cluster name.
+It looks for a container with the name defined, or starts a new one if none can be found.
+The default service name is `kubernetes`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.kubernetes-client.devservices.shared=false`.
+
+== Configuring the cluster
+
+Dev Services for Kubernetes provides three different flavors of Kubernetes cluster. Each flavor supports different Kubernetes API versions.
+You can configure the flavor and version using the `quarkus.kubernetes-client.devservices.flavor` and `quarkus.kubernetes-client.devservices.api-version` properties:
+
+[source, properties]
+----
+quarkus.kubernetes-client.devservices.flavor=api-only # k3s or kind
+quarkus.kubernetes-client.devservices.api-version=1.22
+----
+
+`api-only` only starts a Kubernetes API Server. If you need a fully-featured Kubernetes cluster that can spin up Pods, you can use `k3s` or `kind`. Note that they both requires to run in Docker privileged mode.
+
+If `api-version` is not set, the latest version for the given flavor will be used. Otherwise, the version must match a https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json[version supported by the given flavor].

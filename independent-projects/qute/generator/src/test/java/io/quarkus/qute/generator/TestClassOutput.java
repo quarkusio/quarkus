@@ -16,11 +16,12 @@
 
 package io.quarkus.qute.generator;
 
-import io.quarkus.gizmo.ClassOutput;
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
+
+import io.quarkus.gizmo.ClassOutput;
 
 public class TestClassOutput implements ClassOutput {
 

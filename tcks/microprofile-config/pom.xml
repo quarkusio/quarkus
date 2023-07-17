@@ -12,6 +12,10 @@
     <artifactId>quarkus-tck-microprofile-config</artifactId>
     <name>Quarkus - TCK - MicroProfile Config</name>
 
+    <properties>
+        <microprofile-config-tck.version>3.0.3</microprofile-config-tck.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -64,7 +68,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-tck</artifactId>
-            <version>${microprofile-config-api.version}</version>
+            <version>${microprofile-config-tck.version}</version>
         </dependency>
     </dependencies>
 

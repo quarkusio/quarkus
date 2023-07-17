@@ -26,17 +26,18 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.security.deployment.JCAProviderBuildItem;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism;
 import io.quarkus.smallrye.jwt.runtime.auth.JsonWebTokenCredentialProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtPrincipalProducer;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.RawOptionalClaimCreator;
+import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
@@ -54,10 +55,13 @@ class SmallRyeJwtProcessor {
 
     private static final Logger log = Logger.getLogger(SmallRyeJwtProcessor.class.getName());
 
+    private static final String MP_JWT_VERIFY_KEY_LOCATION = "mp.jwt.verify.publickey.location";
+    private static final String MP_JWT_DECRYPT_KEY_LOCATION = "mp.jwt.decrypt.key.location";
+
     private static final DotName CLAIM_NAME = DotName.createSimple(Claim.class.getName());
     private static final DotName CLAIMS_NAME = DotName.createSimple(Claims.class.getName());
 
-    SmallRyeJWTConfig config;
+    SmallRyeJwtBuildTimeConfig config;
 
     @BuildStep(onlyIf = IsEnabled.class)
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
@@ -65,8 +69,8 @@ class SmallRyeJwtProcessor {
     }
 
     @BuildStep(onlyIf = IsEnabled.class)
-    EnableAllSecurityServicesBuildItem security() {
-        return new EnableAllSecurityServicesBuildItem();
+    public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+        securityInformationProducer.produce(SecurityInformationBuildItem.JWT());
     }
 
     /**
@@ -96,12 +100,14 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
 
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, SignatureAlgorithm.class));
-        reflectiveClasses.produce(new ReflectiveClassBuildItem(true, true, KeyEncryptionAlgorithm.class));
+        reflectiveClasses
+                .produce(ReflectiveClassBuildItem.builder(SignatureAlgorithm.class).methods().fields().build());
+        reflectiveClasses
+                .produce(ReflectiveClassBuildItem.builder(KeyEncryptionAlgorithm.class).methods().fields().build());
     }
 
     /**
-     * Register this extension as a MP-JWT feature
+     * Register this extension as an MP-JWT feature
      *
      * @return FeatureBuildItem
      */
@@ -115,18 +121,22 @@ class SmallRyeJwtProcessor {
      *
      * @return NativeImageResourceBuildItem
      */
-    @BuildStep
-    NativeImageResourceBuildItem registerNativeImageResources() {
-        final Config config = ConfigProvider.getConfig();
-        Optional<String> publicKeyLocationOpt = config.getOptionalValue("mp.jwt.verify.publickey.location", String.class);
-        if (publicKeyLocationOpt.isPresent()) {
-            final String publicKeyLocation = publicKeyLocationOpt.get();
-            if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
-                log.infof("Adding %s to native image", publicKeyLocation);
-                return new NativeImageResourceBuildItem(publicKeyLocation);
-            }
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
+    void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> nativeImageResource) {
+        Config config = ConfigProvider.getConfig();
+        registerKeyLocationResource(config, MP_JWT_VERIFY_KEY_LOCATION, nativeImageResource);
+        registerKeyLocationResource(config, MP_JWT_DECRYPT_KEY_LOCATION, nativeImageResource);
+    }
+
+    private void registerKeyLocationResource(Config config, String propertyName,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResource) {
+        Optional<String> keyLocation = config.getOptionalValue(propertyName, String.class);
+        if (keyLocation.isPresent() && keyLocation.get().length() > 1
+                && (keyLocation.get().indexOf(':') < 0 || keyLocation.get().startsWith("classpath:"))) {
+            log.infof("Adding %s to native image", keyLocation.get());
+            String location = keyLocation.get().startsWith("/") ? keyLocation.get().substring(1) : keyLocation.get();
+            nativeImageResource.produce(new NativeImageResourceBuildItem(location));
         }
-        return null;
     }
 
     /**
@@ -152,10 +162,10 @@ class SmallRyeJwtProcessor {
             }
             AnnotationInstance claimQualifier = injectionPoint.getRequiredQualifier(CLAIM_NAME);
             if (claimQualifier != null && injectionPoint.getType().name().equals(DotNames.PROVIDER)) {
-                // Classes from javax.json are handled specially
+                // Classes from jakarta.json are handled specially
                 Type actualType = injectionPoint.getRequiredType();
                 if (actualType.name().equals(DotNames.OPTIONAL) && !actualType.name().toString()
-                        .startsWith("javax.json")) {
+                        .startsWith("jakarta.json")) {
                     additionalTypes.add(actualType);
                 }
             }
@@ -175,7 +185,7 @@ class SmallRyeJwtProcessor {
     }
 
     public static class IsEnabled implements BooleanSupplier {
-        SmallRyeJWTConfig config;
+        SmallRyeJwtBuildTimeConfig config;
 
         public boolean getAsBoolean() {
             return config.enabled;

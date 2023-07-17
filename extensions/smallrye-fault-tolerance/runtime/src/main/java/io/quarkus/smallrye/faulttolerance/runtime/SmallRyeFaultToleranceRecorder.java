@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.enterprise.inject.spi.DeploymentException;
+import jakarta.enterprise.inject.spi.DeploymentException;
 
 import org.eclipse.microprofile.faulttolerance.exceptions.FaultToleranceDefinitionException;
 

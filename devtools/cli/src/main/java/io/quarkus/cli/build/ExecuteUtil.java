@@ -8,51 +8,30 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.utilities.OS;
+import io.quarkus.devtools.exec.ExecSupport;
+import io.quarkus.devtools.exec.Executable;
 
 public class ExecuteUtil {
 
-    public static File findExecutableFile(String base) {
-        String path = null;
-        String executable = base;
+    private static ExecSupport withOutput(OutputOptionMixin output) {
+        return new ExecSupport(output.out(), output.err(), output.isVerbose(), output.isCliTest());
+    }
 
-        if (OS.determineOS() == OS.WINDOWS) {
-            executable = base + ".cmd";
-            path = findExecutable(executable);
-            if (path == null) {
-                executable = base + ".bat";
-                path = findExecutable(executable);
-            }
-        } else {
-            executable = base;
-            path = findExecutable(executable);
-        }
-        if (path == null)
-            return null;
-        return new File(path, executable);
+    public static File findExecutableFile(String base) {
+        return Executable.findExecutableFile(base);
     }
 
     private static String findExecutable(String exec) {
-        return Stream.of(System.getenv("PATH").split(Pattern.quote(File.pathSeparator))).map(Paths::get)
-                .map(path -> path.resolve(exec).toFile()).filter(File::exists).findFirst().map(File::getParent)
-                .orElse(null);
+        return Executable.findExecutable(exec);
     }
 
     public static File findExecutable(String name, String errorMessage, OutputOptionMixin output) {
-        File command = ExecuteUtil.findExecutableFile(name);
-        if (command == null) {
-            output.error(errorMessage);
-            throw new RuntimeException("Unable to find " + name + " command");
-        }
-        return command;
+        return Executable.findExecutable(name, errorMessage, output);
     }
 
     public static int executeProcess(OutputOptionMixin output, String[] args, File parentDir)
@@ -102,18 +81,6 @@ public class ExecuteUtil {
     }
 
     public static File findWrapper(Path projectRoot, String[] windows, String other) {
-        if (OS.determineOS() == OS.WINDOWS) {
-            for (String name : windows) {
-                File wrapper = new File(projectRoot + File.separator + name);
-                if (wrapper.isFile())
-                    return wrapper;
-            }
-        } else {
-            File wrapper = new File(projectRoot + File.separator + other);
-            if (wrapper.isFile())
-                return wrapper;
-        }
-
-        return null;
+        return Executable.findWrapper(projectRoot, windows, other);
     }
 }

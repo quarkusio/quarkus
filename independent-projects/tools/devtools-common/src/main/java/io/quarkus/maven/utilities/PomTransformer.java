@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -24,11 +25,15 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+
 import org.apache.maven.model.Plugin;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.Dependency;
 
 /**
  * A utility to transform {@code pom.xml} files on the DOM level while keeping the original comments and formatting also
@@ -75,7 +80,7 @@ public class PomTransformer {
     public void transform(Collection<Transformation> transformations) {
         transform(transformations, path, () -> {
             try {
-                return new String(Files.readAllBytes(path), charset);
+                return Files.readString(path, charset);
             } catch (IOException e) {
                 throw new RuntimeException(String.format("Could not read DOM from [%s]", path), e);
             }
@@ -552,7 +557,7 @@ public class PomTransformer {
     public static class Gavtcs {
 
         public static Gavtcs importBom(String groupId, String artifactId, String version) {
-            return new Gavtcs(groupId, artifactId, version, "pom", null, "import");
+            return new Gavtcs(groupId, artifactId, version, ArtifactCoords.TYPE_POM, null, Dependency.SCOPE_IMPORT);
         }
 
         public static Gavtcs of(String rawGavtcs) {

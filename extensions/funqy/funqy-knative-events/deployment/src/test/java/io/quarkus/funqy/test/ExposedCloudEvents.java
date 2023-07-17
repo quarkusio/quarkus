@@ -65,6 +65,12 @@ public class ExposedCloudEvents {
                 .build(data);
     }
 
+    @Funq
+    @CloudEventMapping(trigger = "test-null-response")
+    public CloudEvent<String> returnNull(CloudEvent<Void> ignore) {
+        return null;
+    }
+
     public static class TestBean implements Serializable {
         private int i;
         private String s;

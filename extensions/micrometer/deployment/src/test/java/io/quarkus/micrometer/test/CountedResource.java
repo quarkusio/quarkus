@@ -4,9 +4,10 @@ import static java.util.concurrent.CompletableFuture.supplyAsync;
 
 import java.util.concurrent.CompletableFuture;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.micrometer.core.annotation.Counted;
+import io.smallrye.mutiny.Uni;
 
 @ApplicationScoped
 public class CountedResource {
@@ -41,6 +42,21 @@ public class CountedResource {
     @Counted
     public CompletableFuture<?> emptyAsyncMetricName(GuardedResult guardedResult) {
         return supplyAsync(guardedResult::get);
+    }
+
+    @Counted(value = "uni.none", recordFailuresOnly = true)
+    public Uni<?> onlyCountUniFailures(GuardedResult guardedResult) {
+        return Uni.createFrom().item(guardedResult::get);
+    }
+
+    @Counted(value = "uni.all", extraTags = { "extra", "tag" })
+    public Uni<?> countAllUniInvocations(GuardedResult guardedResult) {
+        return Uni.createFrom().item(guardedResult::get);
+    }
+
+    @Counted
+    public Uni<?> emptyUniMetricName(GuardedResult guardedResult) {
+        return Uni.createFrom().item(guardedResult::get);
     }
 
 }

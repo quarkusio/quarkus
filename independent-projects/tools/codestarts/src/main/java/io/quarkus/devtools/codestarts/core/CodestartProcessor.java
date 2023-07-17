@@ -2,16 +2,6 @@ package io.quarkus.devtools.codestarts.core;
 
 import static io.quarkus.devtools.codestarts.Codestart.BASE_LANGUAGE;
 
-import io.quarkus.devtools.codestarts.Codestart;
-import io.quarkus.devtools.codestarts.CodestartResource;
-import io.quarkus.devtools.codestarts.CodestartResource.Source;
-import io.quarkus.devtools.codestarts.CodestartStructureException;
-import io.quarkus.devtools.codestarts.core.reader.CodestartFileReader;
-import io.quarkus.devtools.codestarts.core.reader.TargetFile;
-import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategy;
-import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategyHandler;
-import io.quarkus.devtools.codestarts.core.strategy.DefaultCodestartFileStrategyHandler;
-import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -24,6 +14,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+
+import io.quarkus.devtools.codestarts.Codestart;
+import io.quarkus.devtools.codestarts.CodestartResource;
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
+import io.quarkus.devtools.codestarts.CodestartStructureException;
+import io.quarkus.devtools.codestarts.core.reader.CodestartFileReader;
+import io.quarkus.devtools.codestarts.core.reader.TargetFile;
+import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategy;
+import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategyHandler;
+import io.quarkus.devtools.codestarts.core.strategy.DefaultCodestartFileStrategyHandler;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 
 final class CodestartProcessor {
 

@@ -10,8 +10,9 @@ metadata:
   - "rest"
   - "jaxrs"
   - "resteasy"
+  - "jakarta-rest"
   guide: "https://quarkus.io/guides/rest-data-panache"
   categories:
   - "data"
   - "web"
-  status: "experimental"
+  status: "stable"

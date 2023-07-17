@@ -14,7 +14,7 @@ public class SmallRyeHealthUIConfig {
     String rootPath;
 
     /**
-     * Always include the UI. By default this will only be included in dev and test.
+     * Always include the UI. By default, this will only be included in dev and test.
      * Setting this to true will also include the UI in Prod
      */
     @ConfigItem(defaultValue = "false")

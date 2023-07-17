@@ -19,13 +19,20 @@
         <module>quarkus-resteasy-reactive-jackson</module>
         <module>quarkus-resteasy-reactive-jackson-common</module>
         <module>quarkus-resteasy-reactive-jsonb</module>
+        <module>quarkus-resteasy-reactive-jsonb-common</module>
+        <module>quarkus-resteasy-reactive-jaxb</module>
         <module>quarkus-resteasy-reactive-qute</module>
         <module>quarkus-resteasy-reactive-servlet</module>
         <module>jaxrs-client-reactive</module>
         <module>rest-client-reactive</module>
         <module>rest-client-reactive-jackson</module>
+        <module>rest-client-reactive-jsonb</module>
+        <module>rest-client-reactive-jaxb</module>
+        <module>rest-client-reactive-kotlin-serialization</module>
         <module>quarkus-resteasy-reactive-links</module>
         <module>quarkus-resteasy-reactive-kotlin</module>
+        <module>quarkus-resteasy-reactive-kotlin-serialization-common</module>
+        <module>quarkus-resteasy-reactive-kotlin-serialization</module>
     </modules>
 
 </project>

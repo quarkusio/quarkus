@@ -6,10 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import javax.websocket.ClientEndpoint;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
+import jakarta.websocket.ClientEndpoint;
+import jakarta.websocket.OnMessage;
+import jakarta.websocket.OnOpen;
+import jakarta.websocket.Session;
 
 @ClientEndpoint(decoders = ClientDtoDecoder.class, encoders = ClientDtoEncoder.class)
 public class CodingClient {

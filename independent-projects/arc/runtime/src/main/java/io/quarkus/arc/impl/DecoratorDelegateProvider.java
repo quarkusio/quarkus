@@ -1,7 +1,8 @@
 package io.quarkus.arc.impl;
 
+import jakarta.enterprise.context.spi.CreationalContext;
+
 import io.quarkus.arc.InjectableReferenceProvider;
-import javax.enterprise.context.spi.CreationalContext;
 
 public class DecoratorDelegateProvider implements InjectableReferenceProvider<Object> {
 
@@ -14,7 +15,7 @@ public class DecoratorDelegateProvider implements InjectableReferenceProvider<Ob
 
     /**
      * Set the current delegate for a non-null parameter, remove the threadlocal for null parameter.
-     * 
+     *
      * @param delegate
      * @return the previous delegate or {@code null}
      */

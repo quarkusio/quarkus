@@ -4,9 +4,9 @@ package {{packageName}};
 
 import java.util.function.BiFunction;
 
-import io.quarkus.grpc.runtime.MutinyClient;
+import io.quarkus.grpc.MutinyClient;
 
-@javax.annotation.Generated(
+@jakarta.annotation.Generated(
 value = "by {{classPrefix}} Grpc generator",
 comments = "Source: {{protoName}}")
 public class {{serviceName}}Client implements {{serviceName}}, MutinyClient<{{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub> {
@@ -15,6 +15,14 @@ public class {{serviceName}}Client implements {{serviceName}}, MutinyClient<{{cl
 
     public {{serviceName}}Client(String name, io.grpc.Channel channel, BiFunction<String, {{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub, {{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub> stubConfigurator) {
        this.stub = stubConfigurator.apply(name,{{classPrefix}}{{serviceName}}Grpc.new{{classPrefix}}Stub(channel));
+    }
+
+    private {{serviceName}}Client({{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub stub) {
+       this.stub = stub;
+    }
+
+    public {{serviceName}}Client newInstanceWithStub({{classPrefix}}{{serviceName}}Grpc.{{classPrefix}}{{serviceName}}Stub stub) {
+        return new {{serviceName}}Client(stub);
     }
 
     @Override

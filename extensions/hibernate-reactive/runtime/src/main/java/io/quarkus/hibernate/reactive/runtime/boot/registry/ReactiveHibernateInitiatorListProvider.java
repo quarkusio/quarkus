@@ -12,28 +12,31 @@ import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
 import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
+import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
-import org.hibernate.reactive.id.impl.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.id.factory.spi.ReactiveIdentifierGeneratorFactoryInitiator;
+import org.hibernate.reactive.loader.ast.internal.ReactiveBatchLoaderFactoryInitiator;
+import org.hibernate.reactive.provider.service.NativeParametersHandling;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
-import org.hibernate.reactive.provider.service.ReactiveQueryTranslatorFactoryInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSchemaManagementToolInitiator;
 import org.hibernate.reactive.provider.service.ReactiveSessionFactoryBuilderInitiator;
+import org.hibernate.reactive.provider.service.ReactiveSqmMultiTableMutationStrategyProviderInitiator;
+import org.hibernate.reactive.provider.service.ReactiveValuesMappingProducerProviderInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
-import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusManagedBeanRegistryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.BootstrapOnlyProxyFactoryFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
-import io.quarkus.hibernate.orm.runtime.service.DialectFactoryInitiator;
-import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractorInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusMutableIdentifierGeneratorFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.StandardHibernateORMInitiatorListProvider;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
 
@@ -42,14 +45,17 @@ import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionP
  * ServiceRegistry of a new Hibernate Reactive instance.
  * This is similar to StandardHibernateORMInitiatorListProvider except it will enable the
  * specific customizations to make it Reactive.
- * 
+ *
  * @see StandardHibernateORMInitiatorListProvider
  */
 public final class ReactiveHibernateInitiatorListProvider implements InitialInitiatorListProvider {
 
+    //N.B. this class is currently constructed via reflection by the ORM core extension
+    //(iif the Hibernate Reactive extension is available)
+
     @Override
-    public List<StandardServiceInitiator> initialInitiatorList() {
-        final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
+    public List<StandardServiceInitiator<?>> initialInitiatorList() {
+        final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
         //This one needs to be replaced after Metadata has been recorded:
         serviceInitiators.add(BootstrapOnlyProxyFactoryFactoryInitiator.INSTANCE);
@@ -65,35 +71,30 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
 
         serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
-        serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
         serviceInitiators.add(JdbcEnvironmentInitiator.INSTANCE);
 
         // Custom one!
         serviceInitiators.add(QuarkusJndiServiceInitiator.INSTANCE);
 
-        // Custom one!
-        serviceInitiators.add(DisabledJMXInitiator.INSTANCE);
-
         //Custom for Hibernate Reactive:
         serviceInitiators.add(ReactivePersisterClassResolverInitiator.INSTANCE);
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
         //Custom for Hibernate Reactive:
+        serviceInitiators.add(ReactiveSchemaManagementToolInitiator.INSTANCE);
+
         serviceInitiators.add(QuarkusNoJdbcConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(MultiTenantConnectionProviderInitiator.INSTANCE);
         serviceInitiators.add(DialectResolverInitiator.INSTANCE);
 
         // Custom Quarkus implementation !
-        serviceInitiators.add(DialectFactoryInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusStaticInitDialectFactoryInitiator.INSTANCE);
 
+        // Default implementation
         serviceInitiators.add(BatchBuilderInitiator.INSTANCE);
         serviceInitiators.add(JdbcServicesInitiator.INSTANCE);
         serviceInitiators.add(RefCursorSupportInitiator.INSTANCE);
-
-        // Custom for Hibernate Reactive:
-        //serviceInitiators.add(QueryTranslatorFactoryInitiator.INSTANCE);
-        serviceInitiators.add(ReactiveQueryTranslatorFactoryInitiator.INSTANCE);
 
         // Custom one! Also, this one has state so can't use the singleton.
         serviceInitiators.add(new QuarkusMutableIdentifierGeneratorFactoryInitiator());// MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
@@ -114,6 +115,21 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
 
         // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveIdentifierGeneratorFactoryInitiator.INSTANCE);
+
+        //Custom for Hibernate Reactive:
+        serviceInitiators.add(ReactiveValuesMappingProducerProviderInitiator.INSTANCE);
+
+        //Custom for Hibernate Reactive:
+        serviceInitiators.add(ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
+
+        // Custom for Hibernate Reactive: ParameterMarkerStrategy
+        serviceInitiators.add(NativeParametersHandling.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
+
+        // Custom for Hibernate Reactive: BatchLoaderFactory
+        serviceInitiators.add(ReactiveBatchLoaderFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

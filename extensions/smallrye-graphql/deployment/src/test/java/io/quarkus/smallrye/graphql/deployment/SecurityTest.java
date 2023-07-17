@@ -7,28 +7,26 @@ import static org.hamcrest.Matchers.nullValue;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.annotation.security.RolesAllowed;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Name;
 import org.eclipse.microprofile.graphql.Query;
 import org.eclipse.microprofile.graphql.Source;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 import io.restassured.http.Header;
+import io.smallrye.common.annotation.NonBlocking;
 
 public class SecurityTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(SecuredApi.class, Foo.class)
                     .addAsResource("application-secured.properties", "application.properties")
                     .addAsResource("users.properties")
@@ -61,6 +59,34 @@ public class SecurityTest extends AbstractGraphQLTest {
                 .assertThat()
                 .body("errors", nullValue())
                 .body("data.foo.bonusFoo", equalTo("bonus"));
+    }
+
+    @Test
+    public void testAuthenticatedUserBlocking() {
+        String query = getPayload("{ blockingFoo { message} }");
+        RestAssured.given()
+                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
+                .body(query)
+                .contentType(MEDIATYPE_JSON)
+                .post("/graphql/")
+                .then()
+                .assertThat()
+                .body("errors", nullValue())
+                .body("data.blockingFoo.message", equalTo("foo"));
+    }
+
+    @Test
+    public void testAuthenticatedUserWithSourceBlocking() {
+        String query = getPayload("{ blockingFoo { blockingBonusFoo } }");
+        RestAssured.given()
+                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
+                .body(query)
+                .contentType(MEDIATYPE_JSON)
+                .post("/graphql/")
+                .then()
+                .assertThat()
+                .body("errors", nullValue())
+                .body("data.blockingFoo.blockingBonusFoo", equalTo("bonus"));
     }
 
     @Test
@@ -114,18 +140,31 @@ public class SecurityTest extends AbstractGraphQLTest {
     }
 
     @GraphQLApi
-    @ApplicationScoped
     public static class SecuredApi {
 
         @Query
         @RolesAllowed("fooRole")
+        @NonBlocking
         public Foo foo() {
             return new Foo("foo");
         }
 
         @Name("bonusFoo")
         @RolesAllowed("fooRole")
+        @NonBlocking
         public List<String> bonusFoo(@Source List<Foo> foos) {
+            return foos.stream().map(foo -> "bonus").collect(Collectors.toList());
+        }
+
+        @Query
+        @RolesAllowed("fooRole")
+        public Foo blockingFoo() {
+            return new Foo("foo");
+        }
+
+        @Name("blockingBonusFoo")
+        @RolesAllowed("fooRole")
+        public List<String> blockingBonusFoo(@Source List<Foo> foos) {
             return foos.stream().map(foo -> "bonus").collect(Collectors.toList());
         }
 

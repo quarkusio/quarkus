@@ -1,0 +1,12 @@
+name: grpc-codestart
+ref: grpc
+tags: extension-codestart
+type: code
+metadata:
+  title: gRPC
+  description: Create your first gRPC service
+  related-guide-section: https://quarkus.io/guides/grpc-getting-started
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-grpc

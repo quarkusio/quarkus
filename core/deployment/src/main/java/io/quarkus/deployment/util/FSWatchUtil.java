@@ -14,7 +14,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.apache.commons.io.FilenameUtils;
 import org.jboss.logging.Logger;
 
 public class FSWatchUtil {
@@ -27,11 +26,15 @@ public class FSWatchUtil {
 
     /**
      * in a loop, checks for modifications in the files
-     * 
+     *
      * @param watchers list of {@link Watcher}s
      */
     public void observe(Collection<Watcher> watchers,
             long intervalMs) {
+        if (watchers.isEmpty()) {
+            return;
+        }
+
         ThreadFactory tf = (Runnable r) -> new Thread(r, "FSWatchUtil");
         ExecutorService executorService = Executors.newSingleThreadExecutor(tf);
         executorService.execute(
@@ -50,7 +53,7 @@ public class FSWatchUtil {
                 try {
                     Path rootPath = watcher.rootPath;
                     List<Path> matchingPaths = Files.walk(rootPath)
-                            .filter(path -> FilenameUtils.getExtension(path.toString()).equals(watcher.fileExtension))
+                            .filter(path -> hasExtension(path, watcher.fileExtension))
                             .collect(Collectors.toList());
                     List<Path> changedFiles = new ArrayList<>();
                     for (Path path : matchingPaths) {
@@ -87,6 +90,13 @@ public class FSWatchUtil {
         executors.forEach(ExecutorService::shutdown);
         executors.clear();
         closed = true;
+    }
+
+    private static boolean hasExtension(Path path, String extension) {
+        final String name = path.getFileName().toString();
+        return name.endsWith(extension)
+                && name.length() > extension.length() + 1
+                && name.charAt(name.length() - 1 - extension.length()) == '.';
     }
 
     public static class Watcher {

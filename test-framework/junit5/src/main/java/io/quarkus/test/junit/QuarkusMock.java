@@ -2,16 +2,17 @@ package io.quarkus.test.junit;
 
 import java.lang.annotation.Annotation;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.junit.jupiter.api.TestInstance;
 
 /**
  * Utility class that can be used to mock CDI normal scoped beans.
- * 
- * This includes beans that are {@link javax.enterprise.context.ApplicationScoped} and
- * {@link javax.enterprise.context.RequestScoped}.
- * 
+ *
+ * This includes beans that are {@link jakarta.enterprise.context.ApplicationScoped} and
+ * {@link jakarta.enterprise.context.RequestScoped}.
+ *
  * To use this inject the bean into a test, and then invoke the mock
  * method with your mock.
  *
@@ -55,5 +56,17 @@ public class QuarkusMock {
             }
         }
         MockSupport.installMock(CDI.current().select(instance, qualifiers).get(), mock);
+    }
+
+    /**
+     * Installs a mock for a CDI normal scoped bean by typeLiteral and qualifiers
+     *
+     * @param mock The mock object
+     * @param typeLiteral TypeLiteral representing the required type
+     * @param qualifiers The CDI qualifiers of the bean to mock
+     * @param <T> The bean type
+     */
+    public static <T> void installMockForType(T mock, TypeLiteral<? super T> typeLiteral, Annotation... qualifiers) {
+        MockSupport.installMock(CDI.current().select(typeLiteral, qualifiers).get(), mock);
     }
 }

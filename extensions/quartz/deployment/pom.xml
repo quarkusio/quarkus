@@ -34,10 +34,25 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-quartz</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.transformer</groupId>
+            <artifactId>org.eclipse.transformer</artifactId>
+            <version>0.5.0</version>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

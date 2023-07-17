@@ -1,5 +1,7 @@
 package io.quarkus.oidc.client.deployment;
 
+import static io.quarkus.oidc.client.deployment.OidcClientFilterDeploymentHelper.sanitize;
+
 import java.lang.reflect.Modifier;
 import java.util.Objects;
 import java.util.Optional;
@@ -7,8 +9,8 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 
@@ -22,12 +24,11 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
-import io.quarkus.deployment.builditem.EnableAllSecurityServicesBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -47,34 +48,25 @@ import io.quarkus.oidc.client.runtime.TokensProducer;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
+@BuildSteps(onlyIf = OidcClientBuildStep.IsEnabled.class)
 public class OidcClientBuildStep {
 
-    @BuildStep(onlyIf = IsEnabled.class)
-    FeatureBuildItem featureBuildItem() {
-        return new FeatureBuildItem(Feature.OIDC_CLIENT);
-    }
-
-    @BuildStep(onlyIf = IsEnabled.class)
-    EnableAllSecurityServicesBuildItem security() {
-        return new EnableAllSecurityServicesBuildItem();
-    }
-
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     ExtensionSslNativeSupportBuildItem enableSslInNative() {
         return new ExtensionSslNativeSupportBuildItem(Feature.OIDC_CLIENT);
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     void registerProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(TokensProducer.class));
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     void runtimeInitializeTokenHelper(BuildProducer<RuntimeInitializedClassBuildItem> runtime) {
         runtime.produce(new RuntimeInitializedClassBuildItem(TokensHelper.class.getName()));
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     void extractInjectedOidcClientNames(
             ApplicationArchivesBuildItem beanArchiveIndex,
             BuildProducer<OidcClientNamesBuildItem> oidcClientNames) {
@@ -92,7 +84,7 @@ public class OidcClientBuildStep {
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void setup(
             OidcClientsConfig oidcConfig,
             TlsConfig tlsConfig,
@@ -142,7 +134,7 @@ public class OidcClientBuildStep {
                 .done();
     }
 
-    @BuildStep(onlyIf = IsEnabled.class)
+    @BuildStep
     public void createNonDefaultTokensProducers(
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             OidcClientNamesBuildItem oidcClientNames) {
@@ -159,7 +151,7 @@ public class OidcClientBuildStep {
 
     /**
      * Creates a Tokens producer class like follows:
-     * 
+     *
      * <pre>
      * &#64;Singleton
      * public class TokensProducer_oidcClientName extends AbstractTokensProducer {
@@ -169,7 +161,7 @@ public class OidcClientBuildStep {
      *     public Tokens produceTokens() {
      *         return awaitTokens();
      *     }
-     * 
+     *
      *     &#64;Override
      *     protected Optional<String> clientId() {
      *         return Optional.of("oidcClientName");
@@ -209,10 +201,6 @@ public class OidcClientBuildStep {
         }
 
         return generatedName.replace('/', '.');
-    }
-
-    private String sanitize(String oidcClientName) {
-        return oidcClientName.replaceAll("\\W+", "");
     }
 
     public static class IsEnabled implements BooleanSupplier {

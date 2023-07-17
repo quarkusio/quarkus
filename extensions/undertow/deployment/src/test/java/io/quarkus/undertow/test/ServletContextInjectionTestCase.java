@@ -1,10 +1,8 @@
 package io.quarkus.undertow.test;
 
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
+import jakarta.inject.Inject;
+import jakarta.servlet.ServletContext;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -15,7 +13,7 @@ public class ServletContextInjectionTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+            .withEmptyApplication();
 
     @Inject
     ServletContext servletContext;

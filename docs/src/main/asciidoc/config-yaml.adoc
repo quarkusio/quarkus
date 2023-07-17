@@ -4,10 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = YAML Configuration
-
-include::./attributes.adoc[]
-
-:toc:
+include::_attributes.adoc[]
+:categories: core
+:summary: YAML as a Configuration Source.
 
 https://en.wikipedia.org/wiki/YAML[YAML] is a very popular format. Kubernetes relies heavily on the YAML format to
 write the various resource descriptors.
@@ -16,17 +15,15 @@ Quarkus offers the possibility to use YAML in addition to the standard Java Prop
 
 == Enabling YAML Configuration
 
-To enable YAML configuration add the `quarkus-config-yaml` extension:
+To enable YAML configuration, add the `quarkus-config-yaml` extension:
 
-[source, bash]
-----
-> ./mvnw quarkus:add-extension -Dextensions="io.quarkus:quarkus-config-yaml" # Maven
-> ./gradlew addExtension --extensions="io.quarkus:quarkus-config-yaml" # Gradle
-----
+:add-extension-extensions: quarkus-config-yaml
+include::{includes}/devtools/extension-add.adoc[]
 
 You can also just add the following dependency into your project:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -34,12 +31,18 @@ You can also just add the following dependency into your project:
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-config-yaml")
+----
+
 Remove the `src/main/resources/application.properties` and create a `src/main/resources/application.yaml` file.
 
 NOTE: If both are present, Quarkus prioritizes configuration properties from the YAML file first and then from the
 Properties file. However, to avoid confusion, we recommend removing the Properties file.
 
-TIP: Supports both the  `yml` or `yaml` file extensions.
+TIP: Quarkus supports both the  `yml` and `yaml` file extensions.
 
 === Example
 
@@ -55,10 +58,10 @@ quarkus:
       url: jdbc:postgresql://localhost:5432/some-database
 
 # REST Client configuration property
-org:
-  acme:
-    restclient:
-      CountriesService/mp-rest/url: https://restcountries.eu/rest
+quarkus:
+  rest-client:
+    org.acme.rest.client.ExtensionsService:
+      url: https://stage.code.quarkus.io/api
 ----
 
 [source,yaml]
@@ -151,7 +154,7 @@ quarkus:
 
 == Expressions
 
-The YAML format also supports xref:config-reference.adoc#expressions[expressions], using the same format as Java
+The YAML format also supports xref:config-reference.adoc#property-expressions[property expressions], using the same format as Java
 Properties:
 
 [source, yaml]
@@ -167,12 +170,12 @@ display:
     factor: ${x.factor}
 ----
 
-Note that you can reference nested properties using the `.` (dot) separator as in `{x.factor}`.
+Note that you can reference nested properties using the `.` (dot) separator as in `${x.factor}`.
 
 == External application.yaml file
 
 The `application.yaml` file may also be placed in `config/application.yaml` to specialize the runtime configuration. The
-file has to be present in the root of the working directoryrelative to the Quarkus application runner:
+file has to be present in the root of the working directory relative to the Quarkus application runner:
 
 [source, text]
 ----

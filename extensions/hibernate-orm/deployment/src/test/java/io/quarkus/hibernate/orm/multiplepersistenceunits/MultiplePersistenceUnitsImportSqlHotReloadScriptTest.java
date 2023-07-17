@@ -4,8 +4,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.function.Function;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ import io.restassured.RestAssured;
 public class MultiplePersistenceUnitsImportSqlHotReloadScriptTest {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addPackage(Plane.class.getPackage().getName())
                     .addPackage(SharedEntity.class.getPackage().getName())
                     .addPackage(User.class.getPackage().getName())

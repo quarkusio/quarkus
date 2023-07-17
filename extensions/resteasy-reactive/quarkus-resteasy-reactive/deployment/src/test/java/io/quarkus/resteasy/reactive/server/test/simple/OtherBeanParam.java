@@ -1,9 +1,9 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.junit.jupiter.api.Assertions;
 

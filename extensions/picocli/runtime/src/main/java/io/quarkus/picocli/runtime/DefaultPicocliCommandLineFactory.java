@@ -1,8 +1,8 @@
 package io.quarkus.picocli.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.literal.NamedLiteral;
 
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import picocli.CommandLine;

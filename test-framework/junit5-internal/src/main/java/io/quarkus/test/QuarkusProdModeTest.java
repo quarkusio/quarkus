@@ -5,12 +5,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,7 +37,7 @@ import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.jboss.logmanager.Logger;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -55,11 +57,10 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
@@ -109,7 +110,7 @@ public class QuarkusProdModeTest
     private String logFileName;
     private Map<String, String> runtimeProperties;
     // by default, we use these lower heap settings
-    private List<String> jvmArgs = Collections.singletonList("-Xmx128m");
+    private List<String> jvmArgs = Collections.singletonList("-Xmx192m");
     private Map<String, String> testResourceProperties = new HashMap<>();
     // these will be used to create a directory that can then be obtained by the buildChainCustomizersProducer function
     // values are meant to be resources that exist on the test classpath
@@ -124,13 +125,15 @@ public class QuarkusProdModeTest
     private Optional<Field> prodModeTestResultsField = Optional.empty();
     private Path logfilePath;
     private Optional<Field> logfileField = Optional.empty();
-    private List<AppArtifact> forcedDependencies = Collections.emptyList();
-    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler((r) -> false);
+    private List<Dependency> forcedDependencies = Collections.emptyList();
+    private InMemoryLogHandler inMemoryLogHandler = new InMemoryLogHandler(r -> false);
     private boolean expectExit;
     private String startupConsoleOutput;
     private Integer exitCode;
     private Consumer<Throwable> assertBuildException;
     private String[] commandLineParameters = new String[0];
+
+    private boolean clearRestAssuredURL;
 
     public QuarkusProdModeTest() {
         InputStream appPropsIs = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties");
@@ -153,6 +156,35 @@ public class QuarkusProdModeTest
         Objects.requireNonNull(archiveProducer);
         this.archiveProducer = archiveProducer;
         return this;
+    }
+
+    /**
+     * Customize the application root.
+     *
+     * @param applicationRootConsumer
+     * @return self
+     */
+    public QuarkusProdModeTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
+        Objects.requireNonNull(applicationRootConsumer);
+        return setArchiveProducer(() -> {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            applicationRootConsumer.accept(jar);
+            return jar;
+        });
+    }
+
+    /**
+     * Use an empty application for the test
+     *
+     * @return self
+     */
+    public QuarkusProdModeTest withEmptyApplication() {
+        return withApplicationRoot(new Consumer<JavaArchive>() {
+            @Override
+            public void accept(JavaArchive javaArchive) {
+
+            }
+        });
     }
 
     public QuarkusProdModeTest addBuildChainCustomizerEntries(BuildChainCustomizerEntry entry) {
@@ -238,7 +270,7 @@ public class QuarkusProdModeTest
      * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
      * dependency), or override a version (if the dependency already exists)
      */
-    public QuarkusProdModeTest setForcedDependencies(List<AppArtifact> forcedDependencies) {
+    public QuarkusProdModeTest setForcedDependencies(List<Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
 
         return this;
@@ -334,6 +366,7 @@ public class QuarkusProdModeTest
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         ensureNoInjectAnnotationIsUsed(extensionContext.getRequiredTestClass());
+        ExclusivityChecker.checkTestType(extensionContext, QuarkusProdModeTest.class);
 
         originalHandlers = rootLogger.getHandlers();
         rootLogger.addHandler(inMemoryLogHandler);
@@ -344,7 +377,7 @@ public class QuarkusProdModeTest
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());
-            manager.init();
+            manager.init(null);
             testResourceProperties = manager.start();
             store.put(TestResourceManager.class.getName(), manager);
             store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
@@ -395,8 +428,7 @@ public class QuarkusProdModeTest
                     .addExcludedPath(testLocation)
                     .setProjectRoot(testLocation)
                     .setTargetDirectory(buildDir)
-                    .setForcedDependencies(forcedDependencies.stream().map(d -> new AppDependency(d, "compile"))
-                            .collect(Collectors.toList()));
+                    .setForcedDependencies(forcedDependencies);
             if (applicationName != null) {
                 builder.setBaseName(applicationName);
             }
@@ -590,7 +622,10 @@ public class QuarkusProdModeTest
                     .directory(builtResultArtifactParent.toFile())
                     .start();
             ensureApplicationStartupOrFailure();
-            setupRestAssured();
+            if (!expectExit) { // no point in setting an URL for an app that exits right away
+                setupRestAssured();
+                clearRestAssuredURL = true;
+            }
         } catch (IOException ex) {
             throw new RuntimeException("The produced jar could not be launched. ", ex);
         }
@@ -609,6 +644,10 @@ public class QuarkusProdModeTest
         } catch (InterruptedException ignored) {
 
         }
+        if (clearRestAssuredURL) {
+            RestAssuredURLManager.clearURL();
+            clearRestAssuredURL = false;
+        }
     }
 
     private void setupRestAssured() {
@@ -616,7 +655,7 @@ public class QuarkusProdModeTest
                 .map(Integer::parseInt)
                 .orElse(DEFAULT_HTTP_PORT_INT);
 
-        // If http port is 0, then we need to set the port to null in order to use the `quarkus.https.test-port` property
+        // If http port is 0, then we need to set the port to null in order to use the `quarkus.http.test-ssl-port` property
         // which is done in `RestAssuredURLManager.setURL`.
         if (httpPort == 0) {
             httpPort = null;
@@ -695,10 +734,6 @@ public class QuarkusProdModeTest
         rootLogger.setHandlers(originalHandlers);
         inMemoryLogHandler.clearRecords();
 
-        if (run) {
-            RestAssuredURLManager.clearURL();
-        }
-
         stop();
 
         try {
@@ -723,7 +758,8 @@ public class QuarkusProdModeTest
 
     @Override
     public void beforeEach(ExtensionContext context) {
-        if (run && (process == null || !process.isAlive())) {
+        // restart the app in case it was stopped manually via stop() by the previous test method
+        if (run && !expectExit && (process == null || !process.isAlive())) {
             start();
         }
 
@@ -749,12 +785,16 @@ public class QuarkusProdModeTest
             customApplicationProperties = new Properties();
         }
         try {
-            try (InputStream in = ClassLoader.getSystemResourceAsStream(resourceName)) {
+            URL systemResource = ClassLoader.getSystemResource(resourceName);
+            if (systemResource == null) {
+                throw new FileNotFoundException("Resource '" + resourceName + "' not found");
+            }
+            try (InputStream in = systemResource.openStream()) {
                 customApplicationProperties.load(in);
             }
             return this;
         } catch (IOException e) {
-            throw new RuntimeException("Could not load resource: '" + resourceName + "'");
+            throw new UncheckedIOException("Could not load resource: '" + resourceName + "'", e);
         }
     }
 

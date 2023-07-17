@@ -1,6 +1,7 @@
 package io.quarkus.qute.generator;
 
 import java.util.concurrent.CompletionStage;
+
 import org.jboss.jandex.DotName;
 
 final class DotNames {

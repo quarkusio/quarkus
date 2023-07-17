@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.RuntimeType;
+import jakarta.ws.rs.RuntimeType;
 
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
@@ -60,7 +60,8 @@ public class SerializersUtil {
                 writer.setPriority(additionalWriter.getPriority());
             }
             recorder.registerWriter(serialisers, additionalWriter.getHandledClassName(), writer);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, writerClassName));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(writerClassName).build());
         }
 
         Map<String, MessageBodyReaderWriterOverrideData> readerOverrides = new HashMap<>();
@@ -90,7 +91,8 @@ public class SerializersUtil {
                 reader.setPriority(additionalReader.getPriority());
             }
             recorder.registerReader(serialisers, additionalReader.getHandledClassName(), reader);
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, readerClassName));
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(readerClassName).build());
         }
 
     }

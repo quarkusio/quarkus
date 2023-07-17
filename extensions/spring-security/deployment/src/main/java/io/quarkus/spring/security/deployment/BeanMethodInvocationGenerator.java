@@ -146,7 +146,7 @@ class BeanMethodInvocationGenerator {
                     String argumentExpression = beanMethodArgumentExpressions[i];
                     String trimmedArgumentExpression = argumentExpression.trim();
                     if (argumentExpression.startsWith("'") && argumentExpression.endsWith("'")) { // hard coded string case
-                        if (!DotNames.STRING.equals(matchingBeanMethod.parameters().get(i).name())) {
+                        if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
                             throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
                                     + "' found in expression '" + trimmedArgumentExpression
                                     + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
@@ -160,11 +160,11 @@ class BeanMethodInvocationGenerator {
                             throw createGenericMalformedException(securedMethodInfo, expression);
                         }
 
-                        // this is the index index of the parameter we care about
+                        // this is the index of the parameter we care about
                         int parameterIndex = getParameterIndex(securedMethodInfo, parameterMatcher.group(1), expression);
 
-                        DotName expectedType = securedMethodInfo.parameters().get(parameterIndex).name();
-                        if (!matchingBeanMethod.parameters().get(i).name().equals(expectedType)) {
+                        DotName expectedType = securedMethodInfo.parameterType(parameterIndex).name();
+                        if (!matchingBeanMethod.parameterType(i).name().equals(expectedType)) {
                             throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
                                     + "' found in expression '" + trimmedArgumentExpression
                                     + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
@@ -182,7 +182,7 @@ class BeanMethodInvocationGenerator {
                         ResultHandle principal = check.invokeInterfaceMethod(
                                 ofMethod(SecurityIdentity.class, "getPrincipal", Principal.class), securityIdentity);
 
-                        if (!DotNames.STRING.equals(matchingBeanMethod.parameters().get(i).name())) {
+                        if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
                             throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
                                     + "' found in expression '" + trimmedArgumentExpression
                                     + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
@@ -215,7 +215,7 @@ class BeanMethodInvocationGenerator {
 
     private String getParamTypesDescriptor(MethodInfo securedMethodInfo) {
         StringBuilder sb = new StringBuilder("(");
-        for (Type type : securedMethodInfo.parameters()) {
+        for (Type type : securedMethodInfo.parameterTypes()) {
             sb.append(DescriptorUtils.objectToDescriptor(type.name().toString()));
         }
         sb.append(")");
@@ -229,7 +229,7 @@ class BeanMethodInvocationGenerator {
             if (candidateMethod.name().equals(methodName) &&
                     Modifier.isPublic(candidateMethod.flags()) &&
                     DotNames.PRIMITIVE_BOOLEAN.equals(candidateMethod.returnType().name()) &&
-                    candidateMethod.parameters().size() == methodParametersSize) {
+                    candidateMethod.parametersCount() == methodParametersSize) {
                 if (matchingBeanClassMethod == null) {
                     matchingBeanClassMethod = candidateMethod;
                 } else {

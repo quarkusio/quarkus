@@ -1,11 +1,11 @@
 package io.quarkus.cache.runtime;
 
-import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class CacheInterceptionContext<T extends Annotation> {
+// this should be <T extends Annotation> but that leads to type pollution
+public class CacheInterceptionContext<T> {
 
     private final List<T> interceptorBindings;
     private final List<Short> cacheKeyParameterPositions;

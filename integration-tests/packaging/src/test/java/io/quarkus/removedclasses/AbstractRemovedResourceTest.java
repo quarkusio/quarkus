@@ -1,8 +1,6 @@
 package io.quarkus.removedclasses;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.builder.Version;
@@ -13,7 +11,7 @@ public abstract class AbstractRemovedResourceTest {
 
     protected static QuarkusProdModeTest application(String packageType) {
         return new QuarkusProdModeTest()
-                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                .withApplicationRoot((jar) -> jar
                         .add(new StringAsset(
                                 "quarkus.class-loading.removed-resources.\"io.quarkus\\:quarkus-integration-test-shared-library\"=io/quarkus/it/shared/RemovedResource.class\n"
                                         +

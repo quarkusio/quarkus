@@ -15,20 +15,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.enterprise.event.Event;
-import javax.enterprise.event.Observes;
-import javax.inject.Qualifier;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Event;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import com.google.inject.Inject;
 
 import io.quarkus.arc.deployment.ObserverTransformerBuildItem;
 import io.quarkus.arc.processor.ObserverTransformer;
@@ -41,7 +38,7 @@ public class ObserverTransformerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyObserver.class, AlphaQualifier.class, BravoQualifier.class))
             .addBuildChainCustomizer(buildCustomizer());
 
@@ -63,8 +60,10 @@ public class ObserverTransformerTest {
 
                             @Override
                             public void transform(TransformationContext context) {
-                                if (context.getMethod().name().equals("")) {
-                                    context.transform().removeAll().done();
+                                if (context.getMethod().name().equals("onMyEventRemoveQualifiers")) {
+                                    context.transform()
+                                            .remove(annotation -> annotation.name().equals(ALPHA_QUALIFIER))
+                                            .done();
                                 }
                             }
 
@@ -75,6 +74,8 @@ public class ObserverTransformerTest {
         };
     }
 
+    private static final DotName ALPHA_QUALIFIER = DotName.createSimple(AlphaQualifier.class);
+
     @BravoQualifier
     @Inject
     Event<MyEvent> event;
@@ -83,7 +84,7 @@ public class ObserverTransformerTest {
     public void testTransformation() {
         MyEvent myEvent = new MyEvent();
         event.fire(myEvent);
-        // MyObserver.onMyEventRemoveQualifiers() would not match without transformation 
+        // MyObserver.onMyEventRemoveQualifiers() would not match without transformation
         assertEquals(1, myEvent.log.size());
         assertEquals("onMyEventRemoveQualifiers", myEvent.log.get(0));
     }
@@ -91,7 +92,7 @@ public class ObserverTransformerTest {
     @Singleton
     static class MyObserver {
 
-        void onMyEventRemoveQualifiers(@Observes @BravoQualifier MyEvent event) {
+        void onMyEventRemoveQualifiers(@Observes @AlphaQualifier @BravoQualifier MyEvent event) {
             event.log.add("onMyEventRemoveQualifiers");
         }
 

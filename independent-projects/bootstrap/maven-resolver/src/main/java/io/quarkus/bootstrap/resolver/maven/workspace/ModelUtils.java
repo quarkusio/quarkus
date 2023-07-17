@@ -1,33 +1,31 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.util.PropertyUtils;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.maven.model.Dependency;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+
+import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.fs.util.ZipUtils;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
 /**
  *
@@ -57,54 +55,16 @@ public class ModelUtils {
      * @param appArtifact application artifact
      * @return provisioning state artifact
      */
-    public static AppArtifact getStateArtifact(AppArtifact appArtifact) {
-        return new AppArtifact(appArtifact.getGroupId() + ".quarkus.curate",
+    public static ArtifactCoords getStateArtifact(ArtifactCoords appArtifact) {
+        return new GACTV(appArtifact.getGroupId() + ".quarkus.curate",
                 appArtifact.getArtifactId(),
                 "",
                 "pom",
                 STATE_ARTIFACT_INITIAL_VERSION);
     }
 
-    /**
-     * Filters out non-platform from application POM dependencies.
-     *
-     * @param deps POM model application dependencies
-     * @param appDeps resolved application dependencies
-     * @return dependencies that can be checked for updates
-     */
-    public static List<AppDependency> getUpdateCandidates(List<Dependency> deps, List<AppDependency> appDeps,
-            Set<String> groupIds) {
-        final Map<AppArtifactKey, AppDependency> appDepMap = new LinkedHashMap<>(appDeps.size());
-        for (AppDependency appDep : appDeps) {
-            final AppArtifact appArt = appDep.getArtifact();
-            appDepMap.put(new AppArtifactKey(appArt.getGroupId(), appArt.getArtifactId(), appArt.getClassifier()), appDep);
-        }
-        final List<AppDependency> updateCandidates = new ArrayList<>(deps.size());
-        // it's critical to preserve the order of the dependencies from the pom
-        for (Dependency dep : deps) {
-            if (!groupIds.contains(dep.getGroupId()) || "test".equals(dep.getScope())) {
-                continue;
-            }
-            final AppDependency appDep = appDepMap
-                    .remove(new AppArtifactKey(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier()));
-            if (appDep == null) {
-                // This normally would be a dependency that's missing <scope>test</scope> in the artifact's pom
-                // but is marked as such in one of artifact's parent poms
-                //throw new AppCreatorException("Failed to locate dependency " + new AppArtifact(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(), dep.getType(), dep.getVersion()) + " present in pom.xml among resolved application dependencies");
-                continue;
-            }
-            updateCandidates.add(appDep);
-        }
-        for (AppDependency appDep : appDepMap.values()) {
-            if (groupIds.contains(appDep.getArtifact().getGroupId())) {
-                updateCandidates.add(appDep);
-            }
-        }
-        return updateCandidates;
-    }
-
-    public static AppArtifact resolveAppArtifact(Path appJar) throws IOException {
-        try (FileSystem fs = FileSystems.newFileSystem(appJar, (ClassLoader) null)) {
+    public static ResolvedDependency resolveAppArtifact(Path appJar) throws IOException {
+        try (FileSystem fs = ZipUtils.newFileSystem(appJar)) {
             final Path metaInfMaven = fs.getPath("META-INF", "maven");
             if (Files.exists(metaInfMaven)) {
                 try (DirectoryStream<Path> groupIds = Files.newDirectoryStream(metaInfMaven)) {
@@ -120,38 +80,29 @@ public class ModelUtils {
                                 final Path propsPath = artifactIdPath.resolve("pom.properties");
                                 if (Files.exists(propsPath)) {
                                     final Properties props = loadPomProps(appJar, artifactIdPath);
-                                    AppArtifact appArtifact = new AppArtifact(props.getProperty("groupId"),
-                                            props.getProperty("artifactId"),
-                                            props.getProperty("version"));
-                                    appArtifact.setPath(appJar);
-                                    return appArtifact;
+                                    return ResolvedDependencyBuilder.newInstance()
+                                            .setGroupId(props.getProperty("groupId"))
+                                            .setArtifactId(props.getProperty("artifactId"))
+                                            .setVersion(props.getProperty("version"))
+                                            .setResolvedPath(appJar)
+                                            .build();
                                 }
                             }
                         }
                     }
                 }
             }
-            AppArtifact appArtifact = new AppArtifact("unknown", "unknown",
-                    "1.0-SNAPSHOT");
-            appArtifact.setPath(appJar);
-
-            return appArtifact;
-        }
-    }
-
-    public static Model readAppModel(Path appJar, AppArtifact appArtifact) throws IOException {
-        try (FileSystem fs = FileSystems.newFileSystem(appJar, (ClassLoader) null)) {
-            final Path pomXml = fs.getPath("META-INF", "maven", appArtifact.getGroupId(), appArtifact.getArtifactId(),
-                    "pom.xml");
-            if (!Files.exists(pomXml)) {
-                throw new IOException("Failed to located META-INF/maven/<groupId>/<artifactId>/pom.xml in " + appJar);
-            }
-            return readModel(pomXml);
+            return ResolvedDependencyBuilder.newInstance()
+                    .setGroupId("unknown")
+                    .setArtifactId("unknown")
+                    .setVersion("1.0-SNAPSHOT")
+                    .setResolvedPath(appJar)
+                    .build();
         }
     }
 
     static Model readAppModel(Path appJar) throws IOException {
-        try (FileSystem fs = FileSystems.newFileSystem(appJar, (ClassLoader) null)) {
+        try (FileSystem fs = ZipUtils.newFileSystem(appJar)) {
             final Path metaInfMaven = fs.getPath("META-INF", "maven");
             if (Files.exists(metaInfMaven)) {
                 try (DirectoryStream<Path> groupIds = Files.newDirectoryStream(metaInfMaven)) {
@@ -236,6 +187,11 @@ public class ModelUtils {
             final String resolved = props.get(matcher.group(1));
             if (resolved == null) {
                 return null;
+            }
+            if (resolved.contains("${")) {
+                throw new IllegalArgumentException("Illegal placeholder in Maven CI friendly version property \""
+                        + matcher.group(1) + "\": " + resolved
+                        + "\n\tPlease consult https://maven.apache.org/maven-ci-friendly.html#single-project-setup");
             }
             matcher.appendReplacement(sb, resolved);
         }

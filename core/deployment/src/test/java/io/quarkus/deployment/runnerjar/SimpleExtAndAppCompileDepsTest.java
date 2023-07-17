@@ -3,10 +3,16 @@ package io.quarkus.deployment.runnerjar;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 
-public class SimpleExtAndAppCompileDepsTest extends ExecutableOutputOutcomeTestBase {
+public class SimpleExtAndAppCompileDepsTest extends BootstrapFromOriginalJarTestBase {
 
     @Override
-    protected TsArtifact modelApp() {
+    protected boolean setupCustomMavenRepoInSettings() {
+        // this is to make sure repositories enabled in user settings are properly aggregated
+        return true;
+    }
+
+    @Override
+    protected TsArtifact composeApplication() {
 
         final TsArtifact coreExtRtTransitiveDep = TsArtifact.jar("core-ext-rt-transitive-dep");
         addToExpectedLib(coreExtRtTransitiveDep);

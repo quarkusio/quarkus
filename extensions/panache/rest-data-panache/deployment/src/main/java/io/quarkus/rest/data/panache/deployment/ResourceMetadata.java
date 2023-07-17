@@ -1,11 +1,20 @@
 package io.quarkus.rest.data.panache.deployment;
 
+import java.util.Map;
+
+import org.jboss.jandex.Type;
+
 public class ResourceMetadata {
 
     /**
      * Generated class that implements RestDataResource.
      */
     private final String resourceClass;
+
+    /**
+     * Name that is used to generate the new resource.
+     */
+    private final String resourceName;
 
     /**
      * Application interface that extends RestDataResource interface.
@@ -22,15 +31,32 @@ public class ResourceMetadata {
      */
     private final String idType;
 
-    public ResourceMetadata(String resourceClass, String resourceInterface, String entityType, String idType) {
+    /**
+     * Map containing the field names by field types.
+     */
+    private final Map<String, Type> fields;
+
+    public ResourceMetadata(String resourceClass, String resourceInterface, String entityType, String idType,
+            Map<String, Type> fields) {
+        this(resourceClass, resourceInterface, resourceInterface, entityType, idType, fields);
+    }
+
+    public ResourceMetadata(String resourceClass, String resourceName, String resourceInterface, String entityType,
+            String idType, Map<String, Type> fields) {
         this.resourceClass = resourceClass;
+        this.resourceName = resourceName;
         this.resourceInterface = resourceInterface;
         this.entityType = entityType;
         this.idType = idType;
+        this.fields = fields;
     }
 
     public String getResourceClass() {
         return resourceClass;
+    }
+
+    public String getResourceName() {
+        return resourceName;
     }
 
     public String getResourceInterface() {
@@ -43,5 +69,9 @@ public class ResourceMetadata {
 
     public String getIdType() {
         return idType;
+    }
+
+    public Map<String, Type> getFields() {
+        return fields;
     }
 }

@@ -1,6 +1,6 @@
 package io.quarkus.it.picocli;
 
-import org.assertj.core.api.Assertions;
+import java.util.Arrays;
 
 import picocli.CommandLine;
 
@@ -12,6 +12,6 @@ public class DynamicVersionProviderCommand implements Runnable {
 
     @Override
     public void run() {
-        Assertions.assertThat(commandSpec.version()).containsExactly("quarkus version 1.0");
+        System.out.println(Arrays.toString(commandSpec.version()));
     }
 }

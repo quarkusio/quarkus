@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import io.undertow.Handlers;
 import io.undertow.server.HandlerWrapper;

@@ -4,6 +4,7 @@ import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Enumeration;
+
 import org.jboss.logging.Logger;
 
 public class DriverRemover implements Runnable {

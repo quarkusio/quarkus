@@ -3,20 +3,23 @@ package io.quarkus.arc.test.name;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.literal.NamedLiteral;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class NameResolutionTest {
 
     @RegisterExtension
-    public ArcTestContainer container = new ArcTestContainer(Bravo.class, Alpha.class);
+    public ArcTestContainer container = new ArcTestContainer(Bravo.class, Alpha.class, Consumer.class);
 
     @Test
     public void testBeanNames() {
@@ -27,6 +30,10 @@ public class NameResolutionTest {
         assertEquals(1, Arc.container().beanManager().getBeans("bongo").size());
         // Test that for defaulted name the @Named qualifier is replaced the defaulted value
         assertEquals("bing", Arc.container().instance(String.class, NamedLiteral.of("producedBing")).get());
+
+        Consumer consumer = Arc.container().instance(Consumer.class).get();
+        assertEquals("bing", consumer.producedBing);
+        assertEquals(12345, consumer.bongo);
     }
 
     @Named("A")
@@ -51,4 +58,14 @@ public class NameResolutionTest {
 
     }
 
+    @Dependent
+    static class Consumer {
+        @Inject
+        @Named
+        String producedBing;
+
+        @Inject
+        @Named
+        Integer bongo;
+    }
 }

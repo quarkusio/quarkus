@@ -1,19 +1,20 @@
 package org.jboss.resteasy.reactive.server.injection;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Providers;
-import javax.ws.rs.sse.Sse;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.sse.Sse;
+
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
@@ -51,6 +52,13 @@ public class ContextProducers {
         return getContext().getHttpHeaders();
     }
 
+    // this is added for compatibility reasons
+    @RequestScoped
+    @Produces
+    ContainerRequestContext containerRequestContext() {
+        return getContext().getContainerRequestContext();
+    }
+
     @ApplicationScoped
     @Produces
     Sse sse() {
@@ -78,11 +86,14 @@ public class ContextProducers {
     //        return CurrentRequest.get().getContext().response();
     //    }
 
-    @ApplicationScoped
-    @Produces
-    Providers providers() {
-        return getContext().getProviders();
-    }
+    // TODO: ideally we would declare this bean with a lesser priority and let Quarkus override it using a higher priority,
+    //  however that is not possible because @Priority cannot be applied to methods
+
+    //    @ApplicationScoped
+    //    @Produces
+    //    Providers providers() {
+    //        return getContext().getProviders();
+    //    }
 
     @RequestScoped
     @Produces
@@ -133,6 +144,10 @@ public class ContextProducers {
     }
 
     private ResteasyReactiveRequestContext getContext() {
-        return CurrentRequestManager.get();
+        ResteasyReactiveRequestContext context = CurrentRequestManager.get();
+        if (context == null) {
+            throw new IllegalStateException("No RESTEasy Reactive request in progress");
+        }
+        return context;
     }
 }

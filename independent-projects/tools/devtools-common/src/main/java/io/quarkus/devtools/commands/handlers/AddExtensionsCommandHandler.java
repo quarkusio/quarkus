@@ -2,7 +2,16 @@ package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.commands.AddExtensions.EXTENSION_MANAGER;
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
-import static io.quarkus.devtools.messagewriter.MessageIcons.NOK_ICON;
+import static io.quarkus.devtools.messagewriter.MessageIcons.FAILURE_ICON;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 import io.quarkus.devtools.commands.AddExtensions;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
@@ -12,19 +21,12 @@ import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.project.extensions.ExtensionInstallPlan;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
 import io.quarkus.devtools.project.extensions.ExtensionManager.InstallResult;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.platform.catalog.predicate.ExtensionPredicate;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 import io.quarkus.registry.catalog.ExtensionOrigin;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is thread-safe. It extracts extensions to be added to the project from an instance of
@@ -47,15 +49,15 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                 final InstallResult result = extensionManager.install(extensionInstallPlan);
                 result.getInstalledPlatforms()
                         .forEach(a -> invocation.log()
-                                .info(MessageIcons.OK_ICON + " Platform " + a.getGroupId() + ":" + a.getArtifactId()
+                                .info(MessageIcons.SUCCESS_ICON + " Platform " + a.getGroupId() + ":" + a.getArtifactId()
                                         + " has been installed"));
                 result.getInstalledManagedExtensions()
                         .forEach(a -> invocation.log()
-                                .info(MessageIcons.OK_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
+                                .info(MessageIcons.SUCCESS_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId()
                                         + " has been installed"));
                 result.getInstalledIndependentExtensions()
                         .forEach(a -> invocation.log()
-                                .info(MessageIcons.OK_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId() + ":"
+                                .info(MessageIcons.SUCCESS_ICON + " Extension " + a.getGroupId() + ":" + a.getArtifactId() + ":"
                                         + a.getVersion()
                                         + " has been installed"));
                 result.getAlreadyInstalled()
@@ -70,13 +72,13 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
                                 + "' were not matched in the catalog.");
             } else {
                 invocation.log()
-                        .info(NOK_ICON + " The provided keyword(s) did not match any extension from the catalog.");
+                        .info(FAILURE_ICON + " The provided keyword(s) did not match any extension from the catalog.");
             }
         } catch (MultipleExtensionsFoundException m) {
             StringBuilder sb = new StringBuilder();
             sb.append(ERROR_ICON + " Multiple extensions matching '").append(m.getKeyword()).append("'");
             m.getExtensions()
-                    .forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                    .forEach(extension -> sb.append(System.lineSeparator()).append("     - ")
                             .append(extension.managementKey()));
             sb.append(System.lineSeparator())
                     .append("     Be more specific e.g using the exact name or the full GAV.");
@@ -103,17 +105,26 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
         ExtensionInstallPlan.Builder builder = ExtensionInstallPlan.builder();
         for (String keyword : keywords) {
             int countColons = StringUtils.countMatches(keyword, ":");
-            // Check if it's just groupId:artifactId
-            if (countColons == 1) {
-                ArtifactKey artifactKey = ArtifactKey.fromString(keyword);
-                builder.addManagedExtension(new ArtifactCoords(artifactKey, null));
-                continue;
-            } else if (countColons > 1) {
+            if (countColons > 1) {
                 // it's a gav
                 builder.addIndependentExtension(ArtifactCoords.fromString(keyword));
                 continue;
             }
-            List<Extension> listed = listInternalExtensions(quarkusCore, keyword, catalog.getExtensions());
+            List<Extension> listed = List.of();
+            // Check if it's just groupId:artifactId
+            if (countColons == 1) {
+                ArtifactKey artifactKey = ArtifactKey.fromString(keyword);
+                for (Extension e : invocation.getExtensionsCatalog().getExtensions()) {
+                    if (e.getArtifact().getKey().equals(artifactKey)) {
+                        listed = List.of(e);
+                        break;
+                    }
+                }
+
+                //builder.addManagedExtension(new ArtifactCoords(artifactKey, null));
+            } else {
+                listed = listInternalExtensions(quarkusCore, keyword, catalog.getExtensions());
+            }
             if (listed.isEmpty()) {
                 // No extension found for this keyword.
                 builder.addUnmatchedKeyword(keyword);
@@ -125,7 +136,6 @@ public class AddExtensionsCommandHandler implements QuarkusCommandHandler {
             }
             for (Extension e : listed) {
                 final ArtifactCoords extensionCoords = e.getArtifact();
-
                 boolean managed = false;
                 ExtensionOrigin firstPlatform = null;
                 ExtensionOrigin preferredOrigin = null;

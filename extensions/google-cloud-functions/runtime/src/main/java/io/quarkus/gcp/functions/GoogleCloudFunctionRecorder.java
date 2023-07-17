@@ -37,5 +37,6 @@ public class GoogleCloudFunctionRecorder {
         QuarkusHttpFunction.setDelegate(delegates.get(GoogleCloudFunctionInfo.FunctionType.HTTP));
         QuarkusBackgroundFunction.setDelegates(delegates.get(GoogleCloudFunctionInfo.FunctionType.BACKGROUND),
                 delegates.get(GoogleCloudFunctionInfo.FunctionType.RAW_BACKGROUND));
+        QuarkusCloudEventsFunction.setDelegate(delegates.get(GoogleCloudFunctionInfo.FunctionType.CLOUD_EVENT));
     }
 }

@@ -4,13 +4,15 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ResourceInfo;
+
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.UriInfo;
 
 /**
- * When used on a method, then an implementation of {@link javax.ws.rs.container.ContainerResponseContext} is generated
+ * When used on a method, then an implementation of {@link jakarta.ws.rs.container.ContainerResponseContext} is generated
  * that calls the annotated method with the proper arguments
  *
  * The idea behind using this is to make it much to write a {@code ServerResponseFilter} as all the necessary information
@@ -41,6 +43,7 @@ import javax.ws.rs.container.ResourceInfo;
  * <li>{@link ContainerRequestContext}
  * <li>{@link ContainerResponseContext}
  * <li>{@link ResourceInfo}
+ * <li>{@link UriInfo}
  * <li>{@link SimpleResourceInfo}
  * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown
  * </ul>

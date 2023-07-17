@@ -13,14 +13,14 @@ public class ImplementationFilesDevModeTest extends QuarkusDevGradleTestBase {
 
     @Override
     protected String[] buildArguments() {
-        return new String[] { "clean", ":common:build", ":application:quarkusDev", "-s" };
+        return new String[] { "clean", ":common:build", ":application-dep:quarkusDev", "--no-build-cache" };
     }
 
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse("/hello")).contains("hello common");
 
-        replace("application/src/main/java/org/acme/quarkus/sample/HelloResource.java",
+        replace("application-dep/src/main/java/org/acme/quarkus/sample/HelloResource.java",
                 ImmutableMap.of("return \"hello \" + common.getName();", "return \"hi \" + common.getName();"));
 
         assertUpdatedResponseContains("/hello", "hi common");

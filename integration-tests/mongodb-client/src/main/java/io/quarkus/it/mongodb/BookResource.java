@@ -5,14 +5,18 @@ import static com.mongodb.client.model.Filters.eq;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
+import org.bson.Document;
+
+import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 
+import io.quarkus.mongodb.MongoClientName;
 import io.smallrye.common.annotation.Blocking;
 
 @Path("/books")
@@ -20,18 +24,29 @@ import io.smallrye.common.annotation.Blocking;
 public class BookResource {
 
     @Inject
+    @MongoClientName("parameter-injection")
     MongoClient client;
 
     private MongoCollection<Book> getCollection() {
         return client.getDatabase("books").getCollection("my-collection", Book.class);
     }
 
+    @DELETE
+    public Response clearBooks() {
+        getCollection().deleteMany(new Document());
+        return Response.ok().build();
+    }
+
     @GET
     public List<Book> getBooks() {
         FindIterable<Book> iterable = getCollection().find();
         List<Book> books = new ArrayList<>();
-        for (Book doc : iterable) {
-            books.add(doc);
+        WriteConcern writeConcern = client.getDatabase("temp").getWriteConcern();
+        // force a test failure if we're not getting the correct, and correctly configured named mongodb client
+        if (Boolean.TRUE.equals(writeConcern.getJournal())) {
+            for (Book doc : iterable) {
+                books.add(doc);
+            }
         }
         return books;
     }

@@ -17,7 +17,13 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-funqy-google-cloud-functions</artifactId>
         </dependency>
+
         <!-- test dependencies -->
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -25,7 +31,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-internal</artifactId>
+            <artifactId>quarkus-test-google-cloud-functions</artifactId>
             <scope>test</scope>
         </dependency>
 

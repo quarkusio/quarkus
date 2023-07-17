@@ -4,7 +4,7 @@ Performance is at the heart of Quarkus.
 
 If you are facing performance issues (runtime or startup issues), and would like to discuss them with the Quarkus Team,
 you are more than welcome on our [mailing list](https://groups.google.com/d/forum/quarkus-dev),
-[Zulip chat](https://quarkusio.zulipchat.com) or [Github issue tracker](https://github.com/quarkusio/quarkus/issues).
+[Zulip chat](https://quarkusio.zulipchat.com) or [GitHub issue tracker](https://github.com/quarkusio/quarkus/issues).
 
 To help us troubleshoot your issues, we will need some performance insights from your application.
 
@@ -46,9 +46,6 @@ apt install openjdk-8-dbg
 # Ubuntu/Debian - Java 11
  apt install openjdk-11-dbg
 
-# On CentOS, RHEL and some other RPM-based distributions - Java 8
-debuginfo-install java-1.8.0-openjdk
-
 # On CentOS, RHEL and some other RPM-based distributions - Java 11
 debuginfo-install java-11-openjdk
 ```
@@ -80,16 +77,15 @@ To start CPU profiling, execute the following command:
 
 `-b 4000000` is used to increase the frame buffer size as the default is often too small.
 
-To end profiling and gather the results you can launch the same command with the `stop` subcommand, this will tells you if the buffer frame was too small.    
+To end profiling and gather the results you can launch the same command with the `stop` subcommand, this will tell you if the buffer frame was too small.    
 The output is a text file that is not really usable, so let's use our preferred performance representation: the  flame graph.
 
 ```shell script
-/path/to/async-profiler/profiler.sh stop -f /tmp/cpu-profile.svg --width 1600 <pid>
+/path/to/async-profiler/profiler.sh stop -f /tmp/cpu-profile.html <pid>
 ```
 
-It will create an SVG  flame graph (Async Profiler automatically detect that you ask for a  flame graph thanks to the `svg` file extension)
-that you can open in your browser (and even zoom inside it by clicking on a frame).    
-The example command will create an SVG of 1600 pixels width.
+It will create an HTML flame graph (Async Profiler automatically detect that you ask for a  flame graph thanks to the `html` file extension)
+that you can open in your browser (and even zoom inside it by clicking on a frame).
 
 One very useful option is `-s` (or `--simple`) that results in simple class names being used instead of fully qualified class names, 
 thus making the  flame graph more readable (at cost of not showing the package names of classes).    
@@ -109,7 +105,7 @@ To start allocation profiling, execute the following command:
 Stopping allocation profiling is done in the same way as for the previously shown CPU profiling.
 
 ```shell script
-/path/to/async-profiler/profiler.sh stop -f /tmp/alloc-profile.svg --width 1600 <pid>
+/path/to/async-profiler/profiler.sh stop -f /tmp/alloc-profile.html <pid>
 ```
 
 ## Profiling application startup with Async Profiler
@@ -123,11 +119,11 @@ Some example usages are:
 
 ```shell script
 # profile CPU startup
-java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.svg,interval=1000000,width=1600,simple\
+java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple\
     -jar my-application.jar
 
 # profile allocation startup
-java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.svg,interval=1000000,width=1600,simple\
+java -agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.html,interval=1000000,simple\
     -jar my-application.jar
 ```
 
@@ -144,22 +140,38 @@ It can be used in the same way as for the production application with the except
 
 ```shell script
 # profile CPU startup
-mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.svg,interval=1000000,width=1600,simple"
+mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=cpu,file=startup-cpu-profile.html,interval=1000000,simple"
 
 # profile allocation startup
-mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.svg,interval=1000000,width=1600,simple"
+mvn quarkus:dev -Djvm.args="-agentpath:/path/to/async-profiler/build/libasyncProfiler.so=start,event=alloc,file=/tmp/startup-alloc-profile.html,interval=1000000,simple"
 ```
 
 You can also configure the `jvm.args` system property directly inside the `quarkus-maven-plugin` section of your pom.xml.
 
-## And what about Windows?
+## Analysing build steps execution time
+
+When trying to debug startup performance, it is convenient to log build steps execution time. 
+This can be achieved by adding the following system property: `-Dquarkus.debug.print-startup-times=true` in dev mode or when launching the JAR.
+
+There is also a nice visualization of build steps available in the Dev UI located here: http://localhost:8080/q/dev/build-steps.
+
+If you want to have the same visualization of build steps processing when building your application, you can use the `quarkus.debug.dump-build-metrics=true` property. 
+For example using `mvn package -Dquarkus.debug.dump-build-metrics=true`, will generate a `build-metrics.json` in your `target` repository that you can process via the quarkus-build-report application available here https://github.com/mkouba/quarkus-build-report. 
+This application will generate a `report.html` that you can open in your browser.
+
+## What about Windows?
 
 If you are on Windows, you can still get useful performance insights using JFR - Java Flight Recorder.
 
 The following Java options will enable JFR to record profiling data inside a `myrecording.jfr` file that can then be used by JMC - Java Mission Control for analysis.
 
 ```shell script
--XX:+FlightRecorder -XX:StartFlightRecording=filename=myrecording.jfr,settings=profile -XX:FlightRecorderOptions=stackdepth=64
+-XX:StartFlightRecording=filename=myrecording.jfr,settings=profile -XX:FlightRecorderOptions=stackdepth=64
 ```
 
 Here we configure JFR with a deeper stack depth as the default is usually not enough.
+
+## What about native executables?
+
+If you are having performance issues with native builds of your application first make sure that these issues only manifest in native mode.
+If so, please consult the [native reference guide](https://quarkus.io/guides/native-reference) and more specifically the [profiling section](https://quarkus.io/guides/native-reference#profiling).

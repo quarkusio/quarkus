@@ -2,8 +2,8 @@ package io.quarkus.grpc.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -36,6 +36,9 @@ public class BlockingStubInjectionTest {
     public void test() {
         String neo = service.invoke("neo");
         assertThat(neo).isEqualTo("Hello neo");
+
+        neo = service.invokeWeird("neo");
+        assertThat(neo).isEqualTo("Hello neo");
     }
 
     @ApplicationScoped
@@ -46,6 +49,11 @@ public class BlockingStubInjectionTest {
 
         public String invoke(String s) {
             return service.sayHello(HelloRequest.newBuilder().setName(s).build())
+                    .getMessage();
+        }
+
+        public String invokeWeird(String s) {
+            return service.wEIRD(HelloRequest.newBuilder().setName(s).build())
                     .getMessage();
         }
 

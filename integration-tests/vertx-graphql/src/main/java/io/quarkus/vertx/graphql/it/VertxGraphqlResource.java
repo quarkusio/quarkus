@@ -16,8 +16,8 @@
  */
 package io.quarkus.vertx.graphql.it;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
@@ -28,8 +28,8 @@ import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.graphql.ApolloWSHandler;
 import io.vertx.ext.web.handler.graphql.GraphQLHandler;
+import io.vertx.ext.web.handler.graphql.ws.GraphQLWSHandler;
 
 @ApplicationScoped
 public class VertxGraphqlResource {
@@ -50,8 +50,9 @@ public class VertxGraphqlResource {
         GraphQL graphQL = GraphQL.newGraphQL(graphQLSchema).build();
 
         router.post().handler(BodyHandler.create());
-        router.route("/graphql").handler(ApolloWSHandler.create(graphQL));
-        router.route("/graphql").handler(GraphQLHandler.create(graphQL));
+        router.route("/graphql")
+                .handler(GraphQLWSHandler.create(graphQL))
+                .handler(GraphQLHandler.create(graphQL));
     }
 
 }

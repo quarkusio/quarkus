@@ -1,6 +1,7 @@
 package org.jboss.resteasy.reactive.server.core.parameters;
 
 import java.util.function.BiConsumer;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public interface ParameterExtractor {
@@ -15,7 +16,7 @@ public interface ParameterExtractor {
 
     /**
      * listener class that is used to provide async method parameters.
-     * 
+     *
      * This is very simple to reduce the number of required allocations.
      */
     public class ParameterCallback {

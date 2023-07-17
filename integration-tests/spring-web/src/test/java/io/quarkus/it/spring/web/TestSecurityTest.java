@@ -2,7 +2,7 @@ package io.quarkus.it.spring.web;
 
 import static org.hamcrest.Matchers.is;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.junit.jupiter.api.Test;
 

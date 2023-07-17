@@ -10,7 +10,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Class that has all the query substitutions necessary to remove code that is loaded when proto marshaller is in use
- * 
+ *
  * @author William Burns
  */
 final class QuerySubstitutions {

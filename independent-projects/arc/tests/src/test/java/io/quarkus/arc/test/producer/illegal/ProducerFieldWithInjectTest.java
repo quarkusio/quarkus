@@ -3,14 +3,17 @@ package io.quarkus.arc.test.producer.illegal;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.test.ArcTestContainer;
 import java.time.temporal.Temporal;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.inject.Inject;
+
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.DefinitionException;
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class ProducerFieldWithInjectTest {
 

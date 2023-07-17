@@ -1,6 +1,6 @@
 package io.quarkus.it.spring.web;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

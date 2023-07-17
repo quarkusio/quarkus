@@ -1,8 +1,8 @@
 package io.quarkus.it.hibernate.reactive.db2;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
@@ -16,7 +16,7 @@ import io.vertx.mutiny.sqlclient.Tuple;
 public class HibernateReactiveDB2TestEndpoint {
 
     @Inject
-    Mutiny.Session mutinySession;
+    Mutiny.SessionFactory sessionFactory;
 
     // Injecting a Vert.x Pool is not required, it us only used to
     // independently validate the contents of the database for the test
@@ -28,14 +28,13 @@ public class HibernateReactiveDB2TestEndpoint {
     public Uni<GuineaPig> reactiveFindMutiny() {
         final GuineaPig expectedPig = new GuineaPig(5, "Aloi");
         return populateDB()
-                .chain(() -> mutinySession.find(GuineaPig.class, expectedPig.getId()));
+                .chain(() -> sessionFactory.withSession(s -> s.find(GuineaPig.class, expectedPig.getId())));
     }
 
     @GET
     @Path("/reactivePersist")
     public Uni<String> reactivePersist() {
-        return mutinySession.persist(new GuineaPig(10, "Tulip"))
-                .chain(() -> mutinySession.flush())
+        return sessionFactory.withTransaction(s -> s.persist(new GuineaPig(10, "Tulip")))
                 .chain(() -> selectNameFromId(10));
     }
 
@@ -50,9 +49,8 @@ public class HibernateReactiveDB2TestEndpoint {
                     }
                     return name;
                 })
-                .chain(() -> mutinySession.merge(new GuineaPig(5, "Aloi")))
-                .chain(aloi -> mutinySession.remove(aloi))
-                .chain(() -> mutinySession.flush())
+                .chain(() -> sessionFactory
+                        .withTransaction(s -> s.merge(new GuineaPig(5, "Aloi")).chain(s::remove)))
                 .chain(() -> selectNameFromId(5))
                 .onItem().ifNotNull().transform(result -> result)
                 .onItem().ifNull().continueWith("OK");
@@ -62,9 +60,8 @@ public class HibernateReactiveDB2TestEndpoint {
     @Path("/reactiveRemoveManagedEntity")
     public Uni<String> reactiveRemoveManagedEntity() {
         return populateDB()
-                .chain(() -> mutinySession.find(GuineaPig.class, 5))
-                .chain(aloi -> mutinySession.remove(aloi))
-                .chain(() -> mutinySession.flush())
+                .chain(() -> sessionFactory
+                        .withTransaction(s -> s.find(GuineaPig.class, 5).chain(s::remove)))
                 .chain(() -> selectNameFromId(5))
                 .onItem().ifNotNull().transform(result -> result)
                 .onItem().ifNull().continueWith("OK");
@@ -75,15 +72,13 @@ public class HibernateReactiveDB2TestEndpoint {
     public Uni<String> reactiveUpdate() {
         final String NEW_NAME = "Tina";
         return populateDB()
-                .chain(() -> mutinySession.find(GuineaPig.class, 5))
-                .map(pig -> {
-                    if (NEW_NAME.equals(pig.getName())) {
-                        throw new AssertionError("Pig already had name " + NEW_NAME);
-                    }
-                    pig.setName(NEW_NAME);
-                    return pig;
-                })
-                .chain(() -> mutinySession.flush())
+                .chain(() -> sessionFactory.withTransaction(s -> s.find(GuineaPig.class, 5)
+                        .invoke(pig -> {
+                            if (NEW_NAME.equals(pig.getName())) {
+                                throw new AssertionError("Pig already had name " + NEW_NAME);
+                            }
+                            pig.setName(NEW_NAME);
+                        })))
                 .chain(() -> selectNameFromId(5));
     }
 

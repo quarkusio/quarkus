@@ -3,6 +3,7 @@ description: Report a bug in Quarkus
 labels: kind/bug
 body:
   - type: textarea
+    id: description
     validations:
       required: true
     attributes:
@@ -13,16 +14,19 @@ body:
 
         Provide a clear and concise description of what the problem is.
   - type: textarea
+    id: expected_behavior
     attributes:
       label: Expected behavior
       description: >-
         Describe the expected behavior clearly and concisely.
   - type: textarea
+    id: actual_behavior
     attributes:
       label: Actual behavior
       description: >-
         Describe the actual behavior clearly and concisely.
   - type: textarea
+    id: how_to_reproduce
     attributes:
       label: How to Reproduce?
       description: >-
@@ -33,27 +37,34 @@ body:
         Steps to reproduce the behavior:
         1. 
         2. 
-        3.        
+        3.
   - type: markdown
+    id: environment
     attributes:
       value: |
         ## Environment
   - type: input
+    id: uname
     attributes:
       label: Output of `uname -a` or `ver`
   - type: input
+    id: java_version
     attributes:
       label:  Output of `java -version`
   - type: input
+    id: graalvm_version
     attributes:
       label:  GraalVM version (if different from Java)
   - type: input
+    id: quarkus_version
     attributes:
       label:  Quarkus version or git rev
   - type: input
+    id: build_tool
     attributes:
       label:  Build tool (ie. output of `mvnw --version` or `gradlew --version`)
   - type: textarea
+    id: additional_info
     attributes:
       label: Additional information
       description: >

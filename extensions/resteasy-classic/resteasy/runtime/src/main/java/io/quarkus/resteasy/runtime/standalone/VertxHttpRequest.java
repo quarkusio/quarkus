@@ -13,11 +13,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import javax.ws.rs.ServiceUnavailableException;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.ServiceUnavailableException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.core.AbstractAsynchronousResponse;
 import org.jboss.resteasy.core.AbstractExecutionContext;

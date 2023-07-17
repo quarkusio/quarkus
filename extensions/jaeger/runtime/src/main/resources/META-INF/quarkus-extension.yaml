@@ -10,3 +10,5 @@ metadata:
     - "observability"
   unlisted: true
   status: "stable"
+  config:
+  - "quarkus.jaeger."

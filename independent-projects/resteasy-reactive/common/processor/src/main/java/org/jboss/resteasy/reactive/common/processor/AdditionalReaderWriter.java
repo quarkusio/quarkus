@@ -1,27 +1,36 @@
 package org.jboss.resteasy.reactive.common.processor;
 
 import java.util.Objects;
-import javax.ws.rs.RuntimeType;
+
+import jakarta.ws.rs.RuntimeType;
 
 public interface AdditionalReaderWriter {
 
-    default void add(Class<?> handlerClass, String mediaType, Class<?> entityClass) {
+    default void add(String handlerClass, String mediaType, String entityClass) {
         add(handlerClass, mediaType, entityClass, null);
     }
 
-    void add(Class<?> handlerClass, String mediaType, Class<?> entityClass, RuntimeType constraint);
+    default void add(Class<?> handlerClass, String mediaType, Class<?> entityClass) {
+        add(handlerClass.getName(), mediaType, entityClass.getName(), null);
+    }
+
+    default void add(Class<?> handlerClass, String mediaType, Class<?> entityClass, RuntimeType constraint) {
+        add(handlerClass.getName(), mediaType, entityClass.getName(), constraint);
+    }
+
+    void add(String handlerClass, String mediaType, String entityClass, RuntimeType constraint);
 
     class Entry {
-        private final Class<?> handlerClass;
+        private final String handlerClass;
         private final String mediaType;
-        private final Class<?> entityClass;
+        private final String entityClass;
         private final RuntimeType constraint;
 
-        public Entry(Class<?> handlerClass, String mediaType, Class<?> entityClass) {
+        public Entry(String handlerClass, String mediaType, String entityClass) {
             this(handlerClass, mediaType, entityClass, null);
         }
 
-        public Entry(Class<?> handlerClass, String mediaType, Class<?> entityClass,
+        public Entry(String handlerClass, String mediaType, String entityClass,
                 RuntimeType constraint) {
             this.handlerClass = Objects.requireNonNull(handlerClass);
             this.mediaType = Objects.requireNonNull(mediaType);
@@ -29,7 +38,7 @@ public interface AdditionalReaderWriter {
             this.constraint = constraint;
         }
 
-        public Class<?> getHandlerClass() {
+        public String getHandlerClass() {
             return handlerClass;
         }
 
@@ -37,7 +46,7 @@ public interface AdditionalReaderWriter {
             return mediaType;
         }
 
-        public Class<?> getEntityClass() {
+        public String getEntityClass() {
             return entityClass;
         }
 

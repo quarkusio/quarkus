@@ -33,6 +33,13 @@ public class ApplicationStateNotification {
         ApplicationStateNotification.class.notifyAll();
     }
 
+    /**
+     * Notify of startup failure.
+     *
+     * Before this method is called the exception should be logged.
+     *
+     * @param t The exception
+     */
     public static synchronized void notifyStartupFailed(Throwable t) {
         startupProblem = t;
         state = State.STOPPED;
@@ -48,7 +55,7 @@ public class ApplicationStateNotification {
             }
         }
         if (startupProblem != null) {
-            throw new RuntimeException(startupProblem);
+            throw new ApplicationStartException(startupProblem);
         }
     }
 

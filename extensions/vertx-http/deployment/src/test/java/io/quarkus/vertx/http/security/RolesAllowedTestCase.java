@@ -19,6 +19,7 @@ public class RolesAllowedTestCase extends AbstractRolesAllowedTestCase {
 
     private static final String APP_PROPS = "" +
             "quarkus.http.auth.basic=true\n" +
+            "quarkus.http.limits.max-body-size=100m\n" +
             "quarkus.http.auth.policy.r1.roles-allowed=test\n" +
             "quarkus.http.auth.policy.r2.roles-allowed=admin\n" +
             "quarkus.http.auth.permission.roles1.paths=/roles1,/deny,/permit,/combined,/wildcard1/*,/wildcard2*\n" +
@@ -31,7 +32,7 @@ public class RolesAllowedTestCase extends AbstractRolesAllowedTestCase {
             "quarkus.http.auth.permission.deny1.policy=deny\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)

@@ -2,8 +2,6 @@ package io.quarkus.hibernate.orm.config.namedpu;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -20,11 +18,10 @@ public class EntitiesInNamedPUWithoutDatasourceTest {
                         .isInstanceOf(ConfigurationException.class)
                         .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'.");
             })
-            .overrideConfigKey("quarkus.datasource.devservices", "false")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(MyEntity.class.getPackage().getName())
-                    .addAsResource("application-named-pu-no-datasource.properties",
-                            "application.properties"));
+            .withConfigurationResource("application-named-pu-no-datasource.properties")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
+            .withApplicationRoot((jar) -> jar
+                    .addPackage(MyEntity.class.getPackage().getName()));
 
     @Test
     public void testInvalidConfiguration() {

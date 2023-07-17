@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,7 +21,7 @@ import io.restassured.specification.RequestSpecification;
 public class ExposedCloudEventTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ExposedCloudEvents.class));
 
     @Test
@@ -81,6 +79,18 @@ public class ExposedCloudEventTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("6"));
+    }
+
+    @Test
+    public void testNullResponse() {
+        RestAssured.given().contentType("application/json")
+                .header("ce-id", "test-id")
+                .header("ce-specversion", "1.0")
+                .header("ce-type", "test-null-response")
+                .header("ce-source", "test-source")
+                .post()
+                .then()
+                .statusCode(204);
     }
 
     @ParameterizedTest
@@ -184,7 +194,6 @@ public class ExposedCloudEventTest {
             "  \"type\": \"test-type\", " +
             "  \"extclient\": \"ext-client-val\", " +
             "  \"dataschema\": \"test-dataschema-client\", " +
-            "  \"datacontenttype\": \"application/json\", " +
             "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " +
             "}";
 

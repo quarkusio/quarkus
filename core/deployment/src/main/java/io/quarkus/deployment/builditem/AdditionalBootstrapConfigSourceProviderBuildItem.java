@@ -9,7 +9,11 @@ import io.quarkus.builder.item.MultiBuildItem;
  * registered to the Bootstrap Config setup.
  * This is needed because during Bootstrap Config setup, we don't auto-discover providers
  * but we do want for example the YAML provider to be enabled.
+ *
+ * @deprecated Please use {@link RunTimeConfigBuilderBuildItem} and
+ *             {@link io.smallrye.config.ConfigSourceFactory.ConfigurableConfigSourceFactory}.
  */
+@Deprecated
 public final class AdditionalBootstrapConfigSourceProviderBuildItem extends MultiBuildItem {
 
     private final String providerClassName;

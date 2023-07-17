@@ -1,5 +1,10 @@
 package io.quarkus.deployment.console;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.locks.Lock;
@@ -9,6 +14,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.aesh.command.impl.registry.AeshCommandRegistryBuilder;
+import org.aesh.command.invocation.CommandInvocation;
+import org.aesh.command.registry.CommandRegistry;
+import org.aesh.command.settings.Settings;
+import org.aesh.command.settings.SettingsBuilder;
+import org.aesh.readline.ReadlineConsole;
+import org.aesh.readline.alias.AliasManager;
 import org.aesh.terminal.Attributes;
 import org.aesh.terminal.Connection;
 import org.aesh.terminal.tty.Size;
@@ -18,6 +30,9 @@ import io.quarkus.dev.console.StatusLine;
 
 public class AeshConsole extends QuarkusConsole {
 
+    public static final String ALTERNATE_SCREEN_BUFFER = "\u001b[?1049h\n";
+    public static final String EXIT_ALTERNATE_SCREEN = "\u001b[?1049l";
+    public static final String ALIAS_FILE = ".quarkus/console-aliases.txt";
     private final Connection connection;
     private Size size;
     private Attributes attributes;
@@ -38,7 +53,7 @@ public class AeshConsole extends QuarkusConsole {
      * <p>
      * Data must be added to this, before it is written out by {@link #deadlockSafeWrite()}
      * <p>
-     * Because Aesh can log deadlocks are possible on windows if a write fails, unless care
+     * Because Aesh can log deadlocks are possible on Windows if a write fails, unless care
      * is taken.
      */
     private final LinkedBlockingDeque<String> writeQueue = new LinkedBlockingDeque<>();
@@ -55,6 +70,12 @@ public class AeshConsole extends QuarkusConsole {
     static final TreeMap<Integer, StatusLineImpl> statusMap = new TreeMap<>();
     private final ReadWriteLock positionLock = new ReentrantReadWriteLock();
     private volatile boolean closed;
+    private final StatusLine prompt;
+
+    private volatile boolean pauseOutput;
+    private volatile boolean firstConsoleRun = true;
+    private DelegateConnection delegateConnection;
+    private ReadlineConsole aeshConsole;
 
     public AeshConsole(Connection connection) {
         INSTANCE = this;
@@ -66,7 +87,9 @@ public class AeshConsole extends QuarkusConsole {
             public void run() {
                 connection.close();
             }
-        }, "Console Shutdown Hoot"));
+        }, "Console Shutdown Hook"));
+        prompt = registerStatusLine(0);
+
     }
 
     private void updatePromptOnChange(StringBuilder buffer, int newLines) {
@@ -109,7 +132,7 @@ public class AeshConsole extends QuarkusConsole {
 
     @Override
     public void setPromptMessage(String promptMessage) {
-        setMessage(0, promptMessage);
+        prompt.setMessage(promptMessage);
     }
 
     private AeshConsole setMessage(int position, String message) {
@@ -151,6 +174,10 @@ public class AeshConsole extends QuarkusConsole {
 
     private void deadlockSafeWrite() {
         for (;;) {
+            if (pauseOutput) {
+                //output is paused
+                return;
+            }
             //after we have unlocked we always need to check again
             //another thread may have added something to the queue after our last write but before
             //we unlocked. Checking again makes sure we are safe
@@ -178,8 +205,13 @@ public class AeshConsole extends QuarkusConsole {
         synchronized (this) {
             size = conn.size();
             conn.setSignalHandler(event -> {
+
                 switch (event) {
                     case INT:
+                        if (delegateConnection != null) {
+                            exitCliMode();
+                            return;
+                        }
                         //todo: why does async exit not work here
                         //Quarkus.asyncExit();
                         //end(conn);
@@ -194,17 +226,77 @@ public class AeshConsole extends QuarkusConsole {
             });
             // Keyboard handling
             conn.setStdinHandler(keys -> {
-                var handler = inputHandler;
-                if (handler != null) {
-                    handler.accept(keys);
+
+                QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
+                // redirectIn might have not been initialized yet
+                if (redirectIn == null) {
+                    return;
                 }
-                if (doingReadline) {
-                    for (var k : keys) {
-                        if (k == '\n') {
-                            doingReadline = false;
-                            connection.enterRawMode();
+                //see if the users application wants to read the keystrokes:
+                int pos = 0;
+                while (pos < keys.length) {
+                    if (!redirectIn.acceptInput(keys[pos])) {
+                        break;
+                    }
+                    ++pos;
+                }
+                if (pos > 0) {
+                    if (pos == keys.length) {
+                        return;
+                    }
+                    //the app only consumed some keys
+                    //stick the rest in a new array
+                    int[] newKeys = new int[keys.length - pos];
+                    System.arraycopy(keys, pos, newKeys, 0, newKeys.length);
+                    keys = newKeys;
+                }
+                try {
+                    if (delegateConnection != null) {
+                        //console mode
+                        //just sent the input to the delegate
+                        if (keys.length == 1) {
+                            for (var k : keys) {
+                                if (k == 27) { // escape key
+                                    exitCliMode();
+                                    return;
+                                }
+                            }
+                        }
+                        if (delegateConnection.getStdinHandler() != null) {
+                            try {
+                                delegateConnection.getStdinHandler().accept(keys);
+                            } catch (Throwable t) {
+                                t.printStackTrace();
+                            }
+
+                        }
+                        return;
+                    }
+                    var handler = inputHandler;
+                    if (handler != null) {
+                        try {
+                            handler.accept(keys);
+                        } catch (Throwable t) {
+                            t.printStackTrace();
                         }
                     }
+                    if (doingReadline) {
+                        for (var k : keys) {
+                            if (k == '\n' || k == '\r') {
+                                doingReadline = false;
+                                connection.enterRawMode();
+                            }
+                        }
+                    } else {
+                        for (var k : keys) {
+                            if (k == ':') {
+                                runAeshCli();
+                            }
+                        }
+                    }
+                } catch (Throwable t) {
+                    //can't reliably use logging here
+                    t.printStackTrace();
                 }
             });
 
@@ -255,6 +347,7 @@ public class AeshConsole extends QuarkusConsole {
                 }
             }
         }
+
     }
 
     private void clearStatusMessages(StringBuilder buffer) {
@@ -263,7 +356,11 @@ public class AeshConsole extends QuarkusConsole {
     }
 
     private StringBuilder gotoLine(StringBuilder builder, int line) {
-        return builder.append("\033[").append(line).append(";").append(0).append("H");
+        return gotoCoords(builder, line, 0);
+    }
+
+    private StringBuilder gotoCoords(StringBuilder builder, int line, int col) {
+        return builder.append("\033[").append(line).append(";").append(col).append("H");
     }
 
     int countLines(String s) {
@@ -289,13 +386,20 @@ public class AeshConsole extends QuarkusConsole {
         return lines;
     }
 
-    public void write(String s) {
+    public void write(boolean errorStream, String s) {
         if (IN_WRITE.get()) {
             return;
         }
         if (closed) {
-            connection.write(s);
-            return;
+            // we need to guard against Aesh logging since the connection.write call, in certain error conditions,
+            // can lead to a logger message write, which can trigger an infinite loop
+            IN_WRITE.set(true);
+            try {
+                connection.write(s);
+                return;
+            } finally {
+                IN_WRITE.set(false);
+            }
         }
         if (lastColorCode != null) {
             s = lastColorCode + s;
@@ -311,12 +415,10 @@ public class AeshConsole extends QuarkusConsole {
         }
 
         StringBuilder buffer = new StringBuilder();
+        if (!shouldWrite(errorStream, s)) {
+            return;
+        }
         synchronized (this) {
-            if (outputFilter != null) {
-                if (!outputFilter.test(s)) {
-                    return;
-                }
-            }
             if (totalStatusLines == 0) {
                 bottomBlankSpace = 0; //just to be safe, will only happen if status is added then removed, which is not really likely
                 writeQueue.add(s);
@@ -340,14 +442,14 @@ public class AeshConsole extends QuarkusConsole {
                     newCursorPos = trailing;
                 }
                 int usedBlankSpace = 0;
-                gotoLine(buffer, size.getHeight());
                 if (cursorPos > 1 && lines == 0) {
-                    gotoLine(buffer, size.getHeight() - bottomBlankSpace);
+                    gotoCoords(buffer, size.getHeight() - bottomBlankSpace - totalStatusLines - 1, cursorPos + 1);
                     buffer.append(s);
                     lastWriteCursorX = newCursorPos;
                     //partial line, just write it
                     writeQueue.add(buffer.toString());
                 } else {
+                    gotoLine(buffer, size.getHeight());
                     if (lines == 0) {
                         lines++;
                     }
@@ -357,11 +459,14 @@ public class AeshConsole extends QuarkusConsole {
                         bottomBlankSpace -= usedBlankSpace;
                     }
                     //move the existing content up by the number of lines
-                    int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines), 1);
+                    int appendLines = Math.max(
+                            Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines + 1) //+1 for the extra blank line above the status line
+                            , 1);
                     appendLines -= usedBlankSpace;
                     clearStatusMessages(buffer);
-                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank).append(";")
-                            .append(lastWriteCursorX)
+                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank - (cursorPos > 0 ? 1 : 0))
+                            .append(";")
+                            .append(cursorPos + 1)
                             .append("H");
                     buffer.append(s);
                     buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");
@@ -377,8 +482,13 @@ public class AeshConsole extends QuarkusConsole {
         deadlockSafeWrite();
     }
 
-    public void write(byte[] buf, int off, int len) {
-        write(new String(buf, off, len, connection.outputEncoding()));
+    public void write(boolean errorStream, byte[] buf, int off, int len) {
+        write(errorStream, new String(buf, off, len, connection.outputEncoding()));
+    }
+
+    @Override
+    public boolean isAnsiSupported() {
+        return true;
     }
 
     @Override
@@ -390,10 +500,13 @@ public class AeshConsole extends QuarkusConsole {
     }
 
     void rebalance() {
-        int count = 1;
-        for (var val : statusMap.values()) {
-            val.position = count;
-            setMessage(count++, val.message);
+        synchronized (this) {
+            int count = 1;
+            messages = new String[statusMap.size()];
+            for (var val : statusMap.values()) {
+                val.position = count;
+                setMessage(count++, val.message);
+            }
         }
     }
 
@@ -402,6 +515,7 @@ public class AeshConsole extends QuarkusConsole {
         final int priority;
         int position;
         String message;
+        boolean closed;
 
         StatusLineImpl(int priority) {
             this.priority = priority;
@@ -409,10 +523,12 @@ public class AeshConsole extends QuarkusConsole {
 
         @Override
         public void setMessage(String message) {
-            this.message = message;
             try {
                 positionLock.readLock().lock();
-                AeshConsole.this.setMessage(position, message);
+                this.message = message;
+                if (!closed) {
+                    AeshConsole.this.setMessage(position, message);
+                }
             } finally {
                 positionLock.readLock().unlock();
             }
@@ -421,6 +537,7 @@ public class AeshConsole extends QuarkusConsole {
         @Override
         public void close() {
             positionLock.writeLock().lock();
+            closed = true;
             try {
                 AeshConsole.this.setMessage(position, null);
                 statusMap.remove(priority);
@@ -429,5 +546,108 @@ public class AeshConsole extends QuarkusConsole {
                 positionLock.writeLock().unlock();
             }
         }
+    }
+
+    public void runAeshCli() {
+        if (ConsoleCliManager.commands.isEmpty()) {
+            System.out.println("No commands registered, please wait for Quarkus to start before using the console");
+            return;
+        }
+        try {
+            pauseOutput = true;
+            delegateConnection = new DelegateConnection(connection);
+            connection.write(ALTERNATE_SCREEN_BUFFER);
+            if (firstConsoleRun) {
+                connection.write(
+                        "You are now in Quarkus Terminal. Your app is still running. Use `help` or tab completion to explore, `quit` or `q` to return to your application.\n");
+                firstConsoleRun = false;
+            }
+            AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
+            ConsoleCliManager.commands.forEach(commandBuilder::command);
+
+            CommandRegistry registry = commandBuilder
+                    .create();
+            Settings settings = SettingsBuilder
+                    .builder()
+                    .enableExport(false)
+                    .enableAlias(true)
+                    .aliasManager(
+                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                    .connection(delegateConnection)
+                    .commandRegistry(registry)
+                    .build();
+            aeshConsole = new ReadlineConsole(settings);
+            aeshConsole.setPrompt("quarkus$ ");
+            Thread t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        aeshConsole.start();
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }, "Quarkus integrated CLI thread");
+            t.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Map<Character, String> singleLetterAliases() {
+        try {
+            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true);
+            Map<Character, String> ret = new HashMap<>();
+            for (String alias : manager.getAllNames()) {
+                if (alias.length() == 1) {
+                    ret.put(alias.charAt(0), manager.getAlias(alias).get().getValue());
+                }
+            }
+            return ret;
+        } catch (IOException e) {
+            return Map.of();
+        }
+    }
+
+    @Override
+    public void runAlias(char alias) {
+        try {
+            AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
+            ConsoleCliManager.commands.forEach(commandBuilder::command);
+
+            CommandRegistry registry = commandBuilder
+                    .create();
+            Settings settings = SettingsBuilder
+                    .builder()
+                    .enableExport(false)
+                    .inputStream(new ByteArrayInputStream(new byte[] { (byte) alias, '\n' }))
+                    .enableAlias(true)
+                    .aliasManager(
+                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                    .connection(delegateConnection)
+                    .commandRegistry(registry)
+                    .build();
+            aeshConsole = new ReadlineConsole(settings);
+            aeshConsole.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void exitCliMode() {
+        if (aeshConsole == null || delegateConnection == null) {
+            return;
+        }
+        aeshConsole.stop();
+        aeshConsole = null;
+        delegateConnection.close();
+        delegateConnection = null;
+        connection.enterRawMode();
+        //exit alternate screen mode
+        connection.write(EXIT_ALTERNATE_SCREEN);
+        pauseOutput = false;
+        write(false, "");
+        deadlockSafeWrite();
     }
 }

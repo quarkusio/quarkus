@@ -4,24 +4,31 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyWriter;
-import javax.ws.rs.sse.OutboundSseEvent;
-import javax.ws.rs.sse.SseEvent;
-import org.jboss.resteasy.reactive.common.core.Serialisers;
+
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.SseEvent;
+
 import org.jboss.resteasy.reactive.common.util.CommonSseUtil;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
+import org.jboss.resteasy.reactive.server.handlers.PublisherResponseHandler;
 import org.jboss.resteasy.reactive.server.jaxrs.OutboundSseEventImpl;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class SseUtil extends CommonSseUtil {
 
     private static final String NL = "\n";
 
-    public static CompletionStage<?> send(ResteasyReactiveRequestContext context, OutboundSseEvent event) {
+    public static CompletionStage<?> send(ResteasyReactiveRequestContext context, OutboundSseEvent event,
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
         ServerHttpResponse response = context.serverResponse();
         if (response.closed()) {
             // FIXME: check spec
@@ -35,7 +42,7 @@ public class SseUtil extends CommonSseUtil {
             ret.completeExceptionally(e);
             return ret;
         }
-        setHeaders(context, response);
+        setHeaders(context, response, customizers);
         return response.write(data.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -63,8 +70,10 @@ public class SseUtil extends CommonSseUtil {
             if (event.getReconnectDelay() >= 0)
                 serialiseField(context, sb, "retry", Long.toString(event.getReconnectDelay()), false);
         }
-        String data = serialiseDataToString(context, event, eventMediaType);
-        serialiseField(context, sb, "data", data, true);
+        if (event.getData() != null) {
+            String data = serialiseDataToString(context, event, eventMediaType);
+            serialiseField(context, sb, "data", data, true);
+        }
         sb.append(NL);
         // return a UTF8 buffer
         return sb.toString();
@@ -113,7 +122,7 @@ public class SseUtil extends CommonSseUtil {
         Object entity = event.getData();
         Class<?> entityClass = event.getType();
         Type entityType = event.getGenericType();
-        MediaType mediaType = eventMediaType != null ? eventMediaType : context.getTarget().getSseElementType();
+        MediaType mediaType = eventMediaType != null ? eventMediaType : context.getTarget().getStreamElementType();
         if (mediaType == null) {
             mediaType = MediaType.TEXT_PLAIN_TYPE;
         }
@@ -125,11 +134,10 @@ public class SseUtil extends CommonSseUtil {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
-            // Spec(API) says we should use class/type/mediaType but doesn't talk about annotations 
-            if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {
+            if (writer.isWriteable(entityClass, entityType, context.getAllAnnotations(), mediaType)) {
                 // FIXME: spec doesn't really say what headers we should use here
-                writer.writeTo(entity, entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType,
-                        Serialisers.EMPTY_MULTI_MAP, baos);
+                writer.writeTo(entity, entityClass, entityType, context.getAllAnnotations(), mediaType,
+                        new QuarkusMultivaluedHashMap<>(), baos);
                 wrote = true;
                 break;
             }
@@ -142,16 +150,21 @@ public class SseUtil extends CommonSseUtil {
     }
 
     public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response) {
-        // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
-        // happens first
+        setHeaders(context, response, Collections.emptyList());
+    }
+
+    public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response,
+            List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());
             response.setResponseHeader(HttpHeaders.CONTENT_TYPE, MediaType.SERVER_SENT_EVENTS);
-            if (context.getTarget().getSseElementType() != null) {
-                response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getSseElementType().toString());
+            if (context.getTarget().getStreamElementType() != null) {
+                response.setResponseHeader(SSE_CONTENT_TYPE, context.getTarget().getStreamElementType().toString());
             }
             response.setChunked(true);
-            // FIXME: other headers?
+            for (int i = 0; i < customizers.size(); i++) {
+                customizers.get(i).customize(response);
+            }
         }
     }
 }

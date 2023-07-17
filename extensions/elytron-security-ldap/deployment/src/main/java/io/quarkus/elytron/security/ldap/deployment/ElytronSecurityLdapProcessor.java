@@ -8,6 +8,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AllowJNDIBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
@@ -23,6 +24,12 @@ class ElytronSecurityLdapProcessor {
     @BuildStep()
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.SECURITY_LDAP);
+    }
+
+    @BuildStep
+    AllowJNDIBuildItem enableJndi() {
+        //unfortunately we can't really use LDAP without JNDI
+        return new AllowJNDIBuildItem();
     }
 
     /**
@@ -54,7 +61,14 @@ class ElytronSecurityLdapProcessor {
     }
 
     @BuildStep
-    ReflectiveClassBuildItem enableReflection() {
-        return new ReflectiveClassBuildItem(true, true, QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY);
+    void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection) {
+        // All JDK provided InitialContextFactory impls via the module descriptors:
+        // com.sun.jndi.ldap.LdapCtxFactory, com.sun.jndi.dns.DnsContextFactory and com.sun.jndi.rmi.registry.RegistryContextFactory
+        reflection.produce(ReflectiveClassBuildItem.builder(QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY).methods()
+                .fields().build());
+        reflection.produce(
+                ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
+        reflection.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory")
+                .build());
     }
 }

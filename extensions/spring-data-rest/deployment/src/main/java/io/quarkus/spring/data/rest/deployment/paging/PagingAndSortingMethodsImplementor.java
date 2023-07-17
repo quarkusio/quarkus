@@ -5,6 +5,7 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.jboss.jandex.IndexView;
 import org.springframework.data.domain.PageRequest;
@@ -42,7 +43,7 @@ public class PagingAndSortingMethodsImplementor extends CrudMethodsImplementor {
 
     public void implementList(ClassCreator classCreator, String repositoryInterface) {
         MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Page.class,
-                io.quarkus.panache.common.Sort.class);
+                io.quarkus.panache.common.Sort.class, String.class, Map.class);
 
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);

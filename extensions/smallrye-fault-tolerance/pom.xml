@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-smallrye-fault-tolerance-parent</artifactId>
-    <name>Quarkus - SmallRye Fault tolerance</name>
+    <name>Quarkus - SmallRye Fault Tolerance</name>
 
     <packaging>pom</packaging>
     <modules>

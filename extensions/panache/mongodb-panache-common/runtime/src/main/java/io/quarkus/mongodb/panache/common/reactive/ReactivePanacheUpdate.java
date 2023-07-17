@@ -2,6 +2,8 @@ package io.quarkus.mongodb.panache.common.reactive;
 
 import java.util.Map;
 
+import org.bson.Document;
+
 import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
@@ -10,7 +12,7 @@ import io.smallrye.mutiny.Uni;
  *
  * Use one of its methods to perform the update query.
  */
-public interface ReactivePanacheUpdate extends io.quarkus.mongodb.panache.reactive.ReactivePanacheUpdate {
+public interface ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
@@ -37,6 +39,14 @@ public interface ReactivePanacheUpdate extends io.quarkus.mongodb.panache.reacti
      * @return the number of entities updated.
      */
     public Uni<Long> where(String query, Parameters params);
+
+    /**
+     * Execute the update query with the update document.
+     *
+     * @param query a {@link org.bson.Document} query
+     * @return the number of entities updated.
+     */
+    public Uni<Long> where(Document query);
 
     /**
      * Execute an update on all documents with the update document.

@@ -5,7 +5,7 @@ import java.lang.reflect.TypeVariable;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.util.TypeLiteral;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.resteasy.reactive.common.util.types.TypeSignatureParser;
 import org.junit.jupiter.api.Assertions;

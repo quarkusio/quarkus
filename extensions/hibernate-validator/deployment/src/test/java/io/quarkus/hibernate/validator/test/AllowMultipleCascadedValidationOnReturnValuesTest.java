@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.validator.test;
 
-import javax.inject.Inject;
-import javax.validation.Valid;
-import javax.validation.Validator;
+import jakarta.inject.Inject;
+import jakarta.validation.Valid;
+import jakarta.validation.Validator;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;

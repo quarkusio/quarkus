@@ -25,7 +25,7 @@ public interface ClassPathResource {
 
     /**
      * Loads the data contained in this resource and returns it as a byte array
-     * 
+     *
      * @return The resource data
      */
     byte[] getData();

@@ -10,8 +10,9 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = ConfigItem.PARENT, phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class LocalesBuildTimeConfig {
 
-    // we set to en as the default language when all else fails since this is what the JDK does as well
-    private static final String DEFAULT_LOCALE_VALUE = "${user.language:en}-${user.country:}";
+    // We set to en as the default language when all else fails since this is what the JDK does as well
+    public static final String DEFAULT_LANGUAGE = "${user.language:en}";
+    public static final String DEFAULT_COUNTRY = "${user.country:}";
 
     /**
      * The set of supported locales that can be consumed by the extensions.
@@ -19,17 +20,24 @@ public class LocalesBuildTimeConfig {
      * The locales must be specified in the IETF BCP 47 format e.g. en-US or fr-FR.
      * <p>
      * For instance, the Hibernate Validator extension makes use of it.
+     * <p>
+     * Native-image build uses it to define additional locales that are supposed
+     * to be available at runtime.
      */
-    @ConfigItem(defaultValue = DEFAULT_LOCALE_VALUE, defaultValueDocumentation = "Set containing the build system locale")
+    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-"
+            + DEFAULT_COUNTRY, defaultValueDocumentation = "Set containing the build system locale")
     public Set<Locale> locales;
 
     /**
      * Default locale that can be consumed by the extensions.
      * <p>
-     * The locales must be specified in the IETF BCP 47 format e.g. en-US or fr-FR.
+     * The locale must be specified in the IETF BCP 47 format e.g. en-US or fr-FR.
      * <p>
      * For instance, the Hibernate Validator extension makes use of it.
+     * <p>
+     * Native-image build uses this property to derive {@code user.language} and {@code user.country} for the application's
+     * runtime.
      */
-    @ConfigItem(defaultValue = DEFAULT_LOCALE_VALUE, defaultValueDocumentation = "Build system locale")
+    @ConfigItem(defaultValue = DEFAULT_LANGUAGE + "-" + DEFAULT_COUNTRY, defaultValueDocumentation = "Build system locale")
     public Locale defaultLocale;
 }

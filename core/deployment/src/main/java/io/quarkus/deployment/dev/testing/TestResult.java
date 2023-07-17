@@ -18,9 +18,10 @@ public class TestResult {
     final long runId;
     final long time;
     final List<Throwable> problems;
+    final boolean reportable;
 
     public TestResult(String displayName, String testClass, UniqueId uniqueId, TestExecutionResult testExecutionResult,
-            List<String> logOutput, boolean test, long runId, long time) {
+            List<String> logOutput, boolean test, long runId, long time, boolean reportable) {
         this.displayName = displayName;
         this.testClass = testClass;
         this.uniqueId = uniqueId;
@@ -29,6 +30,7 @@ public class TestResult {
         this.test = test;
         this.runId = runId;
         this.time = time;
+        this.reportable = reportable;
         List<Throwable> problems = new ArrayList<>();
         if (testExecutionResult.getThrowable().isPresent()) {
             Throwable t = testExecutionResult.getThrowable().get();
@@ -74,5 +76,9 @@ public class TestResult {
 
     public List<Throwable> getProblems() {
         return problems;
+    }
+
+    public boolean isReportable() {
+        return reportable;
     }
 }

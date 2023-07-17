@@ -29,7 +29,7 @@ import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 
@@ -50,9 +50,12 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 .setTargetDir(quarkusBootstrap.getTargetDirectory())
                 .setDeploymentClassLoader(curatedApplication.createDeploymentClassLoader())
                 .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
-                .setEffectiveModel(curatedApplication.getAppModel());
+                .setEffectiveModel(curatedApplication.getApplicationModel());
         if (quarkusBootstrap.getBaseName() != null) {
             builder.setBaseName(quarkusBootstrap.getBaseName());
+        }
+        if (quarkusBootstrap.getOriginalBaseName() != null) {
+            builder.setOriginalBaseName(quarkusBootstrap.getOriginalBaseName());
         }
 
         boolean auxiliaryApplication = curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication();
@@ -69,16 +72,16 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             //but we only need to add it to the additional app archives
             //if it is forced as an app archive
             if (i.isForceApplicationArchive()) {
-                builder.addAdditionalApplicationArchive(i.getArchivePath());
+                builder.addAdditionalApplicationArchive(i.getResolvedPaths());
             }
         }
         builder.addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
             @Override
             public void accept(BuildChainBuilder builder) {
                 final BuildStepBuilder stepBuilder = builder.addBuildStep((ctx) -> {
-                    ctx.produce(new ProcessInheritIODisabled());
+                    ctx.produce(new ProcessInheritIODisabledBuildItem());
                 });
-                stepBuilder.produces(ProcessInheritIODisabled.class).build();
+                stepBuilder.produces(ProcessInheritIODisabledBuildItem.class).build();
             }
         });
         builder.excludeFromIndexing(quarkusBootstrap.getExcludeFromClassPath());
@@ -94,7 +97,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
         }
         if (containerBuildRequested) {
             //TODO: this is a bit ugly
-            //we don't nessesarily need these artifacts
+            //we don't necessarily need these artifacts
             //but if we include them it does mean that you can auto create docker images
             //and deploy to kube etc
             //for an ordinary build with no native and no docker this is a waste
@@ -122,8 +125,10 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 }
             }
             resultMap.put("files", result);
-            List javaargs = new ArrayList<String>();
+            final List<String> javaargs = new ArrayList<>();
             javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
+            javaargs.add(
+                    "-Djava.util.concurrent.ForkJoinPool.common.threadFactory=io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
             resultMap.put("java-args", javaargs);
             resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
             if (nativeRequested) {

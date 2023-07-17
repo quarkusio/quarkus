@@ -2,14 +2,17 @@ package io.quarkus.arc.test.instance.frombean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.UUID;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Singleton;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.test.ArcTestContainer;
-import java.util.UUID;
-import javax.annotation.PostConstruct;
-import javax.inject.Singleton;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class InstanceFromBeanTest {
 

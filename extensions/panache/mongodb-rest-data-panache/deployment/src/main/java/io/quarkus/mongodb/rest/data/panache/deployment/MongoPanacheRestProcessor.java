@@ -1,9 +1,12 @@
 package io.quarkus.mongodb.rest.data.panache.deployment;
 
 import static io.quarkus.deployment.Feature.MONGODB_REST_DATA_PANACHE;
+import static io.quarkus.rest.data.panache.deployment.utils.EntityTypeUtils.getEntityFields;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
+
+import jakarta.ws.rs.Priorities;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -16,6 +19,8 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -27,9 +32,11 @@ import io.quarkus.mongodb.rest.data.panache.PanacheMongoEntityResource;
 import io.quarkus.mongodb.rest.data.panache.PanacheMongoRepositoryResource;
 import io.quarkus.mongodb.rest.data.panache.runtime.NoopUpdateExecutor;
 import io.quarkus.mongodb.rest.data.panache.runtime.RestDataPanacheExceptionMapper;
+import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 
 class MongoPanacheRestProcessor {
 
@@ -45,8 +52,14 @@ class MongoPanacheRestProcessor {
     }
 
     @BuildStep
-    ResteasyJaxrsProviderBuildItem registerRestDataPanacheExceptionMapper() {
-        return new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName());
+    void registerRestDataPanacheExceptionMapper(
+            BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer,
+            BuildProducer<ExceptionMapperBuildItem> exceptionMapperBuildItemBuildProducer) {
+        resteasyJaxrsProviderBuildItemBuildProducer
+                .produce(new ResteasyJaxrsProviderBuildItem(RestDataPanacheExceptionMapper.class.getName()));
+        exceptionMapperBuildItemBuildProducer
+                .produce(new ExceptionMapperBuildItem(RestDataPanacheExceptionMapper.class.getName(),
+                        RestDataPanacheException.class.getName(), Priorities.USER + 100, false));
     }
 
     @BuildStep
@@ -55,17 +68,17 @@ class MongoPanacheRestProcessor {
     }
 
     @BuildStep
-    void findEntityResources(CombinedIndexBuildItem index,
+    void findEntityResources(CombinedIndexBuildItem index, Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getIndex());
+        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getComputingIndex());
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex()
+        for (ClassInfo classInfo : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_ENTITY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+            validateResource(index.getComputingIndex(), classInfo);
 
             List<Type> generics = getGenericTypes(classInfo);
             String resourceInterface = classInfo.name().toString();
@@ -77,25 +90,28 @@ class MongoPanacheRestProcessor {
                     classOutput, dataAccessImplementor, resourceInterface, entityType);
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
-            bytecodeTransformersProducer.produce(
-                    getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
+            if (capabilities.isPresent(Capability.RESTEASY)) {
+                bytecodeTransformersProducer.produce(
+                        getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+            }
         }
     }
 
     @BuildStep
-    void findRepositoryResources(CombinedIndexBuildItem index,
+    void findRepositoryResources(CombinedIndexBuildItem index, Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getIndex());
+        EntityClassHelper entityClassHelper = new EntityClassHelper(index.getComputingIndex());
         ResourceImplementor resourceImplementor = new ResourceImplementor(entityClassHelper);
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
-        for (ClassInfo classInfo : index.getIndex()
+        for (ClassInfo classInfo : index.getComputingIndex()
                 .getKnownDirectImplementors(PANACHE_MONGO_REPOSITORY_RESOURCE_INTERFACE)) {
-            validateResource(index.getIndex(), classInfo);
+            validateResource(index.getComputingIndex(), classInfo);
 
             List<Type> generics = getGenericTypes(classInfo);
             String resourceInterface = classInfo.name().toString();
@@ -110,9 +126,12 @@ class MongoPanacheRestProcessor {
                     new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
 
             restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType)));
-            bytecodeTransformersProducer.produce(
-                    getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
+                            getEntityFields(index.getIndex(), entityType))));
+            if (capabilities.isPresent(Capability.RESTEASY)) {
+                bytecodeTransformersProducer.produce(
+                        getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
+            }
         }
     }
 
@@ -141,7 +160,7 @@ class MongoPanacheRestProcessor {
 
     /**
      * Annotate Mongo entity ID fields with a RESTEasy links annotation.
-     * Otherwise RESTEasy will not be able to generate links that use ID as path parameter.
+     * Otherwise, RESTEasy will not be able to generate links that use ID as path parameter.
      */
     private BytecodeTransformerBuildItem getEntityIdAnnotationTransformer(String entityClassName, String idFieldName) {
         return new BytecodeTransformerBuildItem(entityClassName,

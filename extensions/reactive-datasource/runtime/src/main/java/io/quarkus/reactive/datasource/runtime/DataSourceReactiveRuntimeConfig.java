@@ -1,6 +1,9 @@
 package io.quarkus.reactive.datasource.runtime;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -21,16 +24,32 @@ public class DataSourceReactiveRuntimeConfig {
     public boolean cachePreparedStatements = false;
 
     /**
-     * The datasource URL.
+     * The datasource URLs.
+     * <p>
+     * If multiple values are set, this datasource will create a pool with a list of servers instead of a single server.
+     * The pool uses a round-robin load balancing when a connection is created to select different servers.
+     * Note: some driver may not support multiple values here.
      */
     @ConfigItem
-    public Optional<String> url = Optional.empty();
+    public Optional<List<String>> url = Optional.empty();
 
     /**
      * The datasource pool maximum size.
      */
+    @ConfigItem(defaultValue = "20")
+    public int maxSize = 20;
+
+    /**
+     * When a new connection object is created, the pool assigns it an event loop.
+     * <p>
+     * When {@code #event-loop-size} is set to a strictly positive value, the pool assigns as many event loops as specified, in
+     * a round-robin fashion.
+     * By default, the number of event loops configured or calculated by Quarkus is used.
+     * If {@code #event-loop-size} is set to zero or a negative value, the pool assigns the current event loop to the new
+     * connection.
+     */
     @ConfigItem
-    public OptionalInt maxSize = OptionalInt.empty();
+    public OptionalInt eventLoopSize = OptionalInt.empty();
 
     /**
      * Whether all server certificates should be trusted.
@@ -87,15 +106,6 @@ public class DataSourceReactiveRuntimeConfig {
     public PfxConfiguration keyCertificatePfx = new PfxConfiguration();
 
     /**
-     * Deprecated: this was removed and is no longer available.
-     * 
-     * @Deprecated
-     */
-    @ConfigItem
-    @Deprecated
-    public Optional<Boolean> threadLocal = Optional.empty();
-
-    /**
      * The number of reconnection attempts when a pooled connection cannot be established on first try.
      */
     @ConfigItem(defaultValue = "0")
@@ -119,4 +129,25 @@ public class DataSourceReactiveRuntimeConfig {
      */
     @ConfigItem(defaultValueDocumentation = "no timeout")
     public Optional<Duration> idleTimeout = Optional.empty();
+
+    /**
+     * Set to true to share the pool among datasources.
+     * There can be multiple shared pools distinguished by <name>name</name>, when no specific name is set,
+     * the <code>__vertx.DEFAULT</code> name is used.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean shared;
+
+    /**
+     * Set the pool name, used when the pool is shared among datasources, otherwise ignored.
+     */
+    @ConfigItem
+    public Optional<String> name = Optional.empty();
+
+    /**
+     * Other unspecified properties to be passed through the Reactive SQL Client directly to the database when new connections
+     * are initiated.
+     */
+    @ConfigItem
+    public Map<String, String> additionalProperties = Collections.emptyMap();
 }

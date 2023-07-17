@@ -5,8 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class ConfigurationLiveReloadTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyProcessor.class, HttpFrontend.class, DumbConnector.class)
                     .addAsResource(
                             new File("src/test/resources/config/dummy-connector-conf.properties"),

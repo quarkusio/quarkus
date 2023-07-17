@@ -26,6 +26,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-integration-test-shared-library</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client</artifactId>
+        </dependency>
 
         <!-- JAX-RS -->
         <dependency>
@@ -34,7 +38,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
 
         <!-- Health -->
@@ -52,7 +56,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
         </dependency>
-
 
 
         <!-- test dependencies -->
@@ -73,13 +76,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.strimzi</groupId>
-            <artifactId>strimzi-test-container</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-kafka-companion</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -125,7 +123,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>
@@ -152,6 +150,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

@@ -63,7 +63,7 @@
  * </p>
  *
  * <h2>Simplified queries</h2>
- * 
+ *
  * <p>
  * Normally, MongoDB queries are of this form: <code>{"field1": "value1", "field2": "value2"}</code>
  * </p>
@@ -94,7 +94,7 @@
  * <code>@BsonProperty</code>, but you can still use parameterized queries by index or name.<br/>
  * <code>find("{'field':?1}", value)</code> or <code>find("{'field'::key}", value)</code>
  * </p>
- * 
+ *
  * @author Loïc Mathieu
  */
 package io.quarkus.mongodb.panache;

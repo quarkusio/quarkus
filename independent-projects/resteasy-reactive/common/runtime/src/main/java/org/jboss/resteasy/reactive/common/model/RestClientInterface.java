@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.jboss.resteasy.reactive.common.util.URLUtils;
 
 public class RestClientInterface {
@@ -24,6 +25,8 @@ public class RestClientInterface {
     private final List<ResourceMethod> methods = new ArrayList<>();
 
     private Set<String> pathParameters = new HashSet<>();
+
+    private boolean encoded = false;
 
     public String getClassName() {
         return className;
@@ -57,6 +60,15 @@ public class RestClientInterface {
 
     public RestClientInterface setPathParameters(Set<String> pathParameters) {
         this.pathParameters = pathParameters;
+        return this;
+    }
+
+    public boolean isEncoded() {
+        return encoded;
+    }
+
+    public RestClientInterface setEncoded(boolean encoded) {
+        this.encoded = encoded;
         return this;
     }
 }

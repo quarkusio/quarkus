@@ -1,5 +1,6 @@
 package io.quarkus.security.deployment;
 
+import static io.quarkus.security.deployment.SecurityProcessor.createMethodDescription;
 import static io.quarkus.security.deployment.SecurityTransformerUtils.DENY_ALL;
 
 import java.util.Collection;
@@ -9,24 +10,25 @@ import java.util.Set;
 import org.jboss.jandex.AnnotationTarget;
 
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.security.spi.runtime.MethodDescription;
 
 public class AdditionalDenyingUnannotatedTransformer implements AnnotationsTransformer {
 
-    private final Set<String> classNames;
+    private final Set<MethodDescription> methods;
 
-    public AdditionalDenyingUnannotatedTransformer(Collection<String> classNames) {
-        this.classNames = new HashSet<>(classNames);
+    public AdditionalDenyingUnannotatedTransformer(Collection<MethodDescription> methods) {
+        this.methods = new HashSet<>(methods);
     }
 
     @Override
     public boolean appliesTo(AnnotationTarget.Kind kind) {
-        return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+        return kind == AnnotationTarget.Kind.METHOD;
     }
 
     @Override
     public void transform(TransformationContext context) {
-        String className = context.getTarget().asClass().name().toString();
-        if (classNames.contains(className)) {
+        MethodDescription methodDescription = createMethodDescription(context.getTarget().asMethod());
+        if (methods.contains(methodDescription)) {
             context.transform().add(DENY_ALL).done();
         }
     }

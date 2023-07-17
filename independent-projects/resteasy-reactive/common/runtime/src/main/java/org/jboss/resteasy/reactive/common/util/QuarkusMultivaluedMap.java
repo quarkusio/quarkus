@@ -1,7 +1,8 @@
 package org.jboss.resteasy.reactive.common.util;
 
 import java.util.List;
-import javax.ws.rs.core.MultivaluedMap;
+
+import jakarta.ws.rs.core.MultivaluedMap;
 
 /**
  * MultivaluedMap with extra operations
@@ -9,7 +10,7 @@ import javax.ws.rs.core.MultivaluedMap;
 public interface QuarkusMultivaluedMap<Key, Value> extends MultivaluedMap<Key, Value> {
     /**
      * Adds all elements of the given map to this map.
-     * 
+     *
      * @param otherMap the map to take keys and values from
      */
     public default void addAll(MultivaluedMap<Key, Value> otherMap) {

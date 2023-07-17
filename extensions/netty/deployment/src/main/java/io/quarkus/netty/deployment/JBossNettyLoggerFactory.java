@@ -3,8 +3,10 @@ package io.quarkus.netty.deployment;
 import org.jboss.logging.Logger;
 
 import io.netty.util.internal.logging.AbstractInternalLogger;
+import io.netty.util.internal.logging.FormattingTuple;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.MessageFormatter;
 
 public class JBossNettyLoggerFactory extends InternalLoggerFactory {
 
@@ -29,26 +31,43 @@ public class JBossNettyLoggerFactory extends InternalLoggerFactory {
 
         @Override
         public void trace(String msg) {
-            log.trace(msg);
+            if (isTraceEnabled()) {
+                log.trace(msg);
+            }
         }
 
         @Override
         public void trace(String format, Object arg) {
-            log.tracef(format, arg);
+            if (isTraceEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arg);
+                trace0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void trace(String format, Object argA, Object argB) {
-            log.tracef(format, argA, argB);
+            if (isTraceEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+                trace0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void trace(String format, Object... arguments) {
-            log.tracef(format, arguments);
+            if (isTraceEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arguments);
+                trace0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void trace(String msg, Throwable t) {
+            if (isTraceEnabled()) {
+                trace0(msg, t);
+            }
+        }
+
+        private void trace0(String msg, Throwable t) {
             log.trace(msg, t);
         }
 
@@ -59,26 +78,43 @@ public class JBossNettyLoggerFactory extends InternalLoggerFactory {
 
         @Override
         public void debug(String msg) {
-            log.debug(msg);
+            if (isDebugEnabled()) {
+                log.debug(msg);
+            }
         }
 
         @Override
         public void debug(String format, Object arg) {
-            log.debugf(format, arg);
+            if (isDebugEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arg);
+                debug0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void debug(String format, Object argA, Object argB) {
-            log.debugf(format, argA, argB);
+            if (isDebugEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+                debug0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void debug(String format, Object... arguments) {
-            log.debugf(format, arguments);
+            if (isDebugEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arguments);
+                debug0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void debug(String msg, Throwable t) {
+            if (isDebugEnabled()) {
+                debug0(msg, t);
+            }
+        }
+
+        private void debug0(String msg, Throwable t) {
             log.debug(msg, t);
         }
 
@@ -89,26 +125,43 @@ public class JBossNettyLoggerFactory extends InternalLoggerFactory {
 
         @Override
         public void info(String msg) {
-            log.info(msg);
+            if (isInfoEnabled()) {
+                log.info(msg);
+            }
         }
 
         @Override
         public void info(String format, Object arg) {
-            log.infof(format, arg);
+            if (isInfoEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arg);
+                info0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void info(String format, Object argA, Object argB) {
-            log.infof(format, argA, argB);
+            if (isInfoEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+                info0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void info(String format, Object... arguments) {
-            log.infof(format, arguments);
+            if (isInfoEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arguments);
+                info0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void info(String msg, Throwable t) {
+            if (isInfoEnabled()) {
+                info0(msg, t);
+            }
+        }
+
+        private void info0(String msg, Throwable t) {
             log.info(msg, t);
         }
 
@@ -119,26 +172,43 @@ public class JBossNettyLoggerFactory extends InternalLoggerFactory {
 
         @Override
         public void warn(String msg) {
-            log.warn(msg);
+            if (isWarnEnabled()) {
+                log.warn(msg);
+            }
         }
 
         @Override
         public void warn(String format, Object arg) {
-            log.warnf(format, arg);
+            if (isWarnEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arg);
+                warn0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void warn(String format, Object... arguments) {
-            log.warnf(format, arguments);
+            if (isWarnEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arguments);
+                warn0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void warn(String format, Object argA, Object argB) {
-            log.warnf(format, argA, argB);
+            if (isWarnEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+                warn0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void warn(String msg, Throwable t) {
+            if (isWarnEnabled()) {
+                warn0(msg, t);
+            }
+        }
+
+        private void warn0(String msg, Throwable t) {
             log.warn(msg, t);
         }
 
@@ -149,26 +219,43 @@ public class JBossNettyLoggerFactory extends InternalLoggerFactory {
 
         @Override
         public void error(String msg) {
-            log.error(msg);
+            if (isErrorEnabled()) {
+                log.error(msg);
+            }
         }
 
         @Override
         public void error(String format, Object arg) {
-            log.errorf(format, arg);
+            if (isErrorEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arg);
+                error0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void error(String format, Object argA, Object argB) {
-            log.errorf(format, argA, argB);
+            if (isErrorEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, argA, argB);
+                error0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void error(String format, Object... arguments) {
-            log.errorf(format, arguments);
+            if (isErrorEnabled()) {
+                FormattingTuple ft = MessageFormatter.format(format, arguments);
+                error0(ft.getMessage(), ft.getThrowable());
+            }
         }
 
         @Override
         public void error(String msg, Throwable t) {
+            if (isErrorEnabled()) {
+                error0(msg, t);
+            }
+        }
+
+        private void error0(String msg, Throwable t) {
             log.error(msg, t);
         }
 

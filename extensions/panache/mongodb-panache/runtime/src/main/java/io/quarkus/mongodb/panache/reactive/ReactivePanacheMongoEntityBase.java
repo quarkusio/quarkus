@@ -51,7 +51,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Persist this entity in the database or update it if it already exist.
+     * Persist this entity in the database or update it if it already exists.
      *
      * @see #persistOrUpdate(Iterable)
      * @see #persistOrUpdate(Stream)
@@ -223,7 +223,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      *
      * @param query a {@link Document} query
      * @param sort the {@link Document} sort
@@ -399,7 +399,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).list()</code>.
      *
      * @param query a {@link Document} query
@@ -575,7 +575,7 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a a BSON query and a BSON sort.
+     * Find entities using a BSON query and a BSON sort.
      * This method is a shortcut for <code>find(query, sort).stream()</code>.
      *
      * @param query a {@link Document} query
@@ -905,6 +905,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      *         document
      * @see #update(String, Map)
      * @see #update(String, Parameters)
+     * @see #update(Document)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Object... params) {
@@ -923,7 +924,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      *         document
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
-     *
+     * @see #update(Document)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update,
@@ -943,9 +944,27 @@ public abstract class ReactivePanacheMongoEntityBase {
      *         document
      * @see #update(String, Object...)
      * @see #update(String, Map)
+     * @see #update(Document)
      */
     @GenerateBridge
     public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Parameters params) {
+        throw INSTANCE.implementationInjectionMissing();
+    }
+
+    /**
+     * Update all entities of this type by the given update BSON document.
+     * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
+     * update should be applied.
+     *
+     * @param update the update document, as a {@link org.bson.Document}.
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} instance for the given update
+     *         document
+     * @see #update(String, Object...)
+     * @see #update(String, Map)
+     * @see #update(String, Parameters)
+     */
+    @GenerateBridge
+    public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(Document update) {
         throw INSTANCE.implementationInjectionMissing();
     }
 

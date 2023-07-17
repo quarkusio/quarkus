@@ -3,14 +3,16 @@ package io.quarkus.mailer.runtime;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
 import io.quarkus.mailer.Mail;
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.TlsConfig;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.ext.mail.MailClient;
 
 public class FakeSmtpTestBase {
 
@@ -42,47 +44,48 @@ public class FakeSmtpTestBase {
         return new Mail().setFrom(FROM).addTo(TO).setSubject("Subject").setText("Message");
     }
 
-    protected MutinyMailerImpl getMailer(MailConfig config) {
+    protected ReactiveMailer getMailer(MailersRuntimeConfig config) {
         return getMailer(config, false);
     }
 
-    protected MutinyMailerImpl getMailer(MailConfig config, boolean globalTrustAll) {
-        TlsConfig tlsConfig = new TlsConfig();
+    protected ReactiveMailer getMailer(MailersRuntimeConfig config, boolean globalTrustAll) {
+        TlsConfig globalTlsConfig = new TlsConfig();
         if (globalTrustAll) {
-            tlsConfig.trustAll = true;
+            globalTlsConfig.trustAll = true;
         }
-        MailClientProducer producer = new MailClientProducer(vertx.getDelegate(), config, tlsConfig);
-        MailClient client = producer.mutinyClient();
-        MutinyMailerImpl mailer = new MutinyMailerImpl();
-        mailer.vertx = vertx;
-        mailer.mailerSupport = new MailerSupport(FROM, null, false);
-        mailer.client = client;
-        return mailer;
+
+        Mailers mailers = new Mailers(vertx.getDelegate(), vertx, config, globalTlsConfig, LaunchMode.NORMAL,
+                new MailerSupport(true, Set.of()));
+
+        return mailers.reactiveMailerFromName(Mailers.DEFAULT_MAILER_NAME);
     }
 
-    protected MailConfig getDefaultConfig() {
-        MailConfig config = new MailConfig();
-        config.host = "localhost";
-        config.port = OptionalInt.of(FAKE_SMTP_PORT);
-        config.startTLS = "DISABLED";
-        config.login = "DISABLED";
-        config.ssl = false;
-        config.authMethods = Optional.empty();
-        config.maxPoolSize = 10;
-        config.ownHostName = Optional.empty();
-        config.username = Optional.empty();
-        config.password = Optional.empty();
-        config.poolCleanerPeriod = Duration.ofSeconds(1);
-        config.keepAlive = true;
-        config.keepAliveTimeout = Duration.ofMinutes(5);
-        config.trustAll = Optional.empty();
-        config.keyStore = Optional.empty();
-        config.keyStorePassword = Optional.empty();
-        config.truststore = new TrustStoreConfig();
-        config.truststore.paths = Optional.empty();
-        config.truststore.password = Optional.empty();
-        config.truststore.type = Optional.empty();
-        return config;
+    protected MailersRuntimeConfig getDefaultConfig() {
+        MailersRuntimeConfig mailersConfig = new MailersRuntimeConfig();
+        mailersConfig.defaultMailer = new MailerRuntimeConfig();
+        mailersConfig.defaultMailer.from = Optional.of(FROM);
+        mailersConfig.defaultMailer.host = "localhost";
+        mailersConfig.defaultMailer.port = OptionalInt.of(FAKE_SMTP_PORT);
+        mailersConfig.defaultMailer.startTLS = "DISABLED";
+        mailersConfig.defaultMailer.login = "DISABLED";
+        mailersConfig.defaultMailer.ssl = false;
+        mailersConfig.defaultMailer.authMethods = Optional.empty();
+        mailersConfig.defaultMailer.maxPoolSize = 10;
+        mailersConfig.defaultMailer.ownHostName = Optional.empty();
+        mailersConfig.defaultMailer.username = Optional.empty();
+        mailersConfig.defaultMailer.password = Optional.empty();
+        mailersConfig.defaultMailer.poolCleanerPeriod = Duration.ofSeconds(1);
+        mailersConfig.defaultMailer.keepAlive = true;
+        mailersConfig.defaultMailer.keepAliveTimeout = Duration.ofMinutes(5);
+        mailersConfig.defaultMailer.trustAll = Optional.empty();
+        mailersConfig.defaultMailer.keyStore = Optional.empty();
+        mailersConfig.defaultMailer.keyStorePassword = Optional.empty();
+        mailersConfig.defaultMailer.truststore = new TrustStoreConfig();
+        mailersConfig.defaultMailer.truststore.paths = Optional.empty();
+        mailersConfig.defaultMailer.truststore.password = Optional.empty();
+        mailersConfig.defaultMailer.truststore.type = Optional.empty();
+
+        return mailersConfig;
     }
 
 }

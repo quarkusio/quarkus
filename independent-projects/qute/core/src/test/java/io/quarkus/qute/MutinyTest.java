@@ -1,10 +1,9 @@
 package io.quarkus.qute;
 
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -12,7 +11,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.Test;
+
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 public class MutinyTest {
 
@@ -58,10 +61,23 @@ public class MutinyTest {
     @Test
     public void testUniResolution() {
         Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
-        Template template = engine.parse("{foo.toLowerCase}::{#each items}{count}.{it}{#if hasNext},{/if}{/each}");
+        Template template = engine.parse("{foo.toLowerCase}::{#each items}{it_count}.{it}{#if it_hasNext},{/if}{/each}");
         Uni<Object> fooUni = Uni.createFrom().item("FOO");
         Uni<List<String>> itemsUni = Uni.createFrom().item(() -> Arrays.asList("foo", "bar", "baz"));
         assertEquals("foo::1.foo,2.bar,3.baz", template.data("foo", fooUni, "items", itemsUni).render());
+    }
+
+    @Test
+    public void testUniFailure() {
+        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        Template template = engine.parse("{foo.toLowerCase}");
+        Uni<String> fooUni = Uni.createFrom().item(() -> {
+            throw new IllegalStateException("Foo!");
+        });
+        assertThatIllegalStateException()
+                .isThrownBy(() -> template.data("foo", fooUni).render())
+                .withMessage("Foo!");
+
     }
 
     private void assertMulti(Multi<String> multi, String expected) throws InterruptedException {

@@ -2,10 +2,11 @@ package io.quarkus.devtools.codestarts;
 
 import static java.util.Objects.requireNonNull;
 
-import io.quarkus.devtools.codestarts.utils.NestedMaps;
-import io.quarkus.devtools.messagewriter.MessageWriter;
 import java.util.Collection;
 import java.util.Map;
+
+import io.quarkus.devtools.codestarts.utils.NestedMaps;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 
 public class CodestartProjectInput {
     private final Collection<String> dependencies;

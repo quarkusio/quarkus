@@ -3,18 +3,16 @@ package io.quarkus.smallrye.graphql.deployment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import javax.json.Json;
-import javax.json.JsonObject;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
 
 import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.SimpleTimer;
 import org.eclipse.microprofile.metrics.Tag;
 import org.hamcrest.CoreMatchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,9 +24,9 @@ public class MetricsTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class)
+                            BusinessException.class, TestUnion.class, TestUnionMember.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.metrics.enabled=true"), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 

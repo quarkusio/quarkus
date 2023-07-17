@@ -25,9 +25,13 @@ public class CategoryConfig {
     Optional<List<String>> handlers;
 
     /**
-     * Specify whether or not this logger should send its output to its parent Logger
+     * Specify whether this logger should send its output to its parent Logger
      */
     @ConfigItem(defaultValue = "true")
     boolean useParentHandlers;
 
+    // for method refs
+    public InheritableLevel getLevel() {
+        return level;
+    }
 }

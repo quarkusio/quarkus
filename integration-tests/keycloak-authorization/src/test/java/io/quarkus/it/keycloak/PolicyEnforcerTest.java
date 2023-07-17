@@ -4,11 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.io.IOException;
-
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 
@@ -19,6 +15,7 @@ import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -27,18 +24,10 @@ import io.restassured.http.ContentType;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @QuarkusTest
+@QuarkusTestResource(KeycloakLifecycleManager.class)
 public class PolicyEnforcerTest {
 
-    private static final String KEYCLOAK_SERVER_URL = System.getProperty("keycloak.url", "http://localhost:8180/auth");
     private static final String KEYCLOAK_REALM = "quarkus";
-
-    @BeforeAll
-    public static void configureKeycloakRealm() throws IOException {
-    }
-
-    @AfterAll
-    public static void removeKeycloakRealm() {
-    }
 
     @Test
     public void testUserHasAdminRoleServiceTenant() {
@@ -123,7 +112,16 @@ public class PolicyEnforcerTest {
                 .then()
                 .statusCode(403);
         RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/annotation/scope-write")
+                .then()
+                .statusCode(403);
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
                 .when().get("/api/permission/scope?scope=read")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/annotation/scope-read")
                 .then()
                 .statusCode(200)
                 .and().body(Matchers.containsString("read"));
@@ -232,7 +230,45 @@ public class PolicyEnforcerTest {
                 .statusCode(404);
     }
 
-    private String getAccessToken(String userName) {
+    @Test
+    public void testPermissionScopes() {
+        // 'jdoe' has scope 'read' and 'read' is required
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/standard-way")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+
+        // 'jdoe' has scope 'read' while 'write' is required
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/standard-way-denied")
+                .then()
+                .statusCode(403);
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/programmatic-way")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/programmatic-way-denied")
+                .then()
+                .statusCode(403);
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/annotation-way")
+                .then()
+                .statusCode(200)
+                .and().body(Matchers.containsString("read"));
+
+        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
+                .when().get("/api/permission/scopes/annotation-way-denied")
+                .then()
+                .statusCode(403);
+    }
+
+    protected String getAccessToken(String userName) {
         return RestAssured
                 .given()
                 .param("grant_type", "password")
@@ -241,7 +277,8 @@ public class PolicyEnforcerTest {
                 .param("client_id", "quarkus-app")
                 .param("client_secret", "secret")
                 .when()
-                .post(KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
+                .post(KeycloakLifecycleManager.KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM
+                        + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
 }

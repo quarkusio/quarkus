@@ -4,7 +4,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Set;
-import javax.ws.rs.container.ResourceInfo;
+
+import jakarta.ws.rs.container.ResourceInfo;
+
+import org.jboss.resteasy.reactive.server.util.MethodId;
 
 /**
  * A lazy representation of a Method
@@ -14,31 +17,30 @@ import javax.ws.rs.container.ResourceInfo;
  */
 public class ResteasyReactiveResourceInfo implements ResourceInfo {
 
-    private static final String JSON_VIEW_NAME = "com.fasterxml.jackson.annotation.JsonView";
-    private static final String CUSTOM_SERIALIZATION = "io.quarkus.resteasy.reactive.jackson.CustomSerialization";
-
     private final String name;
     private final Class<?> declaringClass;
     private final Class[] parameterTypes;
     private final Set<String> classAnnotationNames;
     private final Set<String> methodAnnotationNames;
-    private final boolean requiresCustomSerialization;
-    private final boolean requiresJsonViewName;
+    /**
+     * If it's non-blocking method within the runtime that won't always default to blocking
+     */
+    public final boolean isNonBlocking;
 
     private volatile Annotation[] classAnnotations;
     private volatile Method method;
     private volatile Annotation[] annotations;
     private volatile Type returnType;
+    private volatile String methodId;
 
     public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
-            Set<String> classAnnotationNames, Set<String> methodAnnotationNames) {
+            Set<String> classAnnotationNames, Set<String> methodAnnotationNames, boolean isNonBlocking) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
         this.classAnnotationNames = classAnnotationNames;
         this.methodAnnotationNames = methodAnnotationNames;
-        this.requiresCustomSerialization = methodAnnotationNames.contains(CUSTOM_SERIALIZATION);
-        this.requiresJsonViewName = methodAnnotationNames.contains(JSON_VIEW_NAME);
+        this.isNonBlocking = isNonBlocking;
     }
 
     public String getName() {
@@ -111,17 +113,10 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
         return getMethod().getParameterAnnotations()[index];
     }
 
-    /**
-     * Short cut to check if the method is annotated with io.quarkus.resteasy.reactive.jackson.CustomSerialization
-     */
-    public boolean requiresCustomSerialization() {
-        return this.requiresCustomSerialization;
-    }
-
-    /**
-     * Short cut to check if the method is annotated with com.fasterxml.jackson.annotation.JsonView
-     */
-    public boolean requiresJsonViewName() {
-        return this.requiresJsonViewName;
+    public String getMethodId() {
+        if (methodId == null) {
+            methodId = MethodId.get(name, declaringClass, parameterTypes);
+        }
+        return methodId;
     }
 }

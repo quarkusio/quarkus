@@ -1,8 +1,8 @@
 package io.quarkus.gcp.function.test;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import com.google.cloud.functions.BackgroundFunction;
 import com.google.cloud.functions.Context;

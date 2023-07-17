@@ -2,6 +2,8 @@ package io.quarkus.mongodb.panache.common;
 
 import java.util.Map;
 
+import org.bson.Document;
+
 import io.quarkus.panache.common.Parameters;
 
 /**
@@ -9,7 +11,7 @@ import io.quarkus.panache.common.Parameters;
  *
  * Use one of its methods to perform the update query.
  */
-public interface PanacheUpdate extends io.quarkus.mongodb.panache.PanacheUpdate {
+public interface PanacheUpdate {
 
     /**
      * Execute the update query with the update document.
@@ -37,6 +39,14 @@ public interface PanacheUpdate extends io.quarkus.mongodb.panache.PanacheUpdate 
      * @return the number of entities updated.
      */
     public long where(String query, Parameters params);
+
+    /**
+     * Execute the update query with the update document.
+     *
+     * @param query a {@link org.bson.Document} query
+     * @return the number of entities updated.
+     */
+    public long where(Document query);
 
     /**
      * Execute an update on all documents with the update document.

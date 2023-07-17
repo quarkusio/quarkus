@@ -1,22 +1,21 @@
 package io.quarkus.devtools.codestarts.core.reader;
 
-import io.quarkus.devtools.codestarts.CodestartResource;
-import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import io.quarkus.devtools.codestarts.CodestartResource;
+import io.quarkus.devtools.codestarts.CodestartResource.Source;
 
 public interface CodestartFileReader {
 
     CodestartFileReader DEFAULT = new DefaultCodestartFileReader();
 
-    List<CodestartFileReader> ALL = Collections.unmodifiableList(Arrays.asList(
+    List<CodestartFileReader> ALL = List.of(
             DEFAULT,
             new QuteCodestartFileReader(),
-            new IgnoreCodestartFileReader()));
+            new IgnoreCodestartFileReader());
 
     boolean matches(String fileName);
 

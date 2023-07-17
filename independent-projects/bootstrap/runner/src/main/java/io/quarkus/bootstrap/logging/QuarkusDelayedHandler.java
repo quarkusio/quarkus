@@ -18,13 +18,20 @@ package io.quarkus.bootstrap.logging;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
+
 import org.jboss.logmanager.ExtHandler;
 import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.Level;
@@ -49,6 +56,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
 
     private final Deque<ExtLogRecord> logRecords = new ArrayDeque<>();
     private final List<Runnable> logCloseTasks = new ArrayList<>();
+    private final Set<CategoryAndLevel> droppedRecords = Collections.synchronizedSet(new HashSet<>());
 
     private final int queueLimit;
     private volatile boolean buildTimeLoggingActivated = false;
@@ -83,19 +91,17 @@ public class QuarkusDelayedHandler extends ExtHandler {
                     // this is not ideal, but we can run out of memory otherwise
                     // this only happens if we end up with more than 4k log messages before activation
                     if (record.getLevel().intValue() <= discardLevel) {
+                        droppedRecords.add(new CategoryAndLevel(record.getLoggerName(), record.getLevel()));
                         return;
                     }
                     // Determine whether the queue was overrun
                     if (logRecords.size() >= queueLimit) {
-                        reportError(
-                                "The delayed handler's queue was overrun and log record(s) were lost. Did you forget to configure logging?",
-                                null, ErrorManager.WRITE_FAILURE);
                         compactQueue();
                         if (logRecords.size() >= queueLimit) {
+                            droppedRecords.add(new CategoryAndLevel(record.getLoggerName(), record.getLevel()));
                             //still too full, nothing we can do
                             return;
                         }
-                        return;
                     }
                     // Determine if we need to calculate the caller information before we queue the record
                     if (isCallerCalculationRequired()) {
@@ -124,6 +130,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
         while (it.hasNext()) {
             ExtLogRecord rec = it.next();
             if (rec.getLevel().intValue() == lowestInQueue) {
+                droppedRecords.add(new CategoryAndLevel(rec.getLoggerName(), rec.getLevel()));
                 it.remove();
             } else {
                 newLowest = Integer.min(rec.getLevel().intValue(), newLowest);
@@ -201,6 +208,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
 
     public synchronized void buildTimeComplete() {
         buildTimeLoggingActivated = false;
+        runCloseTasks();
     }
 
     /**
@@ -229,9 +237,7 @@ public class QuarkusDelayedHandler extends ExtHandler {
     @Override
     public Handler[] clearHandlers() throws SecurityException {
         activated = false;
-        for (Runnable i : logCloseTasks) {
-            i.run();
-        }
+        runCloseTasks();
         return super.clearHandlers();
     }
 
@@ -286,6 +292,59 @@ public class QuarkusDelayedHandler extends ExtHandler {
                 publishToNestedHandlers(record);
             }
         }
+        Map<String, List<java.util.logging.Level>> lostCategories = new TreeMap<>();
+        for (CategoryAndLevel entry : droppedRecords) {
+            if (Logger.getLogger(entry.category).isLoggable(entry.level)) {
+                lostCategories.computeIfAbsent(entry.category, (key) -> new ArrayList<>())
+                        .add(entry.level);
+            }
+        }
+        if (lostCategories.size() > 0) {
+            StringBuilder msg = new StringBuilder(
+                    "The delayed handler's queue was overrun and log record(s) were lost (Did you forget to configure logging?): \n");
+            for (Map.Entry<String, List<java.util.logging.Level>> entry : lostCategories.entrySet()) {
+                msg.append(String.format("\t - %s: %s\n", entry.getKey(), entry.getValue()));
+            }
+            reportError(msg.toString(), null, ErrorManager.WRITE_FAILURE);
+            lostCategories.clear();
+        }
+        droppedRecords.clear();
         activated = true;
+    }
+
+    private void runCloseTasks() {
+        if (!logCloseTasks.isEmpty()) {
+            for (Runnable i : logCloseTasks) {
+                i.run();
+            }
+            logCloseTasks.clear();
+        }
+    }
+
+    static final class CategoryAndLevel {
+        final String category;
+        final java.util.logging.Level level;
+
+        CategoryAndLevel(String category, java.util.logging.Level level) {
+            this.category = category;
+            this.level = level;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            CategoryAndLevel that = (CategoryAndLevel) o;
+            return Objects.equals(category, that.category) && Objects.equals(level, that.level);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(category, level);
+        }
     }
 }

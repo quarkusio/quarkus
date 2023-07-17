@@ -296,6 +296,11 @@ function makeCollapsibleHandler(descDiv, td, row,
             return;
         }
 
+        // don't collapse if the target is button with attribute "do-not-collapse"
+        if( (target.localName == 'button' && target.hasAttribute("do-not-collapse"))) {
+            return;
+        }
+
         var isCollapsed = descDiv.classList.contains('description-collapsed');
         if( isCollapsed ) {
             collapsibleSpan.childNodes.item(0).nodeValue = 'Show less';

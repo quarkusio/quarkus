@@ -3,7 +3,7 @@ package io.quarkus.security.deployment;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
  * Used as an integration point when extensions need to customize the security behavior of a bean

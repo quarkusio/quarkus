@@ -3,6 +3,7 @@ package io.quarkus.arc.deployment.devconsole;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -48,6 +49,7 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
             DevBeanKind kind;
             String memberName;
             boolean isApplicationBean;
+            boolean isGenerated = false;
             Name declaringClass;
             if (target.kind() == Kind.METHOD) {
                 MethodInfo method = target.asMethod();
@@ -55,32 +57,40 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
                 kind = DevBeanKind.METHOD;
                 isApplicationBean = predicate.test(bean.getDeclaringBean().getBeanClass());
                 declaringClass = Name.from(bean.getDeclaringBean().getBeanClass());
+                isGenerated = bean.getDeclaringBean().getImplClazz().isSynthetic();
             } else if (target.kind() == Kind.FIELD) {
                 FieldInfo field = target.asField();
                 memberName = field.name();
                 kind = DevBeanKind.FIELD;
                 isApplicationBean = predicate.test(bean.getDeclaringBean().getBeanClass());
                 declaringClass = Name.from(bean.getDeclaringBean().getBeanClass());
+                isGenerated = bean.getDeclaringBean().getImplClazz().isSynthetic();
             } else if (target.kind() == Kind.CLASS) {
                 ClassInfo clazz = target.asClass();
                 kind = DevBeanKind.CLASS;
                 memberName = null;
                 isApplicationBean = predicate.test(clazz.name());
+                isGenerated = clazz.isSynthetic();
                 declaringClass = null;
             } else {
                 throw new IllegalArgumentException("Invalid annotation target: " + target);
             }
-            return new DevBeanInfo(kind, isApplicationBean, providerType, memberName, types, qualifiers, scope, declaringClass,
-                    interceptors);
+            return new DevBeanInfo(bean.getIdentifier(), kind, isApplicationBean, providerType, memberName, types, qualifiers,
+                    scope, declaringClass,
+                    interceptors, isGenerated);
         } else {
             // Synthetic bean
-            return new DevBeanInfo(DevBeanKind.SYNTHETIC, false, providerType, null, types, qualifiers, scope, null,
-                    interceptors);
+            return new DevBeanInfo(bean.getIdentifier(), DevBeanKind.SYNTHETIC, false, providerType, null, types, qualifiers,
+                    scope, null,
+                    interceptors, bean.getImplClazz().isSynthetic());
         }
     }
 
-    public DevBeanInfo(DevBeanKind kind, boolean isApplicationBean, Name providerType, String memberName, Set<Name> types,
-            Set<Name> qualifiers, Name scope, Name declaringClass, List<String> boundInterceptors) {
+    public DevBeanInfo(String id, DevBeanKind kind, boolean isApplicationBean, Name providerType, String memberName,
+            Set<Name> types,
+            Set<Name> qualifiers, Name scope, Name declaringClass, List<String> boundInterceptors,
+            boolean isGenerated) {
+        this.id = id;
         this.kind = kind;
         this.isApplicationBean = isApplicationBean;
         this.providerType = providerType;
@@ -90,8 +100,10 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
         this.scope = scope;
         this.declaringClass = declaringClass;
         this.interceptors = boundInterceptors;
+        this.isGenerated = isGenerated;
     }
 
+    private final String id;
     private final DevBeanKind kind;
     private final boolean isApplicationBean;
     private final Name providerType;
@@ -101,6 +113,11 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
     private final Name scope;
     private final Name declaringClass;
     private final List<String> interceptors;
+    private final boolean isGenerated;
+
+    public String getId() {
+        return id;
+    }
 
     public DevBeanKind getKind() {
         return kind;
@@ -151,12 +168,84 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
         return interceptors;
     }
 
+    public boolean isGenerated() {
+        return isGenerated;
+    }
+
+    public String getDescription() {
+        return description(false);
+    }
+
+    public String getSimpleDescription() {
+        return description(true);
+    }
+
+    private String description(boolean simple) {
+        String typeInfo = typeInfo(simple);
+        switch (kind) {
+            case FIELD:
+                return typeInfo + "#" + memberName;
+            case METHOD:
+                return typeInfo + "#" + memberName + "()";
+            case SYNTHETIC:
+                return "Synthetic: " + typeInfo;
+            default:
+                return typeInfo;
+        }
+    }
+
+    public String typeInfo(boolean simple) {
+        String type;
+        switch (kind) {
+            case FIELD:
+            case METHOD:
+                type = declaringClass.toString();
+                break;
+            default:
+                type = providerType.toString();
+                break;
+        }
+        if (simple) {
+            int idx = type.lastIndexOf(".");
+            return idx != -1 && type.length() > 1 ? type.substring(idx + 1) : type;
+        }
+        return type;
+    }
+
     @Override
     public int compareTo(DevBeanInfo o) {
-        // Application beans should go first
-        if (isApplicationBean == o.isApplicationBean) {
-            return providerType.compareTo(o.providerType);
+        // application beans come first
+        int result = Boolean.compare(o.isApplicationBean, isApplicationBean);
+        if (result != 0) {
+            return result;
         }
-        return isApplicationBean ? -1 : 1;
+        // generated beans comes last
+        result = Boolean.compare(isGenerated, o.isGenerated);
+        if (result != 0) {
+            return result;
+        }
+        // fallback to name comparison
+        return providerType.compareTo(o.providerType);
     }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        DevBeanInfo other = (DevBeanInfo) obj;
+        return Objects.equals(id, other.id);
+    }
+
 }

@@ -1,14 +1,16 @@
 package io.quarkus.arc.test.interceptors;
 
-import io.quarkus.arc.ArcInvocationContext;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Priority;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Priority;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
+
+import io.quarkus.arc.ArcInvocationContext;
 
 @Lifecycle
 @Priority(1)
@@ -20,21 +22,23 @@ public class LifecycleInterceptor {
     static final List<Object> PRE_DESTROYS = new CopyOnWriteArrayList<>();
 
     @PostConstruct
-    void simpleInit(InvocationContext ctx) {
+    void simpleInit(InvocationContext ctx) throws Exception {
         Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }
         POST_CONSTRUCTS.add(ctx.getTarget());
+        ctx.proceed();
     }
 
     @PreDestroy
-    void simpleDestroy(InvocationContext ctx) {
+    void simpleDestroy(InvocationContext ctx) throws Exception {
         Object bindings = ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
         if (bindings == null) {
             throw new IllegalArgumentException("No bindings found");
         }
         PRE_DESTROYS.add(ctx.getTarget());
+        ctx.proceed();
     }
 
     @AroundConstruct

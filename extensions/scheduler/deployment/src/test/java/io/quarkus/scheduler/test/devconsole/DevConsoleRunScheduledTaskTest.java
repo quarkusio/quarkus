@@ -1,8 +1,6 @@
 package io.quarkus.scheduler.test.devconsole;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -13,7 +11,7 @@ public class DevConsoleRunScheduledTaskTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(NeverRunTask.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NeverRunTask.class));
 
     @Test
     public void testInvokeScheduledTask() {
@@ -24,7 +22,7 @@ public class DevConsoleRunScheduledTaskTest {
                 .body(Matchers.equalTo("true"));
         RestAssured.with().formParam("name", "io.quarkus.scheduler.test.devconsole.NeverRunTask#run")
                 .redirects().follow(false)
-                .post("q/dev/io.quarkus.quarkus-scheduler/schedules")
+                .post("q/dev-v1/io.quarkus.quarkus-scheduler/schedules")
                 .then()
                 .statusCode(303);
         RestAssured.with()

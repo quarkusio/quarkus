@@ -2,7 +2,7 @@ package com.example.reactivejackson;
 
 import static io.quarkus.vertx.web.Route.HttpMethod.GET;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RouteBase;

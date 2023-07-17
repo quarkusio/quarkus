@@ -3,8 +3,6 @@ package io.quarkus.test.devconsole;
 import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,14 +18,14 @@ public class DevConsoleSchedulerSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(Jobs.class));
+            .withApplicationRoot((jar) -> jar.addClass(Jobs.class));
 
     @Test
     public void testScheduler() {
-        RestAssured.get("q/dev")
+        RestAssured.get("q/dev-v1")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Scheduled Methods"));
-        RestAssured.get("q/dev/io.quarkus.quarkus-scheduler/schedules")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-scheduler/schedules")
                 .then()
                 .statusCode(200).body(Matchers.containsString("Scheduler is running"));
     }

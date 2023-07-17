@@ -14,7 +14,7 @@ public class VertxMetricsTags {
 
     /**
      * Creates a {@code method} tag based on the {@link HttpServerRequest#method()}
-     * method} of the given {@code request}.
+     * method of the given {@code request}.
      *
      * @param method the request method
      * @return the method tag whose value is a capitalized method (e.g. GET).

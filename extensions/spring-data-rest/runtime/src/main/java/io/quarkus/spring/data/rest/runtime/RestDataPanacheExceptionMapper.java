@@ -1,7 +1,7 @@
 package io.quarkus.spring.data.rest.runtime;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
 
@@ -18,7 +18,7 @@ public class RestDataPanacheExceptionMapper implements ExceptionMapper<RestDataP
     }
 
     private Response throwableToResponse(Throwable throwable, String message) {
-        if (throwable instanceof javax.validation.ConstraintViolationException) {
+        if (throwable instanceof jakarta.validation.ConstraintViolationException) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), message).build();
         }
 

@@ -12,7 +12,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * This class is here solely to remove the mbeanObjectName field and all methods that would access it
- * 
+ *
  * @author William Burns
  */
 @TargetClass(RemoteCacheImpl.class)

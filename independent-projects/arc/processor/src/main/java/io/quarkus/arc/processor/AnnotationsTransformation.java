@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.function.Predicate;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
@@ -14,21 +15,21 @@ import org.jboss.jandex.MethodParameterInfo;
 public interface AnnotationsTransformation<T extends AnnotationsTransformation<T>> {
 
     /**
-     * 
+     *
      * @param annotation
      * @return self
      */
     T add(AnnotationInstance annotation);
 
     /**
-     * 
+     *
      * @param annotations
      * @return self
      */
     T addAll(Collection<AnnotationInstance> annotations);
 
     /**
-     * 
+     *
      * @param annotations
      * @return self
      */
@@ -38,7 +39,7 @@ public interface AnnotationsTransformation<T extends AnnotationsTransformation<T
      * NOTE: The annotation target is derived from the transformation context. If you need to add an annotation instance
      * to a method parameter use methods consuming {@link AnnotationInstance} directly and supply the correct
      * {@link MethodParameterInfo}.
-     * 
+     *
      * @param annotationType
      * @param values
      * @return self
@@ -49,7 +50,7 @@ public interface AnnotationsTransformation<T extends AnnotationsTransformation<T
      * NOTE: The annotation target is derived from the transformation context.. If you need to add an annotation instance
      * to a method parameter use methods consuming {@link AnnotationInstance} directly and supply the correct
      * {@link MethodParameterInfo}.
-     * 
+     *
      * @param name
      * @param values
      * @return self
@@ -58,7 +59,7 @@ public interface AnnotationsTransformation<T extends AnnotationsTransformation<T
 
     /**
      * Remove all annotations matching the given predicate.
-     * 
+     *
      * @param predicate
      * @return self
      */
@@ -66,7 +67,7 @@ public interface AnnotationsTransformation<T extends AnnotationsTransformation<T
 
     /**
      * Remove all annotations.
-     * 
+     *
      * @return self
      */
     T removeAll();

@@ -26,6 +26,16 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>jakarta.activation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>angus-activation</artifactId>
         </dependency>
         <!-- test dependencies -->
         <dependency>
@@ -62,6 +72,23 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-oidc-token-propagation</artifactId>
         </dependency>
         <dependency>
@@ -77,7 +104,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-jwt</artifactId>
@@ -192,7 +219,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${keycloak.docker.image}</name>
+                                    <name>${keycloak.docker.legacy.image}</name>
                                     <alias>quarkus-test-keycloak</alias>
                                     <run>
                                         <ports>
@@ -208,7 +235,7 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <http>
                                                 <url>http://localhost:8180</url>
                                             </http>
@@ -256,7 +283,6 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 
 </project>

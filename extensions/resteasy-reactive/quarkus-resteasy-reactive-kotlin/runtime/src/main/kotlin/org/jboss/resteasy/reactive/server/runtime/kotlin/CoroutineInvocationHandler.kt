@@ -11,11 +11,12 @@ import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger(CoroutineInvocationHandler::class.java)
 
-class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
-                                 private val coroutineScope: CoroutineScope) : ServerRestHandler {
+class CoroutineInvocationHandler(
+    private val invoker: EndpointInvoker,
+    private val coroutineScope: CoroutineScope
+) : ServerRestHandler {
 
     private val originalTCCL: ClassLoader = Thread.currentThread().contextClassLoader
-
 
     override fun handle(requestContext: ResteasyReactiveRequestContext) {
         if (requestContext.result != null) {
@@ -27,7 +28,8 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
         }
 
         val requestScope = requestContext.captureCDIRequestScope()
-        val dispatcher: CoroutineDispatcher = Vertx.currentContext()?.let {VertxDispatcher(it,requestScope)}
+        val dispatcher: CoroutineDispatcher =
+            Vertx.currentContext()?.let { VertxDispatcher(it, requestScope, requestContext) }
                 ?: throw IllegalStateException("No Vertx context found")
 
         logger.trace("Handling request with dispatcher {}", dispatcher)
@@ -37,9 +39,17 @@ class CoroutineInvocationHandler(private val invoker: EndpointInvoker,
             // ensure the proper CL is not lost in dev-mode
             Thread.currentThread().contextClassLoader = originalTCCL
             try {
-                requestContext.result = invoker.invokeCoroutine(requestContext.endpointInstance, requestContext.parameters)
+                val result =
+                    invoker.invokeCoroutine(
+                        requestContext.endpointInstance,
+                        requestContext.parameters
+                    )
+                if (result != Unit) {
+                    requestContext.result = result
+                }
             } catch (t: Throwable) {
-                // passing true since the target doesn't change and we want response filters to be able to know what the resource method was
+                // passing true since the target doesn't change and we want response filters to be
+                // able to know what the resource method was
                 requestContext.handleException(t, true)
             }
             requestContext.resume()

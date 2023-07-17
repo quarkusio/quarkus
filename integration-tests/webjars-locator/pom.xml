@@ -13,7 +13,12 @@
     <artifactId>quarkus-integration-test-webjars-locator</artifactId>
 
     <name>Quarkus - Integration Tests - WebJar Locator</name>
-    
+
+    <properties>
+        <!-- do not update these dependencies, they are only used for testing -->
+        <webjar.momentjs.version>2.24.0</webjar.momentjs.version>
+        <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -26,13 +31,13 @@
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
-            <artifactId>jquery</artifactId>
-            <version>${webjar.jquery.version}</version>
+            <artifactId>jquery-ui</artifactId>
+            <version>${webjar.jquery-ui.version}</version>
         </dependency>
         <dependency>
           <groupId>org.webjars</groupId>
           <artifactId>momentjs</artifactId>
-          <version>2.24.0</version>
+          <version>${webjar.momentjs.version}</version>
         </dependency>
 
         <dependency>
@@ -87,6 +92,24 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <webjar.jquery-ui.version>${webjar.jquery-ui.version}</webjar.jquery-ui.version>
+                        <webjar.momentjs.version>${webjar.momentjs.version}</webjar.momentjs.version>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <webjar.jquery-ui.version>${webjar.jquery-ui.version}</webjar.jquery-ui.version>
+                        <webjar.momentjs.version>${webjar.momentjs.version}</webjar.momentjs.version>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

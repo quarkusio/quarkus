@@ -35,8 +35,25 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-amazon-lambda-http</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-amazon-lambda-http-event-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-server-spi-deployment</artifactId>
+        </dependency>
     </dependencies>
     <build>
+      <resources>
+          <resource>
+              <directory>src/main/resources</directory>
+          </resource>
+          <resource>
+              <directory>src/main/resources/http</directory>
+              <filtering>false</filtering>
+          </resource>
+      </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

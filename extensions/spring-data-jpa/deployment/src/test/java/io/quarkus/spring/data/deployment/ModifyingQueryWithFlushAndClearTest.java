@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
-import javax.inject.Inject;
-import javax.transaction.Transactional;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -86,6 +86,20 @@ public class ModifyingQueryWithFlushAndClearTest {
         final boolean allProcessed = verifyUser.getLoginEvents().stream()
                 .allMatch(loginEvent -> loginEvent.isProcessed());
         assertThat(allProcessed).describedAs("all LoginEvents are marked as processed").isTrue();
+    }
+
+    @Test
+    @Transactional
+    public void testNamedQueryOnEntities() {
+        User user = repo.getUserByFullNameUsingNamedQuery("John Doe");
+        assertThat(user).isNotNull();
+    }
+
+    @Test
+    @Transactional
+    public void testNamedQueriesOnEntities() {
+        User user = repo.getUserByFullNameUsingNamedQueries("John Doe");
+        assertThat(user).isNotNull();
     }
 
     private LoginEvent createLoginEvent(User user) {

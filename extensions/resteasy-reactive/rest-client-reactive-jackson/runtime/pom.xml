@@ -14,6 +14,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-jackson</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-jackson-common</artifactId>
         </dependency>
@@ -27,7 +31,12 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.rest.client.reactive.jackson</provides>
+                    </capabilities>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -10,14 +10,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
 
 public class TestChangeTrackingWhenStartFailsTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, StartupFailer.class).add(
@@ -25,7 +26,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
                             "application.properties");
                 }
             })
-            .setTestArchiveProducer(new Supplier<JavaArchive>() {
+            .setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, DuplicateSimpleET.class);

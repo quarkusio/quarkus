@@ -1,14 +1,14 @@
 package io.quarkus.it.spring.data.jpa;
 
-import java.util.HashSet;
 import java.util.Set;
 
-import javax.json.bind.annotation.JsonbTransient;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
-import javax.persistence.SequenceGenerator;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.SequenceGenerator;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class Song {
@@ -16,15 +16,15 @@ public class Song {
     @Id
     @SequenceGenerator(name = "songSeqGen", sequenceName = "songSeq", initialValue = 100, allocationSize = 1)
     @GeneratedValue(generator = "songSeqGen")
-    public Long id;
+    private Long id;
 
     private String title;
 
     private String author;
 
-    @JsonbTransient
+    @JsonIgnore
     @ManyToMany(mappedBy = "likedSongs")
-    private Set<Person> likes = new HashSet<>();
+    private Set<Person> likes;
 
     public Long getId() {
         return id;

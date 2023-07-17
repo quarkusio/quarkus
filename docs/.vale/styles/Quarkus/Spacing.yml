@@ -1,0 +1,10 @@
+---
+extends: existence
+level: error
+link: https://github.com/quarkusio/quarkus/blob/main/docs/src/main/asciidoc/doc-reference.adoc
+message: "Keep one space between words in '%s'."
+nonword: true
+# source: Quarkus contributor guide
+tokens:
+  - "[a-z][.?!] {2,}[A-Z]"
+  - "[a-z][.?!][A-Z]"

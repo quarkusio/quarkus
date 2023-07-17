@@ -3,8 +3,6 @@ package io.quarkus.vertx.deployment;
 import static io.quarkus.vertx.deployment.VertxConstants.COMPLETION_STAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
 import static io.quarkus.vertx.deployment.VertxConstants.LOCAL_EVENT_BUS_CODEC;
-import static io.quarkus.vertx.deployment.VertxConstants.MESSAGE;
-import static io.quarkus.vertx.deployment.VertxConstants.MUTINY_MESSAGE;
 import static io.quarkus.vertx.deployment.VertxConstants.UNI;
 
 import java.util.Arrays;
@@ -12,7 +10,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -27,7 +27,9 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.vertx.LocalEventBusCodec;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -36,15 +38,19 @@ public class EventBusCodecProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(EventBusCodecProcessor.class.getName());
 
+    private static final DotName OBJECT = DotName.createSimple(Object.class);
+    private static final DotName LOCAL_EVENT_BUT_CODEC = DotName.createSimple(LocalEventBusCodec.class);
+
     @BuildStep
     public void registerCodecs(
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            CombinedIndexBuildItem combinedIndex,
             BuildProducer<MessageCodecBuildItem> messageCodecs,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         final IndexView index = beanArchiveIndexBuildItem.getIndex();
         Collection<AnnotationInstance> consumeEventAnnotationInstances = index.getAnnotations(CONSUME_EVENT);
-        Map<Type, DotName> codecByTypes = new HashMap<>();
+        Map<DotName, DotName> codecByTypes = new HashMap<>();
         for (AnnotationInstance consumeEventAnnotationInstance : consumeEventAnnotationInstances) {
             AnnotationTarget typeTarget = consumeEventAnnotationInstance.target();
             if (typeTarget.kind() != AnnotationTarget.Kind.METHOD) {
@@ -61,7 +67,7 @@ public class EventBusCodecProcessor {
                 if (codecTargetFromParameter == null) {
                     throw new IllegalStateException("Invalid `codec` argument in @ConsumeEvent - no parameter");
                 }
-                codecByTypes.put(codecTargetFromParameter, codec.asClass().asClassType().name());
+                codecByTypes.put(codecTargetFromParameter.name(), codec.asClass().asClassType().name());
             } else if (codecTargetFromParameter != null) {
                 // Codec is not set, check if we have a built-in codec
                 if (!hasBuiltInCodec(codecTargetFromParameter)) {
@@ -72,25 +78,51 @@ public class EventBusCodecProcessor {
                                 "The generic message codec can only be used for local delivery,"
                                         + ", implement your own event bus codec for " + codecTargetFromParameter.name()
                                                 .toString());
-                    } else if (!codecByTypes.containsKey(codecTargetFromParameter)) {
-                        LOGGER.infof("Local Message Codec registered for type %s",
-                                codecTargetFromParameter.toString());
-                        codecByTypes.put(codecTargetFromParameter, LOCAL_EVENT_BUS_CODEC);
+                    } else if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
+                        LOGGER.debugf("Local Message Codec registered for type %s",
+                                codecTargetFromParameter);
+                        codecByTypes.put(codecTargetFromParameter.name(), LOCAL_EVENT_BUS_CODEC);
                     }
                 }
             }
 
             if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)
-                    && !codecByTypes.containsKey(codecTargetFromReturnType)) {
+                    && !codecByTypes.containsKey(codecTargetFromReturnType.name())) {
 
-                LOGGER.infof("Local Message Codec registered for type %s", codecTargetFromReturnType.toString());
-                codecByTypes.put(codecTargetFromReturnType, LOCAL_EVENT_BUS_CODEC);
+                LOGGER.debugf("Local Message Codec registered for type %s", codecTargetFromReturnType);
+                codecByTypes.put(codecTargetFromReturnType.name(), LOCAL_EVENT_BUS_CODEC);
             }
         }
 
-        // Produce the build items
-        for (Map.Entry<Type, DotName> entry : codecByTypes.entrySet()) {
+        // Produce the build items for registered types
+        for (Map.Entry<DotName, DotName> entry : codecByTypes.entrySet()) {
             messageCodecs.produce(new MessageCodecBuildItem(entry.getKey().toString(), entry.getValue().toString()));
+        }
+
+        // Produce the build items for subclasses of registered types
+        // But do not override the existing ones
+        for (Map.Entry<DotName, DotName> entry : codecByTypes.entrySet()) {
+            // we do not consider Object as it would be a mess
+            DotName typeDotName = entry.getKey();
+            if (OBJECT.equals(typeDotName)) {
+                continue;
+            }
+
+            DotName codecDotName = entry.getValue();
+            // we have to limit subclasses to codecs we know that have unique name per-instance
+            // see: https://github.com/quarkusio/quarkus/issues/33458
+            if (!LOCAL_EVENT_BUT_CODEC.equals(codecDotName)) {
+                continue;
+            }
+
+            Set<DotName> subclasses = combinedIndex.getIndex().getAllKnownSubclasses(typeDotName).stream()
+                    .map(ci -> ci.name())
+                    .filter(d -> !codecByTypes.containsKey(d))
+                    .collect(Collectors.toSet());
+
+            for (DotName subclass : subclasses) {
+                messageCodecs.produce(new MessageCodecBuildItem(subclass.toString(), codecDotName.toString()));
+            }
         }
 
         // Register codec classes for reflection.
@@ -98,7 +130,7 @@ public class EventBusCodecProcessor {
                 .forEach(new Consumer<String>() {
                     @Override
                     public void accept(String name) {
-                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, name));
+                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().build());
                     }
                 });
     }
@@ -142,11 +174,16 @@ public class EventBusCodecProcessor {
     }
 
     private static Type extractPayloadTypeFromParameter(MethodInfo method) {
-        List<Type> parameters = method.parameters();
+        List<Type> parameters = method.parameterTypes();
         if (parameters.isEmpty()) {
             return null;
         }
-        Type param = method.parameters().get(0);
+        /*
+         * VertxProcessor.collectEventConsumers makes sure that only methods with either just the message object,
+         * or headers as first argument then message object are allowed.
+         */
+        int messageIndex = parameters.size() == 1 ? 0 : 1;
+        Type param = method.parameterType(messageIndex);
         if (param.kind() == Type.Kind.CLASS) {
             return param;
         } else if (param.kind() == Type.Kind.PARAMETERIZED_TYPE) {
@@ -181,7 +218,6 @@ public class EventBusCodecProcessor {
      * @return {@code true} if it matches, {@code false} otherwise.
      */
     private static boolean isMessageClass(ParameterizedType type) {
-        return type.name().equals(MESSAGE)
-                || type.name().equals(MUTINY_MESSAGE);
+        return VertxConstants.isMessage(type.name());
     }
 }

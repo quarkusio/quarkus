@@ -4,14 +4,13 @@ plugins {
 }
 
 repositories {
-    mavenCentral()
-    if (System.properties.containsKey('maven.repo.local')) {
-        maven {
-            url System.properties.get('maven.repo.local')
+    mavenLocal {
+        content {
+            includeGroup 'org.acme' // for dependencies built in this test
+            includeGroupByRegex 'io.quarkus.*'
         }
-    } else {
-        mavenLocal()
     }
+    mavenCentral()
 }
 
 dependencies {

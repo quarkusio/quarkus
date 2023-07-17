@@ -2,9 +2,6 @@ package io.quarkus.spring.data.deployment;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URL;
-import java.sql.Blob;
-import java.sql.NClob;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,11 +22,15 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Stream;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Version;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.NamedQueries;
+import jakarta.persistence.NamedQuery;
+import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 
 import org.jboss.jandex.DotName;
 import org.springframework.data.domain.Page;
@@ -86,10 +87,14 @@ public final class DotNames {
             .createSimple(Persistable.class.getName());
 
     public static final DotName JPA_ID = DotName.createSimple(Id.class.getName());
+    public static final DotName JPA_EMBEDDED_ID = DotName.createSimple(EmbeddedId.class.getName());
     public static final DotName VERSION = DotName.createSimple(Version.class.getName());
     public static final DotName JPA_INHERITANCE = DotName.createSimple(Inheritance.class.getName());
     public static final DotName JPA_MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
     public static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());;
+    public static final DotName JPA_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
+    public static final DotName JPA_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
+    public static final DotName JPA_TRANSIENT = DotName.createSimple(Transient.class.getName());
     public static final DotName VOID = DotName.createSimple(void.class.getName());
     public static final DotName LONG = DotName.createSimple(Long.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());

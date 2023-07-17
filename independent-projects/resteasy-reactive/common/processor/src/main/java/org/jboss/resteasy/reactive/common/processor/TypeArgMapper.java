@@ -1,13 +1,17 @@
 package org.jboss.resteasy.reactive.common.processor;
 
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
+
 import java.util.List;
 import java.util.function.Function;
+
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 
-public class TypeArgMapper implements Function<String, String> {
+public class TypeArgMapper implements Function<String, Type> {
     private final ClassInfo declaringClass;
     private final IndexView index;
 
@@ -17,12 +21,12 @@ public class TypeArgMapper implements Function<String, String> {
     }
 
     @Override
-    public String apply(String v) {
+    public Type apply(String v) {
         //we attempt to resolve type variables
         ClassInfo declarer = declaringClass;
         int pos = -1;
         for (;;) {
-            if (declarer == null) {
+            if (declarer == null || OBJECT.equals(declarer.name())) {
                 return null;
             }
             List<TypeVariable> typeParameters = declarer.typeParameters();
@@ -43,11 +47,11 @@ public class TypeArgMapper implements Function<String, String> {
         if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
             List<Type> bounds = type.asTypeVariable().bounds();
             if (bounds.isEmpty()) {
-                return "Ljava/lang/Object;";
+                return ClassType.OBJECT_TYPE;
             }
-            return AsmUtil.getSignature(bounds.get(0), this);
+            return bounds.get(0);
         } else {
-            return AsmUtil.getSignature(type, this);
+            return type;
         }
     }
 }

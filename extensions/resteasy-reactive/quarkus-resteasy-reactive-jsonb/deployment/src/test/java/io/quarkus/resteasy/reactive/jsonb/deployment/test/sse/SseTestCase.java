@@ -1,6 +1,9 @@
 package io.quarkus.resteasy.reactive.jsonb.deployment.test.sse;
 
+import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.time.Duration;
@@ -11,15 +14,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.sse.InboundSseEvent;
-import javax.ws.rs.sse.SseEventSource;
+import jakarta.json.bind.JsonbBuilder;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.sse.InboundSseEvent;
+import jakarta.ws.rs.sse.SseEventSource;
 
+import org.apache.http.HttpStatus;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.resteasy.reactive.common.util.RestMediaType;
+import org.jboss.resteasy.reactive.server.jsonb.JsonbMessageBodyReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -34,7 +40,7 @@ public class SseTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(SseResource.class, Message.class));
 
     @Test
@@ -108,8 +114,32 @@ public class SseTestCase {
         testJsonMulti("sse/json/multi2");
     }
 
+    @Test
+    public void testNdJsonMultiFromMulti() {
+        when().get(uri.toString() + "sse/ndjson/multi")
+                .then().statusCode(HttpStatus.SC_OK)
+                // @formatter:off
+                .body(is("{\"name\":\"hello\"}\n"
+                            + "{\"name\":\"stef\"}\n"))
+                // @formatter:on
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_NDJSON));
+    }
+
+    @Test
+    public void testStreamJsonMultiFromMulti() {
+        when().get(uri.toString() + "sse/stream-json/multi")
+                .then().statusCode(HttpStatus.SC_OK)
+                // @formatter:off
+                .body(is("{\"name\":\"hello\"}\n"
+                        + "{\"name\":\"stef\"}\n"))
+                // @formatter:on
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_STREAM_JSON));
+    }
+
     private void testJsonMulti(String path) {
-        Client client = ClientBuilder.newBuilder().build();
+        Client client = ClientBuilder.newBuilder()
+                .register(new JsonbMessageBodyReader(JsonbBuilder.create())) // we need this because registering Jsonb for the server part does not affect the client
+                .build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
         List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));

@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class CategoryBuildTimeConfig {
     /**
      * The minimum log level for this category.
-     * By default all categories are configured with <code>DEBUG</code> minimum level.
+     * By default, all categories are configured with <code>DEBUG</code> minimum level.
      *
      * To get runtime logging below <code>DEBUG</code>, e.g. <code>TRACE</code>,
      * the minimum level has to be adjusted at build time, the right log level needs to be provided at runtime.
@@ -17,4 +17,9 @@ public class CategoryBuildTimeConfig {
      */
     @ConfigItem(defaultValue = "inherit")
     public InheritableLevel minLevel;
+
+    // for method refs
+    public InheritableLevel getMinLevel() {
+        return minLevel;
+    }
 }

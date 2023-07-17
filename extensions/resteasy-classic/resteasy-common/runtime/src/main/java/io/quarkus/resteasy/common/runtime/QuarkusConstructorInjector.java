@@ -3,7 +3,7 @@ package io.quarkus.resteasy.common.runtime;
 import java.lang.reflect.Constructor;
 import java.util.function.Supplier;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.jboss.resteasy.spi.ApplicationException;
 import org.jboss.resteasy.spi.ConstructorInjector;
@@ -32,7 +32,7 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
         if (factory != null) {
             return factory.get().get();
         }
-        factory = Arc.container().instanceSupplier(this.ctor.getDeclaringClass());
+        factory = Arc.container().beanInstanceSupplier(this.ctor.getDeclaringClass());
         if (factory == null) {
             return delegate.construct(unwrapAsync);
         }
@@ -45,7 +45,7 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
         if (factory != null) {
             return factory.get().get();
         }
-        factory = Arc.container().instanceSupplier(this.ctor.getDeclaringClass());
+        factory = Arc.container().beanInstanceSupplier(this.ctor.getDeclaringClass());
         if (factory == null) {
             return delegate.construct(request, response, unwrapAsync);
         }

@@ -2,12 +2,15 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
 import java.util.List;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.RestPath;
 import org.junit.jupiter.api.Assertions;
 
 public class ResourceLocatorSubresource {
@@ -16,7 +19,7 @@ public class ResourceLocatorSubresource {
 
     @GET
     public String doGet(@Context UriInfo uri) {
-        LOG.info("Uri Ancesstors for Subresource.doGet():");
+        LOG.info("Uri Ancestors for Subresource.doGet():");
         List<String> matchedURIs = uri.getMatchedURIs();
         Assertions.assertEquals(2, matchedURIs.size());
         Assertions.assertEquals("base/1/resources", matchedURIs.get(0));
@@ -51,5 +54,18 @@ public class ResourceLocatorSubresource {
         for (Object ancestor : uri.getMatchedResources())
             LOG.debugv("   {0}", ancestor.getClass().getName());
         return new ResourceLocatorSubresource2();
+    }
+
+    @GET
+    @Path("/subresource3")
+    public String getValueFromBeanParam(@BeanParam Params params) {
+        return params.param + " and " + params.value;
+    }
+
+    public static class Params {
+        @RestPath
+        String param;
+        @QueryParam("value")
+        String value;
     }
 }

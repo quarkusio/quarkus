@@ -2,10 +2,10 @@ package io.quarkus.it.keycloak;
 
 import java.util.function.Consumer;
 
-import javax.annotation.Priority;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;

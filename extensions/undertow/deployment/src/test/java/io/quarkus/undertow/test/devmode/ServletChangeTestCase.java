@@ -25,7 +25,7 @@ public class ServletChangeTestCase {
 
     @RegisterExtension
     final static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)

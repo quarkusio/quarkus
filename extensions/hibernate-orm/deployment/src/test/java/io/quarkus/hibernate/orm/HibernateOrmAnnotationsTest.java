@@ -14,8 +14,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import org.hibernate.Hibernate;
 import org.jboss.jandex.AnnotationInstance;
@@ -49,9 +51,21 @@ public class HibernateOrmAnnotationsTest {
     @Test
     public void testNoMissingJpaAnnotation() {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
-        jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("javax.persistence.metamodel."));
+        jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("jakarta.persistence.metamodel."));
 
         assertThat(HibernateOrmAnnotations.JPA_MAPPING_ANNOTATIONS)
+                .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
+    }
+
+    @Test
+    public void testNoMissingJpaListenerAnnotation() {
+        Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
+        Pattern listenerAnnotationNamePattern = Pattern.compile(".*\\.(Pre|Post)[^.]+");
+        jpaMappingAnnotations = jpaMappingAnnotations.stream()
+                .filter(name -> listenerAnnotationNamePattern.matcher(name.toString()).matches())
+                .collect(Collectors.toSet());
+
+        assertThat(HibernateOrmAnnotations.JPA_LISTENER_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 
@@ -60,9 +74,16 @@ public class HibernateOrmAnnotationsTest {
         Set<DotName> hibernateMappingAnnotations = findRuntimeAnnotations(hibernateIndex);
         hibernateMappingAnnotations.removeIf(name -> name.toString().contains(".internal."));
         hibernateMappingAnnotations.removeIf(name -> name.toString().contains(".spi."));
+        ignoreInternalAnnotations(hibernateMappingAnnotations);
 
         assertThat(HibernateOrmAnnotations.HIBERNATE_MAPPING_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(hibernateMappingAnnotations);
+    }
+
+    private static void ignoreInternalAnnotations(Set<DotName> annotationSet) {
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Incubating"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Internal"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Remove"));
     }
 
     @Test
@@ -70,6 +91,7 @@ public class HibernateOrmAnnotationsTest {
         Set<DotName> packageLevelHibernateAnnotations = findRuntimeAnnotationsByTargetType(jpaIndex, ElementType.PACKAGE);
         packageLevelHibernateAnnotations.addAll(findRuntimeAnnotationsByTargetType(hibernateIndex, ElementType.PACKAGE));
         packageLevelHibernateAnnotations.removeIf(name -> name.toString().contains(".internal."));
+        ignoreInternalAnnotations(packageLevelHibernateAnnotations);
 
         assertThat(HibernateOrmAnnotations.PACKAGE_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(packageLevelHibernateAnnotations);
@@ -117,7 +139,7 @@ public class HibernateOrmAnnotationsTest {
     }
 
     private boolean allowsTargetType(ClassInfo annotation, ElementType targetType) {
-        AnnotationInstance targetAnnotation = annotation.classAnnotation(TARGET);
+        AnnotationInstance targetAnnotation = annotation.declaredAnnotation(TARGET);
         if (targetAnnotation == null) {
             // Can target anything
             return true;

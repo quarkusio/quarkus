@@ -16,7 +16,6 @@
     <properties>
         <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
         <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
-        <mssqldb.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssqldb.image>
     </properties>
 
     <dependencies>
@@ -43,8 +42,18 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -188,7 +197,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>${mssqldb.image}</name>
+                                    <name>${mssql.image}</name>
                                     <alias>quarkus-test-mssqldb</alias>
                                     <run>
                                         <ports>

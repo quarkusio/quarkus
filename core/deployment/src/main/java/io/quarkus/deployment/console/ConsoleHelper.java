@@ -11,7 +11,6 @@ import org.aesh.terminal.Connection;
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
 import io.quarkus.dev.console.QuarkusConsole;
-import io.quarkus.dev.console.RedirectPrintStream;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.util.ColorSupport;
 
@@ -25,19 +24,13 @@ public class ConsoleHelper {
         boolean colorEnabled = ColorSupport.isColorEnabled(consoleRuntimeConfig, logConfig);
         QuarkusConsole.installed = true;
         //if there is no color we need a basic console
-        Consumer<String> consumer = System.out::print;
-        if (System.console() != null) {
-            consumer = (s) -> {
-                System.console().writer().print(s);
-                System.console().writer().flush();
-            };
-        }
         //note that we never enable input for tests
         //surefire communicates of stdin, so this can mess with it
         boolean inputSupport = !test && !config.disableConsoleInput.orElse(consoleConfig.disableInput);
         if (!inputSupport) {
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
-                    inputSupport, consumer);
+            //note that in this case we don't hold onto anything from this class loader
+            //which is important for the test suite
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
             return;
         }
         try {
@@ -54,8 +47,11 @@ public class ConsoleHelper {
                         connection.setStdinHandler(new Consumer<int[]>() {
                             @Override
                             public void accept(int[] ints) {
+                                QuarkusConsole.StateChangeInputStream redirectIn = QuarkusConsole.REDIRECT_IN;
                                 for (int i : ints) {
-                                    queue.add(i);
+                                    if (redirectIn != null && !redirectIn.acceptInput(i)) {
+                                        queue.add(i);
+                                    }
                                 }
                             }
                         });
@@ -96,12 +92,8 @@ public class ConsoleHelper {
                 }
             });
         } catch (IOException e) {
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
-                    inputSupport, consumer);
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
         }
-
-        RedirectPrintStream ps = new RedirectPrintStream();
-        System.setOut(ps);
-        System.setErr(ps);
+        QuarkusConsole.installRedirects();
     }
 }

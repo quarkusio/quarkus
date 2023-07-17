@@ -1,5 +1,8 @@
 package io.quarkus.arc.impl;
 
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
@@ -51,12 +54,44 @@ final class Types {
         }
     }
 
+    /**
+     * Determines whether the given type is an actual type. A type is considered actual if it is a raw type,
+     * a parameterized type or an array type.
+     *
+     * @param type the given type
+     * @return true if and only if the given type is an actual type
+     */
     static boolean isActualType(Type type) {
         return (type instanceof Class<?>) || (type instanceof ParameterizedType) || (type instanceof GenericArrayType);
     }
 
+    /**
+     * Determines whether the given type is an array type.
+     *
+     * @param type the given type
+     * @return true if the given type is a subclass of java.lang.Class or implements GenericArrayType
+     */
     static boolean isArray(Type type) {
         return (type instanceof GenericArrayType) || (type instanceof Class<?> && ((Class<?>) type).isArray());
+    }
+
+    /**
+     * Determines the component type for a given array type.
+     *
+     * @param type the given array type
+     * @return the component type of a given array type
+     */
+    public static Type getArrayComponentType(Type type) {
+        if (type instanceof GenericArrayType) {
+            return GenericArrayType.class.cast(type).getGenericComponentType();
+        }
+        if (type instanceof Class<?>) {
+            Class<?> clazz = (Class<?>) type;
+            if (clazz.isArray()) {
+                return clazz.getComponentType();
+            }
+        }
+        throw new IllegalArgumentException("Not an array type " + type);
     }
 
     /**
@@ -86,9 +121,10 @@ final class Types {
         if (type instanceof Class<?>) {
             return (Class<T>) type;
         }
-        if (type instanceof ParameterizedType) {
-            if (((ParameterizedType) type).getRawType() instanceof Class<?>) {
-                return (Class<T>) ((ParameterizedType) type).getRawType();
+        if (isParameterizedType(type)) {
+            final ParameterizedType parameterizedType = asParameterizedType(type);
+            if (parameterizedType.getRawType() instanceof Class<?>) {
+                return (Class<T>) parameterizedType.getRawType();
             }
         }
         if (type instanceof TypeVariable<?>) {
@@ -164,8 +200,8 @@ final class Types {
         if (type instanceof TypeVariable<?>) {
             return true;
         }
-        if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
+        if (isParameterizedType(type)) {
+            ParameterizedType parameterizedType = asParameterizedType(type);
             for (Type t : parameterizedType.getActualTypeArguments()) {
                 if (containsTypeVariable(t)) {
                     return true;

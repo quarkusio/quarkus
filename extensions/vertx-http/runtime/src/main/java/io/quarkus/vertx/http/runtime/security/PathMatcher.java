@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Handler that dispatches to a given handler based of a prefix match of the path.
  * <p>
- * This only matches a single level of a request, e.g if you have a request that takes the form:
+ * This only matches a single level of a request, e.g. if you have a request that takes the form:
  * <p>
  * /foo/bar
  * <p>
@@ -39,7 +39,7 @@ public class PathMatcher<T> {
 
     /**
      * Matches a path against the registered handlers.
-     * 
+     *
      * @param path The relative path to match
      * @return The match match. This will never be null, however if none matched its value field will be
      */
@@ -53,8 +53,7 @@ public class PathMatcher<T> {
 
         int length = path.length();
         final int[] lengths = this.lengths;
-        for (int i = 0; i < lengths.length; ++i) {
-            int pathLength = lengths[i];
+        for (int pathLength : lengths) {
             if (pathLength == length) {
                 SubstringMap.SubstringMatch<T> next = paths.get(path, length);
                 if (next != null) {

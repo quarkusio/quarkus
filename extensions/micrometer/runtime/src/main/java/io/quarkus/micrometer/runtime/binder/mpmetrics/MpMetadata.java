@@ -7,7 +7,7 @@ import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.annotation.Metric;
 
-class MpMetadata implements Metadata {
+public class MpMetadata implements Metadata {
 
     public static MpMetadata sanitize(Metadata metadata, MetricType type) {
         if (metadata instanceof MpMetadata) {

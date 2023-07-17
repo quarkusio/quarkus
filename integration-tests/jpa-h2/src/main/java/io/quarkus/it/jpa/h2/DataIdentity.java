@@ -1,8 +1,8 @@
 package io.quarkus.it.jpa.h2;
 
-import javax.persistence.Id;
-import javax.persistence.IdClass;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
+import jakarta.persistence.MappedSuperclass;
 
 /**
  * This entity isn't directly referenced: its mere presence is

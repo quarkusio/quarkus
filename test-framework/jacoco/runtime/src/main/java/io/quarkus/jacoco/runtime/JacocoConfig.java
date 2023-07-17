@@ -11,10 +11,18 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class JacocoConfig {
 
     /**
-     * The jacoco data file
+     * The jacoco data file. By default this will be target/jacoco-quarkus.exec.
+     * The path can be relative (to the module) or absolute.
      */
-    @ConfigItem(defaultValue = "jacoco-quarkus.exec")
-    public String dataFile;
+    @ConfigItem
+    public Optional<String> dataFile;
+
+    /**
+     * Whether to reuse ({@code true}) or delete ({@code false}) the jacoco
+     * data file on each run.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean reuseDataFile;
 
     /**
      * If Quarkus should generate the Jacoco report
@@ -49,6 +57,13 @@ public class JacocoConfig {
     /**
      * A list of class files to include in the report. May use wildcard
      * characters (* and ?). When not specified everything will be included.
+     * <p>
+     * For instance:
+     * <ul>
+     * <li><code>&#42;&#42;/fo/&#42;&#42;/&#42;</code> targets all classes under fo and sub packages</li>
+     * <li><code>&#42;&#42;/bar/&#42;</code> targets all classes directly under bar</li>
+     * <li><code>&#42;&#42;/&#42;BAR&#42;.class</code> targets classes that contain BAR in their name regardless of path</li>
+     * </ul>
      */
     @ConfigItem(defaultValue = "**")
     public List<String> includes;
@@ -56,13 +71,21 @@ public class JacocoConfig {
     /**
      * A list of class files to exclude from the report. May use wildcard
      * characters (* and ?). When not specified nothing will be excluded.
+     * <p>
+     * For instance:
+     * <ul>
+     * <li><code>&#42;&#42;/fo/&#42;&#42;/&#42;</code> targets all classes under fo and sub packages</li>
+     * <li><code>&#42;&#42;/bar/&#42;</code> targets all classes directly under bar</li>
+     * <li><code>&#42;&#42;/&#42;BAR&#42;.class</code> targets classes that contain BAR in their name regardless of path</li>
+     * </ul>
      */
     @ConfigItem
     public Optional<List<String>> excludes;
 
     /**
-     * The location of the report files.
+     * The location of the report files. By default this will be target/jacoco-report.
+     * The path can be relative (to the module) or absolute.
      */
-    @ConfigItem(defaultValue = "jacoco-report")
-    public String reportLocation;
+    @ConfigItem
+    public Optional<String> reportLocation;
 }

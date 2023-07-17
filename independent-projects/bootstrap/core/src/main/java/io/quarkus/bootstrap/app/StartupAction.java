@@ -14,6 +14,8 @@ public interface StartupAction {
 
     ClassLoader getClassLoader();
 
+    Map<String, String> getDevServicesProperties();
+
     /**
      * Runs the application by running the main method of the main class. As this is a blocking method a new
      * thread is created to run this task.
@@ -23,5 +25,10 @@ public interface StartupAction {
      * of the JVM will exit when the app stops.
      */
     RunningQuarkusApplication runMainClass(String... args) throws Exception;
+
+    /**
+     * Runs the application by running the main method of the main class, and runs it to completion
+     */
+    int runMainClassBlocking(String... args) throws Exception;
 
 }

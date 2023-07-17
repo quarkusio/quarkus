@@ -44,14 +44,29 @@ public class OidcConfigurationMetadata {
     }
 
     public OidcConfigurationMetadata(JsonObject wellKnownConfig) {
-        this.tokenUri = wellKnownConfig.getString(TOKEN_ENDPOINT);
-        this.introspectionUri = wellKnownConfig.getString(INTROSPECTION_ENDPOINT);
-        this.authorizationUri = wellKnownConfig.getString(AUTHORIZATION_ENDPOINT);
-        this.jsonWebKeySetUri = wellKnownConfig.getString(JWKS_ENDPOINT);
-        this.userInfoUri = wellKnownConfig.getString(USERINFO_ENDPOINT);
-        this.endSessionUri = wellKnownConfig.getString(END_SESSION_ENDPOINT);
-        this.issuer = wellKnownConfig.getString(ISSUER);
+        this(wellKnownConfig, null);
+    }
+
+    public OidcConfigurationMetadata(JsonObject wellKnownConfig, OidcConfigurationMetadata localMetadataConfig) {
+        this.tokenUri = getMetadataValue(wellKnownConfig, TOKEN_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.tokenUri);
+        this.introspectionUri = getMetadataValue(wellKnownConfig, INTROSPECTION_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.introspectionUri);
+        this.authorizationUri = getMetadataValue(wellKnownConfig, AUTHORIZATION_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.authorizationUri);
+        this.jsonWebKeySetUri = getMetadataValue(wellKnownConfig, JWKS_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.jsonWebKeySetUri);
+        this.userInfoUri = getMetadataValue(wellKnownConfig, USERINFO_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.userInfoUri);
+        this.endSessionUri = getMetadataValue(wellKnownConfig, END_SESSION_ENDPOINT,
+                localMetadataConfig == null ? null : localMetadataConfig.endSessionUri);
+        this.issuer = getMetadataValue(wellKnownConfig, ISSUER,
+                localMetadataConfig == null ? null : localMetadataConfig.issuer);
         this.json = wellKnownConfig;
+    }
+
+    private static String getMetadataValue(JsonObject wellKnownConfig, String propertyName, String localValue) {
+        return localValue != null ? localValue : wellKnownConfig.getString(propertyName);
     }
 
     public String getTokenUri() {

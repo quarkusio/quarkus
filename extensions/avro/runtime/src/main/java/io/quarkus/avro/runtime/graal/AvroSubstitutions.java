@@ -1,91 +1,22 @@
 package io.quarkus.avro.runtime.graal;
 
 import java.lang.reflect.Constructor;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.IndexedRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.ResolvingDecoder;
 import org.apache.avro.util.WeakIdentityHashMap;
-import org.graalvm.home.Version;
+import org.apache.avro.util.internal.ThreadLocalWithInitial;
 
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.Inject;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-@TargetClass(className = "org.apache.avro.reflect.ReflectionUtil", onlyWith = GraalVM20OrEarlier.class)
-final class Target_org_apache_avro_reflect_ReflectionUtil {
-
-    /**
-     * Use reflection instead of method handles
-     */
-    @Substitute
-    public static <V, R> Function<V, R> getConstructorAsFunction(Class<V> parameterClass, Class<R> clazz) {
-        try {
-            Constructor<R> constructor = clazz.getConstructor(parameterClass);
-            return new Function<V, R>() {
-                @Override
-                public R apply(V v) {
-                    try {
-                        return constructor.newInstance(v);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            };
-        } catch (Throwable t) {
-            // if something goes wrong, do not provide a Function instance
-            return null;
-        }
-    }
-
-}
-
-@TargetClass(className = "org.apache.avro.reflect.ReflectData", onlyWith = GraalVM20OrEarlier.class)
-final class Target_org_apache_avro_reflect_ReflectData {
-
-    @Inject
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.None)
-    Map<Class<?>, Target_org_apache_avro_reflect_ReflectData_ClassAccessorData> ACCESSORS;
-
-    @Substitute
-    private Target_org_apache_avro_reflect_ReflectData_ClassAccessorData getClassAccessorData(Class<?> c) {
-        if (ACCESSORS == null) {
-            ACCESSORS = new HashMap<>();
-        }
-
-        Map<Class<?>, Target_org_apache_avro_reflect_ReflectData_ClassAccessorData> map = ACCESSORS;
-        Target_org_apache_avro_reflect_ReflectData_ClassAccessorData o = map.get(c);
-        if (o == null) {
-            if (!IndexedRecord.class.isAssignableFrom(c)) {
-                Target_org_apache_avro_reflect_ReflectData_ClassAccessorData d = new Target_org_apache_avro_reflect_ReflectData_ClassAccessorData(
-                        c);
-                map.put(c, d);
-            }
-            return null;
-        }
-        return o;
-    }
-}
-
-@TargetClass(className = "org.apache.avro.reflect.ReflectData", innerClass = "ClassAccessorData", onlyWith = GraalVM20OrEarlier.class)
-final class Target_org_apache_avro_reflect_ReflectData_ClassAccessorData<T> {
-    // Just provide access to "ReflectData.ClassAccessorData"
-
-    @Alias
-    public Target_org_apache_avro_reflect_ReflectData_ClassAccessorData(Class<?> c) {
-
-    }
-
-}
+import io.quarkus.runtime.graal.JDK17OrLater;
 
 @TargetClass(className = "org.apache.avro.generic.GenericDatumReader")
 final class Target_org_apache_avro_generic_GenericDatumReader {
@@ -106,31 +37,59 @@ final class Target_org_apache_avro_generic_GenericDatumReader {
 
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
-    private static ThreadLocal<Map<Schema, Map<Schema, ResolvingDecoder>>> RESOLVER_CACHE = ThreadLocal.withInitial(
-            WeakIdentityHashMap::new);
+    private static ThreadLocal<Map<Schema, Map<Schema, ResolvingDecoder>>> RESOLVER_CACHE = ThreadLocalWithInitial
+            .of(WeakIdentityHashMap::new);
+
     @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private Map<Schema, Class> stringClassCache;
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private Map<Class, Constructor> stringCtorCache;
+    private Target_org_apache_avro_generic_GenericDatumReader_ReaderCache readerCache;
 
     @Substitute
     protected Target_org_apache_avro_generic_GenericDatumReader(GenericData data) {
         this.fastDatumReader = null;
         this.creatorResolver = null;
-        this.stringClassCache = new IdentityHashMap();
-        this.stringCtorCache = new HashMap();
         this.data = data;
         this.creator = Thread.currentThread();
+        this.readerCache = new Target_org_apache_avro_generic_GenericDatumReader_ReaderCache(this::findStringClass);
+    }
+
+    @Alias
+    protected native Class findStringClass(Schema schema);
+
+}
+
+@TargetClass(className = "org.apache.avro.generic.GenericDatumReader", innerClass = "ReaderCache")
+final class Target_org_apache_avro_generic_GenericDatumReader_ReaderCache {
+    // Just provide access to "org.apache.avro.generic.GenericDatumReader.ReaderCache"
+
+    @Alias
+    public Target_org_apache_avro_generic_GenericDatumReader_ReaderCache(
+            @SuppressWarnings("unused") Function<Schema, Class> findStringClass) {
     }
 
 }
 
-class GraalVM20OrEarlier implements BooleanSupplier {
-    @Override
-    public boolean getAsBoolean() {
-        return Version.getCurrent().compareTo(21) < 0;
+@TargetClass(className = "org.apache.avro.reflect.ReflectionUtil", onlyWith = JDK17OrLater.class)
+final class Target_org_apache_avro_reflect_ReflectionUtil {
+
+    @Substitute
+    public static <V, R> Function<V, R> getConstructorAsFunction(Class<V> parameterClass, Class<R> clazz) {
+        // Cannot use the method handle approach as it uses ProtectionDomain which got removed.
+        try {
+            Constructor<R> constructor = clazz.getConstructor(parameterClass);
+            return new Function<V, R>() {
+                @Override
+                public R apply(V v) {
+                    try {
+                        return constructor.newInstance(v);
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Unable to create new instance for " + clazz, e);
+                    }
+                }
+            };
+        } catch (Throwable t) {
+            // if something goes wrong, do not provide a Function instance
+            return null;
+        }
     }
 }
 

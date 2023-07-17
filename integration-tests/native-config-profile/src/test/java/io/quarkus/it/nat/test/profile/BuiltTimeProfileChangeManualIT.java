@@ -4,8 +4,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.NativeImageTest;
 import io.quarkus.test.junit.NativeTestExtension;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
@@ -17,7 +17,7 @@ import io.quarkus.test.junit.TestProfile;
  * {@link BuildProfileChange#getConfigProfile()} returns a profile name that changes
  * {@code quarkus.arc.remove-unused-beans} in {@code application.properties}.
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 @TestProfile(BuiltTimeProfileChangeManualIT.BuildProfileChange.class)
 @Disabled("Manual testing only")
 public class BuiltTimeProfileChangeManualIT {

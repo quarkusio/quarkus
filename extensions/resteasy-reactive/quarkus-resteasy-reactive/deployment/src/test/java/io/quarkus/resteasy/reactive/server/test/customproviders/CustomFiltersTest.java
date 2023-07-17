@@ -19,7 +19,7 @@ public class CustomFiltersTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -31,13 +31,14 @@ public class CustomFiltersTest {
 
     @Test
     public void testFilters() {
-        Headers headers = RestAssured.given().header("some-input", "bar").get("/custom/req")
+        Headers responseHeaders = RestAssured.given().header("some-input", "bar").get("/custom/req")
                 .then().statusCode(200).body(Matchers.containsString("/custom/req-bar-null")).extract().headers();
-        assertThat(headers.getValues("java-method")).containsOnly("filters");
+        assertThat(responseHeaders.getValues("java-method")).containsOnly("filters");
         Assertions.assertEquals(3, AssertContainerFilter.COUNT.get());
+        assertThat(responseHeaders.getValues("very")).isEmpty();
 
-        headers = RestAssured.given().header("some-input", "bar").get("/custom/metal")
+        responseHeaders = RestAssured.given().header("some-input", "bar").get("/custom/metal")
                 .then().statusCode(200).body(Matchers.containsString("/custom/metal-bar-metal")).extract().headers();
-        assertThat(headers.getValues("java-method")).containsOnly("metal");
+        assertThat(responseHeaders.getValues("very")).containsOnly("heavy");
     }
 }

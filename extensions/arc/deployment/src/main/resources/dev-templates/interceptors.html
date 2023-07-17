@@ -21,7 +21,7 @@
       }
       $(".class-candidate").each(function() {
         var className = $(this).text();
-        if (appClassLang(className)) {
+        if (appClassLocation(className)) {
           $(this).addClass("app-class");
         }
       });
@@ -45,7 +45,7 @@
    <thead class="thead-dark">
     <tr>
       <th scope="col">#</th>
-      <th scope="col">Interceptor class</th>
+      <th scope="col">Interceptor Class</th>
       <th scope="col">Priority</th>
       <th scope="col">Bindings</th>
       <th scope="col">Interception Types</th>
@@ -54,7 +54,7 @@
    <tbody>
     {#for interceptor in info:devBeanInfos.interceptors}
     <tr>
-      <td>{count}.</td>
+      <td>{interceptor_count}.</td>
       <td><span class="class-candidate">{interceptor.interceptorClass}</span></td>
       <td><span class="badge rounded-pill bg-info text-light larger-badge" title="Priority: {interceptor.priority}">{interceptor.priority}</span></td>
       <td>

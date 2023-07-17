@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.apache.avro.Conversions;
 import org.apache.avro.Schema;
 import org.apache.avro.compiler.specific.SpecificCompiler;
 
@@ -46,7 +47,7 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         // allow them to share a single schema so reuse and sharing of schema
         // is possible.
         try {
-            if (options.imports == null) {
+            if (options.imports == EMPTY) {
                 schema = new Schema.Parser().parse(file);
             } else {
                 schema = schemaParser.parse(file);
@@ -65,6 +66,19 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         compiler.setCreateSetters(options.createSetters);
         compiler.setEnableDecimalLogicalType(options.enableDecimalLogicalType);
         compiler.setOutputCharacterEncoding("UTF-8");
+        compiler.addCustomConversion(Conversions.UUIDConversion.class);
+
+        for (String customConversion : options.customConversions) {
+            try {
+                Class<?> conversionClass = Class.forName(customConversion);
+                if (!conversionClass.isInstance(Conversions.UUIDConversion.class)) {
+                    compiler.addCustomConversion(conversionClass);
+                }
+            } catch (ClassNotFoundException e) {
+                throw new CodeGenException("Unable to find the following conversion class: " + customConversion, e);
+            }
+        }
+
         try {
             compiler.compileToDestination(file, outputDirectory.toFile());
         } catch (IOException e) {

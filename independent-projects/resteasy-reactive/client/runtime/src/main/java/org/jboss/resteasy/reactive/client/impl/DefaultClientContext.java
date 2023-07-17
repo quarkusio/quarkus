@@ -1,13 +1,17 @@
 package org.jboss.resteasy.reactive.client.impl;
 
-import io.vertx.core.Vertx;
 import java.util.Collections;
+import java.util.Map;
 import java.util.function.Supplier;
-import javax.ws.rs.RuntimeType;
+
+import jakarta.ws.rs.RuntimeType;
+
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
+import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.GenericTypeMapping;
-import org.jboss.resteasy.reactive.common.core.Serialisers;
+
+import io.vertx.core.Vertx;
 
 public class DefaultClientContext implements ClientContext {
 
@@ -20,7 +24,7 @@ public class DefaultClientContext implements ClientContext {
     };
 
     final GenericTypeMapping genericTypeMapping;
-    final Serialisers serialisers;
+    final ClientSerialisers serialisers;
     final ClientProxies clientProxies;
 
     public DefaultClientContext() {
@@ -31,7 +35,7 @@ public class DefaultClientContext implements ClientContext {
     }
 
     @Override
-    public Serialisers getSerialisers() {
+    public ClientSerialisers getSerialisers() {
         return serialisers;
     }
 
@@ -48,5 +52,10 @@ public class DefaultClientContext implements ClientContext {
     @Override
     public ClientProxies getClientProxies() {
         return clientProxies;
+    }
+
+    @Override
+    public Map<Class<?>, MultipartResponseData> getMultipartResponsesData() {
+        return Collections.emptyMap(); // supported in quarkus only at the moment
     }
 }

@@ -2,8 +2,9 @@ package org.jboss.resteasy.reactive.common.providers.serialisers;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyReader;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.MessageBodyReader;
 
 public abstract class AbstractJsonMessageBodyReader implements MessageBodyReader<Object> {
 
@@ -21,7 +22,8 @@ public abstract class AbstractJsonMessageBodyReader implements MessageBodyReader
         }
         String subtype = mediaType.getSubtype();
         boolean isApplicationMediaType = "application".equals(mediaType.getType());
-        return (isApplicationMediaType && "json".equalsIgnoreCase(subtype) || subtype.endsWith("+json"))
+        return (isApplicationMediaType && "json".equalsIgnoreCase(subtype) || subtype.endsWith("+json")
+                || subtype.equalsIgnoreCase("x-ndjson"))
                 || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isApplicationMediaType));
     }
 }

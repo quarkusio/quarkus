@@ -1,6 +1,6 @@
 package io.quarkus.spring.data.rest.deployment.crud;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 
 import org.hibernate.bytecode.enhance.spi.EnhancerConstants;
 import org.jboss.jandex.ClassInfo;

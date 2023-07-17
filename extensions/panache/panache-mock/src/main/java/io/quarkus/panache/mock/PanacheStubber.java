@@ -16,7 +16,7 @@ public class PanacheStubber {
      * Allows to choose a method when stubbing in doThrow()|doAnswer()|doNothing()|doReturn() style
      * <p>
      * Example:
-     * 
+     *
      * <pre class="code">
      * <code class="java">
      *   doThrow(new RuntimeException())

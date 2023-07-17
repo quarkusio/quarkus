@@ -1,0 +1,15 @@
+pluginManagement {
+    repositories {
+        mavenLocal {
+            content {
+                includeGroupByRegex 'io.quarkus.*'
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id "${quarkusPluginId}" version "${quarkusPluginVersion}"
+    }
+}
+rootProject.name='with-build-configuration'

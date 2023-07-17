@@ -49,7 +49,6 @@ public class TestConsoleHandler implements TestListener {
     private volatile ConsoleStateManager.ConsoleContext consoleContext;
     private volatile StatusLine resultsOutput;
     private volatile StatusLine testsStatusOutput;
-    private volatile StatusLine testsCompileOutput;
 
     public TestConsoleHandler(DevModeType devModeType) {
         this.devModeType = devModeType;
@@ -79,7 +78,6 @@ public class TestConsoleHandler implements TestListener {
         this.consoleContext = ConsoleStateManager.INSTANCE.createContext("Continuous Testing");
         this.resultsOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_RESULTS);
         this.testsStatusOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.TEST_STATUS);
-        this.testsCompileOutput = QuarkusConsole.INSTANCE.registerStatusLine(QuarkusConsole.COMPILE_ERROR);
         setupPausedConsole();
     }
 
@@ -90,7 +88,10 @@ public class TestConsoleHandler implements TestListener {
             public void run() {
                 if (lastResults == null) {
                     testsStatusOutput.setMessage(BLUE + "Starting tests" + RESET);
+                } else {
+                    testsStatusOutput.setMessage(null);
                 }
+                setupTestsRunningConsole();
                 TestSupport.instance().get().start();
             }
         }));
@@ -103,8 +104,10 @@ public class TestConsoleHandler implements TestListener {
         } else {
             testsStatusOutput.setMessage(BLUE + "Running tests for the first time" + RESET);
         }
-        consoleContext.reset();
-        addTestOutput();
+        if (firstRun) {
+            consoleContext.reset();
+            addTestOutput();
+        }
     }
 
     void addTestOutput() {
@@ -138,16 +141,6 @@ public class TestConsoleHandler implements TestListener {
     public void testsDisabled() {
         disabled = true;
         setupPausedConsole();
-    }
-
-    @Override
-    public void testCompileFailed(String message) {
-        testsCompileOutput.setMessage(message);
-    }
-
-    @Override
-    public void testCompileSucceeded() {
-        testsCompileOutput.setMessage(null);
     }
 
     @Override
@@ -224,14 +217,47 @@ public class TestConsoleHandler implements TestListener {
                 } else {
                     currentlyFailing = true;
                     //TODO: this should not use the logger, it should print a nicer status
+                    //first print the full failures
                     log.error(statusHeader("TEST REPORT #" + results.getId()));
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
-                            log.error(
-                                    RED + "Test " + test.getDisplayName() + " failed \n" + RESET,
-                                    test.getTestExecutionResult().getThrowable().get());
+                            if (test.isReportable()) {
+                                log.error(
+                                        RED + "Test " + test.getDisplayName() + " failed \n" + RESET,
+                                        test.getTestExecutionResult().getThrowable().get());
+                            }
                         }
                     }
+                    //then print the summary
+                    StringBuilder summary = new StringBuilder(statusFooter(RED + "Summary:") + "\n");
+                    for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
+                        for (TestResult test : classEntry.getValue().getFailing()) {
+                            if (test.isReportable()) {
+                                StackTraceElement testclass = null;
+                                for (var i : test.getTestExecutionResult().getThrowable().get().getStackTrace()) {
+                                    if (i.getClassName().equals(test.testClass)) {
+                                        testclass = i;
+                                        break;
+                                    }
+                                }
+
+                                if (summary.charAt(summary.length() - 1) != '\n') {
+                                    summary.append("\n");
+                                }
+                                if (testclass != null) {
+                                    summary.append(testclass.getClassName() + "#" + testclass.getMethodName() + "("
+                                            + testclass.getFileName() + ":" + testclass.getLineNumber() + ") ");
+                                }
+                                summary.append(RED
+                                        + test.getDisplayName() + RESET
+                                        + " " + test.getTestExecutionResult().getThrowable().get().getMessage());
+                            }
+                        }
+                    }
+                    while (summary.charAt(summary.length() - 1) == '\n') {
+                        summary.setLength(summary.length() - 1);
+                    }
+                    log.error(summary.toString());
                     log.error(
                             statusFooter(RED + results.getCurrentFailedCount() + " "
                                     + pluralize("TEST", "TESTS", results.getCurrentFailedCount()) + " FAILED"));
@@ -252,11 +278,6 @@ public class TestConsoleHandler implements TestListener {
             }
 
             @Override
-            public void noTests(TestRunResults results) {
-                runComplete(results);
-            }
-
-            @Override
             public void runAborted() {
                 firstRun = false;
             }
@@ -265,7 +286,8 @@ public class TestConsoleHandler implements TestListener {
             public void testStarted(TestIdentifier testIdentifier, String className) {
                 String status = "Running " + (methodCount.get() + 1) + "/" + totalNoTests
                         + (failureCount.get() == 0 ? "."
-                                : ". " + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far.")
+                                : ". " + RED + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far."
+                                        + RESET)
                         + " Running: "
                         + className + "#" + testIdentifier.getDisplayName();
                 if (TestSupport.instance().get().isDisplayTestOutput() &&
@@ -273,6 +295,11 @@ public class TestConsoleHandler implements TestListener {
                     log.info(status);
                 }
                 testsStatusOutput.setMessage(status);
+            }
+
+            @Override
+            public void dynamicTestRegistered(TestIdentifier testIdentifier) {
+                totalNoTests.incrementAndGet();
             }
         });
 

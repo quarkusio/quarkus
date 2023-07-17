@@ -3,36 +3,42 @@ package io.quarkus.redis.client.deployment.devmode;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.redis.client.deployment.RedisTestResource;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.restassured.RestAssured;
 
+@QuarkusTestResource(RedisTestResource.class)
 public class RedisClientDevModeTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addAsResource(new StringAsset("quarkus.redis.hosts=redis://localhost:6379/0"),
+                            .addAsResource(new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}"),
                                     "application.properties")
                             .addClass(IncrementResource.class);
                 }
             });
 
     @Test
-    public void testRedisDevMode() {
+    public void testSourceFileUpdateInDevMode() {
         RestAssured.get("/inc")
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo("1"));
+
         RestAssured.get("/inc")
                 .then()
                 .statusCode(200)
@@ -43,6 +49,10 @@ public class RedisClientDevModeTestCase {
                 return s.replace("INCREMENT = 1", "INCREMENT = 10");
             }
         });
+
+        Awaitility.await()
+                .untilAsserted(() -> Assertions.assertEquals("2", RestAssured.get("/inc/val").andReturn().asString()));
+
         RestAssured.get("/inc")
                 .then()
                 .statusCode(200)
@@ -52,5 +62,9 @@ public class RedisClientDevModeTestCase {
                 .statusCode(200)
                 .body(Matchers.equalTo("22"));
 
+        RestAssured.get("/inc")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("32"));
     }
 }

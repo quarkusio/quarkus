@@ -4,4 +4,4 @@ registries:
 - test.registry.quarkus.io:
     maven:
         repository:
-            url: file://$testResourcesDir/test-registry-repo
+            url: file://${project.build.outputDirectory}/test-registry-repo

@@ -8,19 +8,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationVersion;
-import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
 import org.flywaydb.core.api.migration.JavaMigration;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import db.migration.V1_0_1__Update;
+import db.migration.V1_0_2__Update;
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
@@ -34,8 +33,8 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(V1_0_1__Update.class, V1_0_2__Update.class)
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(V1_0_1__Update.class, V1_0_2__Update.class, V9_9_9__Update.class)
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("clean-and-migrate-at-start-config.properties", "application.properties"));
 
@@ -55,19 +54,10 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
         assertEquals("1.0.2", currentVersion, "Expected to be 1.0.2 as there is a SQL and two Java migration scripts");
     }
 
-    public static class V1_0_1__Update extends BaseJavaMigration {
-        @Override
-        public void migrate(Context context) throws Exception {
-            try (Statement statement = context.getConnection().createStatement()) {
-                statement.executeUpdate("INSERT INTO quarked_flyway VALUES (1001, 'test')");
-            }
-        }
-    }
-
-    public static class V1_0_2__Update implements JavaMigration {
+    public static class V9_9_9__Update implements JavaMigration {
         @Override
         public MigrationVersion getVersion() {
-            return MigrationVersion.fromVersion("1.0.2");
+            return MigrationVersion.fromVersion("9.9.9");
         }
 
         @Override
@@ -81,11 +71,6 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
         }
 
         @Override
-        public boolean isUndo() {
-            return false;
-        }
-
-        @Override
         public boolean canExecuteInTransaction() {
             return true;
         }
@@ -93,7 +78,7 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
         @Override
         public void migrate(Context context) throws Exception {
             try (Statement statement = context.getConnection().createStatement()) {
-                statement.executeUpdate("INSERT INTO quarked_flyway VALUES (1002, 'test')");
+                statement.executeUpdate("INSERT INTO quarked_flyway VALUES (9999, 'should-not-be-added')");
             }
         }
     }

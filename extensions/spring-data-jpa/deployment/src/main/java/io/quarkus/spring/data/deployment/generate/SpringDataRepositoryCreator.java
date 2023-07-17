@@ -10,8 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -54,10 +54,11 @@ public class SpringDataRepositoryCreator {
                 typeBundle);
     }
 
-    public void implementCrudRepository(ClassInfo repositoryToImplement, IndexView indexView) {
+    public Result implementCrudRepository(ClassInfo repositoryToImplement, IndexView indexView) {
         Map.Entry<DotName, DotName> extraTypesResult = extractIdAndEntityTypes(repositoryToImplement, indexView);
 
-        String idTypeStr = extraTypesResult.getKey().toString();
+        DotName idTypeDotName = extraTypesResult.getKey();
+        String idTypeStr = idTypeDotName.toString();
         DotName entityDotName = extraTypesResult.getValue();
         String entityTypeStr = entityDotName.toString();
 
@@ -100,7 +101,7 @@ public class SpringDataRepositoryCreator {
                 ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Object.class, "<init>", void.class), ctor.getThis());
                 // initialize the entityClass field
                 ctor.writeInstanceField(entityClassFieldCreator.getFieldDescriptor(), ctor.getThis(),
-                        ctor.loadClass(entityTypeStr));
+                        ctor.loadClassFromTCCL(entityTypeStr));
                 ctor.returnValue(null);
             }
 
@@ -116,13 +117,15 @@ public class SpringDataRepositoryCreator {
             derivedMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(), generatedClassName,
                     repositoryToImplement, entityClassInfo);
             customQueryMethodsAdder.add(classCreator, entityClassFieldCreator.getFieldDescriptor(),
-                    repositoryToImplement, entityClassInfo);
+                    repositoryToImplement, entityClassInfo, idTypeStr);
         }
+
+        return new Result(entityDotName, idTypeDotName, generatedClassName);
     }
 
     private Map.Entry<DotName, DotName> extractIdAndEntityTypes(ClassInfo repositoryToImplement, IndexView indexView) {
         AnnotationInstance repositoryDefinitionInstance = repositoryToImplement
-                .classAnnotation(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
+                .declaredAnnotation(DotNames.SPRING_DATA_REPOSITORY_DEFINITION);
         if (repositoryDefinitionInstance != null) {
             return new AbstractMap.SimpleEntry<>(repositoryDefinitionInstance.value("idClass").asClass().name(),
                     repositoryDefinitionInstance.value("domainClass").asClass().name());
@@ -183,6 +186,30 @@ public class SpringDataRepositoryCreator {
             customImplNameToFieldDescriptor.put(customImplClassName,
                     customClassField.getFieldDescriptor());
             i++;
+        }
+    }
+
+    public static final class Result {
+        final DotName entityDotName;
+        final DotName idTypeDotName;
+        final String generatedClassName;
+
+        Result(DotName entityDotName, DotName idTypeDotName, String generatedClassName) {
+            this.entityDotName = entityDotName;
+            this.idTypeDotName = idTypeDotName;
+            this.generatedClassName = generatedClassName;
+        }
+
+        public DotName getEntityDotName() {
+            return entityDotName;
+        }
+
+        public DotName getIdTypeDotName() {
+            return idTypeDotName;
+        }
+
+        public String getGeneratedClassName() {
+            return generatedClassName;
         }
     }
 }

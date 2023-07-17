@@ -11,9 +11,11 @@ metadata:
   categories:
     - "cloud"
   guide: "https://quarkus.io/guides/funqy-gcp-functions"
-  status: "experimental"
+  status: "preview"
   codestart:
     name: "funqy-google-cloud-functions-example"
     kind: "example"
     languages: "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.funqy."

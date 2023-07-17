@@ -3,18 +3,33 @@ package io.quarkus.micrometer.deployment.binder.mpmetrics;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 
-import javax.enterprise.context.Dependent;
+import jakarta.enterprise.context.Dependent;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.deployment.*;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.AutoInjectAnnotationBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.annotations.*;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.gizmo.ClassOutput;
@@ -28,6 +43,7 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
  *
  * Avoid importing classes that import MP Metrics API classes.
  */
+@BuildSteps(onlyIf = MicroprofileMetricsProcessor.MicroprofileMetricsEnabled.class)
 public class MicroprofileMetricsProcessor {
     private static final Logger log = Logger.getLogger(MicroprofileMetricsProcessor.class);
     static final Class<?> METRIC_ANNOTATION_CLASS = MicrometerRecorder
@@ -41,17 +57,17 @@ public class MicroprofileMetricsProcessor {
         }
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     IndexDependencyBuildItem addDependencies() {
         return new IndexDependencyBuildItem("org.eclipse.microprofile.metrics", "microprofile-metrics-api");
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     AutoInjectAnnotationBuildItem autoInjectMetric() {
         return new AutoInjectAnnotationBuildItem(MetricDotNames.METRIC);
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     AdditionalBeanBuildItem registerBeanClasses() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
@@ -64,7 +80,7 @@ public class MicroprofileMetricsProcessor {
                 .build();
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     void logWarningForMpMetricsUsage(CombinedIndexBuildItem combinedIndexBuildItem,
             BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<BeanConfiguratorBuildItem> errors) {
@@ -105,7 +121,7 @@ public class MicroprofileMetricsProcessor {
     /**
      * Make sure all classes containing metrics annotations have a bean scope.
      */
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     AnnotationsTransformerBuildItem transformBeanScope(BeanArchiveIndexBuildItem index,
             CustomScopeAnnotationsBuildItem scopes) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -129,7 +145,7 @@ public class MicroprofileMetricsProcessor {
                 if (!MetricDotNames.isSingleInstance(clazz)) {
                     while (clazz != null && clazz.superName() != null) {
                         if (!MetricDotNames.knownClass(clazz)
-                                && MetricDotNames.containsMetricAnnotation(clazz.annotations())) {
+                                && MetricDotNames.containsMetricAnnotation(clazz.annotationsMap())) {
                             log.debugf(
                                     "Found metrics business methods on a class %s with no scope defined - adding @Dependent",
                                     ctx.getTarget());
@@ -143,7 +159,7 @@ public class MicroprofileMetricsProcessor {
         });
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     UnremovableBeanBuildItem processAnnotatedMetrics(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             CombinedIndexBuildItem indexBuildItem) {
@@ -183,7 +199,7 @@ public class MicroprofileMetricsProcessor {
         });
     }
 
-    @BuildStep(onlyIf = MicroprofileMetricsEnabled.class)
+    @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void configureRegistry(MpMetricsRecorder recorder,
             RootMeterRegistryBuildItem rootMeterRegistryBuildItem) {

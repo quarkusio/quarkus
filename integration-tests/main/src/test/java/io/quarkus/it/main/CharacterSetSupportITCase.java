@@ -4,10 +4,10 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class CharacterSetSupportITCase {
 
     @Test

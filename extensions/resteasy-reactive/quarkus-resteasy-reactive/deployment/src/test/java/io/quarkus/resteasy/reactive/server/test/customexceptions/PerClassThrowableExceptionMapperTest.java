@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
+import static io.quarkus.resteasy.reactive.server.test.ExceptionUtil.removeStackTrace;
+
 import java.util.function.Supplier;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -13,6 +15,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.resteasy.reactive.server.test.ExceptionUtil;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
@@ -20,11 +23,11 @@ public class PerClassThrowableExceptionMapperTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HasCustomThrowableHandlerResource.class);
+                            .addClasses(HasCustomThrowableHandlerResource.class, ExceptionUtil.class);
                 }
             });
 
@@ -49,7 +52,7 @@ public class PerClassThrowableExceptionMapperTest {
         @Path("throwable")
         @Produces("text/plain")
         public String throwsThrowable() throws Throwable {
-            throw new Throwable();
+            throw removeStackTrace(new Throwable());
         }
     }
 
@@ -60,7 +63,7 @@ public class PerClassThrowableExceptionMapperTest {
         @Path("throwable")
         @Produces("text/plain")
         public String throwsThrowable() throws Throwable {
-            throw new Throwable();
+            throw removeStackTrace(new Throwable());
         }
     }
 }

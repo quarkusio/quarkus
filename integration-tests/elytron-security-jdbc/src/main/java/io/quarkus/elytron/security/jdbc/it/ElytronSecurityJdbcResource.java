@@ -16,10 +16,12 @@
  */
 package io.quarkus.elytron.security.jdbc.it;
 
-import javax.annotation.security.RolesAllowed;
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.quarkus.security.PermissionsAllowed;
 
 @Path("/api")
 @ApplicationScoped
@@ -36,6 +38,20 @@ public class ElytronSecurityJdbcResource {
     @RolesAllowed("user")
     public String authenticated() {
         return "authenticated";
+    }
+
+    @GET
+    @Path("/read-permission")
+    @PermissionsAllowed("read")
+    public String withReadPermission() {
+        return "withReadPermission";
+    }
+
+    @GET
+    @Path("/day-based-permission")
+    @PermissionsAllowed(value = "worker:adult", permission = WorkdayPermission.class)
+    public String withDayBasedPermission(String day) {
+        return day;
     }
 
     @GET

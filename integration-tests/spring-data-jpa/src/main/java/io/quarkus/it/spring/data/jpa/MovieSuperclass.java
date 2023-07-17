@@ -1,8 +1,8 @@
 package io.quarkus.it.spring.data.jpa;
 
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.Version;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Version;
 
 @MappedSuperclass
 public abstract class MovieSuperclass {

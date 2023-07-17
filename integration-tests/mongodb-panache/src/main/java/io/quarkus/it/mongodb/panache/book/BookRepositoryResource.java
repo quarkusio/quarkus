@@ -4,10 +4,10 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.Response;
 
 import org.bson.types.ObjectId;
 import org.jboss.logging.Logger;
@@ -81,12 +81,6 @@ public class BookRepositoryResource {
     @Path("/search/{author}")
     public List<BookShortView> getBooksByAuthor(@PathParam("author") String author) {
         return bookRepository.find("author", author).project(BookShortView.class).list();
-    }
-
-    @GET
-    @Path("/legacy-search/{author}")
-    public List<LegacyBookShortView> getLegacyBooksByAuthor(@PathParam("author") String author) {
-        return bookRepository.find("author", author).project(LegacyBookShortView.class).list();
     }
 
     @GET

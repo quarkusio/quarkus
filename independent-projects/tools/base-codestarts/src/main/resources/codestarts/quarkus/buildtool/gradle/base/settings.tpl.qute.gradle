@@ -1,8 +1,8 @@
 pluginManagement {
     repositories {
-        mavenLocal()
         mavenCentral()
         gradlePluginPortal()
+        mavenLocal()
 {#if gradle.plugin-repositories}
 {#for rep in gradle.plugin-repositories}
         maven { url "{rep.url}" }

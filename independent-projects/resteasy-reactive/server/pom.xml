@@ -18,6 +18,8 @@
         <module>runtime</module>
         <module>processor</module>
         <module>vertx</module>
+        <module>jsonb</module>
+        <module>jackson</module>
     </modules>
 
 </project>

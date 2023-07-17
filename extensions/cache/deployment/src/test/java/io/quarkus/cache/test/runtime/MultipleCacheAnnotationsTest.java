@@ -1,12 +1,11 @@
 package io.quarkus.cache.test.runtime;
 
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,8 +22,7 @@ public class MultipleCacheAnnotationsTest {
     private static final Object KEY = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -56,7 +54,7 @@ public class MultipleCacheAnnotationsTest {
         assertTrue(value2 == value4);
 
         // STEP 5
-        // Action: @CacheResult(cache2)-annotated method call. 
+        // Action: @CacheResult(cache2)-annotated method call.
         // Expected effect: method invoked because of STEP 4 and result cached into `cache2`.
         // Verified by: different objects references between STEPS 3 AND 5 results.
         String value5 = cachedService.cachedMethod2(KEY);
@@ -105,6 +103,39 @@ public class MultipleCacheAnnotationsTest {
         assertTrue(value8 != value11);
     }
 
+    @Test
+    void testMultipleCacheInvalidateWithNoArg() {
+        // STEP 1
+        // Action: @CacheResult(cache1)-annotated method call.
+        // Effect: method invoked, default cache key used and result cached into `cache1`.
+        String value1 = cachedService.cachedMethodWithNoArg1();
+
+        // STEP 2
+        // Action: @CacheResult(cache2)-annotated method call.
+        // Effect: method invoked, default cache key used and result cached into `cache2`.
+        String value2 = cachedService.cachedMethodWithNoArg2();
+
+        // STEP 3
+        // Action: [@CacheInvalidate(cache1) and @CacheInvalidate(cache2)]-annotated method call.
+        // Expected effect: default cache key used and cache entry invalidated in `cache1` and `cache2`.
+        // Verified by: STEPS 4 and 5.
+        cachedService.multipleCacheInvalidateWithNoArg();
+
+        // STEP 4
+        // Action: @CacheResult(cache1)-annotated method call.
+        // Expected effect: method invoked because of STEP 3, default cache key used and result cached into `cache1`.
+        // Verified by: different objects references between STEPS 1 and 4 results.
+        String value4 = cachedService.cachedMethodWithNoArg1();
+        assertNotSame(value1, value4);
+
+        // STEP 5
+        // Action: @CacheResult(cache2)-annotated method call.
+        // Expected effect: method invoked because of STEP 3, default cache key used and result cached into `cache2`.
+        // Verified by: different objects references between STEPS 2 and 5 results.
+        String value5 = cachedService.cachedMethodWithNoArg2();
+        assertNotSame(value2, value5);
+    }
+
     @ApplicationScoped
     static class CachedService {
 
@@ -118,6 +149,16 @@ public class MultipleCacheAnnotationsTest {
 
         @CacheResult(cacheName = TEST_CACHE_2)
         public String cachedMethod2(Object key) {
+            return new String();
+        }
+
+        @CacheResult(cacheName = TEST_CACHE_1)
+        public String cachedMethodWithNoArg1() {
+            return new String();
+        }
+
+        @CacheResult(cacheName = TEST_CACHE_2)
+        public String cachedMethodWithNoArg2() {
             return new String();
         }
 
@@ -136,6 +177,11 @@ public class MultipleCacheAnnotationsTest {
         @CacheInvalidate(cacheName = TEST_CACHE_1)
         @CacheInvalidate(cacheName = TEST_CACHE_2)
         public void multipleCacheInvalidate(Object key) {
+        }
+
+        @CacheInvalidate(cacheName = TEST_CACHE_1)
+        @CacheInvalidate(cacheName = TEST_CACHE_2)
+        public void multipleCacheInvalidateWithNoArg() {
         }
 
         @CacheInvalidateAll(cacheName = TEST_CACHE_1)

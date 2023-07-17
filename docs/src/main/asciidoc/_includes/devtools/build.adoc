@@ -1,0 +1,36 @@
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+.CLI
+----
+ifdef::build-additional-parameters[]
+quarkus build {build-additional-parameters}
+endif::[]
+ifndef::build-additional-parameters[]
+quarkus build
+endif::[]
+----
+ifndef::devtools-no-maven[]
+ifdef::devtools-wrapped[+]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+----
+ifdef::build-additional-parameters[]
+./mvnw install {build-additional-parameters}
+endif::[]
+ifndef::build-additional-parameters[]
+./mvnw install
+endif::[]
+----
+endif::[]
+ifndef::devtools-no-gradle[]
+ifdef::devtools-wrapped[+]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+ifdef::build-additional-parameters[]
+./gradlew build {build-additional-parameters}
+endif::[]
+ifndef::build-additional-parameters[]
+./gradlew build
+endif::[]
+----
+endif::[]

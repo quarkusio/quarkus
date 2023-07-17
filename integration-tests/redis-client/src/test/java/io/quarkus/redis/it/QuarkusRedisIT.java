@@ -1,8 +1,12 @@
 package io.quarkus.redis.it;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class QuarkusRedisIT extends QuarkusRedisTest {
 
+    @Override
+    String getKey(String k) {
+        return "native-" + k;
+    }
 }

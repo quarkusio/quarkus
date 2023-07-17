@@ -10,17 +10,18 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.ContinuousTestingTestUtils;
+import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.vertx.http.deployment.devmode.tests.ClassResult;
 import io.quarkus.vertx.http.deployment.devmode.tests.SuiteResult;
-import io.quarkus.vertx.http.deployment.devmode.tests.TestStatus;
 import io.restassured.RestAssured;
 
 public class TestRunnerSmokeTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
@@ -28,7 +29,7 @@ public class TestRunnerSmokeTestCase {
                                     "application.properties");
                 }
             })
-            .setTestArchiveProducer(new Supplier<JavaArchive>() {
+            .setTestArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, UnitET.class);
@@ -47,7 +48,7 @@ public class TestRunnerSmokeTestCase {
         Assertions.assertEquals(1L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        SuiteResult suiteResult = RestAssured.get("q/dev/io.quarkus.quarkus-vertx-http/tests/result")
+        SuiteResult suiteResult = RestAssured.get("q/dev-v1/io.quarkus.quarkus-vertx-http/tests/result")
                 .as(SuiteResult.class);
         Assertions.assertEquals(2, suiteResult.getResults().size());
         for (ClassResult cr : suiteResult.getResults().values()) {

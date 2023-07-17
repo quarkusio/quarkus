@@ -5,9 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -22,7 +20,7 @@ public class MaxParametersTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestServlet.class, TestGreeter.class)
                     .addAsResource(new StringAsset("quarkus.servlet.max-parameters=10"), "application.properties"));
 

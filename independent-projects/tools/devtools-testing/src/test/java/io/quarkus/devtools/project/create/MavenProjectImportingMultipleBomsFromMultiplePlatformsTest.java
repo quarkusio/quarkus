@@ -1,12 +1,14 @@
 package io.quarkus.devtools.project.create;
 
-import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
 
 public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends MultiplePlatformBomsTestBase {
 
@@ -27,7 +29,7 @@ public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends 
                 .newRelease("2.0.4")
                 .quarkusVersion("2.2.2")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "2.0.4").addExtension("ext-b").release()
                 .stream().platform().registry()
@@ -37,7 +39,7 @@ public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends 
                 // 1.0.1 release
                 .newRelease("1.0.1")
                 .quarkusVersion("1.1.2")
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("io.acme", "ext-a", "1.0.1").release()
                 .newMember("acme-baz-bom").addExtension("io.acme", "ext-b", "1.0.1").release()
                 .stream().platform().registry()
@@ -60,15 +62,15 @@ public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends 
 
         assertModel(projectDir,
                 toPlatformBomCoords("acme-foo-bom"),
-                Collections.singletonList(new ArtifactCoords("io.acme", "ext-a", "jar", null)),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null)),
                 "1.0.1");
 
         addExtensions(projectDir, Arrays.asList("ext-b", "ext-c"));
         assertModel(projectDir,
                 toPlatformBomCoords("acme-foo-bom", "acme-baz-bom"),
-                Arrays.asList(new ArtifactCoords("io.acme", "ext-a", "jar", null),
-                        new ArtifactCoords("io.acme", "ext-b", "jar", null),
-                        new ArtifactCoords("io.acme", "ext-c", "jar", "5.0")),
+                List.of(ArtifactCoords.jar("io.acme", "ext-a", null),
+                        ArtifactCoords.jar("io.acme", "ext-b", null),
+                        ArtifactCoords.jar("io.acme", "ext-c", "5.0")),
                 "1.0.1");
     }
 }

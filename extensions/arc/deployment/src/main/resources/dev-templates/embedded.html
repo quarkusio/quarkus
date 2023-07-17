@@ -10,6 +10,12 @@
   <i class="fa fa-traffic-light fa-fw"></i>
   Interceptors <span class="badge badge-light">{info:devBeanInfos.interceptors.size}</span></a>
 <br>
+{#if !info:devBeanInfos.decorators.empty}
+<a href="{urlbase}/decorators" class="badge badge-light">
+  <i class="fa fa-traffic-light fa-fw"></i>
+  Decorators <span class="badge badge-light">{info:devBeanInfos.decorators.size}</span></a>
+<br>
+{/if}
 {#if config:property('quarkus.arc.dev-mode.monitoring-enabled') is "true"}
 <a href="{urlbase}/events" class="badge badge-light">
   <i class="far fa-eye fa-fw"></i>
@@ -22,4 +28,4 @@
 {/if}
 <a href="{urlbase}/removed-beans" class="badge badge-light">
   <i class="fa fa-trash-alt fa-fw"></i>
-  Removed Beans <span class="badge badge-light">{info:devBeanInfos.removedBeans.size}</span></a>
+  Removed Components <span class="badge badge-light">{info:devBeanInfos.removedComponents}</span></a>

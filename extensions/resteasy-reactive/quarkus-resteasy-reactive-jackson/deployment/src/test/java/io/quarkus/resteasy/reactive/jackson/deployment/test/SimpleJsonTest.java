@@ -22,26 +22,19 @@ public class SimpleJsonTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Person.class, SimpleJsonResource.class, User.class, Views.class, SuperClass.class,
-                                    DataItem.class, Item.class,
+                                    OtherPersonResource.class, AbstractPersonResource.class, DataItem.class, Item.class,
                                     NoopReaderInterceptor.class);
                 }
             });
 
     @Test
     public void testJson() {
-        RestAssured.get("/simple/person")
-                .then()
-                .statusCode(200)
-                .contentType("application/json")
-                .header("transfer-encoding", nullValue())
-                .header("content-length", notNullValue())
-                .body("first", Matchers.equalTo("Bob"))
-                .body("last", Matchers.equalTo("Builder"));
+        doTestGetPersonNoSecurity("/simple", "/person");
 
         RestAssured
                 .with()
@@ -122,6 +115,17 @@ public class SimpleJsonTest {
                 .body("[0].last", Matchers.equalTo("Builder2"));
     }
 
+    private void doTestGetPersonNoSecurity(final String basePath, String path) {
+        RestAssured.get(basePath + path)
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body("first", Matchers.equalTo("Bob"))
+                .body("last", Matchers.equalTo("Builder"));
+    }
+
     @Test
     public void testLargeJsonPost() {
         StringBuilder sb = new StringBuilder();
@@ -146,6 +150,7 @@ public class SimpleJsonTest {
         RestAssured
                 .with()
                 .body(postBody)
+                .accept("application/json")
                 .contentType("application/json")
                 .post("/simple/person-validated")
                 .then()
@@ -156,6 +161,7 @@ public class SimpleJsonTest {
         RestAssured
                 .with()
                 .body(postBody)
+                .accept("application/json")
                 .contentType("application/json")
                 .post("/simple/person-invalid-result")
                 .then()
@@ -165,6 +171,7 @@ public class SimpleJsonTest {
         RestAssured
                 .with()
                 .body("{\"first\": \"Bob\"}")
+                .accept("application/json")
                 .contentType("application/json")
                 .post("/simple/person-validated")
                 .then()
@@ -286,7 +293,7 @@ public class SimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .contentType("application/json");
-        // assert that the instances were re-used as we simply invoked methods that should have already created their object writters
+        // assert that the instances were re-used as we simply invoked methods that should have already created their object writers
         assertEquals(2, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
 
         RestAssured.get("/simple/invalid-use-of-custom-serializer")
@@ -294,6 +301,91 @@ public class SimpleJsonTest {
                 .statusCode(500);
         // a new instance should have been created
         assertEquals(3, SimpleJsonResource.UnquotedFieldsPersonBiFunction.count.intValue());
+    }
+
+    @Test
+    public void testSecurityDisabledPerson() {
+        doTestGetPersonNoSecurity("/other", "/no-security");
+    }
+
+    @Test
+    public void testSecurePerson() {
+        doTestSecurePerson("/simple", "/secure-person");
+    }
+
+    @Test
+    public void testSecurePersonWithPrivateView() {
+        doTestSecurePerson("/simple", "/secure-person-with-private-view");
+    }
+
+    @Test
+    public void testSecurePersonWithPublicView() {
+        doTestSecurePersonWithPublicView("/simple", "/secure-person-with-public-view");
+    }
+
+    @Test
+    public void testUniSecurePersonWithPublicView() {
+        doTestSecurePersonWithPublicView("/simple", "/uni-secure-person-with-public-view");
+    }
+
+    @Test
+    public void testSecurePersonFromAbstract() {
+        doTestSecurePerson("/other", "/abstract-with-security");
+    }
+
+    @Test
+    public void testSecureUniPerson() {
+        doTestSecurePerson("/simple", "/secure-uni-person");
+    }
+
+    @Test
+    public void testSecureRestResponsePerson() {
+        doTestSecurePerson("/simple", "/secure-rest-response-person");
+    }
+
+    private void doTestSecurePerson(String basePath, final String path) {
+        RestAssured.get(basePath + path)
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(containsString("0"))
+                .body(not(containsString("Builder")));
+    }
+
+    private void doTestSecurePersonWithPublicView(String basePath, final String path) {
+        RestAssured.get(basePath + path)
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(not(containsString("0")))
+                .body(not(containsString("Builder")));
+    }
+
+    @Test
+    public void testSecurePeople() {
+        doTestSecurePeople("secure-people");
+    }
+
+    @Test
+    public void testSecureUniPeople() {
+        doTestSecurePeople("secure-uni-people");
+    }
+
+    private void doTestSecurePeople(final String path) {
+        RestAssured.get("/simple/" + path)
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .header("transfer-encoding", nullValue())
+                .header("content-length", notNullValue())
+                .body(containsString("Bob"))
+                .body(not(containsString("Builder")));
     }
 
     @Test

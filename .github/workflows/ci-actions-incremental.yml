@@ -12,6 +12,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - 'jakarta/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
@@ -26,6 +27,7 @@ on:
       - '*.adoc'
       - '*.txt'
       - 'adr/**'
+      - 'jakarta/**'
       - 'docs/src/main/asciidoc/**'
       - '.github/ISSUE_TEMPLATE/**'
       - '.github/*.yml'
@@ -42,10 +44,12 @@ env:
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests install -DskipDocs"
-  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs"
+  JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs -Dquarkus.test.hang-detection-timeout=60"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
+  GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+  PULL_REQUEST_NUMBER: ${{ github.event.number }}
 jobs:
   # This is a hack to work around a GitHub API limitation:
   # when the PR is coming from another fork, the pull_requests field of the
@@ -62,10 +66,11 @@ jobs:
         run: |
           echo -n ${{ github.event.number }} > pull-request-number
       - name: Upload pull request number
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: pull-request-number-${{ github.event.number }}
           path: pull-request-number
+          retention-days: 1
   ci-sanity-check:
     name: "CI Sanity Check"
     runs-on: ubuntu-latest
@@ -96,39 +101,34 @@ jobs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
-      - uses: n1hility/cancel-previous-runs@v2
-        # quarkus-bot will handle this much more efficiently, but it's not active in/for forks
-        if: github.repository != 'quarkusio/quarkus'
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: 11
       - name: Get Date
         id: get-date
         run: |
-          echo "::set-output name=date::$(/bin/date -u "+%Y-%m")"
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           # refresh cache every month to avoid unlimited growth
           key: q2maven-${{ steps.get-date.outputs.date }}
       - name: Build
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
@@ -154,26 +154,45 @@ jobs:
             GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
           fi
           echo "GIB_ARGS: $GIB_ARGS"
-          echo "::set-output name=gib_args::${GIB_ARGS}"
+          echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT
       - name: Get GIB impacted modules
         id: get-gib-impacted
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
           ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          [ -f gib-impacted.log ] && GIB_IMPACTED=$(cat gib-impacted.log) || GIB_IMPACTED=''
+          if [ -s gib-impacted.log ]
+          then
+            GIB_IMPACTED=$(cat gib-impacted.log)
+          else
+            GIB_IMPACTED=''
+          fi
           echo "GIB_IMPACTED: ${GIB_IMPACTED}"
-          echo "::set-output name=impacted_modules::${GIB_IMPACTED//$'\n'/'%0A'}"
+          # three steps to retain linefeeds in output for other jobs
+          # (see https://github.com/github/docs/issues/21529 and https://github.com/orgs/community/discussions/26288#discussioncomment-3876281)
+          echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
+          echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar Maven Repo
         shell: bash
         run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: maven-repo
           path: maven-repo.tgz
+          retention-days: 1
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-Initial JDK 11 Build"
+          path: |
+            target/build-report.json
+            LICENSE.txt
+          retention-days: 2
 
   calculate-test-jobs:
     name: Calculate Test Jobs
@@ -185,39 +204,49 @@ jobs:
       GIB_IMPACTED_MODULES: ${{ needs.build-jdk11.outputs.gib_impacted }}
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
+      jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
       run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
+      run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
           json=$(.github/filter-native-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
-          echo "::set-output name=matrix::${json}"
+          echo "matrix=${json}" >> $GITHUB_OUTPUT
+      - name: Calculate matrix from matrix-jvm-tests.json
+        id: calc-jvm-matrix
+        run: |
+          json=$(.github/filter-jvm-tests-json.sh)
+          echo "${json}"
+          echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_tcks=true
+          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_quickstarts=true; run_tcks=true
           if [ -n "${GIB_IMPACTED_MODULES}" ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven)|tcks/.*'; then run_jvm=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'; then run_devtools=false; fi
-            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; fi
-            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; run_devtools=true; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; run_devtools=true; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv '(docs|integration-tests|tcks)/.*'; then run_quickstarts=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'; then run_tcks=false; fi
           fi
-          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_tcks=${run_tcks}"
-          echo "::set-output name=run_jvm::${run_jvm}"
-          echo "::set-output name=run_devtools::${run_devtools}"
-          echo "::set-output name=run_gradle::${run_gradle}"
-          echo "::set-output name=run_maven::${run_maven}"
-          echo "::set-output name=run_tcks::${run_tcks}"
+          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
+          echo "run_jvm=${run_jvm}" >> $GITHUB_OUTPUT
+          echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
+          echo "run_gradle=${run_gradle}" >> $GITHUB_OUTPUT
+          echo "run_maven=${run_maven}" >> $GITHUB_OUTPUT
+          echo "run_quickstarts=${run_quickstarts}" >> $GITHUB_OUTPUT
+          echo "run_tcks=${run_tcks}" >> $GITHUB_OUTPUT
 
   jvm-tests:
     name: JVM Tests - JDK ${{matrix.java.name}}
@@ -225,67 +254,49 @@ jobs:
     needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 240
+    timeout-minutes: 360
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
     strategy:
       fail-fast: false
-      matrix:
-        java:
-          - {
-            name: "11",
-            java-version: 11,
-            maven_args: "$JVM_TEST_MAVEN_ARGS",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
-            os-name: "ubuntu-latest"
-          }
-          - {
-            name: "16",
-            java-version: 16,
-            maven_args: "$JVM_TEST_MAVEN_ARGS -pl '!devtools/gradle'",
-            maven_opts: "-Xmx2g -XX:MaxMetaspaceSize=1g",
-            os-name: "ubuntu-latest"
-          }
-          - {
-            name: "11 Windows",
-            java-version: 11,
-            maven_args: "-DskipDocs -Dformat.skip",
-            maven_opts: "-Xmx1500m -XX:MaxMetaspaceSize=1g",
-            os-name: "windows-latest"
-          }
+      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
+
 
     steps:
       - name: Stop mysql
-        if: "!startsWith(matrix.java.os-name, 'windows')"
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         shell: bash
         run: |
           ss -ln
           sudo service mysql stop || true
-
-      - uses: actions/checkout@v2
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
-        if: "!startsWith(matrix.java.os-name, 'windows')"
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         shell: bash
         run: sudo apt-get clean
 
       - name: Reclaim Disk Space
-        if: "!startsWith(matrix.java.os-name, 'windows')"
+        if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         run: .github/ci-prerequisites.sh
 
       - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+          architecture: ${{ matrix.java.architecture || 'x64' }}
 
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -295,23 +306,47 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+      - name: Clean Gradle temp directory
+        if: always()
+        shell: bash
+        run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-jvm${{matrix.java.name}}
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
+          retention-days: 5
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-JVM Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-JVM Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
+          retention-days: 2
+      - name: Upload gc.log
+        uses: actions/upload-artifact@v3
+        with:
+          name: "GC log - JDK ${{matrix.java.name}}"
+          path: |
+            **/windows-java-11.txt
+            !**/build/tmp/**
+          retention-days: 5
+      - name: Upload build.log (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-logs-JVM Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/build.log
           retention-days: 2
 
   maven-tests:
@@ -322,66 +357,6 @@ jobs:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        java:
-          - {
-            name: "11",
-            java-version: 11,
-            os-name: "ubuntu-latest"
-          }
-          - {
-            name: "11 Windows",
-            java-version: 11,
-            os-name: "windows-latest"
-          }
-    steps:
-      - uses: actions/checkout@v2
-      - name: Download Maven Repo
-        uses: actions/download-artifact@v1
-        with:
-          name: maven-repo
-          path: .
-      - name: Extract Maven Repo
-        shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
-        with:
-          java-version: ${{ matrix.java.java-version }}
-      - name: Build
-        # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl 'integration-tests/maven'
-      - name: Prepare failure archive (if maven failed)
-        if: failure()
-        shell: bash
-        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
-      - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
-        if: failure()
-        with:
-          name: test-reports-maven-java${{matrix.java.name}}
-          path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() || cancelled() }}
-        with:
-          name: "surefire-reports-Maven Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
-          retention-days: 2
-
-  gradle-tests:
-    name: Gradle Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{matrix.java.os-name}}
-    needs: calculate-test-jobs
-    env:
-      # leave more space for the actual gradle execution (which is just wrapped by maven)
-      MAVEN_OPTS: -Xmx1g
-    # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 80
     strategy:
       fail-fast: false
@@ -398,9 +373,12 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
-      - uses: actions/checkout@v2
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -408,10 +386,86 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
+      - name: Build
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl 'integration-tests/maven'
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: test-reports-maven-java${{matrix.java.name}}
+          path: 'test-reports.tgz'
+          retention-days: 5
+      # see https://github.com/actions/toolkit/blob/master/packages/artifact/docs/additional-information.md#non-supported-characters
+      - name: Rename invalid path
+        if: ${{ failure() || cancelled() }}
+        run: |
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' 'integration-tests/maven/target/test-classes/projects/qit--fast--jar'; fi
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
+          if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
+        shell: bash
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-Maven Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
+          retention-days: 2
+
+  gradle-tests:
+    name: Gradle Tests - JDK ${{matrix.java.name}}
+    runs-on: ${{matrix.java.os-name}}
+    needs: calculate-test-jobs
+    env:
+      # leave more space for the actual gradle execution (which is just wrapped by maven)
+      MAVEN_OPTS: -Xmx1g
+    # Skip main in forks
+    if: "needs.calculate-test-jobs.outputs.run_gradle == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "11",
+            java-version: 11,
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 Windows",
+            java-version: 11,
+            os-name: "windows-latest"
+          }
+    steps:
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v3
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v3
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java.java-version }}
+          cache: 'gradle'
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
         if: "!startsWith(matrix.java.os-name, 'windows')"
@@ -421,12 +475,16 @@ jobs:
         shell: bash
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS install -pl integration-tests/gradle
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Gradle Tests - JDK ${{matrix.java.name}}"
-          path: "**/build/test-results/test/TEST-*.xml"
+          name: "build-reports-Gradle Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/build/test-results/test/TEST-*.xml
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   devtools-tests:
@@ -446,14 +504,22 @@ jobs:
             os-name: "ubuntu-latest"
           }
           - {
+            name: "17",
+            java-version: 17,
+            os-name: "ubuntu-latest"
+          }
+          - {
             name: "11 Windows",
             java-version: 11,
             os-name: "windows-latest"
           }
     steps:
-      - uses: actions/checkout@v2
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v3
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -461,9 +527,9 @@ jobs:
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Build
         # Important: keep -pl ... in sync with "Calculate run flags"!
@@ -473,17 +539,68 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-devtools-java${{matrix.java.name}}
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
+          retention-days: 5
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Devtools Tests - JDK ${{matrix.java.name}}"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-Devtools Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
+          retention-days: 2
+
+  quickstarts-tests:
+    name: Quickstarts Compilation - JDK ${{matrix.java.name}}
+    runs-on: ${{matrix.java.os-name}}
+    needs: [build-jdk11, calculate-test-jobs]
+    # Skip main in forks
+    if: "needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "17",
+            java-version: 17,
+            os-name: "ubuntu-latest"
+          }
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v3
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java.java-version }}
+      - name: Compile Quickstarts
+        run: |
+          git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
+          git checkout development
+          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-Quickstarts Compilation - JDK ${{matrix.java.name}}"
+          path: |
+            quarkus-quickstarts/**/target/*-reports/TEST-*.xml
+            quarkus-quickstarts/target/build-report.json
+            quarkus-quickstarts/LICENSE
           retention-days: 2
 
   tcks-test:
@@ -495,21 +612,21 @@ jobs:
     timeout-minutes: 150
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash
-        run: git remote add quarkusio https://github.com/quarkusio/quarkus.git
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: 11
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -529,17 +646,21 @@ jobs:
         shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-tcks
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
+          retention-days: 5
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-MicroProfile TCKs Tests"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-MicroProfile TCKs Tests"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
 
   native-tests:
@@ -554,17 +675,20 @@ jobs:
     # Ignore the following YAML Schema error
     timeout-minutes: ${{matrix.timeout}}
     strategy:
-      max-parallel: 8
+      max-parallel: 12
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.os-name, 'windows')"
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v3
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11
-        # Uses sha for added security since tags can be updated
-        uses: joschi/setup-jdk@e87a7cec853d2dd7066adf837fe12bf0f3d45e52
+        uses: actions/setup-java@v3
         with:
+          distribution: temurin
           java-version: 11
       - name: Install cl.exe
         if: startsWith(matrix.os-name, 'windows')
@@ -573,21 +697,20 @@ jobs:
         if: startsWith(matrix.os-name, 'windows')
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: DeLaGuardo/setup-graalvm@master
+        uses: graalvm/setup-graalvm@v1
         if: startsWith(matrix.os-name, 'windows')
         with:
-          graalvm-version: '21.1.0.java11'
-      - name: Install native-image component
-        if: startsWith(matrix.os-name, 'windows')
-        run: |
-          gu.cmd install native-image
+          version: 'mandrel-latest'
+          java-version: '17'
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       # We do this so we can get better analytics for the downloaded version of the build images
       - name: Update Docker Client User Agent
         shell: bash
         run: |
           cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
       - name: Download Maven Repo
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: maven-repo
           path: .
@@ -605,15 +728,41 @@ jobs:
         shell: bash
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: test-reports-native-${{matrix.category}}
           path: 'test-reports.tgz'
-      - name: Upload Surefire reports (if build failed)
-        uses: actions/upload-artifact@v2
+          retention-days: 5
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
-          name: "surefire-reports-Native Tests - ${{matrix.category}}"
-          path: "**/target/*-reports/TEST-*.xml"
+          name: "build-reports-Native Tests - ${{matrix.category}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            **/build/test-results/test/TEST-*.xml
+            target/build-report.json
+            LICENSE.txt
           retention-days: 2
+
+  build-report:
+    runs-on: ubuntu-latest
+    name: Build report
+    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests]
+    if: always() && github.repository != 'quarkusio/quarkus'
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          path: build-reports-artifacts
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Produce report and add it as job summary
+        uses: quarkusio/action-build-reporter@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-reports-artifacts-path: build-reports-artifacts
+          forks-only: true

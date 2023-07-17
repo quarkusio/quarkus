@@ -12,6 +12,8 @@ public interface HotReplacementContext {
 
     List<Path> getSourcesDir();
 
+    List<Path> getTestSourcesDir();
+
     List<Path> getResourcesDir();
 
     Throwable getDeploymentProblem();
@@ -28,7 +30,7 @@ public interface HotReplacementContext {
 
     /**
      * Returns the type of the development mode
-     * 
+     *
      * @return the dev mode type
      */
     DevModeType getDevModeType();

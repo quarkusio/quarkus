@@ -2,8 +2,8 @@ package io.quarkus.it.picocli;
 
 import static io.quarkus.it.picocli.TestUtils.createConfig;
 
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

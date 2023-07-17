@@ -2,8 +2,6 @@ package io.quarkus.amazon.lambda.http;
 
 import java.util.Optional;
 
-import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
-
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;

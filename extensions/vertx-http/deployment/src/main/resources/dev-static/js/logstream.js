@@ -4,12 +4,12 @@ var myself = $('script[src*=logstream]');
 var frameworkRootPath = myself.attr('data-frameworkRootPath');   
 if (typeof frameworkRootPath === "undefined" ) {
     var pathname = window.location.pathname;
-    var frameworkRootPath = pathname.substr(0, pathname.indexOf('/dev/'));
+    var frameworkRootPath = pathname.substr(0, pathname.indexOf('/dev-v1/'));
 }
 // Get the streaming path
 var streamingPath = myself.attr('data-streamingPath');
 if (typeof streamingPath === "undefined" ) {
-   var streamingPath = "/dev/logstream";
+   var streamingPath = "/dev-v1/logstream";
 }
 
 var zoom = 0.90;
@@ -24,7 +24,7 @@ var space = "&nbsp;";
 var isRunning = true;
 var logScrolling = true;
 
-var filter = "";
+var logfilter = "";
 
 var localstoragekey = "quarkus_logging_manager_state";
 
@@ -42,7 +42,7 @@ $('document').ready(function () {
     logstreamZoomOutButton.addEventListener("click", zoomOutEvent);
     logstreamZoomInButton.addEventListener("click", zoomInEvent);
     logstreamFollowLogButton.addEventListener("click", followLogEvent);
-    logstreamFilterModalInputButton.addEventListener("click", applyFilter);
+    logstreamFilterModalInputButton.addEventListener("click", applyLogFilter);
     
     addControlCListener();
     addEnterListener();
@@ -57,6 +57,13 @@ $('document').ready(function () {
             event.preventDefault();
             logstreamFilterModalInputButton.click();
         }
+    });
+    
+    $("#logLevelFilterInput").on("keyup", function() {
+        var value = $(this).val().toLowerCase();
+        $("#logstreamLogLevelsModalTableBody tr").filter(function() {
+            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+        });
     });
     
     $('#logstreamFilterModal').on('shown.bs.modal', function () {
@@ -89,7 +96,7 @@ function loadSettings(){
         applyFollowLog();
 
         $("#logstreamFilterModalInput").val(state.filter);
-        applyFilter();
+        applyLogFilter();
         
         $('#logstreamColumnsModalLevelIconSwitch').prop('checked', state.levelIconSwitch);
         $('#logstreamColumnsModalSequenceNumberSwitch').prop('checked', state.sequenceNumberSwitch);
@@ -121,7 +128,7 @@ function saveSettings(){
         "linespace": linespace,
         "tabspace": tabspace,
         "logScrolling": logScrolling,
-        "filter": filter,
+        "filter": logfilter,
         "levelIconSwitch": $('#logstreamColumnsModalLevelIconSwitch').is(":checked"),
         "sequenceNumberSwitch": $('#logstreamColumnsModalSequenceNumberSwitch').is(":checked"),
         "dateSwitch": $('#logstreamColumnsModalDateSwitch').is(":checked"),
@@ -334,12 +341,12 @@ function scrollToBottom() {
     logScrolling = true;
 }
 
-function applyFilter(){
-    filter = $("#logstreamFilterModalInput").val();
-    if(filter===""){
-        clearFilter();
+function applyLogFilter(){
+    logfilter = $("#logstreamFilterModalInput").val();
+    if(logfilter===""){
+        clearLogFilter();
     }else{
-        logstreamCurrentFilter.innerHTML = "<span style='border-bottom: 1px dotted;'>" + filter + " <i class='fas fa-times-circle' onclick='clearFilter();'></i></span>";
+        logstreamCurrentFilter.innerHTML = "<span style='border-bottom: 1px dotted;'>" + logfilter + " <i class='fas fa-times-circle' onclick='clearLogFilter();'></i></span>";
         
         var currentlines = $("#logstreamLogTerminalText").html().split('<!-- logline -->');
         
@@ -357,12 +364,12 @@ function applyFilter(){
 }
 
 function getLogLine(htmlline){
-    if(filter===""){
+    if(logfilter===""){
         return htmlline;
     }else{
         
         var textline = $(htmlline).text();
-        if(textline.includes(filter)){
+        if(textline.includes(logfilter)){
             return htmlline;
         }else{
             return htmlline.replace('<span>', '<span class="logstreamFilteredOut">');
@@ -370,8 +377,8 @@ function getLogLine(htmlline){
     }
 }
 
-function clearFilter(){
-    filter = "";
+function clearLogFilter(){
+    logfilter = "";
     $("#logstreamFilterModalInput").val("");
     logstreamCurrentFilter.innerHTML = "";
     
@@ -473,7 +480,7 @@ function getLoggerClassName(loggerClassName){
 
 function getClassFullAbbreviatedName(sourceClassNameFull, lineNumber, sourceClassNameFullShort) {
     if($('#logstreamColumnsModalSourceClassFullAbbreviatedSwitch').is(":checked")){
-        if (isClickableClassName(sourceClassNameFull)) {
+        if (isClickableClassName(sourceClassNameFull, lineNumber)) {
             return makeClickableClassNameLink(sourceClassNameFull, lineNumber, sourceClassNameFullShort);
         }
         return "<span class='text-secondary'>[" + sourceClassNameFullShort + "]</span>" + tab;
@@ -483,7 +490,7 @@ function getClassFullAbbreviatedName(sourceClassNameFull, lineNumber, sourceClas
 
 function getFullClassName(sourceClassNameFull, lineNumber) {
     if($('#logstreamColumnsModalSourceClassFullSwitch').is(":checked")){
-        if (isClickableClassName(sourceClassNameFull)) {
+        if (isClickableClassName(sourceClassNameFull, lineNumber)) {
             return makeClickableClassNameLink(sourceClassNameFull, lineNumber, sourceClassNameFull);
         }
         return "<span class='text-secondary'>[" + sourceClassNameFull + "]</span>" + tab;
@@ -493,7 +500,7 @@ function getFullClassName(sourceClassNameFull, lineNumber) {
 
 function getClassName(sourceClassNameFull, lineNumber, className) {
     if($('#logstreamColumnsModalSourceClassSwitch').is(":checked")){
-        if (isClickableClassName(sourceClassNameFull)) {
+        if (isClickableClassName(sourceClassNameFull, lineNumber)) {
             return makeClickableClassNameLink(sourceClassNameFull, lineNumber, className);
         }
         return "<span class='text-secondary'>[" + className + "]</span>" + tab;
@@ -501,8 +508,8 @@ function getClassName(sourceClassNameFull, lineNumber, className) {
     return "";
 }
 
-function isClickableClassName(className){
-    if (className !== undefined && appClassLang(className) && ideKnown()) {
+function isClickableClassName(className, lineNumber){
+    if (lineNumber !== undefined && lineNumber && lineNumber !== "" && className !== undefined && appClassLocation(className) && ideKnown()) {
         return true;
     }
     return false;
@@ -563,12 +570,28 @@ function getThreadName(threadName, threadId) {
 
 function getLogMessage(message){
     if($('#logstreamColumnsModalMessageSwitch').is(":checked")){
+        // Make links clickable
         if(message.includes("http://")){
             message = makeLink(message, "http://");
         }
         if(message.includes("https://")){
             message = makeLink(message, "https://");
         }
+        // Make sure multi line is supported
+        if(message.includes('\n')){
+            var htmlifiedLines = [];
+            var lines = message.split('\n');
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i];
+                line = line.replace(/ /g, '\u00a0');
+                if(i === lines.length-1){
+                    htmlifiedLines.push(line);
+                }else{
+                    htmlifiedLines.push(line + '<br/>');
+                }
+            }
+            message = htmlifiedLines.join('');
+        }   
         return message;
     }
     return "";
@@ -603,8 +626,8 @@ function enhanceStacktrace(stacktrace) {
                     var classMethod = classMethodFileNumberSplit[0];
                     var fileNumber = classMethodFileNumberSplit[1];
                     givenClassName = classMethod.substring(0, classMethod.lastIndexOf('.'));
-                    if(isClickableClassName(givenClassName)){
-                        lineNumber = fileNumber.substring(fileNumber.lastIndexOf(':') + 1, fileNumber.lastIndexOf(')'));
+                    lineNumber = fileNumber.substring(fileNumber.lastIndexOf(':') + 1, fileNumber.lastIndexOf(')'));
+                    if(isClickableClassName(givenClassName, lineNumber)){
                         line = "<a class='text-wrap text-danger clickable-app-class' onclick='openInIDE(\"" + givenClassName + "\",\"" + lineNumber + "\");'><b>" + line + "</b></a>";
                     }
                 }
@@ -699,7 +722,7 @@ function openSocket() {
         
         htmlLine = htmlLine + "</span><!-- logline -->";
         
-        if(filter!=""){
+        if(logfilter!=""){
             writeResponse(getLogLine(htmlLine));
         }else{
             writeResponse(htmlLine);
@@ -720,7 +743,7 @@ function populateLoggerLevelModal(loggerNamesArray, levelNamesArray){
         tbodyLevels.append(row);
     }
     
-    $('select').on('change', function() {
+    $('.logleveldropdown').on('change', function() {
         changeLogLevel(this.value, $(this).find('option:selected').text());
     });
     
@@ -748,7 +771,7 @@ function getTextClass(level){
 
 function createDropdown(name, level, levelNamesArray){
     
-    var dd = "<select class='custom-select custom-select-sm'>";
+    var dd = "<select class='logleveldropdown custom-select custom-select-sm'>";
     // Populate the dropdown
     for (var i = 0; i < levelNamesArray.length; i++) {
         var selected = "";

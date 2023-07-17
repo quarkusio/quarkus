@@ -1,7 +1,7 @@
 package io.quarkus.hibernate.orm.rest.data.panache.runtime;
 
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 import org.jboss.logging.Logger;
 
@@ -21,7 +21,7 @@ public class RestDataPanacheExceptionMapper implements ExceptionMapper<RestDataP
             return Response.status(Response.Status.CONFLICT.getStatusCode(), message).build();
         }
 
-        if (throwable instanceof javax.validation.ConstraintViolationException) {
+        if (throwable instanceof jakarta.validation.ConstraintViolationException) {
             return Response.status(Response.Status.BAD_REQUEST.getStatusCode(), message).build();
         }
 

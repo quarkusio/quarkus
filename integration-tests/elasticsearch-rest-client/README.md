@@ -21,10 +21,10 @@ The application is now runnable using `java -jar target/quarkus-integration-test
 
 ## Creating a native executable
 
-You can create a native executable using: `./mvnw package -Pnative`.
+You can create a native executable using: `./mvnw package -Dnative`.
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: `./mvnw package -Pnative -Dquarkus.native.container-build=true`.
+Or, if you don't have GraalVM installed, you can run the native executable build in a container using: `./mvnw package -Dnative -Dquarkus.native.container-build=true`.
 
 You can then execute your native executable with: `./target/quarkus-integration-test-elasticsearch-rest-client-1.0-SNAPSHOT-runner`
 
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/building-native-image-guide.
+If you want to learn more about building native executables, please consult https://quarkus.io/guides/building-native-image.

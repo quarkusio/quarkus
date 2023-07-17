@@ -1,7 +1,9 @@
 package org.jboss.resteasy.reactive.server.handlers;
 
 import java.util.function.Function;
-import javax.ws.rs.container.CompletionCallback;
+
+import jakarta.ws.rs.container.CompletionCallback;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionTarget;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -23,9 +25,14 @@ public class PerRequestInstanceHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
+        requestContext.requireCDIRequestScope();
         BeanFactory.BeanInstance<Object> instance = factory.createInstance();
         requestContext.setEndpointInstance(instance.getInstance());
-        ((ResteasyReactiveInjectionTarget) clientProxyUnwrapper.apply(instance.getInstance()))
+        Object unwrapped = instance.getInstance();
+        if (clientProxyUnwrapper != null) {
+            unwrapped = clientProxyUnwrapper.apply(unwrapped);
+        }
+        ((ResteasyReactiveInjectionTarget) unwrapped)
                 .__quarkus_rest_inject(requestContext);
         requestContext.registerCompletionCallback(new CompletionCallback() {
             @Override

@@ -1,31 +1,39 @@
 package io.quarkus.redis.client.deployment.devmode;
 
-import java.util.Arrays;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-
-import io.quarkus.redis.client.RedisClient;
-import io.vertx.redis.client.Response;
+import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.keys.KeyCommands;
+import io.quarkus.redis.datasource.value.ValueCommands;
 
 @Path("/inc")
 public class IncrementResource {
 
-    public static final int INCREMENT = 1;
-    @Inject
-    RedisClient redisClient;
+    public static final long INCREMENT = 1;
+    private final ValueCommands<String, Integer> commands;
+    private final KeyCommands<String> keys;
+
+    public IncrementResource(RedisDataSource ds) {
+        commands = ds.value(Integer.class);
+        keys = ds.key();
+    }
 
     @GET
     public int increment() {
-        Response response = redisClient.get("key");
-        Integer resp = 0;
-        if (response != null) {
-            resp = response.toInteger();
-        }
-        resp = resp + INCREMENT;
-        redisClient.set(Arrays.asList("key", Integer.toString(resp)));
-        return resp;
+        return (int) commands.incrby("counter-dev-mode", INCREMENT);
+    }
+
+    @GET
+    @Path("/val")
+    public int value() {
+        return commands.get("counter-dev-mode");
+    }
+
+    @GET
+    @Path("/keys")
+    public int verifyPreloading() {
+        return keys.keys("*").size();
     }
 
 }

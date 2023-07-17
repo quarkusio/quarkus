@@ -31,10 +31,11 @@ final class MethodsCandidate implements AccessorCandidate {
                         for (Method method : methods) {
                             try {
                                 if (params.parameterTypesMatch(method.isVarArgs(), method.getParameterTypes())) {
+                                    Class<?>[] parameterTypes = method.getParameterTypes();
                                     Object[] args = new Object[method.getParameterCount()];
                                     for (int i = 0; i < args.length; i++) {
                                         if (method.isVarArgs() && (i == args.length - 1)) {
-                                            Class<?> lastParam = method.getParameterTypes()[i];
+                                            Class<?> lastParam = parameterTypes[i];
                                             args[i] = params.getVarargsResults(method.getParameterCount(),
                                                     lastParam.getComponentType());
                                         } else {

@@ -7,12 +7,10 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ public class ConnectorProfileConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(DumbConnector.class, BeanUsingDummyConnector.class)
                     .addAsResource(
                             new File("src/test/resources/config/dummy-connector-with-profile.properties"),

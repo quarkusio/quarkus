@@ -16,7 +16,6 @@
 
     <properties>
         <reactive-db2.url>vertx-reactive:db2://localhost:50000/hreact</reactive-db2.url>
-        <db2.image>ibmcom/db2:11.5.5.0</db2.image>
     </properties>
 
     <dependencies>
@@ -190,7 +189,7 @@
                                             <color>cyan</color>
                                         </log>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
+                                            <!-- good docs found at: https://dmp.fabric8.io/#build-healthcheck -->
                                             <log>.*INSTANCE.*</log>
                                             <!-- Unfortunately booting DB2 is slow, needs to set a generous (15m) timeout;
                                              it generally starts in 2-3 minutes, but it's been occasionally slightly above 10m -->

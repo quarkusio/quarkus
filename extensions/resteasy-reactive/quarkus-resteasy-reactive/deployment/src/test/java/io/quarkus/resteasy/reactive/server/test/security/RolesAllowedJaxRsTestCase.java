@@ -2,8 +2,19 @@ package io.quarkus.resteasy.reactive.server.test.security;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.ext.MessageBodyReader;
+import jakarta.ws.rs.ext.Provider;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -16,11 +27,11 @@ import io.restassured.RestAssured;
 public class RolesAllowedJaxRsTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(RolesAllowedResource.class, UserResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
-                            UnsecuredSubResource.class));
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(RolesAllowedResource.class, UserResource.class, RolesAllowedBlockingResource.class,
+                            SerializationEntity.class, SerializationRolesResource.class, TestIdentityProvider.class,
+                            TestIdentityController.class, UnsecuredSubResource.class, RolesAllowedService.class,
+                            RolesAllowedServiceResource.class));
 
     @BeforeAll
     public static void setupUsers() {
@@ -31,11 +42,13 @@ public class RolesAllowedJaxRsTestCase {
 
     @Test
     public void testRolesAllowed() {
-        RestAssured.get("/roles").then().statusCode(401);
-        RestAssured.given().auth().basic("admin", "admin").get("/roles").then().statusCode(200);
-        RestAssured.given().auth().basic("user", "user").get("/roles").then().statusCode(200);
-        RestAssured.given().auth().basic("admin", "admin").get("/roles/admin").then().statusCode(200);
-        RestAssured.given().auth().basic("user", "user").get("/roles/admin").then().statusCode(403);
+        Arrays.asList("/roles", "/roles-blocking").forEach((path) -> {
+            RestAssured.get(path).then().statusCode(401);
+            RestAssured.given().auth().basic("admin", "admin").get(path).then().statusCode(200);
+            RestAssured.given().auth().basic("user", "user").get(path).then().statusCode(200);
+            RestAssured.given().auth().basic("admin", "admin").get(path + "/admin").then().statusCode(200);
+            RestAssured.given().auth().basic("user", "user").get(path + "/admin").then().statusCode(403);
+        });
     }
 
     @Test
@@ -45,5 +58,56 @@ public class RolesAllowedJaxRsTestCase {
         RestAssured.given().auth().basic("admin", "admin").get("/user").then().body(is(""));
         RestAssured.given().auth().basic("user", "user").get("/user").then().body(is(""));
         RestAssured.given().auth().preemptive().basic("user", "user").get("/user").then().body(is("user"));
+    }
+
+    @Test
+    public void testNestedRolesAllowed() {
+        // there are 2 different checks in place: user & admin on resource, admin on service
+        RestAssured.given().auth().basic("admin", "admin").get("/roles-service/hello").then().statusCode(200)
+                .body(is(RolesAllowedService.SERVICE_HELLO));
+        RestAssured.given().auth().basic("user", "user").get("/roles-service/hello").then().statusCode(403);
+    }
+
+    @Test
+    public void testSecurityRunsBeforeValidation() {
+        read = false;
+        RestAssured.given().body(new SerializationEntity()).post("/roles-validate").then().statusCode(401);
+        Assertions.assertFalse(read);
+        RestAssured.given().body(new SerializationEntity()).auth().basic("admin", "admin").post("/roles-validate").then()
+                .statusCode(200);
+        Assertions.assertTrue(read);
+        read = false;
+        RestAssured.given().body(new SerializationEntity()).auth().basic("user", "user").post("/roles-validate").then()
+                .statusCode(200);
+        Assertions.assertTrue(read);
+        read = false;
+        RestAssured.given().body(new SerializationEntity()).auth().basic("admin", "admin").post("/roles-validate/admin").then()
+                .statusCode(200);
+        Assertions.assertTrue(read);
+        read = false;
+        RestAssured.given().body(new SerializationEntity()).auth().basic("user", "user").post("/roles-validate/admin").then()
+                .statusCode(403);
+        Assertions.assertFalse(read);
+    }
+
+    static volatile boolean read = false;
+
+    @Provider
+    public static class Reader implements MessageBodyReader<SerializationEntity> {
+
+        @Override
+        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return true;
+        }
+
+        @Override
+        public SerializationEntity readFrom(Class<SerializationEntity> type, Type genericType, Annotation[] annotations,
+                MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+                throws IOException, WebApplicationException {
+            read = true;
+            SerializationEntity entity = new SerializationEntity();
+            entity.setName("read");
+            return entity;
+        }
     }
 }

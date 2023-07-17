@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.devconsole;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -12,7 +10,7 @@ public class DevConsoleConfigEditorTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
+            .withEmptyApplication();
 
     @Test
     public void testChangeHttpRoute() {
@@ -20,9 +18,11 @@ public class DevConsoleConfigEditorTest {
                 .get("q/arc/beans")
                 .then()
                 .statusCode(200);
-        RestAssured.with().formParam("name", "quarkus.http.root-path").formParam("value", "/foo")
+        RestAssured.with().formParam("name", "quarkus.http.root-path")
+                .formParam("value", "/foo")
+                .formParam("action", "updateProperty")
                 .redirects().follow(false)
-                .post("q/dev/io.quarkus.quarkus-vertx-http/config")
+                .post("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
                 .then()
                 .statusCode(303);
         RestAssured.with()
@@ -42,9 +42,11 @@ public class DevConsoleConfigEditorTest {
                 .get("q/arc/beans")
                 .then()
                 .statusCode(200);
-        RestAssured.with().formParam("name", "quarkus.http.root-path").formParam("value", "")
+        RestAssured.with().formParam("name", "quarkus.http.root-path")
+                .formParam("value", "")
+                .formParam("action", "updateProperty")
                 .redirects().follow(false)
-                .post("q/dev/io.quarkus.quarkus-vertx-http/config")
+                .post("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
                 .then()
                 .statusCode(303);
         RestAssured.with()

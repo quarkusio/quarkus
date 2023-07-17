@@ -2,12 +2,10 @@ package io.quarkus.qute.deployment.currentrequest;
 
 import static io.restassured.RestAssured.when;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +17,7 @@ public class CurrentRequestTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(MyRoute.class)
                     .addAsResource(new StringAsset(
                             "Hello {inject:vertxRequest.getParam('name')}!"),

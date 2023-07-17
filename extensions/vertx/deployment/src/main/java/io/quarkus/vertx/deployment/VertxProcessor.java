@@ -1,6 +1,8 @@
 package io.quarkus.vertx.deployment;
 
 import static io.quarkus.vertx.deployment.VertxConstants.CONSUME_EVENT;
+import static io.quarkus.vertx.deployment.VertxConstants.isMessage;
+import static io.quarkus.vertx.deployment.VertxConstants.isMessageHeaders;
 
 import java.util.HashMap;
 import java.util.List;
@@ -11,12 +13,14 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
+import io.quarkus.arc.deployment.CurrentContextFactoryBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.processor.AnnotationStore;
@@ -79,7 +83,7 @@ class VertxProcessor {
                     annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
                             .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())
                             .build(classOutput));
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(invokerClass).build());
         }
 
         Map<Class<?>, Class<?>> codecByClass = new HashMap<>();
@@ -96,6 +100,15 @@ class VertxProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void currentContextFactory(BuildProducer<CurrentContextFactoryBuildItem> currentContextFactory,
+            VertxBuildConfig buildConfig, VertxRecorder recorder) {
+        if (buildConfig.customizeArcContext) {
+            currentContextFactory.produce(new CurrentContextFactoryBuildItem(recorder.currentContextFactory()));
+        }
+    }
+
+    @BuildStep
     public UnremovableBeanBuildItem unremovableBeans() {
         return new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(CONSUME_EVENT));
     }
@@ -109,14 +122,33 @@ class VertxProcessor {
         AnnotationStore annotationStore = beanRegistrationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         for (BeanInfo bean : beanRegistrationPhase.getContext().beans().classBeans()) {
             for (MethodInfo method : bean.getTarget().get().asClass().methods()) {
+                if (method.isSynthetic()) {
+                    continue;
+                }
                 AnnotationInstance consumeEvent = annotationStore.getAnnotation(method, CONSUME_EVENT);
                 if (consumeEvent != null) {
                     // Validate method params and return type
-                    List<Type> params = method.parameters();
-                    if (params.size() != 1) {
+                    List<Type> params = method.parameterTypes();
+                    if (params.size() == 2) {
+                        if (!isMessageHeaders(params.get(0).name())) {
+                            // If there are two parameters, the first must be message headers.
+                            throw new IllegalStateException(String.format(
+                                    "An event consumer business method with two parameters must have MultiMap as the first parameter: %s [method: %s, bean:%s]",
+                                    params, method, bean));
+                        } else if (isMessage(params.get(1).name())) {
+                            throw new IllegalStateException(String.format(
+                                    "An event consumer business method with two parameters must not accept io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message: %s [method: %s, bean:%s]",
+                                    params, method, bean));
+                        }
+                    } else if (params.size() != 1) {
                         throw new IllegalStateException(String.format(
-                                "Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s",
+                                "An event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s]",
                                 params, method, bean));
+                    }
+                    if (method.returnType().kind() != Kind.VOID && VertxConstants.isMessage(params.get(0).name())) {
+                        throw new IllegalStateException(String.format(
+                                "An event consumer business method that accepts io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message must return void [method: %s, bean:%s]",
+                                method, bean));
                     }
                     messageConsumerBusinessMethods
                             .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
@@ -139,7 +171,7 @@ class VertxProcessor {
         // Mutiny Verticles
         for (ClassInfo ci : indexBuildItem.getIndex()
                 .getAllKnownSubclasses(DotName.createSimple(io.smallrye.mutiny.vertx.core.AbstractVerticle.class.getName()))) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ci.toString()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(ci.toString()).build());
         }
     }
 

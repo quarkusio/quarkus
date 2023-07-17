@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
-public class ResourceLocatorAnnotationFreeSubResource extends ResourceLocatorAbstractAnnotationFreeResouce
+public class ResourceLocatorAnnotationFreeSubResource extends ResourceLocatorAbstractAnnotationFreeResource
         implements ResourceLocatorSubInterface {
 
     public String post(String s) {

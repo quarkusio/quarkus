@@ -1,20 +1,23 @@
 package io.quarkus.vertx.http.runtime.filters;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.vertx.http.runtime.AbstractRequestWrapper;
 import io.vertx.core.Handler;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.CookieSameSite;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.core.http.impl.HttpServerRequestWrapper;
 
-public class QuarkusRequestWrapper extends AbstractRequestWrapper {
+public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
 
     /**
      * Huge hack, to work around the fact that there is no way to directly access this class once it is wrapped,
@@ -35,7 +38,7 @@ public class QuarkusRequestWrapper extends AbstractRequestWrapper {
     private final BiConsumer<Cookie, HttpServerRequest> cookieConsumer;
 
     public QuarkusRequestWrapper(HttpServerRequest event, BiConsumer<Cookie, HttpServerRequest> cookieConsumer) {
-        super(event);
+        super((HttpServerRequestInternal) event);
         this.cookieConsumer = cookieConsumer;
         this.response = new ResponseWrapper(delegate.response(), event);
         event.exceptionHandler(new Handler<Throwable>() {
@@ -87,6 +90,22 @@ public class QuarkusRequestWrapper extends AbstractRequestWrapper {
             return new QuarkusCookie();
         }
         return super.getCookie(name);
+    }
+
+    @Override
+    public Cookie getCookie(String name, String domain, String path) {
+        if (name.equals(FAKE_COOKIE_NAME)) {
+            return new QuarkusCookie();
+        }
+        return super.getCookie(name, domain, path);
+    }
+
+    @Override
+    public Set<Cookie> cookies(String name) {
+        if (name.equals(FAKE_COOKIE_NAME)) {
+            return Collections.singleton(new QuarkusCookie());
+        }
+        return super.cookies(name);
     }
 
     class ResponseWrapper extends AbstractResponseWrapper {

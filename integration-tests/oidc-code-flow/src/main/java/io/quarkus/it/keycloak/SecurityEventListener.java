@@ -1,9 +1,8 @@
 package io.quarkus.it.keycloak;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
-import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.vertx.ext.web.RoutingContext;
@@ -16,7 +15,8 @@ public class SecurityEventListener {
         boolean blockingApiAvailable = event.getSecurityIdentity()
                 .getAttribute(AuthenticationRequestContext.class.getName()) != null;
 
-        RoutingContext vertxContext = event.getSecurityIdentity().getCredential(IdTokenCredential.class).getRoutingContext();
+        RoutingContext vertxContext = event.getSecurityIdentity()
+                .getAttribute(RoutingContext.class.getName());
         vertxContext.put("listener-message",
                 String.format("event:%s,tenantId:%s,blockingApi:%b", event.getEventType().name(), tenantId,
                         blockingApiAvailable));

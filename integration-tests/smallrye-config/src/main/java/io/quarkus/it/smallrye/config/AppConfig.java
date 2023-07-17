@@ -10,11 +10,15 @@ public interface AppConfig {
 
     Info info();
 
+    String toString();
+
     interface Info {
         @WithDefault("alias")
         String alias();
 
         @WithDefault("10")
         Integer count();
+
+        String toString();
     }
 }

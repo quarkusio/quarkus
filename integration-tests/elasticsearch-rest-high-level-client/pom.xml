@@ -166,6 +166,8 @@
                                     <run>
                                         <env>
                                             <discovery.type>single-node</discovery.type>
+                                            <xpack.security.enabled>false</xpack.security.enabled>
+                                            <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
                                         </env>
                                         <ports>
                                             <port>9200:9200</port>
@@ -181,7 +183,7 @@
                                                 <method>GET</method>
                                                 <status>200</status>
                                             </http>
-                                            <time>20000</time>
+                                            <time>30000</time>
                                         </wait>
                                     </run>
                                 </image>

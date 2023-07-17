@@ -14,8 +14,6 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.core.ThrowingRunnable;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -28,15 +26,17 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class OidcClientFilterDevModeTest {
 
-    private static Class<?>[] testClasses = {
+    private static final Class<?>[] testClasses = {
             FrontendResource.class,
             ProtectedResource.class,
-            ProtectedResourceService.class
+            ProtectedResourceService.class,
+            ProtectedResourceServiceNamedOidcClient.class,
+            NamedOidcClientResource.class
     };
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application-oidc-client-filter.properties", "application.properties"));
 
@@ -56,12 +56,19 @@ public class OidcClientFilterDevModeTest {
         test.modifyResourceFile("application.properties", s -> s.replace("#quarkus.oidc-client.auth-server-url",
                 "quarkus.oidc-client.auth-server-url"));
 
-        // token lifespan (3 secs) is less than the auto-refresh interval so the token should be refreshed immediately 
+        // token lifespan (3 secs) is less than the auto-refresh interval so the token should be refreshed immediately
         RestAssured.when().get("/frontend/user-after-registering-provider")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));
         checkLog();
+
+        // here we test that user can optionally select named OidcClient like this @OidcClient("clientName")
+        // even though 'quarkus.oidc-client-filter.register-filter' is enabled
+        RestAssured.when().get("/named-oidc-client/user-name")
+                .then()
+                .statusCode(200)
+                .body(equalTo("jdoe"));
     }
 
     private void checkLog() {

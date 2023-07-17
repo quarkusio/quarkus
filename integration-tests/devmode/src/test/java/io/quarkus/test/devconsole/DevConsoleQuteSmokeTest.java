@@ -1,9 +1,7 @@
 package io.quarkus.test.devconsole;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,15 +16,18 @@ public class DevConsoleQuteSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addAsResource(new StringAsset(
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(
                     "{hello}"),
                     "templates/hello.txt"));
 
     @Test
     public void testTemplates() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-qute/templates")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-qute/templates")
                 .then()
                 .statusCode(200).body(Matchers.containsString("hello.txt"));
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-qute/preview")
+                .then()
+                .statusCode(200).body(Matchers.containsString("Test JSON data"));
     }
 
 }

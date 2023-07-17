@@ -1,14 +1,27 @@
 package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.devtools.commands.CreateProject;
+import io.quarkus.devtools.commands.data.QuarkusCommandException;
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.catalog.ExtensionOrigin;
 
 public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends MultiplePlatformBomsTestBase {
 
@@ -29,7 +42,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
                 .newRelease("2.0.4")
                 .quarkusVersion("2.2.2")
                 // default bom including quarkus-core + essential metadata
-                .addCoreMember()
+                .addCoreMember().release()
                 // foo platform member
                 .newMember("acme-foo-bom").addExtension("acme-foo").release()
                 .stream().platform()
@@ -38,14 +51,14 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
                 // 1.0.1 release
                 .newRelease("1.0.1")
                 .quarkusVersion("1.1.2")
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("acme-foo").release()
                 .newMember("acme-baz-bom").addExtension("acme-baz").release()
                 .stream()
                 // 1.0.0 release
                 .newRelease("1.0.0")
                 .quarkusVersion("1.1.1")
-                .addCoreMember()
+                .addCoreMember().release()
                 .newMember("acme-foo-bom").addExtension("acme-foo").release()
                 .newMember("acme-bar-bom").addExtension("acme-bar").release()
                 .newMember("acme-baz-bom").addExtension("acme-baz").release()
@@ -73,6 +86,38 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
 
     protected String getMainPlatformKey() {
         return MAIN_PLATFORM_KEY;
+    }
+
+    @Test
+    public void createWithPreferedCatalogs() throws Exception {
+        final Path projectDir = newProjectDir("preferred-catalogs");
+
+        final ExtensionCatalog catalog = QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog(Arrays.asList(
+                ArtifactCoords.fromString("org.acme.platform:quarkus-bom::pom:1.0.1"),
+                ArtifactCoords.fromString("org.acme.platform:acme-foo-bom::pom:1.0.1"),
+                ArtifactCoords.fromString("org.acme.platform:acme-baz-bom::pom:1.0.1")));
+        final QuarkusProject project = QuarkusProjectHelper.getProject(projectDir, catalog, BuildTool.MAVEN);
+
+        final Set<String> extensionKeys = new HashSet<>();
+        final List<ArtifactCoords> expectedExtensions = new ArrayList<>();
+        catalog.getExtensions().forEach(e -> {
+            final ArtifactCoords coords = e.getArtifact();
+            extensionKeys.add(coords.getGroupId() + ":" + coords.getArtifactId());
+            boolean platform = false;
+            for (ExtensionOrigin o : e.getOrigins()) {
+                if (o.isPlatform()) {
+                    platform = true;
+                    break;
+                }
+            }
+            expectedExtensions.add(platform
+                    ? ArtifactCoords.of(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType(),
+                            null)
+                    : coords);
+        });
+        new CreateProject(project).extensions(extensionKeys).noCode().execute();
+
+        assertModel(projectDir, toPlatformBomCoords("acme-foo-bom", "acme-baz-bom"), expectedExtensions, "1.0.1");
     }
 
     @Test
@@ -157,7 +202,8 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
     @Test
     public void attemptCreateWithIncompatibleExtensions() throws Exception {
         final Path projectDir = newProjectDir("create-with-incompatible-extensions");
-        assertThat(createProject(projectDir, Arrays.asList("acme-bar", "other-five-one")).isSuccess()).isFalse();
+        assertThatExceptionOfType(QuarkusCommandException.class)
+                .isThrownBy(() -> createProject(projectDir, Arrays.asList("acme-bar", "other-five-one")));
     }
 
     @Test

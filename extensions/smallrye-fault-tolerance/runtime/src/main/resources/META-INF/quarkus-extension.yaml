@@ -3,12 +3,19 @@ artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "SmallRye Fault Tolerance"
 metadata:
   keywords:
-  - "smallrye-fault-tolerance"
   - "fault-tolerance"
+  - "smallrye-fault-tolerance"
   - "microprofile-fault-tolerance"
-  - "circuit-breaker"
   - "bulkhead"
-  guide: "https://quarkus.io/guides/microprofile-fault-tolerance"
+  - "circuit-breaker"
+  - "fallback"
+  - "rate-limit"
+  - "retry"
+  - "timeout"
+  guide: "https://quarkus.io/guides/smallrye-fault-tolerance"
   categories:
   - "cloud"
   status: "stable"
+  config:
+  - "smallrye.faulttolerance."
+  - "mp.fault.tolerance."

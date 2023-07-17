@@ -5,7 +5,7 @@ import org.eclipse.microprofile.metrics.MetadataBuilder;
 import org.eclipse.microprofile.metrics.MetricType;
 
 /**
- * DefaultMetadata from MP Metrics API does not have a public default constructor so we use this custom wrapper
+ * DefaultMetadata from MP Metrics API does not have a public default constructor, so we use this custom wrapper
  * for passing metric metadata from processor to recorder and reconstructing the original Metadata instance in runtime code.
  */
 public class MetadataHolder {

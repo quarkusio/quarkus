@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.spi;
 
-import javax.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestContext;
 
 public interface ResteasyReactiveContainerRequestContext extends ContainerRequestContext {
 

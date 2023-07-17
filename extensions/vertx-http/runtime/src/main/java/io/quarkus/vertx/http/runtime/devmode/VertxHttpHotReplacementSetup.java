@@ -16,6 +16,7 @@ import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.HotReplacementSetup;
+import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -55,7 +56,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
         //remove for vert.x 4.2
         //at the moment there is a TCCL error that is normally handled by the log filters
         //but if startup fails it may not take effect
-        //it happens once per thread so it can completely mess up the console output, and hide the real issue
+        //it happens once per thread, so it can completely mess up the console output, and hide the real issue
         LogManager.getLogManager().getLogger("io.vertx.core.impl.ContextImpl").setLevel(Level.SEVERE);
         VertxHttpRecorder.startServerAfterFailedStart();
     }
@@ -97,7 +98,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.request().endHandler(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    connectionBase.getContext().executeBlocking(new Handler<Promise<Object>>() {
+                    VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Handler<Promise<Object>>() {
                         @Override
                         public void handle(Promise<Object> promise) {
                             try {
@@ -135,7 +136,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             return;
         }
         ClassLoader current = Thread.currentThread().getContextClassLoader();
-        connectionBase.getContext().executeBlocking(new Handler<Promise<Boolean>>() {
+        VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Handler<Promise<Boolean>>() {
             @Override
             public void handle(Promise<Boolean> event) {
                 //the blocking pool may have a stale TCCL
@@ -146,11 +147,18 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                     synchronized (this) {
                         if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
                             nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
+                            Object currentState = VertxHttpRecorder.getCurrentApplicationState();
                             try {
                                 restart = hotReplacementContext.doScan(true);
                             } catch (Exception e) {
                                 event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
                                 return;
+                            }
+                            if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
+                                //its possible a Kafka message or some other source triggered a reload,
+                                //so we could wait for the restart (due to the scan lock)
+                                //but then fail to dispatch to the new application
+                                restart = true;
                             }
                         }
                     }
@@ -160,7 +168,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                     }
                     if (restart) {
                         //close all connections on close, except for this one
-                        //this prevents long running requests such as SSE or websockets
+                        //this prevents long-running requests such as SSE or websockets
                         //from holding onto the old deployment
                         Set<ConnectionBase> connections = new HashSet<>(openConnections);
                         for (ConnectionBase con : connections) {

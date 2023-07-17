@@ -1,6 +1,8 @@
 package io.quarkus.dev.console;
 
+import java.io.Console;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -24,6 +26,23 @@ public class BasicConsole extends QuarkusConsole {
     final boolean color;
 
     volatile boolean readingLine;
+
+    public BasicConsole(boolean color, boolean inputSupport, PrintStream printStream, Console console) {
+        this(color, inputSupport, (s) -> {
+            if (console != null) {
+                console.writer().print(s);
+                console.writer().flush();
+            } else {
+                printStream.print(s);
+            }
+        }, () -> {
+            try {
+                return System.in.read();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
 
     public BasicConsole(boolean color, boolean inputSupport, Consumer<String> output) {
         this(color, inputSupport, output, () -> {
@@ -54,7 +73,7 @@ public class BasicConsole extends QuarkusConsole {
                             if (readingLine) {
                                 //when doing a read line we want to discard the first \n
                                 //as this was the one that was needed to activate this mode
-                                if (val == '\n') {
+                                if (val == '\n' || val == '\r') {
                                     readingLine = false;
                                     continue;
                                 }
@@ -95,6 +114,7 @@ public class BasicConsole extends QuarkusConsole {
                     return;
                 }
                 if (message == null) {
+                    old = null;
                     return;
                 }
                 if (message.equals(old)) {
@@ -134,13 +154,11 @@ public class BasicConsole extends QuarkusConsole {
     }
 
     @Override
-    public void write(String s) {
-        if (outputFilter != null) {
-            if (!outputFilter.test(s)) {
-                //we still test, the output filter may be recording output
-                if (!DISABLE_FILTER.get()) {
-                    return;
-                }
+    public void write(boolean errorStream, String s) {
+        if (!shouldWrite(errorStream, s)) {
+            //we still test, the output filter may be recording output
+            if (!DISABLE_FILTER.get()) {
+                return;
             }
         }
         if (!color) {
@@ -152,8 +170,8 @@ public class BasicConsole extends QuarkusConsole {
     }
 
     @Override
-    public void write(byte[] buf, int off, int len) {
-        write(new String(buf, off, len, StandardCharsets.UTF_8));
+    public void write(boolean errorStream, byte[] buf, int off, int len) {
+        write(errorStream, new String(buf, off, len, StandardCharsets.UTF_8));
     }
 
     @Override

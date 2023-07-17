@@ -1,0 +1,30 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="security-oidc-configuration-properties-reference"]
+= OpenID Connect (OIDC) configuration properties
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: security
+
+As a Quarkus developer, you configure the Quarkus OpenID Connect (OIDC) extension by setting the following properties in the `src/main/resources/application.properties` file.
+
+include::{generated-dir}/config/quarkus-oidc.adoc[opts=optional, leveloffset=+1]
+
+== References
+
+* xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
+* xref:security-oidc-bearer-token-authentication-tutorial.adoc[Protect a service application by using OpenID Connect (OIDC) Bearer token authentication]
+// * https://www.keycloak.org/documentation.html[Keycloak Documentation]
+* https://openid.net/connect/[OpenID Connect]
+// * https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* xref:security-openid-connect-client-reference.adoc[OpenID Connect and OAuth2 Client and Filters Reference Guide]
+// * xref:security-openid-connect-dev-services.adoc[Dev Services for Keycloak]
+// * xref:security-jwt-build.adoc[Sign and encrypt JWT tokens with SmallRye JWT Build]
+* xref:security-authentication-mechanisms.adoc#oidc-jwt-oauth2-comparison[Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms]
+* xref:security-authentication-mechanisms.adoc#combining-authentication-mechanisms[Combining authentication mechanisms]
+* xref:security-overview.adoc[Quarkus Security]
+// * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
+// TASK - Select some references and eliminate the rest.

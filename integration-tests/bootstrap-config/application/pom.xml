@@ -20,8 +20,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-integration-test-bootstrap-config-extension</artifactId>
-            <version>999-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -62,6 +66,19 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>
@@ -80,6 +97,15 @@
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${compiler-plugin.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemProperties>
+                        <quarkus.dummy.map.system>system</quarkus.dummy.map.system>
+                    </systemProperties>
+                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -110,6 +136,10 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
+                                    <environmentVariables>
+                                        <QUARKUS_DUMMY_MAP_SYSTEM>system</QUARKUS_DUMMY_MAP_SYSTEM>
+                                        <QUARKUS_DUMMY_MAP_LOCATIONS>locations</QUARKUS_DUMMY_MAP_LOCATIONS>
+                                    </environmentVariables>
                                     <systemPropertyVariables>
                                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                                     </systemPropertyVariables>

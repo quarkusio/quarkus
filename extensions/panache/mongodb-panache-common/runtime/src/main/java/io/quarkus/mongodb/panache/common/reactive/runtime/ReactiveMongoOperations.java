@@ -3,6 +3,7 @@ package io.quarkus.mongodb.panache.common.reactive.runtime;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.beanName;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.clientFromArc;
 import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseName;
+import static io.quarkus.mongodb.panache.common.runtime.BeanUtils.getDatabaseNameFromResolver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,14 +23,17 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
 import org.jboss.logging.Logger;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.model.InsertOneModel;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.WriteModel;
+import com.mongodb.client.result.DeleteResult;
 
-import io.quarkus.mongodb.panache.MongoEntity;
-import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
-import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
+import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.reactive.Panache;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.mongodb.reactive.ReactiveMongoDatabase;
@@ -74,7 +78,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 objects.add(entity);
             }
 
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -99,7 +103,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> persist(Stream<?> entities) {
         return Uni.createFrom().deferred(() -> {
             List<Object> objects = entities.collect(Collectors.toList());
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -122,7 +126,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 objects.add(entity);
             }
 
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -147,7 +151,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> update(Stream<?> entities) {
         return Uni.createFrom().deferred(() -> {
             List<Object> objects = entities.collect(Collectors.toList());
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -170,7 +174,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
                 objects.add(entity);
             }
 
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -195,7 +199,7 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     public Uni<Void> persistOrUpdate(Stream<?> entities) {
         return Uni.createFrom().deferred(() -> {
             List<Object> objects = entities.collect(Collectors.toList());
-            if (objects.size() > 0) {
+            if (!objects.isEmpty()) {
                 // get the first entity to be able to retrieve the collection with it
                 Object firstEntity = objects.get(0);
                 ReactiveMongoCollection collection = mongoCollection(firstEntity);
@@ -210,28 +214,37 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         BsonDocument document = getBsonDocument(collection, entity);
         BsonValue id = document.get(ID);
         BsonDocument query = new BsonDocument().append(ID, id);
+
+        if (Panache.getCurrentSession() != null) {
+            return collection.deleteOne(Panache.getCurrentSession(), query).onItem().ignore().andContinueWithNull();
+        }
         return collection.deleteOne(query).onItem().ignore().andContinueWithNull();
     }
 
     public ReactiveMongoCollection mongoCollection(Class<?> entityClass) {
-        MongoEntity legacyEntity = entityClass.getAnnotation(MongoEntity.class);
-        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
-                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
-        ReactiveMongoDatabase database = mongoDatabase(legacyEntity, mongoEntity);
-        if (legacyEntity != null && !legacyEntity.collection().isEmpty()) {
-            return database.getCollection(legacyEntity.collection(), entityClass);
-        }
-        if (mongoEntity != null && !mongoEntity.collection().isEmpty()) {
-            return database.getCollection(mongoEntity.collection(), entityClass);
+        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        ReactiveMongoDatabase database = mongoDatabase(mongoEntity);
+        if (mongoEntity != null) {
+            ReactiveMongoCollection collection = mongoEntity.collection().isEmpty()
+                    ? database.getCollection(entityClass.getSimpleName(), entityClass)
+                    : database.getCollection(mongoEntity.collection(), entityClass);
+            if (!mongoEntity.readPreference().isEmpty()) {
+                try {
+                    collection = collection.withReadPreference(ReadPreference.valueOf(mongoEntity.readPreference()));
+                } catch (IllegalArgumentException iae) {
+                    throw new IllegalArgumentException("Illegal read preference " + mongoEntity.readPreference()
+                            + " configured in the @MongoEntity annotation of " + entityClass.getName() + "."
+                            + " Supported values are primary|primaryPreferred|secondary|secondaryPreferred|nearest");
+                }
+            }
+            return collection;
         }
         return database.getCollection(entityClass.getSimpleName(), entityClass);
     }
 
     public ReactiveMongoDatabase mongoDatabase(Class<?> entityClass) {
-        MongoEntity legacyEntity = entityClass.getAnnotation(MongoEntity.class);
-        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
-                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
-        return mongoDatabase(legacyEntity, mongoEntity);
+        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        return mongoDatabase(mongoEntity);
     }
 
     //
@@ -242,10 +255,16 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     }
 
     private Uni<Void> persist(ReactiveMongoCollection collection, Object entity) {
+        if (Panache.getCurrentSession() != null) {
+            return collection.insertOne(Panache.getCurrentSession(), entity).onItem().ignore().andContinueWithNull();
+        }
         return collection.insertOne(entity).onItem().ignore().andContinueWithNull();
     }
 
     private Uni<Void> persist(ReactiveMongoCollection collection, List<Object> entities) {
+        if (Panache.getCurrentSession() != null) {
+            return collection.insertMany(Panache.getCurrentSession(), entities).onItem().ignore().andContinueWithNull();
+        }
         return collection.insertMany(entities).onItem().ignore().andContinueWithNull();
     }
 
@@ -256,6 +275,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         //then we get its id field and create a new Document with only this one that will be our replace query
         BsonValue id = document.get(ID);
         BsonDocument query = new BsonDocument().append(ID, id);
+
+        if (Panache.getCurrentSession() != null) {
+            return collection.replaceOne(Panache.getCurrentSession(), query, entity).onItem().ignore().andContinueWithNull();
+        }
         return collection.replaceOne(query, entity).onItem().ignore().andContinueWithNull();
     }
 
@@ -272,17 +295,24 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         BsonValue id = document.get(ID);
         if (id == null) {
             //insert with autogenerated ID
+            if (Panache.getCurrentSession() != null) {
+                return collection.insertOne(Panache.getCurrentSession(), entity).onItem().ignore().andContinueWithNull();
+            }
             return collection.insertOne(entity).onItem().ignore().andContinueWithNull();
         } else {
             //insert with user provided ID or update
             BsonDocument query = new BsonDocument().append(ID, id);
+            if (Panache.getCurrentSession() != null) {
+                return collection.replaceOne(Panache.getCurrentSession(), query, entity, new ReplaceOptions().upsert(true))
+                        .onItem().ignore().andContinueWithNull();
+            }
             return collection.replaceOne(query, entity, new ReplaceOptions().upsert(true))
                     .onItem().ignore().andContinueWithNull();
         }
     }
 
     private Uni<Void> persistOrUpdate(ReactiveMongoCollection collection, List<Object> entities) {
-        //this will be an ordered bulk: it's less performant than a unordered one but will fail at the first failed write
+        //this will be an ordered bulk: it's less performant than an unordered one but will fail at the first failed write
         List<WriteModel> bulk = new ArrayList<>();
         for (Object entity : entities) {
             //we transform the entity as a document first
@@ -301,6 +331,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
             }
         }
 
+        if (Panache.getCurrentSession() != null) {
+            return collection.bulkWrite(Panache.getCurrentSession(), bulk).onItem().ignore().andContinueWithNull();
+        }
         return collection.bulkWrite(bulk).onItem().ignore().andContinueWithNull();
     }
 
@@ -316,21 +349,20 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return mongoCollection(entityClass);
     }
 
-    private ReactiveMongoDatabase mongoDatabase(MongoEntity legacyEntity,
-            io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
-        ReactiveMongoClient mongoClient = clientFromArc(legacyEntity, mongoEntity, ReactiveMongoClient.class, true);
-        if (legacyEntity != null && !legacyEntity.database().isEmpty()) {
-            return mongoClient.getDatabase(legacyEntity.database());
+    private ReactiveMongoDatabase mongoDatabase(MongoEntity mongoEntity) {
+        ReactiveMongoClient mongoClient = clientFromArc(mongoEntity, ReactiveMongoClient.class, true);
+        if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
+            return mongoClient.getDatabase(mongoEntity.database());
         }
-        String databaseName = getDefaultDatabaseName(legacyEntity, mongoEntity);
+        String databaseName = getDatabaseNameFromResolver().orElseGet(() -> getDefaultDatabaseName(mongoEntity));
         return mongoClient.getDatabase(databaseName);
     }
 
-    private String getDefaultDatabaseName(MongoEntity legacyEntity, io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
-        return defaultDatabaseName.computeIfAbsent(beanName(legacyEntity, mongoEntity), new Function<String, String>() {
+    private String getDefaultDatabaseName(MongoEntity mongoEntity) {
+        return defaultDatabaseName.computeIfAbsent(beanName(mongoEntity), new Function<String, String>() {
             @Override
             public String apply(String beanName) {
-                return getDatabaseName(legacyEntity, mongoEntity, beanName);
+                return getDatabaseName(mongoEntity, beanName);
             }
         });
     }
@@ -345,6 +377,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public Uni<Optional> findByIdOptional(Class<?> entityClass, Object id) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
+        if (Panache.getCurrentSession() != null) {
+            return collection.find(Panache.getCurrentSession(), new Document(ID, id)).collect().first()
+                    .onItem().transform(Optional::ofNullable);
+        }
         return collection.find(new Document(ID, id)).collect().first()
                 .onItem().transform(Optional::ofNullable);
     }
@@ -353,7 +389,6 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -453,7 +488,6 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -470,7 +504,6 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, sort, params.map());
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, Document query, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
@@ -554,13 +587,11 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         return stream(find(entityClass, query, sort));
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         return createQuery(collection, null, null);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass, Sort sort) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
@@ -575,6 +606,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         Document sortDoc = new Document();
         for (Sort.Column col : sort.getColumns()) {
             sortDoc.append(col.getName(), col.getDirection() == Sort.Direction.Ascending ? 1 : -1);
+            if (col.getNullPrecedence() != null) {
+                throw new UnsupportedOperationException("Cannot sort by nulls first or nulls last");
+            }
         }
         return sortDoc;
     }
@@ -597,6 +631,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public Uni<Long> count(Class<?> entityClass) {
         ReactiveMongoCollection collection = mongoCollection(entityClass);
+        if (Panache.getCurrentSession() != null) {
+            return collection.countDocuments(Panache.getCurrentSession());
+        }
         return collection.countDocuments();
     }
 
@@ -604,6 +641,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         String bindQuery = bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
+        if (Panache.getCurrentSession() != null) {
+            return collection.countDocuments(Panache.getCurrentSession(), docQuery);
+        }
         return collection.countDocuments(docQuery);
     }
 
@@ -611,6 +651,9 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         String bindQuery = bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection collection = mongoCollection(entityClass);
+        if (Panache.getCurrentSession() != null) {
+            return collection.countDocuments(Panache.getCurrentSession(), docQuery);
+        }
         return collection.countDocuments(docQuery);
     }
 
@@ -621,17 +664,26 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     //specific Mongo query
     public Uni<Long> count(Class<?> entityClass, Document query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
+        if (Panache.getCurrentSession() != null) {
+            return collection.countDocuments(Panache.getCurrentSession(), query);
+        }
         return collection.countDocuments(query);
     }
 
     public Uni<Long> deleteAll(Class<?> entityClass) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(new Document()).map(deleteResult -> deleteResult.getDeletedCount());
+        if (Panache.getCurrentSession() != null) {
+            return collection.deleteMany(Panache.getCurrentSession(), new Document()).map(DeleteResult::getDeletedCount);
+        }
+        return collection.deleteMany(new Document()).map(DeleteResult::getDeletedCount);
     }
 
     public Uni<Boolean> deleteById(Class<?> entityClass, Object id) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
         Document query = new Document().append(ID, id);
+        if (Panache.getCurrentSession() != null) {
+            return collection.deleteOne(Panache.getCurrentSession(), query).map(results -> results.getDeletedCount() == 1);
+        }
         return collection.deleteOne(query).map(results -> results.getDeletedCount() == 1);
     }
 
@@ -639,14 +691,20 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
         String bindQuery = bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
+        if (Panache.getCurrentSession() != null) {
+            return collection.deleteMany(Panache.getCurrentSession(), docQuery).map(DeleteResult::getDeletedCount);
+        }
+        return collection.deleteMany(docQuery).map(DeleteResult::getDeletedCount);
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
         BsonDocument docQuery = BsonDocument.parse(bindQuery);
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(docQuery).map(deleteResult -> deleteResult.getDeletedCount());
+        if (Panache.getCurrentSession() != null) {
+            return collection.deleteMany(Panache.getCurrentSession(), docQuery).map(DeleteResult::getDeletedCount);
+        }
+        return collection.deleteMany(docQuery).map(DeleteResult::getDeletedCount);
     }
 
     public Uni<Long> delete(Class<?> entityClass, String query, Parameters params) {
@@ -656,7 +714,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
     //specific Mongo query
     public Uni<Long> delete(Class<?> entityClass, Document query) {
         ReactiveMongoCollection<?> collection = mongoCollection(entityClass);
-        return collection.deleteMany(query).map(deleteResult -> deleteResult.getDeletedCount());
+        if (Panache.getCurrentSession() != null) {
+            return collection.deleteMany(Panache.getCurrentSession(), query).map(DeleteResult::getDeletedCount);
+        }
+        return collection.deleteMany(query).map(DeleteResult::getDeletedCount);
     }
 
     public UpdateType update(Class<?> entityClass, String update, Map<String, Object> params) {
@@ -669,6 +730,10 @@ public abstract class ReactiveMongoOperations<QueryType, UpdateType> {
 
     public UpdateType update(Class<?> entityClass, String update, Object... params) {
         return executeUpdate(entityClass, update, params);
+    }
+
+    public UpdateType update(Class<?> entityClass, Document update) {
+        return createUpdate(mongoCollection(entityClass), entityClass, update);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {

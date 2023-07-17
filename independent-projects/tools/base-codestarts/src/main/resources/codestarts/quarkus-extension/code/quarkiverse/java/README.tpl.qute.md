@@ -1,4 +1,6 @@
-# {namespace.name}{extension.name}
+# {extension.full-name}
+
+[![Version](https://img.shields.io/maven-central/v/{group-id}/{namespace.id}{extension.id}?logo=apache-maven&style=flat-square)](https://search.maven.org/artifact/{group-id}/{namespace.id}{extension.id})
 
 ## Welcome to Quarkiverse!
 
@@ -10,13 +12,13 @@ You can find the basic info, Quarkiverse policies and conventions in [the Quarki
 
 In case you are creating a Quarkus extension project for the first time, please follow [Building My First Extension](https://quarkus.io/guides/building-my-first-extension) guide.
 
-Other useful articles related to Quarkus extension development can be found under the [Writing Extensions](https://quarkus.io/guides/#writing-extensions) guide category on the [Quarkus.io](http://quarkus.io) website.
+Other useful articles related to Quarkus extension development can be found under the [Writing Extensions](https://quarkus.io/guides/#writing-extensions) guide category on the [Quarkus.io](https://quarkus.io) website.
 
 Thanks again, good luck and have fun!
 
 ## Documentation
 
-The documentation for this extension should be maintained as part of this repository and it is stored in the `docs/` directory. 
+The documentation for this extension should be maintained as part of this repository and it is stored in the `docs/` directory.
 
 The layout should follow the [Antora's Standard File and Directory Set](https://docs.antora.org/antora/2.3/standard-directories/).
 

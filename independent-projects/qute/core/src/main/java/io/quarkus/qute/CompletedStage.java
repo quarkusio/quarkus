@@ -20,14 +20,31 @@ import java.util.function.Supplier;
  */
 public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> {
 
-    static final CompletedStage<Void> VOID = new CompletedStage<>(null, null);
+    @SuppressWarnings("rawtypes")
+    static final CompletedStage NULL = new CompletedStage<>(null, null);
 
+    @SuppressWarnings("unchecked")
     public static <T> CompletedStage<T> of(T result) {
+        if (result == null) {
+            // Use a shared constant for nulls
+            return (CompletedStage<T>) NULL;
+        }
         return new CompletedStage<T>(result, null);
     }
 
     public static <T> CompletedStage<T> failure(Throwable t) {
+        Objects.requireNonNull(t);
         return new CompletedStage<T>(null, t);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static CompletedStage<Void> ofVoid() {
+        return NULL;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static CompletedStage<Object> ofNull() {
+        return NULL;
     }
 
     private final T result;
@@ -36,6 +53,10 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
     private CompletedStage(T result, Throwable exception) {
         this.result = result;
         this.exception = exception;
+    }
+
+    public boolean isFailure() {
+        return exception != null;
     }
 
     public T get() {
@@ -80,7 +101,7 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
             } catch (Throwable e) {
                 return new CompletedStage<>(null, e);
             }
-            return VOID;
+            return ofVoid();
         }
         return new CompletedStage<>(null, exception);
     }
@@ -104,7 +125,7 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
             } catch (final Throwable e) {
                 return new CompletedStage<>(null, e);
             }
-            return VOID;
+            return ofVoid();
         }
         return new CompletedStage<>(null, exception);
     }

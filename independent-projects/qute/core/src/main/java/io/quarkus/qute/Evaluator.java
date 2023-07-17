@@ -8,7 +8,7 @@ import java.util.concurrent.CompletionStage;
 public interface Evaluator {
 
     /**
-     * 
+     *
      * @param expression
      * @param resolutionContext
      * @return the result

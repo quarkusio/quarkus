@@ -2,8 +2,8 @@ package io.quarkus.hibernate.orm.panache;
 
 import java.util.Map;
 
-import javax.persistence.EntityManager;
-import javax.transaction.TransactionManager;
+import jakarta.persistence.EntityManager;
+import jakarta.transaction.TransactionManager;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.quarkus.hibernate.orm.panache.runtime.JpaOperations;

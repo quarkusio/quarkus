@@ -1,6 +1,6 @@
 package io.quarkus.elytron.security.oauth2.deployment;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.wildfly.security.auth.server.SecurityRealm;
 
@@ -21,6 +21,7 @@ import io.quarkus.elytron.security.oauth2.runtime.OAuth2RuntimeConfig;
 import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2AuthMechanism;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
+import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 
 /**
  * The build time process for the OAUth2 security aspects of the deployment. This creates {@linkplain BuildStep}s for
@@ -71,6 +72,13 @@ class OAuth2DeploymentProcessor {
             return null;
         }
         return new ElytronTokenMarkerBuildItem();
+    }
+
+    void provideSecurityInformation(OAuth2BuildTimeConfig oauth2BuildTimeConfig,
+            BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
+        if (oauth2BuildTimeConfig.enabled) {
+            securityInformationProducer.produce(SecurityInformationBuildItem.OAUTH2());
+        }
     }
 
     @BuildStep

@@ -1,20 +1,20 @@
 package io.quarkus.it.hibernate.validator.groups;
 
-import javax.validation.constraints.AssertFalse;
-import javax.validation.constraints.AssertTrue;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Null;
+import jakarta.validation.constraints.AssertFalse;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 
 public class MyBeanWithGroups {
 
-    @Null(groups = ValidationGroups.Put.class)
-    @NotNull(groups = { ValidationGroups.Post.class, ValidationGroups.Get.class, ValidationGroups.Delete.class })
+    @Null(groups = ValidationGroups.Post.class)
+    @NotNull(groups = { ValidationGroups.Put.class, ValidationGroups.Get.class, ValidationGroups.Delete.class })
     private Long id;
 
     @NotNull
     private String name;
 
-    @AssertFalse(groups = { ValidationGroups.Put.class, ValidationGroups.Post.class, ValidationGroups.Get.class })
+    @AssertFalse(groups = { ValidationGroups.Post.class, ValidationGroups.Put.class, ValidationGroups.Get.class })
     @AssertTrue(groups = ValidationGroups.Delete.class)
     private boolean deleted;
 

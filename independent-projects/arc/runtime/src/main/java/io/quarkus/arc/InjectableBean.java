@@ -1,14 +1,17 @@
 package io.quarkus.arc;
 
-import io.quarkus.arc.impl.Qualifiers;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.Set;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.Bean;
-import javax.enterprise.inject.spi.InjectionPoint;
+
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.InjectionPoint;
+
+import io.quarkus.arc.impl.Qualifiers;
 
 /**
  * Quarkus representation of an injectable bean.
@@ -28,7 +31,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
     String getIdentifier();
 
     /**
-     * 
+     *
      * @return the kind of the bean
      * @see Kind
      */
@@ -84,19 +87,22 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return Collections.emptySet();
     }
 
+    /**
+     * By default, this method always returns an empty set, because obtaining the set
+     * of injection points of a bean at application runtime is rarely useful.
+     * <p>
+     * In the {@linkplain ArcContainer#strictCompatibility() strict mode}, this method
+     * works as described by the CDI specification. Feedback on usefulness of this
+     * method is welcome!
+     */
     @Override
     default Set<InjectionPoint> getInjectionPoints() {
         return Collections.emptySet();
     }
 
     @Override
-    default boolean isNullable() {
-        return false;
-    }
-
-    @Override
     default boolean isAlternative() {
-        return getAlternativePriority() != null;
+        return false;
     }
 
     /**
@@ -104,7 +110,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      * @return the priority if the bean is an alternative, or {@code null}
      */
     default Integer getAlternativePriority() {
-        return null;
+        return isAlternative() ? getPriority() : null;
     }
 
     /**
@@ -114,6 +120,48 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         return false;
     }
 
+    /**
+     * Suppressed beans cannot be obtained by programmatic lookup via {@link Instance}.
+     *
+     * @return {@code true} if the bean should be suppressed
+     */
+    default boolean isSuppressed() {
+        return false;
+    }
+
+    /**
+     * A bean may have a priority assigned.
+     * <p>
+     * Class-based beans can specify the priority declaratively via {@link jakarta.annotation.Priority}. If no priority
+     * annotation is used then a bean has the priority of value 0.
+     * <p>
+     * This priority is used to sort the resolved beans when performing programmatic lookup via
+     * {@link Instance} or when injecting a list of beans by means of the {@link All} qualifier.
+     *
+     * @return the priority
+     * @see Priority
+     */
+    default int getPriority() {
+        return 0;
+    }
+
+    /**
+     * The return value depends on the {@link #getKind()}.
+     *
+     * <ul>
+     * <li>For managed beans, interceptors, decorators and built-in beans, the bean class is returned.</li>
+     * <li>For a producer method, the class of the return type is returned.</li>
+     * <li>For a producer field, the class of the field is returned.</li>
+     * <li>For a synthetic bean, the implementation class defined by the registrar is returned.
+     * </ul>
+     *
+     * @return the implementation class, or null in case of a producer of a primitive type or an array
+     * @see Kind
+     */
+    default Class<?> getImplementationClass() {
+        return getBeanClass();
+    }
+
     enum Kind {
 
         CLASS,
@@ -121,7 +169,9 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
         PRODUCER_METHOD,
         SYNTHETIC,
         INTERCEPTOR,
-        DECORATOR;
+        DECORATOR,
+        BUILTIN,
+        ;
 
         public static Kind from(String value) {
             for (Kind kind : values()) {

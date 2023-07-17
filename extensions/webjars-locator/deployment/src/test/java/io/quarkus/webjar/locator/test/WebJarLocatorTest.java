@@ -2,28 +2,27 @@ package io.quarkus.webjar.locator.test;
 
 import static org.hamcrest.core.Is.is;
 
-import java.util.Arrays;
+import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class WebJarLocatorTest {
+public class WebJarLocatorTest extends WebJarLocatorTestSupport {
     private static final String META_INF_RESOURCES = "META-INF/resources/";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset("<html>Hello!<html>"), META_INF_RESOURCES + "/index.html")
                     .addAsResource(new StringAsset("Test"), META_INF_RESOURCES + "/some/path/test.txt"))
-            .setForcedDependencies(Arrays.asList(new AppArtifact("org.webjars", "jquery", "3.5.1"),
-                    new AppArtifact("org.webjars", "momentjs", "2.24.0")));
+            .setForcedDependencies(List.of(
+                    Dependency.of("org.webjars", "jquery-ui", JQUERY_UI_VERSION),
+                    Dependency.of("org.webjars", "momentjs", MOMENTJS_VERSION)));
 
     @Test
     public void test() {
@@ -41,15 +40,15 @@ public class WebJarLocatorTest {
                 .body(is("Test"));
 
         // Test Existing Web Jars
-        RestAssured.get("/webjars/jquery/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/jquery-ui.min.js").then()
                 .statusCode(200);
         RestAssured.get("/webjars/momentjs/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test using version in url of existing Web Jar
-        RestAssured.get("/webjars/jquery/3.5.1/jquery.min.js").then()
+        RestAssured.get("/webjars/jquery-ui/" + JQUERY_UI_VERSION + "/jquery-ui.min.js").then()
                 .statusCode(200);
-        RestAssured.get("/webjars/momentjs/2.24.0/min/moment.min.js").then()
+        RestAssured.get("/webjars/momentjs/" + MOMENTJS_VERSION + "/min/moment.min.js").then()
                 .statusCode(200);
 
         // Test non-existing Web Jar

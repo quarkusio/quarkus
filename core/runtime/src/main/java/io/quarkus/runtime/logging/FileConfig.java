@@ -1,6 +1,7 @@
 package io.quarkus.runtime.logging;
 
 import java.io.File;
+import java.nio.charset.Charset;
 import java.util.Optional;
 import java.util.logging.Level;
 
@@ -41,6 +42,18 @@ public class FileConfig {
     File path;
 
     /**
+     * The name of the filter to link to the file handler.
+     */
+    @ConfigItem
+    Optional<String> filter;
+
+    /**
+     * The character encoding used
+     */
+    @ConfigItem
+    Optional<Charset> encoding;
+
+    /**
      * File async logging config
      */
     AsyncConfig async;
@@ -58,13 +71,13 @@ public class FileConfig {
         /**
          * The maximum file size of the log file after which a rotation is executed.
          */
-        @ConfigItem(defaultValueDocumentation = "10")
-        Optional<MemorySize> maxFileSize;
+        @ConfigItem(defaultValue = "10M")
+        MemorySize maxFileSize;
 
         /**
          * The maximum number of backups to keep.
          */
-        @ConfigItem(defaultValue = "1")
+        @ConfigItem(defaultValue = "5")
         int maxBackupIndex;
 
         /**

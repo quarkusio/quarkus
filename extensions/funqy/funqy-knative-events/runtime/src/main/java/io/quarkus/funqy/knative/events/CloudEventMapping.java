@@ -36,14 +36,14 @@ public @interface CloudEventMapping {
     /**
      * If the function has output, this describes the cloud event type of the output event
      * Defaults to {function}.output
-     * 
+     *
      * @return
      */
     String responseType() default "";
 
     /**
      * If there is an extra requirement to match against cloud event attributes to find the function to be triggered
-     * 
+     *
      * @return
      */
     EventAttribute[] attributes() default {};

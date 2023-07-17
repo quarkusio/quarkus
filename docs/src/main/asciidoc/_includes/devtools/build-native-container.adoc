@@ -1,0 +1,37 @@
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+.CLI
+----
+ifdef::build-additional-parameters[]
+quarkus build --native --no-tests -Dquarkus.native.container-build=true {build-additional-parameters}
+endif::[]
+ifndef::build-additional-parameters[]
+quarkus build --native --no-tests -Dquarkus.native.container-build=true
+endif::[]
+# The --no-tests flag is required only on Windows and macOS.
+----
+ifndef::devtools-no-maven[]
+ifdef::devtools-wrapped[+]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+.Maven
+----
+ifdef::build-additional-parameters[]
+./mvnw install -Dnative -DskipTests -Dquarkus.native.container-build=true {build-additional-parameters}
+endif::[]
+ifndef::build-additional-parameters[]
+./mvnw install -Dnative -DskipTests -Dquarkus.native.container-build=true
+endif::[]
+----
+endif::[]
+ifndef::devtools-no-gradle[]
+ifdef::devtools-wrapped[+]
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+ifdef::build-additional-parameters[]
+./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true {build-additional-parameters}
+endif::[]
+ifndef::build-additional-parameters[]
+./gradlew build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
+endif::[]
+----
+endif::[]

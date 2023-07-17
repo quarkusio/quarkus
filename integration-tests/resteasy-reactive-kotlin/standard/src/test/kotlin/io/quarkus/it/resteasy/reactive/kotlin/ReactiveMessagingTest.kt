@@ -3,27 +3,25 @@ package io.quarkus.it.resteasy.reactive.kotlin
 import io.quarkus.test.common.QuarkusTestResource
 import io.quarkus.test.junit.QuarkusTest
 import io.restassured.RestAssured.get
-import io.restassured.RestAssured.given
 import io.restassured.common.mapper.TypeRef
+import io.restassured.module.kotlin.extensions.Then
+import io.restassured.module.kotlin.extensions.When
+import java.time.Duration
 import org.awaitility.Awaitility.await
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import java.time.Duration
 
 @QuarkusTest
 @QuarkusTestResource(KafkaTestResource::class)
 class ReactiveMessagingTest {
 
-    private val TYPE_REF: TypeRef<List<Country>> = object: TypeRef<List<Country>>() {}
+    private val TYPE_REF: TypeRef<List<Country>> = object : TypeRef<List<Country>>() {}
 
     @Test
     fun test() {
         assertCountries(6)
 
-        given()
-                .`when`().post("/country/kafka/dummy")
-                .then()
-                .statusCode(200)
+        When { post("/country/kafka/dummy") } Then { statusCode(200) }
 
         assertCountries(8)
     }

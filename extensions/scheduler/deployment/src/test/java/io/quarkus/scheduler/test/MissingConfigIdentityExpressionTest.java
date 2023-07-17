@@ -2,8 +2,6 @@ package io.quarkus.scheduler.test;
 
 import java.util.NoSuchElementException;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,7 +13,7 @@ public class MissingConfigIdentityExpressionTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setExpectedException(NoSuchElementException.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MissingConfigIdentityExpressionTest.InvalidBean.class));
 
     @Test

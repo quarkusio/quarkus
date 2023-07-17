@@ -2,9 +2,7 @@ package io.quarkus.undertow.test;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -70,7 +68,7 @@ public class ServletWebXmlInitParamsTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(WebXmlInitParamsServlet.class, WebXmlInitParamsFilter.class)
                     .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));
 

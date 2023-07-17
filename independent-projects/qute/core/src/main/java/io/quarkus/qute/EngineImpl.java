@@ -1,15 +1,11 @@
 package io.quarkus.qute;
 
-import io.quarkus.qute.TemplateLocator.TemplateLocation;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -17,7 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Predicate;
+
 import org.jboss.logging.Logger;
+
+import io.quarkus.qute.Parser.StringReader;
+import io.quarkus.qute.TemplateInstance.Initializer;
+import io.quarkus.qute.TemplateLocator.TemplateLocation;
 
 class EngineImpl implements Engine {
 
@@ -33,20 +34,26 @@ class EngineImpl implements Engine {
     private final List<ResultMapper> resultMappers;
     private final AtomicLong idGenerator = new AtomicLong(0);
     private final List<ParserHook> parserHooks;
+    final List<TemplateInstance.Initializer> initializers;
     final boolean removeStandaloneLines;
+    private final long timeout;
+    private final boolean useAsyncTimeout;
 
     EngineImpl(EngineBuilder builder) {
-        this.sectionHelperFactories = Collections.unmodifiableMap(new HashMap<>(builder.sectionHelperFactories));
+        this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
         this.valueResolvers = sort(builder.valueResolvers);
         this.namespaceResolvers = ImmutableList.<NamespaceResolver> builder()
                 .addAll(builder.namespaceResolvers).add(new TemplateImpl.DataNamespaceResolver()).build();
-        this.evaluator = new EvaluatorImpl(this.valueResolvers, this.namespaceResolvers, builder.strictRendering);
+        this.evaluator = new EvaluatorImpl(this.valueResolvers, this.namespaceResolvers, builder.strictRendering, this);
         this.templates = new ConcurrentHashMap<>();
         this.locators = sort(builder.locators);
         this.resultMappers = sort(builder.resultMappers);
         this.sectionHelperFunc = builder.sectionHelperFunc;
         this.parserHooks = ImmutableList.copyOf(builder.parserHooks);
         this.removeStandaloneLines = builder.removeStandaloneLines;
+        this.initializers = ImmutableList.copyOf(builder.initializers);
+        this.timeout = builder.timeout;
+        this.useAsyncTimeout = builder.useAsyncTimeout;
     }
 
     @Override
@@ -117,6 +124,11 @@ class EngineImpl implements Engine {
     }
 
     @Override
+    public boolean isTemplateLoaded(String id) {
+        return templates.containsKey(id);
+    }
+
+    @Override
     public void clearTemplates() {
         templates.clear();
     }
@@ -124,6 +136,32 @@ class EngineImpl implements Engine {
     @Override
     public void removeTemplates(Predicate<String> test) {
         templates.keySet().removeIf(test);
+    }
+
+    @Override
+    public List<Initializer> getTemplateInstanceInitializers() {
+        return initializers;
+    }
+
+    @Override
+    public long getTimeout() {
+        return timeout;
+    }
+
+    @Override
+    public boolean useAsyncTimeout() {
+        return useAsyncTimeout;
+    }
+
+    @Override
+    public Optional<TemplateLocation> locate(String id) {
+        for (TemplateLocator locator : locators) {
+            Optional<TemplateLocation> location = locator.locate(id);
+            if (location.isPresent()) {
+                return location;
+            }
+        }
+        return Optional.empty();
     }
 
     String generateId() {

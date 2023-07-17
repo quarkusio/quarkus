@@ -92,9 +92,9 @@ abstract class AbstractKubernetesConfigSourceUtil {
     private int getOrdinal(int ordinalOffset) {
         final OrdinalData ordinalData = ordinalData();
         /*
-         * We don't want a large list of sources to cause an "overflow" into an Ordinal of another ConfigSource
+         * We don't want a large list of sources to cause an "overflow" into an Ordinal of another ConfigSource,
          * so we just let the last ones all use the max ordinal
-         * this is not fool proof, but it's very unlikely that an application will need to define
+         * this is not foolproof, but it's very unlikely that an application will need to define
          * a list with 10+ sources...
          */
         return Math.min(ordinalData.getBase() + ordinalOffset, ordinalData.getMax());

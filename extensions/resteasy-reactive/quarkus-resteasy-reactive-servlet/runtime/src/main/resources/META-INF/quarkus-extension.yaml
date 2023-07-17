@@ -8,11 +8,13 @@ metadata:
   - "web"
   - "rest"
   - "servlet"
+  - "jakarta-rest"
   categories:
   - "web"
   status: "experimental"
   codestart:
     name: "resteasy-reactive"
+    kind: "core"
     languages:
       - "java"
       - "kotlin"

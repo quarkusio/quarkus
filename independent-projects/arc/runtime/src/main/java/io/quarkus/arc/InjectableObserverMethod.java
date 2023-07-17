@@ -3,9 +3,14 @@ package io.quarkus.arc;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.Set;
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
-import javax.enterprise.inject.spi.ObserverMethod;
+
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
+import jakarta.enterprise.inject.spi.Bean;
+import jakarta.enterprise.inject.spi.ObserverMethod;
+
+import io.quarkus.arc.impl.EventContextImpl;
+import io.quarkus.arc.impl.EventMetadataImpl;
 
 /**
  * Represents an observer method.
@@ -31,8 +36,18 @@ public interface InjectableObserverMethod<T> extends ObserverMethod<T> {
         return TransactionPhase.IN_PROGRESS;
     }
 
+    @Override
+    default Bean<?> getDeclaringBean() {
+        return getDeclaringBeanIdentifier() != null ? Arc.container().bean(getDeclaringBeanIdentifier()) : null;
+    }
+
+    default void notify(T event) {
+        notify(new EventContextImpl<>(event,
+                new EventMetadataImpl(getObservedQualifiers(), event.getClass(), null)));
+    }
+
     /**
-     * 
+     *
      * @return the identifier or null for synthetic observers
      * @see InjectableBean#getIdentifier()
      */

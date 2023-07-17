@@ -4,54 +4,44 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import io.quarkus.annotation.processor.Constants;
 
 final public class ConfigDocWriter {
-    private final DocFormatter summaryTableDocFormatter = new SummaryTableDocFormatter();
 
     /**
      * Write all extension configuration in AsciiDoc format in `{root}/target/asciidoc/generated/config/` directory
      */
     public void writeAllExtensionConfigDocumentation(ConfigDocGeneratedOutput output)
             throws IOException {
-        generateDocumentation(Constants.GENERATED_DOCS_PATH.resolve(output.getFileName()), output.getAnchorPrefix(),
-                output.isSearchable(), output.getConfigDocItems());
-    }
 
-    /**
-     * Generate documentation in a summary table and descriptive format
-     *
-     */
-    private void generateDocumentation(Path targetPath, String initialAnchorPrefix, boolean activateSearch,
-            List<ConfigDocItem> configDocItems)
-            throws IOException {
-        if (configDocItems.isEmpty()) {
+        if (output.getConfigDocItems().isEmpty()) {
             return;
         }
 
+        // Create single summary table
+        final var configDocBuilder = new ConfigDocBuilder().addSummaryTable(output.getAnchorPrefix(), output.isSearchable(),
+                output.getConfigDocItems(), output.getFileName(), true);
+
+        generateDocumentation(output.getFileName(), configDocBuilder);
+    }
+
+    public void generateDocumentation(String fileName, ConfigDocBuilder configDocBuilder) throws IOException {
+        generateDocumentation(
+                // Resolve output file path
+                Constants.GENERATED_DOCS_PATH.resolve(fileName),
+                // Write all items
+                configDocBuilder.build());
+    }
+
+    private void generateDocumentation(Path targetPath, ConfigDoc configDoc)
+            throws IOException {
         try (Writer writer = Files.newBufferedWriter(targetPath)) {
-            summaryTableDocFormatter.format(writer, initialAnchorPrefix, activateSearch, configDocItems);
-
-            boolean hasDuration = false, hasMemory = false;
-            for (ConfigDocItem item : configDocItems) {
-                if (item.hasDurationInformationNote()) {
-                    hasDuration = true;
-                }
-
-                if (item.hasMemoryInformationNote()) {
-                    hasMemory = true;
-                }
-            }
-
-            if (hasDuration) {
-                writer.append(Constants.DURATION_FORMAT_NOTE);
-            }
-
-            if (hasMemory) {
-                writer.append(Constants.MEMORY_SIZE_FORMAT_NOTE);
+            for (ConfigDoc.WriteItem writeItem : configDoc.getWriteItems()) {
+                // Write documentation item, f.e. summary table
+                writeItem.accept(writer);
             }
         }
     }
+
 }

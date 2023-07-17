@@ -1,7 +1,7 @@
 package com.example.quarkusmm.domain
 
 import com.example.quarkusmm.port.CustomerService
-import javax.enterprise.context.ApplicationScoped
+import jakarta.enterprise.context.ApplicationScoped
 
 @ApplicationScoped
 class CustomerServiceImpl : CustomerService {

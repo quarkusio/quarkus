@@ -2,6 +2,7 @@ package io.quarkus.arc.processor;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -20,7 +21,7 @@ final class IndexClassLookupUtils {
     }
 
     /**
-     * 
+     *
      * @param index
      * @param type
      * @return the class for the given type or {@code null} for primitives, arrays and

@@ -1,0 +1,131 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Infinispan
+include::_attributes.adoc[]
+:categories: data
+:summary: Start Infinispan automatically in dev and test modes.
+
+Quarkus supports a feature called Dev Services that allows you to create various datasources without any config.
+If you have docker running and have not configured `quarkus.infinispan-client.hosts`,
+Quarkus will automatically start an Infinispan container when running tests or dev mode, and automatically configure the connection.
+
+The following properties are available to customize the Infinispan Dev Services:
+
+include::{generated-dir}/config/quarkus-infinispan-client-config-group-infinispan-client-build-time-config-dev-service-configuration.adoc[opts=optional, leveloffset=+1]
+
+When running the production version of the application, the Infinispan connection need to be configured as normal,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Infinispan settings.
+
+Dev Services for Infinispan relies on Docker to start the server.
+
+== Connecting to the running Infinispan Server
+
+You *don't need to configure anything in dev mode*.
+The server will be running in a random port.
+If you need a fixed port, then configure `quarkus.infinispan-client.devservices.port` property.
+
+[NOTE]
+====
+The running Infinispan Server has authentication enabled and a user with full admin role.
+The credentials of the user are *admin/password*.
+====
+
+=== Accessing to the Infinispan Server Console
+Infinispan Server provides a web console that can be accessed with a browser:
+
+. Open the xref:dev-ui.adoc[Dev UI]
+. You will see an *Infinispan Client* box. Click on  *Web Console* and enter the credentials above.
+
+image::dev-ui-infinispan.png[alt=Dev UI Infinispan,align=center,width=40%]
+
+If your environment does not support Docker, you will need to spin up an Infinispan Server manually, or connect to an already running server.
+
+== Overriding the Infinispan Server Image
+
+The extension is updated regularly and the Dev Services will start the latest final version image of Infinispan.
+Use `quarkus.infinispan-client.devservices.image-name` property to specify another image that fits your needs.
+
+==  Enabling / Disabling Dev Services for Infinispan
+
+Dev Services for Infinispan is automatically enabled unless:
+
+- `quarkus.infinispan-client.devservices.enabled` is set to `false`
+- the `quarkus.infinispan-client.hosts` is configured
+
+Dev Services for Infinispan relies on Docker to start the broker.
+If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
+You can configure the broker address using `quarkus.infinispan-client.hosts`.
+
+== Cross Site Replication
+If you want run the Infinispan Server container with Cross Site Replication configuration, you need to provide a site name.
+
+[source,properties]
+----
+quarkus.infinispan-client.devservices.site=NYC <1>
+quarkus.infinispan-client.devservices.mcast-port=46666 <2>
+----
+
+<1> Provides a site name for your Infinispan cluster
+<2> Eventually configure a mcastPort if you want to avoid creating a cluster with another container
+
+[NOTE]
+====
+Learn more about Cross Site Replication in the Infinispan Cross Site Replication link:https://infinispan.org/docs/stable/titles/xsite/xsite.html[documentation guide]
+and in the Infinispan Cross Site Replication
+link:https://infinispan.org/tutorials/simple/simple_tutorials.html#cross-site-replication_remote-cache-tutorials[simple code tutorial].
+====
+
+== Multiple Dev Services for named connections
+The Infinispan Client extension supports connecting to more than one Infinispan Cluster with
+the named connections. If you need to spin an additional dev service for a connection name, configure
+at least on property in the application properties:
+
+[source,properties]
+----
+quarkus.infinispan-client.conn-2.devservices.enabled=true
+----
+
+== Tracing with OpenTelemetry
+
+Infinispan supports instrumentation of the server via OpenTelemetry. Enable tracing setting `quarkus.infinispan-client.devservices.tracing.enabled` to true.
+The default otlp exporter endpoint is `http://localhost:4317`.
+If you are running Jaeger in a container as explained in the xref:opentelemetry.adoc[OpenTelemetry guide], since the containers
+are running in the default network, Infinispan container won't have access to localhost.
+You need to get the IP running the following command and configure the `quarkus.infinispan-client.devservices.tracing.exporter.otlp.endpoint` property.
+
+[source,bash]
+----
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' jaeger
+----
+
+== Persistence layer for Infinispan
+
+Infinispan caches provide several features that need to connect to a persistence layer using a
+particular SQL database driver such as persisting caches in a SQL database or off-loading database
+tables or queries with SQL cache stores.
+
+Infinispan needs the SQL Java Driver depending on the database kind the application is using.
+To spin up a container with a particular SQL driver, configure `quarkus.infinispan-client.devservices.artifacts`.
+
+
+TIP: Learn more about persistence and SQL Cache Stores check the https://github.com/infinispan-demos/infinispan-sqlstore-demo[SQL Store Demo + Quarkus Demo] and
+the https://infinispan.org/docs/stable/titles/configuring/configuring.html#persistence[Infinispan Persistence Documentation] guide.
+
+
+== Shared server
+
+Most of the time you need to share the server between applications.
+Dev Services for Infinispan implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single server.
+
+NOTE: Dev Services for Infinispan starts the container with the `infinispan` label which is used to identify the container.
+
+If you need multiple (shared) servers, you can configure the `quarkus.infinispan-client.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `infinispan`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.infinispan-client.devservices.shared=false`

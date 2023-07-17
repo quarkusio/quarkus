@@ -3,41 +3,48 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
-import javax.validation.Valid;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.validation.Valid;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.container.Suspended;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
+import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
+import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Path("/simple")
 @NonBlocking
+@DisableSecureSerialization
 public class SimpleJsonResource extends SuperClass<Person> {
 
     @ServerExceptionMapper
-    public Response handleParseException(JsonParseException jpe) {
-        return Response.status(Response.Status.BAD_REQUEST).entity(jpe.getMessage()).build();
+    public Response handleParseException(WebApplicationException e) {
+        var cause = e.getCause() == null ? e : e.getCause();
+        return Response.status(Response.Status.BAD_REQUEST).entity(cause.getMessage()).build();
     }
 
     @GET
@@ -54,6 +61,65 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("custom-serialized-person")
     public Person getCustomSerializedPerson() {
         return getPerson();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-person")
+    public Person getSecurePerson() {
+        return getPerson();
+    }
+
+    @JsonView(Views.Public.class)
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-person-with-public-view")
+    public Person getSecurePersonWithPublicView() {
+        return getPerson();
+    }
+
+    @JsonView(Views.Public.class)
+    @EnableSecureSerialization
+    @GET
+    @Path("uni-secure-person-with-public-view")
+    public Uni<Person> getUniSecurePersonWithPublicView() {
+        return Uni.createFrom().item(getPerson());
+    }
+
+    @JsonView(Views.Private.class)
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-person-with-private-view")
+    public Person getSecurePersonWithPrivateView() {
+        return getPerson();
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-uni-person")
+    public Uni<Person> getSecureUniPerson() {
+        return Uni.createFrom().item(getPerson());
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-rest-response-person")
+    public RestResponse<Person> getSecureRestResponsePerson() {
+        return RestResponse.ok(getPerson());
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-people")
+    public List<Person> getSecurePeople() {
+        return Collections.singletonList(getPerson());
+    }
+
+    @EnableSecureSerialization
+    @GET
+    @Path("secure-uni-people")
+    public Uni<List<Person>> getSecureUniPeople() {
+        return Uni.createFrom().item(Collections.singletonList(getPerson()));
     }
 
     @POST
@@ -136,9 +202,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Person personTest(Person person) {
-        //large requests should get bumped from the IO thread
-        if (!BlockingOperationControl.isBlockingAllowed()) {
-            throw new RuntimeException("should have dispatched");
+        if (BlockingOperationControl.isBlockingAllowed()) {
+            throw new RuntimeException("should have dispatched back to event loop");
         }
         return person;
     }
@@ -262,4 +327,5 @@ public class SimpleJsonResource extends SuperClass<Person> {
             return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
         }
     }
+
 }

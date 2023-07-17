@@ -1,17 +1,13 @@
 package io.quarkus.agroal.runtime;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class DataSourceSupport {
 
-    // everything needs to be mutable because it's used in a recorder
-
-    public boolean disableSslSupport;
-    public boolean mpMetricsPresent;
-    public Map<String, Entry> entries;
-
-    public DataSourceSupport() {
-    }
+    public final boolean disableSslSupport;
+    public final boolean mpMetricsPresent;
+    public final Map<String, Entry> entries;
 
     public DataSourceSupport(boolean disableSslSupport, boolean mpMetricsPresent, Map<String, Entry> entries) {
         this.disableSslSupport = disableSslSupport;
@@ -20,18 +16,18 @@ public class DataSourceSupport {
     }
 
     public static class Entry {
-        public String dataSourceName;
-        public String resolvedDbKind;
-        public String resolvedDriverClass;
-        public boolean isDefault;
+        public final String dataSourceName;
+        public final String resolvedDbKind;
+        public final Optional<String> dbVersion;
+        public final String resolvedDriverClass;
+        public final boolean isDefault;
 
-        public Entry() {
-        }
-
-        public Entry(String dataSourceName, String resolvedDbKind, String resolvedDriverClass,
+        public Entry(String dataSourceName, String resolvedDbKind, Optional<String> dbVersion,
+                String resolvedDriverClass,
                 boolean isDefault) {
             this.dataSourceName = dataSourceName;
             this.resolvedDbKind = resolvedDbKind;
+            this.dbVersion = dbVersion;
             this.resolvedDriverClass = resolvedDriverClass;
             this.isDefault = isDefault;
         }

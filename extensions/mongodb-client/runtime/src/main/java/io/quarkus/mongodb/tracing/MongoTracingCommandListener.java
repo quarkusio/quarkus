@@ -1,5 +1,7 @@
 package io.quarkus.mongodb.tracing;
 
+import org.jboss.logging.Logger;
+
 import com.mongodb.event.CommandFailedEvent;
 import com.mongodb.event.CommandListener;
 import com.mongodb.event.CommandStartedEvent;
@@ -7,18 +9,16 @@ import com.mongodb.event.CommandSucceededEvent;
 
 import io.opentracing.contrib.mongo.common.TracingCommandListener;
 import io.opentracing.util.GlobalTracer;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 /**
  * Command Listener for Mongo client delegated to {@link TracingCommandListener}.
- * 
+ *
  */
 public class MongoTracingCommandListener implements CommandListener {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MongoTracingCommandListener.class);
+    private static final Logger LOGGER = Logger.getLogger(MongoTracingCommandListener.class);
 
-    private TracingCommandListener delegate;
+    private final TracingCommandListener delegate;
 
     public MongoTracingCommandListener() {
         this.delegate = new TracingCommandListener.Builder(GlobalTracer.get()).build();
@@ -39,7 +39,7 @@ public class MongoTracingCommandListener implements CommandListener {
 
     @Override
     public void commandSucceeded(CommandSucceededEvent event) {
-        LOGGER.trace("commandSucceded event " + event.getCommandName());
+        LOGGER.trace("commandSucceeded event " + event.getCommandName());
         delegate.commandSucceeded(event);
     }
 

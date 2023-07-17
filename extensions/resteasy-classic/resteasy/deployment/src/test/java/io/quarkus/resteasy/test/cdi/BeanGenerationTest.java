@@ -3,8 +3,6 @@ package io.quarkus.resteasy.test.cdi;
 import static io.restassured.RestAssured.when;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +16,7 @@ public class BeanGenerationTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addPackage(PublicHello.class.getPackage())
                     .addClasses(Greeting.class, MorningGreeting.class, GreetingEndpoint.class));
 

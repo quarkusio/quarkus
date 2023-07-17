@@ -1,11 +1,24 @@
 package io.quarkus.bootstrap;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.app.CurationResult;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolver;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
@@ -15,31 +28,10 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
-import io.quarkus.bootstrap.resolver.update.DefaultUpdateDiscovery;
-import io.quarkus.bootstrap.resolver.update.DependenciesOrigin;
-import io.quarkus.bootstrap.resolver.update.UpdateDiscovery;
-import io.quarkus.bootstrap.resolver.update.VersionUpdate;
-import io.quarkus.bootstrap.resolver.update.VersionUpdateNumber;
 import io.quarkus.bootstrap.util.IoUtils;
-import io.quarkus.bootstrap.util.ZipUtils;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-import org.jboss.logging.Logger;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * The factory that creates the application dependency model.
@@ -66,7 +58,7 @@ public class BootstrapAppModelFactory {
         return new BootstrapAppModelFactory();
     }
 
-    private AppArtifact managingProject;
+    private ArtifactCoords managingProject;
     private Path projectRoot;
     private List<Path> appCp = new ArrayList<>(0);
     private Boolean localProjectsDiscovery;
@@ -76,16 +68,13 @@ public class BootstrapAppModelFactory {
     private boolean devMode;
     private AppModelResolver bootstrapAppModelResolver;
 
-    private VersionUpdateNumber versionUpdateNumber;
-    private VersionUpdate versionUpdate;
-    private DependenciesOrigin dependenciesOrigin;
-    private AppArtifact appArtifact;
+    private ResolvedDependency appArtifact;
     private MavenArtifactResolver mavenArtifactResolver;
 
     private BootstrapMavenContext mvnContext;
-    Set<AppArtifactKey> localArtifacts = Collections.emptySet();
+    Set<ArtifactKey> reloadableModules = Set.of();
 
-    private List<AppDependency> forcedDependencies = Collections.emptyList();
+    private Collection<io.quarkus.maven.dependency.Dependency> forcedDependencies = List.of();
 
     private BootstrapAppModelFactory() {
     }
@@ -100,12 +89,8 @@ public class BootstrapAppModelFactory {
         return this;
     }
 
-    public Set<AppArtifactKey> getLocalArtifacts() {
-        return localArtifacts;
-    }
-
-    public BootstrapAppModelFactory setLocalArtifacts(Set<AppArtifactKey> localArtifacts) {
-        this.localArtifacts = localArtifacts;
+    public BootstrapAppModelFactory setLocalArtifacts(Set<ArtifactKey> localArtifacts) {
+        this.reloadableModules = new HashSet<>(localArtifacts);
         return this;
     }
 
@@ -139,27 +124,13 @@ public class BootstrapAppModelFactory {
         return this;
     }
 
-    public BootstrapAppModelFactory setVersionUpdateNumber(VersionUpdateNumber versionUpdateNumber) {
-        this.versionUpdateNumber = versionUpdateNumber;
-        return this;
-    }
-
-    public BootstrapAppModelFactory setVersionUpdate(VersionUpdate versionUpdate) {
-        this.versionUpdate = versionUpdate;
-        return this;
-    }
-
-    public BootstrapAppModelFactory setDependenciesOrigin(DependenciesOrigin dependenciesOrigin) {
-        this.dependenciesOrigin = dependenciesOrigin;
-        return this;
-    }
-
-    public BootstrapAppModelFactory setAppArtifact(AppArtifact appArtifact) {
+    public BootstrapAppModelFactory setAppArtifact(ResolvedDependency appArtifact) {
         this.appArtifact = appArtifact;
         return this;
     }
 
-    public BootstrapAppModelFactory setForcedDependencies(List<AppDependency> forcedDependencies) {
+    public BootstrapAppModelFactory setForcedDependencies(
+            Collection<io.quarkus.maven.dependency.Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
         return this;
     }
@@ -175,7 +146,7 @@ public class BootstrapAppModelFactory {
                 if (mavenArtifactResolver == null) {
                     final BootstrapMavenContext mvnCtx = createBootstrapMavenContext();
                     if (managingProject == null) {
-                        managingProject = mvnCtx.getCurrentProjectArtifact("pom");
+                        managingProject = mvnCtx.getCurrentProjectArtifact(ArtifactCoords.TYPE_POM);
                     }
                     mvn = new MavenArtifactResolver(mvnCtx);
                 } else {
@@ -230,11 +201,12 @@ public class BootstrapAppModelFactory {
         } else {
             serializedModel = System.getProperty(BootstrapConstants.SERIALIZED_APP_MODEL);
         }
+
         if (serializedModel != null) {
             final Path p = Paths.get(serializedModel);
             if (Files.exists(p)) {
-                try (InputStream existing = Files.newInputStream(Paths.get(serializedModel))) {
-                    final AppModel appModel = (AppModel) new ObjectInputStream(existing).readObject();
+                try (InputStream existing = Files.newInputStream(p)) {
+                    final ApplicationModel appModel = (ApplicationModel) new ObjectInputStream(existing).readObject();
                     return new CurationResult(appModel);
                 } catch (IOException | ClassNotFoundException e) {
                     log.error("Failed to load serialized app mode", e);
@@ -251,7 +223,7 @@ public class BootstrapAppModelFactory {
             return createAppModelForJar(projectRoot);
         }
 
-        AppArtifact appArtifact = this.appArtifact;
+        ResolvedDependency appArtifact = this.appArtifact;
         try {
             LocalProject localProject = null;
             if (appArtifact == null) {
@@ -283,11 +255,11 @@ public class BootstrapAppModelFactory {
                         if (reader.readInt() == CP_CACHE_FORMAT_ID) {
                             if (reader.readInt() == workspace.getId()) {
                                 ObjectInputStream in = new ObjectInputStream(reader);
-                                AppModel appModel = (AppModel) in.readObject();
+                                ApplicationModel appModel = (ApplicationModel) in.readObject();
 
                                 log.debugf("Loaded cached AppModel %s from %s", appModel, cachedCpPath);
-                                for (AppDependency i : appModel.getFullDeploymentDeps()) {
-                                    for (Path p : i.getArtifact().getPaths()) {
+                                for (ResolvedDependency d : appModel.getDependencies()) {
+                                    for (Path p : d.getResolvedPaths()) {
                                         if (!Files.exists(p)) {
                                             throw new IOException("Cached artifact does not exist: " + p);
                                         }
@@ -308,14 +280,14 @@ public class BootstrapAppModelFactory {
                 }
             }
             CurationResult curationResult = new CurationResult(getAppModelResolver()
-                    .resolveManagedModel(appArtifact, forcedDependencies, managingProject, localArtifacts));
+                    .resolveManagedModel(appArtifact, forcedDependencies, managingProject, reloadableModules));
             if (cachedCpPath != null) {
                 Files.createDirectories(cachedCpPath.getParent());
                 try (DataOutputStream out = new DataOutputStream(Files.newOutputStream(cachedCpPath))) {
                     out.writeInt(CP_CACHE_FORMAT_ID);
                     out.writeInt(workspace.getId());
                     ObjectOutputStream obj = new ObjectOutputStream(out);
-                    obj.writeObject(curationResult.getAppModel());
+                    obj.writeObject(curationResult.getApplicationModel());
                 } catch (Exception e) {
                     log.warn("Failed to write classpath cache", e);
                 }
@@ -332,145 +304,41 @@ public class BootstrapAppModelFactory {
     }
 
     private LocalProject loadWorkspace() throws AppModelResolverException {
-        return projectRoot == null || !Files.isDirectory(projectRoot)
-                ? null
-                : createBootstrapMavenContext().getCurrentProject();
+        if (projectRoot == null || !Files.isDirectory(projectRoot)) {
+            return null;
+        }
+        LocalProject project = createBootstrapMavenContext().getCurrentProject();
+        if (project == null) {
+            return null;
+        }
+        if (project.getDir().equals(projectRoot)) {
+            return project;
+        }
+        for (LocalProject p : project.getWorkspace().getProjects().values()) {
+            if (p.getDir().equals(projectRoot)) {
+                return p;
+            }
+        }
+        log.warnf("Expected project directory %s does not match current project directory %s", projectRoot, project.getDir());
+        return project;
     }
 
     private CurationResult createAppModelForJar(Path appArtifactPath) {
-        log.debugf("provideOutcome depsOrigin=%s, versionUpdate=%s, versionUpdateNumber=%s", dependenciesOrigin, versionUpdate,
-                versionUpdateNumber);
-
-        AppArtifact stateArtifact = null;
-        boolean loadedFromState = false;
         AppModelResolver modelResolver = getAppModelResolver();
-        final AppModel initialDepsList;
-        AppArtifact appArtifact = this.appArtifact;
+        final ApplicationModel appModel;
+        ResolvedDependency appArtifact = this.appArtifact;
         try {
             if (appArtifact == null) {
                 appArtifact = ModelUtils.resolveAppArtifact(appArtifactPath);
             }
             modelResolver.relink(appArtifact, appArtifactPath);
-
-            if (dependenciesOrigin == DependenciesOrigin.LAST_UPDATE) {
-                log.info("Looking for the state of the last update");
-                Path statePath = null;
-                try {
-                    stateArtifact = ModelUtils.getStateArtifact(appArtifact);
-                    final String latest = modelResolver.getLatestVersion(stateArtifact, null, false);
-                    if (!stateArtifact.getVersion().equals(latest)) {
-                        stateArtifact = new AppArtifact(stateArtifact.getGroupId(), stateArtifact.getArtifactId(),
-                                stateArtifact.getClassifier(), stateArtifact.getType(), latest);
-                    }
-                    statePath = modelResolver.resolve(stateArtifact);
-                    log.info("- located the state at " + statePath);
-                } catch (AppModelResolverException e) {
-                    // for now let's assume this means artifact does not exist
-                }
-
-                if (statePath != null) {
-                    Model model;
-                    try {
-                        model = ModelUtils.readModel(statePath);
-                    } catch (IOException e) {
-                        throw new RuntimeException("Failed to read application state " + statePath, e);
-                    }
-                    final List<Dependency> modelStateDeps = model.getDependencies();
-                    final List<AppDependency> updatedDeps = new ArrayList<>(modelStateDeps.size());
-                    final String groupIdProp = "${" + CREATOR_APP_GROUP_ID + "}";
-                    for (Dependency modelDep : modelStateDeps) {
-                        if (modelDep.getGroupId().equals(groupIdProp)) {
-                            continue;
-                        }
-                        updatedDeps.add(new AppDependency(new AppArtifact(modelDep.getGroupId(), modelDep.getArtifactId(),
-                                modelDep.getClassifier(), modelDep.getType(), modelDep.getVersion()), modelDep.getScope(),
-                                modelDep.isOptional()));
-                    }
-                    initialDepsList = modelResolver.resolveModel(appArtifact, updatedDeps);
-                    loadedFromState = true;
-                } else {
-                    initialDepsList = modelResolver.resolveModel(appArtifact);
-                }
-            } else {
-                //we need some way to figure out dependencies here
-                initialDepsList = modelResolver.resolveManagedModel(appArtifact, Collections.emptyList(), managingProject,
-                        localArtifacts);
-            }
+            //we need some way to figure out dependencies here
+            appModel = modelResolver.resolveManagedModel(appArtifact, List.of(), managingProject,
+                    reloadableModules);
         } catch (AppModelResolverException | IOException e) {
             throw new RuntimeException("Failed to resolve initial application dependencies", e);
         }
-
-        if (versionUpdate == VersionUpdate.NONE) {
-            return new CurationResult(initialDepsList, Collections.emptyList(),
-                    loadedFromState, appArtifact,
-                    stateArtifact);
-        }
-
-        log.info("Checking for available updates");
-        List<AppDependency> appDeps;
-        try {
-            appDeps = modelResolver.resolveUserDependencies(appArtifact, initialDepsList.getUserDependencies());
-        } catch (AppModelResolverException e) {
-            throw new RuntimeException("Failed to determine the list of dependencies to update", e);
-        }
-        final Iterator<AppDependency> depsI = appDeps.iterator();
-        while (depsI.hasNext()) {
-            final AppArtifact appDep = depsI.next().getArtifact();
-            if (!appDep.getType().equals(AppArtifactCoords.TYPE_JAR)) {
-                depsI.remove();
-                continue;
-            }
-            appDep.getPaths().forEach(path -> {
-                if (Files.isDirectory(path)) {
-                    if (!Files.exists(path.resolve(BootstrapConstants.DESCRIPTOR_PATH))) {
-                        depsI.remove();
-                    }
-                    return;
-                }
-                try (FileSystem artifactFs = ZipUtils.newFileSystem(path)) {
-                    if (!Files.exists(artifactFs.getPath(BootstrapConstants.DESCRIPTOR_PATH))) {
-                        depsI.remove();
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to open " + path, e);
-                }
-            });
-        }
-
-        final UpdateDiscovery ud = new DefaultUpdateDiscovery(modelResolver, versionUpdateNumber);
-        List<AppDependency> availableUpdates = null;
-        int i = 0;
-        while (i < appDeps.size()) {
-            final AppDependency dep = appDeps.get(i++);
-            final AppArtifact depArtifact = dep.getArtifact();
-            final String updatedVersion = versionUpdate == VersionUpdate.NEXT ? ud.getNextVersion(depArtifact)
-                    : ud.getLatestVersion(depArtifact);
-            if (updatedVersion == null || depArtifact.getVersion().equals(updatedVersion)) {
-                continue;
-            }
-            log.info(dep.getArtifact() + " -> " + updatedVersion);
-            if (availableUpdates == null) {
-                availableUpdates = new ArrayList<>();
-            }
-            availableUpdates.add(new AppDependency(new AppArtifact(depArtifact.getGroupId(), depArtifact.getArtifactId(),
-                    depArtifact.getClassifier(), depArtifact.getType(), updatedVersion), dep.getScope()));
-        }
-
-        if (availableUpdates != null) {
-            try {
-                return new CurationResult(
-                        modelResolver.resolveManagedModel(appArtifact, availableUpdates, managingProject, localArtifacts),
-                        availableUpdates,
-                        loadedFromState, appArtifact, stateArtifact);
-            } catch (AppModelResolverException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            log.info("- no updates available");
-            return new CurationResult(initialDepsList, Collections.emptyList(),
-                    loadedFromState, appArtifact,
-                    stateArtifact);
-        }
+        return new CurationResult(appModel);
     }
 
     private Path resolveCachedCpPath(LocalProject project) {
@@ -490,7 +358,7 @@ public class BootstrapAppModelFactory {
         return this;
     }
 
-    public BootstrapAppModelFactory setManagingProject(AppArtifact managingProject) {
+    public BootstrapAppModelFactory setManagingProject(ArtifactCoords managingProject) {
         this.managingProject = managingProject;
         return this;
     }

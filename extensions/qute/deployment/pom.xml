@@ -27,6 +27,10 @@
             <artifactId>quarkus-panache-common-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache-deployment-spi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus.qute</groupId>
             <artifactId>qute-generator</artifactId>
         </dependency>
@@ -50,7 +54,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-web-deployment</artifactId>
+            <artifactId>quarkus-reactive-routes-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -58,7 +67,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

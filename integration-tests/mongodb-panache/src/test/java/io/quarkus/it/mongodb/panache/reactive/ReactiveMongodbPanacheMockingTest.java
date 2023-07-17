@@ -4,13 +4,11 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
-import javax.ws.rs.WebApplicationException;
+import jakarta.ws.rs.WebApplicationException;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.mockito.Mockito;
 
 import io.quarkus.it.mongodb.panache.reactive.person.MockableReactivePersonRepository;
@@ -24,7 +22,6 @@ import io.smallrye.mutiny.Uni;
 
 @QuarkusTest
 @QuarkusTestResource(MongoReplicaSetTestResource.class)
-@DisabledOnOs(OS.WINDOWS)
 public class ReactiveMongodbPanacheMockingTest {
 
     private static final Duration timeout = Duration.ofSeconds(2);

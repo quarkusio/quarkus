@@ -7,13 +7,13 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Optional;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Variant;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Variant;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;

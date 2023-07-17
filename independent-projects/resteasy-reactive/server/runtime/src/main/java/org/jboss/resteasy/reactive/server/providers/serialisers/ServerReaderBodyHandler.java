@@ -5,8 +5,10 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 import org.jboss.resteasy.reactive.common.providers.serialisers.ReaderBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;

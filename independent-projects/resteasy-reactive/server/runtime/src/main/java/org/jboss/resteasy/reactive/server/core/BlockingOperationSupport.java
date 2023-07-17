@@ -4,6 +4,7 @@ public class BlockingOperationSupport {
 
     private static volatile IOThreadDetector ioThreadDetector;
 
+    //TODO: move away from a static
     public static void setIoThreadDetector(IOThreadDetector ioThreadDetector) {
         BlockingOperationSupport.ioThreadDetector = ioThreadDetector;
     }

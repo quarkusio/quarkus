@@ -1,8 +1,19 @@
 {#include main fluid=true}
-{#title}Keycloak{/title}
+{#title}
+{#if info:oidcProviderName??}
+{info:oidcProviderName}
+{#else}
+OpenId Connect Dev Console
+{/if}
+{/title}
 {#script}
 
-{#if info:oidcApplicationType is 'service'}
+var port = {config:property('quarkus.http.port')};
+
+{#if info:oidcApplicationType is 'service' || info:oidcApplicationType is 'hybrid'}
+    var devRoot = '{devRootAppend}';
+    var encodedDevRoot = devRoot.replaceAll("/", "%2F");
+
     {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
     var accessToken;
     var idToken;
@@ -14,6 +25,7 @@
         if(tokensInUrl()){
             loggedIn === true;
             $('.implicitLoggedOut').hide();
+            $('.loginError').hide();
             $('.implicitLoggedIn').show();
             var hash = window.location.hash;
             accessToken = hash.match(/access_token=([^&]+)/)[1];
@@ -25,14 +37,23 @@
         }else if(codeInUrl()){
             loggedIn === true;
             $('.implicitLoggedOut').hide();
+            $('.loginError').hide();
             $('.implicitLoggedIn').show();
-            var hash = window.location.hash;
-            var code = hash.match(/code=([^&]+)/)[1];
-            exchangeCodeForTokens(code);
+            var search = window.location.search;
+            var code = decodeURIComponent(search.match(/code=([^&]+)/)[1]);
+            var state = search.match(/state=([^&]+)/)[1];
+            exchangeCodeForTokens(code, state);
+        }else if(errorInUrl()){
+            loggedIn === false;
+            $('.implicitLoggedOut').hide();
+            $('.implicitLoggedIn').hide();
+            $('.loginError').show();
+            printLoginError();
         }else{
             loggedIn === false;
             $('.implicitLoggedOut').show();
             $('.implicitLoggedIn').hide();
+            $('.loginError').hide();
             accessToken = null;
             idToken = null;
             userName = null;
@@ -40,9 +61,14 @@
             $('#accessTokenDecodedArea').text('');
             $('#idTokenEncodedArea').text('');
             $('#idTokenDecodedArea').text('');
-
+            $('#errorDescription').text('');
         }
     });
+    
+    function showLoginToSpa() {
+        $('.implicitLoggedOut').show();
+        $('.loginError').hide();
+    }
 
     function tokensInUrl(){
         return idTokenInUrl() && accessTokenInUrl();
@@ -59,6 +85,10 @@
     function codeInUrl(){
         return inUrl('code');
     }
+    
+    function errorInUrl(){
+        return inUrl('error_description');
+    }
 
     function inUrl(field){
         var url = window.location.href;
@@ -69,27 +99,40 @@
         return false;
     }
 
-    function signInToKeycloakAndGetTokens() {
-      {#if info:oidcGrantType is 'implicit'}
-        window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
-          + "?client_id=" + '{info:keycloakClient}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
-          + "&scope=openid&response_type=token id_token&response_mode=fragment&prompt=login"
-          + "&nonce=" + makeid();
+    function signInToOidcProviderAndGetTokens() {
+      var address;
+      var state;
+      var clientId = getClientId();
+      var scopes = '{info:scopes??}';
+      {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+          address = '{info:keycloakAdminUrl??}' + "/realms/" + $('#keycloakRealm').val() + "/protocol/openid-connect/auth";
+          state = makeid() + "_" + $('#keycloakRealm').val() + "_" + clientId;
       {#else}
-        window.location.href = '{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/auth"
-          + "?client_id=" + '{info:keycloakClient}'
-          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider"
-          + "&scope=openid&response_type=code&response_mode=fragment&prompt=login"
-          + "&nonce=" + makeid();
+          address = '{info:authorizationUrl??}';
+          state = makeid();
+      {/if}
+      {#if info:oidcGrantType is 'implicit'}
+        window.location.href = address
+          + "?client_id=" + clientId
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&scope=" + scopes + "&response_type=token id_token&response_mode=query&prompt=login"
+          + "&nonce=" + makeid()
+          + "&state=" + state;
+      {#else}
+        window.location.href = address
+          + "?client_id=" + clientId
+          + "&redirect_uri=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&scope=" + scopes + "&response_type=code&response_mode=query&prompt=login"
+          + "&nonce=" + makeid()
+          + "&state=" + state;
       {/if}    
     }
 
     function testServiceWithAccessToken(){
-        var servicePath = $('#servicePath').val();
+        var servicePath = getServicePath();
         $.post("testServiceWithToken",
             {
-              serviceUrl: "http://localhost:8080" + servicePath,
+              serviceUrl: "http://localhost:" + port + servicePath,
               token: accessToken
             },
             function(data, status){
@@ -98,10 +141,10 @@
     }
 
     function testServiceWithIdToken(){
-        var servicePath = $('#servicePath').val();
+        var servicePath = getServicePath();
         $.post("testServiceWithToken",
             {
-              serviceUrl: "http://localhost:8080" + servicePath,
+              serviceUrl: "http://localhost:" + port + servicePath,
               token: idToken
             },
             function(data, status){
@@ -127,6 +170,23 @@
         copyToClipboard(idToken,"dummyIdTokenClipBoard");
     }
 
+    function navigateToSwaggerUi(){
+        navigateToSwaggerUiWithToken(getTokenForNavigation())
+    }
+    
+    function navigateToGraphQLUi(){
+        navigateToGraphQLUiWithToken(getTokenForNavigation())
+    }
+    
+    function getTokenForNavigation(){
+        {#if info:introspectionIsAvailable??}
+            return accessToken;
+        {#else}
+            var parts = accessToken.split(".");
+            return parts.length == 3 ? accessToken : idToken;
+        {/if}
+    }
+    
     function copyToClipboard(token, type){
         var dummy = document.createElement("input");
         document.body.appendChild(dummy);
@@ -138,28 +198,46 @@
     }
 
     function logout() {
-        window.location.assign('{info:keycloakUrl}' + "/realms/" + '{info:keycloakRealm}' + "/protocol/openid-connect/logout"
-          + "?post_logout_redirect_uri=" + "http%3A%2F%2Flocalhost%3A8080%2Fq%2Fdev%2Fio.quarkus.quarkus-oidc%2Fprovider");
+        localStorage.removeItem('authorized');
+    
+        var address;
+        {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+            address = '{info:keycloakAdminUrl??}' + "/realms/" + $('#keycloakRealm').val() + "/protocol/openid-connect/logout";
+        {#else}
+            address = '{info:logoutUrl??}';
+        {/if}
+        window.location.assign(address
+          + "?" + '{info:postLogoutUriParam??}' + "=" + "http%3A%2F%2Flocalhost%3A" + port + encodedDevRoot + "%2Fio.quarkus.quarkus-oidc%2Fprovider"
+          + "&" + "id_token_hint" + "=" + idToken);
     }
         
-    function exchangeCodeForTokens(code){
+    function exchangeCodeForTokens(code, state){
+        var address = '{info:tokenUrl??}';
+        var clientId = '{info:clientId??}';
+        if (state && state.includes("_")) {
+            var parts = state.substring(index + 1).split("_");
+            var index = address.indexOf("/realms/");
+            address = address.substring(0, index + 8) + parts[1] + "/protocol/openid-connect/token";
+            clientId = parts[2];
+        }
         $.post("exchangeCodeForTokens",
             {
-              keycloakUrl: '{info:keycloakUrl}',
-              realm: '{info:keycloakRealm}',
-              client: '{info:keycloakClient}',
-              clientSecret: '{info:keycloakClientSecret}',
+              tokenUrl: address,
+              client: clientId,
+              clientSecret: '{info:clientSecret}',
               authorizationCode: code,
-              redirectUri: "http://localhost:8080/q/dev/io.quarkus.quarkus-oidc/provider"
+              redirectUri: "http://localhost:" + port + devRoot + "/io.quarkus.quarkus-oidc/provider"
             },
             function(data, status){
                 var tokens = JSON.parse(data);
                 accessToken = tokens.access_token
-                idToken = tokens.id_token
                 $('#accessTokenEncodedArea').html(prettyToken(accessToken));
                 $('#accessTokenDecodedArea').html(decodeToken(accessToken));
-                $('#idTokenEncodedArea').html(prettyToken(idToken));
-                $('#idTokenDecodedArea').html(decodeToken(idToken));
+                if ("id_token" in tokens) {
+	                idToken = tokens.id_token
+	                $('#idTokenEncodedArea').html(prettyToken(idToken));
+	                $('#idTokenDecodedArea').html(decodeToken(idToken));
+	            }
             });
     }
     
@@ -174,9 +252,11 @@
                     userName = jsonPayload.upn;
                 } else if (jsonPayload.preferred_username) {
                     userName = jsonPayload.preferred_username;
+                }  else if (jsonPayload.name) {
+                    userName = jsonPayload.name;
                 }
                 if (userName) {
-                    $('#loggedInUser').append("<i class='fas fa-lock fa-xs'></i> Logged in as " + userName);
+                    $('#loggedInUser').append("Logged in as " + userName + " ");
                 }
             }
             return "<pre class='text-danger' title='Header'>" + 
@@ -201,25 +281,66 @@
           return token;
         }
     }
-    
+
+    function printLoginError(){
+        var search = window.location.search;
+        var errorDescription = search.match(/error_description=([^&]+)/)[1];
+        $('#errorDescription').append("<i class='far fa-times-circle text-danger px-2'></i>");
+        $('#errorDescription').append("<span class='text-primary px-1'>" + "Login error: " + decodeURI(errorDescription).replaceAll("+", " ") + "</span>");
+    }
+
     {/if}
+    
+{#else}
+function signInToService(servicePath) {
+    window.open("http://localhost:" + port + servicePath);
+}
 {/if}
 
 {#if info:oidcGrantType is 'password'}
 
-    function testServiceWithPassword(userName, servicePath){
+    function testServiceWithPassword(userName, password, servicePath){
         $.post("testService",
             {
-              keycloakUrl: '{info:keycloakUrl}',
-              serviceUrl: "http://localhost:8080" + servicePath,
-              realm: '{info:keycloakRealm}',
-              client: '{info:keycloakClient}',
-              clientSecret: '{info:keycloakClientSecret}',
+              tokenUrl: getTokenUrl(),
+              serviceUrl: "http://localhost:" + port + servicePath,
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               user: userName,
+              password: password,
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
               printResponseData(data, "User: " + userName + ", " + "service path: " + servicePath);
+            });
+    }
+    
+    function testServiceWithPasswordInSwaggerUi(userName, password){
+        $.post("testService",
+            {
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
+              user: userName,
+              password: password,
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToSwaggerUiWithToken(data);
+            });
+    }
+    
+    function testServiceWithPasswordInGraphQLUi(userName){
+        $.post("testService",
+            {
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
+              user: userName,
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToGraphQLUiWithToken(data);
             });
     }
 {/if}
@@ -228,18 +349,79 @@
     function testServiceWithClientCredentials(servicePath) {
         $.post("testService",
             {
-              keycloakUrl: '{info:keycloakUrl}',
-              serviceUrl: "http://localhost:8080" + servicePath,
-              realm: '{info:keycloakRealm}',
-              client: '{info:keycloakClient}',
-              clientSecret: '{info:keycloakClientSecret}',
+              tokenUrl: getTokenUrl(),
+              serviceUrl: "http://localhost:" + port + servicePath,
+              client: getClientId(),
+              clientSecret: getClientSecret(),
               grant: '{info:oidcGrantType}'
             },
             function(data, status){
               printResponseData(data, "Service path: " + servicePath);
             });
     }
+    function testServiceWithClientCredentialsInSwaggerUi(){
+        $.post("testService",
+            {
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToSwaggerUiWithToken(data);
+            });
+    }
+    
+    function testServiceWithClientCredentialsInGraphQLUi(){
+        $.post("testService",
+            {
+              tokenUrl: getTokenUrl(),
+              client: getClientId(),
+              clientSecret: getClientSecret(),
+              grant: '{info:oidcGrantType}'
+            },
+            function(data, status){
+              navigateToGraphQLUiWithToken(data);
+            });
+    }
 {/if}
+
+function navigateToSwaggerUiWithToken(token){
+    {#if info:swaggerIsAvailable??}
+    var url = "{config:http-path('quarkus.swagger-ui.path')}";
+    
+    var authorizedValue = {
+        "SecurityScheme":{
+            "schema":{
+                "flow":"implicit",
+                "authorizationUrl":"{info:authorizationUrl??}",
+                "tokenUrl":"{info:tokenUrl??}",
+                "type":"oauth2",
+                "description":"Authentication"
+            },
+            "clientId":"{info:clientId}",
+            "name":"SecurityScheme",
+            "token":{
+                "access_token":token,
+                "token_type":"Bearer",
+                "expires_in":"900"
+            }
+        }
+    };
+    
+    localStorage.setItem('authorized', JSON.stringify(authorizedValue));
+    window.open(url, '_blank').focus();
+    {/if}
+}
+
+function navigateToGraphQLUiWithToken(token){
+    {#if info:graphqlIsAvailable??}
+        var url = "{config:http-path('quarkus.smallrye-graphql.ui.root-path')}";
+        var headerJson = '{"authorization": "Bearer ' + token + '"}';
+        url = url + '/?' + encodeURIComponent('headers') + '=' + encodeURIComponent(headerJson);
+        window.open(url, '_blank').focus();
+    {/if}
+}
 
 function printResponseData(data, message){
     if(data.startsWith("2")){
@@ -253,8 +435,37 @@ function printResponseData(data, message){
     $('#results').append("<br/>");
 }
 
-function signInToService(servicePath) {
-    window.open("http://localhost:8080" + servicePath);
+function getServicePath() {
+    var servicePath = $('#servicePath').val();
+    return servicePath.startsWith("/") ? servicePath : ("/" + servicePath);
+}
+
+function getTokenUrl() {
+    {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+        return '{info:keycloakAdminUrl??}' + "/realms/" + $('#keycloakRealm').val() + "/protocol/openid-connect/token";
+    {#else}
+        return '{info:tokenUrl??}';
+    {/if}
+}
+
+function clearResults() {
+    $('#results').text('');
+}
+
+function getClientId() {
+    {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+        return $('#clientId').val();
+    {#else}
+        return '{info:clientId??}';
+    {/if}
+}
+
+function getClientSecret() {
+    {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+        return $('#clientSecret').val();
+    {#else}
+        return '{info:clientSecret??}';
+    {/if}
 }
 
 {/script}
@@ -262,34 +473,76 @@ function signInToService(servicePath) {
 {#body}
 <p/>
 
-{#if info:keycloakUrl??}
+{#if info:keycloakAdminUrl??}
 <div class="float-right">
-    <a href="{info:keycloakUrl}" target="_blank" class="btn btn-link" title="Log into Keycloak to Configure Realms">
+    <a href="{info:keycloakAdminUrl??}" target="_blank" class="btn btn-link" title="Log into Keycloak to Configure Realms">
        <i class="fas fa-key"></i> Keycloak Admin
     </a>
 </div>
 {/if}
 
 <div class="container">
-{#if info:oidcApplicationType?? is 'service'}
+{#if info:oidcApplicationType?? is 'service' || info:oidcApplicationType?? is 'hybrid'}
     {#if info:oidcGrantType is 'implicit' || info:oidcGrantType is 'code'}
         
         <div class="card implicitLoggedOut">
             <div class="card-body">
-                <a class="btn btn-block btn-success" title="Log into Single Page Application to Get Access and ID Tokens" onclick="signInToKeycloakAndGetTokens();">
+                {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+                  {#let realms=info:keycloakRealms??}
+                    <div class="form-group">
+                      <div class="row">
+                        <div class="col-1">
+                          <label for="keycloakRealm">Realm</label>
+                        </div>
+                        <div class="col">
+                          <select class="form-control" id="keycloakRealm">
+                            {#for realm in realms}
+                              <option>{realm}</option>
+                            {/for}   
+                          </select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-1">
+                          <label for="clientId">Client</label>
+                        </div>
+                        <div class="col">
+                          <input type="text" class="form-control" id="clientId"
+                                value="{#if realms.size() == 1}{info:clientId??}{/if}" title="Client ID">
+                        </div>
+                      </div> 
+                    </div> 
+                  {/let}
+                {/if}
+                <a class="btn btn-block btn-success" title="Log into Single Page Application to Get Access and ID Tokens" onclick="signInToOidcProviderAndGetTokens();">
                     <i class="fas fa-user"></i> Log into Single Page Application
                 </a>
             </div>
         </div>
+        <div class="card loginError">
+            <div class="card-body">
+                <div class="float-left">
+                    <span id="errorDescription"></span>
+                </div>
+                <div class="float-right">
+                    <a onclick="showLoginToSpa();" class="btn btn-link" title="Click to start again">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>    
         <div class="card implicitLoggedIn">
             <div class="card-header">
                 <div class="float-left">
                     Your tokens
                 </div>
                 <div class="float-right">
-                    <a id="loggedInUser" onclick="logout();" class="btn btn-link" title="Click to logout and start again">
-                        
+                    <span id="loggedInUser"></span>
+                    {#if info:logoutUrl??}
+                    <a onclick="logout();" class="btn btn-link" title="Click to logout and start again">
+                        <i class="fas fa-sign-out-alt"></i>
                     </a>
+                    {/if}
                 </div>
             </div>
             <div class="card-body mx-0 px-0">
@@ -364,7 +617,21 @@ function signInToService(servicePath) {
         <br>
         <div class="card implicitLoggedIn">
             <div class="card-header">
-                Test your service
+                <div class="float-left">
+                    Test your service
+                </div>
+                <div class="float-right">
+                    {#if info:swaggerIsAvailable??}
+                    <a onclick="navigateToSwaggerUi();" class="btn btn-link" title="Test in Swagger UI">
+                        <i class="fas fa-external-link-alt"></i> Swagger UI
+                    </a>
+                    {/if}
+                    {#if info:graphqlIsAvailable??}
+                    <a onclick="navigateToGraphQLUi();" class="btn btn-link" title="Test in GraphQL UI">
+                        <i class="fas fa-external-link-alt"></i> GraphQL UI
+                    </a>
+                    {/if}
+                </div>
             </div>
             <div class="card-body border-0">
                 <div class="row">
@@ -385,9 +652,12 @@ function signInToService(servicePath) {
                 </div>    
 
                 <br/>
-                <div class="bg-light" id="results">
 
+                <div class="bg-light" id="results">
                 </div>
+                <a class="btn btn-link float-right" title="Clear results" onclick="clearResults();">
+                    <i class="fa fa-eraser" aria-hidden="true"></i>
+                </a>
 
             </div>
         </div>
@@ -397,14 +667,58 @@ function signInToService(servicePath) {
                Get access token and test your service
             </div>
             <div class="card-body">
+                {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+                  {#let realms=info:keycloakRealms??}
+                    <div class="form-group">
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="keycloakRealm">Realm</label>
+                        </div>
+                        <div class="col-10">
+                          <select class="form-control" id="keycloakRealm">
+                            {#for realm in realms}
+                              <option>{realm}</option>
+                            {/for}   
+                          </select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="clientId">Client</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="text" class="form-control" id="clientId"
+                                value="{#if realms.size() == 1}{info:clientId??}{/if}" title="Client ID">
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="clientSecret">Secret</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="password" class="form-control" id="clientSecret" 
+                                value="{#if realms.size() == 1}{info:clientSecret??}{/if}" title="Secret">
+                        </div>
+                      </div>
+                    </div>
+                  {/let}
+                {/if}
                 <div class="row">
                     <div class="col-2">
                         <label for="userName">User name</label>
                     </div>
                     <div class="col-10">
-                        <input type="text" class="form-control" id="userName" value="{info:keycloakUsers.keySet().iterator().next()}" title="User">
+                        <input type="text" class="form-control" id="userName" value="" title="User">
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-2">
+                        <label for="password">Password</label>
+                    </div>
+                    <div class="col-10">
+                        <input type="password" class="form-control" id="password" value="" title="Password">
+                    </div>
+                </div> 
                 <div class="row my-2">
                     <div class="col-2">
                         <label for="servicePath">Service Path</label>
@@ -415,22 +729,73 @@ function signInToService(servicePath) {
                 </div>
                 <div class="row my-2">
                     <div class="col offset-md-2">
-                        <button onclick="testServiceWithPassword($('#userName').val(), $('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
+                        <button onclick="testServiceWithPassword($('#userName').val(), $('#password').val(), getServicePath());" class="btn btn-primary btn-block" title="Test service">Test service</button>
                     </div>
+                    <div class="float-right">
+	                    {#if info:swaggerIsAvailable??}
+	                    <a onclick="testServiceWithPasswordInSwaggerUi($('#userName').val(), $('#password').val());" class="btn btn-link" title="Test in Swagger UI">
+	                        <i class="fas fa-external-link-alt"></i> Swagger UI
+	                    </a>
+	                    {/if}
+	                    {#if info:graphqlIsAvailable??}
+	                    <a onclick="testServiceWithPasswordInGraphQLUi($('#userName').val(), $('#password').val());" class="btn btn-link" title="Test in GraphQL UI">
+	                        <i class="fas fa-external-link-alt"></i> GraphQL UI
+	                    </a>
+	                    {/if}
+	                </div>
                 </div>    
 
                 <br/>
                 <div class="bg-light" id="results">
 
                 </div>
+                <a class="btn btn-link float-right" title="Clear results" onclick="clearResults();">
+                    <i class="fa fa-eraser" aria-hidden="true"></i>
+                </a>
             </div>
         </div>    
     {#else if info:oidcGrantType is 'client_credentials'}
         <div class="card">
             <div class="card-header">
-                Get access token for {info:keycloakClient} and test your service
+                Get access token for the client and test your service
             </div>
             <div class="card-body">
+                {#if info:keycloakAdminUrl?? && info:keycloakRealms??}
+                  {#let realms=info:keycloakRealms??}
+                    <div class="form-group">
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="keycloakRealm">Realm</label>
+                        </div>
+                        <div class="col-10">
+                          <select class="form-control" id="keycloakRealm">
+                            {#for realm in realms}
+                              <option>{realm}</option>
+                            {/for}   
+                          </select>
+                        </div>
+                      </div>
+                      <div class="row">
+                        <div class="col-2">
+                          <label for="clientId">Client</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="text" class="form-control" id="clientId"
+                                value="{#if realms.size() == 1}{info:clientId??}{/if}" title="Client ID">
+                        </div>
+                       </div>
+                       <div class="row">
+                        <div class="col-2">
+                          <label for="clientSecret">Secret</label>
+                        </div>
+                        <div class="col-10">
+                          <input type="password" class="form-control" id="clientSecret" 
+                                value="{#if realms.size() == 1}{info:clientSecret??}{/if}" title="Secret"
+                        </div>
+                      </div>
+                    </div>
+                  {/let}
+                {/if}
                 <div class="row">
                     <div class="col-2">
                         <label for="servicePath">Service Path</label>
@@ -441,14 +806,29 @@ function signInToService(servicePath) {
                 </div>
                 <div class="row my-2">
                     <div class="col offset-md-2">
-                        <button onclick="testServiceWithClientCredentials($('#servicePath').val());" class="btn btn-primary btn-block" title="Test service">Test service</button>
+                        <button onclick="testServiceWithClientCredentials(getServicePath());" class="btn btn-primary btn-block" title="Test service">Test service</button>
                     </div>
+                    <div class="float-right">
+	                    {#if info:swaggerIsAvailable??}
+	                    <a onclick="testServiceWithClientCredentialsInSwaggerUi();" class="btn btn-link" title="Test in Swagger UI">
+	                        <i class="fas fa-external-link-alt"></i> Swagger UI
+	                    </a>
+	                    {/if}
+	                    {#if info:graphqlIsAvailable??}
+	                    <a onclick="testServiceWithClientCredentialsInGraphQLUi();" class="btn btn-link" title="Test in GraphQL UI">
+	                        <i class="fas fa-external-link-alt"></i> GraphQL UI
+	                    </a>
+	                    {/if}
+	                </div>
                 </div>    
 
                 <br/>
                 <div class="bg-light" id="results">
 
                 </div>
+                <a class="btn btn-link float-right" title="Clear results" onclick="clearResults();">
+                    <i class="fa fa-eraser" aria-hidden="true"></i>
+                </a>
             </div>
         </div>    
     {/if}    
@@ -465,7 +845,7 @@ function signInToService(servicePath) {
             </div>
             <div class="row my-2">
                 <div class="col offset-md-2">
-                    <button onclick="signInToService($('#servicePath').val());" class="btn btn-success btn-block" title="Log into your Web Application">Log into your Web Application</button>
+                    <button onclick="signInToService(getServicePath());" class="btn btn-success btn-block" title="Log into your Web Application">Log into your Web Application</button>
                 </div>
             </div>
         </div>

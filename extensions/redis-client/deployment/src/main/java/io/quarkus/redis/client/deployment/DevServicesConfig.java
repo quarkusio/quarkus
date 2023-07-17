@@ -1,5 +1,6 @@
 package io.quarkus.redis.client.deployment;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -22,6 +23,8 @@ public class DevServicesConfig {
 
     /**
      * The container image name to use, for container based DevServices providers.
+     * If you want to use Redis Stack modules (bloom, graph, search...), use:
+     * {@code redis/redis-stack-server:latest}.
      */
     @ConfigItem
     public Optional<String> imageName;
@@ -53,13 +56,19 @@ public class DevServicesConfig {
      * This property is used when {@code shared} is set to {@code true}.
      * In this case, before starting a container, Dev Services for Redis looks for a container with the
      * {@code quarkus-dev-service-redis} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise it
+     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
      * starts a new container with the {@code quarkus-dev-service-redis} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared Redis servers.
      */
     @ConfigItem(defaultValue = "redis")
     public String serviceName;
+
+    /**
+     * Environment variables that are passed to the container.
+     */
+    @ConfigItem
+    public Map<String, String> containerEnv;
 
     @Override
     public boolean equals(Object o) {
@@ -72,11 +81,12 @@ public class DevServicesConfig {
                 Objects.equals(imageName, that.imageName) &&
                 Objects.equals(port, that.port) &&
                 Objects.equals(shared, that.shared) &&
-                Objects.equals(serviceName, that.serviceName);
+                Objects.equals(serviceName, that.serviceName) &&
+                Objects.equals(containerEnv, that.containerEnv);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, imageName, port, shared, serviceName);
+        return Objects.hash(enabled, imageName, port, shared, serviceName, containerEnv);
     }
 }

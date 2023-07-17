@@ -8,7 +8,7 @@ import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.CategoryListFormatOptions;
 import io.quarkus.cli.common.RunModeOption;
-import io.quarkus.cli.common.TargetQuarkusVersionGroup;
+import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.devtools.commands.ListCategories;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -17,19 +17,18 @@ import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
-import picocli.CommandLine.Mixin;
 
-@CommandLine.Command(name = "categories", aliases = "cat", sortOptions = false, showDefaultValues = true, mixinStandardHelpOptions = false, header = "List extension categories.", headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", parameterListHeading = "%n", optionListHeading = "%nOptions:%n")
+@CommandLine.Command(name = "categories", aliases = "cat", header = "List extension categories.")
 public class ProjectExtensionsCategories extends BaseBuildCommand implements Callable<Integer> {
 
-    @Mixin
+    @CommandLine.Mixin
     RunModeOption runMode;
 
     @CommandLine.ArgGroup(heading = "%nOutput format:%n")
     CategoryListFormatOptions format = new CategoryListFormatOptions();
 
     @CommandLine.ArgGroup(order = 2, heading = "%nQuarkus version:%n")
-    TargetQuarkusVersionGroup targetQuarkusVersion = new TargetQuarkusVersionGroup();
+    TargetQuarkusPlatformGroup targetQuarkusVersion = new TargetQuarkusPlatformGroup();
 
     @Override
     public Integer call() {
@@ -112,7 +111,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
         if (extensionListHint) {
             output.info("");
             output.info(ListCategories.LIST_EXTENSIONS_HINT,
-                    "`quarkus extensions list --installable --category \"categoryId\"`");
+                    "`quarkus extension list --installable --category \"categoryId\"`");
         }
     }
 

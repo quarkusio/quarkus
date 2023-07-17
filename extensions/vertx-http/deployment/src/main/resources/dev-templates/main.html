@@ -11,15 +11,13 @@
         <link rel="stylesheet" href="{devRootAppend}/resources/css/dev-console.css?2">
         <link rel="stylesheet" href="{devRootAppend}/resources/css/logstream.css">
         <link rel="stylesheet" href="{devRootAppend}/resources/css/tests.css">
+        {#insert styleref /}
+        
         <link rel="shortcut icon" type="image/png" href="{devRootAppend}/resources/images/favicon.ico" >
 
         <style>
             {#insert style /}
         </style>
-
-        <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
-        <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
-        <script src="{devRootAppend}/resources/js/dev-console.js"></script>
 
         <title>
             {#if currentExtensionName?? && currentExtensionName != 'Eclipse Vert.x - HTTP'}
@@ -31,7 +29,7 @@
     </head>
     <body>
         <!-- Top Header -->
-        <nav class="navbar sticky-top navbar-dark bg-dark">
+        <nav id="stickyTopHeaderNavBar" class="navbar sticky-top navbar-dark bg-dark">
             <a class="navbar-brand" href="{devRootAppend}/">
                 <img src="{devRootAppend}/resources/images/quarkus_icon_rgb_reverse.svg" width="40" height="30" class="d-inline-block align-middle" alt="Quarkus"/>
                 <span id="navbar-title" class="align-middle">Dev UI</span>
@@ -40,7 +38,7 @@
             <span id="navbar-subtitle" class="navbar-nav">
                 <span class="navbar-item">
                     {#if currentExtensionName == 'Eclipse Vert.x - HTTP'}
-                    <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
+                    {#insert breadcrumbs/} <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {#else}
                     <i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {currentExtensionName}{#insert breadcrumbs/}<i class="fas fa-chevron-right fa-sm breadcrumb-separator"></i> {#insert title/}
                     {/if}
@@ -63,6 +61,20 @@
                 </button>
             </div>
             {/if}
+            <div class="position-fixed top-0 right-0 p-3" style="z-index: 5; right: 0; top 0;">
+                <div class="toast hide" role="alert" aria-live="assertive" aria-atomic="true" data-delay="5000">
+                  <div class="toast-header">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong id="toastHeader" class="mr-auto"></strong>
+                    <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                  <div id="toastMessage" class="toast-body">
+                  </div>
+                </div>
+            </div>
+            
             {#insert body/}
         </div>
 
@@ -105,8 +117,12 @@
         {#include logmanagerModals /}
         {#include testsModals /}
 
+        <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
+        <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
+        <script src="{devRootAppend}/resources/js/dev-console.js"></script>
         <script src="{devRootAppend}/resources/js/logstream.js"></script>
         <script src="{devRootAppend}/resources/js/tests.js"></script>
+        {#insert scriptref /}
         
         <script>
                             {|
@@ -127,8 +143,13 @@
                             {/for}
                                     sourceMap["{sourcePackageEntry.key}"] = {sourcePackageEntry.key}Packages;
                             {/for}
-
-                                    var srcMainPath = "{ideInfo:srcMainPath}";
+                            var sourceLocationMap = \{\};
+                            {#for sourcePackageEntry in ideInfo:locationPackages}
+                            sourceLocationMap["{sourcePackageEntry.key}"] = [];
+                            {#for rootPackage in sourcePackageEntry.value}
+                            sourceLocationMap["{sourcePackageEntry.key}"].push("{rootPackage}")
+                            {/for}
+                            {/for}
                             var ideLinkType = "{ideInfo:ideLinkType}";
                             var ideClientLinkFormat = "{ideInfo:ideClientLinkFormat}";
                             var ideServerLinkEndpoint = "{ideInfo:ideServerLinkEndpoint}";
@@ -146,7 +167,23 @@
                             if (sourceMap.hasOwnProperty(key)) {
                             var packages = sourceMap[key];
                             for (var i = 0; i < packages.length; i++) {
-                            if (className.startsWith(packages[i] + ".")) {
+                            if (className.startsWith(packages[i] + ".") || ((packages[i] === "") && (className.indexOf('.') == -1))) {
+                            return key;
+                            }
+                            }
+                            }
+                            }
+                            return null;
+                            }
+
+                            // if the class is an application class, return the source language it was written in
+                            // or null if the class is not an application class
+                            function appClassLocation(className) {
+                            for (var key in sourceLocationMap){
+                            if (sourceLocationMap.hasOwnProperty(key)) {
+                            var packages = sourceLocationMap[key];
+                            for (var i = 0; i < packages.length; i++) {
+                            if (className.startsWith(packages[i] + ".") || ((packages[i] === "") && (className.indexOf('.') == -1))) {
                             return key;
                             }
                             }
@@ -156,6 +193,11 @@
                             }
 
                             function openInIDE(className, line) {
+                            var location = appClassLocation(className);
+                            if (location == null) {
+                            console.error("Unable to determine file name of class: '" + className + "'");
+                            return;
+                            }
                             var lang = appClassLang(className);
                             if (lang == null) {
                             console.error("Unable to determine file name of class: '" + className + "'");
@@ -168,7 +210,7 @@
                             }
                             var fileName = effectiveClassName.replaceAll(".", "/") + "." + langToExt[lang];
                             if (ideLinkType == "client") {
-                            var location = ideClientLinkFormat.replace("{0}", srcMainPath + "/" + lang + "/" + fileName);
+                            var location = ideClientLinkFormat.replace("{0}", location + "/" + fileName);
                             if (line) {
                             location = location.replace("{1}", line);
                             } else {
@@ -181,7 +223,6 @@
                             var fd = new FormData();
                             fd.append('className', className);
                             fd.append('lang', lang);
-                            fd.append('srcMainPath', srcMainPath);
                             if (line) {
                             fd.append('line', line);
                             }
@@ -199,6 +240,17 @@
                             console.error("Unknown IDE link type: " + ideLinkType);
                             }
                             }
+                            
+                            function showToastMessage(header, message){
+                                $('#toastHeader').text("" + header);
+                                $('#toastMessage').text(message);
+                                
+                                $('.toast').toast({
+                                    autohide: true,
+                                    delay: 5000
+                                }).toast('show');
+                            }
+                            
                             |}
 
                             {#insert script / }

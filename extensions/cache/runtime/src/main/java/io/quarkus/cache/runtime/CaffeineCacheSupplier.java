@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import io.quarkus.arc.Arc;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheManager;
-import io.quarkus.cache.runtime.caffeine.CaffeineCache;
+import io.quarkus.cache.CaffeineCache;
 
 public class CaffeineCacheSupplier implements Supplier<Collection<CaffeineCache>> {
 

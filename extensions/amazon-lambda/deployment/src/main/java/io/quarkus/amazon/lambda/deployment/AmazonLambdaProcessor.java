@@ -9,8 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -23,9 +24,9 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 
 import io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder;
+import io.quarkus.amazon.lambda.runtime.AmazonLambdaStaticRecorder;
 import io.quarkus.amazon.lambda.runtime.FunctionError;
 import io.quarkus.amazon.lambda.runtime.LambdaBuildTimeConfig;
-import io.quarkus.amazon.lambda.runtime.LambdaConfig;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.builder.BuildException;
@@ -98,30 +99,31 @@ public final class AmazonLambdaProcessor {
             final DotName name = info.name();
             final String lambda = name.toString();
             builder.addBeanClass(lambda);
-            reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, false, lambda));
+            reflectiveClassBuildItemBuildProducer
+                    .produce(ReflectiveClassBuildItem.builder(lambda).methods().build());
 
             String cdiName = null;
-            AnnotationInstance named = info.classAnnotation(NAMED);
+            AnnotationInstance named = info.declaredAnnotation(NAMED);
             if (named != null) {
                 cdiName = named.value().asString();
             }
 
             ClassInfo current = info;
             boolean done = false;
-            boolean streamHandler = info.superName().equals(SKILL_STREAM_HANDLER) ? true : false;
+            boolean streamHandler = info.superName().equals(SKILL_STREAM_HANDLER);
             while (current != null && !done) {
                 for (MethodInfo method : current.methods()) {
                     if (method.name().equals("handleRequest")) {
-                        if (method.parameters().size() == 3) {
+                        if (method.parametersCount() == 3) {
                             streamHandler = true;
                             done = true;
                             break;
-                        } else if (method.parameters().size() == 2
-                                && !method.parameters().get(0).name().equals(DotName.createSimple(Object.class.getName()))) {
+                        } else if (method.parametersCount() == 2
+                                && !method.parameterType(0).name().equals(DotName.createSimple(Object.class.getName()))) {
                             String source = getClass().getSimpleName() + " > " + method.declaringClass() + "[" + method + "]";
 
                             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(method.parameters().get(0))
+                                    .type(method.parameterType(0))
                                     .source(source)
                                     .build());
                             reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
@@ -139,7 +141,8 @@ public final class AmazonLambdaProcessor {
         }
         additionalBeanBuildItemBuildProducer.produce(builder.build());
         reflectiveClassBuildItemBuildProducer
-                .produce(new ReflectiveClassBuildItem(true, true, true, FunctionError.class));
+                .produce(ReflectiveClassBuildItem.builder(FunctionError.class).methods().fields()
+                        .build());
         return ret;
     }
 
@@ -156,7 +159,7 @@ public final class AmazonLambdaProcessor {
         additionalBeanBuildItemBuildProducer.produce(builder.build());
 
         reflectiveClassBuildItemBuildProducer
-                .produce(new ReflectiveClassBuildItem(true, true, true, handlerClass));
+                .produce(ReflectiveClassBuildItem.builder(handlerClass).methods().fields().build());
 
         // TODO
         // This really isn't good enough.  We should recursively add reflection for all method and field types of the parameter
@@ -164,28 +167,31 @@ public final class AmazonLambdaProcessor {
         // for reflection.  Shouldn't have to do this.
         for (Method method : handlerClass.getMethods()) {
             if (method.getName().equals("handleRequest")
-                    && method.getParameterTypes().length == 2
-                    && !method.getParameterTypes()[0].equals(Object.class)) {
-                reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, true, true, method.getParameterTypes()[0].getName()));
-                reflectiveClassBuildItemBuildProducer
-                        .produce(new ReflectiveClassBuildItem(true, true, true, method.getReturnType().getName()));
-                reflectiveClassBuildItemBuildProducer.produce(new ReflectiveClassBuildItem(true, true, true,
-                        DateTime.class));
-                break;
+                    && method.getParameterCount() == 2) {
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                if (!parameterTypes[0].equals(Object.class)) {
+                    reflectiveClassBuildItemBuildProducer
+                            .produce(ReflectiveClassBuildItem.builder(parameterTypes[0].getName())
+                                    .methods().fields().build());
+                    reflectiveClassBuildItemBuildProducer
+                            .produce(ReflectiveClassBuildItem.builder(method.getReturnType().getName())
+                                    .methods().fields().build());
+                    reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(DateTime.class)
+                            .methods().fields().build());
+                    break;
+                }
             }
         }
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void recordHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+    @Record(ExecutionTime.STATIC_INIT)
+    public void recordStaticInitHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+            LambdaObjectMapperInitializedBuildItem mapper, // ordering!
             Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
-            BeanContainerBuildItem beanContainerBuildItem,
-            AmazonLambdaRecorder recorder,
-            LambdaConfig config,
-            List<ServiceStartBuildItem> orderServicesFirst, // try to order this after service recorders
+            AmazonLambdaStaticRecorder recorder,
             RecorderContext context) {
+        // can set handler within static initialization if only one handler exists in deployment
         if (providedLambda.isPresent()) {
             boolean useStreamHandler = false;
             for (Class handleInterface : providedLambda.get().getHandlerClass().getInterfaces()) {
@@ -197,14 +203,55 @@ public final class AmazonLambdaProcessor {
             if (useStreamHandler) {
                 Class<? extends RequestStreamHandler> handlerClass = (Class<? extends RequestStreamHandler>) context
                         .classProxy(providedLambda.get().getHandlerClass().getName());
-                recorder.setStreamHandlerClass(handlerClass, beanContainerBuildItem.getValue());
+                recorder.setStreamHandlerClass(handlerClass);
             } else {
                 Class<? extends RequestHandler<?, ?>> handlerClass = (Class<? extends RequestHandler<?, ?>>) context
                         .classProxy(providedLambda.get().getHandlerClass().getName());
 
-                recorder.setHandlerClass(handlerClass, beanContainerBuildItem.getValue());
+                recorder.setHandlerClass(handlerClass);
             }
-        } else if (lambdas != null) {
+        } else if (lambdas != null && lambdas.size() == 1) {
+            AmazonLambdaBuildItem item = lambdas.get(0);
+            if (item.isStreamHandler()) {
+                Class<? extends RequestStreamHandler> handlerClass = (Class<? extends RequestStreamHandler>) context
+                        .classProxy(item.getHandlerClass());
+                recorder.setStreamHandlerClass(handlerClass);
+
+            } else {
+                Class<? extends RequestHandler<?, ?>> handlerClass = (Class<? extends RequestHandler<?, ?>>) context
+                        .classProxy(item.getHandlerClass());
+
+                recorder.setHandlerClass(handlerClass);
+
+            }
+        } else if (lambdas == null || lambdas.isEmpty()) {
+            String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
+                    + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
+            throw new RuntimeException(errorMessage);
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void recordBeanContainer(BeanContainerBuildItem beanContainerBuildItem,
+            AmazonLambdaRecorder recorder,
+            // try to order this after service recorders
+            List<ServiceStartBuildItem> orderServicesFirst) {
+        recorder.setBeanContainer(beanContainerBuildItem.getValue());
+
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    public void recordHandlerClass(List<AmazonLambdaBuildItem> lambdas,
+            Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
+            BeanContainerBuildItem beanContainerBuildItem,
+            AmazonLambdaRecorder recorder,
+            List<ServiceStartBuildItem> orderServicesFirst, // try to order this after service recorders
+            RecorderContext context) {
+        // Have to set lambda class at runtime if there is not a provided lambda or there is more than one lambda in
+        // deployment
+        if (!providedLambda.isPresent() && lambdas != null && lambdas.size() > 1) {
             List<Class<? extends RequestHandler<?, ?>>> unnamed = new ArrayList<>();
             Map<String, Class<? extends RequestHandler<?, ?>>> named = new HashMap<>();
 
@@ -229,8 +276,7 @@ public final class AmazonLambdaProcessor {
                 }
             }
 
-            recorder.chooseHandlerClass(unnamed, named, unnamedStreamHandler, namedStreamHandler,
-                    beanContainerBuildItem.getValue(), config);
+            recorder.chooseHandlerClass(unnamed, named, unnamedStreamHandler, namedStreamHandler);
         }
     }
 
@@ -241,22 +287,34 @@ public final class AmazonLambdaProcessor {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     void startPoolLoop(AmazonLambdaRecorder recorder,
             ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem,
             List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
     ) {
-        recorder.startPollLoop(shutdownContextBuildItem);
+        recorder.startPollLoop(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
     }
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    void enableNativeEventLoop(LambdaBuildTimeConfig config,
-            AmazonLambdaRecorder recorder,
+    void startPoolLoopDevOrTest(AmazonLambdaRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
             ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
-        if (config.enablePollingJvmMode && mode.isDevOrTest()) {
-            recorder.startPollLoop(shutdownContextBuildItem);
+        if (mode.isDevOrTest()) {
+            recorder.startPollLoop(shutdownContextBuildItem, mode);
         }
+    }
+
+    @BuildStep
+    @Record(value = ExecutionTime.STATIC_INIT)
+    void recordExpectedExceptions(LambdaBuildTimeConfig config,
+            BuildProducer<ReflectiveClassBuildItem> registerForReflection,
+            AmazonLambdaStaticRecorder recorder) {
+        Set<Class<?>> classes = config.expectedExceptions.map(Set::copyOf).orElseGet(Set::of);
+        classes.stream()
+                .map(clazz -> ReflectiveClassBuildItem.builder(clazz).constructors(false).build())
+                .forEach(registerForReflection::produce);
+        recorder.setExpectedExceptionClasses(classes);
     }
 
 }

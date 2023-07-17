@@ -1,12 +1,14 @@
 package io.quarkus.bootstrap.resolver.test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
 import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.util.IoUtils;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import io.quarkus.maven.dependency.DependencyFlags;
 
 /**
  *
@@ -30,7 +32,7 @@ public class SystemPropertyOverridesPomPropertyDependencyTestCase extends Collec
         setSystemProperty("x.version", "3");
 
         // it is expected that the system property will dominate
-        addCollectedDep(x13);
+        addCollectedDep(x13, DependencyFlags.DIRECT);
     }
 
     @Override
@@ -47,6 +49,6 @@ public class SystemPropertyOverridesPomPropertyDependencyTestCase extends Collec
         // workspace reader for the root project
         final LocalProject currentProject = LocalProject.loadWorkspace(projectDir);
 
-        return initResolver(currentProject);
+        return newAppModelResolver(currentProject);
     }
 }

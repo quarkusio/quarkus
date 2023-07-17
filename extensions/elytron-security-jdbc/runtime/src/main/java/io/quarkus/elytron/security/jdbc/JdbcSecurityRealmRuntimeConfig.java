@@ -16,7 +16,7 @@ public class JdbcSecurityRealmRuntimeConfig {
      */
     @ConfigItem(name = "principal-query")
     public PrincipalQueriesConfig principalQueries;
-    //  https://github.com/wildfly/wildfly-core/blob/master/elytron/src/test/resources/org/wildfly/extension/elytron/security-realms.xml#L18
+    //  https://github.com/wildfly/wildfly-core/blob/main/elytron/src/test/resources/org/wildfly/extension/elytron/security-realms.xml#L18
 
     @Override
     public String toString() {

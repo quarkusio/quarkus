@@ -2,7 +2,7 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class ApplicationScopeObject {

@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -22,7 +23,7 @@ public class NameBindingUtil {
      * Returns the class names of the {@code @NameBinding} annotations or null if non are present
      */
     public static Set<String> nameBindingNames(IndexView index, ClassInfo classInfo) {
-        return nameBindingNames(index, instanceDotNames(classInfo.classAnnotations()));
+        return nameBindingNames(index, instanceDotNames(classInfo.declaredAnnotations()));
     }
 
     public static Set<String> nameBindingNames(IndexView index, MethodInfo methodInfo, Set<String> forClass) {
@@ -53,7 +54,7 @@ public class NameBindingUtil {
             if (classAnnotation == null) {
                 continue;
             }
-            if (classAnnotation.classAnnotation(NAME_BINDING) != null) {
+            if (classAnnotation.declaredAnnotation(NAME_BINDING) != null) {
                 result.add(classAnnotation.name().toString());
             }
         }

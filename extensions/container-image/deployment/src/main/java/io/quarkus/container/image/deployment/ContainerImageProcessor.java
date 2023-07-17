@@ -1,11 +1,19 @@
 package io.quarkus.container.image.deployment;
 
+import static io.quarkus.container.image.deployment.util.EnablementUtil.*;
+import static io.quarkus.container.spi.ImageReference.DEFAULT_TAG;
+import static io.quarkus.deployment.builditem.ApplicationInfoBuildItem.UNSET_VALUE;
+
 import java.util.Collections;
 import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
+import io.quarkus.container.spi.ContainerImageCustomNameBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
+import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
+import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
 import io.quarkus.container.spi.ImageReference;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -21,9 +29,14 @@ public class ContainerImageProcessor {
     private static final Logger log = Logger.getLogger(ContainerImageProcessor.class);
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
-    void failForNativeSources(BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
-        throw new IllegalArgumentException(
-                "The Container Image extensions are incompatible with the 'native-sources' package type.");
+    void failForNativeSources(ContainerImageConfig containerImageConfig,
+            Optional<ContainerImageBuildRequestBuildItem> buildRequest,
+            Optional<ContainerImagePushRequestBuildItem> pushRequest,
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
+        if (buildOrPushContainerImageNeeded(containerImageConfig, buildRequest, pushRequest)) {
+            throw new IllegalArgumentException(
+                    "The Container Image extensions are incompatible with the 'native-sources' package type.");
+        }
     }
 
     @BuildStep
@@ -34,7 +47,10 @@ public class ContainerImageProcessor {
 
     @BuildStep
     public void publishImageInfo(ApplicationInfoBuildItem app,
-            ContainerImageConfig containerImageConfig, Capabilities capabilities,
+            ContainerImageConfig containerImageConfig,
+            Optional<FallbackContainerImageRegistryBuildItem> containerImageRegistry,
+            Optional<ContainerImageCustomNameBuildItem> containerImageCustomName,
+            Capabilities capabilities,
             BuildProducer<ContainerImageInfoBuildItem> containerImage) {
 
         ensureSingleContainerImageExtension(capabilities);
@@ -66,24 +82,30 @@ public class ContainerImageProcessor {
             return;
         }
 
-        String registry = containerImageConfig.registry.orElse(null);
+        String registry = containerImageConfig.registry
+                .orElseGet(() -> containerImageRegistry.map(FallbackContainerImageRegistryBuildItem::getRegistry).orElse(null));
         if ((registry != null) && !ImageReference.isValidRegistry(registry)) {
             throw new IllegalArgumentException("The supplied container-image registry '" + registry + "' is invalid");
         }
 
-        String effectiveName = containerImageConfig.name.orElse(app.getName());
+        String effectiveName = containerImageCustomName.map(ContainerImageCustomNameBuildItem::getName)
+                .orElse(containerImageConfig.name);
         String repository = (containerImageConfig.getEffectiveGroup().map(s -> s + "/").orElse("")) + effectiveName;
         if (!ImageReference.isValidRepository(repository)) {
             throw new IllegalArgumentException("The supplied combination of container-image group '"
                     + effectiveGroup + "' and name '" + effectiveName + "' is invalid");
         }
 
-        final String effectiveTag = containerImageConfig.tag.orElse(app.getVersion());
+        String effectiveTag = containerImageConfig.tag.orElse(app.getVersion());
+        if (effectiveTag.equals(UNSET_VALUE)) {
+            effectiveTag = DEFAULT_TAG;
+        }
+
         if (!ImageReference.isValidTag(effectiveTag)) {
             throw new IllegalArgumentException("The supplied container-image tag '" + effectiveTag + "' is invalid");
         }
 
-        containerImage.produce(new ContainerImageInfoBuildItem(containerImageConfig.registry,
+        containerImage.produce(new ContainerImageInfoBuildItem(Optional.ofNullable(registry),
                 containerImageConfig.getEffectiveGroup(),
                 effectiveName, effectiveTag,
                 containerImageConfig.additionalTags.orElse(Collections.emptyList())));

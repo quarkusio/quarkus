@@ -1,7 +1,7 @@
 package io.quarkus.it.rest;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 

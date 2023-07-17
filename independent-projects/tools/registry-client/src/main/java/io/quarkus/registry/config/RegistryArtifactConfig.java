@@ -1,6 +1,7 @@
 package io.quarkus.registry.config;
 
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.json.JsonBuilder;
 
 /**
  * Base registry catalog artifact configuration
@@ -20,4 +21,26 @@ public interface RegistryArtifactConfig {
      * @return catalog artifact coordinates in the registry
      */
     ArtifactCoords getArtifact();
+
+    /** @return a mutable copy of this config */
+    default Mutable mutable() {
+        return new RegistryArtifactConfigImpl.Builder(this);
+    }
+
+    interface Mutable extends RegistryArtifactConfig, JsonBuilder<RegistryArtifactConfig> {
+
+        Mutable setArtifact(ArtifactCoords artifact);
+
+        Mutable setDisabled(boolean disabled);
+
+        /** @return an immutable copy of this config */
+        RegistryArtifactConfig build();
+    }
+
+    /**
+     * @return a new mutable instance
+     */
+    static Mutable builder() {
+        return new RegistryArtifactConfigImpl.Builder();
+    }
 }

@@ -1,16 +1,19 @@
 package io.quarkus.arc.processor;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
-final class AssignabilityCheck {
+public final class AssignabilityCheck {
 
     private final ConcurrentMap<DotName, Set<DotName>> cache;
     private final IndexView index;
@@ -20,7 +23,7 @@ final class AssignabilityCheck {
         this.index = applicationIndex != null ? CompositeIndex.create(beanArchiveIndex, applicationIndex) : beanArchiveIndex;
     }
 
-    boolean isAssignableFrom(Type type1, Type type2) {
+    public boolean isAssignableFrom(Type type1, Type type2) {
         // java.lang.Object is assignable from any type
         if (type1.name().equals(DotNames.OBJECT)) {
             return true;
@@ -30,22 +33,36 @@ final class AssignabilityCheck {
             return true;
         }
         // type1 is a superclass
-        return getAssignables(type1.name()).contains(type2.name());
+        return getSupertypes(type2.name()).contains(type1.name());
     }
 
-    Set<DotName> getAssignables(DotName name) {
-        return cache.computeIfAbsent(name, this::findAssignables);
+    private Set<DotName> getSupertypes(DotName name) {
+        return cache.computeIfAbsent(name, this::findSupertypes);
     }
 
-    private Set<DotName> findAssignables(DotName name) {
-        Set<DotName> assignables = new HashSet<>();
-        for (ClassInfo subclass : index.getAllKnownSubclasses(name)) {
-            assignables.add(subclass.name());
+    private Set<DotName> findSupertypes(DotName name) {
+        Set<DotName> result = new HashSet<>();
+
+        Deque<DotName> workQueue = new ArrayDeque<>();
+        workQueue.add(name);
+        while (!workQueue.isEmpty()) {
+            DotName type = workQueue.poll();
+            if (result.contains(type)) {
+                continue;
+            }
+            result.add(type);
+
+            ClassInfo clazz = index.getClassByName(type);
+            if (clazz == null) {
+                continue;
+            }
+            if (clazz.superName() != null) {
+                workQueue.add(clazz.superName());
+            }
+            workQueue.addAll(clazz.interfaceNames());
         }
-        for (ClassInfo implementor : index.getAllKnownImplementors(name)) {
-            assignables.add(implementor.name());
-        }
-        return assignables;
+
+        return result;
     }
 
 }

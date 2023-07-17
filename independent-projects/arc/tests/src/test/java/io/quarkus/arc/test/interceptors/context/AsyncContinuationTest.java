@@ -3,23 +3,26 @@ package io.quarkus.arc.test.interceptors.context;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.interceptors.Simple;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Priority;
-import javax.inject.Singleton;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+
+import jakarta.annotation.Priority;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.interceptors.Simple;
 
 public class AsyncContinuationTest {
 

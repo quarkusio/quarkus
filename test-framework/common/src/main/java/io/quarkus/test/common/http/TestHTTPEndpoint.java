@@ -9,9 +9,9 @@ import java.lang.annotation.Target;
  * Indicates that this test class or method is testing a specific endpoint.
  *
  * RESTAssured will also have its base URL modified
- * so all URLS can be given relative to the root of the the provided resource class. It
+ * so all URLS can be given relative to the root of the provided resource class. It
  * can also be applied to {@link TestHTTPResource} fields to set the base path.
- * 
+ *
  *
  * This mechanism is pluggable, and currently supports JAX-RS endpoints, Servlets and Reactive Routes.
  *

@@ -1,0 +1,1 @@
+INSERT INTO MyEntity(id, name) VALUES(2, 'import-2.sql load script entity');

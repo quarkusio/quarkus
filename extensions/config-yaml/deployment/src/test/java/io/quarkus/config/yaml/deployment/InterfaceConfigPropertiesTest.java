@@ -2,25 +2,23 @@ package io.quarkus.config.yaml.deployment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.config.ConfigProperties;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 public class InterfaceConfigPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(DummyBean.class, SqlConfiguration.class, SqlConfiguration.Nested.class,
-                            SqlConfiguration.Type.class)
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(DummyBean.class, SqlConfiguration.class, SqlConfiguration.Type.class)
                     .addAsResource("configprops.yaml", "application.yaml"));
 
     @Inject
@@ -29,12 +27,12 @@ public class InterfaceConfigPropertiesTest {
     @Test
     public void testConfiguredValues() {
         SqlConfiguration sqlConfiguration = dummyBean.sqlConfiguration;
-        assertEquals("defaultName", sqlConfiguration.getName());
-        assertEquals("defaultUser", sqlConfiguration.getUser());
-        assertEquals("defaultPassword", sqlConfiguration.getPassword());
+        assertEquals("defaultName", sqlConfiguration.name());
+        assertEquals("defaultUser", sqlConfiguration.user());
+        assertEquals("defaultPassword", sqlConfiguration.password());
         assertEquals(100, sqlConfiguration.maxPoolSize());
         assertEquals(200, sqlConfiguration.maxIdleTimeSeconds());
-        assertEquals(SqlConfiguration.Type.DEFAULT_TYPE, sqlConfiguration.getType());
+        assertEquals(SqlConfiguration.Type.DEFAULT_TYPE, sqlConfiguration.type());
     }
 
     @Singleton
@@ -43,48 +41,24 @@ public class InterfaceConfigPropertiesTest {
         SqlConfiguration sqlConfiguration;
     }
 
-    @ConfigProperties(prefix = "sql")
+    @ConfigMapping(prefix = "sql")
     public interface SqlConfiguration {
-        @ConfigProperty(name = "max_pool_size", defaultValue = "50")
+
+        @WithName("max_pool_size")
+        @WithDefault("50")
         int maxPoolSize();
 
-        @ConfigProperty(name = "max_idle_time_seconds", defaultValue = "100")
+        @WithName("max_idle_time_seconds")
+        @WithDefault("100")
         int maxIdleTimeSeconds();
 
-        String getName();
+        String name();
 
-        String getUser();
+        String user();
 
-        String getPassword();
+        String password();
 
-        Type getType();
-
-        class Nested {
-            @ConfigProperty(name = "max_pool_size")
-            private int maxPoolSize = 50;
-            @ConfigProperty(name = "max_idle_time_seconds")
-            public int maxIdleTimeSeconds = 150;
-            public String name;
-            public String user;
-            public String password;
-            private Type type;
-
-            public int getMaxPoolSize() {
-                return maxPoolSize;
-            }
-
-            public void setMaxPoolSize(int maxPoolSize) {
-                this.maxPoolSize = maxPoolSize;
-            }
-
-            public Type getType() {
-                return type;
-            }
-
-            public void setType(Type type) {
-                this.type = type;
-            }
-        }
+        Type type();
 
         enum Type {
             MSSQL,

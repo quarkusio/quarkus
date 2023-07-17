@@ -19,29 +19,36 @@
     </properties>
 
     <modules>
-        <module>artemis</module>
         <module>common</module>
         <module>h2</module>
+        <module>grpc</module>
         <module>derby</module>
         <module>kubernetes-client</module>
         <module>openshift-client</module>
         <module>junit5-internal</module>
+        <module>junit5-properties</module>
         <module>junit5</module>
+        <module>junit5-component</module>
         <module>junit5-mockito</module>
-        <module>junit5-vertx</module>
+        <module>junit5-mockito-config</module>
+        <module>vertx</module>
+        <module>hibernate-reactive-panache</module>
         <module>amazon-lambda</module>
         <module>arquillian</module>
         <module>devmode-test-utils</module>
         <module>maven</module>
-        <module>vault</module>
         <module>ldap</module>
         <module>security</module>
         <module>security-jwt</module>
         <module>security-oidc</module>
+        <module>security-webauthn</module>
         <module>oidc-server</module>
         <module>keycloak-server</module>
         <module>jacoco</module>
         <module>mongodb</module>
+        <module>infinispan-client</module>
+        <module>kafka-companion</module>
+        <module>google-cloud-functions</module>
     </modules>
 
 </project>

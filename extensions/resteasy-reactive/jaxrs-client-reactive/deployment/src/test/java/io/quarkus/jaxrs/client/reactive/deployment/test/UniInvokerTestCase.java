@@ -2,13 +2,11 @@ package io.quarkus.jaxrs.client.reactive.deployment.test;
 
 import java.net.URL;
 
-import javax.enterprise.event.Observes;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.enterprise.event.Observes;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
 
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +23,7 @@ public class UniInvokerTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Endpoint.class));
 
     @TestHTTPResource

@@ -1,12 +1,14 @@
 package io.quarkus.arc.test.interceptors.subclasses;
 
-import javax.enterprise.context.ApplicationScoped;
+import java.io.IOException;
+
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 @MyBinding
 public class SomeBean {
 
-    public String foo() {
+    public String foo() throws IOException, IOException {
         return "";
     }
 

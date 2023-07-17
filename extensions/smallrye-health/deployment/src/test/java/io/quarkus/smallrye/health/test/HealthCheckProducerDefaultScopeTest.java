@@ -7,13 +7,11 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Readiness;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,12 +23,12 @@ public class HealthCheckProducerDefaultScopeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(HealthCheckProducers.class));
 
     @Test
     public void testHealth() {
-        // the health check does not set a content type so we need to force the parser
+        // the health check does not set a content type, so we need to force the parser
         try {
             RestAssured.defaultParser = Parser.JSON;
             when().get("/q/health/ready").then()

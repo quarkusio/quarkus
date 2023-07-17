@@ -4,7 +4,7 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequest;
 import io.quarkus.amazon.lambda.http.model.AwsProxyRequestContext;
@@ -27,7 +27,7 @@ final public class DefaultLambdaIdentityProvider implements IdentityProvider<Def
     public Uni<SecurityIdentity> authenticate(DefaultLambdaAuthenticationRequest request,
             AuthenticationRequestContext context) {
         AwsProxyRequest event = request.getEvent();
-        SecurityIdentity identity = authenticate(event);
+        SecurityIdentity identity = authenticate(event, LambdaHttpRecorder.config.mapCognitoToRoles);
         if (identity == null) {
             return Uni.createFrom().optional(Optional.empty());
         }
@@ -38,16 +38,27 @@ final public class DefaultLambdaIdentityProvider implements IdentityProvider<Def
      * Create a SecurityIdentity with a principal derived from APIGatewayV2HTTPEvent.
      * Looks for Cognito JWT, IAM, or Custom Lambda metadata for principal name
      *
+     * Cognito JWTs will automatically add Cognito groups as Quarkus roles
+     *
      * @param event
+     * @param groups add "cognito:groups" to SecurityIdentity roles
      * @return
      */
-    public static SecurityIdentity authenticate(AwsProxyRequest event) {
+    public static SecurityIdentity authenticate(AwsProxyRequest event, boolean groups) {
         Principal principal = getPrincipal(event);
         if (principal == null) {
             return null;
         }
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.setPrincipal(principal);
+        if (groups) {
+            if (principal instanceof CognitoPrincipal) {
+                CognitoPrincipal cognito = (CognitoPrincipal) principal;
+                for (String group : cognito.getGroups()) {
+                    builder.addRole(group);
+                }
+            }
+        }
         return builder.build();
     }
 

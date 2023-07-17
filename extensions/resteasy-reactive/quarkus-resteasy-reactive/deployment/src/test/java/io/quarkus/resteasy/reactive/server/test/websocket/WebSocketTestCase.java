@@ -3,8 +3,6 @@ package io.quarkus.resteasy.reactive.server.test.websocket;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,7 +22,7 @@ public class WebSocketTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(WebSocketResource.class));
 
     @Test

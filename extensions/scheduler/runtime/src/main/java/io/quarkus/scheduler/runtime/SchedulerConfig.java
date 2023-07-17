@@ -12,10 +12,22 @@ public class SchedulerConfig {
 
     /**
      * The syntax used in CRON expressions.
-     * 
+     *
      * @see Scheduled#cron()
      */
     @ConfigItem(defaultValue = "quartz")
     public CronType cronType;
+
+    /**
+     * Scheduled task metrics will be enabled if a metrics extension is present and this value is true.
+     */
+    @ConfigItem(name = "metrics.enabled")
+    public boolean metricsEnabled;
+
+    /**
+     * Tracing will be enabled if the OpenTelemetry extension is present and this value is true.
+     */
+    @ConfigItem(name = "tracing.enabled")
+    public boolean tracingEnabled;
 
 }

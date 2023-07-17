@@ -46,4 +46,21 @@ class GreetingResourceTest {
                 .body(containsString("Farewell"));
     }
 
+    @Test
+    void testError() {
+
+        String errorRequest = getPayload("mutation error{\n" +
+                "  error \n" +
+                "}");
+        given()
+                .when()
+                .accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON)
+                .body(errorRequest)
+                .post("/graphql")
+                .then()
+                .statusCode(200)
+                .and()
+                .body(containsString("No foo allowed"));
+    }
 }

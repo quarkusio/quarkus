@@ -2,9 +2,9 @@ package io.quarkus.resteasy.reactive.server.test.security;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
+import java.util.Arrays;
+
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,8 +17,8 @@ import io.restassured.RestAssured;
 public class ReplaceIdentityLazyAuthRolesAllowedJaxRsTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(RolesAllowedResource.class, UserResource.class,
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(RolesAllowedResource.class, UserResource.class, RolesAllowedBlockingResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,
                             SecurityOverrideFilter.class,
@@ -36,14 +36,17 @@ public class ReplaceIdentityLazyAuthRolesAllowedJaxRsTestCase {
     @Test
     public void testRolesAllowedModified() {
         //make sure that things work as normal when no modification happens
-        RestAssured.given()
-                .header("user", "admin")
-                .header("role", "admin")
-                .get("/roles").then().statusCode(200);
-        RestAssured.given()
-                .auth().basic("user", "user")
-                .header("user", "admin")
-                .header("role", "admin").get("/roles/admin").then().statusCode(200);
+
+        Arrays.asList("/roles", "/roles-blocking").forEach((path) -> {
+            RestAssured.given()
+                    .header("user", "admin")
+                    .header("role", "admin")
+                    .get(path).then().statusCode(200);
+            RestAssured.given()
+                    .auth().basic("user", "user")
+                    .header("user", "admin")
+                    .header("role", "admin").get(path + "/admin").then().statusCode(200);
+        });
     }
 
     @Test

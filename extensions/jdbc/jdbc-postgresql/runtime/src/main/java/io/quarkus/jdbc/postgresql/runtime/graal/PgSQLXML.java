@@ -54,9 +54,9 @@ import com.oracle.svm.core.annotate.TargetClass;
  * triggered via {@see java.sql.PreparedStatement#setObject},
  * which is widely used for other purposes as well.
  *
- * Considering that the efficiency costs of including all of
+ * Considering that the efficiency costs of including all
  * resources and reflective registrations necessary to support the
- * XML parsers is non trivial, we apply here a trick to help the
+ * XML parsers is non-trivial, we apply here a trick to help the
  * GraalVM native image compiler avoid this inclusion unless this
  * feature is actually is reachable, by isolating the construction of
  * the parsers and their supporting other types via a reflective call.
@@ -309,7 +309,7 @@ public final class PgSQLXML implements SQLXML {
             }
         } else if (stringWriter != null) {
             // This is also handling the work for Stream, SAX, and StAX Results
-            // as they will use the same underlying stringwriter variable.
+            // as they will use the same underlying stringWriter variable.
             //
             data = stringWriter.toString();
             stringWriter = null;

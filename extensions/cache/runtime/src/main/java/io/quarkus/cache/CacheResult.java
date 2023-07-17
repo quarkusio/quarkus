@@ -5,17 +5,31 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import javax.enterprise.util.Nonbinding;
-import javax.interceptor.InterceptorBinding;
+import jakarta.enterprise.util.Nonbinding;
+import jakarta.interceptor.InterceptorBinding;
+
+import io.quarkus.cache.runtime.UndefinedCacheKeyGenerator;
 
 /**
  * When a method annotated with {@link CacheResult} is invoked, Quarkus will compute a cache key and use it to check in the
- * cache whether the method has been already invoked. If the method has one or more arguments, the key computation is done from
- * all the method arguments if none of them is annotated with {@link CacheKey}, or all the arguments annotated with
- * {@link CacheKey} otherwise. This annotation can also be used on a method with no arguments, a default key derived from the
- * cache name is used in that case. If a value is found in the cache, it is returned and the annotated method is never actually
- * executed. If no value is found, the annotated method is invoked and the returned value is stored in the cache using the
- * computed key.
+ * cache whether the method has been already invoked.
+ * <p>
+ * The cache key is computed using the following logic:
+ * <ul>
+ * <li>If a {@link CacheKeyGenerator} is specified with this annotation, then it is used to generate the cache key. The
+ * {@link CacheKey @CacheKey} annotations that might be present on some of the method arguments are ignored.</li>
+ * <li>Otherwise, if the method has no arguments, then the cache key is an instance of {@link DefaultCacheKey} built from the
+ * cache name.</li>
+ * <li>Otherwise, if the method has exactly one argument, then that argument is the cache key.</li>
+ * <li>Otherwise, if the method has multiple arguments but only one annotated with {@link CacheKey @CacheKey}, then that
+ * annotated argument is the cache key.</li>
+ * <li>Otherwise, if the method has multiple arguments annotated with {@link CacheKey @CacheKey}, then the cache key is an
+ * instance of {@link CompositeCacheKey} built from these annotated arguments.</li>
+ * <li>Otherwise, the cache key is an instance of {@link CompositeCacheKey} built from all the method arguments.</li>
+ * </ul>
+ * <p>
+ * If a value is found in the cache, it is returned and the annotated method is never actually executed. If no value is found,
+ * the annotated method is invoked and the returned value is stored in the cache using the computed key.
  * <p>
  * A method annotated with {@link CacheResult} is protected by a lock on cache miss mechanism. If several concurrent
  * invocations try to retrieve a cache value from the same missing key, the method will only be invoked once. The first
@@ -48,4 +62,10 @@ public @interface CacheResult {
      */
     @Nonbinding
     long lockTimeout() default 0;
+
+    /**
+     * The {@link CacheKeyGenerator} implementation to use to generate a cache key.
+     */
+    @Nonbinding
+    Class<? extends CacheKeyGenerator> keyGenerator() default UndefinedCacheKeyGenerator.class;
 }

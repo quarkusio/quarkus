@@ -14,6 +14,6 @@ public interface RegistryNonPlatformExtensionsResolver {
      * @return catalog of extensions compatible with a given Quarkus version or null
      * @throws RegistryResolutionException in case of a failure
      */
-    ExtensionCatalog resolveNonPlatformExtensions(String quarkusVersion)
+    ExtensionCatalog.Mutable resolveNonPlatformExtensions(String quarkusVersion)
             throws RegistryResolutionException;
 }

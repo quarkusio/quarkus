@@ -1,23 +1,27 @@
 package io.quarkus.arc.impl;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Set;
 
 /**
- * A simple InvocationContext implementation used for PostConstruct and PreDestroy callbacks.
+ * A simple stateful {@link jakarta.interceptor.InvocationContext} implementation used for
+ * lifecycle callback interceptors.
  * <p>
  * All lifecycle callback interceptors of a specific chain must be invoked on the same thread.
  */
-class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
+abstract class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
 
+    protected final Set<Annotation> bindings;
+    protected final List<InterceptorInvocation> chain;
     private int position = 0;
 
-    LifecycleCallbackInvocationContext(Object target, Constructor<?> constructor, Set<Annotation> interceptorBindings,
-            List<InterceptorInvocation> chain) {
-        super(target, null, constructor, null, null, interceptorBindings, chain);
+    LifecycleCallbackInvocationContext(Object target, Object[] parameters,
+            Set<Annotation> bindings, List<InterceptorInvocation> chain) {
+        super(target, parameters, new ContextDataMap(bindings));
+        this.chain = chain;
+        this.bindings = bindings;
     }
 
     @Override
@@ -27,7 +31,8 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
                 // Invoke the next interceptor in the chain
                 invokeNext();
             } else {
-                // The invocation of proceed in the last interceptor method in the chain
+                // The invocation of proceed in the last interceptor method in the chain,
+                // need to forward to the target class
                 interceptorChainCompleted();
             }
             // The return value of a lifecycle callback is ignored
@@ -44,11 +49,14 @@ class LifecycleCallbackInvocationContext extends AbstractInvocationContext {
         }
     }
 
-    protected void interceptorChainCompleted() throws Exception {
-        // No-op
+    @Override
+    public Set<Annotation> getInterceptorBindings() {
+        return bindings;
     }
 
-    protected Object invokeNext() throws Exception {
+    protected abstract void interceptorChainCompleted() throws Exception;
+
+    private Object invokeNext() throws Exception {
         try {
             return chain.get(position++).invoke(this);
         } finally {

@@ -51,7 +51,7 @@ public class RequestMetricInfo {
         return filterIgnored(path, ignorePatterns);
     }
 
-    /** Subclassess should override with appropriate mechanisms for finding templated urls */
+    /** Subclasses should override with appropriate mechanisms for finding templated urls */
     protected String applyTemplateMatching(String path) {
         return path;
     }

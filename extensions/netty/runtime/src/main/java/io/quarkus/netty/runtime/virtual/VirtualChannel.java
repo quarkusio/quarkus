@@ -44,7 +44,7 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
- * A {@link Channel} for the local transport. This is a bit different than a LocalChannel in regular Netty
+ * A {@link Channel} for the local transport. This is a bit different from a LocalChannel in regular Netty
  * as it does not require a client event loop and exposes the client inbound queue directly.
  *
  * The queue exposed is a blocking queue so that local virtual clients can block on this queue and obtain
@@ -218,7 +218,7 @@ public class VirtualChannel extends AbstractChannel {
             if (oldState != null && oldState != State.CLOSED) {
                 // We need to release all the buffers that may be put into our inbound queue since we closed the Channel
                 // to ensure we not leak any memory. This is fine as it basically gives the same guarantees as TCP which
-                // means even if the promise was notified before its not really guaranteed that the "remote peer" will
+                // means even if the promise was notified before, it's not really guaranteed that the "remote peer" will
                 // see the buffer at all.
                 releaseInboundBuffers();
             }

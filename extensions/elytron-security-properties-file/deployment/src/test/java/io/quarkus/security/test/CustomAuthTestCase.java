@@ -1,7 +1,5 @@
 package io.quarkus.security.test;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -11,7 +9,7 @@ import io.restassured.RestAssured;
 public class CustomAuthTestCase {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(TestSecureServlet.class, CustomAuth.class)
                     .addAsResource("application-custom-auth.properties", "application.properties")
                     //.addAsManifestResource("logging.properties")

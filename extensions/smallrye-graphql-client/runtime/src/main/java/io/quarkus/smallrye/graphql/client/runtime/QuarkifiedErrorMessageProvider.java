@@ -1,6 +1,6 @@
 package io.quarkus.smallrye.graphql.client.runtime;
 
-import io.smallrye.graphql.client.ErrorMessageProvider;
+import io.smallrye.graphql.client.impl.ErrorMessageProvider;
 
 /**
  * Provides Quarkus-specific versions of error messages for SmallRye GraphQL. The reason being, for example,

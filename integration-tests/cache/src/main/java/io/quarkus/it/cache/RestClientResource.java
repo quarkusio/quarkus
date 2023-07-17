@@ -1,12 +1,12 @@
 package io.quarkus.it.cache;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
-import org.jboss.resteasy.annotations.jaxrs.QueryParam;
+import org.jboss.resteasy.reactive.RestPath;
+import org.jboss.resteasy.reactive.RestQuery;
 
 @Path("rest-client")
 public class RestClientResource {
@@ -16,7 +16,7 @@ public class RestClientResource {
 
     @GET
     @Path("time/{city}")
-    public String getSunriseTime(@PathParam String city, @QueryParam String date) {
+    public String getSunriseTime(@RestPath String city, @RestQuery String date) {
         return sunriseRestClient.getSunriseTime(city, date);
     }
 
@@ -28,7 +28,7 @@ public class RestClientResource {
 
     @DELETE
     @Path("invalidate/{city}")
-    public void invalidate(@PathParam String city, @QueryParam String notPartOfTheCacheKey, @QueryParam String date) {
+    public void invalidate(@RestPath String city, @RestQuery String notPartOfTheCacheKey, @RestQuery String date) {
         sunriseRestClient.invalidate(city, notPartOfTheCacheKey, date);
     }
 

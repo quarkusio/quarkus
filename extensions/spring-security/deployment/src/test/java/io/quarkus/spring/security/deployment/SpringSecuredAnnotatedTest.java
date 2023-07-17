@@ -4,11 +4,9 @@ import static io.quarkus.security.test.utils.IdentityMock.*;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -36,7 +34,7 @@ public class SpringSecuredAnnotatedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(BeanWithSpringSecurityMethodAnnotations.class,
                             BeanWithSpringSecurityAnnotations.class,
                             SpringSecuredSubClass.class,

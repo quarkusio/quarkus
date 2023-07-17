@@ -1,12 +1,21 @@
 package io.quarkus.it.kubernetes.client;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import io.fabric8.kubernetes.client.utils.Utils;
+
 @Path("/configMapProperties")
 public class ConfigMapProperties {
+
+    static {
+        // this is only done to ensure that Utils is reachable
+        // see https://github.com/quarkusio/quarkus/issues/21398
+        String osName = Utils.OS_NAME;
+        System.out.println(osName);
+    }
 
     @ConfigProperty(name = "dummy")
     String dummy;

@@ -12,34 +12,15 @@
 
     <artifactId>quarkus-hibernate-envers</artifactId>
     <name>Quarkus - Hibernate Envers - Runtime</name>
-    <description>Enable Hibernate Envers capabilities in your JPA applications</description>
+    <description>Enable Hibernate Envers capabilities in your Jakarta Persistence applications</description>
 
     <dependencies>
         <dependency>
-            <groupId>org.hibernate</groupId>
+            <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-envers</artifactId>
             <!-- We need to repeat the same exclusions applied on hibernate-core -->
             <exclusions>
-                <exclusion>
-                    <groupId>javax.persistence</groupId>
-                    <artifactId>javax.persistence-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.spec.javax.transaction</groupId>
-                    <artifactId>jboss-transaction-api_1.2_spec</artifactId>
-                </exclusion>
-
-                <!-- Javassist is never used in Quarkus -->
-                <exclusion>
-                    <groupId>org.javassist</groupId>
-                    <artifactId>javassist</artifactId>
-                </exclusion>
-
                 <!-- These XML parsers are banned in the project as we use the new package -->
-                <exclusion>
-                    <groupId>javax.xml.bind</groupId>
-                    <artifactId>jaxb-api</artifactId>
-                </exclusion>
                 <exclusion>
                     <groupId>org.glassfish.jaxb</groupId>
                     <artifactId>jaxb-runtime</artifactId>
@@ -47,8 +28,8 @@
 
                 <!-- Following dependencies are only necessary during metadata initialization -->
                 <exclusion>
-                    <groupId>javax.activation</groupId>
-                    <artifactId>javax.activation-api</artifactId>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -56,13 +37,18 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.hibernate.envers</provides>

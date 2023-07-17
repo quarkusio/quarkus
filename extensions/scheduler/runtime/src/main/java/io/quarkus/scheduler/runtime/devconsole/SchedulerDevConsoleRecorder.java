@@ -13,12 +13,16 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.scheduler.ScheduledExecution;
 import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.Trigger;
-import io.quarkus.scheduler.runtime.ScheduledInvoker;
-import io.quarkus.scheduler.runtime.ScheduledMethodMetadata;
-import io.quarkus.scheduler.runtime.SchedulerContext;
-import io.quarkus.scheduler.runtime.util.SchedulerUtils;
+import io.quarkus.scheduler.common.runtime.ScheduledInvoker;
+import io.quarkus.scheduler.common.runtime.ScheduledMethod;
+import io.quarkus.scheduler.common.runtime.SchedulerContext;
+import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.smallrye.common.vertx.VertxContext;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -76,28 +80,38 @@ public class SchedulerDevConsoleRecorder {
                 } else {
                     String name = form.get("name");
                     SchedulerContext context = Arc.container().instance(SchedulerContext.class).get();
-                    for (ScheduledMethodMetadata metadata : context.getScheduledMethods()) {
+                    for (ScheduledMethod metadata : context.getScheduledMethods()) {
                         if (metadata.getMethodDescription().equals(name)) {
-                            context.getExecutor().execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    final ClassLoader previousCl = Thread.currentThread().getContextClassLoader();
-                                    try {
-                                        Thread.currentThread().setContextClassLoader(currentCl);
-                                        ScheduledInvoker invoker = context
-                                                .createInvoker(metadata.getInvokerClassName());
-                                        invoker.invoke(new DevModeScheduledExecution());
-                                        LOG.infof("Invoked scheduled method %s via Dev UI", name);
-                                    } catch (Exception e) {
-                                        LOG.error(
-                                                "Unable to invoke a @Scheduled method: "
-                                                        + metadata.getMethodDescription(),
-                                                e);
-                                    } finally {
-                                        Thread.currentThread().setContextClassLoader(previousCl);
-                                    }
+                            Vertx vertx = Arc.container().instance(Vertx.class).get();
+                            Context vdc = VertxContext.getOrCreateDuplicatedContext(vertx);
+                            VertxContextSafetyToggle.setContextSafe(vdc, true);
+                            try {
+                                ScheduledInvoker invoker = context
+                                        .createInvoker(metadata.getInvokerClassName());
+                                if (invoker.isBlocking()) {
+                                    vdc.executeBlocking(p -> {
+                                        try {
+                                            invoker.invoke(new DevModeScheduledExecution());
+                                        } catch (Exception ignored) {
+                                        } finally {
+                                            p.complete();
+                                        }
+                                    }, false);
+                                } else {
+                                    vdc.runOnContext(x -> {
+                                        try {
+                                            invoker.invoke(new DevModeScheduledExecution());
+                                        } catch (Exception ignored) {
+                                        }
+                                    });
                                 }
-                            });
+                                LOG.infof("Invoked scheduled method %s via Dev UI", name);
+                            } catch (Exception e) {
+                                LOG.error(
+                                        "Unable to invoke a @Scheduled method: "
+                                                + metadata.getMethodDescription(),
+                                        e);
+                            }
                             flashMessage(ctx, "Action invoked");
                             return;
                         }
@@ -135,6 +149,12 @@ public class SchedulerDevConsoleRecorder {
                 public Instant getPreviousFireTime() {
                     return now;
                 }
+
+                @Override
+                public boolean isOverdue() {
+                    return false;
+                }
+
             };
         }
 

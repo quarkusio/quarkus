@@ -1,8 +1,11 @@
 package io.quarkus.flyway.runtime;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -10,18 +13,34 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 
+import io.agroal.api.AgroalDataSource;
+import io.quarkus.flyway.FlywayConfigurationCustomizer;
+import io.quarkus.runtime.configuration.ConfigurationException;
+
 class FlywayCreator {
 
     private static final String[] EMPTY_ARRAY = new String[0];
+    public static final Duration DEFAULT_CONNECT_RETRIES_INTERVAL = Duration.ofSeconds(120L);
 
     private final FlywayDataSourceRuntimeConfig flywayRuntimeConfig;
     private final FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig;
+    private final List<FlywayConfigurationCustomizer> customizers;
     private Collection<Callback> callbacks = Collections.emptyList();
 
+    // only used for tests
     public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
             FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig) {
         this.flywayRuntimeConfig = flywayRuntimeConfig;
         this.flywayBuildTimeConfig = flywayBuildTimeConfig;
+        this.customizers = Collections.emptyList();
+    }
+
+    public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
+            FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig,
+            List<FlywayConfigurationCustomizer> customizers) {
+        this.flywayRuntimeConfig = flywayRuntimeConfig;
+        this.flywayBuildTimeConfig = flywayBuildTimeConfig;
+        this.customizers = customizers;
     }
 
     public FlywayCreator withCallbacks(Collection<Callback> callbacks) {
@@ -31,12 +50,37 @@ class FlywayCreator {
 
     public Flyway createFlyway(DataSource dataSource) {
         FluentConfiguration configure = Flyway.configure();
-        configure.dataSource(dataSource);
+
+        if (flywayRuntimeConfig.jdbcUrl.isPresent()) {
+            if (flywayRuntimeConfig.username.isPresent() && flywayRuntimeConfig.password.isPresent()) {
+                configure.dataSource(flywayRuntimeConfig.jdbcUrl.get(), flywayRuntimeConfig.username.get(),
+                        flywayRuntimeConfig.password.get());
+            } else {
+                throw new ConfigurationException(
+                        "Username and password must be defined when a JDBC URL is provided in the Flyway configuration");
+            }
+        } else {
+            if (flywayRuntimeConfig.username.isPresent() && flywayRuntimeConfig.password.isPresent()) {
+                AgroalDataSource agroalDataSource = (AgroalDataSource) dataSource;
+                String jdbcUrl = agroalDataSource.getConfiguration().connectionPoolConfiguration()
+                        .connectionFactoryConfiguration().jdbcUrl();
+
+                configure.dataSource(jdbcUrl, flywayRuntimeConfig.username.get(),
+                        flywayRuntimeConfig.password.get());
+            } else if (dataSource != null) {
+                configure.dataSource(dataSource);
+            }
+        }
         if (flywayRuntimeConfig.initSql.isPresent()) {
             configure.initSql(flywayRuntimeConfig.initSql.get());
         }
         if (flywayRuntimeConfig.connectRetries.isPresent()) {
             configure.connectRetries(flywayRuntimeConfig.connectRetries.getAsInt());
+        }
+        configure.connectRetriesInterval(
+                (int) flywayRuntimeConfig.connectRetriesInterval.orElse(DEFAULT_CONNECT_RETRIES_INTERVAL).toSeconds());
+        if (flywayRuntimeConfig.defaultSchema.isPresent()) {
+            configure.defaultSchema(flywayRuntimeConfig.defaultSchema.get());
         }
         if (flywayRuntimeConfig.schemas.isPresent()) {
             configure.schemas(flywayRuntimeConfig.schemas.get().toArray(EMPTY_ARRAY));
@@ -54,8 +98,25 @@ class FlywayCreator {
         configure.cleanDisabled(flywayRuntimeConfig.cleanDisabled);
         configure.baselineOnMigrate(flywayRuntimeConfig.baselineOnMigrate);
         configure.validateOnMigrate(flywayRuntimeConfig.validateOnMigrate);
-        configure.ignoreMissingMigrations(flywayRuntimeConfig.ignoreMissingMigrations);
-        configure.ignoreFutureMigrations(flywayRuntimeConfig.ignoreFutureMigrations);
+        configure.validateMigrationNaming(flywayRuntimeConfig.validateMigrationNaming);
+
+        final String[] ignoreMigrationPatterns;
+        if (flywayRuntimeConfig.ignoreMigrationPatterns.isPresent()) {
+            ignoreMigrationPatterns = flywayRuntimeConfig.ignoreMigrationPatterns.get();
+        } else {
+            List<String> patterns = new ArrayList<>(2);
+            if (flywayRuntimeConfig.ignoreMissingMigrations) {
+                patterns.add("*:Missing");
+            }
+            if (flywayRuntimeConfig.ignoreFutureMigrations) {
+                patterns.add("*:Future");
+            }
+            // Default is *:Future
+            ignoreMigrationPatterns = patterns.toArray(new String[0]);
+        }
+
+        configure.ignoreMigrationPatterns(ignoreMigrationPatterns);
+        configure.cleanOnValidationError(flywayRuntimeConfig.cleanOnValidationError);
         configure.outOfOrder(flywayRuntimeConfig.outOfOrder);
         if (flywayRuntimeConfig.baselineVersion.isPresent()) {
             configure.baselineVersion(flywayRuntimeConfig.baselineVersion.get());
@@ -84,6 +145,10 @@ class FlywayCreator {
                 Arrays.asList(configure.getLocations()));
         configure.javaMigrationClassProvider(new QuarkusFlywayClassProvider<>(quarkusPathLocationScanner.scanForClasses()));
         configure.resourceProvider(new QuarkusFlywayResourceProvider(quarkusPathLocationScanner.scanForResources()));
+
+        for (FlywayConfigurationCustomizer customizer : customizers) {
+            customizer.customize(configure);
+        }
 
         return configure.load();
     }

@@ -1,10 +1,14 @@
 package io.quarkus.maven;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
+import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecution;
@@ -20,15 +24,21 @@ import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
-import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.maven.components.BootstrapSessionListener;
+import io.quarkus.maven.components.ManifestSection;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.runtime.LaunchMode;
 
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
+    static final String CLOSE_BOOTSTRAPPED_APP = "closeBootstrappedApp";
+
     @Component
     protected QuarkusBootstrapProvider bootstrapProvider;
+
+    @Component(hint = "quarkus-bootstrap", role = AbstractMavenLifecycleParticipant.class)
+    private BootstrapSessionListener bootstrapSessionListener;
 
     /**
      * The current repository/network configuration of Maven.
@@ -59,6 +69,18 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.build.finalName}")
     private String finalName;
+
+    /**
+     * The list of main manifest attributes
+     */
+    @Parameter
+    private Map<String, String> manifestEntries = new LinkedHashMap<>();
+
+    /**
+     * The list of manifest sections
+     */
+    @Parameter
+    private List<ManifestSection> manifestSections = new ArrayList<>();
 
     /**
      * When building an uber-jar, this array specifies entries that should
@@ -113,16 +135,51 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * The context of the execution of the plugin.
      */
     @Parameter(defaultValue = "${mojoExecution}", readonly = true, required = true)
-    private MojoExecution mojoExecution;
+    MojoExecution mojoExecution;
 
-    private AppArtifactKey projectId;
+    /**
+     * Application bootstrap provider ID. This parameter is not supposed to be configured by the user.
+     * To be able to re-use an application bootstrapped in one phase in a later phase, there needs to be a way
+     * to identify the correct instance of the bootstrapped application (in case there are more than one) in each Mojo.
+     * A bootstrap ID serves this purpose. This parameter is is set in {@link DevMojo} invoking {@code generate-code}
+     * and {@code generate-code-tests} goals. If this parameter is not configured, a Mojo execution ID will be used
+     * as the bootstrap ID.
+     */
+    @Parameter(required = false)
+    String bootstrapId;
+
+    /**
+     * Whether to close the bootstrapped applications after the execution
+     */
+    @Parameter(property = "quarkusCloseBootstrappedApp")
+    private Boolean closeBootstrappedApp;
+
+    private ArtifactKey projectId;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         if (!beforeExecute()) {
             return;
         }
-        doExecute();
+        try {
+            doExecute();
+        } finally {
+            if (closeBootstrappedApp != null) {
+                // This trick is for dev mode from which we invoke other goals using the invoker API,
+                // in which case the session listener won't be enabled and the app bootstrapped in generate-code will be closed immediately
+                // causing DevMojo to bootstrap a new instance
+                if (closeBootstrappedApp) {
+                    bootstrapProvider.bootstrapper(this).close();
+                }
+            } else if (!bootstrapSessionListener.isEnabled()
+                    // we may end up here when running 'compile quarkus:dev'
+                    // even if the session listener is disabled we still don't want to close the provider
+                    // because there might have been a Maven profile activated which we won't take into account
+                    // when re-bootstrapping in DevMojo
+                    && !mavenSession().getGoals().contains("quarkus:dev")) {
+                bootstrapProvider.bootstrapper(this).close();
+            }
+        }
     }
 
     @Override
@@ -152,10 +209,23 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return appArtifact;
     }
 
+    /**
+     * Allows implementations to provide extra dependencies that should be enforced on the application.
+     * Originally requested by Camel K.
+     *
+     * @param mode launch mode the application is being bootstrapped in
+     * @return list of extra dependencies that should be enforced on the application
+     */
+    protected List<Dependency> forcedDependencies(LaunchMode mode) {
+        return List.of();
+    }
+
+    @Deprecated(forRemoval = true)
     protected RepositorySystem repositorySystem() {
         return bootstrapProvider.repositorySystem();
     }
 
+    @Deprecated(forRemoval = true)
     protected RemoteRepositoryManager remoteRepositoryManager() {
         return bootstrapProvider.remoteRepositoryManager();
     }
@@ -188,6 +258,14 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return finalName;
     }
 
+    protected Map<String, String> manifestEntries() {
+        return manifestEntries;
+    }
+
+    protected List<ManifestSection> manifestSections() {
+        return manifestSections;
+    }
+
     protected String[] ignoredEntries() {
         return ignoredEntries;
     }
@@ -196,29 +274,23 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return properties;
     }
 
-    protected String executionId() {
-        return mojoExecution.getExecutionId();
+    protected String bootstrapId() {
+        return bootstrapId == null ? mojoExecution.getExecutionId() : bootstrapId;
     }
 
-    protected AppArtifactKey projectId() {
-        return projectId == null ? projectId = new AppArtifactKey(project.getGroupId(), project.getArtifactId()) : projectId;
-    }
-
-    // @deprecated in 1.14.0.Final
-    @Deprecated
-    protected AppArtifact projectArtifact() throws MojoExecutionException {
-        return bootstrapProvider.projectArtifact(this);
-    }
-
-    protected MavenArtifactResolver artifactResolver() throws MojoExecutionException {
-        return bootstrapProvider.artifactResolver(this);
-    }
-
-    protected QuarkusBootstrap bootstrapQuarkus() throws MojoExecutionException {
-        return bootstrapProvider.bootstrapQuarkus(this);
+    protected ArtifactKey projectId() {
+        return projectId == null ? projectId = QuarkusBootstrapProvider.getProjectId(project) : projectId;
     }
 
     protected CuratedApplication bootstrapApplication() throws MojoExecutionException {
-        return bootstrapProvider.bootstrapApplication(this);
+        return bootstrapApplication(LaunchMode.NORMAL);
+    }
+
+    protected CuratedApplication bootstrapApplication(LaunchMode mode) throws MojoExecutionException {
+        return bootstrapProvider.bootstrapApplication(this, mode);
+    }
+
+    protected Properties getBuildSystemProperties(boolean quarkusOnly) throws MojoExecutionException {
+        return bootstrapProvider.bootstrapper(this).getBuildSystemProperties(this, quarkusOnly);
     }
 }

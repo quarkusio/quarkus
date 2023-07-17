@@ -1,0 +1,27 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus Maven Plugin
+
+The Quarkus Maven Plugin builds the Quarkus applications, and provides helpers to launch dev mode or build native executables.
+For more information about how to use the Quarkus Maven Plugin, please refer to the xref:maven-tooling.adoc[Maven Tooling guide].
+
+include::_attributes.adoc[]
+
+== Discover Maven goals
+
+Like most Maven plugins, the Quarkus Maven Plugin has a `help` goal that prints the description of the plugin, listing all available goals as well as their description.
+It is also possible to print out detailed information about a goal, all its parameters and their default values. For instance, to see the help for the `create` goal, run:
+
+[source,shell]
+----
+./mvnw quarkus:help -Ddetail -Dgoal=create
+----
+
+== Maven goals reference
+
+Here is the list of all the Quarkus Maven Plugin goals:
+
+include::{generated-dir}/config/quarkus-maven-plugin-goals.adoc[opts=optional, leveloffset=+2]

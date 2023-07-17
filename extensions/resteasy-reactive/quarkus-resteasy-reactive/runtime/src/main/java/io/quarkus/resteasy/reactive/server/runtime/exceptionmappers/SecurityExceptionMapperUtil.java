@@ -1,10 +1,10 @@
 package io.quarkus.resteasy.reactive.server.runtime.exceptionmappers;
 
-import static io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AsyncExceptionMappingUtil.DEFAULT_UNAUTHORIZED_RESPONSE;
+import static org.jboss.resteasy.reactive.server.exceptionmappers.AsyncExceptionMappingUtil.DEFAULT_UNAUTHORIZED_RESPONSE;
 
 import java.util.function.Function;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;

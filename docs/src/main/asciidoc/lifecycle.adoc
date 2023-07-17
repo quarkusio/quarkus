@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Application Initialization and Termination
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: core
+:summary: You often need to execute custom actions when the application starts and clean up everything when the application stops. This guide explains how to be notified when an application stops or starts.
 
 You often need to execute custom actions when the application starts and clean up everything when the application stops.
 This guide explains how to:
@@ -17,12 +18,7 @@ This guide explains how to:
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 10 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Solution
 
@@ -37,28 +33,18 @@ The solution is located in the `lifecycle-quickstart` {quickstarts-tree-url}/lif
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=lifecycle-quickstart \
-    -DclassName="org.acme.lifecycle.GreetingResource" \
-    -Dpath="/hello"
-cd lifecycle-quickstart
-----
+:create-app-artifact-id: lifecycle-quickstart
+include::{includes}/devtools/create-app.adoc[]
 
 It generates:
 
 * the Maven structure
-* a landing page accessible on `http://localhost:8080`
 * example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
-* an `org.acme.lifecycle.GreetingResource` resource
-* an associated test
 
 == The main method
 
-By default Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
+By default, Quarkus will automatically generate a main method, that will bootstrap Quarkus and then just wait for
 shutdown to be initiated. Let's provide our own main method:
 [source,java]
 ----
@@ -135,9 +121,19 @@ String[] args;
 
 Command line arguments can be passed to the application through the `-D` flag with the property `quarkus.args`:
 
-* For Quarkus dev mode: `./mvnw quarkus:dev -Dquarkus.args=<cmd-args>`
+:devtools-wrapped:
+// TODO: use <cmd-args> once Asciidoctor escaping bug is fixed
+:dev-additional-parameters: -Dquarkus.args=cmd-args
+
+* For Quarkus dev mode:
++
+include::{includes}/devtools/dev-parameters.adoc[]
+
 * For a runner jar: `java -Dquarkus.args=<cmd-args> -jar target/quarkus-app/quarkus-run.jar`
 * For a native executable: `./target/lifecycle-quickstart-1.0-SNAPSHOT-runner -Dquarkus.args=<cmd-args>`
+
+:!dev-additional-parameters:
+:!devtools-wrapped:
 
 == Listening for startup and shutdown events
 
@@ -148,8 +144,8 @@ following content:
 ----
 package org.acme.lifecycle;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -170,8 +166,8 @@ public class AppLifecycleBean {
 
 }
 ----
-1. Method called when the application is starting
-2. Method called when the application is terminating
+<1> Method called when the application is starting
+<2> Method called when the application is terminating
 
 TIP: The events are also called in _dev mode_ between each redeployment.
 
@@ -181,9 +177,9 @@ NOTE: The methods can access injected beans. Check the {quickstarts-blob-url}/li
 
 In the JVM mode, there is no real difference, except that `StartupEvent` is always fired *after* `@Initialized(ApplicationScoped.class)` and `ShutdownEvent` is fired *before* `@Destroyed(ApplicationScoped.class)`. 
 For a native executable build, however, `@Initialized(ApplicationScoped.class)` is fired as *part of the native build process*, whereas `StartupEvent` is fired when the native image is executed.
-See link:writing-extensions#bootstrap-three-phases[Three Phases of Bootstrap and Quarkus Philosophy] for more details.
+See xref:writing-extensions.adoc#bootstrap-three-phases[Three Phases of Bootstrap and Quarkus Philosophy] for more details.
 
-NOTE: In CDI applications, an event with qualifier `@Initialized(ApplicationScoped.class)` is fired when the application context is initialized. See https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#application_context[the spec, window="_blank"] for more info.
+NOTE: In CDI applications, an event with qualifier `@Initialized(ApplicationScoped.class)` is fired when the application context is initialized. See https://jakarta.ee/specifications/cdi/2.0/cdi-spec-2.0.html#application_context[the spec, window="_blank"] for more info.
 
 [[startup_annotation]]
 === Using `@Startup` to initialize a CDI bean at application startup
@@ -194,7 +190,7 @@ A bean represented by a class, producer method or field annotated with `@Startup
 ----
 package org.acme.lifecycle;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @Startup // <1> 
 @ApplicationScoped
@@ -207,8 +203,8 @@ public class EagerAppBean {
    }
 }
 ----
-1. For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
-2. The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
+<1> For each bean annotated with `@Startup` a synthetic observer of `StartupEvent` is generated. The default priority is used.
+<2> The bean constructor is called when the application starts and the resulting contextual instance is stored in the application context.
 
 NOTE: `@Dependent` beans are destroyed immediately afterwards to follow the behavior of observers declared on `@Dependent` beans.
 
@@ -216,11 +212,22 @@ TIP: If a class is annotated with `@Startup` but with no scope annotation then `
 
 == Package and run the application
 
-Run the application with: `./mvnw compile quarkus:dev`, the logged message is printed.
+Run the application with:
+
+include::{includes}/devtools/dev.adoc[]
+
+The logged message is printed.
 When the application is stopped, the second log message is printed.
 
-As usual, the application can be packaged using `./mvnw clean package` and executed using the `target/quarkus-app/quarkus-run.jar` file.
-You can also generate the native executable using `./mvnw clean package -Pnative`.
+As usual, the application can be packaged using:
+
+include::{includes}/devtools/build.adoc[]
+
+and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable using:
+
+include::{includes}/devtools/build-native.adoc[]
 
 == Launch Modes
 
@@ -233,7 +240,7 @@ or by invoking the static method `io.quarkus.runtime.LaunchMode.current()`.
 == Graceful Shutdown
 
 Quarkus includes support for graceful shutdown, this allows Quarkus to wait for running requests to finish, up
-till a set timeout. By default this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout`
+till a set timeout. By default, this is disabled, however you can configure this by setting the `quarkus.shutdown.timeout`
 config property. When this is set shutdown will not happen until all running requests have completed, or until
 this timeout has elapsed. This config property is a duration, and can be set using the standard
 `java.time.Duration` format, if only a number is specified it is interpreted as seconds.

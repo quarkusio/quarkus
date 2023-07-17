@@ -1,6 +1,10 @@
 package io.quarkus.registry.config;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
+
+import io.quarkus.registry.json.JsonBuilder;
 
 /**
  * Client side registry configuration containing information how to
@@ -78,4 +82,89 @@ public interface RegistryConfig {
      * @return custom registry client configuration
      */
     Map<String, Object> getExtra();
+
+    /**
+     * @return a mutable copy of this configuration
+     */
+    default Mutable mutable() {
+        return new RegistryConfigImpl.Builder(this);
+    }
+
+    /**
+     * Persist this configuration to the specified file.
+     *
+     * @param p Target path
+     * @throws IOException if the specified file can not be written to.
+     */
+    default void persist(Path p) throws IOException {
+        RegistriesConfigMapperHelper.serialize(this, p);
+    }
+
+    interface Mutable extends RegistryConfig, JsonBuilder<RegistryConfig> {
+        Mutable setId(String id);
+
+        Mutable setEnabled(boolean enabled);
+
+        Mutable setUpdatePolicy(String updatePolicy);
+
+        Mutable setDescriptor(RegistryDescriptorConfig descriptor);
+
+        Mutable setPlatforms(RegistryPlatformsConfig platforms);
+
+        Mutable setNonPlatformExtensions(RegistryNonPlatformExtensionsConfig nonPlatformExtensionsConfig);
+
+        Mutable setMaven(RegistryMavenConfig maven);
+
+        Mutable setQuarkusVersions(RegistryQuarkusVersionsConfig quarkusVersions);
+
+        default Mutable setAny(String name, Object value) {
+            setExtra(name, value);
+            return this;
+        }
+
+        Mutable setExtra(Map<String, Object> extra);
+
+        Mutable setExtra(String name, Object value);
+
+        /** @return an immutable copy of this configuration */
+        RegistryConfig build();
+
+        default void persist(Path p) throws IOException {
+            RegistriesConfigMapperHelper.serialize(this.build(), p);
+        }
+    }
+
+    /**
+     * Get the default registry
+     */
+    static RegistryConfig defaultConfig() {
+        return RegistryConfigImpl.getDefaultRegistry();
+    }
+
+    /**
+     * @return a new mutable instance
+     */
+    static Mutable builder() {
+        return new RegistryConfigImpl.Builder();
+    }
+
+    /**
+     * Read config from the specified file
+     *
+     * @param path File to read from (yaml or json)
+     * @return read-only RegistryConfig object
+     */
+    static RegistryConfig fromFile(Path path) throws IOException {
+        return RegistriesConfigMapperHelper.deserialize(path, RegistryConfigImpl.class);
+    }
+
+    /**
+     * Read config from the specified file
+     *
+     * @param path File to read from (yaml or json)
+     * @return mutable (possibly incomplete) RegistryConfig object
+     */
+    static Mutable mutableFromFile(Path path) throws IOException {
+        return RegistriesConfigMapperHelper.deserialize(path, RegistryConfigImpl.Builder.class);
+    }
 }

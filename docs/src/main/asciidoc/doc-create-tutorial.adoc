@@ -1,0 +1,411 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="doc-create-tutorial"]
+= Creating a tutorial
+include::_attributes.adoc[]
+:diataxis-type: tutorial
+:categories: contributing
+
+Create a new tutorial that guides users through creating, running, and testing a Quarkus application that uses annotations from an imaginary extension.
+
+== Prerequisites
+
+- Roughly 15 minutes
+- An editor or IDE that provides syntax highlighting and previews for AsciiDoc, either natively or using a plugin.
+- You should be familiar with the overview of what a xref:doc-concept.adoc#tutorial[Tutorial] is.
+- Have the xref:doc-reference.adoc[Quarkus style and content guidelines] handy as a reference for required syntax and other conventions.
+
+:sectnums:
+:sectnumlevels: 3
+== Decide on a title and file name
+
+1. Decide on a title for the tutorial.
+For this worked example, we will use  `Serve Http requests using the Acme extension`.
+
+2. Decide on a file name.
+For this example, we will use `acme-serve-http-requests-tutorial.adoc`:
+
+- `acme-` will group this guide with other resources related to the acme extension
+- `serve-http-requests` is a derivative of the document title
+- `-tutorial` will indicate that this document is a tutorial (optional)
+- `.adoc` to indicate this is an asciidoc file
+
+== Copy the tutorial template
+
+Copy `docs/src/main/diataxis/_templates/template-tutorial.adoc` from the Quarkus repository into a new file called `acme-serve-http-requests-tutorial.adoc`.
+
+== Update the document header
+
+[source,asciidoc]
+----
+[id="acme-serve-http-requests-tutorial"] // <1>
+= Serve Http requests using the Acme extension // <2>
+include::_attributes.adoc[] // <3>
+:categories: web // <4>
+:extension-status: experimental // <5>
+----
+
+<1> Use the file name as a unique id for the section.
+<2> Add the title as a top-level heading.
+<3> Include additional attributes that help define consistent formatting and provide source portability.
+<4> Specify the `web` category, as our imaginary extension works with Http requests.
+<5> Our imaginary `acme` extension is experimental, so we include the extension status declaration in the header.
+
+.Document Preview
+--
+The preview of your document should contain the chosen title as a styled header at the top of the page.
+--
+
+== Add an abstract
+
+We want to let the readers of our tutorial know what they will achieve by following the steps in the tutorial.
+This abstract should be concise and should use appropriate verbs (create, build, deploy, ...) to set expectations.
+They should be able to determine if they want to engage with the content.
+
+[source,asciidoc]
+----
+Create an application that uses unique annotations from the experimental acme extension to define two endpoints:
+a simple HTTP endpoint and an endpoint that emits server-sent events (SSE).
+We will also use Quarkus dev mode for iterative development and testing.
+----
+
+.Document Preview
+--
+The preview of your document should contain the abstract as a paragraph immediately following the header.
+--
+
+== Include extension status descriptive text
+
+As the `acme` extension is experimental, we'll include `\{includes}/extension-status.adoc` that provides extension status text.
+It uses the extension status attribute defined in the header.
+
+[source,asciidoc]
+----
+\include::{includes}/extension-status.adoc[]
+----
+
+.Document Preview
+--
+The preview of your document should now include an admonition box below the abstract explaining that the plugin is experimental technology, and describing what can be expected in terms of stability or support for experimental technologies.
+--
+
+== Define Prerequisites
+
+We need to tell users what resources are required for completing the tutorial.
+
+Any tutorial describing development activity should use  `\{includes}/prerequisites.adoc` to ensure consistent language is used when describing prerequisites.
+Declared `prerequisites-` attributes can customize the final text.
+
+[source,asciidoc]
+----
+== Prerequisites
+
+:prerequisites-time: 30 minutes // <1>
+:prerequisites-docker: // <2>
+:prerequisites-no-graalvm: // <3>
+include::{includes}/prerequisites.adoc[] // <4>
+
+The `curl` command line utility is also used to manually test the endpoint.
+----
+
+<1> Declare that our hypothetical tutorial will take about 30 minutes to complete.
+<2> Declare that our nonsensical acme extension also requires a container runtime.
+<3> For simplicity in this tutorial, we will avoid GraalVM and Mandrel prerequisites.
+<4> Include the common file that provides text describing prerequisites.
+
+.Document Preview
+--
+A second level `Prerequistes` heading should immediately follow the extension status box in your document preview.
+It should state:
+
+- that this tutorial will take roughly 30 minutes
+- that you need an IDE, JDK (with versions), maven (with a placeholder for the maven version), a working container runtime, and (optionally) the Quarkus CLI.
+--
+
+== Describe the steps for completing the tutorial
+
+There are a few parts to this process.
+Just remember that each step should conclude with a comprehensible/observable result: "The output should look something like this..."
+
+=== Define the first step
+
+Enable section numbering before specifying the header for the first step.
+
+[source,asciidoc]
+----
+:sectnums: // <1>
+:sectnumlevels: 3
+== Create a new project // <2>
+
+Create a new project with the following command: // <3>
+
+:create-app-artifact-id: acme-quickstart // <4>
+:create-app-extensions: acme // <5>
+include::{includes}/devtools/create-app.adoc[] // <6>
+----
+
+<1> Enable section numbering
+<2> Create a second level heading for the first step
+<3> Describe the step briefly
+<4> Define the artifact id (Maven or Gradle)
+<5> List the extensions required by this project
+<6> Use common text to describe how to create a project
+
+.Document Preview
+--
+The document preview should now include a new section called `1. Create a new project`, that contains steps for creating a new project using both the Quarkus CLI and maven.
+--
+
+=== Using a source file
+
+In this tutorial, we are going to include code from a separate Java file using tags.
+
+[NOTE]
+====
+Consider this an aspirational example. Source is more commonly included directly in the source code block.
+While there are advantages to including source from Java files,
+there are details that we have to work out regarding where referenced code should live.
+Help and ideas are welcome!
+====
+
+Let's create a file called `acme-serve-http-requests-MyAcmeApplication.java`.
+While this is not a valid Java file name, it does sit nicely next to our tutorial source.
+We're going to rely on IDE magic for syntax checking.
+
+Let's add the following code to that file:
+
+[source,java,subs="-callouts"]
+----
+// tag::application[]
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.acme.corp.Anvil;
+import org.acme.corp.Toaster;
+
+import io.smallrye.mutiny.Multi;
+
+@ApplicationScoped // <1>
+public class MyAcmeApplication {
+
+    @Anvil(optional = {"name"}) // <2>
+    public String hello(String name) {
+        return String.format("Hello, %s!", (name == null ? "World" : name));
+    }
+
+    // tag::goodbye[]
+    @Toaster // <1>
+    public Multi<String> longGoodbye(String name) {
+        return Multi.createFrom().items("Goodbye", ",", "Sweet", "Planet", "!"); // <2>
+    }
+    // end::goodbye[]
+}
+// end::application[]
+----
+
+There are a few things to notice in this code sample:
+
+- AsciiDoc callouts are shown as comments on some lines, and their numbering is not sequential.
+
+- AsciiDoc content regions are defined by tag pairs (`tag::` and `end::`) in comments surrounding different sections of code.
+
+=== Provide concise subsequent steps
+
+Let's now instruct the learner to create a simple endpoint using the imaginary `@Anvil` annotation.
+
+==== Create a source code file
+
+We'll start with the steps required to create and add an endpoint to a file.
+
+[source,asciidoc,subs="-callouts"]
+-----
+== Hello, World! as an Acme REST service
+
+Let's create a Http endpoint using the `@Anvil` annotation.
+
+Create a new source file, `src/main/java/org/acme/MyAcmeApplication.java`, and define the `MyAcmeApplication` bean as follows:
+
+[source,java]
+----
+\include::{doc-examples}/acme-serve-http-requests-MyAcmeApplication.java[tags=*;!goodbye]
+----
+
+<1> Specify the CDI lifecycle of this bean.
+An `@ApplicationScoped` bean has a single bean instance that is used for the application.
+<2> The `@Anvil` annotation always implies a simple Http GET request with the uri derived from the method name, `/hello` in this case.
+The `optional` value indicates that the `name` parameter is not required.
+-----
+
+Some things to notice about these instructions:
+
+- We are including code from the source file while using Asciidoc tagged regions to exclude the `goodbye` method from the listing.
+- We put some context around what `@ApplicationScoped` means, without going into details about alternative CDI lifecycles
+- We describe what `@Anvil` is providing in the specific case covered by this tutorial.
+
+WARNING: Be careful with the amount of explanation given in a tutorial.
+Include enough information in the tutorial to help the user determine what other resource (`howto`, `concept`, or `reference`) they should look at next.
+
+.Document Preview
+--
+Your preview should contain a new section, `2. Hello, World! as an Acme REST service` that includes the contents of `src/main/java/org/acme/MyAcmeApplication.java` with the `goodbye` method omitted.
+--
+
+==== Explore continuous development and test
+
+It's now time to walk the user through starting Quarkus dev mode.
+A common include does most of the work for us:
+
+[source,asciidoc,subs="-callouts"]
+-----
+== Dev Mode: Hello, World!
+
+Let's run our application using Quarkus' iterative development mode:
+
+\include::{includes}/devtools/dev.adoc[]
+
+Once the console output from dev mode indicates that things are ready, use `curl` to invoke the `hello` endpoint:
+
+[source,shell]
+----
+$ curl -w "\n" http://localhost:8080/hello
+Hello, World!
+----
+
+Pass the name as a parameter:
+
+[source,bash,subs=attributes+]
+----
+$ curl localhost:8080/hello -d '{"name": "bananas"}'
+Hello, bananas!
+----
+
+You can leave dev mode running throughout the rest of the tutorial for continuous feedback as you make changes to code.
+Use `CTRL-C` to exit dev mode.
+-----
+
+We're providing a few things here:
+
+- We're using common text that describes how to start dev mode.
+- We describe how to use `curl` to test the output of our defined endpoint.
+
+.Document Preview
+--
+Your preview should contain a new section, "3. Dev Mode: Hello, World!"
+That section should include three methods of launching Quarkus dev mode (cli, maven, gradle).
+It should have codeblocks containing curl console commands and output, and instructions for how to exit dev mode.
+--
+
+==== Adding tests
+
+Now let's walk users through adding a test to their application:
+
+[source,asciidoc,subs="-callouts"]
+-----
+== Testing: Hello, World!
+
+Let's create a test to work with our `@Anvil` endpoint.
+
+Create a new source file, `src/test/java/org/acme/MyAcmeApplicationTest.java`, and define `MyAcmeApplicationTest` as follows:
+
+[source,java]
+----
+\include::{doc-examples}/acme-serve-http-requests-MyAcmeApplicationTest.java[tags=*;!goodbye]
+----
+
+After saving, the dev console should detect the presence of tests, but it isn't running by default.
+The bottom of the console screen will display a message indicating that running tests have been paused.
+
+Press `r` to resume testing.
+You should see the status change as tests are running, and it should finish with a message indicating that 1 test was run and that it was successful.
+-----
+
+We're using Asciidoc region tags to exclude a method from the listing (that we will be adding later).
+
+.Document Preview
+--
+Your preview should contain a new section, `4. Testing: Hello, World!` that includes the contents of `src/main/java/org/acme/MyAcmeApplicationTest.java` with the `testGoodbyeEndpoint` method omitted.
+--
+
+==== Add additional capabilities
+
+Let's add another step for creating a different endpoint using the imaginary `@Toaster` annotation, and for providing a corresponding test.
+
+[source,asciidoc,subs="-callouts"]
+-----
+== Goodbye, Sweet Planet! Server sent events with Acme
+
+Let's add an endpoint that supports Server Sent Events using the `@Toaster` annotation:
+
+[source,java]
+----
+\include::{doc-examples}/acme-serve-http-requests-MyAcmeApplication.java[tag=goodbye]
+----
+<1> The `@Toaster` annotation indicates that this method emits Server-Sent Events.
+<2> A `Multi` is an asynchronous publisher of multiple events provided by Mutiny, the event-driven reactive streams library used by Quarkus.
+
+== Testing: Goodbye, Sweet Planet!
+
+Let's create a test to work with our `@Toaster` endpoint.
+
+Add the following method to `src/test/java/org/acme/MyAcmeApplicationTest.java`:
+
+[source,java]
+----
+\include::{doc-examples}/acme-serve-http-requests-MyAcmeApplicationTest.java[tag=goodbye]
+----
+
+After saving, the dev console should detect the presence of the additional test, and run both.
+You should see a message that 2 tests were run, and both were successful.
+-----
+
+A few things to note:
+
+- We're using the AsciiDoc region tag to include only one region of the target file.
+
+- We do not go into detail explaining concepts:
+
+    * We talk about what the `@Toaster` annotation is doing in this example.
+    * We define the term `Multi` in a way that helps a user find their way to other related materials (How to, Concept, or Reference).
+
+.Document preview
+--
+Your preview should now contain two new sections, `5. Goodbye, Sweet Planet! Server sent events with Acme` and `6. Testing: Goodbye, Sweet Planet!`.
+
+The two new code listings should be focused on the methods that were omitted before:
+`goodbye` from `src/main/java/org/acme/MyAcmeApplication.java`, and `testGoodbyeEndpoint` from `src/main/java/org/acme/MyAcmeApplicationTest.java`.
+--
+
+== Provide a Summary section
+
+[source,asciidoc]
+----
+:sectnums!: // <1>
+== Summary
+
+Congratulations! You have created a project that uses the acme extension to create fanciful endpoints using the `@Anvil` and `@Toaster` annotations. // <2>
+----
+
+<1> Turn off section numbering
+<2> Congratulate the user on a job well done!
+
+.Document preview
+--
+Your preview should now contain an unnumbered `Summary` section.
+--
+
+:sectnums!:
+== Summary
+
+Congratulations!
+You have created a tutorial that describes how to create an application that uses annotations of dubious merit from a hypothetical extension.
+
+Compare your result against the complete worked example:
+
+[source,asciidoc]
+-----
+include::{doc-examples}/acme-serve-http-requests-tutorial.adoctxt[]
+-----

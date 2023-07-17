@@ -11,11 +11,11 @@ import java.util.concurrent.Executor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.AnonymousIdentityProvider;
 import io.quarkus.security.runtime.QuarkusIdentityProviderManagerImpl;
+import io.quarkus.smallrye.jwt.runtime.auth.JsonWebTokenCredential;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -31,7 +31,7 @@ public class TokenRealmUnitTest {
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) pk1, "https://server.example.com");
-        MpJwtValidator jwtValidator = new MpJwtValidator(new DefaultJWTParser(contextInfo));
+        MpJwtValidator jwtValidator = new MpJwtValidator(new DefaultJWTParser(contextInfo), null);
         QuarkusIdentityProviderManagerImpl authenticator = QuarkusIdentityProviderManagerImpl.builder()
                 .addProvider(new AnonymousIdentityProvider())
                 .setBlockingExecutor(new Executor() {
@@ -43,7 +43,7 @@ public class TokenRealmUnitTest {
                 .addProvider(jwtValidator).build();
 
         String jwt = TokenUtils.generateTokenString("/Token1.json", pk1Priv, "testTokenRealm");
-        TokenAuthenticationRequest tokenEvidence = new TokenAuthenticationRequest(new TokenCredential(jwt, "bearer"));
+        TokenAuthenticationRequest tokenEvidence = new TokenAuthenticationRequest(new JsonWebTokenCredential(jwt));
         SecurityIdentity securityIdentity = authenticator.authenticate(tokenEvidence).await().indefinitely();
         Assertions.assertNotNull(securityIdentity);
         Assertions.assertEquals("jdoe@example.com", securityIdentity.getPrincipal().getName());

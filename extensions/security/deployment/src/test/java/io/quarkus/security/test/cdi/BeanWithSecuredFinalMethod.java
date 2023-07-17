@@ -1,8 +1,8 @@
 package io.quarkus.security.test.cdi;
 
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.RolesAllowed;
-import javax.inject.Singleton;
+import jakarta.annotation.security.DenyAll;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Singleton;
 
 @Singleton
 public class BeanWithSecuredFinalMethod {

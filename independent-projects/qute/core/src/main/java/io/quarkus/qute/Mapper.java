@@ -6,7 +6,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * Maps keys to values in a similar way to {@link java.util.Map}. The difference is that a mapper could be stateless, i.e. the
  * lookup may be performed dynamically.
- * 
+ *
  * @see ValueResolvers#mapperResolver()
  */
 public interface Mapper {
@@ -20,7 +20,7 @@ public interface Mapper {
     }
 
     /**
-     * 
+     *
      * @param key
      * @return {@code true} if the mapper should be applied to the specified key
      */
@@ -29,7 +29,7 @@ public interface Mapper {
     }
 
     /**
-     * 
+     *
      * @param map
      * @return a mapper that wraps the given map
      */

@@ -9,7 +9,7 @@ import io.quarkus.runtime.ObjectSubstitution;
 public final class ObjectSubstitutionBuildItem extends MultiBuildItem {
     /**
      * Holder to keep type info around for compiler
-     * 
+     *
      * @param <F> - from class
      * @param <T> - to class
      */

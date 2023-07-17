@@ -10,11 +10,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
-import javax.transaction.TransactionSynchronizationRegistry;
+import jakarta.transaction.Status;
+import jakarta.transaction.Synchronization;
+import jakarta.transaction.SystemException;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.bson.BsonDocument;
 import org.bson.BsonDocumentWriter;
@@ -24,6 +24,7 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.EncoderContext;
 import org.jboss.logging.Logger;
 
+import com.mongodb.ReadPreference;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
@@ -36,10 +37,10 @@ import com.mongodb.client.result.DeleteResult;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.mongodb.panache.MongoEntity;
-import io.quarkus.mongodb.panache.binder.NativeQueryBinder;
-import io.quarkus.mongodb.panache.binder.PanacheQlQueryBinder;
-import io.quarkus.mongodb.panache.transaction.MongoTransactionException;
+import io.quarkus.mongodb.panache.common.MongoEntity;
+import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
+import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
+import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 
@@ -112,7 +113,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             objects.add(entity);
         }
 
-        if (objects.size() > 0) {
+        if (!objects.isEmpty()) {
             // get the first entity to be able to retrieve the collection with it
             Object firstEntity = objects.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
@@ -134,7 +135,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public void update(Stream<?> entities) {
         List<Object> objects = entities.collect(Collectors.toList());
-        if (objects.size() > 0) {
+        if (!objects.isEmpty()) {
             // get the first entity to be able to retrieve the collection with it
             Object firstEntity = objects.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
@@ -188,24 +189,29 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     public MongoCollection mongoCollection(Class<?> entityClass) {
-        MongoEntity legacyMongoEntity = entityClass.getAnnotation(MongoEntity.class);
-        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
-                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
-        MongoDatabase database = mongoDatabase(legacyMongoEntity, mongoEntity);
-        if (mongoEntity != null && !mongoEntity.collection().isEmpty()) {
-            return database.getCollection(mongoEntity.collection(), entityClass);
-        }
-        if (legacyMongoEntity != null && !legacyMongoEntity.collection().isEmpty()) {
-            return database.getCollection(legacyMongoEntity.collection(), entityClass);
+        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        MongoDatabase database = mongoDatabase(mongoEntity);
+        if (mongoEntity != null) {
+            MongoCollection collection = mongoEntity.collection().isEmpty()
+                    ? database.getCollection(entityClass.getSimpleName(), entityClass)
+                    : database.getCollection(mongoEntity.collection(), entityClass);
+            if (!mongoEntity.readPreference().isEmpty()) {
+                try {
+                    collection = collection.withReadPreference(ReadPreference.valueOf(mongoEntity.readPreference()));
+                } catch (IllegalArgumentException iae) {
+                    throw new IllegalArgumentException("Illegal read preference " + mongoEntity.readPreference()
+                            + " configured in the @MongoEntity annotation of " + entityClass.getName() + "."
+                            + " Supported values are primary|primaryPreferred|secondary|secondaryPreferred|nearest");
+                }
+            }
+            return collection;
         }
         return database.getCollection(entityClass.getSimpleName(), entityClass);
     }
 
     public MongoDatabase mongoDatabase(Class<?> entityClass) {
-        MongoEntity legacyMongoEntity = entityClass.getAnnotation(MongoEntity.class);
-        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
-                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
-        return mongoDatabase(legacyMongoEntity, mongoEntity);
+        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
+        return mongoDatabase(mongoEntity);
     }
 
     //
@@ -221,7 +227,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     private void persist(List<Object> entities) {
-        if (entities.size() > 0) {
+        if (!entities.isEmpty()) {
             // get the first entity to be able to retrieve the collection with it
             Object firstEntity = entities.get(0);
             MongoCollection collection = mongoCollection(firstEntity);
@@ -290,7 +296,7 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         MongoCollection collection = mongoCollection(firstEntity);
         ClientSession session = getSession(firstEntity);
 
-        //this will be an ordered bulk: it's less performant than a unordered one but will fail at the first failed write
+        //this will be an ordered bulk: it's less performant than an unordered one but will fail at the first failed write
         List<WriteModel> bulk = new ArrayList<>();
         for (Object entity : entities) {
             //we transform the entity as a document first
@@ -328,28 +334,26 @@ public abstract class MongoOperations<QueryType, UpdateType> {
     }
 
     ClientSession getSession(Class<?> entityClass) {
-        MongoEntity legacyMongoEntity = entityClass.getAnnotation(MongoEntity.class);
-        io.quarkus.mongodb.panache.common.MongoEntity mongoEntity = entityClass
-                .getAnnotation(io.quarkus.mongodb.panache.common.MongoEntity.class);
+        ClientSession clientSession = null;
+        MongoEntity mongoEntity = entityClass.getAnnotation(MongoEntity.class);
         InstanceHandle<TransactionSynchronizationRegistry> instance = Arc.container()
                 .instance(TransactionSynchronizationRegistry.class);
         if (instance.isAvailable()) {
             TransactionSynchronizationRegistry registry = instance.get();
             if (registry.getTransactionStatus() == Status.STATUS_ACTIVE) {
-                ClientSession clientSession = (ClientSession) registry.getResource(SESSION_KEY);
+                clientSession = (ClientSession) registry.getResource(SESSION_KEY);
                 if (clientSession == null) {
-                    return registerClientSession(legacyMongoEntity, mongoEntity, registry);
+                    return registerClientSession(mongoEntity, registry);
                 }
             }
         }
-        return null;
+        return clientSession;
     }
 
-    private ClientSession registerClientSession(MongoEntity legacyMongoEntity,
-            io.quarkus.mongodb.panache.common.MongoEntity mongoEntity,
+    private ClientSession registerClientSession(MongoEntity mongoEntity,
             TransactionSynchronizationRegistry registry) {
         TransactionManager transactionManager = Arc.container().instance(TransactionManager.class).get();
-        MongoClient client = BeanUtils.clientFromArc(legacyMongoEntity, mongoEntity, MongoClient.class, false);
+        MongoClient client = BeanUtils.clientFromArc(mongoEntity, MongoClient.class, false);
         ClientSession clientSession = client.startSession();
         clientSession.startTransaction();//TODO add txoptions from annotation
         registry.putResource(SESSION_KEY, clientSession);
@@ -387,24 +391,21 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return mongoCollection(entityClass);
     }
 
-    private MongoDatabase mongoDatabase(MongoEntity legacyEntity, io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
-        MongoClient mongoClient = BeanUtils.clientFromArc(legacyEntity, mongoEntity, MongoClient.class, false);
-        if (legacyEntity != null && !legacyEntity.database().isEmpty()) {
-            return mongoClient.getDatabase(legacyEntity.database());
-        }
+    private MongoDatabase mongoDatabase(MongoEntity mongoEntity) {
+        MongoClient mongoClient = BeanUtils.clientFromArc(mongoEntity, MongoClient.class, false);
         if (mongoEntity != null && !mongoEntity.database().isEmpty()) {
             return mongoClient.getDatabase(mongoEntity.database());
         }
-        String databaseName = getDefaultDatabaseName(legacyEntity, mongoEntity);
+        String databaseName = BeanUtils.getDatabaseNameFromResolver().orElseGet(() -> getDefaultDatabaseName(mongoEntity));
         return mongoClient.getDatabase(databaseName);
     }
 
-    private String getDefaultDatabaseName(MongoEntity legacyEntity, io.quarkus.mongodb.panache.common.MongoEntity mongoEntity) {
-        return defaultDatabaseName.computeIfAbsent(BeanUtils.beanName(legacyEntity, mongoEntity),
+    private String getDefaultDatabaseName(MongoEntity mongoEntity) {
+        return defaultDatabaseName.computeIfAbsent(BeanUtils.beanName(mongoEntity),
                 new Function<String, String>() {
                     @Override
                     public String apply(String beanName) {
-                        return BeanUtils.getDatabaseName(legacyEntity, mongoEntity, beanName);
+                        return BeanUtils.getDatabaseName(mongoEntity, beanName);
                     }
                 });
     }
@@ -426,7 +427,6 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Object... params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -523,7 +523,6 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, null, params);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String bindQuery = bindFilter(entityClass, query, params);
         Document docQuery = Document.parse(bindQuery);
@@ -541,7 +540,6 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return find(entityClass, query, sort, params.map());
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType find(Class<?> entityClass, Document query, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
@@ -627,14 +625,12 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         return stream(find(entityClass, query, sort));
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass) {
         MongoCollection collection = mongoCollection(entityClass);
         ClientSession session = getSession(entityClass);
         return createQuery(collection, session, null, null);
     }
 
-    @SuppressWarnings("rawtypes")
     public QueryType findAll(Class<?> entityClass, Sort sort) {
         MongoCollection collection = mongoCollection(entityClass);
         Document sortDoc = sortToDocument(sort);
@@ -650,6 +646,9 @@ public abstract class MongoOperations<QueryType, UpdateType> {
         Document sortDoc = new Document();
         for (Sort.Column col : sort.getColumns()) {
             sortDoc.append(col.getName(), col.getDirection() == Sort.Direction.Ascending ? 1 : -1);
+            if (col.getNullPrecedence() != null) {
+                throw new UnsupportedOperationException("Cannot sort by nulls first or nulls last");
+            }
         }
         return sortDoc;
     }
@@ -760,6 +759,10 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     public UpdateType update(Class<?> entityClass, String update, Object... params) {
         return executeUpdate(entityClass, update, params);
+    }
+
+    public UpdateType update(Class<?> entityClass, Document update) {
+        return createUpdate(mongoCollection(entityClass), entityClass, update);
     }
 
     private UpdateType executeUpdate(Class<?> entityClass, String update, Object... params) {

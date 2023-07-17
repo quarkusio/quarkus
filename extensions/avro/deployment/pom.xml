@@ -36,6 +36,10 @@
             <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jackson-spi</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

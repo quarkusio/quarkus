@@ -1,16 +1,19 @@
 package org.jboss.resteasy.reactive.server.jaxrs;
 
+import java.util.Collections;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
-import javax.ws.rs.sse.OutboundSseEvent;
-import javax.ws.rs.sse.SseEventSink;
+
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.SseEventSink;
+
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.SseUtil;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
 
 public class SseEventSinkImpl implements SseEventSink {
 
-    private static final byte[] EMPTY_BUFFER = new byte[0];
+    public static final byte[] EMPTY_BUFFER = new byte[0];
     private ResteasyReactiveRequestContext context;
     private SseBroadcasterImpl broadcaster;
     private boolean closed;
@@ -29,15 +32,7 @@ public class SseEventSinkImpl implements SseEventSink {
         if (isClosed())
             throw new IllegalStateException("Already closed");
         // NOTE: we can't cast event to OutboundSseEventImpl because the TCK sends us its own subclass
-        CompletionStage<?> ret = SseUtil.send(context, event);
-        if (broadcaster != null) {
-            return ret.whenComplete((value, x) -> {
-                if (x != null) {
-                    broadcaster.fireException(this, x);
-                }
-            });
-        }
-        return ret;
+        return SseUtil.send(context, event, Collections.emptyList());
     }
 
     @Override

@@ -31,30 +31,47 @@ public final class KubernetesDeploymentTargetBuildItem extends MultiBuildItem
 
     private final String name;
     private final String kind;
+    private final String group;
+    private final String version;
     private final int priority;
     private final boolean enabled;
+    private final DeployStrategy deployStrategy;
 
-    public KubernetesDeploymentTargetBuildItem(String name, String kind) {
-        this(name, kind, DEFAULT_PRIORITY, false);
+    public KubernetesDeploymentTargetBuildItem(String name, String kind, String group, String version,
+            DeployStrategy deployStrategy) {
+        this(name, kind, group, version, DEFAULT_PRIORITY, false, deployStrategy);
     }
 
-    public KubernetesDeploymentTargetBuildItem(String name, String kind, boolean enabled) {
-        this(name, kind, DEFAULT_PRIORITY, enabled);
+    public KubernetesDeploymentTargetBuildItem(String name, String kind, String group, String version, boolean enabled,
+            DeployStrategy deployStrategy) {
+        this(name, kind, group, version, DEFAULT_PRIORITY, enabled, deployStrategy);
     }
 
-    public KubernetesDeploymentTargetBuildItem(String name, String kind, int priority, boolean enabled) {
+    public KubernetesDeploymentTargetBuildItem(String name, String kind, String group, String version, int priority,
+            boolean enabled, DeployStrategy deployStrategy) {
         this.name = Objects.requireNonNull(name, "'name' must not be null");
         this.kind = Objects.requireNonNull(kind, "'kind' must not be null");
+        this.version = Objects.requireNonNull(version, "'version' must not be null");
+        this.group = group;
         this.priority = priority;
         this.enabled = enabled;
+        this.deployStrategy = deployStrategy;
     }
 
-    public String getName() {
-        return this.name;
+    public String getGroup() {
+        return this.group;
+    }
+
+    public String getVersion() {
+        return this.version;
     }
 
     public String getKind() {
         return this.kind;
+    }
+
+    public String getName() {
+        return this.name;
     }
 
     public int getPriority() {
@@ -63,6 +80,10 @@ public final class KubernetesDeploymentTargetBuildItem extends MultiBuildItem
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public DeployStrategy getDeployStrategy() {
+        return deployStrategy;
     }
 
     public boolean nameAndKindMatch(KubernetesDeploymentTargetBuildItem other) {
@@ -88,8 +109,10 @@ public final class KubernetesDeploymentTargetBuildItem extends MultiBuildItem
                     "Merging of KubernetesDeploymentTargetBuildItem having different 'name' or 'kind' fields is not allowed.");
         }
 
-        return new KubernetesDeploymentTargetBuildItem(this.name, this.kind, Math.max(this.priority, other.getPriority()),
-                this.enabled || other.isEnabled());
+        return new KubernetesDeploymentTargetBuildItem(this.name, this.kind, this.group, this.version,
+                Math.max(this.priority, other.getPriority()),
+                this.enabled || other.isEnabled(),
+                this.deployStrategy);
     }
 
     @Override
@@ -102,12 +125,13 @@ public final class KubernetesDeploymentTargetBuildItem extends MultiBuildItem
         return priority == that.priority &&
                 enabled == that.enabled &&
                 name.equals(that.name) &&
-                kind.equals(that.kind);
+                kind.equals(that.kind) &&
+                version.equals(that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, kind, priority, enabled);
+        return Objects.hash(name, kind, version, priority, enabled);
     }
 
     /**

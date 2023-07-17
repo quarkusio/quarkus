@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.bootstrap.BootstrapConstants;
@@ -18,6 +19,7 @@ import io.quarkus.runtime.util.ClassPathUtils;
  * Maps between builder test and application class directories.
  */
 public final class PathTestHelper {
+    private static final String TARGET = "target";
     private static final Map<String, String> TEST_TO_MAIN_DIR_FRAGMENTS = new HashMap<>();
 
     static {
@@ -141,15 +143,20 @@ public final class PathTestHelper {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
         }
-
-        if (!isInTestDir(resource)) {
-            throw new RuntimeException(
-                    "The test class " + testClass + " is not located in any of the directories "
-                            + TEST_TO_MAIN_DIR_FRAGMENTS.keySet());
-        }
-
         Path path = toPath(resource);
-        return path.getRoot().resolve(path.subpath(0, path.getNameCount() - Paths.get(classFileName).getNameCount()));
+        path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
+
+        if (!isInTestDir(resource) && !path.getParent().getFileName().toString().equals(TARGET)) {
+            final StringBuilder msg = new StringBuilder();
+            msg.append("The test class ").append(testClass.getName()).append(" is not located in any of the directories ");
+            var i = TEST_TO_MAIN_DIR_FRAGMENTS.keySet().iterator();
+            msg.append(i.next());
+            while (i.hasNext()) {
+                msg.append(", ").append(i.next());
+            }
+            throw new RuntimeException(msg.toString());
+        }
+        return path;
     }
 
     /**
@@ -175,13 +182,10 @@ public final class PathTestHelper {
                         .append(testClassLocation, 0, testClassLocation.length() - "-tests.jar".length())
                         .append(".jar")
                         .toString());
-            } else if (testClassLocation.contains("-rpkgtests")) {
-                // This is a third party test-jar transformed using rpkgtests-maven-plugin
-                return Paths.get(testClassLocation.replace("-rpkgtests", ""));
             }
-            return Paths.get(testClassLocation);
+            return Path.of(testClassLocation);
         }
-        return TEST_TO_MAIN_DIR_FRAGMENTS.entrySet().stream()
+        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.entrySet().stream()
                 .filter(e -> testClassLocation.contains(e.getKey()))
                 .map(e -> {
                     // we should replace only the last occurrence of the fragment
@@ -191,10 +195,30 @@ public final class PathTestHelper {
                     if (i + e.getKey().length() + 1 < testClassLocation.length()) {
                         buf.append(testClassLocation.substring(i + e.getKey().length()));
                     }
-                    return Paths.get(buf.toString());
+                    return Path.of(buf.toString());
                 })
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Unable to translate path for " + testClassLocation));
+                .findFirst();
+        Path p = null;
+        if (mainClassesDir.isPresent()) {
+            p = mainClassesDir.get();
+            if (Files.exists(p)) {
+                return p;
+            }
+        }
+        // could be a custom test classes dir under the 'target' dir with the main
+        // classes still under 'target/classes'
+        p = Path.of(testClassLocation).getParent();
+        if (p != null && p.getFileName().toString().equals(TARGET)) {
+            p = p.resolve("classes");
+            if (Files.exists(p)) {
+                return p;
+            }
+        }
+        if (mainClassesDir.isPresent()) {
+            // if it's mapped but doesn't exist, it's still ok to return it
+            return mainClassesDir.get();
+        }
+        throw new IllegalStateException("Unable to translate path for " + testClassLocation);
     }
 
     /**
@@ -246,7 +270,7 @@ public final class PathTestHelper {
         }
         path = path.substring(5, path.lastIndexOf('!'));
 
-        return testLocation.equals(Paths.get(path));
+        return testLocation.equals(Path.of(path));
     }
 
     private static boolean isInTestDir(URL resource) {
@@ -257,5 +281,21 @@ public final class PathTestHelper {
 
     private static Path toPath(URL resource) {
         return ClassPathUtils.toLocalPath(resource);
+    }
+
+    /**
+     * Returns the build directory of the project given its base dir and the test classes dir.
+     *
+     * @param projectRoot project dir
+     * @param testClassLocation test dir
+     *
+     * @return project build dir
+     */
+    public static Path getProjectBuildDir(Path projectRoot, Path testClassLocation) {
+        if (!testClassLocation.startsWith(projectRoot)) {
+            // this typically happens in the platform testsuite where test classes are loaded from jars
+            return projectRoot.resolve("target");
+        }
+        return projectRoot.resolve(projectRoot.relativize(testClassLocation).getName(0));
     }
 }

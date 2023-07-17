@@ -6,7 +6,12 @@ metadata:
   - "infinispan-client"
   - "data-grid-client"
   - "infinispan"
+  - "cache"
+  - "distributed-cache"
+  - "caching"
   guide: "https://quarkus.io/guides/infinispan-client"
   categories:
   - "data"
   status: "stable"
+  config:
+  - "quarkus.infinispan-client."

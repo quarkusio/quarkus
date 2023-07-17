@@ -1,6 +1,6 @@
 package io.quarkus.vertx.http.cors;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Router;

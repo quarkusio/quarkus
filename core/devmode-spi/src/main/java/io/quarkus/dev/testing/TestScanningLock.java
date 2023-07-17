@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * lock that is used to prevent scanning while the dev mode test is updating classes
  *
  * This prevents races in the continuous testing tests. It's not an ideal solution
- * but its the only one I can think of at the moment.
+ * but it is the only one I can think of at the moment.
  */
 public class TestScanningLock {
 

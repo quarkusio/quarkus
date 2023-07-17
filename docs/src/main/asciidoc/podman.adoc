@@ -1,0 +1,148 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Using Podman with Quarkus
+include::_attributes.adoc[]
+
+https://podman.io/[Podman] is a daemonless and rootless container engine for developing, managing, and running OCI Containers on your Linux system or other OS.
+If you're using Podman with Quarkus, some one-off setup is needed, but once it's done, you can take advantage of all the Quarkus features.
+
+== Installing Podman
+
+=== macOS
+
+Containers are really Linux.
+As such, Linux containers cannot run natively on macOS or Windows.
+Therefore, the containers must run in a Linux virtual machine (VM), and a Podman client interacts with that VM.
+A native hypervisor subsystem and virtualization software is used to run the Linux VM on the OS, and then containers are run within this VM.
+In Podman, this is known as the Podman machine, and it is built into the tool.
+
+macOS users can install Podman through https://brew.sh/[Homebrew].
+Once you have set up `brew`, you can use the `brew install` command to install Podman and `docker-compose`:
+
+[source,bash]
+----
+brew install podman
+brew install docker-compose
+podman machine init -v $HOME:$HOME
+PODMAN_VERSION=`podman -v | sed 's/[a-zA-Z ]*//'`
+sudo /opt/homebrew/Cellar/podman/$PODMAN_VERSION/bin/podman-mac-helper install
+podman machine set --rootful
+podman machine start
+alias docker='podman'
+----
+
+If you're using Podman 4.1 or higher, you don't need the `-v $HOME:$HOME` volume mount.
+
+If you're using Mac M1, an extra step is required to https://edofic.com/posts/2021-09-12-podman-m1-amd64[make AMD64 images work]:
+
+[source,bash]
+----
+podman machine ssh
+sudo -i
+rpm-ostree install qemu-user-static
+systemctl reboot
+----
+
+Once the virtual machine restarts, you should be good to run dev services.
+
+For more details, please see
+
+- the https://podman.io/getting-started/installation#macos[official Podman documentation]
+- article about https://www.redhat.com/sysadmin/replace-docker-podman-macos[running Podman on Mac]
+- https://xphyr.net/post/podman_on_osx/[another article], with good guidance on `--rootful` and mounting volumes
+- article about https://edofic.com/posts/2021-09-12-podman-m1-amd64[running AMD64 images with Podman on Mac M1]
+
+=== Windows
+
+Please see the https://github.com/containers/podman/blob/main/docs/tutorials/podman-for-windows.md[Podman for Windows guide] for setup and usage instructions.
+
+Before starting the Podman machine, set it to prefer rootful container execution:
+
+[source,bash]
+----
+podman machine set --rootful
+----
+
+This action only needs to be done once.
+
+=== Linux
+
+The Podman package is available in several Linux distributions.
+Podman can in most cases be used as an drop-in-replacement for Docker, either with the `podman-docker` package, or using an alias (`alias docker=podman`).
+To install it for your Linux OS, please refer to the https://podman.io/getting-started/installation#installing-on-linux[Podman installation guide].
+
+=== Setting DOCKER_HOST on Linux
+
+Podman supports two modes of operation: rootful, in which case the container runs as root on the host system, and rootless, where the container runs under a standard Unix user account.
+On Linux, the REST API Unix socket is, by default, restricted to only allow the root user to access it.
+This prevents someone from using a container to achieve a privilege escalation on the system.
+While these restrictions can be softened to allow a special group instead of just root, the recommended approach is to use rootless Podman on Linux.
+To use rootless Podman, you need to set a `DOCKER_HOST` environment variable to point to the user-specific socket.
+
+NOTE: In both cases, you need to start the REST API by enabling the Podman socket service through systemd, or at least by making sure Podman is running as a service.
+
+[source,bash]
+----
+# Example 1: Enable the podman socket with Docker REST API with systemd (only needs to be done once)
+systemctl --user enable podman.socket --now
+----
+
+[source,bash]
+----
+# Example 2: Enable the podman socket with Docker REST API on a system where systemd is not running (WSL etc)
+podman system service --time=0
+----
+
+Then, you can obtain the path of the socket with the following command:
+
+[source,bash]
+----
+$ podman info | grep -A2 'remoteSocket'
+
+remoteSocket:
+  exists: true
+  path: /path/to/podman.sock
+----
+
+Setting the `DOCKER_HOST` environment variable must be done every time or added to the profile:
+
+[source,bash]
+----
+export DOCKER_HOST=unix:///path/to/podman.sock <1>
+----
+<1> Replace `/path/to/podman.sock` with the path you obtained previously.
+
+For a detailed explanation, see this https://quarkus.io/blog/quarkus-devservices-testcontainers-podman/[blog article].
+
+== After installation
+
+=== Testcontainers privileges
+
+Edit `~/.testcontainers.properties` and add the following line
+
+[source,properties]
+----
+ryuk.container.privileged=true
+----
+
+Alternatively, you can disable ryuk:
+
+[source,bash]
+----
+export TESTCONTAINERS_RYUK_DISABLED=true #not recommended - see above!
+----
+
+This has the disadvantage of https://github.com/containers/podman/discussions/14238[disabling container cleanup], so you may find stale containers hanging around.
+This can be a problem if you're running automated tests.
+
+== Short names of images
+
+Testcontainers and Quarkus Dev Services also expect the container service they make requests against to be non-interactive.
+In case you have multiple registries configured in your Docker or Podman configuration, and when using short image names, Podman responds with a prompt asking which registry should be used to pull images.
+
+While we recommend you to avoid short names and always use fully specified names including the registry, Testcontainers unfortunately relies on short names internally for the time being.
+If you are using Testcontainers, either directly or through Dev Services, you need to disable this prompt by setting the `short-name-mode="disabled"` configuration property of Podman in `/etc/containers/registries.conf`.
+

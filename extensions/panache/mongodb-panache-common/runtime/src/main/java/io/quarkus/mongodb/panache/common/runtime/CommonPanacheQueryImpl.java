@@ -3,6 +3,7 @@ package io.quarkus.mongodb.panache.common.runtime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -16,6 +17,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CountOptions;
 
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
@@ -34,6 +36,8 @@ public class CommonPanacheQueryImpl<Entity> {
     private Range range;
 
     private Collation collation;
+
+    private OptionalInt batchSize = OptionalInt.empty();
 
     public CommonPanacheQueryImpl(MongoCollection<? extends Entity> collection, ClientSession session, Bson mongoQuery,
             Bson sort) {
@@ -151,13 +155,25 @@ public class CommonPanacheQueryImpl<Entity> {
         return (CommonPanacheQueryImpl<T>) this;
     }
 
+    public <T extends Entity> CommonPanacheQueryImpl<T> withBatchSize(int batchSize) {
+        this.batchSize = OptionalInt.of(batchSize);
+        return (CommonPanacheQueryImpl<T>) this;
+    }
+
     // Results
 
     @SuppressWarnings("unchecked")
     public long count() {
         if (count == null) {
             Bson query = getQuery();
-            count = clientSession == null ? collection.countDocuments(query) : collection.countDocuments(clientSession, query);
+            CountOptions countOptions = new CountOptions();
+            if (collation != null) {
+                countOptions.collation(collation);
+            }
+
+            count = clientSession == null
+                    ? collection.countDocuments(query, countOptions)
+                    : collection.countDocuments(clientSession, query, countOptions);
         }
         return count;
     }
@@ -170,13 +186,14 @@ public class CommonPanacheQueryImpl<Entity> {
     private <T extends Entity> List<T> list(Integer limit) {
         List<T> list = new ArrayList<>();
         Bson query = getQuery();
-        FindIterable find = clientSession == null ? collection.find(query) : collection.find(clientSession, query);
+        FindIterable<T> find = clientSession == null ? collection.find(query) : collection.find(clientSession, query);
         if (this.projections != null) {
             find.projection(projections);
         }
         if (this.collation != null) {
             find.collation(collation);
         }
+        batchSize.ifPresent(batchSize -> find.batchSize(batchSize));
         manageOffsets(find, limit);
 
         try (MongoCursor<T> cursor = find.sort(sort).iterator()) {

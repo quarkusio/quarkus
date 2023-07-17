@@ -2,7 +2,7 @@ package io.quarkus.liquibase.runtime.devconsole;
 
 import java.lang.annotation.Annotation;
 
-import javax.enterprise.inject.Default;
+import jakarta.enterprise.inject.Default;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;

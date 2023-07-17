@@ -1,10 +1,11 @@
 package io.quarkus.devtools.codestarts.extension;
 
+import java.util.Collection;
+import java.util.Map;
+
 import io.quarkus.devtools.codestarts.CodestartProjectInputBuilder;
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import java.util.Collection;
-import java.util.Map;
 
 public class QuarkusExtensionCodestartProjectInputBuilder extends CodestartProjectInputBuilder {
     boolean withoutIntegrationTests;

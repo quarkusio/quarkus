@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.crac.Context;
+import org.crac.Resource;
+
 /**
  * Classloader used with the fast-jar package type.
  *
@@ -32,7 +35,8 @@ public final class RunnerClassLoader extends ClassLoader {
     private final Set<String> nonExistentResources;
     // the following two fields go hand in hand - they need to both be populated from the same data
     // in order for the resource loading to work properly
-    private final Set<String> fullyIndexedDirectories;
+    // normally this field would be a set, but it only contains 2 elements, so making it a list is actually better
+    private final List<String> fullyIndexedDirectories;
     private final Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap;
 
     //Mutations protected by synchronization on the field value itself:
@@ -40,15 +44,20 @@ public final class RunnerClassLoader extends ClassLoader {
     //Protected by synchronization on the above field, as they are related.
     private boolean postBootPhase = false;
 
+    private final CracResource resource;
+
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
-            Set<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
+            List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
         super(parent);
         this.resourceDirectoryMap = resourceDirectoryMap;
         this.parentFirstPackages = parentFirstPackages;
         this.nonExistentResources = nonExistentResources;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
+
+        resource = new CracResource();
+        org.crac.Core.getGlobalContext().register(resource);
     }
 
     @Override
@@ -175,6 +184,9 @@ public final class RunnerClassLoader extends ClassLoader {
             dirName = "";
         }
         if (!dirName.equals(name) && fullyIndexedDirectories.contains(dirName)) {
+            if (dirName.isEmpty()) {
+                return resourceDirectoryMap.get(name);
+            }
             // If we arrive here, we know that resource being queried belongs to one of the fully indexed directories
             // Had that resource existed however, it would have been present in directlyIndexedResourcesIndexMap
             return null;
@@ -284,6 +296,24 @@ public final class RunnerClassLoader extends ClassLoader {
                 }
             }
             this.postBootPhase = true;
+        }
+    }
+
+    class CracResource implements Resource {
+        @Override
+        public void beforeCheckpoint(Context<? extends Resource> ctx) {
+            synchronized (currentlyBufferedResources) {
+                for (int i = 0; i < currentlyBufferedResources.length; ++i) {
+                    if (currentlyBufferedResources[i] != null) {
+                        currentlyBufferedResources[i].resetInternalCaches();
+                        currentlyBufferedResources[i] = null;
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void afterRestore(Context<? extends Resource> ctx) {
         }
     }
 }

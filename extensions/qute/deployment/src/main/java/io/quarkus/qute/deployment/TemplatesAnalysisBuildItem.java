@@ -2,9 +2,11 @@ package io.quarkus.qute.deployment;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.qute.Expression;
+import io.quarkus.qute.ParameterDeclaration;
 
 /**
  * Represents the result of analysis of all templates.
@@ -24,7 +26,7 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
     /**
      * Analysis of a particular template found in the given path.
      */
-    static class TemplateAnalysis {
+    public static final class TemplateAnalysis {
 
         // A user-defined id; may be null
         public final String id;
@@ -34,14 +36,21 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
 
         public final List<Expression> expressions;
 
+        public final List<ParameterDeclaration> parameterDeclarations;
+
         // File path, e.g. hello.html or ItemResource/items.html
         public final String path;
 
-        public TemplateAnalysis(String id, String generatedId, List<Expression> expressions, String path) {
+        public final Set<String> fragmentIds;
+
+        public TemplateAnalysis(String id, String generatedId, List<Expression> expressions,
+                List<ParameterDeclaration> parameterDeclarations, String path, Set<String> fragmentIds) {
             this.id = id;
             this.generatedId = generatedId;
             this.expressions = expressions;
+            this.parameterDeclarations = parameterDeclarations;
             this.path = path;
+            this.fragmentIds = fragmentIds;
         }
 
         Expression findExpression(int id) {

@@ -4,21 +4,27 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.function.BiFunction;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
-import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.builder.Version;
 import io.quarkus.devconsole.runtime.spi.FlashScopeUtil;
+import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
@@ -32,6 +38,10 @@ import io.vertx.ext.web.RoutingContext;
  * and has access to build time stuff
  */
 public class DevConsole implements Handler<RoutingContext> {
+
+    private static final Logger log = Logger.getLogger(DevConsole.class);
+
+    private static final String HTML_CONTENT_TYPE = "text/html; charset=UTF-8";
 
     static final ThreadLocal<String> currentExtension = new ThreadLocal<>();
     private static final Comparator<Map<String, Object>> EXTENSION_COMPARATOR = Comparator
@@ -52,39 +62,52 @@ public class DevConsole implements Handler<RoutingContext> {
         this.globalData.put("frameworkRootPath", frameworkRootPath);
 
         // This includes the dev segment, but does not include a trailing slash (for append)
-        this.devRootAppend = frameworkRootPath + "dev";
+        this.devRootAppend = frameworkRootPath + "dev-v1";
         this.globalData.put("devRootAppend", devRootAppend);
 
         this.globalData.put("quarkusVersion", Version.getVersion());
         this.globalData.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         this.globalData.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+    }
 
-        try {
-            final Yaml yaml = new Yaml();
-            ClassPathUtils.consumeAsPaths("/META-INF/quarkus-extension.yaml", p -> {
-                final String desc;
-                try (Scanner scanner = new Scanner(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
-                    scanner.useDelimiter("\\A");
-                    desc = scanner.hasNext() ? scanner.next() : null;
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed to read " + p, e);
+    private void initLazyState() {
+        if (extensions.isEmpty()) {
+            synchronized (extensions) {
+                if (extensions.isEmpty()) {
+                    try {
+                        final Yaml yaml = new Yaml(new SafeConstructor(new LoaderOptions()));
+                        ClassPathUtils.consumeAsPaths("/META-INF/quarkus-extension.yaml", p -> {
+                            try {
+                                final String desc;
+                                try (Scanner scanner = new Scanner(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
+                                    scanner.useDelimiter("\\A");
+                                    desc = scanner.hasNext() ? scanner.next() : null;
+                                }
+                                if (desc == null) {
+                                    // should be an exception?
+                                    return;
+                                }
+                                final Map<String, Object> metadata = yaml.load(desc);
+                                extensions.put(getExtensionNamespace(metadata), metadata);
+                            } catch (IOException | RuntimeException e) {
+                                // don't abort, just log, to prevent a single extension from breaking entire dev ui
+                                log.error("Failed to process extension descriptor " + p.toUri(), e);
+                            }
+                        });
+                        this.globalData.put("configKeyMap", getConfigKeyMap());
+                    } catch (IOException x) {
+                        throw new RuntimeException(x);
+                    }
                 }
-                if (desc == null) {
-                    // should be an exception?
-                    return;
-                }
-                final Map<String, Object> metadata = yaml.load(desc);
-                extensions.put(getExtensionNamespace(metadata), metadata);
-            });
-        } catch (IOException x) {
-            throw new RuntimeException(x);
+            }
         }
     }
 
     @Override
     public void handle(RoutingContext ctx) {
-        // Redirect /q/dev to /q/dev/
+        initLazyState();
+        // Redirect /q/dev-v1 to /q/dev-v1/
         if (ctx.normalizedPath().length() == devRootAppend.length()) {
             ctx.response().setStatusCode(302);
             ctx.response().headers().set(HttpHeaders.LOCATION, devRootAppend + "/");
@@ -106,9 +129,10 @@ public class DevConsole implements Handler<RoutingContext> {
             Template devTemplate = engine.getTemplate(path);
             if (devTemplate != null) {
                 String extName = getExtensionName(namespace);
-                ctx.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+                ctx.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, HTML_CONTENT_TYPE);
                 TemplateInstance devTemplateInstance = devTemplate
                         .data("currentExtensionName", extName)
+                        .data("query-string", ctx.request().query())
                         .data("flash", FlashScopeUtil.getFlash(ctx))
                         .data("currentRequest", ctx.request());
                 renderTemplate(ctx, devTemplateInstance);
@@ -116,6 +140,22 @@ public class DevConsole implements Handler<RoutingContext> {
                 ctx.next();
             }
         }
+    }
+
+    private Map<String, List<String>> getConfigKeyMap() {
+        Map<String, List<String>> ckm = new TreeMap<>();
+        Collection<Map<String, Object>> values = this.extensions.values();
+        for (Map<String, Object> extension : values) {
+            if (extension.containsKey("metadata")) {
+                Map<String, Object> metadata = (Map<String, Object>) extension.get("metadata");
+                if (metadata.containsKey("config")) {
+                    List<String> configKeys = (List<String>) metadata.get("config");
+                    String name = (String) extension.get("name");
+                    ckm.put(name, configKeys);
+                }
+            }
+        }
+        return ckm;
     }
 
     private String getExtensionName(String namespace) {
@@ -144,21 +184,28 @@ public class DevConsole implements Handler<RoutingContext> {
         });
     }
 
-    public void sendMainPage(RoutingContext event) {
-        Template devTemplate = engine.getTemplate("index");
+    private void sendMainPage(RoutingContext event) {
+        final Template devTemplate = engine.getTemplate("index");
+        if (devTemplate == null) {
+            throw new RuntimeException("Failed to locate the `index` template");
+        }
         List<Map<String, Object>> actionableExtensions = new ArrayList<>();
         List<Map<String, Object>> nonActionableExtensions = new ArrayList<>();
-        for (Map<String, Object> loaded : this.extensions.values()) {
+        for (Entry<String, Map<String, Object>> entry : this.extensions.entrySet()) {
+            final String namespace = entry.getKey();
+            final Map<String, Object> loaded = entry.getValue();
             @SuppressWarnings("unchecked")
             final Map<String, Object> metadata = (Map<String, Object>) loaded.get("metadata");
-            final String namespace = getExtensionNamespace(loaded);
             currentExtension.set(namespace); // needed because the template of the extension is going to be read
             Template simpleTemplate = engine.getTemplate(namespace + "/embedded.html");
             boolean hasConsoleEntry = simpleTemplate != null;
             boolean hasGuide = metadata.containsKey("guide");
+            boolean hasConfig = metadata.containsKey("config");
+            boolean isUnlisted = metadata.containsKey("unlisted")
+                    && (metadata.get("unlisted").equals(true) || metadata.get("unlisted").equals("true"));
             loaded.put("hasConsoleEntry", hasConsoleEntry);
             loaded.put("hasGuide", hasGuide);
-            if (hasConsoleEntry || hasGuide) {
+            if (!isUnlisted || hasConsoleEntry || hasGuide || hasConfig) {
                 if (hasConsoleEntry) {
                     Map<String, Object> data = new HashMap<>();
                     data.putAll(globalData);
@@ -175,6 +222,7 @@ public class DevConsole implements Handler<RoutingContext> {
         nonActionableExtensions.sort(EXTENSION_COMPARATOR);
         TemplateInstance instance = devTemplate.data("actionableExtensions", actionableExtensions)
                 .data("nonActionableExtensions", nonActionableExtensions).data("flash", FlashScopeUtil.getFlash(event));
+        event.response().setStatusCode(200).headers().set(HttpHeaderNames.CONTENT_TYPE, HTML_CONTENT_TYPE);
         renderTemplate(event, instance);
     }
 
@@ -191,7 +239,7 @@ public class DevConsole implements Handler<RoutingContext> {
                         "Failed to locate 'artifact' or 'group-id' and 'artifact-id' among metadata keys " + metadata.keySet());
             }
         } else {
-            final AppArtifactCoords coords = AppArtifactCoords.fromString(artifact);
+            final GACTV coords = GACTV.fromString(artifact);
             groupId = coords.getGroupId();
             artifactId = coords.getArtifactId();
         }

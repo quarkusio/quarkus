@@ -13,16 +13,14 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-import javax.persistence.EntityManager;
-import javax.persistence.ParameterMode;
-import javax.persistence.StoredProcedureQuery;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.ParameterMode;
+import jakarta.persistence.StoredProcedureQuery;
 
 import org.hibernate.BaseSessionEventListener;
 import org.hibernate.Session;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -42,14 +40,16 @@ public abstract class AbstractTransactionLifecycleTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(SimpleEntity.class)
                     .addAsResource("application.properties"))
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     // Ignore these particular warnings: they are not relevant to this test.
+                    && !record.getMessage().contains("has been blocked for") //sometimes CI has a super slow moment and this triggers the blocked thread detector
                     && !record.getMessage().contains("Using Java versions older than 11 to build Quarkus applications")
-                    && !record.getMessage().contains("Agroal does not support detecting if a connection is still usable"))
+                    && !record.getMessage().contains("Agroal does not support detecting if a connection is still usable")
+                    && !record.getMessage().contains("Netty DefaultChannelId initialization"))
             .assertLogRecords(records -> assertThat(records)
                     .extracting(LogRecord::getMessage) // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
                     .isEmpty());

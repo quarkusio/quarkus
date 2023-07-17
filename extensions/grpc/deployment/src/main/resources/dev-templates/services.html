@@ -16,7 +16,7 @@
           }
           $(".class-candidate").each(function() {
             var className = $(this).text();
-            if (appClassLang(className)) {
+            if (appClassLocation(className)) {
               $(this).addClass("app-class");
             }
           });
@@ -41,7 +41,7 @@
    <tbody>
    {#for service in info:grpcServices.infos}
     <tr>
-      <td>{count}.</td>
+      <td>{service_count}.</td>
       <td>
       {#when service.status}
         {#is SERVING}
@@ -65,7 +65,7 @@
       </td>
       <td>
         {#if service.hasTestableMethod} 
-        <a href="/q/dev/io.quarkus.quarkus-grpc/service?name={service.name}"><i class="fas fa-tools"></i> Test</a>
+        <a href="{devRootAppend}/io.quarkus.quarkus-grpc/service?name={service.name}"><i class="fas fa-tools"></i> Test</a>
         {/if}
       </td>
     {/for}

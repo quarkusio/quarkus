@@ -5,10 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ResourceReferenceProvider;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -19,27 +15,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.persistence.EntityGraph;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.FlushModeType;
-import javax.persistence.LockModeType;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import javax.persistence.StoredProcedureQuery;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaDelete;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.metamodel.Metamodel;
+
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.persistence.EntityGraph;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+import jakarta.persistence.StoredProcedureQuery;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaDelete;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.metamodel.Metamodel;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.DotName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.processor.InjectionPointsTransformer;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class ResourceInjectionTest {
 
@@ -47,7 +53,26 @@ public class ResourceInjectionTest {
     public ArcTestContainer container = ArcTestContainer.builder()
             .beanClasses(EEResourceField.class, JpaClient.class)
             .resourceReferenceProviders(EntityManagerProvider.class, DummyProvider.class)
-            .resourceAnnotations(PersistenceContext.class, Dummy.class).build();
+            .resourceAnnotations(PersistenceContext.class, Dummy.class)
+            .injectionPointsTransformers(new InjectionPointsTransformer() {
+                @Override
+                public boolean appliesTo(org.jboss.jandex.Type requiredType) {
+                    return requiredType.name().toString().equals(String.class.getName());
+                }
+
+                @Override
+                public void transform(TransformationContext transformationContext) {
+                    if (transformationContext.getAllAnnotations()
+                            .stream()
+                            .anyMatch(it -> it.name().toString().equals(Dummy.class.getName()))) {
+                        // pretend that the injection point has an annotation whose class is missing
+                        transformationContext.transform()
+                                .add(AnnotationInstance.builder(DotName.createSimple("missing.NonNull")).build())
+                                .done();
+                    }
+                }
+            })
+            .build();
 
     @Test
     public void testInjection() {

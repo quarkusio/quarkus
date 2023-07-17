@@ -11,15 +11,25 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.config.ObjectMapperConfig;
+import io.restassured.mapper.ObjectMapperType;
 
 @QuarkusTestResource(KafkaTestResource.class)
 @QuarkusTest
 public class KafkaSnappyConsumerTest {
+
+    @BeforeAll
+    public static void configureMapper() {
+        // We have JSON-B and Jackson around, we want to ensure REST Assured uses Jackson and not JSON-B
+        RestAssured.config = RestAssured.config.objectMapperConfig(ObjectMapperConfig.objectMapperConfig()
+                .defaultObjectMapperType(ObjectMapperType.JACKSON_2));
+    }
 
     public static Producer<Integer, String> createProducer() {
         Properties props = new Properties();

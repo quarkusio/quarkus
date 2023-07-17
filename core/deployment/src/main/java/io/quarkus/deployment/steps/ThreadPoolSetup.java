@@ -12,7 +12,6 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.runtime.ExecutorRecorder;
-import io.quarkus.runtime.ThreadPoolConfig;
 
 /**
  *
@@ -23,11 +22,10 @@ public class ThreadPoolSetup {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     public ExecutorBuildItem createExecutor(ExecutorRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
-            ThreadPoolConfig threadPoolConfig,
             Optional<ThreadFactoryBuildItem> threadFactoryBuildItem,
             Optional<ContextHandlerBuildItem> contextBuildItem) {
         return new ExecutorBuildItem(
-                recorder.setupRunTime(shutdownContextBuildItem, threadPoolConfig, launchModeBuildItem.getLaunchMode(),
+                recorder.setupRunTime(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode(),
                         threadFactoryBuildItem.map(ThreadFactoryBuildItem::getThreadFactory).orElse(null),
                         contextBuildItem.map(ContextHandlerBuildItem::contextHandler).orElse(null)));
     }

@@ -33,6 +33,19 @@ public class ForwardedForHeaderTest {
     }
 
     @Test
+    public void testInvalidPort() {
+        assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
+
+        RestAssured.given().header("X-Forwarded-Proto", "https").header("X-Forwarded-For", "backend:-4444")
+                .header("X-Forwarded-Host", "somehost").get("/forward").then()
+                .body(Matchers.not(Matchers.endsWith(":44444444")));
+
+        RestAssured.given().header("X-Forwarded-Proto", "https").header("X-Forwarded-For", "backend:-4444")
+                .header("X-Forwarded-Host", "somehost").get("/forward").then()
+                .body(Matchers.not(Matchers.endsWith(":44444444")));
+    }
+
+    @Test
     public void testIPV4WithPort() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
 

@@ -1,6 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
+import static io.quarkus.runtime.util.ContainerRuntimeUtil.detectContainerRuntime;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,10 +24,12 @@ import io.quarkus.deployment.pkg.builditem.AppCDSContainerImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSRequestedBuildItem;
 import io.quarkus.deployment.pkg.builditem.AppCDSResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.utilities.JavaBinFinder;
 
 public class AppCDSBuildStep {
@@ -49,6 +52,7 @@ public class AppCDSBuildStep {
     @BuildStep
     public void build(Optional<AppCDSRequestedBuildItem> appCDsRequested,
             JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
+            CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<AppCDSContainerImageBuildItem> appCDSContainerImage,
             BuildProducer<AppCDSResultBuildItem> appCDS,
             BuildProducer<ArtifactResultBuildItem> artifactResult) throws Exception {
@@ -71,17 +75,29 @@ public class AppCDSBuildStep {
             }
         }
 
-        Path classesLstPath = createClassesLst(jarResult, outputTarget, javaBinPath, containerImage,
-                appCDsRequested.get().getAppCDSDir(), packageConfig.isFastJar());
-        if (classesLstPath == null) {
-            return;
+        boolean useArchiveClassesAtExit = compiledJavaVersion.getJavaVersion()
+                .isJava17OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE;
+
+        Path classesListPath = null;
+        if (!useArchiveClassesAtExit) {
+            classesListPath = createClassesList(jarResult, outputTarget, javaBinPath, containerImage,
+                    appCDsRequested.get().getAppCDSDir(), packageConfig.isFastJar());
+            if (classesListPath == null) {
+                return;
+            }
+            log.debugf("'%s' successfully created.", CLASSES_LIST_FILE_NAME);
         }
 
-        log.debugf("'%s' successfully created.", CLASSES_LIST_FILE_NAME);
-
+        Path appCDSPath;
         log.info("Launching AppCDS creation process.");
-        Path appCDSPath = createAppCDS(jarResult, outputTarget, javaBinPath, containerImage, classesLstPath,
-                packageConfig.isFastJar());
+        if (useArchiveClassesAtExit) {
+            appCDSPath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
+                    packageConfig.isFastJar());
+        } else {
+            appCDSPath = createAppCDSFromClassesList(jarResult, outputTarget, javaBinPath, containerImage, classesListPath,
+                    packageConfig.isFastJar());
+        }
+
         if (appCDSPath == null) {
             log.warn("Unable to create AppCDS.");
             return;
@@ -102,7 +118,9 @@ public class AppCDSBuildStep {
 
     private String determineContainerImage(PackageConfig packageConfig,
             Optional<AppCDSContainerImageBuildItem> appCDSContainerImage) {
-        if (packageConfig.appcdsBuilderImage.isPresent()) {
+        if (!packageConfig.appcdsUseContainer) {
+            return null;
+        } else if (packageConfig.appcdsBuilderImage.isPresent()) {
             return packageConfig.appcdsBuilderImage.get();
         } else if (appCDSContainerImage.isPresent()) {
             return appCDSContainerImage.get().getContainerImage();
@@ -113,7 +131,7 @@ public class AppCDSBuildStep {
     /**
      * @return The path of the created classes.lst file or null if the file was not created
      */
-    private Path createClassesLst(JarBuildItem jarResult,
+    private Path createClassesList(JarBuildItem jarResult,
             OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage, Path appCDSDir, boolean isFastJar) {
 
         List<String> commonJavaArgs = new ArrayList<>(3);
@@ -158,17 +176,17 @@ public class AppCDSBuildStep {
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(NULL_FILE);
-                processBuilder.redirectOutput(NULL_FILE);
+                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
-            log.debug("Failed to launch process used to create '" + CLASSES_LIST_FILE_NAME + "'.", e);
+            log.warn("Failed to launch process used to create '" + CLASSES_LIST_FILE_NAME + "'. using the following command:'"
+                    + command + "'", e);
             return null;
         }
 
         if (exitCode != 0) {
-            log.debugf("The process that was supposed to create AppCDS exited with error code: %d.", exitCode);
+            log.warnf("Command '%s' that was supposed to create AppCDS exited with error code: %d.", command, exitCode);
             return null;
         }
 
@@ -185,8 +203,10 @@ public class AppCDSBuildStep {
     // generate the classes file on the host
     private List<String> dockerRunCommands(OutputTargetBuildItem outputTarget, String containerImage,
             String containerWorkingDir) {
+        ContainerRuntime containerRuntime = detectContainerRuntime(true);
+
         List<String> command = new ArrayList<>(10);
-        command.add("docker");
+        command.add(containerRuntime.getExecutableName());
         command.add("run");
         command.add("-v");
         command.add(outputTarget.getOutputDirectory().toAbsolutePath().toString() + ":" + CONTAINER_IMAGE_BASE_BUILD_DIR
@@ -209,18 +229,11 @@ public class AppCDSBuildStep {
     /**
      * @return The path of the created app-cds.jsa file or null if the file was not created
      */
-    private Path createAppCDS(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
+    private Path createAppCDSFromClassesList(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
             String containerImage, Path classesLstPath, boolean isFastFar) {
-
-        Path workingDirectory = jarResult.getPath().getParent();
-        Path appCDSPath = workingDirectory.resolve("app-cds.jsa");
-        if (appCDSPath.toFile().exists()) {
-            try {
-                Files.delete(appCDSPath);
-            } catch (IOException e) {
-                log.debug("Unable to delete existing 'app-cds.jsa' file.", e);
-            }
-        }
+        AppCDSPathsContainer appCDSPathsContainer = AppCDSPathsContainer.fromQuarkusJar(jarResult.getPath());
+        Path workingDirectory = appCDSPathsContainer.workingDirectory;
+        Path appCDSPath = appCDSPathsContainer.resultingFile;
 
         List<String> javaArgs = new ArrayList<>(5);
         javaArgs.add("-Xshare:dump");
@@ -253,6 +266,60 @@ public class AppCDSBuildStep {
             command.addAll(javaArgs);
         }
 
+        return launchAppCDSCreate(workingDirectory, appCDSPath, command);
+    }
+
+    /**
+     * @return The path of the created app-cds.jsa file or null if the file was not created
+     */
+    private Path createAppCDSFromExit(JarBuildItem jarResult,
+            OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
+            boolean isFastJar) {
+
+        AppCDSPathsContainer appCDSPathsContainer = AppCDSPathsContainer.fromQuarkusJar(jarResult.getPath());
+        Path workingDirectory = appCDSPathsContainer.workingDirectory;
+        Path appCDSPath = appCDSPathsContainer.resultingFile;
+
+        boolean debug = log.isDebugEnabled();
+        List<String> javaArgs = new ArrayList<>(debug ? 4 : 3);
+        javaArgs.add("-XX:ArchiveClassesAtExit=" + appCDSPath.getFileName().toString());
+        javaArgs.add(String.format("-D%s=true", MainClassBuildStep.GENERATE_APP_CDS_SYSTEM_PROPERTY));
+        if (debug) {
+            javaArgs.add("-Xlog:cds=debug");
+        }
+        javaArgs.add("-jar");
+
+        List<String> command;
+        if (containerImage != null) {
+            List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
+                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                            : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
+            command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
+            command.addAll(dockerRunCommand);
+            command.add("java");
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command.add(JarResultBuildStep.QUARKUS_RUN_JAR);
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        } else {
+            command = new ArrayList<>(2 + javaArgs.size());
+            command.add(javaBinPath);
+            command.addAll(javaArgs);
+            if (isFastJar) {
+                command
+                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                                .getFileName().toString());
+            } else {
+                command.add(jarResult.getPath().getFileName().toString());
+            }
+        }
+
+        return launchAppCDSCreate(workingDirectory, appCDSPath, command);
+    }
+
+    private Path launchAppCDSCreate(Path workingDirectory, Path appCDSPath, List<String> command) {
         if (log.isDebugEnabled()) {
             log.debugf("Launching command: '%s' to create final AppCDS.", String.join(" ", command));
         }
@@ -264,8 +331,7 @@ public class AppCDSBuildStep {
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(NULL_FILE);
-                processBuilder.redirectOutput(NULL_FILE);
+                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {
@@ -309,8 +375,26 @@ public class AppCDSBuildStep {
         }
     }
 
-    // copied from Java 9
-    // TODO remove when we move to Java 11
+    private static class AppCDSPathsContainer {
+        private final Path workingDirectory;
+        private final Path resultingFile;
 
-    private static final File NULL_FILE = new File(SystemUtils.IS_OS_WINDOWS ? "NUL" : "/dev/null");
+        private AppCDSPathsContainer(Path workingDirectory, Path resultingFile) {
+            this.workingDirectory = workingDirectory;
+            this.resultingFile = resultingFile;
+        }
+
+        public static AppCDSPathsContainer fromQuarkusJar(Path jar) {
+            Path workingDirectory = jar.getParent();
+            Path appCDSPath = workingDirectory.resolve("app-cds.jsa");
+            if (appCDSPath.toFile().exists()) {
+                try {
+                    Files.delete(appCDSPath);
+                } catch (IOException e) {
+                    log.debug("Unable to delete existing 'app-cds.jsa' file.", e);
+                }
+            }
+            return new AppCDSPathsContainer(workingDirectory, appCDSPath);
+        }
+    }
 }

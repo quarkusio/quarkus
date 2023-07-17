@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.eclipse.microprofile.context.ThreadContext;
 import org.eclipse.microprofile.context.spi.ContextManagerExtension;
 import org.eclipse.microprofile.context.spi.ContextManagerProvider;
@@ -50,12 +51,15 @@ public class SmallRyeContextPropagationRecorder {
         SmallRyeContextManager contextManager = builder.build();
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
-        shutdownContext.addShutdownTask(new Runnable() {
+        //needs to be late, as running threads can re-create an implicit one
+        shutdownContext.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
                 contextManagerProvider.releaseContextManager(contextManager);
             }
         });
+        //Avoid leaking the classloader:
+        this.builder = null;
     }
 
     public Supplier<Object> initializeManagedExecutor(ExecutorService executorService) {
@@ -75,6 +79,26 @@ public class SmallRyeContextPropagationRecorder {
                         throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
                     }
                 };
+            }
+        };
+    }
+
+    public Supplier<Object> initializeConfiguredThreadContext(String[] cleared, String[] propagated, String[] unchanged) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return ThreadContext.builder().propagated(propagated).cleared(cleared).unchanged(unchanged).build();
+            }
+        };
+    }
+
+    public Supplier<Object> initializeConfiguredManagedExecutor(String[] cleared, String[] propagated, int maxAsync,
+            int maxQueued) {
+        return new Supplier<Object>() {
+            @Override
+            public Object get() {
+                return ManagedExecutor.builder().propagated(propagated).cleared(cleared).maxAsync(maxAsync).maxQueued(maxQueued)
+                        .build();
             }
         };
     }

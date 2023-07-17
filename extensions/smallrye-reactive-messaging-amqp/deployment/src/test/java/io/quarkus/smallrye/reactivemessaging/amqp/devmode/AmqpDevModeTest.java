@@ -5,8 +5,6 @@ import static org.awaitility.Awaitility.await;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.activemq.artemis.protocol.amqp.broker.ProtonProtocolManagerFactory;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -23,7 +21,7 @@ public class AmqpDevModeTest {
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class,
                             AnonymousAmqpBroker.class, ProtonProtocolManagerFactory.class)
                     .addAsResource("broker.xml")

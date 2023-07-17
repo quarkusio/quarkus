@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.interceptors.inheritance;
 
-import javax.interceptor.Interceptor;
+import jakarta.interceptor.Interceptor;
 
 @Two
 @Interceptor

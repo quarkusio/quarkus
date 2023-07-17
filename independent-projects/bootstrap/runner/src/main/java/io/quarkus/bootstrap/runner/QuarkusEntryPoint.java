@@ -14,6 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThread;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
+
 public class QuarkusEntryPoint {
 
     public static final String QUARKUS_APPLICATION_DAT = "quarkus/quarkus-application.dat";
@@ -21,8 +24,16 @@ public class QuarkusEntryPoint {
 
     public static void main(String... args) throws Throwable {
         System.setProperty("java.util.logging.manager", org.jboss.logmanager.LogManager.class.getName());
+        System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
+                "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
         Timing.staticInitStarted(false);
-        doRun(args);
+
+        try {
+            doRun(args);
+        } catch (Exception e) {
+            InitialConfigurator.DELAYED_HANDLER.close();
+            throw e;
+        }
     }
 
     private static void doRun(Object args) throws IOException, ClassNotFoundException, IllegalAccessException,
@@ -42,12 +53,15 @@ public class QuarkusEntryPoint {
                     24_576)) {
                 app = SerializedApplication.read(in, appRoot);
             }
+            final RunnerClassLoader appRunnerClassLoader = app.getRunnerClassLoader();
             try {
-                Thread.currentThread().setContextClassLoader(app.getRunnerClassLoader());
-                Class<?> mainClass = app.getRunnerClassLoader().loadClass(app.getMainClass());
+                Thread.currentThread().setContextClassLoader(appRunnerClassLoader);
+                QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(appRunnerClassLoader);
+                Class<?> mainClass = appRunnerClassLoader.loadClass(app.getMainClass());
                 mainClass.getMethod("main", String[].class).invoke(null, args);
             } finally {
-                app.getRunnerClassLoader().close();
+                QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(null);
+                appRunnerClassLoader.close();
             }
         }
     }

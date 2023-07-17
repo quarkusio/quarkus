@@ -14,4 +14,10 @@ public class DataSourceReactiveMSSQLConfig {
     @ConfigItem
     public OptionalInt packetSize = OptionalInt.empty();
 
+    /**
+     * Whether SSL/TLS is enabled.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean ssl = false;
+
 }

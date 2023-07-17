@@ -7,15 +7,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class CodestartProjectGenerationTest {
+public class CodestartProjectGenerationTest {
 
+    private static final TestCodestartResourceLoader RESOURCE_LOADER = new TestCodestartResourceLoader();
     private final Path projectPath = Paths.get("target/codestarts-test");
-    private TestCodestartResourceLoader resourceLoader = new TestCodestartResourceLoader();
 
     @BeforeEach
     void setUp() {
@@ -119,12 +120,12 @@ class CodestartProjectGenerationTest {
                 .hasSameTextualContentAs(getResource("expected-pom-maven-merge.xml"));
     }
 
-    private CodestartCatalog<CodestartProjectInput> load() throws IOException {
-        return CodestartCatalogLoader.loadDefaultCatalog(resourceLoader, "codestarts/core", "codestarts/examples");
+    public static CodestartCatalog<CodestartProjectInput> load() throws IOException {
+        return CodestartCatalogLoader.loadDefaultCatalog(RESOURCE_LOADER, "codestarts/core", "codestarts/examples");
     }
 
-    private CodestartCatalog<CodestartProjectInput> loadSpecific(String s) throws IOException {
-        return CodestartCatalogLoader.loadDefaultCatalog(resourceLoader, "codestarts/core", "codestarts/examples",
+    public static CodestartCatalog<CodestartProjectInput> loadSpecific(String s) throws IOException {
+        return CodestartCatalogLoader.loadDefaultCatalog(RESOURCE_LOADER, "codestarts/core", "codestarts/examples",
                 "codestarts/" + s);
     }
 

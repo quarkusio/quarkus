@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -14,7 +15,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.processor.JandexUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
-import org.jboss.resteasy.reactive.common.util.ReflectionBeanFactoryCreator;
+import org.jboss.resteasy.reactive.server.core.reflection.ReflectiveContextInjectedBeanFactory;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
@@ -27,7 +28,7 @@ public class ResteasyReactiveContextResolverScanner {
      * Creates a fully populated exception mapper instance, that are created via reflection.
      */
     public static ContextResolvers createContextResolvers(IndexView indexView, ApplicationScanningResult result) {
-        return createContextResolvers(indexView, result, new ReflectionBeanFactoryCreator());
+        return createContextResolvers(indexView, result, ReflectiveContextInjectedBeanFactory.STRING_FACTORY);
     }
 
     /**
@@ -69,7 +70,7 @@ public class ResteasyReactiveContextResolverScanner {
     }
 
     private static List<String> getProducesMediaTypes(ClassInfo classInfo) {
-        AnnotationInstance produces = classInfo.classAnnotation(ResteasyReactiveDotNames.PRODUCES);
+        AnnotationInstance produces = classInfo.declaredAnnotation(ResteasyReactiveDotNames.PRODUCES);
         if (produces == null) {
             return Collections.emptyList();
         }

@@ -1,7 +1,7 @@
 package io.quarkus.it.panache.kotlin
 
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity
-import javax.persistence.MappedSuperclass
+import jakarta.persistence.MappedSuperclass
 
 @MappedSuperclass
 abstract class GenericEntity<T> : PanacheEntity() {

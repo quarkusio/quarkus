@@ -1,18 +1,19 @@
 package io.quarkus.infinispan.client.deployment;
 
+import java.util.Map;
 import java.util.Properties;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class InfinispanPropertiesBuildItem extends SimpleBuildItem {
 
-    private final Properties properties;
+    private final Map<String, Properties> properties;
 
-    public InfinispanPropertiesBuildItem(Properties properties) {
+    public InfinispanPropertiesBuildItem(Map<String, Properties> properties) {
         this.properties = properties;
     }
 
-    public Properties getProperties() {
+    public Map<String, Properties> getProperties() {
         return properties;
     }
 }

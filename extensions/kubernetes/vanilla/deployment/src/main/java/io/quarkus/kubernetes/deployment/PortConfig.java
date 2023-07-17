@@ -43,4 +43,10 @@ public class PortConfig {
      */
     public OptionalInt nodePort;
 
+    /**
+     * If enabled, the port will be configured to use the schema HTTPS.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean tls;
+
 }

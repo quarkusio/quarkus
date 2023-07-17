@@ -26,6 +26,12 @@ public class JavaDocConfigDescriptionParserTest {
     }
 
     @Test
+    public void removeParagraphIndentation() {
+        String parsed = parser.parseConfigDescription("First paragraph<br><br> Second Paragraph");
+        assertEquals("First paragraph +\n +\nSecond Paragraph", parsed);
+    }
+
+    @Test
     public void parseUntrimmedJavaDoc() {
         String parsed = parser.parseConfigDescription("                ");
         assertEquals("", parsed);
@@ -44,13 +50,13 @@ public class JavaDocConfigDescriptionParserTest {
     @Test
     public void parseJavaDocWithParagraph() {
         String javaDoc = "hello<p>world</p>";
-        String expectedOutput = "hello\nworld";
+        String expectedOutput = "hello\n\nworld";
         String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
 
         javaDoc = "hello world<p>bonjour </p><p>le monde</p>";
-        expectedOutput = "hello world\nbonjour \nle monde";
+        expectedOutput = "hello world\n\nbonjour\n\nle monde";
         parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
@@ -64,9 +70,14 @@ public class JavaDocConfigDescriptionParserTest {
         String parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
+        javaDoc = "hello <strong>world</strong>";
+        expectedOutput = "hello *world*";
+        parsed = parser.parseConfigDescription(javaDoc);
+        assertEquals(expectedOutput, parsed);
+
         // Emphasized
         javaDoc = "<em>hello world</em>";
-        expectedOutput = "*hello world*";
+        expectedOutput = "_hello world_";
         parsed = parser.parseConfigDescription(javaDoc);
         assertEquals(expectedOutput, parsed);
 
@@ -108,21 +119,6 @@ public class JavaDocConfigDescriptionParserTest {
     }
 
     @Test
-    public void parseJavaDocWithUlTags() {
-        String javaDoc = "hello <ul>world</ul>";
-        String expectedOutput = "hello world";
-        String parsed = parser.parseConfigDescription(javaDoc);
-
-        assertEquals(expectedOutput, parsed);
-
-        javaDoc = "hello world<ul> bonjour </ul><ul>le monde</ul>";
-        expectedOutput = "hello world bonjour le monde";
-        parsed = parser.parseConfigDescription(javaDoc);
-
-        assertEquals(expectedOutput, parsed);
-    }
-
-    @Test
     public void parseJavaDocWithLiTagsInsideUlTag() {
         String javaDoc = "List:" +
                 "<ul>\n" +
@@ -130,7 +126,7 @@ public class JavaDocConfigDescriptionParserTest {
                 "<li>2</li>\n" +
                 "</ul>" +
                 "";
-        String expectedOutput = "List: \n - 1 \n - 2";
+        String expectedOutput = "List:\n\n - 1\n - 2";
         String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
@@ -144,7 +140,7 @@ public class JavaDocConfigDescriptionParserTest {
                 "<li>2</li>\n" +
                 "</ol>" +
                 "";
-        String expectedOutput = "List: \n . 1 \n . 2";
+        String expectedOutput = "List:\n\n . 1\n . 2";
         String parsed = parser.parseConfigDescription(javaDoc);
 
         assertEquals(expectedOutput, parsed);
@@ -214,6 +210,49 @@ public class JavaDocConfigDescriptionParserTest {
     }
 
     @Test
+    public void parseJavaDocWithBlockquoteBlock() {
+        assertEquals("See Section 4.5.5 of the JSR 380 specification, specifically\n"
+                + "\n"
+                + "[quote]\n"
+                + "____\n"
+                + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation. This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
+                + "____\n"
+                + "\n"
+                + "That was interesting, wasn't it?",
+                parser.parseConfigDescription("See Section 4.5.5 of the JSR 380 specification, specifically\n"
+                        + "\n"
+                        + "<blockquote>\n"
+                        + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may\n"
+                        + "be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation.\n"
+                        + "This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
+                        + "</blockquote>\nThat was interesting, wasn't it?"));
+
+        assertEquals(
+                "Some HTML entities & special characters:\n\n```\n<os>|<arch>[/variant]|<os>/<arch>[/variant]\n```\n\nbaz",
+                parser.parseConfigDescription(
+                        "Some HTML entities &amp; special characters:\n\n<pre>&lt;os&gt;|&lt;arch&gt;[/variant]|&lt;os&gt;/&lt;arch&gt;[/variant]\n</pre>\n\nbaz"));
+
+        // TODO
+        // assertEquals("Example:\n\n```\nfoo\nbar\n```",
+        // parser.parseConfigDescription("Example:\n\n<pre>{@code\nfoo\nbar\n}</pre>"));
+    }
+
+    @Test
+    public void parseJavaDocWithCodeBlock() {
+        assertEquals("Example:\n\n```\nfoo\nbar\n```\n\nbaz",
+                parser.parseConfigDescription("Example:\n\n<pre>\nfoo\nbar\n</pre>\n\nbaz"));
+
+        assertEquals(
+                "Some HTML entities & special characters:\n\n```\n<os>|<arch>[/variant]|<os>/<arch>[/variant]\n```\n\nbaz",
+                parser.parseConfigDescription(
+                        "Some HTML entities &amp; special characters:\n\n<pre>&lt;os&gt;|&lt;arch&gt;[/variant]|&lt;os&gt;/&lt;arch&gt;[/variant]\n</pre>\n\nbaz"));
+
+        // TODO
+        // assertEquals("Example:\n\n```\nfoo\nbar\n```",
+        // parser.parseConfigDescription("Example:\n\n<pre>{@code\nfoo\nbar\n}</pre>"));
+    }
+
+    @Test
     public void asciidoc() {
         String asciidoc = "== My Asciidoc\n" +
                 "\n" +
@@ -249,11 +288,28 @@ public class JavaDocConfigDescriptionParserTest {
     public void escape(String ch) {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
-        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
-                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
 
         final String asciiDoc = parser.parseConfigDescription(javaDoc);
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
+                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
+        assertEquals(expected, actual);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "#", "*", "\\", "[", "]", "|" })
+    public void escapeInsideInlineElement(String ch) {
+        final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
+                + "</code>, {@code JavaDoc tag " + ch + " " + ch + ch + "}";
+
+        final String asciiDoc = new JavaDocParser(true).parseConfigDescription(javaDoc);
+        final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
+
+        if (ch.equals("]")) {
+            ch = "&#93;";
+        }
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
+                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
         assertEquals(expected, actual);
     }
 
@@ -278,6 +334,27 @@ public class JavaDocConfigDescriptionParserTest {
         final String asciiDoc = parser.parseConfigDescription(javaDoc);
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
         assertEquals(expected, actual);
+    }
+
+    @Test
+    void trim() {
+        assertEquals("+ \nfoo", JavaDocParser.trim(new StringBuilder("+ \nfoo")));
+        assertEquals("+", JavaDocParser.trim(new StringBuilder(" +")));
+        assertEquals("foo", JavaDocParser.trim(new StringBuilder(" +\nfoo")));
+        assertEquals("foo +", JavaDocParser.trim(new StringBuilder("foo +")));
+        assertEquals("foo", JavaDocParser.trim(new StringBuilder("foo")));
+        assertEquals("+", JavaDocParser.trim(new StringBuilder("+ \n")));
+        assertEquals("+", JavaDocParser.trim(new StringBuilder("   +\n+ \n")));
+        assertEquals("", JavaDocParser.trim(new StringBuilder(" +\n")));
+        assertEquals("foo", JavaDocParser.trim(new StringBuilder(" \n\tfoo")));
+        assertEquals("foo", JavaDocParser.trim(new StringBuilder("foo \n\t")));
+        assertEquals("foo", JavaDocParser.trim(new StringBuilder(" \n\tfoo \n\t")));
+        assertEquals("", JavaDocParser.trim(new StringBuilder("")));
+        assertEquals("", JavaDocParser.trim(new StringBuilder("  \n\t")));
+        assertEquals("+", JavaDocParser.trim(new StringBuilder("   +")));
+        assertEquals("", JavaDocParser.trim(new StringBuilder("   +\n")));
+        assertEquals("", JavaDocParser.trim(new StringBuilder("   +\n +\n")));
+        assertEquals("foo +\nbar", JavaDocParser.trim(new StringBuilder("   foo +\nbar +\n")));
     }
 
 }

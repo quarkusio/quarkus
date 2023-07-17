@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.jboss.logging.Logger;
@@ -34,11 +35,12 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.ReferenceCountUtil;
-import io.quarkus.amazon.lambda.http.model.Headers;
 import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.vertx.core.net.SocketAddress;
+import io.vertx.core.net.impl.ConnectionBase;
 
 @SuppressWarnings("unused")
 public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, APIGatewayV2HTTPResponse> {
@@ -46,10 +48,13 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
 
     private static final int BUFFER_SIZE = 8096;
 
-    private static Headers errorHeaders = new Headers();
-    static {
-        errorHeaders.putSingle("Content-Type", "application/json");
-    }
+    private static final Map<String, List<String>> ERROR_HEADERS = Map.of("Content-Type", List.of("application/json"));
+
+    private static final String COOKIE_HEADER = "Cookie";
+
+    // comma headers for headers that have comma in value and we don't want to split it up into
+    // multiple headers
+    private static final Set<String> COMMA_HEADERS = Set.of("access-control-request-headers");
 
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
         InetSocketAddress clientAddress = null;
@@ -66,7 +71,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
             APIGatewayV2HTTPResponse res = new APIGatewayV2HTTPResponse();
             res.setStatusCode(500);
             res.setBody("{ \"message\": \"Internal Server Error\" }");
-            res.setMultiValueHeaders(errorHeaders);
+            res.setMultiValueHeaders(ERROR_HEADERS);
             return res;
         }
 
@@ -103,9 +108,19 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                         if (allForName == null || allForName.isEmpty()) {
                             continue;
                         }
+                        // Handle cookies separately to preserve commas in the header values
+                        if ("set-cookie".equals(name)) {
+                            responseBuilder.setCookies(allForName);
+                            continue;
+                        }
                         final StringBuilder sb = new StringBuilder();
                         for (Iterator<String> valueIterator = allForName.iterator(); valueIterator.hasNext();) {
-                            sb.append(valueIterator.next());
+                            String val = valueIterator.next();
+                            if (name.equalsIgnoreCase("Transfer-Encoding")
+                                    && val.equals("chunked")) {
+                                continue; // ignore transfer encoding, chunked screws up message and response
+                            }
+                            sb.append(val);
                             if (valueIterator.hasNext()) {
                                 sb.append(",");
                             }
@@ -139,7 +154,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                             responseBuilder.setIsBase64Encoded(true);
                             responseBuilder.setBody(Base64.getEncoder().encodeToString(baos.toByteArray()));
                         } else {
-                            responseBuilder.setBody(new String(baos.toByteArray(), StandardCharsets.UTF_8));
+                            responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         }
                     }
                     future.complete(responseBuilder);
@@ -167,24 +182,44 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.class, request);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.RequestContext.class, request.getRequestContext());
+        HttpMethod httpMethod = null;
+        if (request.getRequestContext() != null && request.getRequestContext().getHttp() != null
+                && request.getRequestContext().getHttp().getMethod() != null) {
+            httpMethod = HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod());
+        }
+        if (httpMethod == null) {
+            throw new IllegalStateException("Missing HTTP method in request event");
+        }
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod()), ofNullable(request.getRawQueryString())
+                httpMethod, ofNullable(request.getRawQueryString())
                         .filter(q -> !q.isEmpty()).map(q -> request.getRawPath() + '?' + q).orElse(request.getRawPath()),
                 quarkusHeaders);
         if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
             for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
                 if (header.getValue() != null) {
-                    for (String val : header.getValue().split(","))
-                        nettyRequest.headers().add(header.getKey(), val);
+                    // Some header values have commas in them and we don't want to
+                    // split them up into multiple header values.
+                    if (COMMA_HEADERS.contains(header.getKey().toLowerCase(Locale.ROOT))) {
+                        nettyRequest.headers().add(header.getKey(), header.getValue());
+                    } else {
+                        for (String val : header.getValue().split(","))
+                            nettyRequest.headers().add(header.getKey(), val);
+                    }
                 }
             }
         }
+        if (request.getCookies() != null) {
+            nettyRequest.headers().add(COOKIE_HEADER, String.join("; ", request.getCookies()));
+        }
+
         if (!nettyRequest.headers().contains(HttpHeaderNames.HOST)) {
             nettyRequest.headers().add(HttpHeaderNames.HOST, "localhost");
         }
 
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getBody() != null) {
+            // See https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3
+            nettyRequest.headers().add(HttpHeaderNames.TRANSFER_ENCODING, "chunked");
             if (request.getIsBase64Encoded()) {
                 ByteBuf body = Unpooled.wrappedBuffer(Base64.getDecoder().decode(request.getBody()));
                 requestContent = new DefaultLastHttpContent(body);
@@ -196,7 +231,19 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
-
+        if (request.getRequestContext() != null
+                && request.getRequestContext().getHttp() != null
+                && request.getRequestContext().getHttp().getSourceIp() != null
+                && request.getRequestContext().getHttp().getSourceIp().length() > 0) {
+            int port = 443; // todo, may be bad to assume 443?
+            if (request.getHeaders() != null &&
+                    request.getHeaders().get("X-Forwarded-Port") != null) {
+                port = Integer.parseInt(request.getHeaders().get("X-Forwarded-Port"));
+            }
+            connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
+                    SocketAddress.inetSocketAddress(port,
+                            request.getRequestContext().getHttp().getSourceIp()));
+        }
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
         try {

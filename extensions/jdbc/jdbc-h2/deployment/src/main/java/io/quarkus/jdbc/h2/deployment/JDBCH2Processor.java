@@ -13,6 +13,8 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.jdbc.h2.runtime.H2AgroalConnectionConfigurer;
 
 public class JDBCH2Processor {
@@ -48,5 +50,16 @@ public class JDBCH2Processor {
     @BuildStep
     void registerDefaultDbType(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.H2));
+    }
+
+    @BuildStep
+    void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("org.h2.store.fs.niomem.FileNioMemData"));
+    }
+
+    @BuildStep
+    NativeImageEnableModule registerNetModuleForNative() {
+        //Compiling H2 to native requires activating the jdk.net module of the JDK
+        return new NativeImageEnableModule("jdk.net");
     }
 }

@@ -3,9 +3,7 @@ package io.quarkus.resteasy.test.security;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -17,7 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DefaultRolesAllowedStarJaxRsTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(PermitAllResource.class, UnsecuredResource.class,
                             TestIdentityProvider.class,
                             TestIdentityController.class,

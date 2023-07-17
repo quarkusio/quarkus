@@ -31,7 +31,7 @@ public final class GeneratedBeanBuildItem extends MultiBuildItem {
     }
 
     /**
-     * 
+     *
      * @return the textual representation of generated code
      */
     public String getSource() {

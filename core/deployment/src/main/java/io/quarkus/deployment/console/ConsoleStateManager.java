@@ -26,10 +26,13 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.LogManager;
 
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
+import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSupport;
+import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.spi.DevModeType;
 
@@ -51,19 +54,20 @@ public class ConsoleStateManager {
         @Override
         public void accept(int[] ints) {
             for (int i : ints) {
+                char key = (char) i;
                 if (readLineBuilder != null) {
-                    if (i == '\n') {
+                    if (i == '\n' || i == '\r') {
                         readLineConsumer.accept(readLineBuilder.toString());
                         readLineBuilder = null;
                         readLineConsumer = null;
                     } else {
-                        readLineBuilder.append((char) i);
+                        readLineBuilder.append(key);
                     }
                 } else {
                     if (i == '\n') {
                         System.out.println("");
                     }
-                    Holder command = commands.get((char) i);
+                    Holder command = commands.get(key);
                     if (command != null) {
                         if (command.consoleCommand.getReadLineHandler() != null) {
                             QuarkusConsole.INSTANCE.doReadLine();
@@ -71,6 +75,10 @@ public class ConsoleStateManager {
                             readLineConsumer = command.consoleCommand.getReadLineHandler();
                         } else {
                             command.consoleCommand.getRunnable().run();
+                        }
+                    } else {
+                        if (QuarkusConsole.INSTANCE.singleLetterAliases().containsKey(key)) {
+                            QuarkusConsole.INSTANCE.runAlias(key);
                         }
                     }
                 }
@@ -97,6 +105,25 @@ public class ConsoleStateManager {
             commands.add(new ConsoleCommand('s', "Force restart", null, () -> {
                 forceRestart();
             }));
+            commands.add(new ConsoleCommand('e', "Edits the command line parameters and restarts",
+                    "to edit command line args (currently '" + MessageFormat.GREEN
+                            + String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs()) + MessageFormat.RESET
+                            + "')",
+                    100, new ConsoleCommand.HelpState(() -> BLUE,
+                            () -> String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),
+                    new Consumer<String>() {
+                        @Override
+                        public void accept(String args) {
+                            try {
+                                RuntimeUpdatesProcessor.INSTANCE.setCommandLineArgs(
+                                        CommandLineUtil.translateCommandline(args));
+                            } catch (Exception e) {
+                                Logger.getLogger(ConsoleStateManager.class).errorf(e, "Failed to parse command line %s", args);
+                                return;
+                            }
+                            RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                        }
+                    }));
 
             commands.add(new ConsoleCommand('i', "Toggle instrumentation based reload",
                     new ConsoleCommand.HelpState(() -> RuntimeUpdatesProcessor.INSTANCE.instrumentationEnabled()), () -> {
@@ -126,9 +153,14 @@ public class ConsoleStateManager {
                                 ? toLevel(((LogManager) LogManager.getLogManager()).getLogger("").getLevel()).toString()
                                 : currentLevel.toString())),
                 ConsoleStateManager.this::toggleLogLevel));
+        commands.add(new ConsoleCommand((char) 12, null, null, 10002, null, this::clearScreen));
         commands.add(new ConsoleCommand((char) 13, null, null, 10001, null, this::printBlankLine));
-        commands.add(new ConsoleCommand('h', "Shows this help", "for more options", 10000, null, this::printHelp));
-        commands.add(new ConsoleCommand('q', "Quits the application", null, this::exitQuarkus));
+        commands.add(new ConsoleCommand('h', "Show this help", "for more options", 10000, null, this::printHelp));
+        if (QuarkusConsole.INSTANCE instanceof AeshConsole) {
+            commands.add(new ConsoleCommand(':', "Enter terminal mode", "for the terminal", 9000, null, () -> {
+            }));
+        }
+        commands.add(new ConsoleCommand('q', "Quit the application", null, this::exitQuarkus));
         context.reset(commands.toArray(new ConsoleCommand[0]));
     }
 
@@ -184,21 +216,30 @@ public class ConsoleStateManager {
         }
     }
 
+    private void clearScreen() {
+        System.out.println("\u001b[2J");
+    }
+
     private void printBlankLine() {
         System.out.println("");
     }
 
     private void printHelp() {
-        System.out.println("\nThe following commands are currently available:");
+        System.out.println("\nThe following commands are available:");
         Set<ConsoleContext> contexts = new HashSet<>();
         for (Holder i : commands.values()) {
             contexts.add(i.context);
         }
+        Set<Character> seen = new HashSet<>();
 
         for (ConsoleContext ctx : contexts.stream().sorted(Comparator.comparing(ConsoleContext::getName))
                 .collect(Collectors.toList())) {
             System.out.println("\n" + RED + "==" + RESET + " " + UNDERLINE + ctx.name + NO_UNDERLINE + "\n");
             for (var i : ctx.internal) {
+                if (seen.contains(i.getKey())) {
+                    continue;
+                }
+                seen.add(i.getKey());
                 if (i.getDescription() != null) {
                     if (i.getHelpState() == null) {
                         System.out.println(helpOption(i.getKey(), i.getDescription()));
@@ -211,7 +252,15 @@ public class ConsoleStateManager {
                 }
             }
         }
-
+        Map<Character, String> aliases = QuarkusConsole.INSTANCE.singleLetterAliases();
+        if (!aliases.isEmpty()) {
+            System.out.println("\n" + RED + "==" + RESET + " " + UNDERLINE + "User Defined Aliases" + NO_UNDERLINE + "\n");
+            for (Map.Entry<Character, String> entry : aliases.entrySet()) {
+                if (!seen.contains(entry.getKey())) {
+                    System.out.println(helpOption(entry.getKey(), entry.getValue()));
+                }
+            }
+        }
     }
 
     static class Holder {
@@ -235,6 +284,7 @@ public class ConsoleStateManager {
                 .collect(Collectors.toList());
         if (sorted.isEmpty()) {
             QuarkusConsole.INSTANCE.setPromptMessage(null);
+            oldPrompt = null;
         } else {
             StringBuilder sb = new StringBuilder("Press");
             boolean first = true;
@@ -291,13 +341,7 @@ public class ConsoleStateManager {
         public void reset(ConsoleCommand... command) {
             synchronized (commands) {
                 internal.clear();
-                var it = commands.entrySet().iterator();
-                while (it.hasNext()) {
-                    var holder = it.next();
-                    if (holder.getValue().context == this) {
-                        it.remove();
-                    }
-                }
+                commands.entrySet().removeIf(entry -> entry.getValue().context == this);
             }
             for (var i : command) {
                 addCommandInternal(i);

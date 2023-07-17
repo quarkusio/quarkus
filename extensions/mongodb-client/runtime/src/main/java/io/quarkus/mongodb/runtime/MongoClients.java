@@ -1,13 +1,16 @@
 package io.quarkus.mongodb.runtime;
 
 import static com.mongodb.AuthenticationMechanism.GSSAPI;
+import static com.mongodb.AuthenticationMechanism.MONGODB_AWS;
 import static com.mongodb.AuthenticationMechanism.MONGODB_X509;
 import static com.mongodb.AuthenticationMechanism.PLAIN;
 import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_1;
+import static com.mongodb.AuthenticationMechanism.SCRAM_SHA_256;
+import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
+import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,9 +22,10 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.inject.Any;
-import javax.inject.Singleton;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
 
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
@@ -54,6 +58,8 @@ import com.mongodb.event.ConnectionPoolListener;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.credentials.CredentialsProvider;
+import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.mongodb.health.MongoHealthCheck;
 import io.quarkus.mongodb.impl.ReactiveMongoClientImpl;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
@@ -75,20 +81,29 @@ public class MongoClients {
 
     private final MongodbConfig mongodbConfig;
     private final MongoClientSupport mongoClientSupport;
+    private final Instance<CodecProvider> codecProviders;
+    private final Instance<PropertyCodecProvider> propertyCodecProviders;
+    private final Instance<CommandListener> commandListeners;
 
-    private Map<String, MongoClient> mongoclients = new HashMap<>();
-    private Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
+    private final Map<String, MongoClient> mongoclients = new HashMap<>();
+    private final Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
 
-    public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport) {
+    public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
+            Instance<CodecProvider> codecProviders,
+            Instance<PropertyCodecProvider> propertyCodecProviders,
+            Instance<CommandListener> commandListeners) {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
+        this.codecProviders = codecProviders;
+        this.propertyCodecProviders = propertyCodecProviders;
+        this.commandListeners = commandListeners;
 
         try {
             //JDK bug workaround
             //https://github.com/quarkusio/quarkus/issues/14424
             //force class init to prevent possible deadlock when done by mongo threads
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
-        } catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException ignored) {
         }
 
         try {
@@ -254,7 +269,11 @@ public class MongoClients {
 
         configureCodecRegistry(defaultCodecRegistry, settings);
 
-        settings.commandListenerList(getCommandListeners(mongoClientSupport.getCommandListeners()));
+        List<CommandListener> commandListenerList = new ArrayList<>();
+        for (CommandListener commandListener : commandListeners) {
+            commandListenerList.add(commandListener);
+        }
+        settings.commandListenerList(commandListenerList);
 
         config.applicationName.ifPresent(settings::applicationName);
 
@@ -308,9 +327,10 @@ public class MongoClients {
 
     private void configureCodecRegistry(CodecRegistry defaultCodecRegistry, MongoClientSettings.Builder settings) {
         List<CodecProvider> providers = new ArrayList<>();
-        if (!mongoClientSupport.getCodecProviders().isEmpty()) {
-            providers.addAll(getCodecProviders(mongoClientSupport.getCodecProviders()));
+        for (CodecProvider codecProvider : codecProviders) {
+            providers.add(codecProvider);
         }
+
         // add pojo codec provider with automatic capabilities
         // it always needs to be the last codec provided
         PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder()
@@ -328,10 +348,10 @@ public class MongoClients {
             }
         }
         // register property codec provider
-        if (!mongoClientSupport.getPropertyCodecProviders().isEmpty()) {
-            pojoCodecProviderBuilder.register(getPropertyCodecProviders(mongoClientSupport.getPropertyCodecProviders())
-                    .toArray(new PropertyCodecProvider[0]));
+        for (PropertyCodecProvider propertyCodecProvider : propertyCodecProviders) {
+            pojoCodecProviderBuilder.register(propertyCodecProvider);
         }
+
         CodecRegistry registry = !providers.isEmpty() ? fromRegistries(fromProviders(providers), defaultCodecRegistry,
                 fromProviders(pojoCodecProviderBuilder.build()))
                 : fromRegistries(defaultCodecRegistry, fromProviders(pojoCodecProviderBuilder.build()));
@@ -365,12 +385,11 @@ public class MongoClients {
     }
 
     private MongoCredential createMongoCredential(MongoClientConfig config) {
-        String username = config.credentials.username.orElse(null);
-        if (username == null) {
+        UsernamePassword usernamePassword = determineUserNamePassword(config.credentials);
+        if (usernamePassword == null) {
             return null;
         }
 
-        char[] password = config.credentials.password.map(String::toCharArray).orElse(null);
         // get the authsource, or the database from the config, or 'admin' as it is the default auth source in mongo
         // and null is not allowed
         String authSource = config.credentials.authSource.orElse(config.database.orElse("admin"));
@@ -382,6 +401,8 @@ public class MongoClients {
         }
 
         // Create the MongoCredential instance.
+        String username = usernamePassword.getUsername();
+        char[] password = usernamePassword.getPassword();
         MongoCredential credential;
         if (mechanism == GSSAPI) {
             credential = MongoCredential.createGSSAPICredential(username);
@@ -391,6 +412,10 @@ public class MongoClients {
             credential = MongoCredential.createMongoX509Credential(username);
         } else if (mechanism == SCRAM_SHA_1) {
             credential = MongoCredential.createScramSha1Credential(username, authSource, password);
+        } else if (mechanism == SCRAM_SHA_256) {
+            credential = MongoCredential.createScramSha256Credential(username, authSource, password);
+        } else if (mechanism == MONGODB_AWS) {
+            credential = MongoCredential.createAwsCredential(username, password);
         } else if (mechanism == null) {
             credential = MongoCredential.createCredential(username, authSource, password);
         } else {
@@ -407,6 +432,25 @@ public class MongoClients {
         return credential;
     }
 
+    private UsernamePassword determineUserNamePassword(CredentialConfig config) {
+        if (config.credentialsProvider.isPresent()) {
+            String beanName = config.credentialsProviderName.orElse(null);
+            CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
+            String name = config.credentialsProvider.get();
+            Map<String, String> credentials = credentialsProvider.getCredentials(name);
+            String user = credentials.get(USER_PROPERTY_NAME);
+            String password = credentials.get(PASSWORD_PROPERTY_NAME);
+            return new UsernamePassword(user, password.toCharArray());
+        } else {
+            String username = config.username.orElse(null);
+            if (username == null) {
+                return null;
+            }
+            char[] password = config.password.map(String::toCharArray).orElse(null);
+            return new UsernamePassword(username, password);
+        }
+    }
+
     private AuthenticationMechanism getAuthenticationMechanism(String authMechanism) {
         AuthenticationMechanism mechanism;
         try {
@@ -415,51 +459,6 @@ public class MongoClients {
             throw new IllegalArgumentException("Invalid authMechanism '" + authMechanism + "'");
         }
         return mechanism;
-    }
-
-    private List<CodecProvider> getCodecProviders(List<String> classNames) {
-        List<CodecProvider> providers = new ArrayList<>();
-        for (String name : classNames) {
-            try {
-                Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass(name);
-                Constructor clazzConstructor = clazz.getConstructor();
-                providers.add((CodecProvider) clazzConstructor.newInstance());
-            } catch (Exception e) {
-                LOGGER.warnf(e, "Unable to load the codec provider class %s", name);
-            }
-        }
-
-        return providers;
-    }
-
-    private List<PropertyCodecProvider> getPropertyCodecProviders(List<String> classNames) {
-        List<PropertyCodecProvider> providers = new ArrayList<>();
-        for (String name : classNames) {
-            try {
-                Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass(name);
-                Constructor clazzConstructor = clazz.getConstructor();
-                providers.add((PropertyCodecProvider) clazzConstructor.newInstance());
-            } catch (Exception e) {
-                LOGGER.warnf(e, "Unable to load the property codec provider class %s", name);
-            }
-        }
-
-        return providers;
-    }
-
-    private List<CommandListener> getCommandListeners(List<String> classNames) {
-        List<CommandListener> listeners = new ArrayList<>();
-        for (String name : classNames) {
-            try {
-                Class<?> clazz = Class.forName(name, true, Thread.currentThread().getContextClassLoader());
-                Constructor<?> clazzConstructor = clazz.getConstructor();
-                listeners.add((CommandListener) clazzConstructor.newInstance());
-            } catch (Exception e) {
-                LOGGER.warnf(e, "Unable to load the command listener class %s", name);
-            }
-        }
-
-        return listeners;
     }
 
     @PreDestroy
@@ -473,6 +472,24 @@ public class MongoClients {
             if (reactive != null) {
                 reactive.close();
             }
+        }
+    }
+
+    private static class UsernamePassword {
+        private final String username;
+        private final char[] password;
+
+        public UsernamePassword(String username, char[] password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public char[] getPassword() {
+            return password;
         }
     }
 }

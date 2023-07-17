@@ -8,20 +8,17 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.processor.InjectionPointsTransformer;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.MyQualifier;
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Qualifier;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+import jakarta.inject.Qualifier;
+
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -29,6 +26,12 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.processor.InjectionPointsTransformer;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.MyQualifier;
 
 public class InjectionPointTransformerTest {
 

@@ -4,8 +4,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.function.Function;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +14,7 @@ import io.restassured.RestAssured;
 public class ImportSqlHotReloadScriptTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
                     .addAsResource("application-import-load-script-test.properties", "application.properties")
                     .addAsResource("import.sql"));

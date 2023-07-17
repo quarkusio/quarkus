@@ -2,8 +2,6 @@ package io.quarkus.vertx.http.devconsole;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
@@ -14,7 +12,7 @@ public class FixConfigOnErrorTest {
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .setAllowFailedStart(true)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(ConfigBean.class));
+            .withApplicationRoot((jar) -> jar.addClass(ConfigBean.class));
 
     public void testFailedStartup() {
         RestAssured.with()

@@ -1,15 +1,18 @@
 package io.quarkus.spring.data.deployment.generate;
 
 import static io.quarkus.gizmo.FieldDescriptor.of;
+import static io.quarkus.spring.data.deployment.generate.GenerationUtil.getNamedQueryForMethod;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -17,10 +20,12 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.TypeVariable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -55,7 +60,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
     public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
             String generatedClassName, ClassInfo repositoryClassInfo, ClassInfo entityClassInfo) {
         MethodNameParser methodNameParser = new MethodNameParser(entityClassInfo, index);
-        List<MethodInfo> repoMethods = new ArrayList<>(repositoryClassInfo.methods());
+        LinkedHashSet<MethodInfo> repoMethods = new LinkedHashSet<>(repositoryClassInfo.methods());
 
         // Remember custom return type methods: {resultType:[methodName]}
         Map<DotName, List<String>> customResultTypes = new HashMap<>(3);
@@ -63,13 +68,15 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
         //As intermediate interfaces are supported for spring data repositories, we need to search the methods declared in such interfaced and add them to the methods to implement list
         for (DotName extendedInterface : repositoryClassInfo.interfaceNames()) {
-            if (GenerationUtil.isIntermediateRepository(extendedInterface, index)) {
-                List<MethodInfo> methods = index.getClassByName(extendedInterface).methods();
-                repoMethods.addAll(methods);
-            }
+            addAllMethodOfIntermediateRepository(extendedInterface, repoMethods);
         }
         for (MethodInfo method : repoMethods) {
             if (method.annotation(DotNames.SPRING_DATA_QUERY) != null) { // handled by CustomQueryMethodsAdder
+                continue;
+            }
+
+            // If method is a named query placed in the entity, we skip it to be handled by CustomQueryMethodsAdder
+            if (getNamedQueryForMethod(method, entityClassInfo) != null) {
                 continue;
             }
 
@@ -83,7 +90,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
 
             Type returnType = method.returnType();
 
-            List<Type> parameters = method.parameters();
+            List<Type> parameters = method.parameterTypes();
             String[] parameterTypesStr = new String[parameters.size()];
             List<Integer> queryParameterIndexes = new ArrayList<>(parameters.size());
             Integer pageableParameterIndex = null;
@@ -164,7 +171,8 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                             methodCreator.readInstanceField(entityClassFieldDescriptor, methodCreator.getThis()),
                             methodCreator.load(finalQuery), sort, paramsArray);
 
-                    Type resultType = verifyQueryResultType(method.returnType(), index);
+                    Type resultType = extractResultType(repositoryClassInfo, method);
+
                     DotName customResultTypeName = resultType.name();
 
                     if (customResultTypeName.equals(entityClassInfo.name())
@@ -177,7 +185,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                         if (Modifier.isInterface(resultClassInfo.flags())) {
                             // Find the implementation name, and use that for subsequent query result generation
                             customResultTypeName = customResultTypeImplNames.computeIfAbsent(customResultTypeName,
-                                    k -> createSimpleInterfaceImpl(resultType.name()));
+                                    k -> createSimpleInterfaceImpl(k, entityClassInfo.name()));
 
                             // Remember the parameters for this usage of the custom type, we'll deal with it later
                             customResultTypes.computeIfAbsent(customResultTypeName,
@@ -282,6 +290,44 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
         }
     }
 
+    private Type extractResultType(ClassInfo repositoryClassInfo, MethodInfo method) {
+        Type resultType = verifyQueryResultType(method.returnType(), index);
+        if (resultType.kind() == Type.Kind.TYPE_VARIABLE) {
+            // we can handle the generic result type case where interface only declares one generic type that is the same as the method result type uses (TODO: look into enhancing)
+            // this is accomplished by resolving the generic type from the interface we are actually implementing
+            TypeVariable resultTypeVariable = resultType.asTypeVariable();
+            List<TypeVariable> interfaceTypeVariables = method.declaringClass().typeParameters();
+
+            int matchingIndex = -1;
+            for (int i = 0; i < interfaceTypeVariables.size(); i++) {
+                if (interfaceTypeVariables.get(i).equals(resultTypeVariable)) {
+                    matchingIndex = i;
+                    break;
+                }
+            }
+
+            if (matchingIndex != -1) {
+                List<Type> resolveTypeParameters = JandexUtil.resolveTypeParameters(repositoryClassInfo.name(),
+                        method.declaringClass().name(), index);
+                if (matchingIndex < resolveTypeParameters.size()) {
+                    return resolveTypeParameters.get(matchingIndex);
+                }
+            }
+        }
+        return resultType;
+    }
+
+    private void addAllMethodOfIntermediateRepository(DotName interfaceDotName, Set<MethodInfo> result) {
+        if (GenerationUtil.isIntermediateRepository(interfaceDotName, index)) {
+            ClassInfo classInfo = index.getClassByName(interfaceDotName);
+            List<MethodInfo> methods = classInfo.methods();
+            result.addAll(methods);
+            for (DotName superInterface : classInfo.interfaceNames()) {
+                addAllMethodOfIntermediateRepository(superInterface, result);
+            }
+        }
+    }
+
     private void generateCustomResultTypes(DotName interfaceName, DotName implName, ClassInfo entityClassInfo,
             List<String> queryMethods) {
 
@@ -302,7 +348,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                     throw new IllegalArgumentException("Method " + method.name() + " of interface " + interfaceName
                             + " is not a getter method since it returns void");
                 }
-                DotName fieldTypeName = getPrimitiveTypeName(returnType.name());
+                DotName fieldTypeName = returnType.name();
 
                 FieldDescriptor field = implClassCreator.getFieldCreator(propertyName, fieldTypeName.toString())
                         .getFieldDescriptor();
@@ -320,12 +366,12 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
             for (String queryMethod : queryMethods) {
                 try (MethodCreator convert = implClassCreator.getMethodCreator("convert_" + queryMethod,
                         implName.toString(), entityClassInfo.name().toString())) {
-                    convert.setModifiers(Modifier.STATIC);
+                    convert.setModifiers(Modifier.STATIC | Modifier.PUBLIC);
 
                     ResultHandle newObject = convert.newInstance(MethodDescriptor.ofConstructor(implName.toString()));
 
                     ResultHandle entity = convert.getMethodParam(0);
-                    final List<MethodInfo> availableMethods = entityClassInfo.methods();
+                    final List<MethodInfo> availableMethods = availableMethods(entityClassInfo, index);
                     for (Map.Entry<String, FieldDescriptor> field : fields.entrySet()) {
                         if (!getterExists(availableMethods, field.getKey())) {
                             throw new IllegalArgumentException(field.getKey() + " method does not exists in "
@@ -341,6 +387,21 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                 }
             }
         }
+    }
+
+    private static List<MethodInfo> availableMethods(ClassInfo entityClassInfo, IndexView index) {
+        List<MethodInfo> result = new ArrayList<>(entityClassInfo.methods().size());
+        while (true) {
+            result.addAll(entityClassInfo.methods());
+            if (entityClassInfo.superName() == null) {
+                break;
+            }
+            entityClassInfo = index.getClassByName(entityClassInfo.superName());
+            if ((entityClassInfo == null) || DotNames.OBJECT.equals(entityClassInfo.name())) {
+                break;
+            }
+        }
+        return result;
     }
 
     private boolean getterExists(List<MethodInfo> methods, String getterName) {

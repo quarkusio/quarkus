@@ -29,6 +29,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-search-orm-elasticsearch</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+        </dependency>
 
         <!-- test dependencies -->
         <dependency>
@@ -121,6 +125,8 @@
                                     <run>
                                         <env>
                                             <discovery.type>single-node</discovery.type>
+                                            <xpack.security.enabled>false</xpack.security.enabled>
+                                            <ES_JAVA_OPTS>-Xms512m -Xmx512m</ES_JAVA_OPTS>
                                         </env>
                                         <ports>
                                             <port>9200:9200</port>
@@ -136,7 +142,7 @@
                                                 <method>GET</method>
                                                 <status>200</status>
                                             </http>
-                                            <time>20000</time>
+                                            <time>30000</time>
                                         </wait>
                                     </run>
                                 </image>

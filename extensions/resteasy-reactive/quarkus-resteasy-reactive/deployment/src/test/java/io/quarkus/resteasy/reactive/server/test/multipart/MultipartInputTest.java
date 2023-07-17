@@ -29,7 +29,7 @@ public class MultipartInputTest extends AbstractMultipartTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     return ShrinkWrap.create(JavaArchive.class)
@@ -50,6 +50,9 @@ public class MultipartInputTest extends AbstractMultipartTest {
     private final File HTML_FILE2 = new File("./src/test/resources/test2.html");
     private final File XML_FILE = new File("./src/test/resources/test.html");
     private final File TXT_FILE = new File("./src/test/resources/lorem.txt");
+    private final String TXT = "lorem ipsum";
+    private final String XML = "<note></note>";
+    private final String HTML = "<!DOCTYPE html><html></html>";
 
     @BeforeEach
     public void assertEmptyUploads() {
@@ -68,18 +71,92 @@ public class MultipartInputTest extends AbstractMultipartTest {
                 .multiPart("active", "true")
                 .multiPart("num", "25")
                 .multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML, "text/html")
+                .multiPart("xmlFile", XML, "text/xml")
+                .multiPart("txtFile", TXT, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/simple/2")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
+
+        // ensure that the 3 uploaded files where created on disk
+        Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
+
+        // same with text as file
+        RestAssured.given()
+                .multiPart("name", "something.txt", "Alice".getBytes())
+                .multiPart("active", "true")
+                .multiPart("num", "25")
+                .multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML, "text/html")
+                .multiPart("xmlFile", XML, "text/xml")
+                .multiPart("txtFile", TXT, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/simple/2")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
+    }
+
+    @Test
+    public void testSimpleImplicit() {
+        RestAssured.given()
+                .multiPart("name", "Alice")
+                .multiPart("active", "true")
+                .multiPart("num", "25")
+                .multiPart("status", "WORKING")
                 .multiPart("htmlFile", HTML_FILE, "text/html")
                 .multiPart("xmlFile", XML_FILE, "text/xml")
                 .multiPart("txtFile", TXT_FILE, "text/plain")
                 .accept("text/plain")
                 .when()
-                .post("/multipart/simple/2")
+                .post("/multipart/implicit/simple/2")
                 .then()
                 .statusCode(200)
                 .body(equalTo("Alice - true - 50 - WORKING - text/html - true - true"));
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
+    }
+
+    @Test
+    public void testSimpleParam() {
+        RestAssured.given()
+                .multiPart("name", "Alice")
+                .multiPart("active", "true")
+                .multiPart("num", "25")
+                .multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML, "text/html")
+                .multiPart("xmlFile", XML, "text/xml")
+                .multiPart("txtFile", TXT, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/param/simple/2")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
+
+        // ensure that the 3 uploaded files where created on disk
+        Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);
+
+        // same with text as file
+        RestAssured.given()
+                .multiPart("name", "something.txt", "Alice".getBytes())
+                .multiPart("active", "true")
+                .multiPart("num", "25")
+                .multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML, "text/html")
+                .multiPart("xmlFile", XML, "text/xml")
+                .multiPart("txtFile", TXT, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/param/simple/2")
+                .then()
+                .statusCode(200)
+                .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
     }
 
     @Test
@@ -136,6 +213,26 @@ public class MultipartInputTest extends AbstractMultipartTest {
                 .accept("text/plain")
                 .when()
                 .post("/multipart/same-name")
+                .then()
+                .statusCode(200)
+                .body(equalTo("EATING - 2 - 1 - 1"));
+
+        // ensure that the 3 uploaded files where created on disk
+        Assertions.assertEquals(4, uploadDir.toFile().listFiles().length);
+    }
+
+    @Test
+    public void testSameNameParam() {
+        RestAssured.given()
+                .multiPart("active", "false")
+                .multiPart("status", "EATING")
+                .multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("htmlFile", HTML_FILE2, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml")
+                .multiPart("txtFile", TXT_FILE, "text/plain")
+                .accept("text/plain")
+                .when()
+                .post("/multipart/param/same-name")
                 .then()
                 .statusCode(200)
                 .body(equalTo("EATING - 2 - 1 - 1"));

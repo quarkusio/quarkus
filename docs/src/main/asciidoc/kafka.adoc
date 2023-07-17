@@ -4,13 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Apache Kafka Reference Guide
-
-include::./attributes.adoc[]
-
+include::_attributes.adoc[]
+:categories: messaging
+:summary: This reference guide provides an in-depth look on Apache Kafka and Smallrye Reactive Messaging framework.
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:toc:
 
 This reference guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with Apache Kafka.
 
@@ -39,20 +38,30 @@ For a quick start take a look at xref:kafka-reactive-getting-started.adoc[Gettin
 
 You can add the `smallrye-reactive-messaging-kafka` extensions to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-reactive-messaging-kafka"
-----
+:add-extension-extensions: smallrye-reactive-messaging-kafka
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 </dependency>
 ----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-reactive-messaging-kafka")
+----
+
+[NOTE]
+====
+The extension includes `kafka-clients` version 3.2.1 as a transitive dependency and is compatible with Kafka brokers version 2.x.
+====
 
 == Configuring Smallrye Kafka Connector
 
@@ -69,13 +78,27 @@ A minimal configuration for the Kafka connector with an incoming channel looks l
 %prod.kafka.bootstrap.servers=kafka:9092 <1>
 mp.messaging.incoming.prices.connector=smallrye-kafka <2>
 ----
-
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.incoming.$channel.bootstrap.servers` property.
-In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, <<kafka-dev-services>> automatically starts a Kafka broker.
 When not provided this property defaults to `localhost:9092`.
-<2> Configure the connector to manage the prices channel. By default the topic name is same as the channel name. You can configure the topic attribute to override it.
+<2> Configure the connector to manage the prices channel. By default, the topic name is same as the channel name. You can configure the topic attribute to override it.
 
 NOTE: The `%prod` prefix indicates that the property is only used when the application runs in prod mode (so not in dev or test). Refer to the xref:config-reference.adoc#profiles[Profile documentation] for further details.
+
+[TIP]
+.Connector auto-attachment
+====
+If you have a single connector on your classpath, you can omit the `connector` attribute configuration.
+Quarkus automatically associates _orphan_ channels to the (unique) connector found on the classpath.
+_Orphans_ channels are outgoing channels without a downstream consumer or incoming channels without an upstream producer.
+
+This auto-attachment can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.auto-connector-attachment=false
+----
+====
 
 == Receiving messages from Kafka
 
@@ -85,7 +108,7 @@ Continuing from the previous minimal configuration, your Quarkus application can
 ----
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class PriceConsumer {
@@ -154,14 +177,14 @@ Alternatively, your application can inject a `Multi` in your bean and subscribe 
 [source, java]
 ----
 import io.smallrye.mutiny.Multi;
-import io.smallrye.reactive.messaging.annotations.Channel;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import org.jboss.resteasy.annotations.SseElementType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/prices")
 public class PriceResource {
@@ -172,8 +195,7 @@ public class PriceResource {
 
     @GET
     @Path("/prices")
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    @SseElementType("text/plain")
+    @RestStreamElementType(MediaType.TEXT_PLAIN)
     public Multi<Double> stream() {
         return prices;
     }
@@ -187,7 +209,7 @@ in this example exposing it as a Server-Sent Events endpoint.
 [NOTE]
 ====
 When consuming messages with `@Channel`, the application code is responsible for the subscription.
-In the example above, RESTEasy endpoint handles that for you.
+In the example above, the RESTEasy Reactive endpoint handles that for you.
 ====
 
 Following types can be injected as channels:
@@ -213,9 +235,12 @@ Injecting `@Channel("prices")` or having `@Incoming("prices")` does not automati
 You need to configure an inbound connector with `mp.messaging.incoming.prices\...` or have an `@Outgoing("prices")` method somewhere in your application (in which case, `prices` will be an in-memory channel).
 ====
 
+[#blocking-processing]
 === Blocking processing
 
-You often need to combine Reactive Messaging with blocking processing such as database interactions.
+Reactive Messaging invokes your method on an I/O thread.
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
+But, you often need to combine Reactive Messaging with blocking processing such as database interactions.
 For this, you need to use the `@Blocking` annotation indicating that the processing is _blocking_ and should not be run on the caller thread.
 
 For example, The following code illustrates how you can store incoming payloads to a database using Hibernate with Panache:
@@ -225,14 +250,13 @@ For example, The following code illustrates how you can store incoming payloads 
 import io.smallrye.reactive.messaging.annotations.Blocking;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.transaction.Transactional;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class PriceStorage {
 
     @Incoming("prices")
-    @Blocking
     @Transactional
     public void store(int priceInUsd) {
         Price price = new Price();
@@ -256,6 +280,14 @@ They have the same effect.
 Thus, you can use both.
 The first one provides more fine-grained tuning such as the worker pool to use and whether it preserves the order.
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
+
+Detailed information on the usage of `@Blocking` annotation can be found in https://smallrye.io/smallrye-reactive-messaging/latest/concepts/blocking/[SmallRye Reactive Messaging – Handling blocking execution].
+====
+
+[TIP]
+.@Transactional
+====
+If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.
 ====
 
 === Acknowledgment Strategies
@@ -293,12 +325,12 @@ As mentioned above, the method can also override the acknowledgment strategy to 
 [[commit-strategies]]
 === Commit Strategies
 
-When a message produced from a Kafka record is acknowledged, the connector invokes a commit strategy. 
-These strategies decide when the consumer offset for a specific topic/partition is committed. 
-Committing an offset indicates that all previous records have been processed. 
+When a message produced from a Kafka record is acknowledged, the connector invokes a commit strategy.
+These strategies decide when the consumer offset for a specific topic/partition is committed.
+Committing an offset indicates that all previous records have been processed.
 It is also the position where the application would restart the processing after a crash recovery or a restart.
 
-Committing every offset has performance penalties as Kafka offset management can be slow. 
+Committing every offset has performance penalties as Kafka offset management can be slow.
 However, not committing the offset often enough may lead to message duplication if the application crashes between two commits.
 
 The Kafka connector supports three strategies:
@@ -307,10 +339,18 @@ The Kafka connector supports three strategies:
 This strategy guarantees at-least-once delivery even if the channel performs asynchronous processing.
 The connector tracks the received records and periodically (period specified by `auto.commit.interval.ms`, default: 5000 ms) commits the highest consecutive offset.
 The connector will be marked as unhealthy if a message associated with a record is not acknowledged in `throttled.unprocessed-record-max-age.ms` (default: 60000 ms).
-Indeed, this strategy cannot commit the offset as soon as a single record processing fails (see <<error-handling>> to configure what happens on failing processing).
+Indeed, this strategy cannot commit the offset as soon as a single record processing fails.
 If `throttled.unprocessed-record-max-age.ms` is set to less than or equal to `0`, it does not perform any health check verification.
 Such a setting might lead to running out of memory if there are "poison pill" messages (that are never acked).
 This strategy is the default if `enable.auto.commit` is not explicitly set to true.
+
+- `checkpoint` allows persisting consumer offsets on a **state store**, instead of committing them back to the Kafka broker. 
+Using the `CheckpointMetadata` API, consumer code can persist a _processing state_ with the record offset to mark the progress of a consumer. 
+When the processing continues from a previously persisted offset, it seeks the Kafka consumer to that offset and also restores the persisted state, continuing the stateful processing from where it left off. 
+The checkpoint strategy holds locally the processing state associated with the latest offset, and persists it periodically to the state store (period specified by `auto.commit.interval.ms` (default: 5000)). 
+The connector will be marked as unhealthy if no processing state is persisted to the state store in `checkpoint.unsynced-state-max-age.ms` (default: 10000). 
+If `checkpoint.unsynced-state-max-age.ms` is set to less than or equal to 0, it does not perform any health check verification. 
+For more information, see <<stateful-processing-checkpointing>>
 
 - `latest` commits the record offset received by the Kafka consumer as soon as the associated message is acknowledged (if the offset is higher than the previously committed offset).
 This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous processing.
@@ -318,8 +358,9 @@ This strategy should not be used in high load environment, as offset commit is e
 
 - `ignore` performs no commit. This strategy is the default strategy when the consumer is explicitly configured with `enable.auto.commit` to true.
 It delegates the offset commit to the underlying Kafka client.
-This strategy provides at-least-once delivery if the channel processes the message without performing any asynchronous operations and when `enable.auto.commit` is set to true.
-However, if the processing failed between two commits, messages received after the commit and before the failure will be re-processed.
+When `enable.auto.commit` is `true` this strategy **DOES NOT** guarantee at-least-once delivery.
+SmallRye Reactive Messaging processes records asynchronously, so offsets may be committed for records that have been polled but not yet processed.
+In case of a failure, only records that were not committed yet will be re-processed.
 
 [IMPORTANT]
 ====
@@ -329,6 +370,9 @@ If high throughput is important for you, and you are not limited by the downstre
 - use the `throttled` policy,
 - or set `enable.auto.commit` to true and annotate the consuming method with `@Acknowledgment(Acknowledgment.Strategy.NONE)`.
 ====
+
+Smallrye Reactive Messaging enables implementing custom commit strategies.
+See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
 
 [[error-handling]]
 === Error Handling Strategies
@@ -354,6 +398,9 @@ The record written on the dead letter queue contains a set of additional headers
 - *dead-letter-topic*: the original topic of the record
 - *dead-letter-partition*: the original partition of the record (integer mapped to String)
 - *dead-letter-offset*: the original offset of the record (long mapped to String)
+
+Smallrye Reactive Messaging enables implementing custom failure strategies.
+See https://smallrye.io/smallrye-reactive-messaging/latest/kafka/receiving-kafka-records/#acknowledgement[SmallRye Reactive Messaging documentation] for more information.
 
 ==== Retrying processing
 
@@ -389,6 +436,33 @@ See https://smallrye.io/docs/smallrye-fault-tolerance/5.2.0/usage/extra.html#_no
 The incoming messages are acknowledged only once the processing completes successfully.
 So, it commits the offset after the successful processing.
 If the processing still fails, even after all retries, the message is _nacked_ and the failure strategy is applied.
+
+==== Handling Deserialization Failures
+
+When a deserialization failure occurs, you can intercept it and provide a failure strategy.
+To achieve this, you need to create a bean implementing `DeserializationFailureHandler<T>` interface:
+
+[source, java]
+----
+@ApplicationScoped
+@Identifier("failure-retry") // Set the name of the failure handler
+public class MyDeserializationFailureHandler
+    implements DeserializationFailureHandler<JsonObject> { // Specify the expected type
+
+    @Override
+    public JsonObject decorateDeserialization(Uni<JsonObject> deserialization, String topic, boolean isKey,
+            String deserializer, byte[] data, Headers headers) {
+        return deserialization
+                    .onFailure().retry().atMost(3)
+                    .await().atMost(Duration.ofMillis(200));
+    }
+}
+----
+
+To use this failure handler, the bean must be exposed with the `@Identifier` qualifier and the connector configuration must specify the attribute `mp.messaging.incoming.$channel.[key|value]-deserialization-failure-handler` (for key or value deserializers).
+
+The handler is called with details of the deserialization, including the action represented as `Uni<T>`.
+On the deserialization `Uni` failure strategies like retry, providing a fallback value or applying timeout can be implemented.
 
 === Consumer Groups
 
@@ -431,6 +505,19 @@ Different consumer groups can thus scale independently according to the message 
 +
 image::kafka-two-app-two-consumer-groups.png[alt=Architecture, width=60%, align=center]
 
+[NOTE]
+====
+A common business requirement is to consume and process Kafka records in order.
+The Kafka broker preserves order of records inside a partition and not inside a topic.
+Therefore, it is important to think about how records are partitioned inside a topic.
+The default partitioner uses record key hash to compute the partition for a record, or when the key is not defined, chooses a partition randomly per batch or records.
+
+During normal operation, a Kafka consumer preserves the order of records inside each partition assigned to it.
+Smallrye Reactive Messaging keeps this order for processing, unless `@Blocking(ordered = false)` is used (see <<blocking-processing>>).
+
+Note that due to consumer rebalances, Kafka consumers only guarantee at-least-once processing of single records, meaning that uncommitted records _can_ be processed again by consumers.
+====
+
 ==== Consumer Rebalance Listener
 
 Inside a consumer group, as new group members arrive and old members leave, the partitions are re-assigned so that each member receives a proportional share of the partitions.
@@ -440,7 +527,7 @@ To achieve this, implement the `io.smallrye.reactive.messaging.kafka.KafkaConsum
 A common use case is to store offset in a separate data store to implement exactly-once semantic, or starting the processing at a specific offset.
 
 The listener is invoked every time the consumer topic/partition assignment changes.
-For example, when the application starts, it invokes the `partitionsAssigned` callback with the initial set of topics/partitions associated with the consumer. 
+For example, when the application starts, it invokes the `partitionsAssigned` callback with the initial set of topics/partitions associated with the consumer.
 If, later, this set changes, it calls the `partitionsRevoked` and `partitionsAssigned` callbacks again, so you can implement custom logic.
 
 Note that the rebalance listener methods are called from the Kafka polling thread and **will** block the caller thread until completion.
@@ -454,7 +541,7 @@ We also recommend applying the same logic when the application stops.
 
 Unlike the `ConsumerRebalanceListener` from Apache Kafka, the `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` methods pass the Kafka Consumer and the set of topics/partitions.
 
-In the following example we set-up a consumer that always starts on messages from at most 10 minutes ago (or offset 0). 
+In the following example we set up a consumer that always starts on messages from at most 10 minutes ago (or offset 0).
 First we need to provide a bean that implements `io.smallrye.reactive.messaging.kafka.KafkaConsumerRebalanceListener` and is annotated with `io.smallrye.common.annotation.Identifier`.
 We then must configure our inbound connector to use this bean.
 
@@ -468,7 +555,7 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.OffsetAndTimestamp;
 import org.apache.kafka.clients.consumer.TopicPartition;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -516,7 +603,7 @@ import io.smallrye.reactive.messaging.kafka.IncomingKafkaRecord;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -563,6 +650,217 @@ mp.messaging.incoming.your-channel.group.id=${quarkus.uuid}
 
 IMPORTANT: If the `group.id` attribute is not set, it defaults the `quarkus.application.name` configuration property.
 
+=== Receiving Kafka Records in Batches
+
+By default, incoming methods receive each Kafka record individually.
+Under the hood, Kafka consumer clients poll the broker constantly and receive records in batches, presented inside the `ConsumerRecords` container.
+
+In *batch* mode, your application can receive all the records returned by the consumer *poll* in one go.
+
+To achieve this you need to specify a compatible container type to receive all the data:
+
+[source, java]
+----
+@Incoming("prices")
+public void consume(List<Double> prices) {
+    for (double price : prices) {
+        // process price
+    }
+}
+----
+
+The incoming method can also receive `Message<List<Payload>>`, `KafkaRecordBatch<Key, Payload>` `ConsumerRecords<Key, Payload>` types.
+They give access to record details such as offset or timestamp:
+
+[source, java]
+----
+@Incoming("prices")
+public CompletionStage<Void> consumeMessage(KafkaRecordBatch<String, Double> records) {
+    for (KafkaRecord<String, Double> record : records) {
+        String payload = record.getPayload();
+        String topic = record.getTopic();
+        // process messages
+    }
+    // ack will commit the latest offsets (per partition) of the batch.
+    return records.ack();
+}
+
+----
+
+Note that the successful processing of the incoming record batch will commit the latest offsets for each partition received inside the batch.
+The configured commit strategy will be applied for these records only.
+
+Conversely, if the processing throws an exception, all messages are _nacked_, applying the failure strategy for all the records inside the batch.
+
+[NOTE]
+====
+Quarkus autodetects batch types for incoming channels and sets batch configuration automatically.
+You can configure batch mode explicitly with `mp.messaging.incoming.$channel.batch` property.
+====
+
+[[stateful-processing-checkpointing]]
+=== Stateful processing with Checkpointing
+
+[IMPORTANT]
+====
+The `checkpoint` commit strategy is an experimental feature and can change in the future.
+====
+
+Smallrye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
+An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external 
+<<state-stores, state store>>, such as a relational database or a key-value store.
+As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer. 
+This local state will be periodically persisted to the state store and will be associated with the offset of the record that produced it.
+
+This strategy does not commit any offsets to the Kafka broker, so when new partitions get assigned to the consumer, 
+i.e. consumer restarts or consumer group instances scale, 
+the consumer resumes the processing from the latest _checkpointed_ offset with its saved state.
+
+The `@Incoming` channel consumer code can manipulate the processing state through the `CheckpointMetadata` API.
+For example, a consumer calculating the moving average of prices received on a Kafka topic would look the following: 
+
+[source,java]
+----
+package org.acme;
+
+import java.util.concurrent.CompletionStage;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Message;
+
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.commit.CheckpointMetadata;
+
+@ApplicationScoped
+public class MeanCheckpointConsumer {
+
+    @Incoming("prices")
+    public CompletionStage<Void> consume(Message<Double> record) {
+        // Get the `CheckpointMetadata` from the incoming message
+        CheckpointMetadata<AveragePrice> checkpoint = CheckpointMetadata.fromMessage(record);
+    
+        // `CheckpointMetadata` allows transforming the processing state
+        // Applies the given function, starting from the value `0.0` when no previous state exists
+        checkpoint.transform(new AveragePrice(), average -> average.update(record.getPayload()), /* persistOnAck */ true);
+    
+        // `persistOnAck` flag set to true, ack will persist the processing state
+        // associated with the latest offset (per partition).
+        return record.ack();
+    }
+    
+    static class AveragePrice {
+        long count;
+        double mean;
+    
+        AveragePrice update(double newPrice) {
+            mean += ((newPrice - mean) / ++count);
+            return this;
+        }
+    }
+}
+----
+
+The `transform` method applies the transformation function to the current state, producing a changed state and registering it locally for checkpointing. 
+By default, the local state is persisted to the state store periodically, period specified by `auto.commit.interval.ms`, (default: 5000). 
+If `persistOnAck` flag is given, the latest state is persisted to the state store eagerly on message acknowledgment. 
+The `setNext` method works similarly directly setting the latest state.
+
+The checkpoint commit strategy tracks when a processing state is last persisted for each topic-partition. 
+If an outstanding state change can not be persisted for `checkpoint.unsynced-state-max-age.ms` (default: 10000), the channel is marked unhealthy.
+
+[[state-stores]]
+==== State stores
+
+State store implementations determine where and how the processing states are persisted. 
+This is configured by the `mp.messaging.incoming.[channel-name].checkpoint.state-store` property.
+The serialization of state objects depends on the state store implementation. 
+In order to instruct state stores for serialization can require configuring the class name of state objects using `mp.messaging.incoming.[channel-name].checkpoint.state-type` property.
+
+Quarkus provides following state store implementations:
+
+- `quarkus-redis`: Uses the xref:redis-reference.adoc[`quarkus-redis-client`] extension to persist processing states. 
+Jackson is used to serialize processing state in Json. For complex objects it is required to configure the `checkpoint.state-type` property with the class name of the object.
+By default, the state store uses the default redis client, but if a link:https://quarkus.io/guides/redis-reference#default-and-named-clients[named client] is to be used, the client name can be specified using the `mp.messaging.incoming.[channel-name].checkpoint.quarkus-redis.client-name` property.
+Processing states will be stored in Redis using the key naming scheme `[consumer-group-id]:[topic]:[partition]`.
+
+For example the configuration of the previous code would be the following:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.group.id=prices-checkpoint
+# ...
+mp.messaging.incoming.prices.commit-strategy=checkpoint
+mp.messaging.incoming.prices.checkpoint.state-store=quarkus-redis
+mp.messaging.incoming.prices.checkpoint.state-type=org.acme.MeanCheckpointConsumer.AveragePrice
+# ...
+# if using a named redis client
+mp.messaging.incoming.prices.checkpoint.quarkus-redis.client-name=my-redis
+quarkus.redis.my-redis.hosts=redis://localhost:7000
+quarkus.redis.my-redis.password=<redis-pwd>
+----
+
+- `quarkus-hibernate-reactive`: Uses the xref:hibernate-reactive.adoc[`quarkus-hibernate-reactive`] extension to persist processing states. 
+Processing state objects are required to be a Jakarta Persistence entity and extend the `CheckpointEntity` class, 
+which handles object identifiers composed of the consumer group id, topic and partition.
+Therefore, the class name of the entity needs to be configured using the `checkpoint.state-type` property.
+
+For example the configuration of the previous code would be the following:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.group.id=prices-checkpoint
+# ...
+mp.messaging.incoming.prices.commit-strategy=checkpoint
+mp.messaging.incoming.prices.checkpoint.state-store=quarkus-hibernate-reactive
+mp.messaging.incoming.prices.checkpoint.state-type=org.acme.AveragePriceEntity
+----
+
+With `AveragePriceEntity` being a Jakarta Persistence entity extending `CheckpointEntity`:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.persistence.Entity;
+
+import io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntity;
+
+@Entity
+public class AveragePriceEntity extends CheckpointEntity {
+    public long count;
+    public double mean;
+
+    public AveragePriceEntity update(double newPrice) {
+        mean += ((newPrice - mean) / ++count);
+        return this;
+    }
+}
+----
+
+- `quarkus-hibernate-orm`: Uses the xref:hibernate-orm.adoc[`quarkus-hibernate-orm`] extension to persist processing states.
+It is similar to the previous state store, but it uses Hibernate ORM instead of Hibernate Reactive. 
+
+When configured, it can use a named `persistence-unit` for the checkpointing state store:
+
+[source, properties]
+----
+mp.messaging.incoming.prices.commit-strategy=checkpoint
+mp.messaging.incoming.prices.checkpoint.state-store=quarkus-hibernate-orm
+mp.messaging.incoming.prices.checkpoint.state-type=org.acme.AveragePriceEntity
+mp.messaging.incoming.prices.checkpoint.quarkus-hibernate-orm.persistence-unit=prices
+# ... Setup "prices" persistence unit
+quarkus.datasource."prices".db-kind=postgresql
+quarkus.datasource."prices".username=<your username>
+quarkus.datasource."prices".password=<your password>
+quarkus.datasource."prices".jdbc.url=jdbc:postgresql://localhost:5432/hibernate_orm_test
+quarkus.hibernate-orm."prices".datasource=prices
+quarkus.hibernate-orm."prices".packages=org.acme
+----
+
+For instructions on how to implement custom state stores, 
+see https://smallrye.io/smallrye-reactive-messaging/3.22.0/kafka/receiving-kafka-records/#implementing-state-stores[Implementing State Stores].
 
 == Sending messages to Kafka
 
@@ -576,7 +874,7 @@ mp.messaging.outgoing.prices-out.topic=prices <3>
 ----
 
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.outgoing.$channel.bootstrap.servers` property.
-In dev mode and when running tests, link:kafka-dev-services[Dev Services for Kafka] automatically starts a Kafka broker.
+In dev mode and when running tests, <<kafka-dev-services>> automatically starts a Kafka broker.
 When not provided, this property defaults to `localhost:9092`.
 <2> Configure the connector to manage the `prices-out` channel.
 <3> By default, the topic name is same as the channel name. You can configure the topic attribute to override it.
@@ -595,7 +893,7 @@ It can use `double` payloads as in the following snippet:
 import io.smallrye.mutiny.Multi;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Duration;
 import java.util.Random;
 
@@ -686,11 +984,11 @@ For this, you can use an `Emitter`.
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/prices")
 public class PriceResource {
@@ -731,11 +1029,11 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.MediaType;
 
 @Path("/prices")
 public class PriceResource {
@@ -765,11 +1063,11 @@ You can therefore use Mutiny APIs for handling downstream messages and errors.
 ----
 import org.eclipse.microprofile.reactive.messaging.Channel;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.core.MediaType;
 
 import io.smallrye.reactive.messaging.MutinyEmitter;
 
@@ -805,6 +1103,19 @@ The `io.smallrye.reactive.messaging.annotations.Emitter`, `io.smallrye.reactive.
 The new `Emitter.send` method returns a `CompletionStage` completed when the produced message is acknowledged.
 ====
 
+[NOTE]
+.Depreciation
+====
+`MutinyEmitter#send(Message msg)` method is deprecated in favor of following methods receiving `Message` for emitting:
+
+* `<M extends Message<? extends T>> Uni<Void> sendMessage(M msg)`
+* `<M extends Message<? extends T>> void sendMessageAndAwait(M msg)`
+* `<M extends Message<? extends T>> Cancellable sendMessageAndForget(M msg)`
+
+====
+
+More information on how to use `Emitter` can be found in https://smallrye.io/smallrye-reactive-messaging/latest/concepts/emitter/[SmallRye Reactive Messaging – Emitters and Channels]
+
 === Write Acknowledgement
 
 When Kafka broker receives a record, its acknowledgement can take time depending on the configuration.
@@ -836,10 +1147,37 @@ When the Kafka producer receives an error from the server, if it is a transient,
 This behavior is controlled by `retries` and `retry.backoff.ms` parameters.
 In addition to this, SmallRye Reactive Messaging will retry individual messages on recoverable errors, depending on the `retries` and `delivery.timeout.ms` parameters.
 
-Note that while having retries in a reliable system is a best practice, the `max.in.flights.requests.per.session` parameter defaults to `5`, meaning that the order of the messages is not guaranteed.
-If the message order is a must for your use case, setting `max.in.flights.requests.per.session` to `1` will make sure a single batch of messages is sent at a time, in the expense of limiting the throughput of the producer.
+Note that while having retries in a reliable system is a best practice, the `max.in.flight.requests.per.connection` parameter defaults to `5`, meaning that the order of the messages is not guaranteed.
+If the message order is a must for your use case, setting `max.in.flight.requests.per.connection` to `1` will make sure a single batch of messages is sent at a time, in the expense of limiting the throughput of the producer.
 
 For applying retry mechanism on processing errors, see the section on <<retrying-processing>>.
+
+=== Handling Serialization Failures
+
+For Kafka producer client serialization failures are not recoverable, thus the message dispatch is not retried. In these cases you may need to apply a failure strategy for the serializer.
+To achieve this, you need to create a bean implementing `SerializationFailureHandler<T>` interface:
+
+[source, java]
+----
+@ApplicationScoped
+@Identifier("failure-fallback") // Set the name of the failure handler
+public class MySerializationFailureHandler
+    implements SerializationFailureHandler<JsonObject> { // Specify the expected type
+
+    @Override
+    public byte[] decorateSerialization(Uni<byte[]> serialization, String topic, boolean isKey,
+        String serializer, Object data, Headers headers) {
+        return serialization
+                    .onFailure().retry().atMost(3)
+                    .await().indefinitely();
+    }
+}
+----
+
+To use this failure handler, the bean must be exposed with the `@Identifier` qualifier and the connector configuration must specify the attribute `mp.messaging.outgoing.$channel.[key|value]-serialization-failure-handler` (for key or value serializers).
+
+The handler is called with details of the serialization, including the action represented as `Uni<byte[]>`.
+Note that the method must await on the result and return the serialized byte array.
 
 === In-memory channels
 
@@ -864,7 +1202,7 @@ In case of in-memory channels, `@Broadcast` annotation can be used on the `@Outg
 ----
 import java.util.Random;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -901,6 +1239,75 @@ Reciprocally, multiple producers on the same channel can be merged by setting `m
 On the `@Incoming` methods, you can control how multiple channels are merged using the `@Merge` annotation.
 ====
 
+=== Kafka Transactions
+
+Kafka transactions enable atomic writes to multiple Kafka topics and partitions.
+The Kafka connector provides `KafkaTransactions` custom emitter for writing Kafka records inside a transaction.
+It can be injected as a regular emitter `@Channel`:
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@ApplicationScoped
+public class KafkaTransactionalProducer {
+
+    @Channel("tx-out-example")
+    KafkaTransactions<String> txProducer;
+
+    public Uni<Void> emitInTransaction() {
+        return txProducer.withTransaction(emitter -> {
+            emitter.send(KafkaRecord.of(1, "a"));
+            emitter.send(KafkaRecord.of(2, "b"));
+            emitter.send(KafkaRecord.of(3, "c"));
+            return Uni.createFrom().voidItem();
+        });
+    }
+
+}
+----
+
+The function given to the `withTransaction` method receives a `TransactionalEmitter` for producing records, and returns a `Uni` that provides the result of the transaction.
+
+* If the processing completes successfully, the producer is flushed and the transaction is committed.
+* If the processing throws an exception, returns a failing `Uni`, or marks the `TransactionalEmitter` for abort, the transaction is aborted.
+
+Kafka transactional producers require configuring `acks=all` client property, and a unique id for `transactional.id`, which implies `enable.idempotence=true`.
+When Quarkus detects the use of `KafkaTransactions` for an outgoing channel it configures these properties on the channel,
+providing a default value of `"${quarkus.application.name}-${channelName}"` for `transactional.id` property.
+
+Note that for production use the `transactional.id` must be unique across all application instances.
+
+
+[IMPORTANT]
+====
+While a normal message emitter would support concurrent calls to `send` methods and consequently queues outgoing messages to be written to Kafka,
+a `KafkaTransactions` emitter only supports one transaction at a time.
+A transaction is considered in progress from the call to the `withTransaction` until the returned `Uni` results in success or failure.
+While a transaction is in progress, subsequent calls to the `withTransaction`, including nested ones inside the given function, will throw `IllegalStateException`.
+
+Note that in Reactive Messaging, the execution of processing methods, is already serialized, unless `@Blocking(ordered = false)` is used.
+If `withTransaction` can be called concurrently, for example from a REST endpoint, it is recommended to limit the concurrency of the execution.
+This can be done using the `@Bulkhead` annotation from link:https://quarkus.io/guides/smallrye-fault-tolerance[_Microprofile Fault Tolerance_].
+
+An example usage can be found in <<chaining-kafka-transactions-with-hibernate-reactive-transactions>>.
+====
+
+==== Transaction-aware consumers
+
+If you'd like to consume records only written and committed inside a Kafka transaction you need to configure the `isolation.level` property on the incoming channel as such:
+
+[source, properties]
+----
+mp.messaging.incoming.prices-in.isolation.level=read_committed
+----
+
 == Processing Messages
 
 Applications streaming data often need to consume some events from a topic, process them and publish the result to a different topic.
@@ -911,7 +1318,7 @@ A processor method can be simply implemented using both the `@Incoming` and `@Ou
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class PriceProcessor {
@@ -934,7 +1341,7 @@ You can apply asynchronous stream processing by consuming and returning reactive
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -965,6 +1372,77 @@ record key propagation produces the outgoing record with the same _key_ as the i
 If the outgoing record already contains a _key_, it *won't be overridden* by the incoming record key.
 If the incoming record does have a _null_ key, the `mp.messaging.outgoing.$channel.key` property is used.
 
+=== Exactly-Once Processing
+
+Kafka Transactions allows managing consumer offsets inside a transaction, together with produced messages.
+This enables coupling a consumer with a transactional producer in a _consume-transform-produce_ pattern, also known as *exactly-once processing*.
+
+The `KafkaTransactions` custom emitter provides a way to apply exactly-once processing to an incoming Kafka message inside a transaction.
+
+The following example includes a batch of Kafka records inside a transaction.
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.OnOverflow;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@ApplicationScoped
+public class KafkaExactlyOnceProcessor {
+
+    @Channel("prices-out")
+    @OnOverflow(value = OnOverflow.Strategy.BUFFER, bufferSize = 500) // <3>
+    KafkaTransactions<Integer> txProducer;
+
+    @Incoming("prices-in")
+    public Uni<Void> emitInTransaction(KafkaRecordBatch<String, Integer> batch) { // <1>
+        return txProducer.withTransactionAndAck(batch, emitter -> { // <2>
+            for (KafkaRecord<String, Integer> record : batch) {
+                emitter.send(KafkaRecord.of(record.getKey(), record.getPayload() + 1)); // <3>
+            }
+            return Uni.createFrom().voidItem();
+        });
+    }
+
+}
+----
+
+<1> It is recommended to use exactly-once processing along with the batch consumption mode.
+While it is possible to use it with a single Kafka message, it'll have a significant performance impact.
+<2> The consumed `KafkaRecordBatch` message is passed to the `KafkaTransactions#withTransactionAndAck` in order to handle the offset commits and message acks.
+<3> The `send` method writes records to Kafka inside the transaction, without waiting for send receipt from the broker.
+Messages pending to be written to Kafka will be buffered, and flushed before committing the transaction.
+It is therefore recommended configuring the `@OnOverflow` `bufferSize` in order to fit enough messages, for example the `max.poll.records`, maximum amount of records returned in a batch.
+
+- If the processing completes successfully, _before committing the transaction_, the topic partition offsets of the given batch message will be committed to the transaction.
+- If the processing needs to abort, _after aborting the transaction_, the consumer's position is reset to the last committed offset, effectively resuming the consumption from that offset. If no consumer offset has been committed to a topic-partition, the consumer's position is reset to the beginning of the topic-partition, _even if the offset reset policy is `latest`_.
+
+When using exactly-once processing, consumed message offset commits are handled by the transaction and therefore the application should not commit offsets through other means.
+The consumer should have `enable.auto.commit=false` (the default) and set explicitly `commit-strategy=ignore`:
+
+[source, properties]
+----
+mp.messaging.incoming.prices-in.commit-strategy=ignore
+mp.messaging.incoming.prices-in.failure-strategy=ignore
+----
+
+==== Error handling for the exactly-once processing
+
+The `Uni` returned from the `KafkaTransactions#withTransaction` will yield a failure if the transaction fails and is aborted.
+The application can choose to handle the error case, but if a failing `Uni` is returned from the `@Incoming` method, the incoming channel will effectively fail and stop the reactive stream.
+
+The `KafkaTransactions#withTransactionAndAck` method acks and nacks the message but will *not* return a failing `Uni`.
+Nacked messages will be handled by the failure strategy of the incoming channel, (see <<error-handling>>).
+Configuring `failure-strategy=ignore` simply resets the Kafka consumer to the last committed offsets and resumes the consumption from there.
+
+
 [[kafka-bare-clients]]
 == Accessing Kafka clients directly
 
@@ -973,9 +1451,9 @@ In rare cases, you may need to access the underlying Kafka clients.
 
 [source,java]
 ----
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 
@@ -1012,9 +1490,9 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -1040,7 +1518,8 @@ public class KafkaClients {
 
 ----
 
-This configuration map will contain all Kafka related properties configured inside `application.properties` file.
+The `default-kafka-broker` configuration map contains all application properties prefixed with `kafka.` or `KAFKA_`.
+For more configuration options check out <<kafka-configuration-resolution>>.
 
 [[kafka-serialization]]
 == JSON serialization
@@ -1074,7 +1553,7 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 /**
 * A bean consuming data from the "fruit-in" channel and applying some price conversion.
@@ -1096,25 +1575,23 @@ public class FruitProcessor {
 }
 ----
 
-To do this, we will need to setup JSON serialization with Jackson or JSON-B.
+To do this, we will need to set up JSON serialization with Jackson or JSON-B.
 
 NOTE: With JSON serialization correctly configured, you can also use `Publisher<Fruit>` and `Emitter<Fruit>`.
 
 [[jackson-serialization]]
 === Serializing via Jackson
 
-First, you need to include the `quarkus-jackson` extension.
-
-[source, xml]
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jackson</artifactId>
-</dependency>
-----
+Quarkus has built-in support for JSON serialization and deserialization based on Jackson.
+It will also <<serialization-generation, generate>> the serializer and deserializer for you, so you do not have to configure anything.
+When generation is disabled, you can use the provided `ObjectMapperSerializer` and `ObjectMapperDeserializer` as explained below.
 
 There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
+
+NOTE: By default, the `ObjectMapperSerializer` serializes null as the `"null"` String, this can be customized by setting the Kafka configuration
+property `json.serialize.null-as-null=true` which will serialize null as `null`.
+This is handy when using a compacted topic, as `null` is used as a tombstone to know which messages delete during compaction phase.
 
 The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the `ObjectMapperDeserializer`.
@@ -1137,12 +1614,10 @@ Finally, configure your channels to use the Jackson serializer and deserializer.
 [source,properties]
 ----
 # Configure the Kafka source (we read from it)
-mp.messaging.incoming.fruit-in.connector=smallrye-kafka
 mp.messaging.incoming.fruit-in.topic=fruit-in
 mp.messaging.incoming.fruit-in.value.deserializer=com.acme.fruit.jackson.FruitDeserializer
 
 # Configure the Kafka sink (we write to it)
-mp.messaging.outgoing.fruit-out.connector=smallrye-kafka
 mp.messaging.outgoing.fruit-out.topic=fruit-out
 mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
 ----
@@ -1150,12 +1625,30 @@ mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.seriali
 Now, your Kafka messages will contain a Jackson serialized representation of your `Fruit` data object.
 In this case, the `deserializer` configuration is not necessary as the <<serialization-autodetection>> is enabled by default.
 
+If you want to deserialize a list of fruits, you need to create a deserializer with a Jackson `TypeReference` denoted the generic collection used.
+
+[source,java]
+----
+package com.acme.fruit.jackson;
+
+import java.util.List;
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+
+public class ListOfFruitDeserializer extends ObjectMapperDeserializer<List<Fruit>> {
+    public ListOfFruitDeserializer() {
+        super(new TypeReference<List<Fruit>>() {});
+    }
+}
+----
+
 [[jsonb-serialization]]
 === Serializing via JSON-B
 
 First, you need to include the `quarkus-jsonb` extension.
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
@@ -1163,8 +1656,18 @@ First, you need to include the `quarkus-jsonb` extension.
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-jsonb")
+----
+
 There is an existing `JsonbSerializer` that can be used to serialize all data objects via JSON-B.
 You may create an empty subclass if you want to use <<serialization-autodetection>>.
+
+NOTE: By default, the `JsonbSerializer` serializes null as the `"null"` String, this can be customized by setting the Kafka configuration
+property `json.serialize.null-as-null=true` which will serialize null as `null`.
+This is handy when using a compacted topic, as `null` is used as a tombstone to know which messages delete during compaction phase.
 
 The corresponding deserializer class needs to be subclassed.
 So, let's create a `FruitDeserializer` that extends the generic `JsonbDeserializer`.
@@ -1199,17 +1702,34 @@ mp.messaging.outgoing.fruit-out.value.serializer=io.quarkus.kafka.client.seriali
 
 Now, your Kafka messages will contain a JSON-B serialized representation of your `Fruit` data object.
 
+If you want to deserialize a list of fruits, you need to create a deserializer with a `Type` denoted the generic collection used.
+
+[source,java]
+----
+package com.acme.fruit.jsonb;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+import io.quarkus.kafka.client.serialization.JsonbDeserializer;
+
+public class ListOfFruitDeserializer extends JsonbDeserializer<List<Fruit>> {
+    public ListOfFruitDeserializer() {
+        super(new ArrayList<MyEntity>() {}.getClass().getGenericSuperclass());
+    }
+}
+----
+
 NOTE: If you don't want to create a deserializer for each data object, you can use the generic `io.vertx.kafka.client.serialization.JsonObjectDeserializer`
 that will deserialize to a `io.vertx.core.json.JsonObject`. The corresponding serializer can also be used: `io.vertx.kafka.client.serialization.JsonObjectSerializer`.
 
 == Avro Serialization
 
-This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
 
 [[serialization-autodetection]]
 == Serializer/deserializer autodetection
 
-When using SmallRye Reactive Messaging with Kafka, Quarkus can often automatically detect the correct serializer and deserializer class.
+When using SmallRye Reactive Messaging with Kafka (`io.quarkus:quarkus-smallrye-reactive-messaging-kafka`), Quarkus can often automatically detect the correct serializer and deserializer class.
 This autodetection is based on declarations of `@Incoming` and `@Outgoing` methods, as well as injected ``@Channel``s.
 
 For example, if you declare
@@ -1262,8 +1782,11 @@ The full set of types supported by the serializer/deserializer autodetection is:
 * `io.vertx.core.buffer.Buffer`
 * `io.vertx.core.json.JsonObject`
 * `io.vertx.core.json.JsonArray`
+* classes for which a direct implementation of `org.apache.kafka.common.serialization.Serializer<T>` / `org.apache.kafka.common.serialization.Deserializer<T>` is present.
+** the implementation needs to specify the type argument `T` as the (de-)serialized type.
 * classes generated from Avro schemas, as well as Avro `GenericRecord`, if Confluent or Apicurio Registry _serde_ is present
-** see link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries
+** in case multiple Avro serdes are present, serializer/deserializer must be configured manually for Avro-generated classes, because autodetection is impossible
+** see xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro] for more information about using Confluent or Apicurio Registry libraries
 * classes for which a subclass of `ObjectMapperSerializer` / `ObjectMapperDeserializer` is present, as described in <<jackson-serialization>>
 ** it is technically not needed to subclass `ObjectMapperSerializer`, but in such case, autodetection isn't possible
 * classes for which a subclass of `JsonbSerializer` / `JsonbDeserializer` is present, as described in <<jsonb-serialization>>
@@ -1274,9 +1797,28 @@ If a serializer/deserializer is set by configuration, it won't be replaced by th
 In case you have any issues with serializer autodetection, you can switch it off completely by setting `quarkus.reactive-messaging.kafka.serializer-autodetection.enabled=false`.
 If you find you need to do this, please file a bug in the link:https://github.com/quarkusio/quarkus/issues[Quarkus issue tracker] so we can fix whatever problem you have.
 
+[[serialization-generation]]
+== JSON Serializer/deserializer generation
+Quarkus automatically generates serializers and deserializers for channels where:
+
+1. the serializer/deserializer is not configured
+2. the auto-detection did not find a matching serializer/deserializer
+
+It uses Jackson underneath.
+
+This generation can be disabled using:
+
+[source, properties]
+----
+quarkus.reactive-messaging.kafka.serializer-generation.enabled=false
+----
+
+IMPORTANT: Generation does not support collections such as `List<Fruit>`.
+Refer to <<jackson-serialization>> to write your own serializer/deserializer for this case.
+
 == Using Schema Registry
 
-This is described in a dedicated guide: link:kafka-schema-registry-avro[Using Apache Kafka with Schema Registry and Avro].
+This is described in a dedicated guide: xref:kafka-schema-registry-avro.adoc[Using Apache Kafka with Schema Registry and Avro].
 
 [[kafka-health-check]]
 == Health Checks
@@ -1330,7 +1872,7 @@ You can adjust the timeout for topic verification calls to the broker using the 
 
 == Kafka Streams
 
-This is described in a dedicated guide: link:kafka-streams[Using Apache Kafka Streams].
+This is described in a dedicated guide: xref:kafka-streams.adoc[Using Apache Kafka Streams].
 
 == Using Snappy for message compression
 
@@ -1354,12 +1896,19 @@ In native mode, Snappy is disabled by default as the use of Snappy requires embe
 If your Kafka broker uses OAuth as authentication mechanism, you need to configure the Kafka consumer to enable this authentication process.
 First, add the following dependency to your application:
 
-[source, xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.strimzi</groupId>
     <artifactId>kafka-oauth-client</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.strimzi:kafka-oauth-client")
 ----
 
 This dependency provides the callback handler required to handle the OAuth workflow.
@@ -1391,15 +1940,44 @@ To achieve this, you can _switch_ the channels managed by the Kafka connector to
 
 IMPORTANT: This approach only works for JVM tests. It cannot be used for native tests (because they do not support injection).
 
-First, add the following dependency to your application:
+Let's say we want to test the following processor application:
 
-[source, xml]
+[source, java]
+----
+@ApplicationScoped
+public class BeverageProcessor {
+
+    @Incoming("orders")
+    @Outgoing("beverages")
+    Beverage process(Order order) {
+        System.out.println("Order received " + order.getProduct());
+        Beverage beverage = new Beverage();
+        beverage.setBeverage(order.getProduct());
+        beverage.setCustomer(order.getCustomer());
+        beverage.setOrderId(order.getOrderId());
+        beverage.setPreparationState("RECEIVED");
+        return beverage;
+    }
+
+}
+----
+
+First, add the following test dependency to your application:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.smallrye.reactive</groupId>
     <artifactId>smallrye-reactive-messaging-in-memory</artifactId>
     <scope>test</scope>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("io.smallrye.reactive:smallrye-reactive-messaging-in-memory")
 ----
 
 Then, create a Quarkus Test Resource as follows:
@@ -1411,8 +1989,8 @@ public class KafkaTestResourceLifecycleManager implements QuarkusTestResourceLif
     @Override
     public Map<String, String> start() {
         Map<String, String> env = new HashMap<>();
-        Map<String, String> props1 = InMemoryConnector.switchIncomingChannelsToInMemory("orders");  // <1>
-        Map<String, String> props2 = InMemoryConnector.switchOutgoingChannelsToInMemory("queue");   // <2>
+        Map<String, String> props1 = InMemoryConnector.switchIncomingChannelsToInMemory("orders");     // <1>
+        Map<String, String> props2 = InMemoryConnector.switchOutgoingChannelsToInMemory("beverages");  // <2>
         env.putAll(props1);
         env.putAll(props2);
         return env;  // <3>
@@ -1424,8 +2002,8 @@ public class KafkaTestResourceLifecycleManager implements QuarkusTestResourceLif
     }
 }
 ----
-<1> Switch the incoming channel "orders" (expecting messages from Kafka) to in-memory.
-<2> Switch the outgoing channel "queue" (writing messages to Kafka) to in-memory.
+<1> Switch the incoming channel `orders` (expecting messages from Kafka) to in-memory.
+<2> Switch the outgoing channel `beverages` (writing messages to Kafka) to in-memory.
 <3> Builds and returns a `Map` containing all the properties required to configure the application to use in-memory channels.
 <4> When the test stops, clear the `InMemoryConnector` (discard all the received and sent messages)
 
@@ -1442,19 +2020,19 @@ class BaristaTest {
 
     @Test
     void testProcessOrder() {
-        InMemorySource<Order> orders = connector.source("orders"); // <2>
-        InMemorySink<Beverage> queue = connector.sink("queue");    // <3>
+        InMemorySource<Order> ordersIn = connector.source("orders");     // <2>
+        InMemorySink<Beverage> beveragesOut = connector.sink("beverages");  // <3>
 
         Order order = new Order();
         order.setProduct("coffee");
         order.setName("Coffee lover");
         order.setOrderId("1234");
 
-        orders.send(order);  // <4>
+        ordersIn.send(order);  // <4>
 
-        await().<List<? extends Message<Beverage>>>until(queue::received, t -> t.size() == 1); // <5>
+        await().<List<? extends Message<Beverage>>>until(beveragesOut::received, t -> t.size() == 1); // <5>
 
-        Beverage queuedBeverage = queue.received().get(0).getPayload();
+        Beverage queuedBeverage = beveragesOut.received().get(0).getPayload();
         Assertions.assertEquals(Beverage.State.READY, queuedBeverage.getPreparationState());
         Assertions.assertEquals("coffee", queuedBeverage.getBeverage());
         Assertions.assertEquals("Coffee lover", queuedBeverage.getCustomer());
@@ -1465,11 +2043,99 @@ class BaristaTest {
 ----
 <1> Inject the in-memory connector in your test class.
 <2> Retrieve the incoming channel (`orders`) - the channel must have been switched to in-memory in the test resource.
-<3> Retrieve the outgoing channel (`queue`) - the channel must have been switched to in-memory in the test resource.
-<4> Use the `send` method to send a message to the `orders` channel. So, the application will process this message.
-<5> Use the `received` method to check the messages produced by the application.
+<3> Retrieve the outgoing channel (`beverages`) - the channel must have been switched to in-memory in the test resource.
+<4> Use the `send` method to send a message to the `orders` channel.
+The application will process this message and send a message to `beverages` channel.
+<5> Use the `received` method on `beverages` channel to check the messages produced by the application.
 
-=== Starting Kafka in a test resource
+[IMPORTANT]
+====
+With in-memory channels we were able to test application code processing messages without starting a Kafka broker.
+Note that different in-memory channels are independent, and switching channel connector to in-memory does not simulate message delivery between channels configured to the same Kafka topic.
+====
+
+=== Testing using a Kafka broker
+
+If you are using <<kafka-dev-services>>, a Kafka broker will be started and available throughout the tests, unless it is disabled in `%test` profile.
+While it is possible to connect to this broker using Kafka Clients API,
+https://smallrye.io/smallrye-reactive-messaging/latest/kafka/test-companion/[Kafka Companion Library] proposes an easier way of interacting with a Kafka broker and, creating consumer, producer and admin actions inside tests.
+
+For using `KafkaCompanion` API in tests, start by adding the following dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-kafka-companion</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+which provides `io.quarkus.test.kafka.KafkaCompanionResource` - an implementation of `io.quarkus.test.common.QuarkusTestResourceLifecycleManager`.
+
+Then use `@QuarkusTestResource` to configure the Kafka Companion in tests, for example:
+
+[source, java]
+----
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.UUID;
+
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.kafka.InjectKafkaCompanion;
+import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
+import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
+
+@QuarkusTest
+@QuarkusTestResource(KafkaCompanionResource.class)
+public class OrderProcessorTest {
+
+    @InjectKafkaCompanion // <1>
+    KafkaCompanion companion;
+
+    @Test
+    void testProcessor() {
+        companion.produceStrings().usingGenerator(i -> new ProducerRecord<>("orders", UUID.randomUUID().toString())); // <2>
+
+        // Expect that the tested application processes orders from 'orders' topic and write to 'orders-processed' topic
+
+        ConsumerTask<String, String> orders = companion.consumeStrings().fromTopics("orders-processed", 10); // <3>
+        orders.awaitCompletion(); // <4>
+        assertEquals(10, orders.count());
+    }
+}
+----
+
+<1> `@InjectKafkaCompanion` injects the `KafkaCompanion` instance, configured to access the Kafka broker created for tests.
+<2> Use `KafkaCompanion` to create producer task which writes 10 records to 'orders' topic.
+<3> Create consumer task which subscribes to 'orders-processed' topic and consumes 10 records.
+<4> Await completion of the consumer task.
+
+[TIP]
+====
+If the Kafka Dev Service is available during tests, `KafkaCompanionResource` uses the created Kafka broker, otherwise it creates a Kafka broker using https://github.com/strimzi/test-container[Strimzi Test Container].
+
+The configuration of the created Kafka broker can be customized using `@ResourceArg`, for example:
+[source,java]
+----
+@QuarkusTestResource(value = KafkaCompanionResource.class, initArgs = {
+        @ResourceArg(name = "strimzi.kafka.image", value = "quay.io/strimzi/kafka:0.28.0-kafka-3.0.0"), // Image name
+        @ResourceArg(name = "kafka.port", value = "9092"), // Fixed port for kafka, by default it will be exposed on a random port
+        @ResourceArg(name = "kraft", value = "true"), // Enable Kraft mode
+        @ResourceArg(name = "num.partitions", value = "3"), // Other custom broker configurations
+})
+public class OrderProcessorTest {
+    // ...
+}
+----
+====
+
+==== Custom test resource
 
 Alternatively, you can start a Kafka broker in a test resource.
 The following snippet shows a test resource starting a Kafka broker using https://www.testcontainers.org/modules/kafka/[Testcontainers]:
@@ -1497,18 +2163,44 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager {
 [[kafka-dev-services]]
 include::kafka-dev-services.adoc[leveloffset=+1]
 
+[[kafka-dev-ui]]
+include::kafka-dev-ui.adoc[leveloffset=+1]
+
 == Kubernetes Service Bindings
 
 Quarkus Kafka extension supports
-link:deploying-to-kubernetes[Service Binding Specification for Kubernetes].
+xref:deploying-to-kubernetes.adoc[Service Binding Specification for Kubernetes].
 You can enable this by adding the `quarkus-kubernetes-service-binding` extension to your application.
 
 When running in appropriately configured Kubernetes clusters, Kafka extension will pull its Kafka broker connection configuration from the service binding available inside the cluster, without the need for user configuration.
 
+== Execution model
+
+Reactive Messaging invokes user's methods on an I/O thread.
+Thus, by default, the methods must not block.
+As described in <<blocking-processing>>, you need to add the `@Blocking` annotation on the method if this method will block the caller thread.
+
+See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture documentation] for further details on this topic.
+
+== Channel Decorators
+
+SmallRye Reactive Messaging supports decorating incoming and outgoing channels for implementing cross-cutting concerns such as monitoring, tracing or message interception. For more information on implementing decorators and message interceptors see the http://smallrye.io/smallrye-reactive-messaging/3.19.1/concepts/decorators/[SmallRye Reactive Messaging documentation].
+
 [[kafka-configuration]]
 == Configuration Reference
 
-More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.6/kafka/kafka.html[SmallRye Reactive Messaging - Kafka Connector Documentation].
+More details about the SmallRye Reactive Messaging configuration can be found in the https://smallrye.io/smallrye-reactive-messaging/latest/kafka/kafka/#using-the-kafka-connector[SmallRye Reactive Messaging - Kafka Connector Documentation].
+
+[TIP]
+====
+Each channel can be disabled via configuration using:
+
+[source, properties]
+----
+mp.messaging.[incoming|outgoing].[channel].enabled=false
+----
+====
+
 The most important attributes are listed in the tables below:
 
 === Incoming channel configuration (polling from Kafka)
@@ -1527,12 +2219,32 @@ Some properties have aliases which can be configured globally:
 kafka.bootstrap.servers=...
 ----
 
-include::smallrye-kafka-incoming.adoc[]
+You can also pass any property supported by the underlying https://kafka.apache.org/documentation/#consumerconfigs[Kafka consumer].
+
+For example, to configure the `max.poll.records` property, use:
+
+[source,properties]
+----
+mp.messaging.incoming.[channel].max.poll.records=1000
+----
+
+Some consumer client properties are configured to sensible default values:
+
+If not set, `reconnect.backoff.max.ms` is set to `10000` to avoid high load on disconnection.
+
+If not set, `key.deserializer` is set to `org.apache.kafka.common.serialization.StringDeserializer`.
+
+The consumer `client.id` is configured according to the number of clients to create using `mp.messaging.incoming.[channel].partitions` property.
+
+- If a `client.id` is provided, it is used as-is or suffixed with client index if `partitions` property is set.
+- If a `client.id` is not provided, it is generated as `[client-id-prefix][channel-name][-index]`.
+
+
+include::{includes}/smallrye-kafka-incoming.adoc[]
 
 === Outgoing channel configuration (writing to Kafka)
 
 The following attributes are configured using:
-
 
 [source, properties]
 ----
@@ -1546,7 +2258,813 @@ Some properties have aliases which can be configured globally:
 kafka.bootstrap.servers=...
 ----
 
-include::smallrye-kafka-outgoing.adoc[]
+You can also pass any property supported by the underlying https://kafka.apache.org/documentation/#producerconfigs[Kafka producer].
+
+For example, to configure the `max.block.ms` property, use:
+
+[source,properties]
+----
+mp.messaging.incoming.[channel].max.block.ms=10000
+----
+
+Some producer client properties are configured to sensible default values:
+
+If not set, `reconnect.backoff.max.ms` is set to `10000` to avoid high load on disconnection.
+
+If not set, `key.serializer` is set to `org.apache.kafka.common.serialization.StringSerializer`.
+
+If not set, producer `client.id` is generated as `[client-id-prefix][channel-name]`.
+
+include::{includes}/smallrye-kafka-outgoing.adoc[]
+
+[[kafka-configuration-resolution]]
+=== Kafka Configuration Resolution
+
+Quarkus exposes all Kafka related application properties, prefixed with `kafka.` or `KAFKA_` inside a configuration map with `default-kafka-broker` name.
+This configuration is used to establish the connection with the Kafka broker.
+
+In addition to this default configuration, you can configure the name of the `Map` producer using the `kafka-configuration` attribute:
+
+[source, properties]
+----
+mp.messaging.incoming.my-channel.connector=smallrye-kafka
+mp.messaging.incoming.my-channel.kafka-configuration=my-configuration
+----
+
+In this case, the connector looks for the `Map` associated with the `my-configuration` name.
+If `kafka-configuration` is not set, an optional lookup for a `Map` exposed with the channel name (`my-channel` in the previous example) is done.
+
+[source, java]
+----
+@Produces
+@ApplicationScoped
+@Identifier("my-configuration")
+Map<String, Object> outgoing() {
+    return Map.ofEntries(
+            Map.entry("value.serializer", ObjectMapperSerializer.class.getName())
+    );
+}
+----
+
+IMPORTANT: If `kafka-configuration` is set and no `Map` can be found, the deployment fails.
+
+Attribute values are resolved as follows:
+
+1. the attribute is set directly on the channel configuration (`mp.messaging.incoming.my-channel.attribute=value`),
+2. if not set, the connector looks for a `Map` with the channel name or the configured `kafka-configuration` (if set) and the value is retrieved from that `Map`
+3. If the resolved `Map` does not contain the value the default `Map` is used (exposed with the `default-kafka-broker` name)
+
+== Integrating with Kafka - Common patterns
+
+=== Writing to Kafka from an HTTP endpoint
+
+To send messages to Kafka from an HTTP endpoint, inject an `Emitter` (or a `MutinyEmitter`) in your endpoint:
+
+[source, java]
+----
+package org.acme;
+
+import java.util.concurrent.CompletionStage;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+@Path("/")
+public class ResourceSendingToKafka {
+
+    @Channel("kafka") Emitter<String> emitter;          // <1>
+
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    public CompletionStage<Void> send(String payload) { // <2>
+        return emitter.send(payload);                   // <3>
+    }
+}
+----
+<1> Inject an `Emitter<String>`
+<2> The HTTP method receives the payload and returns a `CompletionStage` completed when the message is written to Kafka
+<3> Send the message to Kafka, the `send` method returns a `CompletionStage`
+
+The endpoint sends the passed payload (from a `POST` HTTP request) to the emitter.
+The emitter's channel is mapped to a Kafka topic in the `application.properties` file:
+
+[source, properties]
+----
+mp.messaging.outgoing.kafka.connector=smallrye-kafka
+mp.messaging.outgoing.kafka.topic=my-topic
+----
+
+The endpoint returns a `CompletionStage` indicating the asynchronous nature of the method.
+The `emitter.send` method returns a `CompletionStage<Void>` .
+The returned future is completed when the message has been written to Kafka.
+If the writing fails, the returned `CompletionStage` is completed exceptionally.
+
+If the endpoint does not return a `CompletionStage`, the HTTP response may be written before the message is sent to Kafka, and so failures won't be reported to the user.
+
+If you need to send a Kafka record, use:
+
+[source, java]
+----
+package org.acme;
+
+import java.util.concurrent.CompletionStage;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+import io.smallrye.reactive.messaging.kafka.Record;
+
+@Path("/")
+public class ResourceSendingToKafka {
+
+    @Channel("kafka") Emitter<Record<String,String>> emitter;  // <1>
+
+
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    public CompletionStage<Void> send(String payload) {
+        return emitter.send(Record.of("my-key", payload));    // <2>
+    }
+}
+----
+<1> Note the usage of an `Emitter<Record<K, V>>`
+<2> Create the record using `Record.of(k, v)`
+
+=== Persisting Kafka messages with Hibernate with Panache
+
+To persist objects received from Kafka into a database, you can use Hibernate with Panache.
+
+NOTE: If you use Hibernate Reactive, look at <<persisting-kafka-messages-with-hibernate-reactive>>.
+
+Let's imagine you receive `Fruit` objects.
+For simplicity purposes, our `Fruit` class is pretty simple:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.persistence.Entity;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
+@Entity
+public class Fruit extends PanacheEntity {
+
+    public String name;
+
+}
+----
+
+To consume `Fruit` instances stored on a Kafka topic, and persist them into a database, you can use the following approach:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import io.smallrye.common.annotation.Blocking;
+
+@ApplicationScoped
+public class FruitConsumer {
+
+    @Incoming("fruits")                                     // <1>
+    @Transactional                                          // <2>
+    public void persistFruits(Fruit fruit) {                // <3>
+        fruit.persist();                                    // <4>
+    }
+}
+----
+<1> Configuring the incoming channel. This channel reads from Kafka.
+<2> As we are writing in a database, we must be in a transaction. This annotation starts a new transaction and commits it when the method returns.
+Quarkus automatically considers the method as _blocking_. Indeed, writing to a database using classic Hibernate is blocking. So, Quarkus calls the method on a worker thread you can block (and not an I/O thread).
+<3> The method receives each Fruit. Note that you would need a deserializer to reconstruct the Fruit instances from the Kafka records.
+<4> Persist the received `fruit` object.
+
+As mentioned in <4>, you need a deserializer that can create a `Fruit` from the record.
+This can be done using a Jackson deserializer:
+
+[source, java]
+----
+package org.acme;
+
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+
+public class FruitDeserializer extends ObjectMapperDeserializer<Fruit> {
+    public FruitDeserializer() {
+        super(Fruit.class);
+    }
+}
+----
+
+The associated configuration would be:
+
+[source, properties]
+----
+mp.messaging.incoming.fruits.connector=smallrye-kafka
+mp.messaging.incoming.fruits.value.deserializer=org.acme.FruitDeserializer
+----
+
+Check <<jackson-serialization>> for more detail about the usage of Jackson with Kafka.
+You can also use Avro.
+
+[#persisting-kafka-messages-with-hibernate-reactive]
+=== Persisting Kafka messages with Hibernate Reactive
+
+To persist objects received from Kafka into a database, you can use Hibernate Reactive with Panache.
+
+Let's imagine you receive `Fruit` objects.
+For simplicity purposes, our `Fruit` class is pretty simple:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.persistence.Entity;
+
+import io.quarkus.hibernate.reactive.panache.PanacheEntity;  // <1>
+
+@Entity
+public class Fruit extends PanacheEntity {
+
+    public String name;
+
+}
+----
+<1> Make sure to use the reactive variant
+
+To consume `Fruit` instances stored on a Kafka topic, and persist them into a database, you can use the following approach:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import io.quarkus.hibernate.reactive.panache.Panache;
+import io.smallrye.mutiny.Uni;
+
+@ApplicationScoped
+public class FruitStore {
+
+    @Inject
+    Mutiny.Session session;                    // <1>
+
+    @Incoming("in")
+    @ActivateRequestContext // <2>
+    public Uni<Void> consume(Fruit entity) {
+        return session.withTransaction(t -> {  // <3>
+            return entity.persistAndFlush()    // <4>
+                    .replaceWithVoid();        // <5>
+        }).onTermination().call(() -> session.close()); // <6>
+    }
+
+}
+----
+<1> Inject the Hibernate Reactive `Session`
+<2> Hibernate Reactive `Session` and `Panache` APIs require an active CDI Request context. 
+`@ActivateRequestContext` annotation creates a new request context and destroys it when the `Uni` returned from the method completes.
+If `Panache` is not used, `Mutiny.SessionFactory` can be injected and used similarly without the need of activating the request context or closing the session manually. 
+<3> Requests a new transaction. The transaction completes when the passed action completes.
+<4> Persist the entity. It returns a `Uni<Fruit>`.
+<5> Switch back to a `Uni<Void>`.
+<6> Close the session - this is close the connection with the database. The connection can then be recycled.
+
+Unlike with _classic_ Hibernate, you can't use `@Transactional`.
+Instead, we use `session.withTransaction` and persist our entity.
+The `map` is used to return a `Uni<Void>` and not a `Uni<Fruit>`.
+
+You need a deserializer that can create a `Fruit` from the record.
+This can be done using a Jackson deserializer:
+
+[source, java]
+----
+package org.acme;
+
+import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+
+public class FruitDeserializer extends ObjectMapperDeserializer<Fruit> {
+    public FruitDeserializer() {
+        super(Fruit.class);
+    }
+}
+----
+
+The associated configuration would be:
+
+[source, properties]
+----
+mp.messaging.incoming.fruits.connector=smallrye-kafka
+mp.messaging.incoming.fruits.value.deserializer=org.acme.FruitDeserializer
+----
+
+Check <<jackson-serialization>> for more detail about the usage of Jackson with Kafka.
+You can also use Avro.
+
+=== Writing entities managed by Hibernate to Kafka
+
+Let's imagine the following process:
+
+1. You receive an HTTP request with a payload,
+2. You create an Hibernate entity instance from this payload,
+3. You persist that entity into a database,
+4. You send the entity to a Kafka topic
+
+NOTE: If you use Hibernate Reactive, look at <<writing-entities-managed-by-hibernate-reactive-to-kafka>>.
+
+Because we write to a database, we must run this method in a transaction.
+Yet, sending the entity to Kafka happens asynchronously.
+The operation returns a `CompletionStage` (or a `Uni` if you use a `MutinyEmitter`) reporting when the operation completes.
+We must be sure that the transaction is still running until the object is written.
+Otherwise, you may access the object outside the transaction, which is not allowed.
+
+To implement this process, you need the following approach:
+
+[source, java]
+----
+package org.acme;
+
+import java.util.concurrent.CompletionStage;
+
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+@Path("/")
+public class ResourceSendingToKafka {
+
+    @Channel("kafka") Emitter<Fruit> emitter;
+
+    @POST
+    @Path("/fruits")
+    @Transactional                                                      // <1>
+    public CompletionStage<Void> storeAndSendToKafka(Fruit fruit) {     // <2>
+        fruit.persist();
+        return emitter.send(new FruitDto(fruit));                       // <3>
+    }
+}
+----
+<1> As we are writing to the database, make sure we run inside a transaction
+<2> The method receives the fruit instance to persist. It returns a `CompletionStage` which is used for the transaction demarcation. The transaction is committed when the return `CompletionStage` completes. In our case, it's when the message is written to Kafka.
+<3> Wrap the managed entity inside a Data transfer object and send it to Kafka.
+This makes sure that managed entity is not impacted by the Kafka serialization.
+
+[#writing-entities-managed-by-hibernate-reactive-to-kafka]
+=== Writing entities managed by Hibernate Reactive to Kafka
+
+To send to Kafka entities managed by Hibernate Reactive, we recommend using:
+
+* RESTEasy Reactive to serve HTTP requests
+* A `MutinyEmitter` to send message to a channel, so it can be easily integrated with the Mutiny API exposed by Hibernate Reactive or Hibernate Reactive with Panache.
+
+The following example demonstrates how to receive a payload, store it in the database using Hibernate Reactive with Panache, and send the persisted entity to Kafka:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkus.hibernate.reactive.panache.Panache;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.MutinyEmitter;
+
+@Path("/")
+public class ReactiveGreetingResource {
+
+    @Channel("kafka") MutinyEmitter<Fruit> emitter;     // <1>
+
+    @POST
+    @Path("/fruits")
+    public Uni<Void> sendToKafka(Fruit fruit) {         // <2>
+        return Panache.withTransaction(() ->            // <3>
+            fruit.<Fruit>persist()
+        )
+            .chain(f -> emitter.send(f));               // <4>
+    }
+}
+----
+<1> Inject a `MutinyEmitter` which exposes a Mutiny API. It simplifies the integration with the Mutiny API exposed by Hibernate Reactive with Panache.
+<2> The HTTP method receiving the payload returns a `Uni<Void>`. The HTTP response is written when the operation completes (the entity is persisted and written to Kafka).
+<3> We need to write the entity into the database in a transaction.
+<4> Once the persist operation completes, we send the entity to Kafka. The `send` method returns a `Uni<Void>`.
+
+
+=== Streaming Kafka topics as server-sent events
+
+Streaming a Kafka topic as server-sent events (SSE) is straightforward:
+
+1. You inject the channel representing the Kafka topic in your HTTP endpoint
+2. You return that channel as a `Publisher` or a `Multi` from the HTTP method
+
+The following code provides an example:
+
+[source, java]
+----
+@Channel("fruits")
+Multi<Fruit> fruits;
+
+@GET
+@Produces(MediaType.SERVER_SENT_EVENTS)
+public Multi<Fruit> stream() {
+    return fruits;
+}
+----
+
+Some environment cuts the SSE connection when there is not enough activity.
+The workaround consists of sending _ping_ messages (or empty objects) periodically.
+
+[source, java]
+----
+@Channel("fruits")
+Multi<Fruit> fruits;
+
+@Inject
+ObjectMapper mapper;
+
+@GET
+@Produces(MediaType.SERVER_SENT_EVENTS)
+public Multi<String> stream() {
+    return Multi.createBy().merging()
+            .streams(
+                    fruits.map(this::toJson),
+                    emitAPeriodicPing()
+            );
+}
+
+Multi<String> emitAPeriodicPing() {
+    return Multi.createFrom().ticks().every(Duration.ofSeconds(10))
+            .onItem().transform(x -> "{}");
+}
+
+private String toJson(Fruit f) {
+    try {
+        return mapper.writeValueAsString(f);
+    } catch (JsonProcessingException e) {
+        throw new RuntimeException(e);
+    }
+}
+----
+
+The workaround is a bit more complex as besides sending the fruits coming from Kafka, we need to send pings periodically.
+To achieve this we merge the stream coming from Kafka and a periodic stream emitting `{}` every 10 seconds.
+
+[[chaining-kafka-transactions-with-hibernate-reactive-transactions]]
+=== Chaining Kafka Transactions with Hibernate Reactive transactions
+
+By chaining a Kafka transaction with a Hibernate Reactive transaction you can send records to a Kafka transaction,
+perform database updates and commit the Kafka transaction only if the database transaction is successful.
+
+The following example demonstrates:
+
+* Receive a payload by serving HTTP requests using RESTEasy Reactive,
+* Limit concurrency of that HTTP endpoint using Smallrye Fault Tolerance,
+* Start a Kafka transaction and send the payload to Kafka record,
+* Store the payload in the database using Hibernate Reactive with Panache,
+* Commit the Kafka transaction only if the entity is persisted successfully.
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.hibernate.reactive.mutiny.Mutiny;
+
+import io.quarkus.hibernate.reactive.panache.Panache;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Fruit> kafkaTx; // <1>
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1) // <2>
+    public Uni<Void> post(Fruit fruit) { // <3>
+        return kafkaTx.withTransaction(emitter -> { // <4>
+            emitter.send(fruit); // <5>
+            return Panache.withTransaction(() -> { // <6>
+                return fruit.<Fruit>persist(); // <7>
+            });
+        }).replaceWithVoid();
+    }
+}
+
+----
+<1> Inject a `KafkaTransactions` which exposes a Mutiny API. It allows the integration with the Mutiny API exposed by Hibernate Reactive with Panache.
+<2> Limit the concurrency of the HTTP endpoint to "1", preventing starting multiple transactions at a given time.
+<3> The HTTP method receiving the payload returns a `Uni<Void>`. The HTTP response is written when the operation completes (the entity is persisted and Kafka transaction is committed).
+<4> Begin a Kafka transaction.
+<5> Send the payload to Kafka inside the Kafka transaction.
+<6> Persist the entity into the database in a Hibernate Reactive transaction.
+<7> Once the persist operation completes, and there is no errors, the Kafka transaction is committed.
+The result is omitted and returned as the HTTP response.
+
+In the previous example the database transaction (inner) will commit followed by the Kafka transaction (outer).
+If you wish to commit the Kafka transaction first and the database transaction second, you need to nest them in the reverse order.
+
+The next example demonstrates that using the Hibernate Reactive API (without Panache):
+
+[source, java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.faulttolerance.Bulkhead;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.hibernate.reactive.mutiny.Mutiny;
+
+import io.smallrye.mutiny.Uni;
+import io.smallrye.reactive.messaging.kafka.transactions.KafkaTransactions;
+import io.vertx.mutiny.core.Context;
+import io.vertx.mutiny.core.Vertx;
+
+@Path("/")
+public class FruitProducer {
+
+    @Channel("kafka") KafkaTransactions<Fruit> kafkaTx;
+
+    @Inject Mutiny.SessionFactory sf; // <1>
+
+    @POST
+    @Path("/fruits")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Bulkhead(1)
+    public Uni<Void> post(Fruit fruit) {
+        Context context = Vertx.currentContext(); // <2>
+        return sf.withTransaction(session -> // <3>
+                kafkaTx.withTransaction(emitter -> // <4>
+                        session.persist(fruit).invoke(() -> emitter.send(fruit)) // <5>
+                ).emitOn(context::runOnContext) // <6>
+        );
+    }
+}
+----
+
+<1> Inject the Hibernate Reactive `SessionFactory`.
+<2> Capture the caller Vert.x context.
+<3> Begin a Hibernate Reactive transaction.
+<4> Begin a Kafka transaction.
+<5> Persist the payload and send the entity to Kafka.
+<6> The Kafka transaction terminates on the Kafka producer sender thread.
+We need to switch to the Vert.x context previously captured in order to terminate the Hibernate Reactive transaction on the same context we started it.
+
+== Logging
+
+To reduce the amount of log written by the Kafka client, Quarkus sets the level of the following log categories to `WARNING`:
+
+- `org.apache.kafka.clients`
+- `org.apache.kafka.common.utils`
+- `org.apache.kafka.common.metrics`
+
+You can override the configuration by adding the following lines to the `application.properties`:
+
+[source, properties]
+----
+quarkus.log.category."org.apache.kafka.clients".level=INFO
+quarkus.log.category."org.apache.kafka.common.utils".level=INFO
+quarkus.log.category."org.apache.kafka.common.metrics".level=INFO
+----
+
+== Connecting to Managed Kafka clusters
+
+This section explains how to connect to notorious Kafka Cloud Services.
+
+=== Azure Event Hub
+
+https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-for-kafka-ecosystem-overview[Azure Event Hub] provides an endpoint compatible with Apache Kafka.
+
+NOTE: Azure Event Hubs for Kafka is not available in the _basic_ tier.
+You need at least the _standard_ tier to use Kafka.
+See https://azure.microsoft.com/en-us/pricing/details/event-hubs/[Azure Event Hubs Pricing] to see the other options.
+
+To connect to Azure Event Hub, using the Kafka protocol with TLS, you need the following configuration:
+
+[source, properties]
+----
+kafka.bootstrap.servers=my-event-hub.servicebus.windows.net:9093 # <1>
+kafka.security.protocol=SASL_SSL
+kafka.sasl.mechanism=PLAIN
+kafka.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \ # <2>
+    username="$ConnectionString" \ # <3>
+    password="<YOUR.EVENTHUBS.CONNECTION.STRING>"; # <4>
+----
+<1> The port is `9093`.
+<2> You need to use the JAAS `PlainLoginModule`.
+<3> The username is the `$ConnectionString` string.
+<4> The Event Hub connection string given by Azure.
+
+Replace `<YOUR.EVENTHUBS.CONNECTION.STRING>` with the connection string for your Event Hubs namespace.
+For instructions on getting the connection string, see https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-get-connection-string[Get an Event Hubs connection string].
+The result would be something like:
+
+[source, properties]
+----
+kafka.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
+    username="$ConnectionString" \
+    password="Endpoint=sb://my-event-hub.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=XXXXXXXXXXXXXXXX";
+----
+
+This configuration can be global (as above), or set in the channel configuration:
+
+[source, properties]
+----
+mp.messaging.incoming.$channel.bootstrap.servers=my-event-hub.servicebus.windows.net:9093
+mp.messaging.incoming.$channel.security.protocol=SASL_SSL
+mp.messaging.incoming.$channel.sasl.mechanism=PLAIN
+mp.messaging.incoming.$channel.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
+    username="$ConnectionString" \
+    password="Endpoint=sb://my-event-hub.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=...";
+----
+
+=== Red Hat OpenShift Streams for Apache Kafka
+
+https://cloud.redhat.com/[Red Hat OpenShift Streams for Apache Kafka] provides managed Kafka brokers.
+First, follow the instructions from https://access.redhat.com/documentation/en-us/red_hat_openshift_streams_for_apache_kafka/1/guide/88e1487a-2a14-4b35-85b9-a7a2d67a37f3[Getting started with the `rhoas` CLI for Red Hat OpenShift Streams for Apache Kafka] to create your Kafka broker instance.
+Make sure you copied the client id and client secret associated with the _ServiceAccount_ you created.
+
+Then, you can configure the Quarkus application to connect to the broker as follows:
+
+[source, properties]
+----
+kafka.bootstrap.servers=<connection url> # <1>
+kafka.security.protocol=SASL_SSL
+kafka.sasl.mechanism=PLAIN
+kafka.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \
+  username="${KAFKA_USERNAME}" \ # <2>
+  password="${KAFKA_PASSWORD}"; # <3>
+----
+<1> The connection string, given on the admin console, such as `demo-c--bjsv-ldd-cvavkc-a.bf2.kafka.rhcloud.com:443`
+<2> The kafka username (the client id from the service account)
+<3> the kafka password (the client secret from the service account)
+
+NOTE: In general, these properties are prefixed using `%prod` to enable them only when running in production mode.
+
+IMPORTANT: As explained in https://access.redhat.com/documentation/en-us/red_hat_openshift_streams_for_apache_kafka/1/guide/88e1487a-2a14-4b35-85b9-a7a2d67a37f3[Getting started with the rhoas CLI for Red Hat OpenShift Streams for Apache Kafka], to use Red Hat OpenShift Streams for Apache Kafka, you must create the topic beforehand, create a _Service Account_, and provide permissions to read and write to your topic from that service account.
+The authentication data (client id and secret) relates to the service account, which means you can implement fine-grain permissions and restrict access to the topic.
+
+When using Kubernetes, it is recommended to set the client id and secret in a Kubernetes secret:
+
+[source, yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kafka-credentials
+stringData:
+  KAFKA_USERNAME: "..."
+  KAFKA_PASSWORD: "..."
+----
+
+To allow your Quarkus application to use that secret, add the following line to the `application.properties` file:
+
+[source, properties]
+----
+%prod.quarkus.openshift.env.secrets=kafka-credentials
+----
+
+==== Red Hat OpenShift Service Registry
+
+https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-service-registry[Red Hat OpenShift Service Registry]
+provides fully managed service registry for handling Kafka schemas.
+
+You can follow the instructions from
+https://access.redhat.com/documentation/en-us/red_hat_openshift_service_registry/1/guide/ab1894d1-cae0-4d11-b185-81d62b4aabc7#_60472331-fa00-48ec-a621-bbd039500c7d[Getting started with Red Hat OpenShift Service Registry],
+or use the `rhoas` CLI to create a new service registry instance:
+
+[source, shell]
+----
+rhoas service-registry create --name my-schema-registry
+----
+
+Make sure to note the _Registry URL_ of the instance created.
+For authentication, you can use the same _ServiceAccount_ you created previously.
+You need to make sure that it has the necessary permissions to access the service registry.
+
+For example, using the `rhoas` CLI, you can grant the `MANAGER` role to the service account:
+
+[source, shell]
+----
+rhoas service-registry role add --role manager --service-account [SERVICE_ACCOUNT_CLIENT_ID]
+----
+
+Then, you can configure the Quarkus application to connect to the schema registry as follows:
+
+[source, properties]
+----
+mp.messaging.connector.smallrye-kafka.apicurio.registry.url=${RHOAS_SERVICE_REGISTRY_URL} <1>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.service.token.endpoint=${RHOAS_OAUTH_TOKEN_ENDPOINT} <2>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.client.id=${RHOAS_CLIENT_ID} <3>
+mp.messaging.connector.smallrye-kafka.apicurio.auth.client.secret=${RHOAS_CLIENT_ID} <4>
+----
+<1> The service registry URL, given on the admin console, such as `https://bu98.serviceregistry.rhcloud.com/t/0e95af2c-6e11-475e-82ee-f13bd782df24/apis/registry/v2`
+<2> The OAuth token endpoint URL, such as `https://identity.api.openshift.com/auth/realms/rhoas/protocol/openid-connect/token`
+<3> The client id (from the service account)
+<4> The client secret (from the service account)
+
+==== Binding Red Hat OpenShift managed services to Quarkus application using the Service Binding Operator
+
+If your Quarkus application is deployed on a Kubernetes or OpenShift cluster with link:https://github.com/redhat-developer/service-binding-operator[Service Binding Operator] and link:https://github.com/redhat-developer/app-services-operator/tree/main/docs[OpenShift Application Services] operators installed,
+configurations necessary to access Red Hat OpenShift Streams for Apache Kafka and Service Registry can be injected to the application using xref:deploying-to-kubernetes.adoc#service_binding[Kubernetes Service Binding].
+
+In order to set up the Service Binding, you need first to connect OpenShift managed services to your cluster.
+For an OpenShift cluster you can follow the instructions from link:https://github.com/redhat-developer/app-services-guides/tree/main/docs/registry/service-binding-registry#connecting-a-kafka-and-service-registry-instance-to-your-openshift-cluster[Connecting a Kafka and Service Registry instance to your OpenShift cluster].
+
+Once you've connected your cluster with the RHOAS Kafka and Service Registry instances, make sure you've granted necessary permissions to the newly created service account.
+
+Then, using the xref:deploying-to-kubernetes.adoc#service_binding[Kubernetes Service Binding] extension,
+you can configure the Quarkus application to generate `ServiceBinding` resources for those services:
+
+[source, properties]
+----
+quarkus.kubernetes-service-binding.detect-binding-resources=true
+
+quarkus.kubernetes-service-binding.services.kafka.api-version=rhoas.redhat.com/v1alpha1
+quarkus.kubernetes-service-binding.services.kafka.kind=KafkaConnection
+quarkus.kubernetes-service-binding.services.kafka.name=my-kafka
+
+quarkus.kubernetes-service-binding.services.serviceregistry.api-version=rhoas.redhat.com/v1alpha1
+quarkus.kubernetes-service-binding.services.serviceregistry.kind=ServiceRegistryConnection
+quarkus.kubernetes-service-binding.services.serviceregistry.name=my-schema-registry
+----
+
+For this example Quarkus build will generate the following `ServiceBinding` resources:
+
+[source, yaml]
+----
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: my-app-kafka
+spec:
+  application:
+    group: apps.openshift.io
+    name: my-app
+    version: v1
+    kind: DeploymentConfig
+  services:
+    - group: rhoas.redhat.com
+      version: v1alpha1
+      kind: KafkaConnection
+      name: my-kafka
+  detectBindingResources: true
+  bindAsFiles: true
+---
+apiVersion: binding.operators.coreos.com/v1alpha1
+kind: ServiceBinding
+metadata:
+  name: my-app-serviceregistry
+spec:
+  application:
+    group: apps.openshift.io
+    name: my-app
+    version: v1
+    kind: DeploymentConfig
+  services:
+    - group: rhoas.redhat.com
+      version: v1alpha1
+      kind: ServiceRegistryConnection
+      name: my-schema-registry
+  detectBindingResources: true
+  bindAsFiles: true
+----
+
+You can follow xref:deploying-to-kubernetes.adoc#openshift[Deploying to OpenShift] to deploy your application, including generated `ServiceBinding` resources.
+The configuration properties necessary to access the Kafka and Schema Registry instances will be injected to the application automatically at deployment.
 
 == Going further
 

@@ -2,9 +2,6 @@ package io.quarkus.devtools.codestarts.core;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.quarkus.devtools.codestarts.CodestartType;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +9,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import io.quarkus.devtools.codestarts.CodestartType;
+
+@JsonInclude(JsonInclude.Include.NON_DEFAULT)
 public final class CodestartSpec {
 
     private final String name;

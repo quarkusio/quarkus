@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import java.nio.charset.StandardCharsets;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.sse.SseEvent;
+
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import java.nio.charset.StandardCharsets;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.sse.SseEvent;
 
 public class SseParser implements Handler<Buffer> {
 
@@ -76,6 +78,7 @@ public class SseParser implements Handler<Buffer> {
     @Override
     public void handle(Buffer event) {
         byte[] newBytes = event.getBytes();
+        event.getByteBuf().release();
         // check if we have partial data remaining
         if (bytes != null) {
             // concat old and new data
@@ -142,7 +145,7 @@ public class SseParser implements Handler<Buffer> {
 
     private void dispatchEvent() {
         // ignore empty events
-        if (dataBuffer.length() == 0)
+        if (dataBuffer.length() == 0 && commentBuffer.length() == 0)
             return;
         WebTargetImpl webTarget = sseEventSource.getWebTarget();
         InboundSseEventImpl event;
@@ -156,7 +159,7 @@ public class SseParser implements Handler<Buffer> {
         event.setComment(commentBuffer.length() == 0 ? null : commentBuffer.toString());
         // SSE spec says empty string is the default, but JAX-RS says null if not specified
         event.setId(lastEventId);
-        event.setData(dataBuffer.toString());
+        event.setData(dataBuffer.length() == 0 ? null : dataBuffer.toString());
         // SSE spec says "message" is the default, but JAX-RS says null if not specified
         event.setName(eventType);
         event.setReconnectDelay(eventReconnectTime);

@@ -1,8 +1,8 @@
 package io.quarkus.hibernate.validator.test.injection;
 
-import javax.inject.Inject;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.inject.Inject;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 
 public class TestInjectionValidator implements ConstraintValidator<TestConstraint, String> {
 

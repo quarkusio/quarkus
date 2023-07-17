@@ -1,8 +1,14 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
+import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore.HIBERNATE_ORM_STATE_STORE;
+import static io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore.HIBERNATE_REACTIVE_STATE_STORE;
+import static io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore.REDIS_STATE_STORE;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -16,21 +22,45 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.processor.KotlinUtils;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.kafka.DatabindProcessingStateCodec;
+import io.quarkus.smallrye.reactivemessaging.kafka.HibernateOrmStateStore;
+import io.quarkus.smallrye.reactivemessaging.kafka.HibernateReactiveStateStore;
 import io.quarkus.smallrye.reactivemessaging.kafka.ReactiveMessagingKafkaConfig;
-import io.vertx.kafka.client.consumer.impl.KafkaReadStreamImpl;
+import io.quarkus.smallrye.reactivemessaging.kafka.RedisStateStore;
+import io.smallrye.mutiny.tuples.Functions.TriConsumer;
+import io.smallrye.reactive.messaging.kafka.KafkaConnector;
+import io.smallrye.reactive.messaging.kafka.commit.ProcessingState;
 
 public class SmallRyeReactiveMessagingKafkaProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger("io.quarkus.smallrye-reactive-messaging-kafka.deployment.processor");
+
+    public static final String CHECKPOINT_STATE_STORE_MESSAGE = "Quarkus detected the use of `%s` for the" +
+            " Kafka checkpoint commit strategy but the extension has not been added. Consider adding '%s'.";
+
+    private static final String CHECKPOINT_ENTITY_NAME = "io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntity";
+    private static final String CHECKPOINT_ENTITY_ID_NAME = "io.quarkus.smallrye.reactivemessaging.kafka.CheckpointEntityId";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -39,18 +69,97 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        // Required for the throttled commit strategy
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(KafkaReadStreamImpl.class)
-                        .fields(true)
-                        .methods(true)
-                        .constructors(true)
-                        .finalFieldsWritable(true)
-                        .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ProcessingState.class).methods().fields().build());
+    }
+
+    @BuildStep
+    public void ignoreDuplicateJmxRegistrationInDevAndTestModes(LaunchModeBuildItem launchMode,
+            BuildProducer<LogCleanupFilterBuildItem> log) {
+        if (launchMode.getLaunchMode().isDevOrTest()) {
+            log.produce(new LogCleanupFilterBuildItem(
+                    "org.apache.kafka.common.utils.AppInfoParser",
+                    "Error registering AppInfo mbean"));
+        }
+    }
+
+    static boolean hasStateStoreConfig(String stateStoreName, Config config) {
+        Optional<String> connectorStrategy = getConnectorProperty("checkpoint.state-store", config);
+        if (connectorStrategy.isPresent() && connectorStrategy.get().equals(stateStoreName)) {
+            return true;
+        }
+        List<String> stateStores = getChannelProperties("checkpoint.state-store", config);
+        return stateStores.contains(stateStoreName);
+    }
+
+    private static Optional<String> getConnectorProperty(String keySuffix, Config config) {
+        return config.getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + "." + keySuffix,
+                String.class);
+    }
+
+    private static List<String> getChannelProperties(String keySuffix, Config config) {
+        List<String> values = new ArrayList<>();
+        for (String propertyName : config.getPropertyNames()) {
+            if (propertyName.startsWith("mp.messaging.incoming.") && propertyName.endsWith("." + keySuffix)) {
+                values.add(config.getValue(propertyName, String.class));
+            }
+        }
+        return values;
+    }
+
+    static String channelPropertyFormat = "mp.messaging.%s.%s.%s";
+
+    static String getChannelPropertyKey(String channelName, String propertyName, boolean incoming) {
+        return String.format(channelPropertyFormat, incoming ? "incoming" : "outgoing",
+                channelName.contains(".") ? "\"" + channelName + "\"" : channelName, propertyName);
+    }
+
+    @BuildStep
+    public void checkpointRedis(BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            Capabilities capabilities) {
+        if (hasStateStoreConfig(REDIS_STATE_STORE, ConfigProvider.getConfig())) {
+            Optional<String> checkpointStateType = getConnectorProperty("checkpoint.state-type", ConfigProvider.getConfig());
+            checkpointStateType.ifPresent(
+                    s -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(s).methods().fields().build()));
+            if (capabilities.isPresent(Capability.REDIS_CLIENT)) {
+                additionalBean.produce(new AdditionalBeanBuildItem(RedisStateStore.Factory.class));
+                additionalBean.produce(new AdditionalBeanBuildItem(DatabindProcessingStateCodec.Factory.class));
+            } else {
+                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, REDIS_STATE_STORE, "quarkus-redis-client");
+            }
+        }
+    }
+
+    @BuildStep
+    public void checkpointHibernateReactive(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (hasStateStoreConfig(HIBERNATE_REACTIVE_STATE_STORE, ConfigProvider.getConfig())) {
+            if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+                additionalBean.produce(new AdditionalBeanBuildItem(HibernateReactiveStateStore.Factory.class));
+            } else {
+                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_REACTIVE_STATE_STORE, "quarkus-hibernate-reactive");
+            }
+        }
+    }
+
+    @BuildStep
+    public void checkpointHibernateOrm(BuildProducer<AdditionalBeanBuildItem> additionalBean, Capabilities capabilities) {
+        if (hasStateStoreConfig(HIBERNATE_ORM_STATE_STORE, ConfigProvider.getConfig())) {
+            if (capabilities.isPresent(Capability.HIBERNATE_ORM)) {
+                additionalBean.produce(new AdditionalBeanBuildItem(HibernateOrmStateStore.Factory.class));
+            } else {
+                LOGGER.warnf(CHECKPOINT_STATE_STORE_MESSAGE, HIBERNATE_ORM_STATE_STORE, "quarkus-hibernate-orm");
+            }
+        }
+    }
+
+    @BuildStep
+    public void additionalJpaModel(BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
+        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_NAME));
+        additionalJpaModel.produce(new AdditionalJpaModelBuildItem(CHECKPOINT_ENTITY_ID_NAME));
     }
 
     /**
-     * Handles the serializer/deserializer detection and whether or not the graceful shutdown should be used in dev mode.
+     * Handles the serializer/deserializer detection and whether the graceful shutdown should be used in dev mode.
      */
     @BuildStep
     public void defaultChannelConfiguration(
@@ -58,26 +167,30 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             ReactiveMessagingKafkaBuildTimeConfig buildTimeConfig,
             ReactiveMessagingKafkaConfig runtimeConfig,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer) {
+            List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigProducer,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflection) {
 
         DefaultSerdeDiscoveryState discoveryState = new DefaultSerdeDiscoveryState(combinedIndex.getIndex());
         if (buildTimeConfig.serializerAutodetectionEnabled) {
-            discoverDefaultSerdeConfig(discoveryState, defaultConfigProducer);
+            discoverDefaultSerdeConfig(discoveryState, channelsManagedByConnectors, defaultConfigProducer,
+                    buildTimeConfig.serializerGenerationEnabled ? generatedClass : null, reflection);
         }
 
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!runtimeConfig.enableGracefulShutdownInDevAndTestMode) {
-                List<AnnotationInstance> incomings = discoveryState.findAnnotationsOnMethods(DotNames.INCOMING);
+                List<AnnotationInstance> incomings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING);
                 List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
                 List<AnnotationInstance> annotations = new ArrayList<>();
                 annotations.addAll(incomings);
                 annotations.addAll(channels);
                 for (AnnotationInstance annotation : annotations) {
                     String channelName = annotation.value().asString();
-                    if (!discoveryState.isKafkaConnector(true, channelName)) {
+                    if (!discoveryState.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
                         continue;
                     }
-                    String key = "mp.messaging.incoming." + channelName + ".graceful-shutdown";
+                    String key = getChannelPropertyKey(channelName, "graceful-shutdown", true);
                     discoveryState.ifNotYetConfigured(key, () -> {
                         defaultConfigProducer.produce(new RunTimeConfigurationDefaultBuildItem(key, "false"));
                     });
@@ -88,30 +201,29 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     // visible for testing
     void discoverDefaultSerdeConfig(DefaultSerdeDiscoveryState discovery,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> config) {
-        for (AnnotationInstance annotation : discovery.findAnnotationsOnMethods(DotNames.INCOMING)) {
+            List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflection) {
+        Map<String, String> alreadyGeneratedSerializers = new HashMap<>();
+        Map<String, String> alreadyGeneratedDeserializers = new HashMap<>();
+        for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.INCOMING)) {
             String channelName = annotation.value().asString();
-            if (!discovery.isKafkaConnector(true, channelName)) {
+            if (!discovery.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
                 continue;
             }
 
             MethodInfo method = annotation.target().asMethod();
 
             Type incomingType = getIncomingTypeFromMethod(method);
-            processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
 
-                handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
-                        config, keyDeserializer, valueDeserializer);
-            });
+            processIncomingType(discovery, config, incomingType, channelName, generatedClass, reflection,
+                    alreadyGeneratedDeserializers);
         }
 
         for (AnnotationInstance annotation : discovery.findAnnotationsOnMethods(DotNames.OUTGOING)) {
             String channelName = annotation.value().asString();
-            if (!discovery.isKafkaConnector(false, channelName)) {
+            if (!discovery.isKafkaConnector(channelsManagedByConnectors, false, channelName)) {
                 continue;
             }
 
@@ -120,19 +232,18 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             Type outgoingType = getOutgoingTypeFromMethod(method);
             processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.outgoing." + channelName + ".key.serializer", keySerializer);
+                        getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.outgoing." + channelName + ".value.serializer", valueSerializer);
+                        getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
 
-                handleAdditionalProperties("mp.messaging.outgoing." + channelName + ".", discovery,
-                        config, keySerializer, valueSerializer);
-            });
+                handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
+            }, generatedClass, reflection, alreadyGeneratedSerializers);
         }
 
         for (AnnotationInstance annotation : discovery.findAnnotationsOnInjectionPoints(DotNames.CHANNEL)) {
             String channelName = annotation.value().asString();
-            if (!discovery.isKafkaConnector(false, channelName)
-                    && !discovery.isKafkaConnector(true, channelName)) {
+            if (!discovery.isKafkaConnector(channelsManagedByConnectors, false, channelName)
+                    && !discovery.isKafkaConnector(channelsManagedByConnectors, true, channelName)) {
                 continue;
             }
 
@@ -142,27 +253,61 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
 
             Type incomingType = getIncomingTypeFromChannelInjectionPoint(injectionPointType);
-            processIncomingType(discovery, incomingType, (keyDeserializer, valueDeserializer) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".key.deserializer", keyDeserializer);
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.incoming." + channelName + ".value.deserializer", valueDeserializer);
 
-                handleAdditionalProperties("mp.messaging.incoming." + channelName + ".", discovery,
-                        config, keyDeserializer, valueDeserializer);
-            });
+            processIncomingType(discovery, config, incomingType, channelName, generatedClass, reflection,
+                    alreadyGeneratedDeserializers);
+
+            processKafkaTransactions(discovery, config, channelName, injectionPointType);
 
             Type outgoingType = getOutgoingTypeFromChannelInjectionPoint(injectionPointType);
             processOutgoingType(discovery, outgoingType, (keySerializer, valueSerializer) -> {
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.outgoing." + channelName + ".key.serializer", keySerializer);
+                        getChannelPropertyKey(channelName, "key.serializer", false), keySerializer);
                 produceRuntimeConfigurationDefaultBuildItem(discovery, config,
-                        "mp.messaging.outgoing." + channelName + ".value.serializer", valueSerializer);
+                        getChannelPropertyKey(channelName, "value.serializer", false), valueSerializer);
 
-                handleAdditionalProperties("mp.messaging.outgoing." + channelName + ".", discovery,
-                        config, keySerializer, valueSerializer);
-            });
+                handleAdditionalProperties(channelName, false, discovery, config, keySerializer, valueSerializer);
+            }, generatedClass, reflection, alreadyGeneratedSerializers);
         }
+    }
+
+    private void processKafkaTransactions(DefaultSerdeDiscoveryState discovery,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config, String channelName, Type injectionPointType) {
+        if (injectionPointType != null && isKafkaEmitter(injectionPointType)) {
+            String transactionalIdKey = getChannelPropertyKey(channelName, "transactional.id", false);
+            String enableIdempotenceKey = getChannelPropertyKey(channelName, "enable.idempotence", false);
+            String acksKey = getChannelPropertyKey(channelName, "acks", false);
+            LOGGER.infof("Transactional producer detected for channel '%s', setting following default config values: "
+                    + "'" + transactionalIdKey + "=${quarkus.application.name}-${channelName}', "
+                    + "'" + enableIdempotenceKey + "=true', "
+                    + "'" + acksKey + "=all'", channelName);
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config, transactionalIdKey,
+                    "${quarkus.application.name}-" + channelName);
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config, enableIdempotenceKey, "true");
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config, acksKey, "all");
+        }
+    }
+
+    private void processIncomingType(DefaultSerdeDiscoveryState discovery,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config, Type incomingType, String channelName,
+            BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflection,
+            Map<String, String> alreadyGeneratedDeserializers) {
+        extractKeyValueType(incomingType, (key, value, isBatchType) -> {
+            Result keyDeserializer = deserializerFor(discovery, key, generatedClass, reflection, alreadyGeneratedDeserializers);
+            Result valueDeserializer = deserializerFor(discovery, value, generatedClass, reflection,
+                    alreadyGeneratedDeserializers);
+
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                    getChannelPropertyKey(channelName, "key.deserializer", true), keyDeserializer);
+            produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                    getChannelPropertyKey(channelName, "value.deserializer", true), valueDeserializer);
+            if (Boolean.TRUE.equals(isBatchType)) {
+                produceRuntimeConfigurationDefaultBuildItem(discovery, config,
+                        getChannelPropertyKey(channelName, "batch", true), "true");
+            }
+
+            handleAdditionalProperties(channelName, true, discovery, config, keyDeserializer, valueDeserializer);
+        });
     }
 
     private Type getInjectionPointType(AnnotationInstance annotation) {
@@ -171,13 +316,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 return annotation.target().asField().type();
             case METHOD_PARAMETER:
                 MethodParameterInfo parameter = annotation.target().asMethodParameter();
-                return parameter.method().parameters().get(parameter.position());
+                return parameter.method().parameterType(parameter.position());
             default:
                 return null;
         }
     }
 
-    private void handleAdditionalProperties(String configPropertyBase, DefaultSerdeDiscoveryState discovery,
+    private void handleAdditionalProperties(String channelName, boolean incoming, DefaultSerdeDiscoveryState discovery,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config, Result... results) {
         for (Result result : results) {
             if (result == null) {
@@ -185,7 +330,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             }
 
             result.additionalProperties.forEach((key, value) -> {
-                produceRuntimeConfigurationDefaultBuildItem(discovery, config, configPropertyBase + key, value);
+                String configKey = getChannelPropertyKey(channelName, key, incoming);
+                produceRuntimeConfigurationDefaultBuildItem(discovery, config, configKey, value);
             });
         }
     }
@@ -205,32 +351,38 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             return;
         }
 
+        if (discovery.shouldNotConfigure(key)) {
+            return;
+        }
+
         discovery.ifNotYetConfigured(key, () -> {
             config.produce(new RunTimeConfigurationDefaultBuildItem(key, value));
         });
     }
 
     private Type getIncomingTypeFromMethod(MethodInfo method) {
-        List<Type> parameterTypes = method.parameters();
+        List<Type> parameterTypes = method.parameterTypes();
         int parametersCount = parameterTypes.size();
         Type returnType = method.returnType();
 
         Type incomingType = null;
 
         // @Incoming
-        if ((isVoid(returnType) && parametersCount == 1)
-                || (isCompletionStage(returnType) && parametersCount == 1)
-                || (isUni(returnType) && parametersCount == 1)) {
+        if ((isVoid(returnType) && parametersCount >= 1)
+                || (isCompletionStage(returnType) && parametersCount >= 1)
+                || (isUni(returnType) && parametersCount >= 1)) {
             incomingType = parameterTypes.get(0);
         } else if ((isSubscriber(returnType) && parametersCount == 0)
                 || (isSubscriberBuilder(returnType) && parametersCount == 0)) {
             incomingType = returnType.asParameterizedType().arguments().get(0);
+        } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
+            incomingType = parameterTypes.get(0);
         }
 
         // @Incoming @Outgoing
         if (method.hasAnnotation(DotNames.OUTGOING)) {
-            if ((isCompletionStage(returnType) && parametersCount == 1)
-                    || (isUni(returnType) && parametersCount == 1)
+            if ((isCompletionStage(returnType) && parametersCount >= 1)
+                    || (isUni(returnType) && parametersCount >= 1)
                     || (isPublisher(returnType) && parametersCount == 1)
                     || (isPublisherBuilder(returnType) && parametersCount == 1)
                     || (isMulti(returnType) && parametersCount == 1)) {
@@ -238,7 +390,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             } else if ((isProcessor(returnType) && parametersCount == 0)
                     || (isProcessorBuilder(returnType) && parametersCount == 0)) {
                 incomingType = returnType.asParameterizedType().arguments().get(0);
-            } else if (parametersCount == 1) {
+            } else if (parametersCount >= 1) {
+                incomingType = parameterTypes.get(0);
+            } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
                 incomingType = parameterTypes.get(0);
             }
 
@@ -263,17 +417,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
     }
 
-    private void processIncomingType(DefaultSerdeDiscoveryState discovery, Type incomingType,
-            BiConsumer<Result, Result> deserializerAcceptor) {
-        extractKeyValueType(incomingType, (key, value) -> {
-            Result keyDeserializer = deserializerFor(discovery, key);
-            Result valueDeserializer = deserializerFor(discovery, value);
-            deserializerAcceptor.accept(keyDeserializer, valueDeserializer);
-        });
-    }
-
     private Type getOutgoingTypeFromMethod(MethodInfo method) {
-        List<Type> parameterTypes = method.parameters();
+        List<Type> parameterTypes = method.parameterTypes();
         int parametersCount = parameterTypes.size();
         Type returnType = method.returnType();
 
@@ -288,6 +433,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             outgoingType = returnType.asParameterizedType().arguments().get(0);
         } else if (parametersCount == 0) {
             outgoingType = returnType;
+        } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
+            outgoingType = getReturnTypeFromKotlinSuspendMethod(method);
         }
 
         // @Incoming @Outgoing
@@ -303,6 +450,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 outgoingType = returnType.asParameterizedType().arguments().get(1);
             } else if (parametersCount == 1) {
                 outgoingType = returnType;
+            } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
+                outgoingType = getReturnTypeFromKotlinSuspendMethod(method);
             }
 
             // @Incoming @Outgoing stream manipulation
@@ -314,12 +463,25 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         return outgoingType;
     }
 
+    private static Type getReturnTypeFromKotlinSuspendMethod(MethodInfo method) {
+        Type continuationReturnType = method.parameterType(method.parametersCount() - 1);
+
+        if (continuationReturnType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            Type firstGenericType = continuationReturnType.asParameterizedType().arguments().get(0);
+            if (firstGenericType.kind() == Type.Kind.WILDCARD_TYPE) {
+                return firstGenericType.asWildcardType().superBound();
+            }
+        }
+
+        return null;
+    }
+
     private Type getOutgoingTypeFromChannelInjectionPoint(Type injectionPointType) {
         if (injectionPointType == null) {
             return null;
         }
 
-        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType)) {
+        if (isEmitter(injectionPointType) || isMutinyEmitter(injectionPointType) || isKafkaEmitter(injectionPointType)) {
             return injectionPointType.asParameterizedType().arguments().get(0);
         } else {
             return null;
@@ -327,27 +489,43 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     private void processOutgoingType(DefaultSerdeDiscoveryState discovery, Type outgoingType,
-            BiConsumer<Result, Result> serializerAcceptor) {
-        extractKeyValueType(outgoingType, (key, value) -> {
-            Result keySerializer = serializerFor(discovery, key);
-            Result valueSerializer = serializerFor(discovery, value);
+            BiConsumer<Result, Result> serializerAcceptor, BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflection, Map<String, String> alreadyGeneratedSerializer) {
+        extractKeyValueType(outgoingType, (key, value, isBatch) -> {
+            Result keySerializer = serializerFor(discovery, key, generatedClass, reflection,
+                    alreadyGeneratedSerializer);
+            Result valueSerializer = serializerFor(discovery, value, generatedClass, reflection,
+                    alreadyGeneratedSerializer);
             serializerAcceptor.accept(keySerializer, valueSerializer);
         });
     }
 
-    private void extractKeyValueType(Type type, BiConsumer<Type, Type> keyValueTypeAcceptor) {
+    private void extractKeyValueType(Type type, TriConsumer<Type, Type, Boolean> keyValueTypeAcceptor) {
         if (type == null) {
             return;
         }
 
         if (isMessage(type)) {
             List<Type> typeArguments = type.asParameterizedType().arguments();
-            keyValueTypeAcceptor.accept(null, typeArguments.get(0));
-        } else if (isKafkaRecord(type) || isRecord(type) || isProducerRecord(type) || isConsumerRecord(type)) {
+            Type messageTypeParameter = typeArguments.get(0);
+            if (isList(messageTypeParameter)) {
+                List<Type> messageListTypeArguments = messageTypeParameter.asParameterizedType().arguments();
+                keyValueTypeAcceptor.accept(null, messageListTypeArguments.get(0), true);
+            } else {
+                keyValueTypeAcceptor.accept(null, messageTypeParameter, false);
+            }
+        } else if (isList(type)) {
             List<Type> typeArguments = type.asParameterizedType().arguments();
-            keyValueTypeAcceptor.accept(typeArguments.get(0), typeArguments.get(1));
+            keyValueTypeAcceptor.accept(null, typeArguments.get(0), true);
+        } else if (isKafkaRecord(type) || isRecord(type) || isProducerRecord(type) || isConsumerRecord(type)
+                || isKeyedMulti(type)) {
+            List<Type> typeArguments = type.asParameterizedType().arguments();
+            keyValueTypeAcceptor.accept(typeArguments.get(0), typeArguments.get(1), false);
+        } else if (isConsumerRecords(type) || isKafkaBatchRecord(type)) {
+            List<Type> typeArguments = type.asParameterizedType().arguments();
+            keyValueTypeAcceptor.accept(typeArguments.get(0), typeArguments.get(1), true);
         } else if (isRawMessage(type)) {
-            keyValueTypeAcceptor.accept(null, type);
+            keyValueTypeAcceptor.accept(null, type, false);
         }
     }
 
@@ -436,6 +614,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 && type.asParameterizedType().arguments().size() == 1;
     }
 
+    private static boolean isKafkaEmitter(Type type) {
+        // raw type KafkaTransactions is wrong, must be KafkaTransactions<Something>
+        return DotNames.KAFKA_EMITTER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
     // ---
 
     private static boolean isMessage(Type type) {
@@ -466,9 +651,33 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                 && type.asParameterizedType().arguments().size() == 2;
     }
 
+    private static boolean isKeyedMulti(Type type) {
+        return ReactiveMessagingDotNames.KEYED_MULTI.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
+    }
+
     private static boolean isProducerRecord(Type type) {
         // raw type ProducerRecord is wrong, must be ProducerRecord<Something, SomethingElse>
         return DotNames.PRODUCER_RECORD.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
+    }
+
+    private static boolean isList(Type type) {
+        return DotNames.LIST.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isKafkaBatchRecord(Type type) {
+        return DotNames.KAFKA_BATCH_RECORD.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
+    }
+
+    private static boolean isConsumerRecords(Type type) {
+        return DotNames.CONSUMER_RECORDS.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 2;
     }
@@ -488,70 +697,117 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     // @formatter:off
     private static final Map<DotName, String> KNOWN_DESERIALIZERS = Map.ofEntries(
-        // Java types with built-in Kafka deserializer
-        // primitives
-        Map.entry(DotName.createSimple("short"),  org.apache.kafka.common.serialization.ShortDeserializer.class.getName()),
-        Map.entry(DotName.createSimple("int"),    org.apache.kafka.common.serialization.IntegerDeserializer.class.getName()),
-        Map.entry(DotName.createSimple("long"),   org.apache.kafka.common.serialization.LongDeserializer.class.getName()),
-        Map.entry(DotName.createSimple("float"),  org.apache.kafka.common.serialization.FloatDeserializer.class.getName()),
-        Map.entry(DotName.createSimple("double"), org.apache.kafka.common.serialization.DoubleDeserializer.class.getName()),
-        // primitive wrappers
-        Map.entry(DotName.createSimple(java.lang.Short.class.getName()),   org.apache.kafka.common.serialization.ShortDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Integer.class.getName()), org.apache.kafka.common.serialization.IntegerDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Long.class.getName()),    org.apache.kafka.common.serialization.LongDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Float.class.getName()),   org.apache.kafka.common.serialization.FloatDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Double.class.getName()),  org.apache.kafka.common.serialization.DoubleDeserializer.class.getName()),
-        // arrays
-        Map.entry(DotName.createSimple("[B"), org.apache.kafka.common.serialization.ByteArrayDeserializer.class.getName()),
-        // other
-        Map.entry(DotName.createSimple(java.lang.Void.class.getName()),      org.apache.kafka.common.serialization.VoidDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.String.class.getName()),    org.apache.kafka.common.serialization.StringDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(java.util.UUID.class.getName()),      org.apache.kafka.common.serialization.UUIDDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(java.nio.ByteBuffer.class.getName()), org.apache.kafka.common.serialization.ByteBufferDeserializer.class.getName()),
-        // Kafka types
-        Map.entry(DotName.createSimple(org.apache.kafka.common.utils.Bytes.class.getName()), org.apache.kafka.common.serialization.BytesDeserializer.class.getName()),
-        // Vert.x types
-        Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.vertx.kafka.client.serialization.BufferDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.vertx.kafka.client.serialization.JsonObjectDeserializer.class.getName()),
-        Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.vertx.kafka.client.serialization.JsonArrayDeserializer.class.getName())
+            // Java types with built-in Kafka deserializer
+            // primitives
+            Map.entry(DotName.createSimple("short"),  org.apache.kafka.common.serialization.ShortDeserializer.class.getName()),
+            Map.entry(DotName.createSimple("int"),    org.apache.kafka.common.serialization.IntegerDeserializer.class.getName()),
+            Map.entry(DotName.createSimple("long"),   org.apache.kafka.common.serialization.LongDeserializer.class.getName()),
+            Map.entry(DotName.createSimple("float"),  org.apache.kafka.common.serialization.FloatDeserializer.class.getName()),
+            Map.entry(DotName.createSimple("double"), org.apache.kafka.common.serialization.DoubleDeserializer.class.getName()),
+            // primitive wrappers
+            Map.entry(DotName.createSimple(java.lang.Short.class.getName()),   org.apache.kafka.common.serialization.ShortDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Integer.class.getName()), org.apache.kafka.common.serialization.IntegerDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Long.class.getName()),    org.apache.kafka.common.serialization.LongDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Float.class.getName()),   org.apache.kafka.common.serialization.FloatDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Double.class.getName()),  org.apache.kafka.common.serialization.DoubleDeserializer.class.getName()),
+            // arrays
+            Map.entry(DotName.createSimple("[B"), org.apache.kafka.common.serialization.ByteArrayDeserializer.class.getName()),
+            // other
+            Map.entry(DotName.createSimple(java.lang.Void.class.getName()),      org.apache.kafka.common.serialization.VoidDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.String.class.getName()),    org.apache.kafka.common.serialization.StringDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(java.util.UUID.class.getName()),      org.apache.kafka.common.serialization.UUIDDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(java.nio.ByteBuffer.class.getName()), org.apache.kafka.common.serialization.ByteBufferDeserializer.class.getName()),
+            // Kafka types
+            Map.entry(DotName.createSimple(org.apache.kafka.common.utils.Bytes.class.getName()), org.apache.kafka.common.serialization.BytesDeserializer.class.getName()),
+            // Vert.x types
+            Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.quarkus.kafka.client.serialization.BufferDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.quarkus.kafka.client.serialization.JsonObjectDeserializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.quarkus.kafka.client.serialization.JsonArrayDeserializer.class.getName())
     );
 
     private static final Map<DotName, String> KNOWN_SERIALIZERS = Map.ofEntries(
-        // Java types with built-in Kafka serializer
-        // primitives
-        Map.entry(DotName.createSimple("short"),  org.apache.kafka.common.serialization.ShortSerializer.class.getName()),
-        Map.entry(DotName.createSimple("int"),    org.apache.kafka.common.serialization.IntegerSerializer.class.getName()),
-        Map.entry(DotName.createSimple("long"),   org.apache.kafka.common.serialization.LongSerializer.class.getName()),
-        Map.entry(DotName.createSimple("float"),  org.apache.kafka.common.serialization.FloatSerializer.class.getName()),
-        Map.entry(DotName.createSimple("double"), org.apache.kafka.common.serialization.DoubleSerializer.class.getName()),
-        // primitives wrappers
-        Map.entry(DotName.createSimple(java.lang.Short.class.getName()),   org.apache.kafka.common.serialization.ShortSerializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Integer.class.getName()), org.apache.kafka.common.serialization.IntegerSerializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Long.class.getName()),    org.apache.kafka.common.serialization.LongSerializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Float.class.getName()),   org.apache.kafka.common.serialization.FloatSerializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.Double.class.getName()),  org.apache.kafka.common.serialization.DoubleSerializer.class.getName()),
-        // arrays
-        Map.entry(DotName.createSimple("[B"), org.apache.kafka.common.serialization.ByteArraySerializer.class.getName()),
-        // other
-        Map.entry(DotName.createSimple(java.lang.Void.class.getName()),      org.apache.kafka.common.serialization.VoidSerializer.class.getName()),
-        Map.entry(DotName.createSimple(java.lang.String.class.getName()),    org.apache.kafka.common.serialization.StringSerializer.class.getName()),
-        Map.entry(DotName.createSimple(java.util.UUID.class.getName()),      org.apache.kafka.common.serialization.UUIDSerializer.class.getName()),
-        Map.entry(DotName.createSimple(java.nio.ByteBuffer.class.getName()), org.apache.kafka.common.serialization.ByteBufferSerializer.class.getName()),
-        // Kafka types
-        Map.entry(DotName.createSimple(org.apache.kafka.common.utils.Bytes.class.getName()), org.apache.kafka.common.serialization.BytesSerializer.class.getName()),
-        // Vert.x types
-        Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.vertx.kafka.client.serialization.BufferSerializer.class.getName()),
-        Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.vertx.kafka.client.serialization.JsonObjectSerializer.class.getName()),
-        Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.vertx.kafka.client.serialization.JsonArraySerializer.class.getName())
+            // Java types with built-in Kafka serializer
+            // primitives
+            Map.entry(DotName.createSimple("short"),  org.apache.kafka.common.serialization.ShortSerializer.class.getName()),
+            Map.entry(DotName.createSimple("int"),    org.apache.kafka.common.serialization.IntegerSerializer.class.getName()),
+            Map.entry(DotName.createSimple("long"),   org.apache.kafka.common.serialization.LongSerializer.class.getName()),
+            Map.entry(DotName.createSimple("float"),  org.apache.kafka.common.serialization.FloatSerializer.class.getName()),
+            Map.entry(DotName.createSimple("double"), org.apache.kafka.common.serialization.DoubleSerializer.class.getName()),
+            // primitives wrappers
+            Map.entry(DotName.createSimple(java.lang.Short.class.getName()),   org.apache.kafka.common.serialization.ShortSerializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Integer.class.getName()), org.apache.kafka.common.serialization.IntegerSerializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Long.class.getName()),    org.apache.kafka.common.serialization.LongSerializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Float.class.getName()),   org.apache.kafka.common.serialization.FloatSerializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.Double.class.getName()),  org.apache.kafka.common.serialization.DoubleSerializer.class.getName()),
+            // arrays
+            Map.entry(DotName.createSimple("[B"), org.apache.kafka.common.serialization.ByteArraySerializer.class.getName()),
+            // other
+            Map.entry(DotName.createSimple(java.lang.Void.class.getName()),      org.apache.kafka.common.serialization.VoidSerializer.class.getName()),
+            Map.entry(DotName.createSimple(java.lang.String.class.getName()),    org.apache.kafka.common.serialization.StringSerializer.class.getName()),
+            Map.entry(DotName.createSimple(java.util.UUID.class.getName()),      org.apache.kafka.common.serialization.UUIDSerializer.class.getName()),
+            Map.entry(DotName.createSimple(java.nio.ByteBuffer.class.getName()), org.apache.kafka.common.serialization.ByteBufferSerializer.class.getName()),
+            // Kafka types
+            Map.entry(DotName.createSimple(org.apache.kafka.common.utils.Bytes.class.getName()), org.apache.kafka.common.serialization.BytesSerializer.class.getName()),
+            // Vert.x types
+            Map.entry(DotName.createSimple(io.vertx.core.buffer.Buffer.class.getName()),   io.quarkus.kafka.client.serialization.BufferSerializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonObject.class.getName()), io.quarkus.kafka.client.serialization.JsonObjectSerializer.class.getName()),
+            Map.entry(DotName.createSimple(io.vertx.core.json.JsonArray.class.getName()),  io.quarkus.kafka.client.serialization.JsonArraySerializer.class.getName())
     );
     // @formatter:on
 
-    private Result deserializerFor(DefaultSerdeDiscoveryState discovery, Type type) {
-        return serializerDeserializerFor(discovery, type, false);
+    private Result deserializerFor(DefaultSerdeDiscoveryState discovery, Type type,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
+            Map<String, String> alreadyGeneratedSerializers) {
+        Result result = serializerDeserializerFor(discovery, type, false);
+        if (result != null && !result.exists) {
+            // avoid returning Result.nonexistent() to callers, they expect a non-null Result to always be known
+            return null;
+        }
+        // if result is null, generate a jackson serializer, generatedClass is null if the generation is disabled.
+        // also, only generate the serializer/deserializer for classes and only generate once
+        if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
+            // Check if already generated
+            String clazz = alreadyGeneratedSerializers.get(type.toString());
+            if (clazz == null) {
+                clazz = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
+                LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
+                // Deserializers are access by reflection.
+                reflection.produce(
+                        ReflectiveClassBuildItem.builder(clazz).methods().build());
+                alreadyGeneratedSerializers.put(type.toString(), clazz);
+            }
+            result = Result.of(clazz);
+        }
+        return result;
     }
 
-    private Result serializerFor(DefaultSerdeDiscoveryState discovery, Type type) {
-        return serializerDeserializerFor(discovery, type, true);
+    private Result serializerFor(DefaultSerdeDiscoveryState discovery, Type type,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
+            Map<String, String> alreadyGeneratedSerializers) {
+        Result result = serializerDeserializerFor(discovery, type, true);
+        if (result != null && !result.exists) {
+            // avoid returning Result.nonexistent() to callers, they expect a non-null Result to always be known
+            return null;
+        }
+        // if result is null, generate a jackson deserializer, generatedClass is null if the generation is disabled.
+        // also, only generate the serializer/deserializer for classes and only generate once
+        if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
+            // Check if already generated
+            String clazz = alreadyGeneratedSerializers.get(type.toString());
+            if (clazz == null) {
+                clazz = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
+                LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
+                // Serializers are access by reflection.
+                reflection.produce(
+                        ReflectiveClassBuildItem.builder(clazz).methods().build());
+                alreadyGeneratedSerializers.put(type.toString(), clazz);
+            }
+            result = Result.of(clazz);
+        }
+
+        return result;
     }
 
     private Result serializerDeserializerFor(DefaultSerdeDiscoveryState discovery, Type type, boolean serializer) {
@@ -559,6 +815,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             return null;
         }
         DotName typeName = type.name();
+
+        // Serializer/deserializer implementations
+        ClassInfo implementation = discovery.getImplementorOfWithTypeArgument(
+                serializer ? DotNames.KAFKA_SERIALIZER : DotNames.KAFKA_DESERIALIZER, typeName);
+        if (implementation != null) {
+            return Result.of(implementation.name().toString());
+        }
 
         // statically known serializer/deserializer
         Map<DotName, String> map = serializer ? KNOWN_SERIALIZERS : KNOWN_DESERIALIZERS;
@@ -569,6 +832,16 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // Avro generated class or GenericRecord (serializer/deserializer provided by Confluent or Apicurio)
         boolean isAvroGenerated = discovery.isAvroGenerated(typeName);
         if (isAvroGenerated || DotNames.AVRO_GENERIC_RECORD.equals(typeName)) {
+            int avroLibraries = 0;
+            avroLibraries += discovery.hasConfluent() ? 1 : 0;
+            avroLibraries += discovery.hasApicurio1() ? 1 : 0;
+            avroLibraries += discovery.hasApicurio2() ? 1 : 0;
+            if (avroLibraries > 1) {
+                LOGGER.debugf("Skipping Avro serde autodetection for %s, because multiple Avro serde libraries are present",
+                        typeName);
+                return Result.nonexistent();
+            }
+
             if (discovery.hasConfluent()) {
                 return serializer
                         ? Result.of("io.confluent.kafka.serializers.KafkaAvroSerializer")
@@ -584,6 +857,9 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         ? Result.of("io.apicurio.registry.serde.avro.AvroKafkaSerializer")
                         : Result.of("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")
                                 .with(isAvroGenerated, "apicurio.registry.use-specific-avro-reader", "true");
+            } else {
+                // we know it is an Avro type, no point in serializing it as JSON
+                return Result.nonexistent();
             }
         }
 
@@ -634,7 +910,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     void produceReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Type type) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, true, type.name().toString()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(type.name().toString()).methods().fields().build());
     }
 
     // visible for testing
@@ -672,7 +949,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         for (AnnotationInstance annotation : index.getAnnotations(annotationType)) {
             String channelName = annotation.value().asString();
             Type type = typeExtractor.apply(annotation);
-            extractKeyValueType(type, (key, value) -> {
+            extractKeyValueType(type, (key, value, isBatch) -> {
                 if (key != null && isSerdeJson(index, config, channelName, serializer, true)) {
                     annotationAcceptor.accept(annotation, key);
                 }
@@ -684,20 +961,14 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
     }
 
     private boolean isSerdeJson(IndexView index, Config config, String channelName, boolean serializer, boolean isKey) {
-        ConfigValue configValue = config.getConfigValue(getConfigName(channelName, serializer, isKey));
+        String configKey = getChannelPropertyKey(channelName, (isKey ? "key" : "value") + "." +
+                (serializer ? "serializer" : "deserializer"), !serializer);
+        ConfigValue configValue = config.getConfigValue(configKey);
         if (configValue.getValue() != null) {
             DotName serdeName = DotName.createSimple(configValue.getValue());
             return serializer ? isSubclassOfJsonSerializer(index, serdeName) : isSubclassOfJsonDeserializer(index, serdeName);
         }
         return false;
-    }
-
-    String getConfigName(String channelName, boolean serializer, boolean isKey) {
-        return "mp.messaging." +
-                (serializer ? "outgoing" : "incoming") + "." +
-                channelName + "." +
-                (isKey ? "key" : "value") + "." +
-                (serializer ? "serializer" : "deserializer");
     }
 
     private boolean isSubclassOfJsonSerializer(IndexView index, DotName serializerName) {

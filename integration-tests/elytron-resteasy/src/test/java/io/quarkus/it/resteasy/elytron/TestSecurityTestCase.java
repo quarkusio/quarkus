@@ -80,7 +80,7 @@ class TestSecurityTestCase {
                 .get("/user")
                 .then()
                 .statusCode(200)
-                .body(is("testUser"));
+                .body(is("testUser:testUser:testUser"));
     }
 
     @Test

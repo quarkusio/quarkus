@@ -2,9 +2,7 @@ package io.quarkus.test.reload;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -33,7 +31,7 @@ public class AdditionalWatchedResourcesDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(AdditionalWatchedResourcesResource.class)
                     .addAsResource(new StringAsset(INITIAL), RES_WATCHED)
                     .addAsResource(new StringAsset(INITIAL), RES_WATCHED_SUBPATH)

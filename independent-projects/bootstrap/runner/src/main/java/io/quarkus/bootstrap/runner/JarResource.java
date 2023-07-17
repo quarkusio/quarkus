@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import io.smallrye.common.io.jar.JarEntries;
-import io.smallrye.common.io.jar.JarFiles;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -20,6 +18,9 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import io.smallrye.common.io.jar.JarEntries;
+import io.smallrye.common.io.jar.JarFiles;
 
 /**
  * A jar resource
@@ -115,7 +116,10 @@ public class JarResource implements ClassLoadingResource {
                 // for the "path" which includes the "realName"
                 final URL resUrl = new URI(jarUri.getScheme(), jarUri.getPath() + "!/" + realName, null).toURL();
                 // wrap it up into a "jar" protocol URL
-                return new URL("jar", null, resUrl.getProtocol() + ':' + resUrl.getPath());
+                //horrible hack to deal with '?' characters in the URL
+                //seems to be the only way, the URI constructor just does not let you handle them in a sane way
+                return new URL("jar", null, resUrl.getProtocol() + ':' + resUrl.getPath()
+                        + (resUrl.getQuery() == null ? "" : ("%3F" + resUrl.getQuery())));
             } catch (MalformedURLException | URISyntaxException e) {
                 throw new RuntimeException(e);
             }

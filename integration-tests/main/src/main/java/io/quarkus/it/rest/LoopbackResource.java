@@ -2,8 +2,8 @@ package io.quarkus.it.rest;
 
 import java.time.LocalDate;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 @Path("/loopback")
 public class LoopbackResource {

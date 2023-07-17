@@ -1,7 +1,10 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
 
 public class SubResource {
 
@@ -14,5 +17,12 @@ public class SubResource {
     @Path("otherSub")
     public String otherPath() {
         return "otherSub";
+    }
+
+    @Path("patch/text")
+    @PATCH
+    @Consumes(MediaType.TEXT_PLAIN)
+    public String patchWithTextPlain(String patch) {
+        return "test-value: " + patch;
     }
 }

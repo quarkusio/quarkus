@@ -1,8 +1,8 @@
 package io.quarkus.grpc.examples.hello;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class HelloWorldTlsEndpointIT extends HelloWorldTlsEndpointTest {
 
 }

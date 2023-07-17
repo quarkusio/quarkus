@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import javax.inject.Singleton;
-import javax.json.bind.JsonbConfig;
-import javax.json.bind.adapter.JsonbAdapter;
-import javax.json.bind.annotation.JsonbTypeDeserializer;
-import javax.json.bind.annotation.JsonbTypeSerializer;
-import javax.json.bind.serializer.JsonbDeserializer;
-import javax.json.bind.serializer.JsonbSerializer;
+import jakarta.inject.Singleton;
+import jakarta.json.bind.JsonbConfig;
+import jakarta.json.bind.adapter.JsonbAdapter;
+import jakarta.json.bind.annotation.JsonbTypeDeserializer;
+import jakarta.json.bind.annotation.JsonbTypeSerializer;
+import jakarta.json.bind.serializer.JsonbDeserializer;
+import jakarta.json.bind.serializer.JsonbSerializer;
 
 import org.eclipse.yasson.JsonBindingProvider;
 import org.eclipse.yasson.spi.JsonbComponentInstanceCreator;
@@ -36,6 +36,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -57,12 +58,13 @@ public class JsonbProcessor {
 
     @BuildStep
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             CombinedIndexBuildItem combinedIndexBuildItem) {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
-                JsonBindingProvider.class.getName()));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(JsonBindingProvider.class.getName()).build());
 
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("yasson-messages"));
 
@@ -86,7 +88,12 @@ public class JsonbProcessor {
 
         // register String constructors for reflection as they may not have been properly registered by default
         // see https://github.com/quarkusio/quarkus/issues/10873
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, false, "java.lang.String"));
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("java.lang.String").build());
+
+        // Necessary for Yasson versions using MethodHandles (2.0+)
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem("jdk.internal.misc.Unsafe", "putReference", Object.class,
+                long.class, Object.class));
     }
 
     private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, AnnotationInstance instance) {
@@ -95,7 +102,8 @@ public class JsonbProcessor {
             AnnotationValue value = instance.value();
             if (value != null) {
                 // the Deserializers are constructed internally by JSON-B using a no-args constructor
-                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, value.asClass().toString()));
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(value.asClass().toString()).build());
             }
         }
     }
@@ -182,5 +190,4 @@ public class JsonbProcessor {
             }
         }
     }
-
 }

@@ -1,12 +1,5 @@
 package io.quarkus.bootstrap.jbang;
 
-import io.quarkus.bootstrap.app.CuratedApplication;
-import io.quarkus.bootstrap.app.QuarkusBootstrap;
-import io.quarkus.bootstrap.model.AppArtifact;
-import io.quarkus.bootstrap.model.AppDependency;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
-import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -25,6 +18,19 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import io.quarkus.bootstrap.app.CuratedApplication;
+import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactDependency;
+import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.maven.dependency.ResolvedArtifactDependency;
+import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
+import io.quarkus.paths.PathList;
 
 /**
  * JBang Dev mode entry point.
@@ -63,7 +69,10 @@ public class JBangDevModeLauncherImpl implements Closeable {
                 Enumeration<? extends ZipEntry> entries = fz.entries();
                 while (entries.hasMoreElements()) {
                     ZipEntry entry = entries.nextElement();
-                    Path path = targetClasses.resolve(entry.getName());
+                    Path path = targetClasses.resolve(entry.getName()).normalize();
+                    if (!path.startsWith(targetClasses)) {
+                        throw new IOException("Bad ZIP entry: " + path);
+                    }
                     if (entry.isDirectory()) {
                         Files.createDirectories(path);
                     } else {
@@ -78,8 +87,11 @@ public class JBangDevModeLauncherImpl implements Closeable {
             Files.createDirectories(srcDir);
             Files.createSymbolicLink(srcDir.resolve(sourceFile.getFileName().toString()), sourceFile);
             final LocalProject currentProject = LocalProject.loadWorkspace(projectRoot);
-            AppArtifact appArtifact = currentProject.getAppArtifact("jar");
-            appArtifact.setPath(targetClasses);
+            final ResolvedDependency appArtifact = ResolvedDependencyBuilder.newInstance()
+                    .setCoords(currentProject.getAppArtifact(ArtifactCoords.TYPE_JAR))
+                    .setResolvedPath(targetClasses)
+                    .setWorkspaceModule(currentProject.toWorkspaceModule())
+                    .build();
 
             //todo : proper support for everything
             final QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
@@ -88,21 +100,21 @@ public class JBangDevModeLauncherImpl implements Closeable {
                     .setMode(QuarkusBootstrap.Mode.DEV)
                     .setTargetDirectory(targetClasses)
                     .setAppArtifact(appArtifact)
-                    .setManagingProject(new AppArtifact("io.quarkus", "quarkus-bom", "", "pom", getQuarkusVersion()))
+                    .setManagingProject(ArtifactCoords.pom("io.quarkus", "quarkus-bom", getQuarkusVersion()))
                     .setForcedDependencies(deps.entrySet().stream().map(s -> {
                         String[] parts = s.getKey().split(":");
-                        AppArtifact artifact;
+                        Dependency artifact;
                         if (parts.length == 3) {
-                            artifact = new AppArtifact(parts[0], parts[1], parts[2]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], null, ArtifactCoords.TYPE_JAR, parts[2]);
                         } else if (parts.length == 4) {
-                            artifact = new AppArtifact(parts[0], parts[1], null, parts[2], parts[3]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], null, parts[2], parts[3]);
                         } else if (parts.length == 5) {
-                            artifact = new AppArtifact(parts[0], parts[1], parts[3], parts[2], parts[4]);
+                            artifact = new ArtifactDependency(parts[0], parts[1], parts[3], parts[2], parts[4]);
                         } else {
                             throw new RuntimeException("Invalid artifact " + s);
                         }
-                        artifact.setPath(s.getValue());
-                        return new AppDependency(artifact, "compile");
+                        //artifact.setPath(s.getValue());
+                        return artifact;
                     }).collect(Collectors.toList()))
                     .setApplicationRoot(targetClasses)
                     .setProjectRoot(projectRoot);
@@ -116,7 +128,8 @@ public class JBangDevModeLauncherImpl implements Closeable {
                     BootstrapMavenContext.config().setCurrentProject(currentProject));
             final MavenArtifactResolver mvnResolver = new MavenArtifactResolver(mvnCtx);
             builder.setMavenArtifactResolver(mvnResolver);
-            currentProject.getAppArtifact("jar").setPath(targetClasses);
+            ((ResolvedArtifactDependency) currentProject.getAppArtifact(ArtifactCoords.TYPE_JAR))
+                    .setResolvedPaths(PathList.of(targetClasses));
 
             final CuratedApplication curatedApp = builder.build().bootstrap();
             final Object appInstance = curatedApp.runInAugmentClassLoader("io.quarkus.deployment.dev.IDEDevModeMain", context);

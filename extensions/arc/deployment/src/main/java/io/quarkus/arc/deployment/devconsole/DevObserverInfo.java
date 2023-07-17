@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
 
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
 import io.quarkus.arc.processor.ObserverInfo;
@@ -110,7 +110,7 @@ public class DevObserverInfo implements Comparable<DevObserverInfo> {
                     ret = declaringClass.compareTo(other.declaringClass);
                 }
                 if (ret == 0) {
-                    // Observers are not synthetic - method name must be present 
+                    // Observers are not synthetic - method name must be present
                     ret = methodName.compareTo(other.methodName);
                 }
             }

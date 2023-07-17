@@ -4,13 +4,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.json.bind.annotation.JsonbDateFormat;
-
 import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
-import io.quarkus.mongodb.panache.MongoEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonFormat.Shape;
+
+import io.quarkus.mongodb.panache.common.MongoEntity;
 
 @MongoEntity(collection = "TheBook", clientName = "cl2")
 public class Book {
@@ -20,7 +21,7 @@ public class Book {
     private ObjectId id;
     @BsonIgnore
     private String transientDescription;
-    @JsonbDateFormat("yyyy-MM-dd")
+    @JsonFormat(shape = Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate creationDate;
 
     private List<String> categories = new ArrayList<>();

@@ -2,16 +2,16 @@ package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Provider;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+
 import org.jboss.resteasy.reactive.common.providers.serialisers.StringMessageBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-@Provider
 public class ServerStringMessageBodyHandler extends StringMessageBodyHandler
         implements ServerMessageBodyWriter<Object>, ServerMessageBodyReader<String> {
 

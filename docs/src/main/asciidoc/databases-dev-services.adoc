@@ -1,0 +1,226 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Databases
+:categories: data, tooling
+include::_attributes.adoc[]
+
+When testing or running in dev mode Quarkus can provide you with a zero-config database out of the box, a feature we refer to as Dev Services.
+Depending on your database type you may need Docker installed in order to use this feature.
+Dev Services is supported for the following databases:
+
+* DB2 (container) (requires <<#license_acceptance,license acceptance>>)
+* Derby (in-process)
+* H2 (in-process)
+* MariaDB (container)
+* Microsoft SQL Server (container) (requires <<#license_acceptance,license acceptance>>)
+* MySQL (container)
+* Oracle Express Edition (container)
+* PostgreSQL (container)
+
+If you want to use Dev Services then all you need to do is include the relevant extension for the type of database you want (either reactive or JDBC, or both).
+Don't configure a database URL, username and password - Quarkus will provide the database and you can just start coding without worrying about config.
+
+Production databases need to be configured as normal, so if you want to include a production database config in your
+`application.properties` and continue to use Dev Services we recommend that you use the `%prod.` profile to define your database settings.
+
+== Enabling / Disabling Dev Services for Database
+
+Dev Services for databases automatically starts a database server in dev mode and when running tests.
+So, you don't have to start a server manually.
+The application is configured automatically.
+
+You can disable the automatic database start in `application.properties` via:
+
+[source,properties]
+----
+quarkus.devservices.enabled=false
+# OR
+quarkus.datasource.devservices.enabled=false
+----
+
+Dev Services for databases relies on Docker to start the server (except for H2 and Derby which are run in process).
+If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
+
+[[license_acceptance]]
+=== Proprietary Databases - License Acceptance
+
+If you are using a proprietary database such as DB2 or MSSQL you will need to accept the license agreement.
+To do this create a `src/main/resources/container-license-acceptance.txt` files in your project and add a line with the image name and tag of the database.
+By default, Quarkus uses the default image for the current version of Testcontainers, if you attempt to start Quarkus the resulting failure will tell you the exact image name in use for you to add to the file.
+
+An example file is shown below:
+
+.src/main/resources/container-license-acceptance.txt
+----
+ibmcom/db2:11.5.0.0a
+mcr.microsoft.com/mssql/server:2017-CU12
+----
+
+== Mapping volumes into Dev Services for Database
+
+Mapping volumes from the Docker host's filesystem to the containers is handy to provide files like scripts or configuration, but also to preserve database data and reuse it after an application restart.
+
+[NOTE]
+====
+Mapping volumes will only work in Dev Services with a container-based database like PostgreSQL. 
+====
+
+Dev Services volumes can be mapped to the filesystem or the classpath:
+
+[source,properties]
+----
+# Using a filesystem volume:
+quarkus.datasource.devservices.volumes."/path/from"=/container/to <1>
+# Using a classpath volume:
+quarkus.datasource.devservices.volumes."classpath:./file"=/container/to <2>
+----
+
+<1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
+<2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
+
+IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission. 
+
+=== Example of mapping volumes to persist the database data
+
+Let's see an example using PostgreSQL where we'll map a file system volume to keep the database data permantently and use it:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/postgresql/data
+----
+
+The appropriate in-container location varies depending on the database vendor. For PostgresSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=mysql
+quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/mysql
+----
+
+When starting Dev Services (for example, in tests or in DEV mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same dev services, this data will contain all the data you might have created beforehand. 
+
+[IMPORTANT]
+====
+When using Dev Services with Hibernate ORM, by default Quarkus will wipe out the database on application startup, which will wipe out the database data on your Docker host's filesystem.
+Configure `quarkus.hibernate-orm.database.generation=none` or `quarkus.hibernate-orm.database.generation=validate` to avoid this behavior.
+
+Also, using Flyway to migrate your schema when starting the application will modify the database data on your Docker hosts's file system.
+====
+
+== Database Vendor Specific Configuration
+
+All services based on containers are run using Testcontainers but Quarkus is not using the Testcontainers JDBC driver.
+Thus, even though extra JDBC URL properties can be set in your `application.properties` file, specific properties supported by the Testcontainers JDBC driver such as `TC_INITSCRIPT`, `TC_INITFUNCTION`, `TC_DAEMON`, `TC_TMPFS` are not supported.
+
+Quarkus can support *specific* properties sent to the container itself though, e.g. this is the case for `TC_MY_CNF` which allows to override the MariaDB/MySQL configuration file.
+
+Overriding the MariaDB/MySQL configuration would be done as follows:
+
+[source,properties]
+----
+quarkus.datasource.devservices.container-properties.TC_MY_CNF=testcontainers/mysql-conf
+----
+
+This support is database specific and needs to be implemented in each dev service specifically.
+
+== Connect To Database Run as a Dev Service
+
+You can connect to a database running as a Dev Service as you would do with any database running inside a Docker container.
+
+Login credentials are the same for most databases, except when the database requirements don't allow it:
+
+|===
+|Database |Username |Password |Database name
+
+|PostgreSQL, MariaDB, MySQL, IBM Db2, H2
+|`quarkus` for the default datasource or name of the datasource
+|`quarkus`
+|`quarkus`
+
+|Microsoft SQL Server
+|`SA`
+|`Quarkus123`
+|
+
+|===
+
+[NOTE]
+====
+The Microsoft SQL Server Testcontainer doesn't support defining the username or database name.
+It also requires a strong password.
+====
+
+[TIP]
+====
+For databases supporting it
+(i.e. all of them except Microsoft SQL Server for which it is only possible to override the password),
+you can override the database name, username and password used by the Dev Service.
+
+See <<configuration-reference>> for more information.
+====
+
+Keep in mind that, except if configured otherwise (see below), a Dev Service runs on a random port.
+For instance, when you run PostgreSQL as a Dev Service and have `psql` installed on the host, you can connect via:
+
+[source, bash]
+----
+psql -h localhost -p <random port> -U quarkus
+----
+
+The random port can be found with `docker ps`
+
+[source, bash]
+----
+docker ps
+
+# returns something like this:
+
+CONTAINER ID   IMAGE           [..]    PORTS                                         [..]
+b826e3a168c4   postgres:14.2   [..]    0.0.0.0:49174->5432/tcp, :::49174->5432/tcp   [..] <1>
+----
+<1> The random port is `49174`.
+
+You can require a fixed port for a database Dev Service using:
+
+[source,properties]
+----
+quarkus.datasource.devservices.port=<your fixed port> <1>
+
+quarkus.datasource."datasource-name".devservices.port=<your fixed port> <2>
+----
+<1> Fixed port for the default datasource.
+<2> Fixed port for a named datasource.
+
+[TIP]
+====
+`docker ps` allows for more advanced retrieval of container information using the `--format` argument.
+For example, to get the running container ID, the image, the labels and the ports, the following command can be used:
+
+[source, bash]
+----
+docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Labels}}\t{{.Ports}}
+----
+
+An example output using Dev Services for PostgreSQL is the following:
+
+[source, bash]
+----
+CONTAINER ID   IMAGE          LABELS                                                                        PORTS
+a7034c91a392   postgres:14    org.testcontainers.sessionId=xyz,datasource=default,org.testcontainers=true   0.0.0.0:49154->5432/tcp, :::49154->5432/tcp
+----
+
+In the labels tab, we see that Quarkus added the datasource label, which can be very useful in differentiating containers when multiple
+Dev Services have been started.
+====
+
+
+[[configuration-reference]]
+== Configuration Reference
+
+Dev Services for Databases support the following configuration options:
+
+include::{generated-dir}/config/quarkus-datasource-config-group-dev-services-build-time-config.adoc[opts=optional,leveloffset=+1]

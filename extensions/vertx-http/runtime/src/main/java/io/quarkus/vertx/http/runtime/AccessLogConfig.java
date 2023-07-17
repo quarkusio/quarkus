@@ -29,7 +29,7 @@ public class AccessLogConfig {
      * - combined: `%h %l %u %t "%r" %s %b "%{i,Referer}" "%{i,User-Agent}"`
      * - long: `%r\n%{ALL_REQUEST_HEADERS}`
      *
-     * Otherwise consult the Quarkus documentation for the full list of variables that can be used.
+     * Otherwise, consult the Quarkus documentation for the full list of variables that can be used.
      *
      * @asciidoclet
      */

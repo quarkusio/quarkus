@@ -5,9 +5,9 @@ import java.security.PrivilegedAction;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import javax.enterprise.context.Dependent;
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorFactory;
+import jakarta.enterprise.context.Dependent;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorFactory;
 
 import org.hibernate.validator.internal.util.privilegedactions.NewInstance;
 

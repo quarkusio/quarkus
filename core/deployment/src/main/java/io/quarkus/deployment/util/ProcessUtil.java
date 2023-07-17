@@ -23,7 +23,7 @@ public class ProcessUtil {
      * {@link #streamToSysOutSysErr(Process)}. Else, it launches the process with {@link ProcessBuilder#inheritIO()}
      *
      * @param builder The process builder
-     * @param shouldRedirectIO Whether or not {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
+     * @param shouldRedirectIO Whether {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
      *        launching the process
      * @return Returns the newly launched process
      * @throws IOException
@@ -48,7 +48,7 @@ public class ProcessUtil {
      * (Process)}. Else, it launches the process with {@link ProcessBuilder#inheritIO()}
      *
      * @param builder The process builder
-     * @param shouldRedirectIO Whether or not {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
+     * @param shouldRedirectIO Whether {@link java.lang.ProcessBuilder.Redirect#INHERIT} can be used for
      *        launching the process
      * @return Returns the newly launched process
      * @throws IOException

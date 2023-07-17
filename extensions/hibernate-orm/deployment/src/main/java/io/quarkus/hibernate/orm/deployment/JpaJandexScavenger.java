@@ -19,11 +19,17 @@ import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmHibernateMapping;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmJoinedSubclassEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmRootEntityType;
 import org.hibernate.boot.jaxb.hbm.spi.JaxbHbmUnionSubclassEntityType;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEmbeddable;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntity;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbEntityMappings;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbMappedSuperclass;
-import org.hibernate.boot.jaxb.mapping.spi.ManagedType;
+import org.hibernate.boot.jaxb.mapping.EntityOrMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.JaxbConverter;
+import org.hibernate.boot.jaxb.mapping.JaxbEmbeddable;
+import org.hibernate.boot.jaxb.mapping.JaxbEntity;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityListener;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityListeners;
+import org.hibernate.boot.jaxb.mapping.JaxbEntityMappings;
+import org.hibernate.boot.jaxb.mapping.JaxbMappedSuperclass;
+import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitDefaults;
+import org.hibernate.boot.jaxb.mapping.JaxbPersistenceUnitMetadata;
+import org.hibernate.boot.jaxb.mapping.ManagedType;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -35,9 +41,9 @@ import org.jboss.jandex.Type;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.hibernate.orm.deployment.xml.QuarkusMappingFileParser;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
+import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
  * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
@@ -52,7 +58,8 @@ import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
  */
 public final class JpaJandexScavenger {
 
-    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED, ClassNames.ELEMENT_COLLECTION);
+    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED_ID, ClassNames.EMBEDDED,
+            ClassNames.ELEMENT_COLLECTION);
 
     private static final String XML_MAPPING_DEFAULT_ORM_XML = "META-INF/orm.xml";
     private static final String XML_MAPPING_NO_FILE = "no-file";
@@ -83,31 +90,36 @@ public final class JpaJandexScavenger {
         }
         enlistJPAModelClasses(collector, ClassNames.JPA_ENTITY);
         enlistJPAModelClasses(collector, ClassNames.EMBEDDABLE);
-        enlistJPAModelClasses(collector,
-                ClassNames.MAPPED_SUPERCLASS);
+        enlistJPAModelClasses(collector, ClassNames.MAPPED_SUPERCLASS);
+        enlistJPAModelIdClasses(collector, ClassNames.ID_CLASS);
         enlistEmbeddedsAndElementCollections(collector);
+
+        enlistPotentialCdiBeanClasses(collector, ClassNames.CONVERTER);
+        for (DotName annotation : HibernateOrmAnnotations.JPA_LISTENER_ANNOTATIONS) {
+            enlistPotentialCdiBeanClasses(collector, annotation);
+        }
 
         for (JpaModelPersistenceUnitContributionBuildItem persistenceUnitContribution : persistenceUnitContributions) {
             enlistExplicitMappings(collector, persistenceUnitContribution);
         }
 
-        Set<String> allModelClassNames = new HashSet<>(collector.entityTypes);
-        allModelClassNames.addAll(collector.managedTypes);
-        for (String className : allModelClassNames) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+        Set<String> managedClassNames = new HashSet<>(collector.entityTypes);
+        managedClassNames.addAll(collector.modelTypes);
+        for (String className : managedClassNames) {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
         }
 
         if (!collector.enumTypes.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "java.lang.Enum"));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.lang.Enum").methods().build());
             for (String className : collector.enumTypes) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().build());
             }
         }
 
         // for the java types we collected (usually from java.time but it could be from other types),
         // we just register them for reflection
         for (String javaType : collector.javaTypes) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, javaType));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(javaType).methods().build());
         }
 
         if (!collector.unindexedClasses.isEmpty()) {
@@ -118,7 +130,7 @@ public final class JpaJandexScavenger {
             if (!unIgnorableIndexedClasses.isEmpty()) {
                 final String unindexedClassesErrorMessage = unIgnorableIndexedClasses.stream().map(d -> "\t- " + d + "\n")
                         .collect(Collectors.joining());
-                throw new ConfigurationError(
+                throw new ConfigurationException(
                         "Unable to properly register the hierarchy of the following JPA classes as they are not in the Jandex index:\n"
                                 + unindexedClassesErrorMessage
                                 + "Consider adding them to the index either by creating a Jandex index " +
@@ -126,8 +138,8 @@ public final class JpaJandexScavenger {
             }
         }
 
-        return new JpaModelBuildItem(collector.packages, collector.entityTypes, allModelClassNames,
-                collector.xmlMappingsByPU);
+        return new JpaModelBuildItem(collector.packages, collector.entityTypes, managedClassNames,
+                collector.potentialCdiBeanTypes, collector.xmlMappingsByPU);
     }
 
     private void enlistExplicitMappings(Collector collector,
@@ -176,20 +188,46 @@ public final class JpaJandexScavenger {
         String packageName = mapping.getPackage();
         String packagePrefix = packageName == null ? "" : packageName + ".";
 
-        for (JaxbEntity entity : mapping.getEntity()) {
-            String name = safeGetClassName(packagePrefix, entity, "entity");
+        JaxbPersistenceUnitMetadata metadata = mapping.getPersistenceUnitMetadata();
+        JaxbPersistenceUnitDefaults defaults = metadata == null ? null : metadata.getPersistenceUnitDefaults();
+        if (defaults != null) {
+            enlistOrmXmlMappingListeners(collector, packagePrefix, defaults.getEntityListeners());
+        }
+
+        for (JaxbEntity entity : mapping.getEntities()) {
+            enlistOrmXmlMappingManagedClass(collector, packagePrefix, entity, "entity");
+        }
+        for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclasses()) {
+            enlistOrmXmlMappingManagedClass(collector, packagePrefix, mappedSuperclass, "mapped-superclass");
+        }
+        for (JaxbEmbeddable embeddable : mapping.getEmbeddables()) {
+            String name = safeGetClassName(packagePrefix, embeddable, "embeddable");
             enlistExplicitClass(collector, name);
+        }
+        for (JaxbConverter converter : mapping.getConverters()) {
+            collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, converter.getClazz())));
+        }
+    }
+
+    private void enlistOrmXmlMappingManagedClass(Collector collector, String packagePrefix, EntityOrMappedSuperclass managed,
+            String nodeName) {
+        String name = safeGetClassName(packagePrefix, managed, nodeName);
+        enlistExplicitClass(collector, name);
+        if (managed instanceof JaxbEntity) {
             // The call to 'enlistExplicitClass' above may not
             // detect that this class is an entity if it is not annotated
             collector.entityTypes.add(name);
         }
-        for (JaxbMappedSuperclass mappedSuperclass : mapping.getMappedSuperclass()) {
-            String name = safeGetClassName(packagePrefix, mappedSuperclass, "mapped-superclass");
-            enlistExplicitClass(collector, name);
+
+        enlistOrmXmlMappingListeners(collector, packagePrefix, managed.getEntityListeners());
+    }
+
+    private void enlistOrmXmlMappingListeners(Collector collector, String packagePrefix, JaxbEntityListeners entityListeners) {
+        if (entityListeners == null) {
+            return;
         }
-        for (JaxbEmbeddable embeddable : mapping.getEmbeddable()) {
-            String name = safeGetClassName(packagePrefix, embeddable, "embeddable");
-            enlistExplicitClass(collector, name);
+        for (JaxbEntityListener listener : entityListeners.getEntityListener()) {
+            collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, listener.getClazz())));
         }
     }
 
@@ -198,7 +236,17 @@ public final class JpaJandexScavenger {
         if (name == null) {
             throw new IllegalArgumentException("Missing attribute '" + nodeName + ".class'");
         }
-        return packagePrefix + name;
+        return qualifyIfNecessary(packagePrefix, name);
+    }
+
+    // See org.hibernate.cfg.annotations.reflection.internal.XMLContext.buildSafeClassName(java.lang.String, java.lang.String)
+    private static String qualifyIfNecessary(String packagePrefix, String name) {
+        if (name.indexOf('.') < 0) {
+            return packagePrefix + name;
+        } else {
+            // The class name is already qualified; don't apply the package prefix.
+            return name;
+        }
     }
 
     private void enlistHbmXmlMapping(Collector collector, JaxbHbmHibernateMapping mapping) {
@@ -249,7 +297,7 @@ public final class JpaJandexScavenger {
                 // The call to 'enlistExplicitClass' above may not
                 // detect that this class is an entity if it is not annotated
                 collector.entityTypes.add(name);
-                collectHbmXmlEmbeddedTypes(collector, packagePrefix, attributes);
+                collectHbmXmlEmbeddedTypes(collector, packagePrefix, compositeAttribute.getAttributes());
             }
         }
     }
@@ -319,7 +367,53 @@ public final class JpaJandexScavenger {
             ClassInfo klass = annotation.target().asClass();
             DotName targetDotName = klass.name();
             addClassHierarchyToReflectiveList(collector, targetDotName);
-            collectDomainObject(collector, klass);
+            collectModelType(collector, klass);
+        }
+    }
+
+    private void enlistJPAModelIdClasses(Collector collector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            DotName targetDotName = annotation.value().asClass().name();
+            addClassHierarchyToReflectiveList(collector, targetDotName);
+            collector.modelTypes.add(targetDotName.toString());
+        }
+    }
+
+    private void enlistPotentialCdiBeanClasses(Collector collector, DotName dotName) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            AnnotationTarget target = annotation.target();
+            ClassInfo beanType;
+            switch (target.kind()) {
+                case CLASS:
+                    beanType = target.asClass();
+                    break;
+                case FIELD:
+                    beanType = target.asField().declaringClass();
+                    break;
+                case METHOD:
+                    beanType = target.asMethod().declaringClass();
+                    break;
+                case METHOD_PARAMETER:
+                case TYPE:
+                case RECORD_COMPONENT:
+                default:
+                    throw new IllegalArgumentException(
+                            "Annotation " + dotName + " was not expected on a target of kind " + target.kind());
+            }
+            DotName beanTypeDotName = beanType.name();
+            collector.potentialCdiBeanTypes.add(beanTypeDotName);
         }
     }
 
@@ -362,7 +456,7 @@ public final class JpaJandexScavenger {
         }
 
         //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
-        collectDomainObject(collector, classInfo);
+        collectModelType(collector, classInfo);
 
         // add superclass recursively
         addClassHierarchyToReflectiveList(collector, classInfo.superName());
@@ -378,10 +472,10 @@ public final class JpaJandexScavenger {
         collector.packages.add(packageName);
     }
 
-    private static void collectDomainObject(Collector collector, ClassInfo modelClass) {
+    private static void collectModelType(Collector collector, ClassInfo modelClass) {
         String name = modelClass.name().toString();
-        collector.managedTypes.add(name);
-        if (modelClass.classAnnotation(ClassNames.JPA_ENTITY) != null) {
+        collector.modelTypes.add(name);
+        if (modelClass.declaredAnnotation(ClassNames.JPA_ENTITY) != null) {
             collector.entityTypes.add(name);
         }
     }
@@ -398,7 +492,7 @@ public final class JpaJandexScavenger {
                 }
                 break;
             case ARRAY:
-                collectEmbeddedTypes(embeddedTypes, indexType.asArrayType().component());
+                collectEmbeddedTypes(embeddedTypes, indexType.asArrayType().constituent());
                 break;
             default:
                 // do nothing
@@ -410,7 +504,8 @@ public final class JpaJandexScavenger {
         String className = classDotName.toString();
         if (className.startsWith("java.util.") || className.startsWith("java.lang.")
                 || className.startsWith("org.hibernate.engine.spi.")
-                || className.startsWith("javax.persistence.")) {
+                || className.startsWith("jakarta.persistence.")
+                || className.startsWith("jakarta.persistence.")) {
             return true;
         }
         return false;
@@ -427,7 +522,8 @@ public final class JpaJandexScavenger {
     private static class Collector {
         final Set<String> packages = new HashSet<>();
         final Set<String> entityTypes = new HashSet<>();
-        final Set<String> managedTypes = new HashSet<>();
+        final Set<DotName> potentialCdiBeanTypes = new HashSet<>();
+        final Set<String> modelTypes = new HashSet<>();
         final Set<String> enumTypes = new HashSet<>();
         final Set<String> javaTypes = new HashSet<>();
         final Set<DotName> unindexedClasses = new HashSet<>();

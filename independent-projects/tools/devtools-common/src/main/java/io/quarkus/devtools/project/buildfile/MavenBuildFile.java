@@ -2,14 +2,6 @@ package io.quarkus.devtools.project.buildfile;
 
 import static io.quarkus.devtools.project.extensions.Extensions.toKey;
 
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.registry.Constants;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,9 +16,19 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
+
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.registry.Constants;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 /**
  * {@link io.quarkus.devtools.project.buildfile.MavenProjectBuildFile} should be used in place of this class.
@@ -55,7 +57,7 @@ public class MavenBuildFile extends BuildFile {
 
     @Override
     protected boolean importBom(ArtifactCoords coords) {
-        if (!"pom".equalsIgnoreCase(coords.getType())) {
+        if (!ArtifactCoords.TYPE_POM.equals(coords.getType())) {
             throw new IllegalArgumentException(coords + " is not a POM");
         }
         Model model = getModel();
@@ -63,7 +65,7 @@ public class MavenBuildFile extends BuildFile {
         d.setGroupId(coords.getGroupId());
         d.setArtifactId(coords.getArtifactId());
         d.setType(coords.getType());
-        d.setScope("import");
+        d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
         DependencyManagement dependencyManagement = model.getDependencyManagement();
         if (dependencyManagement == null) {
             dependencyManagement = new DependencyManagement();
@@ -93,8 +95,8 @@ public class MavenBuildFile extends BuildFile {
             d.setClassifier(coords.getClassifier());
         }
         d.setType(coords.getType());
-        if ("pom".equalsIgnoreCase(coords.getType())) {
-            d.setScope("import");
+        if (ArtifactCoords.TYPE_POM.equals(coords.getType())) {
+            d.setScope(io.quarkus.maven.dependency.Dependency.SCOPE_IMPORT);
             DependencyManagement dependencyManagement = model.getDependencyManagement();
             if (dependencyManagement == null) {
                 dependencyManagement = new DependencyManagement();
@@ -149,10 +151,10 @@ public class MavenBuildFile extends BuildFile {
             if (!PlatformArtifacts.isCatalogArtifactId(c.getArtifactId())) {
                 continue;
             }
-            tmp.add(new ArtifactCoords(c.getGroupId(),
+            tmp.add(ArtifactCoords.pom(c.getGroupId(),
                     c.getArtifactId().substring(0,
                             c.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()),
-                    null, "pom", c.getVersion()));
+                    c.getVersion()));
         }
         return tmp;
     }

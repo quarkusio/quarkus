@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import java.util.List;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -12,30 +13,31 @@ public class StereotypeInfo {
     private final boolean alternative;
     private final Integer alternativePriority;
     private final boolean isNamed;
+    private final boolean isInherited;
+    private final List<AnnotationInstance> parentStereotypes;
     private final ClassInfo target;
-    // allows to differentiate between standard stereotype and one that is in fact additional bean defining annotation
-    private final boolean isAdditionalBeanDefiningAnnotation;
-    // allows to differentiate between standard stereotype and one that was added through an AdditionalStereotypeBuildItem
-    private final boolean isAdditionalStereotypeBuildItem;
+    // used to differentiate between standard stereotype and one that was added through StereotypeRegistrarBuildItem
+    private final boolean isAdditionalStereotype;
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
-            Integer alternativePriority,
-            boolean isNamed, boolean isAdditionalBeanDefiningAnnotation, boolean isAdditionalStereotypeBuildItem,
-            ClassInfo target) {
+            Integer alternativePriority, boolean isNamed, boolean isAdditionalStereotype, ClassInfo target, boolean isInherited,
+            List<AnnotationInstance> parentStereotypes) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.alternative = alternative;
         this.alternativePriority = alternativePriority;
         this.isNamed = isNamed;
+        this.isInherited = isInherited;
+        this.parentStereotypes = parentStereotypes;
         this.target = target;
-        this.isAdditionalBeanDefiningAnnotation = isAdditionalBeanDefiningAnnotation;
-        this.isAdditionalStereotypeBuildItem = isAdditionalStereotypeBuildItem;
+        this.isAdditionalStereotype = isAdditionalStereotype;
     }
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
-            Integer alternativePriority,
-            boolean isNamed, ClassInfo target) {
-        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, false, target);
+            Integer alternativePriority, boolean isNamed, ClassInfo target, boolean isInherited,
+            List<AnnotationInstance> parentStereotype) {
+        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, target, isInherited,
+                parentStereotype);
     }
 
     public ScopeInfo getDefaultScope() {
@@ -48,6 +50,10 @@ public class StereotypeInfo {
 
     public boolean isAlternative() {
         return alternative;
+    }
+
+    public boolean isInherited() {
+        return isInherited;
     }
 
     public Integer getAlternativePriority() {
@@ -66,16 +72,15 @@ public class StereotypeInfo {
         return target.name();
     }
 
-    public boolean isAdditionalBeanDefiningAnnotation() {
-        return isAdditionalBeanDefiningAnnotation;
-    }
-
-    public boolean isAdditionalStereotypeBuildItem() {
-        return isAdditionalStereotypeBuildItem;
+    public boolean isAdditionalStereotype() {
+        return isAdditionalStereotype;
     }
 
     public boolean isGenuine() {
-        return !isAdditionalBeanDefiningAnnotation && !isAdditionalStereotypeBuildItem;
+        return !isAdditionalStereotype;
     }
 
+    public List<AnnotationInstance> getParentStereotypes() {
+        return parentStereotypes;
+    }
 }

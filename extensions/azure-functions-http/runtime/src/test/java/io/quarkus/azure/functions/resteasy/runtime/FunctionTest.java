@@ -55,6 +55,9 @@ public class FunctionTest {
     private final HttpResponseMessage.Builder responseBuilder = mock(HttpResponseMessage.Builder.class);
     private final HttpResponseMessage response = mock(HttpResponseMessage.class);
 
+    static {
+    }
+
     @BeforeEach
     public void mockSetup() {
         when(request.getHttpMethod()).thenReturn(METHOD);

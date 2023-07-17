@@ -8,7 +8,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class KafkaStreamsBuildTimeConfig {
 
     /**
-     * Whether or not a health check is published in case the smallrye-health extension is present (defaults to true).
+     * Whether a health check is published in case the smallrye-health extension is present (defaults to true).
      */
     @ConfigItem(name = "health.enabled", defaultValue = "true")
     public boolean healthEnabled;

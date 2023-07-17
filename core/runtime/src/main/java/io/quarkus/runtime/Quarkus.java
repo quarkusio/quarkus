@@ -2,12 +2,14 @@ package io.quarkus.runtime;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.function.BiConsumer;
 
 import org.jboss.logging.Logger;
-import org.jboss.logmanager.LogManager;
 
 import io.quarkus.launcher.QuarkusLauncher;
+import io.quarkus.runtime.logging.JBossVersion;
+import io.quarkus.runtime.shutdown.ShutdownRecorder;
 
 /**
  * The entry point for applications that use a main method. Quarkus will shut down when the main method returns.
@@ -57,12 +59,15 @@ public class Quarkus {
     public static void run(Class<? extends QuarkusApplication> quarkusApplication, BiConsumer<Integer, Throwable> exitHandler,
             String... args) {
         try {
-            System.setProperty("java.util.logging.manager", LogManager.class.getName());
+            JBossVersion.disableVersionLogging();
+            System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+            System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
+                    "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
             //production and common dev mode path
             //we already have an application, run it directly
             Class<? extends Application> appClass = (Class<? extends Application>) Class.forName(Application.APP_CLASS_NAME,
                     false, Thread.currentThread().getContextClassLoader());
-            Application application = appClass.newInstance();
+            Application application = appClass.getDeclaredConstructor().newInstance();
             ApplicationLifecycleManager.run(application, quarkusApplication, exitHandler, args);
             return;
         } catch (ClassNotFoundException e) {
@@ -176,10 +181,110 @@ public class Quarkus {
      * Must not be called by the main thread, or a deadlock will result.
      */
     public static void blockingExit() {
+        if (isMainThread(Thread.currentThread())) {
+            Logger.getLogger(Quarkus.class).error(
+                    "'Quarkus#blockingExit' was called on the main thread. This will result in deadlocking the application!");
+        }
+
         Application app = Application.currentApplication();
         asyncExit();
         if (app != null) {
             app.awaitShutdown();
         }
     }
+
+    public static boolean isMainThread(Thread thread) {
+        return thread.getThreadGroup().getName().equals("main") &&
+                thread.getName().toLowerCase(Locale.ROOT).contains("main");
+    }
+
+    private static Application manualApp;
+    private static final int MANUAL_BEGIN = 0;
+    private static final int MANUAL_BEGIN_INITIALIZATION = 1;
+    private static final int MANUAL_INITIALIZED = 2;
+    private static final int MANUAL_STARTING = 5;
+    private static final int MANUAL_STARTED = 6;
+    private static final int MANUAL_FAILURE = 7;
+    private static volatile int manualState = MANUAL_BEGIN;
+    private static final Object manualLock = new Object();
+
+    /**
+     * Manual initialization of Quarkus runtime in cases where
+     * Quarkus does not have control over main() i.e. Lambda or Azure Functions.
+     *
+     * This method will trigger static initialization
+     *
+     */
+    public static void manualInitialize() {
+        int tmpState = manualState;
+        if (tmpState == MANUAL_FAILURE)
+            throw new RuntimeException("Quarkus manual bootstrap failed");
+        if (tmpState > MANUAL_BEGIN)
+            return;
+        synchronized (manualLock) {
+            tmpState = manualState;
+            if (tmpState == MANUAL_FAILURE)
+                throw new RuntimeException("Quarkus manual bootstrap failed");
+            if (tmpState > MANUAL_BEGIN)
+                return;
+            manualState = MANUAL_BEGIN_INITIALIZATION;
+        }
+
+        try {
+            // if Application instantiation is removed from manualInit()
+            // then Class.forName() should be called for class static initialization of ApplicationImpl
+            Class<?> appClass = Class.forName("io.quarkus.runner.ApplicationImpl");
+            manualApp = (Application) appClass.getDeclaredConstructor().newInstance();
+            manualState = MANUAL_INITIALIZED;
+            if (SnapStartRecorder.enabled && SnapStartRecorder.fullWarmup) {
+                manualStart();
+            }
+        } catch (Exception e) {
+            manualState = MANUAL_FAILURE;
+            throw new RuntimeException("Quarkus manual initialization failed", e);
+        }
+    }
+
+    /**
+     * Manual startup of Quarkus runtime in cases where
+     * Quarkus does not have control over main() i.e. Lambda or Azure Functions.
+     *
+     * This method will call Application.start() and register shutdown hook
+     * It will fail if Quarkus.manualInitialize() has not been called.
+     *
+     *
+     */
+    public static void manualStart() {
+        int tmpState = manualState;
+        if (tmpState == MANUAL_FAILURE)
+            throw new IllegalStateException("Quarkus failed to start up");
+        if (tmpState >= MANUAL_STARTING)
+            return;
+        synchronized (manualLock) {
+            tmpState = manualState;
+            if (tmpState == MANUAL_FAILURE)
+                throw new RuntimeException("Quarkus manual bootstrap failed");
+            if (tmpState >= MANUAL_STARTING)
+                return;
+            if (tmpState != MANUAL_INITIALIZED)
+                throw new IllegalStateException("Quarkus manual start cannot proceed as warmup did not run");
+            manualState = MANUAL_STARTING;
+        }
+        try {
+            String[] args = {};
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    ShutdownRecorder.runShutdown();
+                    manualApp.doStop();
+                }
+            });
+            manualApp.doStart(args);
+        } catch (RuntimeException e) {
+            manualState = MANUAL_FAILURE;
+            throw e;
+        }
+        manualState = MANUAL_STARTED;
+    }
+
 }

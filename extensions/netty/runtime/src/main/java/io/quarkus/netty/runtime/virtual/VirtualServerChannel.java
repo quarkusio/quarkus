@@ -33,7 +33,7 @@ import io.netty.util.concurrent.SingleThreadEventExecutor;
 /**
  * A {@link ServerChannel} for the local transport which allows in VM communication.
  *
- * This is a bit different than a LocalServerChannel in regular Netty
+ * This is a bit different from a LocalServerChannel in regular Netty
  * as it does not require a client event loop and exposes the client inbound queue directly.
  *
  */

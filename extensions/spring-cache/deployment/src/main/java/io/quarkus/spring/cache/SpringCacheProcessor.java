@@ -1,6 +1,6 @@
 package io.quarkus.spring.cache;
 
-import static io.quarkus.spring.cache.SpringCacheUtil.*;
+import static io.quarkus.spring.cache.SpringCacheUtil.getSpringCacheName;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.cache.deployment.AdditionalCacheNameBuildItem;
+import io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -33,8 +33,7 @@ public class SpringCacheProcessor {
     static final DotName CACHE_PUT = DotName.createSimple(CachePut.class.getName());
     static final DotName CACHE_EVICT = DotName.createSimple(CacheEvict.class.getName());
 
-    private static final List<DotName> CACHE_ANNOTATIONS = Collections
-            .unmodifiableList(Arrays.asList(CACHEABLE, CACHE_PUT, CACHE_EVICT));
+    private static final List<DotName> CACHE_ANNOTATIONS = List.of(CACHEABLE, CACHE_PUT, CACHE_EVICT);
 
     // some of these restrictions can probably be lifted by us doing additional work on caching after https://github.com/quarkusio/quarkus/pull/8631 lands
     private static final Set<String> CURRENTLY_UNSUPPORTED_ANNOTATION_VALUES = Collections

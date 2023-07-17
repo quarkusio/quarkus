@@ -1,11 +1,11 @@
 package io.quarkus.it.jpa.mariadb;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 /**
  * Test various JPA operations running in native mode
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 public class JPAFunctionalityInGraalITCase extends JPAFunctionalityTest {
 
 }

@@ -22,14 +22,16 @@ public final class BuildResult {
     private final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems;
     private final List<Diagnostic> diagnostics;
     private final long nanos;
+    private final BuildMetrics metrics;
 
     BuildResult(final ConcurrentHashMap<ItemId, BuildItem> simpleItems,
             final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems, final Set<ItemId> finalIds,
-            final List<Diagnostic> diagnostics, final long nanos) {
+            final List<Diagnostic> diagnostics, final long nanos, BuildMetrics metrics) {
         this.simpleItems = simpleItems;
         this.multiItems = multiItems;
         this.diagnostics = diagnostics;
         this.nanos = nanos;
+        this.metrics = metrics;
     }
 
     /**
@@ -67,7 +69,7 @@ public final class BuildResult {
     }
 
     /**
-     * Consume all of the values produced for the named item.
+     * Consume all the values produced for the named item.
      *
      * @param type the item element type (must not be {@code null})
      * @return the produced items (may be empty, will not be {@code null})
@@ -100,6 +102,13 @@ public final class BuildResult {
      */
     public long getDuration(TimeUnit timeUnit) {
         return timeUnit.convert(nanos, TimeUnit.NANOSECONDS);
+    }
+
+    /**
+     * @return the build metrics
+     */
+    public BuildMetrics getMetrics() {
+        return metrics;
     }
 
     /**

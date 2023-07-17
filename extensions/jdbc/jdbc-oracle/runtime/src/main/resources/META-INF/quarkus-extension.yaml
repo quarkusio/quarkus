@@ -6,6 +6,7 @@ metadata:
   - "jdbc-oracle"
   - "jdbc"
   - "oracle"
+  guide: "https://quarkus.io/guides/datasource"
   categories:
   - "data"
   status: "preview"

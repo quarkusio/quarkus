@@ -7,8 +7,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.logging.LogRecord;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,7 +22,7 @@ public class KubernetesWithWarningsEnvTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName(APPLICATION_NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogRecordPredicate(r -> "io.quarkus.kubernetes.deployment.EnvVarValidator".equals(r.getLoggerName())

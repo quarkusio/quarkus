@@ -1,0 +1,1 @@
+jdbc:postgresql://localhost:5431/quarkus_test

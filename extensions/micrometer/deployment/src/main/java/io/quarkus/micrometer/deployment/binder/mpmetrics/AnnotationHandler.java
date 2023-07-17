@@ -2,13 +2,19 @@ package io.quarkus.micrometer.deployment.binder.mpmetrics;
 
 import java.util.Collection;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.micrometer.deployment.MicrometerProcessor;
 
 /**
  * Create beans to handle MP Metrics API annotations.
@@ -23,12 +29,12 @@ public class AnnotationHandler {
     }
 
     static AnnotationsTransformerBuildItem transformAnnotations(final IndexView index,
-            DotName sourceAnnotation, DotName targetAnnotation) {
+            DotName sourceAnnotationName, DotName targetAnnotationName) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
             public void transform(TransformationContext ctx) {
                 final Collection<AnnotationInstance> annotations = ctx.getAnnotations();
-                AnnotationInstance annotation = MicrometerProcessor.findAnnotation(annotations, sourceAnnotation);
+                AnnotationInstance annotation = Annotations.find(annotations, sourceAnnotationName);
                 if (annotation == null) {
                     return;
                 }
@@ -46,15 +52,15 @@ public class AnnotationHandler {
                 } else if (ctx.isClass()) {
                     classInfo = target.asClass();
                     // skip @Interceptor
-                    if (target.asClass().classAnnotation(DotNames.INTERCEPTOR) != null) {
+                    if (target.asClass().declaredAnnotation(DotNames.INTERCEPTOR) != null) {
                         return;
                     }
                 }
 
                 // Remove the @Counted annotation when both @Counted & @Timed/SimplyTimed
                 // Ignore @Metric with @Produces
-                if (removeCountedWhenTimed(sourceAnnotation, target, classInfo, methodInfo) ||
-                        removeMetricWhenProduces(sourceAnnotation, target, methodInfo, fieldInfo)) {
+                if (removeCountedWhenTimed(sourceAnnotationName, target, classInfo, methodInfo) ||
+                        removeMetricWhenProduces(sourceAnnotationName, target, methodInfo, fieldInfo)) {
                     ctx.transform()
                             .remove(x -> x == annotation)
                             .done();
@@ -65,10 +71,14 @@ public class AnnotationHandler {
                 MetricAnnotationInfo annotationInfo = new MetricAnnotationInfo(annotation, index,
                         classInfo, methodInfo, fieldInfo);
 
+                // preserve the original annotation target, `ctx.getTarget()` is different in case of method parameters
+                AnnotationInstance newAnnotation = AnnotationInstance.create(targetAnnotationName, annotation.target(),
+                        annotationInfo.getAnnotationValues());
+
                 // Remove the existing annotation, and add a new one with all the fields
                 ctx.transform()
                         .remove(x -> x == annotation)
-                        .add(targetAnnotation, annotationInfo.getAnnotationValues())
+                        .add(newAnnotation)
                         .done();
             }
         });
@@ -78,9 +88,8 @@ public class AnnotationHandler {
             MethodInfo methodInfo) {
         if (MetricDotNames.COUNTED_ANNOTATION.equals(sourceAnnotation)) {
             if (methodInfo == null) {
-                if (MicrometerProcessor.findAnnotation(classInfo.classAnnotations(), MetricDotNames.TIMED_ANNOTATION) == null &&
-                        MicrometerProcessor.findAnnotation(classInfo.classAnnotations(),
-                                MetricDotNames.SIMPLY_TIMED_ANNOTATION) == null) {
+                if (!Annotations.contains(classInfo.declaredAnnotations(), MetricDotNames.TIMED_ANNOTATION) &&
+                        !Annotations.contains(classInfo.declaredAnnotations(), MetricDotNames.SIMPLY_TIMED_ANNOTATION)) {
                     return false;
                 }
                 log.warnf("Bean %s is both counted and timed. The @Counted annotation " +

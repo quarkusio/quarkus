@@ -1,0 +1,17 @@
+name: reactive-routes-codestart
+ref: reactive-routes-codestart
+tags: extension-codestart
+type: code
+metadata:
+  title: Reactive Route codestart 
+  description: Create your web page using Quarkus Reactive Route in Java or Kotlin
+  path: /hello-route?name=quarkus
+  related-guide-section: https://quarkus.io/guides/reactive-routes
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-reactive-routes
+    test-dependencies:
+      - io.rest-assured:rest-assured
+    
+      

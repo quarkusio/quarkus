@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -11,16 +12,25 @@ import io.quarkus.runtime.annotations.ConfigItem;
 @ConfigGroup
 public class FormAuthConfig {
     /**
-     * If form authentication is enabled
+     * SameSite attribute values for the session and location cookies.
+     */
+    public enum CookieSameSite {
+        STRICT,
+        LAX,
+        NONE
+    }
+
+    /**
+     * If form authentication is enabled.
      */
     @ConfigItem
     public boolean enabled;
 
     /**
-     * The login page
+     * The login page. Redirect to login page can be disabled by setting `quarkus.http.auth.form.login-page=`.
      */
     @ConfigItem(defaultValue = "/login.html")
-    public String loginPage;
+    public Optional<String> loginPage;
 
     /**
      * The post location.
@@ -41,27 +51,33 @@ public class FormAuthConfig {
     public String passwordParameter;
 
     /**
-     * The error page
+     * The error page. Redirect to error page can be disabled by setting `quarkus.http.auth.form.error-page=`.
      */
     @ConfigItem(defaultValue = "/error.html")
-    public String errorPage;
+    public Optional<String> errorPage;
 
     /**
-     * The landing page to redirect to if there is no saved page to redirect back to
+     * The landing page to redirect to if there is no saved page to redirect back to.
+     * Redirect to landing page can be disabled by setting `quarkus.http.auth.form.landing-page=`.
      */
     @ConfigItem(defaultValue = "/index.html")
-    public String landingPage;
+    public Optional<String> landingPage;
 
     /**
      * Option to disable redirect to landingPage if there is no saved page to redirect back to. Form Auth POST is followed
      * by redirect to landingPage by default.
+     *
+     * @deprecated redirect to landingPage can be disabled by removing default landing page
+     *             (via `quarkus.http.auth.form.landing-page=`). Quarkus will ignore this configuration property
+     *             if there is no landing page.
      */
     @ConfigItem(defaultValue = "true")
+    @Deprecated
     public boolean redirectAfterLogin;
 
     /**
      * Option to control the name of the cookie used to redirect the user back
-     * to where he want to get access to.
+     * to where he wants to get access to.
      */
     @ConfigItem(defaultValue = "quarkus-redirect-location")
     public String locationCookie;
@@ -86,7 +102,7 @@ public class FormAuthConfig {
      * is when the cookie is 9m old then the actual timeout will happen 21m after the last request, as the timeout
      * is only refreshed when a new cookie is generated.
      *
-     * In other words no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie itself
+     * In other words no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie itself,
      * and it is decrypted and parsed with each request.
      */
     @ConfigItem(defaultValue = "PT1M")
@@ -97,4 +113,22 @@ public class FormAuthConfig {
      */
     @ConfigItem(defaultValue = "quarkus-credential")
     public String cookieName;
+
+    /**
+     * The cookie path for the session and location cookies.
+     */
+    @ConfigItem(defaultValue = "/")
+    public Optional<String> cookiePath = Optional.of("/");
+
+    /**
+     * Set the HttpOnly attribute to prevent access to the cookie via JavaScript.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean httpOnlyCookie;
+
+    /**
+     * SameSite attribute for the session and location cookies.
+     */
+    @ConfigItem(defaultValue = "strict")
+    public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
 }

@@ -1,7 +1,7 @@
 package io.quarkus.it.spring.data.rest;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 class SpringDataRestIT extends SpringDataRestTest {
 }

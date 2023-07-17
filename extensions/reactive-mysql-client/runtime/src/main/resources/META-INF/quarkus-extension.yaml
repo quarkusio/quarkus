@@ -15,3 +15,5 @@ metadata:
   - "data"
   - "reactive"
   status: "stable"
+  config:
+  - "quarkus.datasource."

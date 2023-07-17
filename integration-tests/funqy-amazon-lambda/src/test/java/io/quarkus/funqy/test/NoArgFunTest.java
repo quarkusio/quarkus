@@ -1,11 +1,11 @@
 package io.quarkus.funqy.test;
 
-import java.time.Duration;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import io.quarkus.amazon.lambda.test.LambdaClient;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
@@ -14,6 +14,11 @@ public class NoArgFunTest {
 
     @Test
     public void testNoArgFun() throws Exception {
-        LambdaClient.invoke(String.class, null, Duration.ofSeconds(5));
+        given()
+                .when()
+                .post()
+                .then()
+                .statusCode(200)
+                .body(containsString("noArgFun"));
     }
 }

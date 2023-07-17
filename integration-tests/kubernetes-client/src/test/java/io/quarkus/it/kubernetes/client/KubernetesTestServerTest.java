@@ -38,9 +38,9 @@ public class KubernetesTestServerTest {
     private KubernetesServer mockServer;
 
     @Test
-    public void testConfiguration() throws InterruptedException {
+    public void testConfiguration() {
         // we can't really test CRUD, and HTTPS doesn't work
-        Assertions.assertEquals(10001, mockServer.getMockServer().getPort());
+        Assertions.assertEquals(10001, mockServer.getKubernetesMockServer().getPort());
         Assertions.assertSame(mockServer, setupServer);
     }
 

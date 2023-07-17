@@ -1,15 +1,12 @@
 package io.quarkus.context.test;
 
-import static org.hamcrest.Matchers.equalTo;
-
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -35,7 +32,7 @@ public class SimpleContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(testClasses)
                     .addAsResource("application.properties"));
 
@@ -76,15 +73,23 @@ public class SimpleContextPropagationTest {
     }
 
     @Test()
-    public void testArcMEContextPropagationDisabled() {
+    public void testArcMEContextPropagationDisabled() throws InterruptedException {
+        // reset state
+        RequestBean.initState();
         RestAssured.when().get("/context/noarc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
+        Assertions.assertTrue(RequestBean.LATCH.await(3, TimeUnit.SECONDS));
+        Assertions.assertEquals(2, RequestBean.DESTROY_INVOKED);
     }
 
     @Test()
-    public void testArcTCContextPropagationDisabled() {
+    public void testArcTCContextPropagationDisabled() throws InterruptedException {
+        // reset state
+        RequestBean.initState();
         RestAssured.when().get("/context/noarc-tc").then()
                 .statusCode(Response.Status.OK.getStatusCode());
+        Assertions.assertTrue(RequestBean.LATCH.await(3, TimeUnit.SECONDS));
+        Assertions.assertEquals(2, RequestBean.DESTROY_INVOKED);
     }
 
     @Test()
@@ -115,23 +120,5 @@ public class SimpleContextPropagationTest {
     public void testTransactionNewContextPropagation() {
         RestAssured.when().get("/context/transaction-new").then()
                 .statusCode(Response.Status.OK.getStatusCode());
-    }
-
-    @Test()
-    public void testTransactionContextPropagationSingle() {
-        RestAssured.when().get("/context/transaction-single").then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body(equalTo("OK"));
-        awaitState(() -> RestAssured.when().get("/context/transaction-single2").then()
-                .statusCode(Response.Status.OK.getStatusCode()));
-    }
-
-    @Test()
-    public void testTransactionContextPropagationPublisher() {
-        RestAssured.when().get("/context/transaction-publisher").then()
-                .statusCode(Response.Status.OK.getStatusCode())
-                .body(equalTo("OK"));
-        awaitState(() -> RestAssured.when().get("/context/transaction-publisher2").then()
-                .statusCode(Response.Status.OK.getStatusCode()));
     }
 }

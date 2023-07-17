@@ -4,7 +4,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.runtime.interceptor.check.SecurityCheck;
+import io.quarkus.security.spi.runtime.MethodDescription;
+import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
  * A {@link SecurityCheck} where all delegates must pass
@@ -21,6 +22,13 @@ public class AllDelegatingSecurityCheck implements SecurityCheck {
     public void apply(SecurityIdentity identity, Method method, Object[] parameters) {
         for (SecurityCheck securityCheck : securityChecks) {
             securityCheck.apply(identity, method, parameters);
+        }
+    }
+
+    @Override
+    public void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters) {
+        for (SecurityCheck securityCheck : securityChecks) {
+            securityCheck.apply(identity, methodDescription, parameters);
         }
     }
 }

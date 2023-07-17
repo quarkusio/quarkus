@@ -1,7 +1,7 @@
 package io.quarkus.grpc.runtime.supports.context;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import org.jboss.logging.Logger;
 
@@ -13,10 +13,13 @@ import io.grpc.ServerInterceptor;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
+import io.quarkus.grpc.GlobalInterceptor;
+import io.quarkus.grpc.runtime.Interceptors;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 @ApplicationScoped
+@GlobalInterceptor
 public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Prioritized {
     private static final Logger log = Logger.getLogger(GrpcRequestContextGrpcInterceptor.class.getName());
 
@@ -31,7 +34,7 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
             Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
 
-        // This interceptor is called first, so, we should be on the event loop.
+        // This interceptor is called just after the duplicated context interceptor, so, we should be on the event loop.
         Context capturedVertxContext = Vertx.currentContext();
         if (capturedVertxContext != null) {
             InjectableContext.ContextState state;
@@ -139,6 +142,6 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
 
     @Override
     public int getPriority() {
-        return Integer.MAX_VALUE;
+        return Interceptors.REQUEST_CONTEXT;
     }
 }

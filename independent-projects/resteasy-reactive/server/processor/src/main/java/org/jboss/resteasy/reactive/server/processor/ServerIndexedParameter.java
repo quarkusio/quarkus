@@ -6,7 +6,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.ParameterCo
 
 public class ServerIndexedParameter extends IndexedParameter<ServerIndexedParameter> {
     protected ParameterConverterSupplier converter;
-    private ParameterExtractor customerParameterExtractor;
+    private ParameterExtractor customParameterExtractor;
 
     public ParameterConverterSupplier getConverter() {
         return converter;
@@ -17,12 +17,12 @@ public class ServerIndexedParameter extends IndexedParameter<ServerIndexedParame
         return this;
     }
 
-    public ParameterExtractor getCustomerParameterExtractor() {
-        return customerParameterExtractor;
+    public ParameterExtractor getCustomParameterExtractor() {
+        return customParameterExtractor;
     }
 
-    public ServerIndexedParameter setCustomerParameterExtractor(ParameterExtractor customerParameterExtractor) {
-        this.customerParameterExtractor = customerParameterExtractor;
+    public ServerIndexedParameter setCustomParameterExtractor(ParameterExtractor customerParameterExtractor) {
+        this.customParameterExtractor = customerParameterExtractor;
         return this;
     }
 }

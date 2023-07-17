@@ -2,7 +2,7 @@ package io.quarkus.elytron.security.runtime;
 
 import java.security.Permission;
 
-import javax.enterprise.inject.spi.CDI;
+import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmMapper;
@@ -31,7 +31,7 @@ public class ElytronRecorder {
     }
 
     public void setDomainForIdentityProvider(BeanContainer bc, RuntimeValue<SecurityDomain> domain) {
-        bc.instance(ElytronSecurityDomainManager.class).setDomain(domain.getValue());
+        bc.beanInstance(ElytronSecurityDomainManager.class).setDomain(domain.getValue());
     }
 
     /**
@@ -77,7 +77,7 @@ public class ElytronRecorder {
     }
 
     /**
-     * Called to add an additional realm to the {@linkplain SecurityDomain} being built
+     * Called to add a realm to the {@linkplain SecurityDomain} being built
      *
      * @param builder - runtime value for SecurityDomain.Builder created by
      *        {@linkplain #configureDomainBuilder(String, RuntimeValue)}

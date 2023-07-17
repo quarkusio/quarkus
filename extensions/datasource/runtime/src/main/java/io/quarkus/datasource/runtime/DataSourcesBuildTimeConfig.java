@@ -1,6 +1,7 @@
 package io.quarkus.datasource.runtime;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -68,13 +69,8 @@ public class DataSourcesBuildTimeConfig {
         if (DataSourceUtil.isDefault(dataSourceName)) {
             return defaultDataSource;
         }
-
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = namedDataSources.get(dataSourceName);
-        if (dataSourceBuildTimeConfig == null) {
-            return new DataSourceBuildTimeConfig();
-        }
-
-        return dataSourceBuildTimeConfig;
+        return Objects.requireNonNullElseGet(dataSourceBuildTimeConfig, DataSourceBuildTimeConfig::new);
     }
 
 }

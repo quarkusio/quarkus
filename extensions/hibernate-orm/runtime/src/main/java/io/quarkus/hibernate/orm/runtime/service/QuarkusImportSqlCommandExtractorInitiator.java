@@ -4,22 +4,22 @@ import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractor;
-import org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor;
+import org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor;
+import org.hibernate.tool.schema.spi.SqlScriptCommandExtractor;
 
-public final class QuarkusImportSqlCommandExtractorInitiator implements StandardServiceInitiator<ImportSqlCommandExtractor> {
+public final class QuarkusImportSqlCommandExtractorInitiator implements StandardServiceInitiator<SqlScriptCommandExtractor> {
 
     public static final QuarkusImportSqlCommandExtractorInitiator INSTANCE = new QuarkusImportSqlCommandExtractorInitiator();
 
-    private static final MultipleLinesSqlCommandExtractor SERVICE_INSTANCE = new MultipleLinesSqlCommandExtractor();
+    private static final MultiLineSqlScriptExtractor SERVICE_INSTANCE = new MultiLineSqlScriptExtractor();
 
     @Override
-    public ImportSqlCommandExtractor initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
+    public SqlScriptCommandExtractor initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
         return SERVICE_INSTANCE;
     }
 
     @Override
-    public Class<ImportSqlCommandExtractor> getServiceInitiated() {
-        return ImportSqlCommandExtractor.class;
+    public Class<SqlScriptCommandExtractor> getServiceInitiated() {
+        return SqlScriptCommandExtractor.class;
     }
 }

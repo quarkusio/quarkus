@@ -26,8 +26,9 @@
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.wildfly.security</groupId>
@@ -60,12 +61,12 @@
             <artifactId>jakarta.enterprise.cdi-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.security.jacc</groupId>
-            <artifactId>jakarta.security.jacc-api</artifactId>
+            <groupId>jakarta.authorization</groupId>
+            <artifactId>jakarta.authorization-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.security.auth.message</groupId>
-            <artifactId>jakarta.security.auth.message-api</artifactId>
+            <groupId>jakarta.authentication</groupId>
+            <artifactId>jakarta.authentication-api</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -78,7 +79,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <excludedArtifacts>
                         <excludedArtifact>org.jboss.spec.javax.security.auth.message:jboss-jaspi-api_1.1_spec</excludedArtifact>

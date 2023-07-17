@@ -4,10 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Locale;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +19,10 @@ public class TemplateExtensionAttributeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
+                    .addAsResource(
+                            new StringAsset("{ping:transform('Foo')}"),
+                            "templates/foo.txt")
                     .addClasses(Extensions.class));
 
     @Inject
@@ -36,6 +38,8 @@ public class TemplateExtensionAttributeTest {
                 engine.parse("{foo.myAttr}").render());
         assertEquals("OK",
                 engine.parse("{attr:ping}").instance().setAttribute("myAttribute", "OK").render());
+        assertEquals("foo::cs",
+                engine.getTemplate("foo").instance().setAttribute("locale", "cs").render());
     }
 
     @TemplateExtension
@@ -52,6 +56,15 @@ public class TemplateExtensionAttributeTest {
         @TemplateExtension(namespace = "attr")
         static String ping(@TemplateAttribute Object myAttribute) {
             return myAttribute.toString();
+        }
+
+    }
+
+    @TemplateExtension(namespace = "ping")
+    public static class NamespaceExtensions {
+
+        static String transform(@TemplateAttribute("locale") Object loc, String val) {
+            return val.toLowerCase() + "::" + loc.toString();
         }
 
     }

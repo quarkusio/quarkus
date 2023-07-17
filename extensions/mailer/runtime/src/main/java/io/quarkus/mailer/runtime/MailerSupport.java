@@ -1,26 +1,15 @@
 package io.quarkus.mailer.runtime;
 
+import java.util.Set;
+
 public class MailerSupport {
 
-    private final String from;
-    private final String bounceAddress;
-    private final boolean mock;
+    public final boolean hasDefaultMailer;
 
-    public MailerSupport(String from, String bounceAddress, boolean mock) {
-        this.from = from;
-        this.bounceAddress = bounceAddress;
-        this.mock = mock;
-    }
+    public final Set<String> namedMailers;
 
-    public String getFrom() {
-        return from;
-    }
-
-    public String getBounceAddress() {
-        return bounceAddress;
-    }
-
-    public boolean isMock() {
-        return mock;
+    public MailerSupport(boolean hasDefaultMailer, Set<String> namedMailers) {
+        this.hasDefaultMailer = hasDefaultMailer;
+        this.namedMailers = namedMailers;
     }
 }

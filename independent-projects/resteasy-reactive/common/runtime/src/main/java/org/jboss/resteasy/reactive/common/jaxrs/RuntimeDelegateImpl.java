@@ -3,17 +3,22 @@ package org.jboss.resteasy.reactive.common.jaxrs;
 import java.util.Date;
 import java.util.Locale;
 import java.util.ServiceLoader;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.CacheControl;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.EntityTag;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.core.Variant;
-import javax.ws.rs.ext.RuntimeDelegate;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.ws.rs.SeBootstrap;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.CacheControl;
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.EntityPart;
+import jakarta.ws.rs.core.EntityTag;
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.Variant;
+import jakarta.ws.rs.ext.RuntimeDelegate;
+
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
@@ -112,5 +117,31 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
     @Override
     public Link.Builder createLinkBuilder() {
         return new LinkBuilderImpl();
+    }
+
+    @Override
+    public SeBootstrap.Configuration.Builder createConfigurationBuilder() {
+        // RR does not implement currently implement the bootstrapping API
+        throw new UnsupportedOperationException("Pending implementation");
+    }
+
+    @Override
+    public CompletionStage<SeBootstrap.Instance> bootstrap(Application application,
+            SeBootstrap.Configuration configuration) {
+        // RR does not implement currently implement the bootstrapping API
+        throw new UnsupportedOperationException("Pending implementation");
+    }
+
+    @Override
+    public CompletionStage<SeBootstrap.Instance> bootstrap(Class<? extends Application> aClass,
+            SeBootstrap.Configuration configuration) {
+        // RR does not implement currently implement the bootstrapping API
+        throw new UnsupportedOperationException("Pending implementation");
+    }
+
+    @Override
+    public EntityPart.Builder createEntityPartBuilder(String s) throws IllegalArgumentException {
+        // TODO: figure out how to implement this
+        throw new UnsupportedOperationException("Pending implementation");
     }
 }

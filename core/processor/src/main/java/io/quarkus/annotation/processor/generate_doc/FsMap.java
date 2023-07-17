@@ -22,7 +22,7 @@ public class FsMap {
         final Path file = dir.resolve(key);
         if (Files.exists(file)) {
             try {
-                return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+                return Files.readString(file);
             } catch (IOException e) {
                 throw new RuntimeException("Could not read " + file, e);
             }
@@ -47,7 +47,7 @@ public class FsMap {
 
     /**
      * Attempts to call {@link Files#createDirectories(Path, java.nio.file.attribute.FileAttribute...)} with the given
-     * {@code dir} at most {@code dir.getNameCount()} times as long as it does not exists, assuming that other treads
+     * {@code dir} at most {@code dir.getNameCount()} times as long as it does not exist, assuming that other treads
      * may try to create the same directory concurrently.
      *
      * @param dir the directory to create
@@ -80,7 +80,7 @@ public class FsMap {
                         .forEach(f -> {
                             try {
                                 result.setProperty(f.getFileName().toString(),
-                                        new String(Files.readAllBytes(f), StandardCharsets.UTF_8));
+                                        Files.readString(f));
                             } catch (IOException e) {
                                 throw new IllegalStateException("Could not read from " + f, e);
                             }

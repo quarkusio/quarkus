@@ -8,8 +8,6 @@ import java.nio.file.Path;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -21,7 +19,7 @@ public class NoCustomManifestSectionsUberJarTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+            .withEmptyApplication()
             .setApplicationName("No-Custom-Manifest-Uber")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("projects/custom-manifest-section/no-custom-manifest-uber.properties");

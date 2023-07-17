@@ -21,13 +21,15 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
     private static class NativeMethod {
         private final MethodInfo methodInfo;
         private final String templateId;
+        private final String fragmentId;
         private final List<String> parameterNames;
         private final CheckedTemplateAdapter adaptor;
 
-        public NativeMethod(MethodInfo methodInfo, String templatePath, List<String> parameterNames,
+        public NativeMethod(MethodInfo methodInfo, String templatePath, String fragmentId, List<String> parameterNames,
                 CheckedTemplateAdapter adaptor) {
             this.methodInfo = methodInfo;
             this.templateId = templatePath;
+            this.fragmentId = fragmentId;
             this.parameterNames = parameterNames;
             this.adaptor = adaptor;
         }
@@ -35,10 +37,10 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
 
     private final Map<String, NativeMethod> methods = new HashMap<>();
 
-    public void implement(MethodInfo methodInfo, String templatePath, List<String> parameterNames,
+    public void implement(MethodInfo methodInfo, String templatePath, String fragmentId, List<String> parameterNames,
             CheckedTemplateAdapter adaptor) {
         // FIXME: this should support overloading by using the method signature as key, but requires moving JandexUtil stuff around
-        methods.put(methodInfo.name(), new NativeMethod(methodInfo, templatePath, parameterNames, adaptor));
+        methods.put(methodInfo.name(), new NativeMethod(methodInfo, templatePath, fragmentId, parameterNames, adaptor));
     }
 
     @Override
@@ -100,6 +102,14 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
                 visitMethodInsn(Opcodes.INVOKEVIRTUAL, "io/quarkus/qute/runtime/TemplateProducer", "getInjectableTemplate",
                         "(Ljava/lang/String;)Lio/quarkus/qute/Template;", false);
 
+                if (nativeMethod.fragmentId != null) {
+                    /*
+                     * template = template.getFragment(id);
+                     */
+                    visitLdcInsn(nativeMethod.fragmentId);
+                    visitMethodInsn(Opcodes.INVOKEINTERFACE, "io/quarkus/qute/Template", "getFragment",
+                            "(Ljava/lang/String;)Lio/quarkus/qute/Template$Fragment;", true);
+                }
                 /*
                  * TemplateInstance instance = template.instance();
                  */
@@ -115,7 +125,7 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
                 }
 
                 int slot = 0; // arg slots start at 0 for static methods
-                List<Type> parameters = nativeMethod.methodInfo.parameters();
+                List<Type> parameters = nativeMethod.methodInfo.parameterTypes();
                 for (int i = 0; i < nativeMethod.parameterNames.size(); i++) {
                     Type parameterType = parameters.get(i);
                     /*

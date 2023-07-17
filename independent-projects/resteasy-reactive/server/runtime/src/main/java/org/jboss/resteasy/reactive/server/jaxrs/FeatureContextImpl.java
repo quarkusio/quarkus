@@ -7,16 +7,18 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import javax.annotation.Priority;
-import javax.ws.rs.NameBinding;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.ext.ExceptionMapper;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.WriterInterceptor;
+
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.NameBinding;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptor;
+
 import org.jboss.resteasy.reactive.common.core.UnmanagedBeanFactory;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
@@ -25,19 +27,19 @@ import org.jboss.resteasy.reactive.common.model.ResourceExceptionMapper;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptor;
 import org.jboss.resteasy.reactive.common.model.ResourceInterceptors;
 import org.jboss.resteasy.reactive.common.model.SettableResourceInterceptor;
-import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.core.RuntimeExceptionMapper;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
 public class FeatureContextImpl implements FeatureContext {
 
     protected final ResourceInterceptors interceptors;
-    private final ExceptionMapping exceptionMapping;
+    private final RuntimeExceptionMapper exceptionMapping;
     private final Function<Class<?>, BeanFactory<?>> beanFactoryCreator;
     private final ConfigurationImpl configuration;
 
     private boolean filtersNeedSorting = false;
 
-    public FeatureContextImpl(ResourceInterceptors interceptors, ExceptionMapping exceptionMapping,
+    public FeatureContextImpl(ResourceInterceptors interceptors, RuntimeExceptionMapper exceptionMapping,
             ConfigurationImpl configuration, Function<Class<?>, BeanFactory<?>> beanFactoryCreator) {
         this.interceptors = interceptors;
         this.exceptionMapping = exceptionMapping;

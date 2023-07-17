@@ -1,8 +1,8 @@
 package io.quarkus.it.rest.client.selfsigned;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 public class ExternalSelfSignedITCase extends ExternalSelfSignedTestCase {
 
 }

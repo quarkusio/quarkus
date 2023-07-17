@@ -8,7 +8,7 @@ import io.quarkus.runtime.StartupContext;
 
 /**
  * A build item that represents the raw command line arguments as they were passed to the application.
- * 
+ *
  * This can be passed directly to bytecode recorders that take a {@code Supplier<String[]>}.
  *
  * No filtering is done on these parameters.

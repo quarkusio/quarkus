@@ -67,7 +67,7 @@ public class KeycloakPolicyEnforcerTenantConfig {
         /**
          * Specifies how scopes should be mapped to HTTP methods. If set to true, the policy enforcer will use the HTTP method
          * from
-         * the current request to check whether or not access should be granted
+         * the current request to check whether access should be granted
          */
         @ConfigItem
         public boolean httpMethodAsScope;

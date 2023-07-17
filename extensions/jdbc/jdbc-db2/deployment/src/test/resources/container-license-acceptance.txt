@@ -1,1 +1,1 @@
-ibmcom/db2:11.5.5.1
+${db2.image}

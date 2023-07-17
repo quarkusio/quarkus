@@ -1,10 +1,16 @@
 package io.quarkus.cli.create;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import java.util.regex.Pattern;
+
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import picocli.CommandLine;
+import picocli.CommandLine.TypeConversionException;
 
 public class TargetGAVGroup {
-    final static String DEFAULT_GAV = CreateProjectHelper.DEFAULT_GROUP_ID + ":"
+    static final String BAD_IDENTIFIER = "The specified %s identifier (%s) contains invalid characters. Valid characters are alphanumeric (A-Za-z), underscore, dash and dot.";
+    static final Pattern OK_ID = Pattern.compile("[0-9A-Za-z_.-]+");
+
+    static final String DEFAULT_GAV = CreateProjectHelper.DEFAULT_GROUP_ID + ":"
             + CreateProjectHelper.DEFAULT_ARTIFACT_ID + ":"
             + CreateProjectHelper.DEFAULT_VERSION;
 
@@ -52,6 +58,13 @@ public class TargetGAVGroup {
                     }
                 }
             }
+            if (artifactId != CreateProjectHelper.DEFAULT_ARTIFACT_ID && !OK_ID.matcher(artifactId).matches()) {
+                throw new TypeConversionException(String.format(BAD_IDENTIFIER, "artifactId", artifactId));
+            }
+            if (groupId != CreateProjectHelper.DEFAULT_GROUP_ID && !OK_ID.matcher(groupId).matches()) {
+                throw new TypeConversionException(String.format(BAD_IDENTIFIER, "groupId", groupId));
+            }
+
             initialized = true;
         }
     }

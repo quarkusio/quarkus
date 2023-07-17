@@ -1,8 +1,6 @@
 package io.quarkus.test.devconsole;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,13 +20,13 @@ public class DevConsoleGrpcSmokeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(Greeter.class.getPackage())
+            .withApplicationRoot((jar) -> jar.addPackage(Greeter.class.getPackage())
                     .addClass(TestGreeter.class))
             .setCodeGenSources("proto");
 
     @Test
     public void testServices() {
-        RestAssured.get("q/dev/io.quarkus.quarkus-grpc/services")
+        RestAssured.get("q/dev-v1/io.quarkus.quarkus-grpc/services")
                 .then()
                 .statusCode(200).body(Matchers.containsString("helloworld.Greeter"));
     }

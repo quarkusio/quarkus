@@ -1,11 +1,11 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.Arc;
 import java.lang.reflect.Modifier;
-import org.jboss.jandex.DotName;
+
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type.Kind;
+
+import io.quarkus.arc.Arc;
 
 abstract class AbstractGenerator {
 
@@ -14,9 +14,15 @@ abstract class AbstractGenerator {
     static final String SYNTHETIC_SUFFIX = "Synthetic";
 
     protected final boolean generateSources;
+    protected final ReflectionRegistration reflectionRegistration;
+
+    public AbstractGenerator(boolean generateSources, ReflectionRegistration reflectionRegistration) {
+        this.generateSources = generateSources;
+        this.reflectionRegistration = reflectionRegistration;
+    }
 
     public AbstractGenerator(boolean generateSources) {
-        this.generateSources = generateSources;
+        this(generateSources, null);
     }
 
     /**
@@ -62,10 +68,19 @@ abstract class AbstractGenerator {
         return false;
     }
 
-    protected boolean isReflectionFallbackNeeded(FieldInfo field, String targetPackage) {
-        // Reflection fallback is needed for private fields and non-public fields declared on superclasses located in a different package
+    protected boolean isReflectionFallbackNeeded(FieldInfo field, String targetPackage, BeanInfo bean) {
+        // Reflection fallback is needed for private fields if the transformation config is set to false
+        // and for non-public fields declared on superclasses located in a different package
         if (Modifier.isPrivate(field.flags())) {
-            return true;
+            // if the transformation is turned off OR if the field's declaring class != bean class, we need reflection
+            if (!bean.getDeployment().transformPrivateInjectedFields
+                    || !field.declaringClass().name().equals(bean.getBeanClass())) {
+                return true;
+            } else {
+                // this is for cases when we want to perform transformation but the class with private field is also
+                // extended by another bean in completely different package - we'll still need reflection there
+                return !DotNames.packageName(field.declaringClass().name()).equals(targetPackage);
+            }
         }
         if (Modifier.isProtected(field.flags()) || isPackagePrivate(field.flags())) {
             return !DotNames.packageName(field.declaringClass().name()).equals(targetPackage);
@@ -75,25 +90,6 @@ abstract class AbstractGenerator {
 
     protected boolean isPackagePrivate(int mod) {
         return !(Modifier.isPrivate(mod) || Modifier.isProtected(mod) || Modifier.isPublic(mod));
-    }
-
-    protected String getPackageName(BeanInfo bean) {
-        DotName providerTypeName;
-        if (bean.isProducerMethod() || bean.isProducerField()) {
-            providerTypeName = bean.getDeclaringBean().getProviderType().name();
-        } else {
-            if (bean.getProviderType().kind() == Kind.ARRAY || bean.getProviderType().kind() == Kind.PRIMITIVE) {
-                providerTypeName = bean.getImplClazz().name();
-            } else {
-                providerTypeName = bean.getProviderType().name();
-            }
-        }
-        String packageName = DotNames.packageName(providerTypeName);
-        if (packageName.startsWith("java.")) {
-            // It is not possible to place a class in a JDK package
-            packageName = DEFAULT_PACKAGE;
-        }
-        return packageName;
     }
 
 }

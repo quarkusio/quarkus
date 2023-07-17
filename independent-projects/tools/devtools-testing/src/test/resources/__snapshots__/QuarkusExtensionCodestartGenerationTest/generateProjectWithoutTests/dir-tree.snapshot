@@ -13,6 +13,10 @@ runtime/
 runtime/pom.xml
 runtime/src/
 runtime/src/main/
+runtime/src/main/java/
+runtime/src/main/java/org/
+runtime/src/main/java/org/extension/
+runtime/src/main/java/org/extension/runtime/
 runtime/src/main/resources/
 runtime/src/main/resources/META-INF/
 runtime/src/main/resources/META-INF/quarkus-extension.yaml

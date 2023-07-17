@@ -2,9 +2,7 @@ package io.quarkus.mailer.runtime;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -13,21 +11,20 @@ import java.util.stream.Collectors;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.MailTemplate.MailTemplateInstance;
+import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
 import io.smallrye.mutiny.Uni;
 
 class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
 
-    private final MutinyMailerImpl mailer;
+    private final ReactiveMailer mailer;
     private final TemplateInstance templateInstance;
-    private final Map<String, Object> data;
     private Mail mail;
 
-    MailTemplateInstanceImpl(MutinyMailerImpl mailer, TemplateInstance templateInstance) {
+    MailTemplateInstanceImpl(ReactiveMailer mailer, TemplateInstance templateInstance) {
         this.mailer = mailer;
         this.templateInstance = templateInstance;
-        this.data = new HashMap<>();
         this.mail = new Mail();
     }
 
@@ -92,8 +89,26 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     }
 
     @Override
+    public MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId) {
+        this.mail.addInlineAttachment(name, data, contentType, contentId);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addAttachment(String name, File file, String contentType) {
+        this.mail.addAttachment(name, file, contentType);
+        return this;
+    }
+
+    @Override
+    public MailTemplateInstance addAttachment(String name, byte[] data, String contentType) {
+        this.mail.addAttachment(name, data, contentType);
+        return this;
+    }
+
+    @Override
     public MailTemplateInstance data(String key, Object value) {
-        this.data.put(key, value);
+        this.templateInstance.data(key, value);
         return this;
     }
 
@@ -101,6 +116,11 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
     public MailTemplateInstance setAttribute(String key, Object value) {
         this.templateInstance.setAttribute(key, value);
         return this;
+    }
+
+    @Override
+    public TemplateInstance templateInstance() {
+        return templateInstance;
     }
 
     @Override
@@ -118,8 +138,7 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
                                         @Override
                                         public CompletionStage<? extends String> get() {
                                             return templateInstance
-                                                    .setAttribute(TemplateInstance.SELECTED_VARIANT, variant).data(data)
-                                                    .renderAsync();
+                                                    .setAttribute(TemplateInstance.SELECTED_VARIANT, variant).renderAsync();
                                         }
                                     })));
                 }

@@ -1,10 +1,12 @@
 package io.quarkus.it.vertx;
 
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
@@ -19,6 +21,17 @@ public class EventBusSender {
     @Path("/person")
     public Uni<String> helloToPerson(JsonObject json) {
         return bus.<String> request("persons", json.getString("name"))
+                .onItem().transform(Message::body);
+    }
+
+    @POST
+    @Path("/person2")
+    @Produces("text/plain")
+    public Uni<String> helloToPersonWithHeaders(JsonObject json) {
+        return bus.<String> request(
+                "person-headers",
+                new Person(json.getString("firstName"), json.getString("lastName")),
+                new DeliveryOptions().addHeader("header", "headerValue"))
                 .onItem().transform(Message::body);
     }
 

@@ -2,27 +2,24 @@ package io.quarkus.hibernate.reactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import jakarta.inject.Inject;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
-import io.smallrye.mutiny.Uni;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 
 public class MultiLineImportTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(Hero.class)
                     .addAsResource("complexMultilineImports.sql", "import.sql"))
             .withConfigurationResource("application.properties");
@@ -31,19 +28,19 @@ public class MultiLineImportTest {
     Mutiny.SessionFactory sessionFactory;
 
     @Test
-    public void integerIdentifierWithStageAPI() {
-        final Uni<List<Object>> result = sessionFactory.withSession(s -> s.createQuery(
-                "from Hero h where h.name = :name").setParameter("name", "Galadriel").getResultList());
-        final List<Object> list = result.await().indefinitely();
-        assertThat(list).hasSize(1);
+    @RunOnVertxContext
+    public void integerIdentifierWithStageAPI(UniAsserter asserter) {
+        asserter.assertThat(() -> sessionFactory.withSession(s -> s.createQuery(
+                "from Hero h where h.name = :name").setParameter("name", "Galadriel").getResultList()),
+                list -> assertThat(list).hasSize(1));
     }
 
     @Entity(name = "Hero")
     @Table(name = "hero")
     public static class Hero {
 
-        @javax.persistence.Id
-        @javax.persistence.GeneratedValue
+        @jakarta.persistence.Id
+        @jakarta.persistence.GeneratedValue
         public java.lang.Long id;
 
         @Column(unique = true)

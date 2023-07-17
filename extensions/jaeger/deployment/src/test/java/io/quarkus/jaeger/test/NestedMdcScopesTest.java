@@ -28,22 +28,22 @@ public class NestedMdcScopesTest {
         assertNull(MDC.get("traceId"));
         assertNull(MDC.get("parentId"));
 
-        JaegerSpanContext span = new JaegerSpanContext(1, 1, 1, 0, Byte.valueOf("0"));
+        JaegerSpanContext span = new JaegerSpanContext(1, 1, 1, 0, Byte.parseByte("0"));
         Scope scope = mdcScopeManager.activate(new TestSpan(span));
         assertSame(span, threadLocalScopeManager.activeSpan().context());
-        assertEquals("10000000000000001", MDC.get("traceId"));
+        assertEquals("00000000000000010000000000000001", MDC.get("traceId"));
         assertEquals("0", MDC.get("parentId"));
 
-        JaegerSpanContext subSpan = new JaegerSpanContext(2, 2, 2, 1, Byte.valueOf("0"));
+        JaegerSpanContext subSpan = new JaegerSpanContext(2, 2, 2, 1, Byte.parseByte("0"));
         Scope subScope = mdcScopeManager.activate(new TestSpan(subSpan));
         assertSame(subSpan, threadLocalScopeManager.activeSpan().context());
-        assertEquals("20000000000000002", MDC.get("traceId"));
+        assertEquals("00000000000000020000000000000002", MDC.get("traceId"));
         assertEquals("1", MDC.get("parentId"));
 
         subScope.close();
 
         assertSame(span, threadLocalScopeManager.activeSpan().context());
-        assertEquals("10000000000000001", MDC.get("traceId"));
+        assertEquals("00000000000000010000000000000001", MDC.get("traceId"));
         assertEquals("0", MDC.get("parentId"));
 
         scope.close();

@@ -7,4 +7,6 @@ metadata:
   guide: "https://quarkus.io/guides/kubernetes-config"
   categories:
   - "cloud"
-  status: "preview"
+  status: "stable"
+  config:
+  - "quarkus.kubernetes-config."

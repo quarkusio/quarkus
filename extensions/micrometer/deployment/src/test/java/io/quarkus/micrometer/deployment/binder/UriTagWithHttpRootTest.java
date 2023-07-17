@@ -4,16 +4,14 @@ import static io.restassured.RestAssured.when;
 
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -35,7 +33,8 @@ public class UriTagWithHttpRootTest {
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
+            .withApplicationRoot((jar) -> jar
                     .addClasses(Util.class,
                             PingPongResource.class,
                             PingPongResource.PingPongRestClient.class,
@@ -86,7 +85,7 @@ public class UriTagWithHttpRootTest {
                 Util.foundServerRequests(registry, "/pong/{message} should be returned by JAX-RS."));
 
         // URI for outbound client request: /foo/pong/{message}
-        Assertions.assertEquals(1, registry.find("http.client.requests").tag("uri", "/foo/pong/{message}").timers().size(),
+        Assertions.assertEquals(1, registry.find("http.client.requests").tag("uri", "/pong/{message}").timers().size(),
                 Util.foundClientRequests(registry, "/foo/pong/{message} should be returned by Rest client."));
     }
 
@@ -97,12 +96,12 @@ public class UriTagWithHttpRootTest {
         @RegisterRestClient(configKey = "pingpong")
         public interface PingPongRestClient {
 
-            @Path("/foo/pong/{message}")
+            @Path("/pong/{message}")
             @GET
             String pingpong(@PathParam("message") String message);
 
             @GET
-            @Path("/foo/pong/{message}")
+            @Path("/pong/{message}")
             CompletionStage<String> asyncPingPong(@PathParam("message") String message);
         }
 

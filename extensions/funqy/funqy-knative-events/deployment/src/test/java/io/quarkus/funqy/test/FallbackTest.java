@@ -6,8 +6,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.util.UUID;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -19,7 +17,7 @@ import io.restassured.parsing.Parser;
 public class FallbackTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsResource("trigger.properties", "application.properties")
                     .addClasses(PrimitiveFunctionsWithFallback.class, GreetingFunctions.class, Greeting.class,
                             GreetingService.class,
@@ -153,7 +151,7 @@ public class FallbackTest {
                 .then().statusCode(200);
     }
 
-    static final String tolowercaseEvent = "{ \"id\" : \"1234\", " +
+    static final String toLowercaseEvent = "{ \"id\" : \"1234\", " +
             "  \"specversion\": \"1.0\", " +
             "  \"source\": \"test\", " +
             "  \"type\": \"tolower\", " +
@@ -164,7 +162,7 @@ public class FallbackTest {
     @Test
     public void testStructuredMapping() {
         RestAssured.given().contentType("application/cloudevents+json")
-                .body(tolowercaseEvent)
+                .body(toLowercaseEvent)
                 .post("/")
                 .then().statusCode(200)
                 .defaultParser(Parser.JSON)

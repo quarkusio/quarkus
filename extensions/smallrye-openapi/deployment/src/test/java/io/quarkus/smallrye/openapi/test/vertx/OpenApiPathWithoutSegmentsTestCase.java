@@ -1,8 +1,6 @@
 package io.quarkus.smallrye.openapi.test.vertx;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class OpenApiPathWithoutSegmentsTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(OpenApiRoute.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-openapi.path=" + OPEN_API_PATH),
                             "application.properties"));

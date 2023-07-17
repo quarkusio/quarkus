@@ -15,12 +15,16 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-jsonb</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jsonb</artifactId>
+            <artifactId>quarkus-resteasy-reactive-jsonb-common</artifactId>
         </dependency>
     </dependencies>
 
@@ -28,7 +32,13 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
+                <configuration>
+                    <capabilities>
+                        <provides>io.quarkus.rest.jsonb</provides>
+                        <provides>io.quarkus.resteasy.reactive.json.jsonb</provides>
+                    </capabilities>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

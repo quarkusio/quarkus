@@ -14,9 +14,13 @@
     </parent>
 {/if}
     <artifactId>{namespace.id}{extension.id}-integration-tests</artifactId>
-{#if extension.name}
-<name>{namespace.name}{extension.name} - Integration Tests</name>
+{#if extension.full-name}
+<name>{extension.full-name} - Integration Tests</name>
 {/if}
+
+    <properties>
+        <skipITs>true</skipITs>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -42,6 +46,13 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+{#if input.extra-codestarts.contains("extension-codestart")}
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+{/if}
     </dependencies>
 
     <build>
@@ -54,6 +65,25 @@
                         <goals>
                             <goal>build</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <maven.home>$\{maven.home}</maven.home>
+                            </systemPropertyVariables>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -70,6 +100,7 @@
             </activation>
             <properties>
                 <quarkus.package.type>native</quarkus.package.type>
+                <skipITs>false</skipITs>
             </properties>
             <build>
                 <plugins>
@@ -79,25 +110,6 @@
                         <configuration>
                             <skipTests>$\{native.surefire.skip}</skipTests>
                         </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <systemPropertyVariables>
-                                        <native.image.path>$\{project.build.directory}/$\{project.build.finalName}-runner</native.image.path>
-                                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                                        <maven.home>$\{maven.home}</maven.home>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
                     </plugin>
                 </plugins>
             </build>

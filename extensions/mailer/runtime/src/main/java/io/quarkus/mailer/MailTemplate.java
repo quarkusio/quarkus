@@ -2,6 +2,8 @@ package io.quarkus.mailer;
 
 import java.io.File;
 
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.qute.TemplateInstance;
 import io.smallrye.mutiny.Uni;
 
 /**
@@ -10,7 +12,7 @@ import io.smallrye.mutiny.Uni;
 public interface MailTemplate {
 
     /**
-     * 
+     *
      * @return a new template instance
      */
     MailTemplateInstance instance();
@@ -54,8 +56,14 @@ public interface MailTemplate {
 
         MailTemplateInstance addInlineAttachment(String name, File file, String contentType, String contentId);
 
+        MailTemplateInstance addInlineAttachment(String name, byte[] data, String contentType, String contentId);
+
+        MailTemplateInstance addAttachment(String name, File file, String contentType);
+
+        MailTemplateInstance addAttachment(String name, byte[] data, String contentType);
+
         /**
-         * 
+         *
          * @param key
          * @param value
          * @return self
@@ -64,7 +72,7 @@ public interface MailTemplate {
         MailTemplateInstance data(String key, Object value);
 
         /**
-         * 
+         *
          * @param key
          * @param value
          * @return self
@@ -72,7 +80,25 @@ public interface MailTemplate {
          */
         MailTemplateInstance setAttribute(String key, Object value);
 
+        /**
+         * Sends all e-mail definitions based on available template variants, i.e. {@code text/html} and {@code text/plain}
+         * template variants.
+         *
+         * @return a {@link Uni} indicating when the mails have been sent
+         * @see ReactiveMailer#send(Mail...)
+         */
         Uni<Void> send();
+
+        /**
+         * The returned instance does not represent a specific template but a delegating template.
+         * <p>
+         * You can select the corresponding variant via {@link TemplateInstance#setAttribute(String, Object)} where the
+         * attribute key is {@link TemplateInstance#SELECTED_VARIANT}. If no variant is selected, the default instance is used.
+         *
+         * @return the underlying template instance
+         */
+        TemplateInstance templateInstance();
+
     }
 
 }

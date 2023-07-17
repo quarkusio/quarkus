@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ public class KnativeScaleToZeroTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class))
             .setApplicationName("knative-scale-to-zero")
             .setApplicationVersion("0.1-SNAPSHOT")
             .withConfigurationResource("knative-scale-to-zero.properties");
@@ -42,7 +40,8 @@ public class KnativeScaleToZeroTest {
                 .deserializeAsList(kubernetesDir.resolve("knative.yml"));
 
         assertThat(kubernetesList).filteredOn(i -> "ConfigMap".equals(i.getKind())).singleElement().satisfies(c -> {
-            assertThat(c.getMetadata()).satisfies(m -> assertThat(m.getName()).isEqualTo("config-autoscaler"));
+            assertThat(c.getMetadata().getName()).isEqualTo("config-autoscaler");
+            assertThat(c.getMetadata().getNamespace()).isEqualTo("knative-serving");
             assertThat(c).isInstanceOfSatisfying(ConfigMap.class, m -> {
                 assertThat(m.getData()).contains(entry("enable-scale-to-zero", "false"));
             });

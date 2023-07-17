@@ -1,8 +1,8 @@
 package io.quarkus.it.jpa.attributeconverter;
 
-import javax.inject.Inject;
-import javax.persistence.AttributeConverter;
-import javax.persistence.Converter;
+import jakarta.inject.Inject;
+import jakarta.persistence.AttributeConverter;
+import jakarta.persistence.Converter;
 
 @Converter
 public class MyDataNotRequiringCDIConverter implements AttributeConverter<MyDataNotRequiringCDI, String> {

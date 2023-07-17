@@ -2,7 +2,7 @@ package org.acme;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.common.QuarkusTestResource;

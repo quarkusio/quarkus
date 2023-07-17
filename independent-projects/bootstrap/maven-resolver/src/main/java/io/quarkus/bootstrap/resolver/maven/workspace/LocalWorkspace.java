@@ -1,19 +1,14 @@
 package io.quarkus.bootstrap.resolver.maven.workspace;
 
-import io.quarkus.bootstrap.model.AppArtifactCoords;
-import io.quarkus.bootstrap.model.AppArtifactKey;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.apache.maven.model.resolution.WorkspaceModelResolver;
@@ -22,16 +17,22 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.repository.WorkspaceRepository;
 
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+
 /**
  *
  * @author Alexey Loubyansky
  */
-public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
+public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader, ProjectModuleResolver {
 
-    private final Map<AppArtifactKey, LocalProject> projects = new HashMap<>();
+    private final Map<ArtifactKey, LocalProject> projects = new HashMap<>();
 
     private final WorkspaceRepository wsRepo = new WorkspaceRepository();
-    private AppArtifactKey lastFindVersionsKey;
+    private ArtifactKey lastFindVersionsKey;
     private List<String> lastFindVersions;
     private long lastModified;
     private int id = 1;
@@ -53,10 +54,10 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     }
 
     public LocalProject getProject(String groupId, String artifactId) {
-        return getProject(new AppArtifactKey(groupId, artifactId));
+        return getProject(ArtifactKey.ga(groupId, artifactId));
     }
 
-    public LocalProject getProject(AppArtifactKey key) {
+    public LocalProject getProject(ArtifactKey key) {
         return projects.get(key);
     }
 
@@ -71,7 +72,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     @Override
     public Model resolveRawModel(String groupId, String artifactId, String versionConstraint)
             throws UnresolvableModelException {
-        if (findArtifact(new DefaultArtifact(groupId, artifactId, null, "pom", versionConstraint)) != null) {
+        if (findArtifact(new DefaultArtifact(groupId, artifactId, null, ArtifactCoords.TYPE_POM, versionConstraint)) != null) {
             return getProject(groupId, artifactId).getRawModel();
         }
         return null;
@@ -83,7 +84,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         return null;
     }
 
-    public Map<AppArtifactKey, LocalProject> getProjects() {
+    public Map<ArtifactKey, LocalProject> getProjects() {
         return projects;
     }
 
@@ -103,51 +104,48 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
                                 && lp.getVersion().equals(resolvedVersion))) {
             return null;
         }
-        if (!Objects.equals(artifact.getClassifier(), lp.getAppArtifact().getClassifier())) {
-            if ("tests".equals(artifact.getClassifier())) {
-                //special classifier used for test jars
-                final Path path = lp.getTestClassesDir();
-                if (Files.exists(path)) {
-                    return path.toFile();
-                }
-            }
-            return null;
-        }
-        final String type = artifact.getExtension();
-        if (type.equals(AppArtifactCoords.TYPE_JAR)) {
-            Path path = lp.getClassesDir();
-            if (Files.exists(path)) {
-                return path.toFile();
-            }
 
-            // it could be a project with no sources/resources, in which case Maven will create an empty JAR
-            // if it has previously been packaged we can return it
-            path = lp.getOutputDir().resolve(getFileName(artifact));
-            if (Files.exists(path)) {
-                return path.toFile();
-            }
-
-            path = emptyJarOutput(lp, artifact);
-            if (path != null) {
-                return path.toFile();
-            }
-
-            // otherwise, this project hasn't been built yet
-        } else if (type.equals(AppArtifactCoords.TYPE_POM)) {
+        if (ArtifactCoords.TYPE_POM.equals(artifact.getExtension())) {
             final File pom = lp.getRawModel().getPomFile();
             // if the pom exists we should also check whether the main artifact can also be resolved from the workspace
-            if (pom.exists() && ("pom".equals(lp.getRawModel().getPackaging())
+            if (pom.exists() && (ArtifactCoords.TYPE_POM.equals(lp.getRawModel().getPackaging())
                     || mvnCtx != null && mvnCtx.isPreferPomsFromWorkspace()
                     || Files.exists(lp.getOutputDir())
                     || emptyJarOutput(lp, artifact) != null)) {
                 return pom;
             }
-        } else {
-            // check whether the artifact exists in the project's output dir
-            final Path path = lp.getOutputDir().resolve(getFileName(artifact));
+        }
+
+        // Check whether the artifact exists in the project's output dir.
+        // It could also be a project with no sources/resources, in which case Maven will create an empty JAR
+        // if it has previously been packaged we can use it
+        Path path = lp.getOutputDir().resolve(getFileName(artifact));
+        if (Files.exists(path)) {
+            return path.toFile();
+        }
+
+        if (!artifact.getClassifier().isEmpty()) {
+            if ("tests".equals(artifact.getClassifier())) {
+                //special classifier used for test jars
+                path = lp.getTestClassesDir();
+                if (Files.exists(path)) {
+                    return path.toFile();
+                }
+            }
+            // otherwise, this artifact hasn't been built yet
+            return null;
+        }
+
+        if (ArtifactCoords.TYPE_JAR.equals(artifact.getExtension())) {
+            path = lp.getClassesDir();
             if (Files.exists(path)) {
                 return path.toFile();
             }
+            path = emptyJarOutput(lp, artifact);
+            if (path != null) {
+                return path.toFile();
+            }
+            // otherwise, this project hasn't been built yet
         }
         return null;
     }
@@ -161,7 +159,7 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
         // so the Maven resolver will succeed resolving it from the repo.
         // If the artifact does not exist in the local repo, we are creating an empty classes directory in the target directory.
         if (!Files.exists(lp.getSourcesSourcesDir())
-                && lp.getResourcesSourcesDirs().toList().stream().noneMatch(Files::exists)
+                && lp.getResourcesSourcesDirs().stream().noneMatch(Files::exists)
                 && !isFoundInLocalRepo(artifact)) {
             try {
                 final Path classesDir = lp.getClassesDir();
@@ -217,10 +215,10 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             return lastFindVersions;
         }
         if (findArtifact(artifact) == null) {
-            return Collections.emptyList();
+            return List.of();
         }
-        lastFindVersionsKey = new AppArtifactKey(artifact.getGroupId(), artifact.getArtifactId());
-        return lastFindVersions = Collections.singletonList(artifact.getVersion());
+        lastFindVersionsKey = ArtifactKey.ga(artifact.getGroupId(), artifact.getArtifactId());
+        return lastFindVersions = List.of(artifact.getVersion());
     }
 
     public String getResolvedVersion() {
@@ -241,5 +239,11 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
     void setBootstrapMavenContext(BootstrapMavenContext mvnCtx) {
         this.mvnCtx = mvnCtx;
+    }
+
+    @Override
+    public WorkspaceModule getProjectModule(String groupId, String artifactId, String version) {
+        final LocalProject project = getProject(groupId, artifactId);
+        return project == null || !project.getVersion().equals(version) ? null : project.toWorkspaceModule(mvnCtx);
     }
 }

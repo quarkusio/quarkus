@@ -101,12 +101,6 @@
         </resources>
         <plugins>
             <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
@@ -119,6 +113,4 @@
             </plugin>
         </plugins>
     </build>
-
-
 </project>

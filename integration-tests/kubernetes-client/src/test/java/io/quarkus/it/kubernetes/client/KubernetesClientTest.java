@@ -3,12 +3,20 @@ package io.quarkus.it.kubernetes.client;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
+
+import java.io.InputStream;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.interfaces.ECPrivateKey;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodListBuilder;
+import io.fabric8.kubernetes.client.internal.CertUtils;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -41,6 +49,25 @@ public class KubernetesClientTest {
 
         RestAssured.when().post("/pod/test").then()
                 .body(containsString("54321"));
+
+        RestAssured.when().get("/version").then()
+                .statusCode(200);
+    }
+
+    @Test
+    public void testEcKeyIsSupported() throws Exception {
+        InputStream certInputStream = KubernetesClientTest.class.getResourceAsStream("/cert.pem");
+        InputStream keyInputStream = KubernetesClientTest.class.getResourceAsStream("/private-key.pem");
+
+        try {
+            KeyStore keyStore = CertUtils.createKeyStore(certInputStream, keyInputStream, "EC", "eckey".toCharArray(),
+                    (String) null, "keystore".toCharArray());
+            Key key = keyStore.getKey("CN=Client,OU=Test,O=Test", "eckey".toCharArray());
+            assertTrue(key instanceof ECPrivateKey);
+        } finally {
+            certInputStream.close();
+            keyInputStream.close();
+        }
     }
 
     private void setupMockServerForTest() {
@@ -70,7 +97,8 @@ public class KubernetesClientTest {
                 .times(2);
 
         mockServer.expect().delete().withPath("/api/v1/namespaces/test/pods/pod1")
-                .andReturn(200, "{}")
+                .andReturn(200, new PodBuilder(pod1)
+                        .editMetadata().withDeletionTimestamp(Instant.now().toString()).endMetadata().build())
                 .once();
 
         // PUT on /pod/test will createOrReplace, which attempts a POST first, then a PUT if receiving a 409

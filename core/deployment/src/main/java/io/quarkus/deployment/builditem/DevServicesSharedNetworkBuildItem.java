@@ -8,20 +8,19 @@ import java.util.function.Function;
 
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildStepBuilder;
-import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A marker build item that if present during the build, then the containers started by DevServices
+ * A marker build item that, if any instances are provided during the build, the containers started by DevServices
  * will use a shared network.
  * This is mainly useful in integration tests where the application container needs to be able
  * to communicate with the services containers
  */
-public final class DevServicesSharedNetworkBuildItem extends SimpleBuildItem {
+public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
 
     /**
-     * Generates a {@link List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
-     * producing the {@link ProcessInheritIODisabled} build item
+     * Generates a {@code List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
+     * producing the {@link DevServicesSharedNetworkBuildItem} build item
      */
     public static final class Factory implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 

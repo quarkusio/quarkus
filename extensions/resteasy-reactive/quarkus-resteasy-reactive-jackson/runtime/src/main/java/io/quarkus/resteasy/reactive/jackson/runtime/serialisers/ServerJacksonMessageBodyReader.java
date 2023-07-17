@@ -5,18 +5,23 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
-import javax.inject.Inject;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
-import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
+import org.jboss.resteasy.reactive.common.util.StreamUtil;
+import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
+import com.fasterxml.jackson.core.exc.StreamReadException;
+import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReader implements ServerMessageBodyReader<Object> {
@@ -31,8 +36,28 @@ public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         try {
             return doReadFrom(type, genericType, entityStream);
-        } catch (MismatchedInputException e) {
-            throw new WebApplicationException(Response.Status.BAD_REQUEST);
+        } catch (MismatchedInputException | InvalidDefinitionException e) {
+            /*
+             * To extract additional details when running in dev mode or test mode, Quarkus previously offered the
+             * DefaultMismatchedInputException(Mapper). That mapper provides additional details about bad input,
+             * beyond Jackson's default, when running in Dev or Test mode. To preserve that behavior, we rethrow
+             * MismatchedInputExceptions we encounter.
+             *
+             * An InvalidDefinitionException is thrown when there is a problem with the way a type is
+             * set up/annotated for consumption by the Jackson API. We don't wrap it in a WebApplicationException
+             * (as a Server Error), since unhandled exceptions will end up as a 500 anyway. In addition, this
+             * allows built-in features like the NativeInvalidDefinitionExceptionMapper to be registered and
+             * communicate potential Jackson integration issues, and potential solutions for resolving them.
+             */
+            throw e;
+        } catch (StreamReadException | DatabindException e) {
+            /*
+             * As JSON is evaluated, it can be invalid due to one of two reasons:
+             * 1) Malformed JSON. Un-parsable JSON results in a StreamReadException
+             * 2) Valid JSON that violates some binding constraint, i.e., a required property, mismatched data types, etc.
+             * Violations of these types are captured via a DatabindException.
+             */
+            throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }
     }
 
@@ -49,14 +74,27 @@ public class ServerJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
     @Override
     public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
-        return doReadFrom(type, genericType, context.getInputStream());
+        return readFrom(type, genericType, null, mediaType, null, context.getInputStream());
     }
 
     private Object doReadFrom(Class<Object> type, Type genericType, InputStream entityStream) throws IOException {
-        if (entityStream instanceof EmptyInputStream) {
+        if (StreamUtil.isEmpty(entityStream)) {
             return null;
         }
-        return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
-                .readValue(entityStream);
+        try {
+            ObjectReader reader = getEffectiveReader();
+            return reader.forType(reader.getTypeFactory().constructType(genericType != null ? genericType : type))
+                    .readValue(entityStream);
+        } catch (MismatchedInputException e) {
+            if (isEmptyInputException(e)) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private boolean isEmptyInputException(MismatchedInputException e) {
+        // this isn't great, but Jackson doesn't have a specific exception for empty input...
+        return e.getMessage().startsWith("No content");
     }
 }

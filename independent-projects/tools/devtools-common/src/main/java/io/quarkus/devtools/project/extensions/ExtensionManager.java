@@ -1,11 +1,12 @@
 package io.quarkus.devtools.project.extensions;
 
-import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
+
+import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
  * This interface defines a high level way of managing (read/write) extensions in any QuarkusProject

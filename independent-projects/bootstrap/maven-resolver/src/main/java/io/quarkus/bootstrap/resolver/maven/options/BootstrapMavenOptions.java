@@ -1,6 +1,5 @@
 package io.quarkus.bootstrap.resolver.maven.options;
 
-import io.quarkus.bootstrap.util.PropertyUtils;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -18,8 +17,11 @@ import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.maven.shared.utils.cli.CommandLineException;
 import org.apache.maven.shared.utils.cli.CommandLineUtils;
+
+import io.quarkus.bootstrap.util.PropertyUtils;
 
 /**
  * This class resolves relevant Maven command line options in case it's called
@@ -238,7 +240,8 @@ public class BootstrapMavenOptions {
     @SuppressWarnings("unchecked")
     private static Map<String, Object> invokeParser(ClassLoader cl, String[] args) throws ClassNotFoundException {
         try {
-            final Class<?> parserCls = cl.loadClass("io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptionsParser");
+            final Class<?> parserCls = cl
+                    .loadClass("io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptionsParser");
             final Method parseMethod = parserCls.getMethod("parse", String[].class);
             return (Map<String, Object>) parseMethod.invoke(null, (Object) args);
         } catch (ClassNotFoundException e) {

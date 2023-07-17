@@ -14,6 +14,7 @@ import io.quarkus.runtime.RuntimeValue;
  * The build step can optionally use a configuration object that uses the {@code BOOTSTRAP} config phase and pass this
  * configuration to the recorder to allow the recorder at runtime to customize its behavior
  */
+@Deprecated
 public final class RunTimeConfigurationSourceValueBuildItem extends MultiBuildItem {
 
     private final RuntimeValue<ConfigSourceProvider> configSourcesValue;

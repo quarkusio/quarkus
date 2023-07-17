@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye Health
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: observability
+:summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Health extension.
 
 This guide demonstrates how your Quarkus application can use https://github.com/smallrye/smallrye-health/[SmallRye Health]
 an implementation of the https://github.com/eclipse/microprofile-health/[MicroProfile Health] specification.
@@ -17,12 +18,7 @@ or restarted.
 
 == Prerequisites
 
-To complete this guide, you need:
-
-* less than 15 minutes
-* an IDE
-* JDK 11+ installed with `JAVA_HOME` configured appropriately
-* Apache Maven {maven-version}
+include::{includes}/prerequisites.adoc[]
 
 == Architecture
 
@@ -45,33 +41,33 @@ The solution is located in the `microprofile-health-quickstart`
 
 First, we need a new project. Create a new project with the following command:
 
-[source,bash,subs=attributes+]
-----
-mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
-    -DprojectGroupId=org.acme \
-    -DprojectArtifactId=microprofile-health-quickstart \
-    -Dextensions="smallrye-health"
-cd microprofile-health-quickstart
-----
+:create-app-artifact-id: microprofile-health-quickstart
+:create-app-extensions: smallrye-health
+include::{includes}/devtools/create-app.adoc[]
 
-This command generates a Maven project, importing the `smallrye-health` extension.
+This command generates a project, importing the `smallrye-health` extension.
 
 If you already have your Quarkus project configured, you can add the `smallrye-health` extension
 to your project by running the following command in your project base directory:
 
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-health"
-----
+:add-extension-extensions: smallrye-health
+include::{includes}/devtools/extension-add.adoc[]
 
-This will add the following to your `pom.xml`:
+This will add the following to your build file:
 
-[source,xml]
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-health</artifactId>
 </dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 == Running the health check
@@ -80,15 +76,22 @@ Importing the `smallrye-health` extension directly exposes three REST endpoints:
 
 - `/q/health/live` - The application is up and running.
 - `/q/health/ready` - The application is ready to serve requests.
+- `/q/health/started` - The application is started.
 - `/q/health` - Accumulating all health check procedures in the application.
  
 To check that the `smallrye-health` extension is working as expected:
 
-* start your Quarkus application with `./mvnw compile quarkus:dev`
+:devtools-wrapped:
+
+* start your Quarkus application with:
++
+include::{includes}/devtools/dev.adoc[]
 * access the `http://localhost:8080/q/health/live` endpoint using your browser or
 `curl http://localhost:8080/q/health/live`
 
-All of the health REST endpoints return a simple JSON object with two fields:
+:!devtools-wrapped:
+
+All `health` REST endpoints return a simple JSON object with two fields:
 
 * `status` -- the overall result of all the health check procedures
 * `checks` -- an array of individual checks
@@ -96,6 +99,15 @@ All of the health REST endpoints return a simple JSON object with two fields:
 The general `status` of the health check is computed as a logical AND of all the 
 declared health check procedures. The `checks` array is empty as we have not specified 
 any health check procedure yet so let's define some.
+
+[NOTE]
+.Management interface
+====
+By default, the health checks are exposed on the main HTTP server.
+You can expose them on a separate network interface and port by enabling the management interface with the
+`quarkus.management.enabled=true` property.
+Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
+====
 
 == Creating your first health check
 
@@ -111,7 +123,7 @@ import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Liveness;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @Liveness
 @ApplicationScoped <1> <2>
@@ -165,7 +177,7 @@ import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.Readiness;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @Readiness
 @ApplicationScoped
@@ -194,6 +206,37 @@ is detailed in the MicroProfile Health specification. Generally, the liveness
 procedures determine whether the application should be restarted while readiness 
 procedures determine whether it makes sense to contact the application with requests.
 
+== Adding a startup health check procedure
+
+The third and final type of health check procedures is startup. Startup procedures are defined as an option for slow starting containers (should not be needed in Quarkus) to delay the invocations of liveness probe which will take over from startup once the startup responds UP for the first time. Startup health checks are defined with the `@Startup` qualifier.
+
+NOTE: Please make sure that you import the microprofile `org.eclipse.microprofile.health.Startup` annotation since there is an unfortunate clash with `io.quarkus.runtime.Startup`.
+
+Create `org.acme.microprofile.health.StartupHealthCheck` class:
+
+[source,java]
+----
+package org.acme.microprofile.health;
+
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.eclipse.microprofile.health.Startup;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+@Startup
+@ApplicationScoped
+public class StartupHealthCheck implements HealthCheck {
+
+    @Override
+    public HealthCheckResponse call() {
+        return HealthCheckResponse.up("Startup health check");
+    }
+}
+----
+
+The startup health check will be available either at `http://localhost:8080/q/health/started` or together with other health check procedure at `http://localhost:8080/q/health`.
+
 == Negative health check procedures
 
 In this section, we extend our `Database connection health check` with the option of 
@@ -213,7 +256,7 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.HealthCheckResponseBuilder;
 import org.eclipse.microprofile.health.Readiness;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @Readiness
 @ApplicationScoped
@@ -246,7 +289,7 @@ public class DatabaseConnectionHealthCheck implements HealthCheck {
 }
 ----
 
-NOTE: Until now we used a simplified method of building a `HealthCheckResponse`
+NOTE: Until now, we used a simplified method of building a `HealthCheckResponse`
 through the `HealthCheckResponse#up(String)` (there is also
 `HealthCheckResponse#down(String)`) which will directly build the response object.
 From now on, we utilize the full builder capabilities provided by the
@@ -282,7 +325,7 @@ import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @Liveness
 @ApplicationScoped
@@ -322,16 +365,46 @@ error along with the health check response.
 
 == Context propagation into the health check invocations
 
-For the perfomance reasons the context (e.g., CDI or security context) is not propagated into each health check invocation. However, if you need to enable this functionality you can set the config property `quarkus.smallrye-health.context-propagation=true` to allow the context propagation into every health check call.
+For performance reasons, the context (e.g., CDI or security context) is not propagated into each health check invocation. However, if you need to enable this functionality you can set the config property `quarkus.smallrye-health.context-propagation=true` to allow the context propagation into every health check call.
+
+== Reactive health checks
+
+MicroProfile Health currently doesn't support returning reactive types, but SmallRye Health does.
+
+If you want to provide a reactive health check, you can implement the `io.smallrye.health.api.AsyncHealthCheck` interface instead of the `org.eclipse.microprofile.health.HealthCheck` one.
+The `io.smallrye.health.api.AsyncHealthCheck` interface allows you to return a `Uni<HealthCheckResponse>`.
+
+The following example shows a reactive liveness check:
+
+[source,java]
+----
+import io.smallrye.health.api.AsyncHealthCheck;
+
+import org.eclipse.microprofile.health.Liveness;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+@Liveness
+@ApplicationScoped
+public class LivenessAsync implements AsyncHealthCheck {
+
+    @Override
+    public Uni<HealthCheckResponse> call() {
+        return Uni.createFrom().item(HealthCheckResponse.up("liveness-reactive"))
+                .onItem().delayIt().by(Duration.ofMillis(10));
+    }
+}
+----
 
 == Extension health checks
 
 Some extension may provide default health checks, including the extension will automatically register its health checks.
 
 For example, `quarkus-agroal` that is used to manage Quarkus datasource(s) automatically register a readiness health check
-that will validate each datasources: link:datasource#datasource-health-check[Datasource Health Check].
+that will validate each datasource: xref:datasource.adoc#datasource-health-check[Datasource Health Check].
 
-You can disable extension health check via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
+You can disable extension health checks via the property `quarkus.health.extensions.enabled` so none will be automatically registered.
 
 [[ui]]
 == Health UI 
@@ -346,29 +419,49 @@ The Quarkus `smallrye-health` extension ships with `health-ui` and enables it by
 
 image:health-ui-screenshot01.png[alt=Health UI]
 
+== Management interface
+
+By default, the health checks are exposed on the main HTTP server.
+You can expose them on a separate network interface and port by setting `quarkus.management.enabled=true` in your application configuration.
+Note that this property is a build-time property.
+The value cannot be overridden at runtime.
+
+If you enable the management interface without customizing the management network interface and port, the health checks are exposed under: `http://0.0.0.0:9000/q/health`.
+You can configure the _path_ (the `health` segment in the previous URL) using the `quarkus.smallrye-health.root-path` property.
+
+Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
+
 == Conclusion
 
 SmallRye Health provides a way for your application to distribute information
-about its healthiness state to state whether or not it is able to function properly. 
+about its healthiness state to state whether it is able to function properly.
 Liveness checks are utilized to tell whether the application should be restarted and 
 readiness checks are used to tell whether the application is able to process requests. 
 
 All that is needed to enable the SmallRye Health features in Quarkus is:
 
+:devtools-wrapped:
 * adding the `smallrye-health` Quarkus extension to your project using the 
-`quarkus-maven-plugin`: +
-[source,bash]
-----
-./mvnw quarkus:add-extension -Dextensions="smallrye-health"
-----
+`quarkus-maven-plugin`:
++
+include::{includes}/devtools/extension-add.adoc[]
+:!devtools-wrapped:
 
-* or simply adding the following Maven dependency: +
-[source,xml]
+* or simply adding the following Maven dependency:
++
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-smallrye-health</artifactId>
 </dependency>
+----
++
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-health")
 ----
 
 == Configuration Reference

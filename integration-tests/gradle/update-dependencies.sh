@@ -11,7 +11,6 @@ PRG_PATH=$( cd "$(dirname "$0")" ; pwd -P )
 DEP_TEMPLATE='        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>XXX</artifactId>
-            <version>\${project.version}</version>
         </dependency>'
 
 DEP_TEMPLATE_DEPLOYMENT='        <dependency>
@@ -36,7 +35,7 @@ echo ''
 # pipefail is switched off briefly so that a better error can be logged when nothing is found
 set +o pipefail
 # note on sed: -deployment deps are added explicitly later and bom is upstream anyway
-ARTIFACT_IDS=$(grep -hR --include 'build*.gradle*' --exclude-dir=build '[iI]mplementation' "${PRG_PATH}" | \
+ARTIFACT_IDS=$(grep -EhR --include 'build*.gradle*' --exclude-dir=build '[iI]mplementation|api|quarkusDev' "${PRG_PATH}" | \
               grep -Eo 'quarkus-[a-z0-9-]+' | \
               sed -e '/-deployment/d' -e '/quarkus-bom/d' | sort | uniq)
 set -o pipefail

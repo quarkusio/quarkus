@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "kafka", phase = ConfigPhase.BUILD_TIME)
 public class KafkaBuildTimeConfig {
     /**
-     * Whether or not an health check is published in case the smallrye-health extension is present.
+     * Whether a health check is published in case the smallrye-health extension is present.
      * <p>
      * If you enable the health check, you must specify the `kafka.bootstrap.servers` property.
      */
@@ -15,7 +15,7 @@ public class KafkaBuildTimeConfig {
     public boolean healthEnabled;
 
     /**
-     * Whether or not to enable Snappy in native mode.
+     * Whether to enable Snappy in native mode.
      * <p>
      * Note that Snappy requires GraalVM 21+ and embeds a native library in the native executable.
      * This library is unpacked and loaded when the application starts.
@@ -28,4 +28,5 @@ public class KafkaBuildTimeConfig {
      */
     @ConfigItem
     public KafkaDevServicesBuildTimeConfig devservices;
+
 }

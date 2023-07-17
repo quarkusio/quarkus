@@ -25,12 +25,16 @@
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss</groupId>
+            <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-core</artifactId>
         </dependency>
     </dependencies>
     <build>

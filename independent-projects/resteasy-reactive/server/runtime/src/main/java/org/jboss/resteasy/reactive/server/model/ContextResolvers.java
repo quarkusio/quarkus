@@ -6,8 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.ContextResolver;
+
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.ContextResolver;
+
 import org.jboss.resteasy.reactive.common.model.ResourceContextResolver;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.jaxrs.ContextResolverDelegate;
@@ -52,7 +54,7 @@ public class ContextResolvers {
                         bestMatch = match;
                         add = true;
                     } else {
-                        int cmp = MediaTypeHelper.COMPARATOR.compare(bestMatch, match);
+                        int cmp = MediaTypeHelper.Q_COMPARATOR.compare(bestMatch, match);
                         if (cmp == 0) {
                             // same fitness
                             add = true;

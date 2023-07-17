@@ -31,7 +31,7 @@ public class CloudFunctionDeploymentBuildStep {
 
     /**
      * Creates a target/deployment dir and copy the uber jar in it.
-     * This facilitates the usage of the 'glcoud' command.
+     * This facilitates the usage of the 'gcloud' command.
      */
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public ArtifactResultBuildItem functionDeployment(OutputTargetBuildItem target, JarBuildItem jar)

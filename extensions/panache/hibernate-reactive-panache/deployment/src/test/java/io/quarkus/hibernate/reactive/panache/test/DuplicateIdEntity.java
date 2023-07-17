@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.panache.test;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 
 import io.quarkus.hibernate.reactive.panache.PanacheEntity;
 

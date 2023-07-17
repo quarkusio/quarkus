@@ -1,0 +1,3108 @@
+{
+  "id" : "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT",
+  "platform" : true,
+  "bom" : "io.quarkus:quarkus-bom::pom:999-SNAPSHOT",
+  "extensions" : [ {
+    "name" : "Quarkus - Core",
+    "description" : "Quarkus core components",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT"
+    },
+    "artifact" : "io.quarkus:quarkus-core::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "ArC",
+    "description" : "Build time CDI dependency injection",
+    "metadata" : {
+      "short-name" : "CDI",
+      "keywords" : [ "arc", "cdi", "dependency-injection", "di" ],
+      "guide" : "https://quarkus.io/guides/cdi-reference",
+      "categories" : [ "core" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "config" : [ "quarkus.arc." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.cdi" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-arc::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Caffeine",
+    "description" : "A high performance caching library for Java 8+",
+    "metadata" : {
+      "keywords" : [ "cache" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "unlisted" : "true",
+      "config" : [ "quarkus.cache." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-caffeine::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Jacoco - Code Coverage",
+    "description" : "Jacoco test coverage support",
+    "metadata" : {
+      "keywords" : [ "testing", "coverage" ],
+      "guide" : "https://quarkus.io/guides/tests-with-coverage",
+      "categories" : [ "miscellaneous" ],
+      "status" : "experimental",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jacoco::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JAXB",
+    "description" : "XML serialization support",
+    "metadata" : {
+      "keywords" : [ "resteasy-jaxb", "resteasy", "jaxb", "xml" ],
+      "categories" : [ "serialization" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-jaxp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jaxb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JAXP",
+    "description" : "Java API for XML Processing",
+    "metadata" : {
+      "keywords" : [ "jaxp", "xml" ],
+      "categories" : [ "serialization" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jaxp::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Jackson",
+    "description" : "Jackson Databind support",
+    "metadata" : {
+      "keywords" : [ "jackson", "json" ],
+      "categories" : [ "serialization" ],
+      "status" : "stable",
+      "config" : [ "quarkus.jackson." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.jackson" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jackson::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JSON-B",
+    "description" : "JSON Binding support",
+    "metadata" : {
+      "keywords" : [ "jsonb", "json-b", "json" ],
+      "guide" : "https://quarkus.io/guides/rest-json",
+      "categories" : [ "serialization" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.jsonb" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jsonb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JSON-P",
+    "description" : "JSON Processing support",
+    "metadata" : {
+      "keywords" : [ "jsonp", "json-p", "json" ],
+      "categories" : [ "serialization" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jsonp::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Netty",
+    "description" : "Netty is a non-blocking I/O client-server framework. Used by Quarkus as foundation layer.",
+    "metadata" : {
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "config" : [ "quarkus.netty." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-netty::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Agroal - Database connection pool",
+    "description" : "Pool JDBC database connections (included in Hibernate ORM)",
+    "metadata" : {
+      "keywords" : [ "agroal", "database-connection-pool", "datasource", "jdbc" ],
+      "guide" : "https://quarkus.io/guides/datasource",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.datasource." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.agroal" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-agroal::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Artemis Core",
+    "description" : "Use ActiveMQ Artemis as message broker",
+    "metadata" : {
+      "keywords" : [ "artemis-core", "artemis" ],
+      "categories" : [ "messaging" ],
+      "guide" : "https://quarkus.io/guides/jms",
+      "status" : "preview",
+      "unlisted" : true,
+      "config" : [ "quarkus.artemis." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-netty" ]
+    },
+    "artifact" : "io.quarkus:quarkus-artemis-core::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Artemis JMS",
+    "description" : "Use JMS APIs to connect to ActiveMQ Artemis via its native protocol",
+    "metadata" : {
+      "keywords" : [ "artemis-jms", "artemis" ],
+      "guide" : "https://quarkus.io/guides/jms",
+      "categories" : [ "messaging" ],
+      "status" : "preview",
+      "config" : [ "quarkus.artemis." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-artemis-core", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-netty" ]
+    },
+    "artifact" : "io.quarkus:quarkus-artemis-jms::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "YAML Configuration",
+    "description" : "Use YAML to configure your Quarkus application",
+    "metadata" : {
+      "keywords" : [ "config", "configuration", "yaml" ],
+      "categories" : [ "core" ],
+      "status" : "stable",
+      "guide" : "https://quarkus.io/guides/config-yaml",
+      "codestart" : {
+        "name" : "config-yaml",
+        "languages" : [ "java", "kotlin" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.config.yaml" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-config-yaml::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Datasources",
+    "description" : "Configure your datasources",
+    "metadata" : {
+      "keywords" : [ "datasource" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-datasource::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elasticsearch REST Client Common",
+    "description" : "Elasticsearch REST client common",
+    "metadata" : {
+      "keywords" : [ "search" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "unlisted" : "true",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elasticsearch REST client",
+    "description" : "Connect to an Elasticsearch cluster using the REST low level client",
+    "metadata" : {
+      "keywords" : [ "elasticsearch", "full text", "search" ],
+      "guide" : "https://quarkus.io/guides/elasticsearch",
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "config" : [ "quarkus.elasticsearch." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elasticsearch REST High Level Client",
+    "description" : "Connect to an Elasticsearch cluster using the REST high level client",
+    "metadata" : {
+      "keywords" : [ "elasticsearch", "full text", "search" ],
+      "guide" : "https://quarkus.io/guides/elasticsearch",
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "config" : [ "quarkus.elasticsearch." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.elasticsearch-rest-high-level-client" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-elasticsearch-rest-client", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elasticsearch-rest-high-level-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Security",
+    "description" : "Security",
+    "metadata" : {
+      "unlisted" : true,
+      "keywords" : [ "security" ],
+      "categories" : [ "security" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.security" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-security::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elytron Security Common",
+    "description" : "Common components to secure your applications via Elytron",
+    "metadata" : {
+      "keywords" : [ "security" ],
+      "categories" : [ "security" ],
+      "stable" : "true",
+      "unlisted" : "true",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elytron-security-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elytron Security",
+    "description" : "Secure your services via Elytron",
+    "metadata" : {
+      "keywords" : [ "security" ],
+      "categories" : [ "security" ],
+      "stable" : "true",
+      "unlisted" : "true",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elytron-security-common", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elytron-security::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elytron Security Properties File",
+    "description" : "Secure your applications using properties files",
+    "metadata" : {
+      "keywords" : [ "security" ],
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "guide" : "https://quarkus.io/guides/security-properties",
+      "config" : [ "quarkus.security.users." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elytron-security", "io.quarkus:quarkus-elytron-security-common", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elytron-security-properties-file::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elytron Security OAuth 2.0",
+    "description" : "Secure your applications with OAuth2 opaque tokens",
+    "metadata" : {
+      "keywords" : [ "security", "oauth2" ],
+      "categories" : [ "security" ],
+      "guide" : "https://quarkus.io/guides/security-oauth2",
+      "status" : "preview",
+      "config" : [ "quarkus.oauth2." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.security.elytron.oauth2" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-elytron-security", "io.quarkus:quarkus-core", "io.quarkus:quarkus-elytron-security-common", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elytron-security-oauth2::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenID Connect",
+    "description" : "Verify Bearer access tokens and authenticate users with Authorization Code Flow",
+    "metadata" : {
+      "keywords" : [ "oauth2", "openid-connect", "oidc" ],
+      "guide" : "https://quarkus.io/guides/security-openid-connect",
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "config" : [ "quarkus.keycloak.devservices.", "quarkus.oidc." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-security", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-oidc-common", "io.quarkus:quarkus-smallrye-jwt-build" ]
+    },
+    "artifact" : "io.quarkus:quarkus-oidc::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenID Connect Client",
+    "description" : "Get and refresh access tokens from OpenID Connect providers",
+    "metadata" : {
+      "keywords" : [ "oauth2", "openid-connect", "oidc", "oidc-client" ],
+      "guide" : "https://quarkus.io/guides/security-openid-connect-client",
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "config" : [ "quarkus.oidc-client.", "quarkus.oidc." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-oidc-common", "io.quarkus:quarkus-smallrye-jwt-build", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-oidc-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenID Connect Client Filter",
+    "description" : "Use JAX-RS Client filter to get and refresh access tokens with OpenId Connect Client and send them as HTTP Authorization Bearer tokens",
+    "metadata" : {
+      "keywords" : [ "oauth2", "openid-connect", "oidc", "oidc-client", "oidc-client-filter" ],
+      "guide" : "https://quarkus.io/guides/security-openid-connect-client",
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "config" : [ "quarkus.oidc-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-oidc-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-oidc-common", "io.quarkus:quarkus-smallrye-jwt-build", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-oidc-client-filter::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenID Connect Client Filter Reactive",
+    "description" : "Use Reactive RestClient filter to get and refresh access tokens with OpenId Connect Client and send them as HTTP Authorization Bearer tokens",
+    "metadata" : {
+      "keywords" : [ "oauth2", "openid-connect", "oidc", "oidc-client", "oidc-client-filter", "oidc-client-reactive-filter" ],
+      "guide" : "https://quarkus.io/guides/security-openid-connect-client",
+      "categories" : [ "security" ],
+      "status" : "preview",
+      "config" : [ "quarkus.oidc-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-oidc-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-oidc-common", "io.quarkus:quarkus-smallrye-jwt-build", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-rest-client-reactive", "io.quarkus:quarkus-jaxrs-client-reactive", "io.quarkus:quarkus-resteasy-reactive-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-oidc-client-reactive-filter::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenID Connect Token Propagation",
+    "description" : "Use JAX-RS Client filter to propagate the incoming Bearer access token or token acquired from Authorization Code Flow as HTTP Authorization Bearer token",
+    "metadata" : {
+      "keywords" : [ "oauth2", "openid-connect", "oidc", "oidc-client", "oidc-token-propagation" ],
+      "guide" : "https://quarkus.io/guides/security-openid-connect-client",
+      "categories" : [ "security" ],
+      "status" : "preview",
+      "config" : [ "quarkus.oidc-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-oidc-client", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-oidc-common", "io.quarkus:quarkus-smallrye-jwt-build", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-oidc-token-propagation::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenID Connect Common",
+    "description" : "OpenID Connect Common - Runtime",
+    "metadata" : {
+      "keywords" : [ "oauth2", "openid-connect", "oidc" ],
+      "categories" : [ "security" ],
+      "status" : "preview",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-smallrye-jwt-build", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-oidc-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Keycloak Authorization",
+    "description" : "Policy enforcer using Keycloak-managed permissions to control access to protected resources",
+    "metadata" : {
+      "keywords" : [ "oauth2", "openid-connect", "keycloak", "authorization-services", "policy-enforcer", "fine-grained-permission", "resource-based-authorization" ],
+      "guide" : "https://quarkus.io/guides/security-keycloak-authorization",
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "config" : [ "quarkus.oidc.", "quarkus.keycloak." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-oidc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-security", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-oidc-common", "io.quarkus:quarkus-smallrye-jwt-build", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-keycloak-authorization::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Keycloak Admin Client",
+    "description" : "Administer a Keycloak Instance",
+    "metadata" : {
+      "keywords" : [ "keycloak", "keycloak-admin-client", "admin", "openid-connect" ],
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-rest-client-jackson", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-keycloak-admin-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Flyway",
+    "description" : "Handle your database schema migrations",
+    "metadata" : {
+      "keywords" : [ "flyway", "database", "data" ],
+      "guide" : "https://quarkus.io/guides/flyway",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.flyway." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.flyway" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-flyway::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Liquibase",
+    "description" : "Handle your database schema migrations with Liquibase",
+    "metadata" : {
+      "keywords" : [ "liquibase", "database", "data" ],
+      "guide" : "https://quarkus.io/guides/liquibase",
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "config" : [ "quarkus.liquibase." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.liquibase" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-jaxb", "io.quarkus:quarkus-jaxp", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-liquibase::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Liquibase MongoDB",
+    "description" : "Handle your MongoDB schema migrations with Liquibase",
+    "metadata" : {
+      "keywords" : [ "liquibase", "mongodb", "data" ],
+      "categories" : [ "data" ],
+      "status" : "experimental",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.liquibase.mongodb" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-mongodb-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-jaxb", "io.quarkus:quarkus-jaxp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-liquibase-mongodb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate ORM",
+    "description" : "Define your persistent model with Hibernate ORM and JPA",
+    "metadata" : {
+      "short-name" : "JPA",
+      "keywords" : [ "hibernate-orm", "jpa", "hibernate" ],
+      "guide" : "https://quarkus.io/guides/hibernate-orm",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.datasource.", "quarkus.hibernate-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.hibernate.orm" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-orm::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate Envers",
+    "description" : "Enable Hibernate Envers capabilities in your JPA applications",
+    "metadata" : {
+      "short-name" : "Envers",
+      "keywords" : [ "hibernate-orm", "envers", "hibernate" ],
+      "guide" : "https://quarkus.io/guides/hibernate-orm#envers",
+      "categories" : [ "data" ],
+      "status" : "experimental",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.hibernate.envers" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-core", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-envers::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate Reactive",
+    "description" : "A reactive API for Hibernate ORM, supporting non-blocking database drivers and a reactive style of interaction with the database.",
+    "metadata" : {
+      "keywords" : [ "hibernate-reactive", "hibernate", "reactive", "database" ],
+      "categories" : [ "data", "reactive" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.hibernate.reactive" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-core", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-reactive-datasource", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-reactive::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate ORM with Panache",
+    "description" : "Simplify your persistence code for Hibernate ORM via the active record or the repository pattern",
+    "metadata" : {
+      "keywords" : [ "hibernate-orm-panache", "panache", "hibernate", "jpa" ],
+      "guide" : "https://quarkus.io/guides/hibernate-orm-panache",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.datasource.", "quarkus.hibernate-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-core", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-hibernate-orm-panache-common", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-orm-panache::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate Reactive with Panache",
+    "description" : "Simplify your persistence code for Hibernate Reactive via the active record or the repository pattern",
+    "metadata" : {
+      "keywords" : [ "hibernate-reactive-panache", "panache", "hibernate", "jpa" ],
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-hibernate-reactive", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-reactive-datasource", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-hibernate-reactive-panache-common", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-reactive-panache::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate ORM with Panache and Kotlin",
+    "description" : "Define your persistent model in Hibernate ORM with Panache",
+    "metadata" : {
+      "keywords" : [ "hibernate-orm-panache-kotlin", "panache", "hibernate", "jpa", "kotlin" ],
+      "guide" : "https://quarkus.io/guides/hibernate-orm-panache-kotlin",
+      "categories" : [ "data" ],
+      "status" : "experimental",
+      "config" : [ "quarkus.datasource.", "quarkus.hibernate-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-kotlin", "io.quarkus:quarkus-hibernate-orm-panache-common", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-orm-panache-kotlin::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate ORM with Panache Common module",
+    "description" : "Hibernate ORM with Panache Common module",
+    "metadata" : {
+      "keywords" : [ "hibernate-orm-panache", "panache", "hibernate", "jpa" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-orm-panache-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate Reactive with Panache Common module",
+    "description" : "Simplify your persistence code for Hibernate Reactive via the active record or the repository pattern",
+    "metadata" : {
+      "keywords" : [ "hibernate-reactive-panache", "panache", "hibernate", "jpa" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-hibernate-reactive", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-reactive-datasource", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-reactive-panache-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST resources for Hibernate ORM with Panache",
+    "description" : "Generate JAX-RS resources for your Hibernate Panache entities and repositories",
+    "metadata" : {
+      "keywords" : [ "hibernate-orm-panache", "panache", "hibernate", "jpa", "rest", "jaxrs", "resteasy" ],
+      "guide" : "https://quarkus.io/guides/rest-data-panache",
+      "categories" : [ "data", "web" ],
+      "status" : "experimental",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-hibernate-orm-panache", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-hibernate-orm-panache-common", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-orm-rest-data-panache::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST resources for MongoDB with Panache",
+    "description" : "Generate JAX-RS resources for your MongoDB entities and repositories",
+    "metadata" : {
+      "keywords" : [ "mongodb-panache", "panache", "mongodb", "rest", "jaxrs", "resteasy" ],
+      "guide" : "https://quarkus.io/guides/rest-data-panache",
+      "categories" : [ "data", "web" ],
+      "status" : "experimental",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-mongodb-panache", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mongodb-panache-common", "io.quarkus:quarkus-mongodb-client", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-narayana-jta" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mongodb-rest-data-panache::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "MongoDB with Panache",
+    "description" : "Simplify your persistence code for MongoDB via the active record or the repository pattern",
+    "metadata" : {
+      "keywords" : [ "mongo", "mongodb", "nosql", "datastore", "panache" ],
+      "guide" : "https://quarkus.io/guides/mongodb-panache",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.mongodb." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.mongodb.panache" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-mongodb-panache-common", "io.quarkus:quarkus-mongodb-client", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-narayana-jta" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mongodb-panache::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "MongoDB with Panache for Kotlin",
+    "description" : "Simplify your persistence code for MongoDB via the active record or the repository pattern",
+    "metadata" : {
+      "keywords" : [ "mongodb-panache-kotlin", "panache", "mongodb", "kotlin" ],
+      "guide" : "https://quarkus.io/guides/mongodb-panache-kotlin",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.mongodb." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.mongodb.panache.kotlin" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-mongodb-panache-common", "io.quarkus:quarkus-mongodb-client", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-kotlin" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mongodb-panache-kotlin::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "MongoDB Panache Common module",
+    "description" : "Build parent to bring in required dependencies",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-mongodb-client", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-narayana-jta" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mongodb-panache-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate Search + Elasticsearch",
+    "description" : "Automatically index your Hibernate entities in Elasticsearch",
+    "metadata" : {
+      "keywords" : [ "hibernate-search-orm-elasticsearch", "hibernate-search-elasticsearch", "search", "full-text", "hibernate", "orm", "hibernate-orm", "hibernate-search-orm", "elasticsearch" ],
+      "guide" : "https://quarkus.io/guides/hibernate-search-orm-elasticsearch",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.hibernate-search-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-search-orm-elasticsearch::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate Search + Elasticsearch - AWS authentication and request signing",
+    "description" : "AWS request signing for Hibernate Search ORM + Elasticsearch",
+    "metadata" : {
+      "keywords" : [ "hibernate-search-orm-elasticsearch-aws", "hibernate-search-elasticsearch-aws", "search", "full-text", "hibernate", "orm", "hibernate-orm", "hibernate-search-orm", "elasticsearch", "amazon", "aws", "apigateway", "iam" ],
+      "guide" : "https://quarkus.io/guides/hibernate-search-orm-elasticsearch",
+      "categories" : [ "data", "cloud" ],
+      "status" : "stable",
+      "config" : [ "quarkus.hibernate-search-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-hibernate-search-orm-elasticsearch", "io.quarkus:quarkus-elasticsearch-rest-client-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-amazon-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-search-orm-elasticsearch-aws::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Hibernate Validator",
+    "description" : "Validate object properties (field, getter) and method parameters for your beans (REST, CDI, JPA)",
+    "metadata" : {
+      "short-name" : "bean validation",
+      "keywords" : [ "hibernate-validator", "bean-validation", "validation" ],
+      "guide" : "https://quarkus.io/guides/validation",
+      "categories" : [ "web", "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.hibernate-validator." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.hibernate.validator" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-hibernate-validator::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Infinispan Client",
+    "description" : "Connect to the Infinispan data grid for distributed caching",
+    "metadata" : {
+      "keywords" : [ "infinispan-client", "data-grid-client", "infinispan" ],
+      "guide" : "https://quarkus.io/guides/infinispan-client",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.infinispan-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-elytron-security-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-infinispan-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Jaeger",
+    "description" : "Trace your services with Jaeger",
+    "metadata" : {
+      "keywords" : [ "tracing", "distributed-tracing", "jaeger" ],
+      "categories" : [ "observability" ],
+      "unlisted" : true,
+      "status" : "stable",
+      "config" : [ "quarkus.jaeger." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.opentracing" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jaeger::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - DB2",
+    "description" : "Connect to the DB2 database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-db2", "jdbc", "db2" ],
+      "categories" : [ "data" ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-db2::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - PostgreSQL",
+    "description" : "Connect to the PostgreSQL database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-postgresql", "jdbc", "postgresql" ],
+      "categories" : [ "data" ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-postgresql::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - H2",
+    "description" : "Connect to the H2 database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-h2", "jdbc", "h2" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-h2::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - MariaDB",
+    "description" : "Connect to the MariaDB database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-mariadb", "jdbc", "mariadb" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-mariadb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - Microsoft SQL Server",
+    "description" : "Connect to the Microsoft SQL Server database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-mssql", "jdbc", "mssql", "sql-server" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-mssql::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - MySQL",
+    "description" : "Connect to the MySQL database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-mysql", "jdbc", "mysql" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-mysql::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - Oracle",
+    "description" : "Connect to the Oracle database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-oracle", "jdbc", "oracle" ],
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-oracle::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JDBC Driver - Derby",
+    "description" : "Connect to the Derby database via JDBC",
+    "metadata" : {
+      "keywords" : [ "jdbc-derby", "jdbc", "derby" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jdbc-derby::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Apache Kafka Client",
+    "description" : "Connect to Apache Kafka with its native API",
+    "metadata" : {
+      "keywords" : [ "kafka" ],
+      "guide" : "https://quarkus.io/guides/kafka",
+      "categories" : [ "messaging" ],
+      "status" : "stable",
+      "config" : [ "quarkus.kafka.", "kafka.", "mp.messaging." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-caffeine" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kafka-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Apache Kafka Streams",
+    "description" : "Implement stream processing applications based on Apache Kafka",
+    "metadata" : {
+      "keywords" : [ "kafka", "kafka-streams" ],
+      "categories" : [ "messaging" ],
+      "guide" : "https://quarkus.io/guides/kafka-streams",
+      "status" : "stable",
+      "config" : [ "quarkus.kafka-streams.", "kafka.", "kafka-streams.", "mp.messaging." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-kafka-client", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-caffeine" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kafka-streams::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Apache Avro",
+    "description" : "Provide support for the Avro data serialization system",
+    "metadata" : {
+      "keywords" : [ "avro" ],
+      "guide" : "https://quarkus.io/guides/kafka",
+      "categories" : [ "serialization" ],
+      "status" : "experimental",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-avro::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Apicurio Registry - Avro",
+    "description" : "Provide support for the Apicurio Registry Avro library",
+    "metadata" : {
+      "keywords" : [ "apicurio", "avro" ],
+      "guide" : "https://quarkus.io/guides/kafka-schema-registry-avro",
+      "categories" : [ "serialization" ],
+      "status" : "experimental",
+      "config" : [ "avro.codegen." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.apicurio.registry.avro" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-avro", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-apicurio-registry-avro::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Health",
+    "description" : "Monitor service health",
+    "metadata" : {
+      "short-name" : "health",
+      "keywords" : [ "smallrye-health", "health-check", "health", "microprofile-health", "microprofile-health-check" ],
+      "guide" : "https://quarkus.io/guides/microprofile-health",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "config" : [ "quarkus.health.", "quarkus.smallrye-health.", "mp.health." ],
+      "codestart" : {
+        "name" : "smallrye-health",
+        "languages" : [ "java", "kotlin" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.smallrye.health" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-health::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye JWT",
+    "description" : "Secure your applications with JSON Web Token",
+    "metadata" : {
+      "keywords" : [ "smallrye-jwt", "jwt", "json-web-token", "rbac", "security" ],
+      "guide" : "https://quarkus.io/guides/security-jwt",
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "config" : [ "mp.jwt.", "smallrye.jwt.", "quarkus.smallrye-jwt." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.jwt" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-reactive-routes", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-smallrye-jwt-build", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-jwt::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye JWT Build",
+    "description" : "Create JSON Web Token with SmallRye JWT Build API",
+    "metadata" : {
+      "keywords" : [ "smallrye-jwt", "smallrye-jwt-build", "jwt", "json-web-token" ],
+      "guide" : "https://quarkus.io/guides/security-jwt",
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "config" : [ "mp.jwt.", "smallrye.jwt.", "quarkus.smallrye-jwt." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-jwt-build::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Context Propagation",
+    "description" : "Propagate contexts between managed threads in reactive applications",
+    "metadata" : {
+      "short-name" : "context propagation",
+      "keywords" : [ "smallrye-context-propagation", "microprofile-context-propagation", "context-propagation", "context", "reactive" ],
+      "guide" : "https://quarkus.io/guides/context-propagation",
+      "categories" : [ "reactive" ],
+      "status" : "stable",
+      "config" : [ "mp.context." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-context-propagation::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Reactive Streams Operators",
+    "description" : "Operators to write Reactive Streams based applications (Mutiny recommended instead)",
+    "metadata" : {
+      "unlisted" : true,
+      "keywords" : [ "smallrye-reactive-streams-operators", "smallrye-reactive-streams", "reactive-streams-operators", "reactive" ],
+      "categories" : [ "reactive" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-reactive-streams-operators::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Mutiny Reactive Streams Operators",
+    "description" : "Operators to write Reactive Streams based applications based on Mutiny",
+    "metadata" : {
+      "keywords" : [ "reactive-streams-operators", "reactive" ],
+      "categories" : [ "reactive" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mutiny-reactive-streams-operators::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Reactive Type Converters",
+    "description" : "Converters for reactive types from various reactive programming libraries",
+    "metadata" : {
+      "keywords" : [ "smallrye-reactive-type-converters", "reactive-type-converters", "reactive-streams", "microprofile-reactive-streams", "reactive" ],
+      "categories" : [ "reactive" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-reactive-type-converters::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Reactive Messaging",
+    "description" : "Produce and consume messages and implement event driven and data streaming applications",
+    "metadata" : {
+      "keywords" : [ "smallrye-reactive-messaging", "reactive-messaging", "reactive" ],
+      "guide" : "https://quarkus.io/guides/reactive-messaging",
+      "categories" : [ "messaging" ],
+      "status" : "stable",
+      "config" : [ "mp.messaging." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-reactive-messaging::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Reactive Messaging - Kafka Connector",
+    "description" : "Connect to Kafka with Reactive Messaging",
+    "metadata" : {
+      "short-name" : "kafka",
+      "keywords" : [ "kafka", "reactive-kafka" ],
+      "guide" : "https://quarkus.io/guides/kafka-reactive-getting-started",
+      "categories" : [ "messaging" ],
+      "status" : "stable",
+      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.kafka." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-kafka-client", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-reactive-messaging-kafka::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Reactive Messaging - AMQP Connector",
+    "description" : "Connect to AMQP with Reactive Messaging",
+    "metadata" : {
+      "short-name" : "amqp",
+      "keywords" : [ "amqp", "reactive-amqp" ],
+      "guide" : "https://quarkus.io/guides/amqp",
+      "categories" : [ "messaging" ],
+      "status" : "stable",
+      "config" : [ "mp.messaging.", "quarkus.reactive-messaging.", "quarkus.amqp." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-reactive-messaging-amqp::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Reactive Messaging - MQTT Connector",
+    "description" : "Connect to MQTT with Reactive Messaging",
+    "metadata" : {
+      "keywords" : [ "mqtt", "reactive-mqtt" ],
+      "categories" : [ "messaging" ],
+      "status" : "preview",
+      "config" : [ "mp.messaging.", "quarkus.reactive-messaging." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-mutiny-reactive-streams-operators", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Metrics",
+    "description" : "Expose metrics for your services",
+    "metadata" : {
+      "short-name" : "metrics",
+      "keywords" : [ "smallrye-metrics", "metrics", "metric", "prometheus", "monitoring" ],
+      "guide" : "https://quarkus.io/guides/microprofile-metrics",
+      "categories" : [ "observability" ],
+      "status" : "stable",
+      "config" : [ "quarkus.smallrye-metrics.", "mp.metrics." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.metrics" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-metrics::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye OpenAPI",
+    "description" : "Document your REST APIs with OpenAPI - comes with Swagger UI",
+    "metadata" : {
+      "keywords" : [ "smallrye-openapi", "openapi", "open-api" ],
+      "guide" : "https://quarkus.io/guides/openapi-swaggerui",
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "config" : [ "quarkus.smallrye-openapi.", "smallrye.openapi.", "mp.openapi.", "quarkus.swagger-ui." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.smallrye.openapi" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-swagger-ui" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-openapi::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye GraphQL",
+    "description" : "Create GraphQL Endpoints using the code-first approach from MicroProfile GraphQL",
+    "metadata" : {
+      "short-name" : "graphql",
+      "keywords" : [ "graphql", "microprofile-graphql", "smallrye-graphql", "web" ],
+      "categories" : [ "web" ],
+      "guide" : "https://quarkus.io/guides/microprofile-graphql",
+      "status" : "preview",
+      "config" : [ "mp.graphql.", "smallrye.graphql.", "quarkus.smallrye-graphql." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.smallrye.graphql" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jsonb", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-graphql::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye GraphQL Client",
+    "description" : "Create GraphQL Clients",
+    "metadata" : {
+      "short-name" : "graphql-client",
+      "keywords" : [ "smallrye-graphql", "graphql", "graphql-client", "microprofile-graphql" ],
+      "categories" : [ "web" ],
+      "guide" : "https://quarkus.io/guides/smallrye-graphql-client",
+      "status" : "preview",
+      "config" : [ "quarkus.smallrye-graphql-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonb", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-graphql-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye OpenTracing",
+    "description" : "Trace your services with SmallRye OpenTracing",
+    "metadata" : {
+      "keywords" : [ "smallrye-opentracing", "opentracing", "tracing", "distributed-tracing", "jaeger" ],
+      "guide" : "https://quarkus.io/guides/opentracing",
+      "categories" : [ "observability" ],
+      "status" : "stable",
+      "config" : [ "quarkus.jaeger.", "mp.opentracing." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.smallrye.opentracing" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jaeger", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-opentracing::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST Client",
+    "description" : "Call REST services",
+    "metadata" : {
+      "keywords" : [ "rest-client", "web-client", "microprofile-rest-client" ],
+      "guide" : "https://quarkus.io/guides/rest-client",
+      "categories" : [ "web" ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.rest.client" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-rest-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST Client Jackson",
+    "description" : "Jackson serialization support for the REST Client",
+    "metadata" : {
+      "keywords" : [ "rest-client-jackson", "rest-client", "web-client", "microprofile-rest-client", "json", "jackson" ],
+      "categories" : [ "web", "serialization" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.resteasy.json.jackson.client" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-rest-client-jackson::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST Client JAXB",
+    "description" : "XML serialization support for the REST Client",
+    "metadata" : {
+      "keywords" : [ "rest-client-jaxb", "rest-client", "web-client", "microprofile-rest-client", "jaxb" ],
+      "categories" : [ "web", "serialization" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-jaxb", "io.quarkus:quarkus-jaxp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-rest-client-jaxb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST Client JSON-B",
+    "description" : "JSON-B serialization support for the REST client",
+    "metadata" : {
+      "keywords" : [ "rest-client-jsonb", "rest-client", "web-client", "microprofile-rest-client", "json", "jsonb" ],
+      "categories" : [ "web", "serialization" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.resteasy.json.jsonb.client" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-jsonb", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-rest-client-jsonb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Mutiny support for REST Client",
+    "description" : "Enable Mutiny for the REST client",
+    "metadata" : {
+      "keywords" : [ "rest-client-mutiny", "rest-client", "web-client", "microprofile-rest-client", "mutiny" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-resteasy-mutiny-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-rest-client-mutiny::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy JAX-RS Common",
+    "description" : "Components common to the RESTEasy server and the REST Client",
+    "metadata" : {
+      "keywords" : [ "resteasy", "jaxrs", "web", "rest" ],
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy JAX-RS",
+    "description" : "REST endpoint framework implementing JAX-RS and more",
+    "metadata" : {
+      "short-name" : "jax-rs",
+      "keywords" : [ "resteasy", "jaxrs", "web", "rest" ],
+      "guide" : "https://quarkus.io/guides/rest-json",
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.resteasy." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.rest", "io.quarkus.resteasy" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Jackson",
+    "description" : "Jackson serialization support for RESTEasy",
+    "metadata" : {
+      "keywords" : [ "resteasy-jackson", "jaxrs-json", "resteasy-json", "resteasy", "jaxrs", "json", "jackson" ],
+      "categories" : [ "web", "serialization" ],
+      "status" : "stable",
+      "config" : [ "quarkus.resteasy.", "quarkus.jackson." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.rest.jackson", "io.quarkus.resteasy.json.jackson" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-jackson::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy JSON-B",
+    "description" : "JSON-B serialization support for RESTEasy",
+    "metadata" : {
+      "keywords" : [ "resteasy-jsonb", "jaxrs-json", "resteasy-json", "resteasy", "jaxrs", "json", "jsonb" ],
+      "guide" : "https://quarkus.io/guides/rest-json",
+      "categories" : [ "web", "serialization" ],
+      "status" : "stable",
+      "config" : [ "quarkus.resteasy." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.rest.jsonb", "io.quarkus.resteasy.json.jsonb" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jsonb", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-jsonb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy JAXB",
+    "description" : "XML serialization support for RESTEasy",
+    "metadata" : {
+      "keywords" : [ "resteasy-jaxb", "resteasy", "jaxrs", "xml", "jaxb" ],
+      "categories" : [ "web", "serialization" ],
+      "status" : "stable",
+      "config" : [ "quarkus.resteasy." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jaxb", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jaxp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-jaxb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Multipart",
+    "description" : "Multipart support for RESTEasy",
+    "metadata" : {
+      "keywords" : [ "resteasy-multipart", "multipart", "upload", "resteasy", "jaxrs" ],
+      "guide" : "https://quarkus.io/guides/rest-json#multipart-support",
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "config" : [ "quarkus.resteasy.multipart." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-multipart::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Server Common",
+    "description" : "RESTEasy Server common",
+    "metadata" : {
+      "keywords" : [ "resteasy", "jaxrs", "web", "rest" ],
+      "guide" : "https://quarkus.io/guides/rest-json",
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-server-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Narayana JTA - Transaction manager",
+    "description" : "Offer JTA transaction support (included in Hibernate ORM)",
+    "metadata" : {
+      "keywords" : [ "narayana-jta", "narayana", "jta", "transactions", "transaction", "tx", "txs" ],
+      "guide" : "https://quarkus.io/guides/transaction",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.transaction-manager." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.transactions" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-narayana-jta::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Narayana LRA - LRA Participant Support",
+    "description" : "Build parent to bring in required dependencies",
+    "metadata" : {
+      "keywords" : [ "narayana-lra", "narayana", "lra", "compensations", "transactions", "transaction", "saga" ],
+      "guide" : "https://quarkus.io/guides/lra",
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-jackson", "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-rest-client", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-narayana-lra::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Undertow Servlet",
+    "description" : "Support for servlets",
+    "metadata" : {
+      "short-name" : "servlet",
+      "keywords" : [ "undertow", "servlet", "http" ],
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "config" : [ "quarkus.servlet." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.servlet" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-undertow::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "SmallRye Fault Tolerance",
+    "description" : "Define fault-tolerant services",
+    "metadata" : {
+      "keywords" : [ "smallrye-fault-tolerance", "fault-tolerance", "microprofile-fault-tolerance", "circuit-breaker", "bulkhead" ],
+      "guide" : "https://quarkus.io/guides/microprofile-fault-tolerance",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "config" : [ "smallrye.faulttolerance.", "mp.fault.tolerance." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.smallrye.faulttolerance" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-smallrye-fault-tolerance::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Eclipse Vert.x",
+    "description" : "Write reactive applications with the Vert.x API",
+    "metadata" : {
+      "keywords" : [ "eclipse-vert.x", "vertx", "vert.x", "reactive" ],
+      "guide" : "https://quarkus.io/guides/vertx",
+      "categories" : [ "reactive" ],
+      "status" : "stable",
+      "config" : [ "quarkus.vertx." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.vertx", "io.quarkus.vertx.core" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-vertx::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Eclipse Vert.x - HTTP",
+    "description" : "Vert.x HTTP",
+    "metadata" : {
+      "keywords" : [ "eclipse-vert.x", "vertx", "vert.x", "reactive", "vertx-http", "http" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "config" : [ "quarkus.http." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.vertx.http" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-vertx-http::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Reactive Routes",
+    "description" : "REST framework offering the route model to define non blocking endpoints",
+    "metadata" : {
+      "keywords" : [ "eclipse", "vertx", "vert.x", "reactive", "vertx-http", "http", "route", "routes" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "stable",
+      "guide" : "https://quarkus.io/guides/reactive-routes",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx-http" ]
+    },
+    "artifact" : "io.quarkus:quarkus-reactive-routes::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Reactive DB2 client",
+    "description" : "Connect to the DB2 database using the reactive pattern",
+    "metadata" : {
+      "keywords" : [ "eclipse-vert.x", "vertx", "vert.x", "reactive", "database", "data", "db2" ],
+      "guide" : "https://quarkus.io/guides/reactive-sql-clients",
+      "categories" : [ "data", "reactive" ],
+      "status" : "preview",
+      "config" : [ "quarkus.datasource." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-reactive-datasource", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-reactive-db2-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Reactive PostgreSQL client",
+    "description" : "Connect to the PostgreSQL database using the reactive pattern",
+    "metadata" : {
+      "keywords" : [ "eclipse-vert.x", "vertx", "vert.x", "reactive", "database", "data", "postgresql" ],
+      "guide" : "https://quarkus.io/guides/reactive-sql-clients",
+      "categories" : [ "data", "reactive" ],
+      "status" : "stable",
+      "config" : [ "quarkus.datasource." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-reactive-datasource", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-reactive-pg-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Reactive MySQL client",
+    "description" : "Connect to the MySQL database using the reactive pattern",
+    "metadata" : {
+      "keywords" : [ "eclipse-vert.x", "vertx", "vert.x", "reactive", "database", "data", "mysql" ],
+      "guide" : "https://quarkus.io/guides/reactive-sql-clients",
+      "categories" : [ "data", "reactive" ],
+      "status" : "stable",
+      "config" : [ "quarkus.datasource." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-reactive-datasource", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-reactive-mysql-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Reactive MS SQL client",
+    "description" : "Connect to the Microsoft SQL Server database using the reactive pattern",
+    "metadata" : {
+      "keywords" : [ "eclipse-vert.x", "vertx", "vert.x", "reactive", "database", "data", "mssql" ],
+      "guide" : "https://quarkus.io/guides/reactive-sql-clients",
+      "categories" : [ "data", "reactive" ],
+      "status" : "preview",
+      "config" : [ "quarkus.datasource." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-reactive-datasource", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-reactive-mssql-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Mailer",
+    "description" : "Send emails",
+    "metadata" : {
+      "keywords" : [ "mail", "mailer" ],
+      "guide" : "https://quarkus.io/guides/mailer",
+      "categories" : [ "miscellaneous" ],
+      "status" : "stable",
+      "config" : [ "quarkus.mailer." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-qute", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mailer::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "MongoDB client",
+    "description" : "Connect to MongoDB in either imperative or reactive style",
+    "metadata" : {
+      "keywords" : [ "mongo", "mongodb", "nosql", "datastore" ],
+      "guide" : "https://quarkus.io/guides/mongodb",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.mongodb." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.mongodb-client" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny-reactive-streams-operators" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mongodb-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "gRPC",
+    "description" : "Serve and consume gRPC services",
+    "metadata" : {
+      "keywords" : [ "gRPC" ],
+      "categories" : [ "web", "serialization", "reactive" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "grpc",
+        "languages" : [ "java" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.grpc." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-grpc-common", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-grpc::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "gRPC Common",
+    "description" : "Build parent to bring in required dependencies",
+    "metadata" : {
+      "keywords" : [ "gRPC" ],
+      "categories" : [ "web", "serialization", "reactive" ],
+      "status" : "experimental",
+      "unlisted" : "true",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-grpc-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "WebSockets",
+    "description" : "WebSocket communication channel support",
+    "metadata" : {
+      "short-name" : "websockets",
+      "keywords" : [ "websocket", "websockets", "web-socket", "web-sockets", "http" ],
+      "guide" : "https://quarkus.io/guides/websockets",
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "websockets",
+        "languages" : [ "java", "kotlin" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.websocket." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-websockets-client" ]
+    },
+    "artifact" : "io.quarkus:quarkus-websockets::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "WebSockets Client",
+    "description" : "WebSocket communication channel support",
+    "metadata" : {
+      "short-name" : "websockets-client",
+      "keywords" : [ "websocket", "websockets", "web-socket", "web-sockets", "http", "client" ],
+      "guide" : "https://quarkus.io/guides/websockets",
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-websockets-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Scheduler - tasks",
+    "description" : "Schedule jobs and tasks",
+    "metadata" : {
+      "keywords" : [ "scheduler", "tasks", "periodic-tasks" ],
+      "guide" : "https://quarkus.io/guides/scheduler",
+      "categories" : [ "miscellaneous" ],
+      "status" : "stable",
+      "config" : [ "quarkus.scheduler." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-scheduler::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quartz",
+    "description" : "Schedule clustered tasks with Quartz",
+    "metadata" : {
+      "keywords" : [ "scheduler", "quartz", "tasks", "periodic-tasks" ],
+      "guide" : "https://quarkus.io/guides/quartz",
+      "categories" : [ "miscellaneous" ],
+      "status" : "preview",
+      "config" : [ "quarkus.quartz." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.quartz" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-scheduler", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-quartz::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring DI API",
+    "description" : "Define your dependency injection with Spring DI",
+    "metadata" : {
+      "keywords" : [ "spring-di", "spring" ],
+      "guide" : "https://quarkus.io/guides/spring-di",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-di::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Security API",
+    "description" : "Secure your application with Spring Security annotations",
+    "metadata" : {
+      "keywords" : [ "spring-security", "spring", "security" ],
+      "guide" : "https://quarkus.io/guides/spring-security",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-spring-di" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-security::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Scheduled",
+    "description" : "Schedule tasks with Spring Scheduling",
+    "metadata" : {
+      "keywords" : [ "spring-scheduled", "spring" ],
+      "guide" : "https://quarkus.io/guides/spring-scheduled",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-scheduler", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-scheduled::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Web API",
+    "description" : "Use Spring Web annotations to create your REST services",
+    "metadata" : {
+      "keywords" : [ "spring-web", "spring" ],
+      "guide" : "https://quarkus.io/guides/spring-web",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "spring-web",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.spring.web" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-jackson", "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-spring-di", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-web::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Data JPA API",
+    "description" : "Use Spring Data JPA annotations to create your data access layer",
+    "metadata" : {
+      "keywords" : [ "spring-data", "spring" ],
+      "guide" : "https://quarkus.io/guides/spring-data-jpa",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "config" : [ "quarkus.datasource.", "quarkus.hibernate-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-hibernate-orm-panache", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-core", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-hibernate-orm-panache-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-spring-di" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-data-jpa::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Data REST",
+    "description" : "Generate JAX-RS resources for a Spring Data application",
+    "metadata" : {
+      "keywords" : [ "spring-data", "spring-data-rest", "spring", "data", "rest" ],
+      "guide" : "https://quarkus.io/guides/spring-data-rest",
+      "categories" : [ "compatibility" ],
+      "status" : "preview",
+      "config" : [ "quarkus.datasource.", "quarkus.hibernate-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-spring-data-jpa", "io.quarkus:quarkus-hibernate-orm-panache", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-hibernate-orm-panache-common", "io.quarkus:quarkus-spring-di" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-data-rest::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Boot properties",
+    "description" : "Use Spring Boot properties annotations to configure your application",
+    "metadata" : {
+      "keywords" : [ "spring-boot", "properties" ],
+      "guide" : "https://quarkus.io/guides/spring-boot-properties",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-boot-properties::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Cloud Config Client",
+    "description" : "Use properties from Spring Cloud Config as bootstrap properties sources",
+    "metadata" : {
+      "keywords" : [ "spring-cloud-config-client", "spring", "config", "configuration" ],
+      "guide" : "https://quarkus.io/guides/spring-cloud-config-client",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "config" : [ "quarkus.spring-cloud-config." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-cloud-config-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus Extension for Spring Cache API",
+    "description" : "Use Spring Cache annotations",
+    "metadata" : {
+      "keywords" : [ "spring-cache", "spring", "cache" ],
+      "guide" : "https://quarkus.io/guides/spring-cache",
+      "categories" : [ "compatibility" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-cache", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-spring-cache::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Swagger UI",
+    "description" : "Swagger UI",
+    "metadata" : {
+      "keywords" : [ "swagger-ui", "openapi" ],
+      "guide" : "https://quarkus.io/guides/openapi-swaggerui",
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-swagger-ui::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Kotlin",
+    "description" : "Write your services in Kotlin",
+    "metadata" : {
+      "keywords" : [ "kotlin" ],
+      "guide" : "https://quarkus.io/guides/kotlin",
+      "categories" : [ "alt-languages" ],
+      "status" : "preview",
+      "codestart" : {
+        "name" : "kotlin",
+        "kind" : "core",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kotlin::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Funqy AWS Lambda Binding",
+    "description" : "Amazon Lambda Binding for Quarkus Funqy framework",
+    "metadata" : {
+      "keywords" : [ "funqy", "function", "lambda", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/funqy-amazon-lambda",
+      "categories" : [ "cloud" ],
+      "status" : "experimental",
+      "codestart" : {
+        "name" : "funqy-amazon-lambda",
+        "kind" : "example",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.funqy." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-amazon-lambda-common", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-funqy-server-common", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-funqy-amazon-lambda::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Funqy Google Cloud Functions",
+    "description" : "Google Cloud Functions Binding for Quarkus Funqy framework",
+    "metadata" : {
+      "keywords" : [ "google cloud", "gcloud", "gcp", "function", "funqy", "cloud event" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/funqy-gcp-functions",
+      "status" : "experimental",
+      "codestart" : {
+        "name" : "funqy-google-cloud-functions-example",
+        "kind" : "example",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.funqy." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-funqy-server-common", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-funqy-google-cloud-functions::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Funqy Knative Events Binding",
+    "description" : "Knative Events Binding for Quarkus Funqy framework",
+    "metadata" : {
+      "keywords" : [ "knative", "function", "funqy", "cloud event" ],
+      "guide" : "https://quarkus.io/guides/funqy-knative-events",
+      "categories" : [ "cloud" ],
+      "status" : "experimental",
+      "codestart" : {
+        "name" : "funqy-knative-events",
+        "kind" : "example",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.funqy.knative-events." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-funqy-server-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-funqy-knative-events::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Funqy HTTP Binding",
+    "description" : "HTTP Binding for Quarkus Funqy framework",
+    "metadata" : {
+      "keywords" : [ "funqy", "function", "http" ],
+      "guide" : "https://quarkus.io/guides/funqy-http",
+      "categories" : [ "cloud" ],
+      "status" : "experimental",
+      "codestart" : {
+        "name" : "funqy-http",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-funqy-server-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-funqy-http::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Funqy Server Common",
+    "description" : "Quarkus Funqy Server Common framework",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-funqy-server-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "AWS Lambda Common",
+    "description" : "Common Runtime for AWS Lambda functions",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-lambda-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "AWS Lambda",
+    "description" : "Write AWS Lambda functions",
+    "metadata" : {
+      "keywords" : [ "lambda", "aws", "amazon" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/amazon-lambda",
+      "status" : "stable",
+      "codestart" : {
+        "name" : "amazon-lambda",
+        "kind" : "example",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.lambda." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-amazon-lambda-common", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-lambda::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "AWS Lambda X-Ray",
+    "description" : "Allow X-Ray to run with Quarkus Lambda support",
+    "metadata" : {
+      "keywords" : [ "lambda", "aws", "amazon", "xray" ],
+      "guide" : "https://quarkus.io/guides/amazon-lambda#tracing-with-aws-xray-and-graalvm",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-amazon-lambda-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-core", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-lambda-xray::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "AWS Lambda HTTP",
+    "description" : "Allow applications written for a servlet container to run in AWS Lambda",
+    "metadata" : {
+      "keywords" : [ "lambda", "aws", "amazon", "http", "rest" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/amazon-lambda-http",
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-amazon-lambda", "io.quarkus:quarkus-amazon-lambda-common", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-lambda-http::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "AWS Lambda Gateway REST API",
+    "description" : "Build parent to bring in required dependencies",
+    "metadata" : {
+      "keywords" : [ "lambda", "aws", "amazon", "http", "rest" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/amazon-lambda-http",
+      "status" : "stable",
+      "config" : [ "quarkus.lambda-http." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-amazon-lambda", "io.quarkus:quarkus-amazon-lambda-common", "io.quarkus:quarkus-core", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-lambda-rest::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon Services Common",
+    "description" : "Common components for AWS Lambda functions",
+    "metadata" : {
+      "keywords" : [ "amazon services", "aws", "amazon" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon DynamoDB",
+    "description" : "Connect to Amazon DynamoDB datastore",
+    "metadata" : {
+      "keywords" : [ "dynamodb", "dynamo", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-dynamodb",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.dynamodb." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-dynamodb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon S3",
+    "description" : "Connect to Amazon S3 cloud storage",
+    "metadata" : {
+      "keywords" : [ "s3", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-s3",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.s3." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-s3::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon SNS",
+    "description" : "Connect to Amazon SNS pub/sub messaging service",
+    "metadata" : {
+      "keywords" : [ "sns", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-sns",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.sns." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-sns::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon SQS",
+    "description" : "Connect to Amazon SQS messaging queue service",
+    "metadata" : {
+      "keywords" : [ "sqs", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-sqs",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.sqs." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-sqs::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon SES",
+    "description" : "Connect to Amazon SES",
+    "metadata" : {
+      "keywords" : [ "ses", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-ses",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.ses." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-ses::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon KMS",
+    "description" : "Connect to Amazon KMS",
+    "metadata" : {
+      "keywords" : [ "kms", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-kms",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.kms." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-kms::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon SSM",
+    "description" : "Connect to Amazon SSM",
+    "metadata" : {
+      "keywords" : [ "ssm", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-ssm",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.ssm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-ssm::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon IAM",
+    "description" : "Connect to Amazon IAM",
+    "metadata" : {
+      "keywords" : [ "iam", "aws", "amazon" ],
+      "guide" : "https://quarkus.io/guides/amazon-iam",
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "config" : [ "quarkus.iam." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-amazon-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-iam::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Amazon Alexa",
+    "description" : "Write Amazon Alexa Skills with AWS Lambda or HTTPS endpoints",
+    "metadata" : {
+      "keywords" : [ "lambda", "alexa" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/amazon-lambda",
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-apache-httpclient", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-amazon-alexa::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive Common",
+    "description" : "Common runtime parts of Quarkus RESTEasy Reactive",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive",
+    "description" : "A JAX-RS implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+    "metadata" : {
+      "short-name" : "resteasy-reactive",
+      "keywords" : [ "jaxrs", "web", "rest" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "stable",
+      "guide" : "https://quarkus.io/guides/resteasy-reactive",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.resteasy-reactive." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.rest", "io.quarkus.resteasy.reactive" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive Kotlin",
+    "description" : "Provides Kotlin support for RESTEasy Reactive",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-kotlin::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Quarkus RESTEasy Reactive Servlet",
+    "description" : "Servlet support for Quarkus RESTEasy Reactive",
+    "metadata" : {
+      "unlisted" : true,
+      "short-name" : "quarkus-resteasy-reactive-servlet",
+      "keywords" : [ "jaxrs", "web", "rest", "servlet" ],
+      "categories" : [ "web" ],
+      "status" : "experimental",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "kind" : "core",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-undertow", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-servlet::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JAX-RS Client Reactive",
+    "description" : "Consume JAX-RS resources reactively",
+    "metadata" : {
+      "keywords" : [ "jax-rs client", "jax-rs", "web-client", "resteasy-reactive" ],
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "kind" : "core",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jaxrs-client-reactive::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST Client Reactive",
+    "description" : "Call REST services reactively",
+    "metadata" : {
+      "keywords" : [ "rest-client", "web-client", "microprofile-rest-client", "resteasy-reactive" ],
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "kind" : "core",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.rest-client-reactive." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.rest.client" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-jaxrs-client-reactive", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-rest-client-reactive::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "REST Client Reactive Jackson",
+    "description" : "Jackson serialization support for REST Client Reactive",
+    "metadata" : {
+      "keywords" : [ "rest-client-jackson", "rest-client", "web-client", "microprofile-rest-client", "json", "jackson", "resteasy-reactive" ],
+      "categories" : [ "web", "serialization" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "kind" : "core",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.rest-client-reactive." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive-jackson-common", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-core", "io.quarkus:quarkus-rest-client-reactive", "io.quarkus:quarkus-jaxrs-client-reactive" ]
+    },
+    "artifact" : "io.quarkus:quarkus-rest-client-reactive-jackson::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive Qute",
+    "description" : "Qute integration for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+    "metadata" : {
+      "keywords" : [ "templating", "templates", "rest" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy-reactive-qute",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.resteasy-reactive.", "quarkus.qute." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy-reactive", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-qute" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-qute::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive JSON-B",
+    "description" : "JSON-B serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.",
+    "metadata" : {
+      "short-name" : "resteasy-reactive-jsonb",
+      "keywords" : [ "rest-jsonb", "resteasy-reactive-json", "jaxrs-json", "rest", "jaxrs", "json", "jsonb" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "kind" : "core",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.resteasy-reactive." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-jsonb", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-jsonb::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive Jackson",
+    "description" : "Jackson serialization support for RESTEasy Reactive. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it",
+    "metadata" : {
+      "short-name" : "resteasy-reactive-jackson",
+      "keywords" : [ "rest-jackson", "quarkus-resteasy-reactive-json", "jaxrs-json", "rest", "jaxrs", "json", "jackson" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "kind" : "core",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.resteasy-reactive.", "quarkus.jackson." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-resteasy-reactive-jackson-common", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-jackson::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive Jackson Common",
+    "description" : "Common classes for Jackson serialization support for RESTEasy Reactive",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-jsonp", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-jackson-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Reactive Links",
+    "description" : "Quarkus RESTEast Reactive resource linking support",
+    "metadata" : {
+      "short-name" : "resteasy-reactive-links",
+      "keywords" : [ "rest", "jaxrs", "links" ],
+      "categories" : [ "web", "reactive" ],
+      "status" : "stable",
+      "codestart" : {
+        "name" : "resteasy-reactive",
+        "kind" : "core",
+        "languages" : [ "java", "kotlin", "scala" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-reactive", "io.quarkus:quarkus-resteasy-reactive-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-reactive-links::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Reactive datasource configuration",
+    "description" : "Configure your reactive datasources",
+    "metadata" : {
+      "keywords" : [ "datasource", "reactive" ],
+      "categories" : [ "data" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-reactive-datasource::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Azure Functions HTTP",
+    "description" : "Write Microsoft Azure functions",
+    "metadata" : {
+      "keywords" : [ "azure", "http" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/azure-functions-http",
+      "status" : "preview",
+      "codestart" : {
+        "name" : "azure-functions-http",
+        "kind" : "example",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-azure-functions-http::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Container Image Docker",
+    "description" : "Build container images of your application using Docker",
+    "metadata" : {
+      "keywords" : [ "docker", "container", "image" ],
+      "categories" : [ "cloud" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.container.image.docker" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-container-image", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-container-image-docker::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Container Image Jib",
+    "description" : "Build container images of your application using Jib",
+    "metadata" : {
+      "keywords" : [ "jib", "container", "image" ],
+      "categories" : [ "cloud" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.container.image.jib" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-container-image", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-container-image-jib::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Container Image S2I",
+    "description" : "Build container images of your application using OpenShift S2I",
+    "metadata" : {
+      "keywords" : [ "s2i", "container", "image" ],
+      "categories" : [ "cloud" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.container.image.s2i" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-container-image", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-container-image-s2i::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Container Image OpenShift",
+    "description" : "Build container images of your application using OpenShift",
+    "metadata" : {
+      "keywords" : [ "openshift", "container", "image" ],
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.container.image.openshift" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-container-image", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-container-image-openshift::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Container Image",
+    "description" : "Build container images of your application",
+    "metadata" : {
+      "keywords" : [ "container", "image" ],
+      "categories" : [ "cloud" ],
+      "status" : "preview",
+      "unlisted" : true,
+      "config" : [ "quarkus.container-image." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-container-image::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Kubernetes",
+    "description" : "Generate Kubernetes resources from annotations",
+    "metadata" : {
+      "keywords" : [ "kubernetes" ],
+      "guide" : "https://quarkus.io/guides/kubernetes",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "config" : [ "quarkus.container-image.", "quarkus.kubernetes.", "quarkus.openshift.", "quarkus.knative." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-container-image", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kubernetes::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenShift",
+    "description" : "Generate OpenShift resources from annotations",
+    "metadata" : {
+      "keywords" : [ "kubernetes", "openshift" ],
+      "guide" : "https://quarkus.io/guides/deploying-to-openshift",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "config" : [ "quarkus.container-image.", "quarkus.kubernetes.", "quarkus.openshift.", "quarkus.kubernetes-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.openshift" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-container-image-openshift", "io.quarkus:quarkus-container-image", "io.quarkus:quarkus-kubernetes" ]
+    },
+    "artifact" : "io.quarkus:quarkus-openshift::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Minikube",
+    "description" : "Generate Minikube resources from annotations",
+    "metadata" : {
+      "keywords" : [ "kubernetes", "minikube" ],
+      "guide" : "https://quarkus.io/guides/kubernetes",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "config" : [ "quarkus.container-image.", "quarkus.kubernetes.", "quarkus.openshift.", "quarkus.kubernetes-config.", "quarkus.knative." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-kubernetes", "io.quarkus:quarkus-container-image" ]
+    },
+    "artifact" : "io.quarkus:quarkus-minikube::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Kubernetes Client",
+    "description" : "Interact with Kubernetes and develop Kubernetes Operators",
+    "metadata" : {
+      "keywords" : [ "kubernetes-client" ],
+      "guide" : "https://quarkus.io/guides/kubernetes-client",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "config" : [ "quarkus.kubernetes-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kubernetes-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Kubernetes Client Internal",
+    "description" : "This module only exists as a separate module to house the configuration that needs to be present on the runtime classpath when the kubernetes extension is used",
+    "metadata" : {
+      "keywords" : [ "kubernetes-client-internal" ],
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kubernetes-client-internal::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Kubernetes Config",
+    "description" : "Read runtime configuration from Kubernetes ConfigMaps and Secrets",
+    "metadata" : {
+      "keywords" : [ "kubernetes-config" ],
+      "guide" : "https://quarkus.io/guides/kubernetes-config",
+      "categories" : [ "cloud" ],
+      "status" : "preview",
+      "config" : [ "quarkus.kubernetes-config." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-kubernetes-client", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kubernetes-config::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Kubernetes Service Binding",
+    "description" : "Read runtime configuration based on the Kubernetes Service Binding Specification",
+    "metadata" : {
+      "keywords" : [ "kubernetes-service-binding" ],
+      "categories" : [ "cloud" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.kubernetes.service.binding" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-kubernetes-service-binding::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenShift Client",
+    "description" : "Interact with OpenShift and develop OpenShift Operators",
+    "metadata" : {
+      "keywords" : [ "openshift-client", "openshift" ],
+      "guide" : "https://quarkus.io/guides/kubernetes-client",
+      "categories" : [ "cloud" ],
+      "status" : "stable",
+      "config" : [ "quarkus.kubernetes-client." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.openshift.client" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-kubernetes-client", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-kubernetes-client-internal", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-openshift-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Consul Config",
+    "description" : "Read runtime configuration from Consul Key - Value store",
+    "metadata" : {
+      "keywords" : [ "consul-client", "config", "configuration", "consul" ],
+      "categories" : [ "core" ],
+      "status" : "preview",
+      "config" : [ "quarkus.consul-config." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty" ]
+    },
+    "artifact" : "io.quarkus:quarkus-consul-config::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Apache Tika",
+    "description" : "Extract data from your documents with Apache Tika",
+    "metadata" : {
+      "keywords" : [ "tika", "parser" ],
+      "categories" : [ "miscellaneous" ],
+      "guide" : "https://quarkus.io/guides/tika",
+      "status" : "stable",
+      "config" : [ "quarkus.tika." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.tika" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-awt", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-tika::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Neo4j client",
+    "description" : "Connect to Neo4j graph datastore",
+    "metadata" : {
+      "keywords" : [ "neo4j", "graph", "nosql", "datastore" ],
+      "guide" : "https://quarkus.io/guides/neo4j",
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "config" : [ "quarkus.neo4j." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-neo4j::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Scala",
+    "description" : "Write your services in Scala",
+    "metadata" : {
+      "keywords" : [ "scala" ],
+      "categories" : [ "alt-languages" ],
+      "status" : "preview",
+      "codestart" : {
+        "name" : "scala",
+        "kind" : "core",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-scala::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JGit",
+    "description" : "Access your Git repositories",
+    "metadata" : {
+      "keywords" : [ "git" ],
+      "categories" : [ "miscellaneous" ],
+      "guide" : "https://quarkus.io/guides/jgit",
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-jsch", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jgit::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "JSch",
+    "description" : "JSch is a pure Java implementation of SSH2 and allows you to connect to an sshd server and use port forwarding, X11 forwarding, file transfer, etc.",
+    "metadata" : {
+      "keywords" : [ "jsch", "ssh", "ssh2" ],
+      "categories" : [ "miscellaneous" ],
+      "status" : "stable",
+      "unlisted" : "true",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-jsch::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Narayana STM - Software Transactional Memory",
+    "description" : "Offer Software Transactional Memory (stm) support",
+    "metadata" : {
+      "keywords" : [ "narayana-stm", "narayana", "stm", "transactions", "transaction", "software-transactional-memory", "tx", "txs" ],
+      "guide" : "https://quarkus.io/guides/software-transactional-memory",
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-narayana-stm::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elytron Security JDBC",
+    "description" : "Secure your applications with username/password stored in a database",
+    "metadata" : {
+      "keywords" : [ "security", "jdbc" ],
+      "guide" : "https://quarkus.io/guides/security-jdbc",
+      "categories" : [ "security" ],
+      "status" : "stable",
+      "config" : [ "quarkus.security.jdbc." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.security.elytron.jdbc" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elytron-security", "io.quarkus:quarkus-elytron-security-common", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource", "io.quarkus:quarkus-narayana-jta" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elytron-security-jdbc::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Security JPA",
+    "description" : "Secure your applications with username/password stored in a database via JPA",
+    "metadata" : {
+      "keywords" : [ "security", "jpa", "orm", "panache" ],
+      "guide" : "https://quarkus.io/guides/security-jpa",
+      "categories" : [ "security" ],
+      "status" : "preview",
+      "config" : [ "quarkus.datasource.", "quarkus.hibernate-orm." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.security.jpa" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-narayana-jta", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-security", "io.quarkus:quarkus-elytron-security-common", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-agroal", "io.quarkus:quarkus-datasource" ]
+    },
+    "artifact" : "io.quarkus:quarkus-security-jpa::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Elytron Security LDAP Realm",
+    "description" : "Secure your applications with username/password via LDAP",
+    "metadata" : {
+      "keywords" : [ "security", "ldap" ],
+      "guide" : "https://quarkus.io/guides/security-ldap",
+      "categories" : [ "security" ],
+      "status" : "preview",
+      "config" : [ "quarkus.security.ldap." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.security.elytron.ldap" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-elytron-security", "io.quarkus:quarkus-elytron-security-common", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-security", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-elytron-security-ldap::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Vault",
+    "description" : "Store your credentials securely in HashiCorp Vault",
+    "metadata" : {
+      "keywords" : [ "vault", "security" ],
+      "guide" : "https://quarkus.io/guides/vault",
+      "categories" : [ "security" ],
+      "status" : "preview",
+      "config" : [ "quarkus.vault." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-vault::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Logging JSON",
+    "description" : "Add JSON formatter for console logging",
+    "metadata" : {
+      "keywords" : [ "logging", "json", "formatter" ],
+      "categories" : [ "core" ],
+      "status" : "preview",
+      "guide" : "https://quarkus.io/guides/logging#json-logging",
+      "config" : [ "quarkus.log.console.json." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-jsonp" ]
+    },
+    "artifact" : "io.quarkus:quarkus-logging-json::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Logging Sentry",
+    "description" : "Use Sentry, a self-hosted or cloud-based error monitoring solution",
+    "metadata" : {
+      "keywords" : [ "logging", "sentry", "cloud" ],
+      "categories" : [ "core" ],
+      "status" : "preview",
+      "guide" : "https://quarkus.io/guides/logging-sentry",
+      "config" : [ "quarkus.log.sentry." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-logging-sentry::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Logging GELF",
+    "description" : "Log using the Graylog Extended Log Format and centralize your logs in ELK or EFK",
+    "metadata" : {
+      "keywords" : [ "logging", "gelf", "handler" ],
+      "guide" : "https://quarkus.io/guides/centralized-log-management",
+      "categories" : [ "core" ],
+      "status" : "preview",
+      "config" : [ "quarkus.log.handler.gelf." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-logging-gelf::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Cache",
+    "description" : "Enable application data caching in CDI beans",
+    "metadata" : {
+      "keywords" : [ "cache", "caching" ],
+      "guide" : "https://quarkus.io/guides/cache",
+      "categories" : [ "data" ],
+      "status" : "preview",
+      "config" : [ "quarkus.cache." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-caffeine", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-cache::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Google Cloud Functions",
+    "description" : "Write Google Cloud functions",
+    "metadata" : {
+      "keywords" : [ "google cloud", "gcloud", "gcp", "function" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/gcp-functions",
+      "status" : "preview",
+      "codestart" : {
+        "name" : "google-cloud-functions",
+        "kind" : "example",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.google-cloud-functions." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-google-cloud-functions::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Google Cloud Functions HTTP",
+    "description" : "Write Google Cloud functions with HTTP endpoints",
+    "metadata" : {
+      "keywords" : [ "google cloud", "gcloud", "gcp", "function", "http" ],
+      "categories" : [ "cloud" ],
+      "guide" : "https://quarkus.io/guides/gcp-functions-http",
+      "status" : "preview",
+      "codestart" : {
+        "name" : "google-cloud-functions-http",
+        "kind" : "example",
+        "languages" : "java",
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-google-cloud-functions-http::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Micrometer metrics",
+    "description" : "Instrument the runtime and your application with dimensional metrics using Micrometer.",
+    "metadata" : {
+      "keywords" : [ "micrometer", "metrics", "metric", "monitoring" ],
+      "guide" : "https://quarkus.io/guides/micrometer",
+      "categories" : [ "observability" ],
+      "status" : "stable",
+      "config" : [ "quarkus.micrometer." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-micrometer::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Micrometer Registry Prometheus",
+    "description" : "Enable Prometheus support for Micrometer",
+    "metadata" : {
+      "keywords" : [ "micrometer", "metrics", "metric", "prometheus", "monitoring" ],
+      "guide" : "https://quarkus.io/guides/micrometer",
+      "categories" : [ "observability" ],
+      "status" : "stable",
+      "config" : [ "quarkus.micrometer." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-micrometer", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-micrometer-registry-prometheus::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenTelemetry",
+    "description" : "Use OpenTelemetry to trace services",
+    "metadata" : {
+      "keywords" : [ "opentelemetry", "tracing", "distributed-tracing", "monitoring" ],
+      "guide" : "https://quarkus.io/guides/opentelemetry",
+      "categories" : [ "observability" ],
+      "status" : "experimental",
+      "config" : [ "quarkus.opentelemetry." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.opentelemetry.tracer" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-opentelemetry::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenTelemetry exporter: Jaeger",
+    "description" : "Enable Jaeger Exporter for OpenTelemetry",
+    "metadata" : {
+      "keywords" : [ "opentelemetry", "tracing", "distributed-tracing", "opentelemetry-jaeger-exporter", "monitoring" ],
+      "guide" : "https://quarkus.io/guides/opentelemetry",
+      "categories" : [ "observability" ],
+      "status" : "experimental",
+      "config" : [ "quarkus.opentelemetry." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-opentelemetry", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-grpc-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-opentelemetry-exporter-jaeger::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "OpenTelemetry exporter: OTLP",
+    "description" : "Enable OTLP Exporter for OpenTelemetry",
+    "metadata" : {
+      "keywords" : [ "opentelemetry", "tracing", "distributed-tracing", "opentelemetry-otlp-exporter", "monitoring" ],
+      "guide" : "https://quarkus.io/guides/opentelemetry",
+      "categories" : [ "observability" ],
+      "status" : "experimental",
+      "config" : [ "quarkus.opentelemetry." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-opentelemetry", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-grpc-common" ]
+    },
+    "artifact" : "io.quarkus:quarkus-opentelemetry-exporter-otlp::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Qute Templating",
+    "description" : "Offer templating support for web, email, etc in a build time, type-safe way",
+    "metadata" : {
+      "keywords" : [ "templating", "templates", "template", "html" ],
+      "guide" : "https://quarkus.io/guides/qute",
+      "categories" : [ "miscellaneous" ],
+      "status" : "stable",
+      "config" : [ "quarkus.qute." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-qute::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Qute",
+    "description" : "Qute Templating integration for RESTEasy",
+    "metadata" : {
+      "keywords" : [ "templating", "templates", "resteasy" ],
+      "guide" : "https://quarkus.io/guides/qute",
+      "categories" : [ "web" ],
+      "status" : "experimental",
+      "codestart" : {
+        "name" : "resteasy-qute",
+        "languages" : [ "java", "kotlin" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.qute." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-qute" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-qute::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Picocli",
+    "description" : "Develop command line applications with Picocli",
+    "metadata" : {
+      "keywords" : [ "picocli", "command-line" ],
+      "guide" : "https://quarkus.io/guides/picocli",
+      "categories" : [ "miscellaneous" ],
+      "status" : "experimental",
+      "codestart" : {
+        "name" : "picocli",
+        "languages" : [ "java", "kotlin" ],
+        "artifact" : "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+      },
+      "config" : [ "quarkus.picocli." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-picocli::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "WebJar Locator",
+    "description" : "Simplify paths for WebJar dependencies",
+    "metadata" : {
+      "short-name" : "webjars-locator",
+      "keywords" : [ "web", "webjar" ],
+      "guide" : "",
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-webjars-locator::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Mutiny",
+    "description" : "Write reactive applications with the modern Reactive Programming library Mutiny",
+    "metadata" : {
+      "keywords" : [ "reactive streams", "reactive programming", "reactive", "RXJava", "Reactor" ],
+      "categories" : [ "reactive" ],
+      "status" : "stable",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-arc" ]
+    },
+    "artifact" : "io.quarkus:quarkus-mutiny::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Mutiny",
+    "description" : "Mutiny support for RESTEasy server",
+    "metadata" : {
+      "keywords" : [ "resteasy-mutiny", "resteasy", "mutiny" ],
+      "guide" : "https://quarkus.io/guides/getting-started-reactive#mutiny",
+      "categories" : [ "web", "reactive" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-resteasy-server-common", "io.quarkus:quarkus-resteasy-mutiny-common", "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-mutiny::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "RESTEasy Mutiny Common",
+    "description" : "Mutiny components common to the RESTEasy server and the REST Client",
+    "metadata" : {
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "capabilities" : {
+        "provides" : [ "io.quarkus.resteasy.mutiny" ]
+      },
+      "extension-dependencies" : [ "io.quarkus:quarkus-resteasy-common", "io.quarkus:quarkus-core", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-apache-httpclient" ]
+    },
+    "artifact" : "io.quarkus:quarkus-resteasy-mutiny-common::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Eclipse Vert.x GraphQL",
+    "description" : "Query the API using GraphQL",
+    "metadata" : {
+      "keywords" : [ "eclipse", "vertx", "vert.x", "graphql", "vertx-graphql" ],
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "config" : [ "quarkus.vertx-graphql." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx-http", "io.quarkus:quarkus-core", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation", "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson" ]
+    },
+    "artifact" : "io.quarkus:quarkus-vertx-graphql::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Redis Client",
+    "description" : "Connect to Redis in either imperative or reactive style",
+    "metadata" : {
+      "keywords" : [ "redis", "redis-client", "vertx-redis", "vertx", "vert.x", "reactive" ],
+      "guide" : "https://quarkus.io/guides/redis",
+      "categories" : [ "data", "reactive" ],
+      "status" : "preview",
+      "config" : [ "quarkus.redis." ],
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core", "io.quarkus:quarkus-netty", "io.quarkus:quarkus-jackson", "io.quarkus:quarkus-mutiny", "io.quarkus:quarkus-smallrye-context-propagation" ]
+    },
+    "artifact" : "io.quarkus:quarkus-redis-client::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "Apache HttpClient",
+    "description" : "Connect to HTTP resources using the Apache HttpClient",
+    "metadata" : {
+      "keywords" : [ "http", "client" ],
+      "categories" : [ "web" ],
+      "status" : "stable",
+      "unlisted" : true,
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-apache-httpclient::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  }, {
+    "name" : "AWT",
+    "description" : "Enable AWT and Java2D usage",
+    "metadata" : {
+      "keywords" : [ "awt", "font", "java2d", "image", "imageio" ],
+      "categories" : [ "miscellaneous" ],
+      "status" : "preview",
+      "built-with-quarkus-core" : "999-SNAPSHOT",
+      "extension-dependencies" : [ "io.quarkus:quarkus-arc", "io.quarkus:quarkus-core" ]
+    },
+    "artifact" : "io.quarkus:quarkus-awt::jar:999-SNAPSHOT",
+    "origins" : [ "io.quarkus:quarkus-bom-quarkus-platform-descriptor:999-SNAPSHOT:json:999-SNAPSHOT" ]
+  } ],
+  "categories" : [ {
+    "id" : "web",
+    "name" : "Web",
+    "description" : "Everything you need for REST endpoints, HTTP and web formats like JSON",
+    "metadata" : {
+      "pinned" : [ "io.quarkus:quarkus-resteasy", "io.quarkus:quarkus-resteasy-jackson", "io.quarkus:quarkus-resteasy-jsonb" ]
+    }
+  }, {
+    "id" : "data",
+    "name" : "Data",
+    "description" : "Accessing and managing your data (RDBMS, NoSQL, caching, transaction management, etc)",
+    "metadata" : {
+      "pinned" : [ "io.quarkus:quarkus-hibernate-orm", "io.quarkus:quarkus-hibernate-orm-panache", "io.quarkus:quarkus-jdbc-postgresql", "io.quarkus:quarkus-jdbc-mariadb", "io.quarkus:quarkus-jdbc-mysql", "io.quarkus:quarkus-jdbc-h2", "io.quarkus:quarkus-jdbc-mssql", "io.quarkus:quarkus-jdbc-db2", "io.quarkus:quarkus-jdbc-derby", "io.quarkus:quarkus-jdbc-oracle" ]
+    }
+  }, {
+    "id" : "messaging",
+    "name" : "Messaging",
+    "description" : "Send and receives message to various messaging systems (AMQP, KAfka etc)",
+    "metadata" : {
+      "pinned" : [ "io.quarkus:quarkus-smallrye-reactive-messaging", "io.quarkus:quarkus-smallrye-reactive-messaging-amqp", "io.quarkus:quarkus-smallrye-reactive-messaging-kafka", "io.quarkus:quarkus-smallrye-reactive-messaging-mqtt" ]
+    }
+  }, {
+    "id" : "core",
+    "name" : "Core",
+    "description" : "Core Quarkus components: engine, logging, etc.",
+    "metadata" : {
+      "pinned" : [ "io.quarkus:quarkus-config-yaml", "io.quarkus:quarkus-logging-json" ]
+    }
+  }, {
+    "id" : "reactive",
+    "name" : "Reactive",
+    "description" : "Non blocking stack and connectors",
+    "metadata" : {
+      "pinned" : [ "io.quarkus:quarkus-vertx", "io.quarkus:quarkus-mutiny" ]
+    }
+  }, {
+    "id" : "cloud",
+    "name" : "Cloud",
+    "description" : "Useful for Cloud Native deployments platforms like Kubernetes and cloud providers",
+    "metadata" : {
+      "pinned" : [ "io.quarkus:quarkus-kubernetes", "io.quarkus:quarkus-openshift", "io.quarkus:quarkus-smallrye-health", "io.quarkus:quarkus-smallrye-fault-tolerance" ]
+    }
+  }, {
+    "id" : "observability",
+    "name" : "Observability",
+    "description" : "Metrics, tracing, etc"
+  }, {
+    "id" : "security",
+    "name" : "Security",
+    "description" : "Everything you need to secure your application",
+    "metadata" : {
+      "pinned" : [ "io.quarkus:quarkus-oidc", "io.quarkus:quarkus-smallrye-jwt" ]
+    }
+  }, {
+    "id" : "serialization",
+    "name" : "Serialization",
+    "description" : "Serializing and deserializing various formats"
+  }, {
+    "id" : "miscellaneous",
+    "name" : "Miscellaneous",
+    "description" : "Mixed bag of good stuff"
+  }, {
+    "id" : "compatibility",
+    "name" : "Compatibility",
+    "description" : "Support for alternative programming models on Quarkus"
+  }, {
+    "id" : "alt-languages",
+    "name" : "Alternative languages",
+    "description" : "Support for other JVM based languages"
+  } ],
+  "metadata" : {
+    "project" : {
+      "properties" : {
+        "doc-root" : "https://quarkus.io",
+        "rest-assured-version" : "${rest-assured.version}",
+        "compiler-plugin-version" : "3.8.1",
+        "surefire-plugin-version" : "3.0.0",
+        "kotlin-version" : "1.5.31",
+        "scala-version" : "2.12.13",
+        "scala-plugin-version" : "4.4.0",
+        "quarkus-core-version" : "999-SNAPSHOT",
+        "maven-plugin-groupId" : "io.quarkus",
+        "maven-plugin-artifactId" : "quarkus-maven-plugin",
+        "maven-plugin-version" : "999-SNAPSHOT",
+        "gradle-plugin-id" : "io.quarkus",
+        "gradle-plugin-version" : "999-SNAPSHOT",
+        "supported-maven-versions" : "[3.6.2,)",
+        "proposed-maven-version" : "3.8.1",
+        "maven-wrapper-version" : "3.1.0",
+        "gradle-wrapper-version" : "7.2"
+      }
+    },
+    "codestarts-artifacts" : [ "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT" ]
+  },
+  "quarkus-core-version" : "999-SNAPSHOT"
+}

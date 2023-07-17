@@ -1,18 +1,21 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonCatalogMapperHelper;
-import io.quarkus.registry.catalog.json.JsonExtensionCatalog;
-import io.quarkus.registry.client.RegistryPlatformExtensionsResolver;
-import io.quarkus.registry.util.PlatformArtifacts;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
+
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.transfer.ArtifactNotFoundException;
+
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.ExtensionCatalog;
+import io.quarkus.registry.client.RegistryPlatformExtensionsResolver;
+import io.quarkus.registry.util.PlatformArtifacts;
 
 public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensionsResolver {
 
@@ -26,7 +29,8 @@ public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensio
     }
 
     @Override
-    public ExtensionCatalog resolvePlatformExtensions(ArtifactCoords platformCoords) throws RegistryResolutionException {
+    public ExtensionCatalog.Mutable resolvePlatformExtensions(ArtifactCoords platformCoords)
+            throws RegistryResolutionException {
         final String version;
         if (platformCoords.getVersion() == null) {
             version = resolveLatestBomVersion(platformCoords, "[0-alpha,)");
@@ -44,13 +48,37 @@ public class MavenPlatformExtensionsResolver implements RegistryPlatformExtensio
         try {
             jsonPath = artifactResolver.resolve(catalogArtifact);
         } catch (Exception e) {
-            throw new RegistryResolutionException("Failed to resolve Quarkus extensions catalog " + catalogArtifact,
-                    e);
+            RemoteRepository repo = null;
+            Throwable t = e;
+            while (t != null) {
+                if (t instanceof ArtifactNotFoundException) {
+                    repo = ((ArtifactNotFoundException) t).getRepository();
+                    break;
+                }
+                t = t.getCause();
+            }
+            final StringBuilder buf = new StringBuilder();
+            buf.append("Failed to resolve extension catalog of ")
+                    .append(PlatformArtifacts.ensureBomArtifact(platformCoords).toCompactCoords());
+            if (repo != null) {
+                buf.append(" from Maven repository ").append(repo.getId()).append(" (").append(repo.getUrl()).append(")");
+                final List<RemoteRepository> mirrored = repo.getMirroredRepositories();
+                if (!mirrored.isEmpty()) {
+                    buf.append(" which is a mirror of ");
+                    buf.append(mirrored.get(0).getId()).append(" (").append(mirrored.get(0).getUrl()).append(")");
+                    for (int i = 1; i < mirrored.size(); ++i) {
+                        buf.append(", ").append(mirrored.get(i).getId()).append(" (").append(mirrored.get(i).getUrl())
+                                .append(")");
+                    }
+                    buf.append(". The mirror may be out of sync.");
+                }
+            }
+            throw new RegistryResolutionException(buf.toString(), e);
         }
         try {
-            return JsonCatalogMapperHelper.deserialize(jsonPath, JsonExtensionCatalog.class);
+            return ExtensionCatalog.mutableFromFile(jsonPath);
         } catch (IOException e) {
-            throw new RegistryResolutionException("Failed to parse Quarkus extensions catalog " + jsonPath, e);
+            throw new RegistryResolutionException("Failed to parse Quarkus extension catalog " + jsonPath, e);
         }
     }
 

@@ -1,6 +1,6 @@
 package io.quarkus.it.config;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.spi.Converter;
 

@@ -6,8 +6,8 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -19,6 +19,7 @@ import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.auth.AbstractBearerTokenExtractor;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.mutiny.Uni;
@@ -36,24 +37,39 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
 
     @Inject
     private JWTAuthContextInfo authContextInfo;
+    private final boolean silent;
+
+    public JWTAuthMechanism(SmallRyeJwtConfig config) {
+        this.silent = config == null ? false : config.silent;
+    }
 
     @Override
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager) {
         String jwtToken = new VertxBearerTokenExtractor(authContextInfo, context).getBearerToken();
         if (jwtToken != null) {
+            context.put(HttpAuthenticationMechanism.class.getName(), this);
             return identityProviderManager
-                    .authenticate(new TokenAuthenticationRequest(new JsonWebTokenCredential(jwtToken)));
+                    .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
+                            new TokenAuthenticationRequest(new JsonWebTokenCredential(jwtToken)), context));
         }
         return Uni.createFrom().optional(Optional.empty());
     }
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
+        if (silent) {
+            //if this is silent we only send a challenge if the request contained auth headers
+            //otherwise we assume another method will send the challenge
+            String authHeader = context.request().headers().get(HttpHeaderNames.AUTHORIZATION);
+            if (authHeader == null) {
+                return Uni.createFrom().optional(Optional.empty());
+            }
+        }
         ChallengeData result = new ChallengeData(
                 HttpResponseStatus.UNAUTHORIZED.code(),
                 HttpHeaderNames.WWW_AUTHENTICATE,
-                "Bearer");
+                BEARER);
         return Uni.createFrom().item(result);
     }
 
@@ -93,7 +109,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
     }
 
     @Override
-    public HttpCredentialTransport getCredentialTransport() {
+    public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         final String tokenHeaderName = authContextInfo.getTokenHeader();
         if (COOKIE_HEADER.equals(tokenHeaderName)) {
             String tokenCookieName = authContextInfo.getTokenCookie();
@@ -101,11 +117,12 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
             if (tokenCookieName == null) {
                 tokenCookieName = BEARER;
             }
-            return new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, tokenCookieName);
+            return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, tokenCookieName));
         } else if (AUTHORIZATION_HEADER.equals(tokenHeaderName)) {
-            return new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BEARER);
+            return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BEARER));
         } else {
-            return new HttpCredentialTransport(HttpCredentialTransport.Type.OTHER_HEADER, tokenHeaderName);
+            return Uni.createFrom()
+                    .item(new HttpCredentialTransport(HttpCredentialTransport.Type.OTHER_HEADER, tokenHeaderName));
         }
     }
 }

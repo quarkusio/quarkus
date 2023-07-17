@@ -14,11 +14,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,7 +27,7 @@ public class LockTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(SimpleBean.class));
 
     @Inject
@@ -53,7 +51,7 @@ public class LockTest {
                     }
                 }));
             }
-            // Wait until the first method invocation is locked 
+            // Wait until the first method invocation is locked
             assertTrue(SimpleBean.FIRST_INSIDE_LATCH.await(5, TimeUnit.SECONDS));
             // Verify that no invocation was completed but one started
             assertEquals(0, SimpleBean.COMPLETED.get());

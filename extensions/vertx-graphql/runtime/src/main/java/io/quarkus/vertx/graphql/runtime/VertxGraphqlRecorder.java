@@ -22,7 +22,7 @@ public class VertxGraphqlRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
-                if (event.normalisedPath().length() == (event.currentRoute().getPath().length()
+                if (event.normalizedPath().length() == (event.currentRoute().getPath().length()
                         + (event.mountPoint() == null ? 0 : event.mountPoint().length() - 1))) {
                     event.response().setStatusCode(302);
                     event.response().headers().set(HttpHeaders.LOCATION, (event.mountPoint() == null ? "" : event.mountPoint())

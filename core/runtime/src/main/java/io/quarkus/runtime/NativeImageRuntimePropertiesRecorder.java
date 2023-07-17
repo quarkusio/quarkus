@@ -3,12 +3,10 @@ package io.quarkus.runtime;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.graalvm.nativeimage.ImageInfo;
-
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * Native image system properties are not automatically propagated to runtime any more
+ * Native image system properties are not automatically propagated to runtime anymore.
  */
 @Recorder
 public class NativeImageRuntimePropertiesRecorder {
@@ -16,7 +14,7 @@ public class NativeImageRuntimePropertiesRecorder {
     private static final Map<String, String> MAP = new HashMap<>();
 
     public void setInStaticInit(String name, String value) {
-        if (ImageInfo.inImageBuildtimeCode()) {
+        if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
             MAP.put(name, value);
         }
     }

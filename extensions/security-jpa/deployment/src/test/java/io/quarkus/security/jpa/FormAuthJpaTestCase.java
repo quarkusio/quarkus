@@ -39,7 +39,7 @@ public class FormAuthJpaTestCase {
             "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<JavaArchive>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
@@ -66,7 +66,7 @@ public class FormAuthJpaTestCase {
                 .header("location", containsString("/login"))
                 .cookie("quarkus-redirect-location", containsString("/servlet-secured"));
 
-        // test with a non existent user
+        // test with a non-existent user
         RestAssured
                 .given()
                 .filter(cookies)

@@ -9,7 +9,7 @@ public final class HealthBuildItem extends MultiBuildItem {
     private final boolean enabled;
 
     /**
-     * 
+     *
      * @param healthCheckClass
      * @param enabled
      * @param configRootName This parameter is not used
@@ -21,9 +21,9 @@ public final class HealthBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @param healthCheckClass the name of the health check class, needs to implements
-     *        org.eclipse.microprofile.health.HealthCheck
-     * @param enabled whether or not the check is enabled
+     * @param healthCheckClass the name of the health check class, needs to implement
+     *        {@link org.eclipse.microprofile.health.HealthCheck}
+     * @param enabled whether the check is enabled
      */
     public HealthBuildItem(String healthCheckClass, boolean enabled) {
         this.healthCheckClass = healthCheckClass;

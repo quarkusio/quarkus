@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
+
+import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
@@ -20,14 +22,24 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
 
     private final Set<String> allModelPackageNames = new TreeSet<>();
     private final Set<String> entityClassNames = new TreeSet<>();
+    private final Set<String> managedClassNames = new TreeSet<>();
+    private final Set<DotName> potentialCdiBeanClassNames = new TreeSet<>();
     private final Set<String> allModelClassNames = new TreeSet<>();
     private final Map<String, List<RecordableXmlMapping>> xmlMappingsByPU = new HashMap<>();
 
     public JpaModelBuildItem(Set<String> allModelPackageNames, Set<String> entityClassNames,
-            Set<String> allModelClassNames, Map<String, List<RecordableXmlMapping>> xmlMappingsByPU) {
+            Set<String> managedClassNames, Set<DotName> potentialCdiBeanClassNames,
+            Map<String, List<RecordableXmlMapping>> xmlMappingsByPU) {
         this.allModelPackageNames.addAll(allModelPackageNames);
         this.entityClassNames.addAll(entityClassNames);
-        this.allModelClassNames.addAll(allModelClassNames);
+        this.managedClassNames.addAll(managedClassNames);
+        this.potentialCdiBeanClassNames.addAll(potentialCdiBeanClassNames);
+        this.allModelClassNames.addAll(managedClassNames);
+        // Converters need to be in the list of model types in order for @Converter#autoApply to work,
+        // but they don't need reflection enabled.
+        for (DotName potentialCdiBeanClassName : potentialCdiBeanClassNames) {
+            this.allModelClassNames.add(potentialCdiBeanClassName.toString());
+        }
         this.xmlMappingsByPU.putAll(xmlMappingsByPU);
     }
 
@@ -46,7 +58,22 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * @return the list of all model class names: entities, mapped super classes...
+     * @return the list of managed class names: entities, mapped super classes and embeddables only.
+     */
+    public Set<String> getManagedClassNames() {
+        return managedClassNames;
+    }
+
+    /**
+     * @return the list of classes that might be retrieved by Hibernate ORM as CDI beans,
+     *         e.g. converters, listeners, ...
+     */
+    public Set<DotName> getPotentialCdiBeanClassNames() {
+        return potentialCdiBeanClassNames;
+    }
+
+    /**
+     * @return the list of all model class names: entities, mapped super classes, {@link #getPotentialCdiBeanClassNames()}...
      */
     public Set<String> getAllModelClassNames() {
         return allModelClassNames;

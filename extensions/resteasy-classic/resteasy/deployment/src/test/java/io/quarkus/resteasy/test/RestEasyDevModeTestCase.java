@@ -5,8 +5,6 @@ import static org.hamcrest.Matchers.is;
 import java.util.function.Function;
 
 import org.hamcrest.Matchers;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,7 +15,7 @@ public class RestEasyDevModeTestCase {
 
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(PostResource.class)
                     .addClass(GreetingResource.class)
                     .addClass(InterfaceResource.class)

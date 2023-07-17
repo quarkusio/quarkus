@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.enterprise.event.Reception;
-import javax.enterprise.event.TransactionPhase;
+import jakarta.enterprise.event.Reception;
+import jakarta.enterprise.event.TransactionPhase;
 
 import org.junit.jupiter.api.Test;
 

@@ -7,8 +7,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.NativeImageTest;
 import io.quarkus.test.junit.NativeTestExtension;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 
@@ -19,7 +19,7 @@ import io.quarkus.test.junit.TestProfile;
  * {@code quarkus.configuration.build-time-mismatch-at-runtime = fail} and
  * {@link BuildTimeValueChangeTestProfile#getConfigOverrides()} changes {@code quarkus.arc.remove-unused-beans}.
  */
-@NativeImageTest
+@QuarkusIntegrationTest
 @TestProfile(BuiltTimeValueChangeManualIT.BuildTimeValueChangeTestProfile.class)
 @Disabled("Manual testing only")
 public class BuiltTimeValueChangeManualIT {

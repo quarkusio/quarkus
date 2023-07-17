@@ -1,6 +1,6 @@
 package io.quarkus.it.rest;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class Someservice {

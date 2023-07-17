@@ -1,6 +1,5 @@
 package io.quarkus.it.resteasy.reactive.kotlin
 
-import io.quarkus.test.junit.NativeImageTest
+import io.quarkus.test.junit.QuarkusIntegrationTest
 
-@NativeImageTest
-class NativeReactiveGreetingResourceIT : ReactiveGreetingResourceTest()
+@QuarkusIntegrationTest class NativeReactiveGreetingResourceIT : ReactiveGreetingResourceTest()

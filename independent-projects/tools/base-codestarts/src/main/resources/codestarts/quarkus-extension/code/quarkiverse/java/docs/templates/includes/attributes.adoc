@@ -1,0 +1,3 @@
+:project-version: ${release.current-version}
+
+:examples-dir: ./../examples/

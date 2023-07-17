@@ -1,7 +1,6 @@
 package io.quarkus.micrometer.runtime.binder.mpmetrics;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -11,7 +10,7 @@ import org.eclipse.microprofile.metrics.annotation.Metric;
 
 import io.micrometer.core.instrument.Tags;
 
-class MetricDescriptor {
+public class MetricDescriptor {
     final String name;
     final Tags tags;
     ExtendedMetricID metricId = null;
@@ -68,7 +67,7 @@ class MetricDescriptor {
     }
 
     public String toString() {
-        return name + Arrays.asList(tags);
+        return name + List.of(tags);
     }
 
     // Deal with ubiquitous MetricID containing nefarious TreeSet and arbitrary

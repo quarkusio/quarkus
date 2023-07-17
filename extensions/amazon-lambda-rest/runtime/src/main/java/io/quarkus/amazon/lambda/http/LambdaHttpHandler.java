@@ -37,6 +37,8 @@ import io.quarkus.netty.runtime.virtual.VirtualClientConnection;
 import io.quarkus.netty.runtime.virtual.VirtualResponseHandler;
 import io.quarkus.vertx.http.runtime.QuarkusHttpHeaders;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.vertx.core.net.SocketAddress;
+import io.vertx.core.net.impl.ConnectionBase;
 
 @SuppressWarnings("unused")
 public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsProxyResponse> {
@@ -44,7 +46,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
     private static final int BUFFER_SIZE = 8096;
 
-    private static Headers errorHeaders = new Headers();
+    private static final Headers errorHeaders = new Headers();
     static {
         errorHeaders.putSingle("Content-Type", "application/json");
     }
@@ -95,7 +97,13 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                     }
                     responseBuilder.setMultiValueHeaders(new Headers());
                     for (String name : res.headers().names()) {
+                        if (name.equalsIgnoreCase("Transfer-Encoding")) {
+                            continue; // ignore transfer encoding, chunked screws up message and response
+                        }
                         for (String v : res.headers().getAll(name)) {
+                            if (name.equalsIgnoreCase("Transfer-Encoding") && v.contains("chunked")) {
+                                continue;
+                            }
                             responseBuilder.getMultiValueHeaders().add(name, v);
                         }
                     }
@@ -126,7 +134,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                             responseBuilder.setBase64Encoded(true);
                             responseBuilder.setBody(Base64.getEncoder().encodeToString(baos.toByteArray()));
                         } else {
-                            responseBuilder.setBody(new String(baos.toByteArray(), StandardCharsets.UTF_8));
+                            responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         }
                     }
                     future.complete(responseBuilder);
@@ -147,7 +155,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
     }
 
-    private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request, Context context)
+    private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request,
+            Context context)
             throws Exception {
         String path = request.getPath();
         //log.info("---- Got lambda request: " + path);
@@ -192,6 +201,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
 
         HttpContent requestContent = LastHttpContent.EMPTY_LAST_CONTENT;
         if (request.getBody() != null) {
+            // See https://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.3
+            nettyRequest.headers().add(HttpHeaderNames.TRANSFER_ENCODING, "chunked");
             if (request.isBase64Encoded()) {
                 ByteBuf body = Unpooled.wrappedBuffer(Base64.getDecoder().decode(request.getBody()));
                 requestContent = new DefaultLastHttpContent(body);
@@ -203,6 +214,18 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
+        if (request.getRequestContext() != null
+                && request.getRequestContext().getIdentity() != null
+                && request.getRequestContext().getIdentity().getSourceIp() != null
+                && request.getRequestContext().getIdentity().getSourceIp().length() > 0) {
+            int port = 443; // todo, may be bad to assume 443?
+            if (request.getMultiValueHeaders() != null &&
+                    request.getMultiValueHeaders().getFirst("X-Forwarded-Port") != null) {
+                port = Integer.parseInt(request.getMultiValueHeaders().getFirst("X-Forwarded-Port"));
+            }
+            connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
+                    SocketAddress.inetSocketAddress(port, request.getRequestContext().getIdentity().getSourceIp()));
+        }
 
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);

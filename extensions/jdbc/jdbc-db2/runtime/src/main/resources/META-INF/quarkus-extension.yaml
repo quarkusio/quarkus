@@ -6,5 +6,6 @@ metadata:
   - "jdbc-db2"
   - "jdbc"
   - "db2"
+  guide: "https://quarkus.io/guides/datasource"
   categories:
   - "data"

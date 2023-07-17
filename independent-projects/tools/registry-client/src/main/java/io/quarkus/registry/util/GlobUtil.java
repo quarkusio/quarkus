@@ -2,6 +2,10 @@ package io.quarkus.registry.util;
 
 import java.util.regex.Pattern;
 
+/**
+ * @deprecated Use {@link io.quarkus.util.GlobUtil} instead
+ */
+@Deprecated(forRemoval = true, since = "2.11.0.Final")
 public class GlobUtil {
 
     private GlobUtil() {
@@ -61,149 +65,10 @@ public class GlobUtil {
      * @param glob the glob expression to transform
      * @return a regular expression suitable for {@link Pattern}
      * @throws IllegalStateException in case the {@code glob} is syntactically invalid
+     * @deprecated Use {@link io.quarkus.util.GlobUtil#toRegexPattern(String)} instead
      */
+    @Deprecated(forRemoval = true, since = "2.11.0.Final")
     public static String toRegexPattern(String glob) {
-        final int length = glob.length();
-        final StringBuilder result = new StringBuilder(length + 4);
-        glob(glob, 0, length, null, result);
-        return result.toString();
-    }
-
-    private static int glob(String glob, int i, int length, String stopChars, StringBuilder result) {
-        while (i < length) {
-            char current = glob.charAt(i++);
-            switch (current) {
-                case '*':
-                    if (i < length && glob.charAt(i) == '*') {
-                        result.append(".*");
-                        i++;
-                    } else {
-                        result.append("[^/]*");
-                    }
-                    break;
-                case '?':
-                    result.append("[^/]");
-                    break;
-                case '[':
-                    i = charClass(glob, i, length, result);
-                    break;
-                case '{':
-                    i = alternation(glob, i, length, result);
-                    break;
-                case '\\':
-                    i = unescape(glob, i, length, result, false);
-                    break;
-                default:
-                    if (stopChars != null && stopChars.indexOf(current) >= 0) {
-                        i--;
-                        return i;
-                    } else {
-                        escapeIfNeeded(current, result);
-                    }
-                    break;
-            }
-        }
-        return i;
-    }
-
-    private static int alternation(String glob, int i, int length, StringBuilder result) {
-        result.append("(?:");
-        while (i < length) {
-            char current = glob.charAt(i++);
-            switch (current) {
-                case '}':
-                    result.append(')');
-                    return i;
-                case ',':
-                    result.append('|');
-                    i = glob(glob, i, length, ",}", result);
-                    break;
-                default:
-                    i--;
-                    i = glob(glob, i, length, ",}", result);
-                    break;
-            }
-        }
-        throw new IllegalStateException(String.format("Missing } at the end of input in glob %s", glob));
-    }
-
-    private static int unescape(String glob, int i, int length, StringBuilder result, boolean charClass) {
-        if (i < length) {
-            final char current = glob.charAt(i++);
-            if (charClass) {
-                escapeCharClassIfNeeded(current, result);
-            } else {
-                escapeIfNeeded(current, result);
-            }
-            return i;
-        } else {
-            throw new IllegalStateException(
-                    String.format("Incomplete escape sequence at the end of input in glob %s", glob));
-        }
-    }
-
-    private static int charClass(String glob, int i, int length, StringBuilder result) {
-        result.append("[[^/]&&[");
-        if (i < length && glob.charAt(i) == '!') {
-            i++;
-            result.append('^');
-        }
-        while (i < length) {
-            char current = glob.charAt(i++);
-            switch (current) {
-                case ']':
-                    result.append("]]");
-                    return i;
-                case '-':
-                    result.append('-');
-                    break;
-                case '\\':
-                    i = unescape(glob, i, length, result, true);
-                    break;
-                default:
-                    escapeCharClassIfNeeded(current, result);
-                    break;
-            }
-        }
-        throw new IllegalStateException(String.format("Missing ] at the end of input in glob %s", glob));
-    }
-
-    private static void escapeIfNeeded(char current, StringBuilder result) {
-        switch (current) {
-            case '*':
-            case '?':
-            case '+':
-            case '.':
-            case '^':
-            case '$':
-            case '{':
-            case '[':
-            case ']':
-            case '|':
-            case '(':
-            case ')':
-            case '\\':
-                result.append('\\');
-                break;
-            default:
-                break;
-        }
-        result.append(current);
-    }
-
-    private static void escapeCharClassIfNeeded(char current, StringBuilder result) {
-        switch (current) {
-            case '^':
-            case '[':
-            case ']':
-            case '&':
-            case '-':
-            case '\\':
-                result.append('\\');
-                break;
-            default:
-                break;
-        }
-        result.append(current);
+        return io.quarkus.util.GlobUtil.toRegexPattern(glob);
     }
 }

@@ -1,13 +1,15 @@
 package io.quarkus.it.hibernate.multitenancy.fruit;
 
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantResolver;
 import io.vertx.ext.web.RoutingContext;
 
+@PersistenceUnitExtension
 @RequestScoped
 public class CustomTenantResolver implements TenantResolver {
 

@@ -2,17 +2,20 @@ package io.quarkus.arc.test.contexts.application;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.BeforeDestroyed;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.event.Observes;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.BeforeDestroyed;
+import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.context.Destroyed;
+import jakarta.enterprise.context.Initialized;
+import jakarta.enterprise.event.Observes;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class ApplicationInitializedTest {
 

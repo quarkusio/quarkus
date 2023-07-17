@@ -1,30 +1,31 @@
 package io.quarkus.devtools.commands.handlers;
 
 import static io.quarkus.devtools.messagewriter.MessageIcons.ERROR_ICON;
+import static io.quarkus.devtools.utils.Patterns.isExpression;
+import static io.quarkus.devtools.utils.Patterns.toRegex;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getExtendedKeywords;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.getShortName;
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
-import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
-import io.quarkus.devtools.commands.data.SelectionResult;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.devtools.project.extensions.Extensions;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.maven.ArtifactKey;
-import io.quarkus.registry.catalog.Extension;
-import io.quarkus.registry.catalog.ExtensionCatalog;
-import io.quarkus.registry.catalog.json.JsonExtension;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
+
+import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
+import io.quarkus.devtools.commands.data.SelectionResult;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.devtools.project.extensions.Extensions;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.registry.catalog.Extension;
+import io.quarkus.registry.catalog.ExtensionCatalog;
 
 final class QuarkusCommandHandlers {
 
@@ -38,9 +39,11 @@ final class QuarkusCommandHandlers {
         for (String query : extensionsQuery) {
             final int countColons = StringUtils.countMatches(query, ":");
             if (countColons > 1) {
-                final JsonExtension ext = new JsonExtension();
-                ext.setArtifact(ArtifactCoords.fromString(query));
-                ext.setName(ext.getArtifact().getArtifactId());
+                ArtifactCoords artifact = ArtifactCoords.fromString(query);
+                final Extension ext = Extension.builder()
+                        .setArtifact(artifact)
+                        .setName(artifact.getArtifactId())
+                        .build();
                 builder.add(ext);
                 continue;
             }
@@ -50,12 +53,12 @@ final class QuarkusCommandHandlers {
                 final ArtifactKey key = ArtifactKey.fromString(query);
                 for (Extension ext : extensionCatalog) {
                     if (ext.getArtifact().getKey().equals(key)) {
-                        result = new SelectionResult(Collections.singletonList(ext), true);
+                        result = new SelectionResult(List.of(ext), true);
                         break;
                     }
                 }
                 if (result == null) {
-                    result = new SelectionResult(Collections.emptyList(), false);
+                    result = new SelectionResult(List.of(), false);
                 }
             } else {
                 result = select(query, extensionCatalog, false);
@@ -73,7 +76,7 @@ final class QuarkusCommandHandlers {
                     return null;
                 }
                 sb.append(ERROR_ICON + " Multiple extensions matching '").append(query).append("'");
-                candidates.forEach(extension -> sb.append(System.lineSeparator()).append("     * ")
+                candidates.forEach(extension -> sb.append(System.lineSeparator()).append("     - ")
                         .append(extension.managementKey()));
                 sb.append(System.lineSeparator())
                         .append("     try using the exact name or the full GAV (group id, artifact id, and version).");
@@ -166,71 +169,13 @@ final class QuarkusCommandHandlers {
                 .filter(e -> !isUnlisted(e)).collect(Collectors.toList());
     }
 
-    private static boolean matchLabels(Pattern pattern, List<String> labels) {
+    private static boolean matchLabels(Pattern pattern, Collection<String> labels) {
         boolean matches = false;
         // if any label match it's ok
         for (String label : labels) {
             matches = matches || pattern.matcher(label.toLowerCase()).matches();
         }
         return matches;
-    }
-
-    private static Pattern toRegex(final String str) {
-        try {
-            String wildcardToRegex = wildcardToRegex(str);
-            if (wildcardToRegex != null && !wildcardToRegex.isEmpty()) {
-                return Pattern.compile(wildcardToRegex);
-            }
-        } catch (PatternSyntaxException e) {
-            //ignore it
-        }
-        return null;
-    }
-
-    private static String wildcardToRegex(String wildcard) {
-        // don't try with file match char in pattern
-        if (!isExpression(wildcard)) {
-            return null;
-        }
-        StringBuffer s = new StringBuffer(wildcard.length());
-        s.append("^.*");
-        for (int i = 0, is = wildcard.length(); i < is; i++) {
-            char c = wildcard.charAt(i);
-            switch (c) {
-                case '*':
-                    s.append(".*");
-                    break;
-                case '?':
-                    s.append(".");
-                    break;
-                case '^': // escape character in cmd.exe
-                    s.append("\\");
-                    break;
-                // escape special regexp-characters
-                case '(':
-                case ')':
-                case '[':
-                case ']':
-                case '$':
-                case '.':
-                case '{':
-                case '}':
-                case '|':
-                case '\\':
-                    s.append("\\");
-                    s.append(c);
-                    break;
-                default:
-                    s.append(c);
-                    break;
-            }
-        }
-        s.append(".*$");
-        return (s.toString());
-    }
-
-    private static boolean isExpression(String s) {
-        return s == null || s.isEmpty() ? false : s.contains("*") || s.contains("?");
     }
 
     private static boolean matchesShortName(Extension extension, String q) {

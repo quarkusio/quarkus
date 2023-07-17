@@ -10,11 +10,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-spring-web-parent</artifactId>
-    <name>Quarkus - Spring - Web</name>
+    <artifactId>quarkus-spring-web-parent-aggregator</artifactId>
+    <name>Quarkus - Spring Web - Parent - Aggregator</name>
     <packaging>pom</packaging>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
+        <module>core</module>
+        <module>resteasy-classic</module>
+        <module>resteasy-reactive</module>
     </modules>
 </project>

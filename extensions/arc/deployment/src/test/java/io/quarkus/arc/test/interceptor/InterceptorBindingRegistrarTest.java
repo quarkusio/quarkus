@@ -9,15 +9,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.List;
 
-import javax.annotation.Priority;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+import jakarta.annotation.Priority;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,7 +29,7 @@ public class InterceptorBindingRegistrarTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(NotAnInterceptorBinding.class, SimpleBean.class, SimpleInterceptor.class))
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {

@@ -1,12 +1,13 @@
 package io.quarkus.oidc.runtime;
 
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.AlternativePriority;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.RefreshToken;
@@ -38,7 +39,8 @@ public class OidcTokenCredentialProducer {
 
     @Produces
     @RequestScoped
-    @AlternativePriority(1)
+    @Alternative
+    @Priority(1)
     AccessTokenCredential currentAccessToken() {
         AccessTokenCredential cred = identity.getCredential(AccessTokenCredential.class);
         if (cred == null || cred.getToken() == null) {

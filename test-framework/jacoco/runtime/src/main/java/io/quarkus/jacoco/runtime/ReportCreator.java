@@ -45,7 +45,7 @@ public class ReportCreator implements Runnable {
             long abortTime = System.currentTimeMillis() + 10000;
             Path datafile = Paths.get(reportInfo.dataFile);
             while (System.currentTimeMillis() < abortTime) {
-                if (Files.exists(datafile)) {
+                if (Files.exists(datafile) && Files.size(datafile) > 0) {
                     break;
                 }
                 Thread.sleep(100);

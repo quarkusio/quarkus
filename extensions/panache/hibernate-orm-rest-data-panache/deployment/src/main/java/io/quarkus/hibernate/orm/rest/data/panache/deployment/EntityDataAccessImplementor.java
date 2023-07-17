@@ -3,8 +3,9 @@ package io.quarkus.hibernate.orm.rest.data.panache.deployment;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.util.List;
+import java.util.Map;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ResultHandle;
@@ -57,6 +58,32 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
+     * Implements <code>Entity.find(query, params).page(page).list()</code>
+     */
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
+                page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
+    }
+
+    /**
+     * Implements <code>Entity.find(query, sort, params).page(page).list()</code>
+     */
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort, ResultHandle query,
+            ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Sort.class, Map.class),
+                query, sort, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
+                page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
+    }
+
+    /**
      * Implements <code>entity.persist()</code>
      */
     @Override
@@ -93,5 +120,13 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
         creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
                 page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), query);
+    }
+
+    /**
+     * Implements <code>Entity.count()</code>
+     */
+    @Override
+    public ResultHandle count(BytecodeCreator creator) {
+        return creator.invokeStaticMethod(ofMethod(entityClassName, "count", long.class));
     }
 }

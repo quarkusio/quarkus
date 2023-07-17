@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Qute Templating Engine
-
-include::./attributes.adoc[]
+include::_attributes.adoc[]
+:categories: miscellaneous
+:summary: Learn more about how you can use templating in your applications with the Qute template engine.
 
 Qute is a templating engine designed specifically to meet the Quarkus needs.
 The usage of reflection is minimized to reduce the size of native images.
@@ -23,17 +24,42 @@ Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {q
 
 The solution is located in the `qute-quickstart` {quickstarts-tree-url}/qute-quickstart[directory].
 
-== Hello World with JAX-RS
+== Hello World with Jakarta REST
 
-If you want to use Qute in your JAX-RS application, you need to add the `quarkus-resteasy-qute` extension first.
-In your `pom.xml` file, add:
+If you want to use Qute in your Jakarta REST application, you need to add an extension first:
 
-[source,xml]
+* either `quarkus-resteasy-reactive-qute` if you are using RESTEasy Reactive:
++
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-reactive-qute</artifactId>
+</dependency>
+----
++
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-reactive-qute")
+----
+
+* or `quarkus-resteasy-qute` if you are using RESTEasy Classic:
++
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
     <artifactId>quarkus-resteasy-qute</artifactId>
 </dependency>
+----
++
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-resteasy-qute")
 ----
 
 We'll start with a very simple template:
@@ -54,10 +80,12 @@ Now let's inject the "compiled" template in the resource class.
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
@@ -76,7 +104,7 @@ public class HelloResource {
 }
 ----
 <1> If there is no `@Location` qualifier provided, the field name is used to locate the template. In this particular case, we're injecting a template with path `templates/hello.txt`.
-<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering. 
+<2> `Template.data()` returns a new template instance that can be customized before the actual rendering is triggered. In this case, we put the name value under the key `name`. The data map is accessible during rendering.
 <3> Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
 
 If your application is running, you can request the endpoint:
@@ -116,10 +144,12 @@ Now let's declare and use those templates in the resource class.
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.CheckedTemplate;
@@ -141,7 +171,7 @@ public class HelloResource {
 ----
 <1> This declares a template with path `templates/HelloResource/hello`.
 <2> `Templates.hello()` returns a new template instance that is returned from the resource method. Note that we don't trigger the rendering - this is done automatically by a special `ContainerResponseFilter` implementation.
- 
+
 NOTE: Once you have declared a `@CheckedTemplate` class, we will check that all its methods point to existing templates, so if you try to use a template from your Java code and you forgot to add it, we will let you know at build time :)
 
 Keep in mind this style of declaration allows you to reference templates declared in other resources too:
@@ -151,10 +181,12 @@ Keep in mind this style of declaration allows you to reference templates declare
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.QueryParam;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 
@@ -172,7 +204,7 @@ public class GoodbyeResource {
 === Top-level type-safe templates
 
 Naturally, if you want to declare templates at the top-level, directly in `/src/main/resources/templates/hello.txt`, for example,
-you can declare them in a toplevel (non-nested) `Templates` class:
+you can declare them in a top-level (non-nested) `Templates` class:
 
 .HelloResource.java
 [source,java]
@@ -191,7 +223,7 @@ public class Templates {
 <1> This declares a template with path `templates/hello`.
 
 
-== Template Parameter Declarations 
+== Template Parameter Declarations
 
 If you declare a *parameter declaration* in a template then Qute attempts to validate all expressions that reference this parameter and if an incorrect expression is found the build fails.
 
@@ -221,7 +253,7 @@ Let's start again with the template:
 </head>
 <body>
     <h1>{item.name}</h1>
-    <div>Price: {item.price}</div> <2> 
+    <div>Price: {item.price}</div> <2>
 </body>
 </html>
 ----
@@ -235,12 +267,11 @@ Finally, let's create a resource class with type-safe templates:
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
@@ -265,6 +296,8 @@ public class ItemResource {
 <1> Declare a method that gives us a `TemplateInstance` for `templates/ItemResource/item.html` and declare its `Item item` parameter so we can validate the template.
 <2> Make the `Item` object accessible in the template.
 
+NOTE: When the `--parameters` compiler argument is enabled, RESTEasy Reactive may infer the parameter names from the method argument names, making the `@PathParam("id")` annotation optional in this case.
+
 === Template parameter declaration inside the template itself
 
 Alternatively, you can declare your template parameters in the template file itself.
@@ -283,7 +316,7 @@ Let's start again with the template:
 </head>
 <body>
     <h1>{item.name}</h1>
-    <div>Price: {item.price}</div> 
+    <div>Price: {item.price}</div>
 </body>
 </html>
 ----
@@ -297,12 +330,11 @@ Finally, let's create a resource class.
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Template;
@@ -315,11 +347,11 @@ public class ItemResource {
 
     @Inject
     Template item; <1>
-    
+
     @GET
     @Path("{id}")
     @Produces(MediaType.TEXT_HTML)
-    public TemplateInstance get(@PathParam("id") Integer id) {
+    public TemplateInstance get(Integer id) {
         return item.data("item", service.findItem(id)); <2>
     }
 }
@@ -351,7 +383,7 @@ Let's update our template:
 </head>
 <body>
     <h1>{item.name}</h1>
-    <div>Price: {item.price}</div> 
+    <div>Price: {item.price}</div>
     {#if item.price > 100} <1>
     <div>Discounted Price: {item.discountedPrice}</div> <2>
     {/if}
@@ -401,7 +433,7 @@ In your `pom.xml` file, add:
 </dependency>
 ----
 
-Let's suppose the have a `SampleService` bean whose `get()` method returns a list of samples.
+Let's suppose we have a `SampleService` bean whose `get()` method returns a list of samples.
 
 .Sample.java
 [source,java]
@@ -447,7 +479,7 @@ The template is simple:
 ----
 package org.acme.quarkus.sample;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import io.quarkus.qute.Template;
 import io.quarkus.qute.Location;
@@ -472,35 +504,12 @@ public class ReportGenerator {
 }
 ----
 <1> In this case, we use the `@Location` qualifier to specify the template path: `templates/reports/v1/report_01.html`.
-<2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the link:scheduler[Scheduler] guide.
+<2> Use the `@Scheduled` annotation to instruct Quarkus to execute this method on the half hour. For more information see the xref:scheduler.adoc[Scheduler] guide.
 <3> The `TemplateInstance.render()` method triggers rendering. Note that this method blocks the current thread.
-
-== Reactive and Asynchronous APIs
-
-Templates can be rendered as a `CompletionStage<String>` (completed with the rendered output asynchronously) or as `Publisher<String>` containing the rendered chunks:
-
-[source, java]
-----
-CompletionStage<String> async = template.data("name", "neo").renderAsync();
-Publisher<String> publisher = template.data("name", "neo").publisher();
-----
-
-In the case of a `Publisher`, the template is rendered chunk by chunk following the requests from the subscriber.
-The rendering is not started until a subscriber requests it.
-The returned `Publisher` is an instance of `io.smallrye.mutiny.Multi`.
-
-It is possible to create an instance of `io.smallrye.mutiny.Uni` as follows:
-
-[source, java]
-----
-Uni<String> uni = Uni.createFrom().completionStage(() -> template.data("name", "neo").renderAsync());
-----
-
-In this case, the rendering only starts once the subscriber requests it.
 
 == Qute Reference Guide
 
-To learn more about Qute, please refer to the link:qute-reference[Qute reference guide].
+To learn more about Qute, please refer to the xref:qute-reference.adoc[Qute reference guide].
 
 [[qute-configuration-reference]]
 == Qute Configuration Reference

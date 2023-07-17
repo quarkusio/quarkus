@@ -17,13 +17,12 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This object represents the claims property in the authorizer context of a request. The claims object is normally populated
  * by a Cognito User Pool authorizer and contains the following fields:
- * 
+ *
  * <pre>
  * "claims": {
  *     "sub": "42df3b02-29f1-4779-a3e5-eff92ff280b2",
@@ -39,13 +38,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * }
  * </pre>
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class CognitoAuthorizerClaims {
 
     //-------------------------------------------------------------
     // Variables - Private
     //-------------------------------------------------------------
 
+    @JsonAnySetter
+    @JsonAnyGetter
     private Map<String, String> claims = new HashMap<>();
 
     @JsonProperty(value = "sub")

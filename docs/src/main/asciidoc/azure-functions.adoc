@@ -1,0 +1,211 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Azure Functions
+:extension-status: preview
+include::_attributes.adoc[]
+:categories: cloud
+:summary: Integrate Quarkus with the Microsoft Azure functions that you have written.
+
+The `quarkus-azure-functions` extension is a simple integration point between Azure Functions
+and Quarkus.  It interacts with Azure Functions runtime to bootstrap quarkus and turns any
+Azure Functions class you write into a CDI/Arc bean.
+
+This allows you to inject any service or component initialized by quarkus directly into your function
+classes.  You can also change the lifecycle of your function class from request scoped (the default)
+to application scope too if you want your function class to be a singleton.
+
+[source, java]
+----
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.annotation.AuthorizationLevel;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.HttpTrigger;
+
+import jakarta.inject.Inject;
+import java.util.Optional;
+
+public class Function {
+    @Inject
+    GreetingService service;
+
+    @FunctionName("HttpExample")
+    public HttpResponseMessage run(
+            @HttpTrigger(
+                name = "req",
+                methods = {HttpMethod.GET, HttpMethod.POST},
+                authLevel = AuthorizationLevel.ANONYMOUS)
+                HttpRequestMessage<Optional<String>> request,
+            final ExecutionContext context) {
+
+        // Parse query parameter
+        final String query = request.getQueryParameters().get("name");
+        final String name = request.getBody().orElse(query);
+
+        if (name == null) {
+            return request.createResponseBuilder(HttpStatus.BAD_REQUEST).body("Please pass a name on the query string or in the request body").build();
+        } else {
+            return request.createResponseBuilder(HttpStatus.OK).body(service.greeting(name)).build();
+        }
+    }
+}
+----
+
+include::{includes}/extension-status.adoc[]
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+* https://azure.microsoft.com[An Azure Account].  Free accounts work.
+* https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools] version 4.x
+* https://docs.microsoft.com/en-us/cli/azure/install-azure-cli[Azure CLI Installed]
+
+== Solution
+
+This guide walks you through running a maven project that can deploy an Http Trigger Azure Function class.
+This function class injects a CDI bean service that generates a greeting message that is passed back
+to the client.
+
+== Creating the Maven/Gradle Project
+
+You can generate the example code from Quarkus's online application generator at https://code.quarkus.io/d?e=azure-functions&cn=code.quarkus.io[this link].
+
+You can also generate this example with the Quarkus CLI:
+
+[source,bash,subs=attributes+]
+----
+quarkus create app --extension=quarkus-azure-functions
+----
+
+Add the `--gradle` switch if you want to generate a gradle project.
+
+== Examining the project
+
+If you open the `pom.xml` or `build.gradle` build file of the generated project you'll see that
+the project is similar to any other Quarkus project.
+The `quarkus-azure-functions` extension is the integration point between
+Quarkus and Azure Functions.  It registers callback with the Azure Functions runtime to bootstrap
+Quarkus and to set up Quarkus/Arc as the function factory for your function classes.
+
+The current implementation of the `quarkus-azure-functions` extension no longer requires the
+`azure-functions-maven-plugin` or gradle equivalent.  Local development and Azure Functions packaging and
+deployment is now all done by Quarkus.
+
+Build configuration is now all within `application.properties`.  The only required configuration switch
+is `quarkus.azure-functions.app-name`.
+
+== Azure Deployment Descriptors
+
+The Azure Functions `host.json` deployment descriptor is automatically
+generated, but if you need to override it, declare it in the root directory of the project and
+rerun the build when you are ready.
+
+== Quarkus dev mode
+
+Quarkus dev mode does not work currently with Azure Functions.
+
+== Run locally in Azure Functions local environment
+
+If you want to try your app with a local Azure Functions environment, you can
+use this command
+
+[source,bash,subs=attributes+]
+----
+./mvnw quarkus:run
+----
+
+or
+
+[source,bash,subs=attributes+]
+----
+./gradlew --info --no-daemon quarkusRun
+----
+
+Gradle is a bit quirky with process management, so you need the `--no-daemon` switch or control-c will not
+destroy the process cleanly and you'll have open ports.
+
+Note that you must have the https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local#v2[Azure Functions Core Tools]
+installed for this to work!
+
+The URL to access the example would be:
+
+https://localhost:8081/HttpExample?name=Bill
+
+
+== Quarkus Integration Testing
+
+You can implement integration tests using `@QuarkusIntegrationTest` functionality.  When these
+integration tests run, the local Azure Functions environment will be spun up for the duration of integration testing.
+
+
+For maven:
+[source,bash,subs=attributes+]
+----
+./mvnw -DskipITs=false verify
+----
+
+Make sure any integration tests you execute with maven use the `*IT.java` file pattern so that regular builds do not execute
+the test.
+
+For Gradle:
+[source,bash,subs=attributes+]
+----
+./gradlew --info quarkusIntTest
+----
+
+Make sure any integration tests you execute with Gradle are located within `src/integrationTest/java`.  Integration
+tests that exist in `src/test` will run with normal build and fail.
+
+== Login to Azure
+
+If you don't log in to Azure you won't be able to deploy.
+
+[source,bash,subs=attributes+]
+----
+az login
+----
+
+== Deploy to Azure
+
+The `quarkus-azure-functions` extension handles all the work to deploy to Azure.  By default,
+Quarkus will use the Azure CLI in the background to authenticate and deploy to Azure.  If you have
+multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id`
+property in your `application.properties` file to the subscription you want to use.
+For other authentication mechanisms and deployment options see our config properties https://quarkus.io/guides/all-config[here].
+
+To run the deploy, after you build your project execute:
+
+[source,bash,subs=attributes+]
+----
+./mvnw quarkus:deploy
+----
+
+or
+
+[source,bash,subs=attributes+]
+----
+./gradlew --info deploy
+----
+
+If deployment is a success, Quarkus will output the endpoint URL of the example function to the console
+For Gradle, you must use the `--info` switch to see this output!
+
+i.e.
+[source]
+----
+[INFO] HTTP Trigger Urls:
+[INFO] 	 HttpExample : https://{appName}.azurewebsites.net/api/httpexample
+----
+
+The URL to access the service would be
+
+https://{appName}.azurewebsites.net/api/HttpExample
+
+
+

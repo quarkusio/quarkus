@@ -4,12 +4,10 @@ plugins {
 }
 
 repositories {
-    if (System.properties.containsKey('maven.repo.local')) {
-        maven {
-            url System.properties.get('maven.repo.local')
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
         }
-    } else {
-        mavenLocal()
     }
     mavenCentral()
 }
@@ -28,7 +26,7 @@ sourceSets {
             resources.srcDir 'src/funcTest/resources'
         }
 
-        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath + configurations.compileOnly
+        compileClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
         runtimeClasspath += output + compileClasspath
     }
 }
@@ -53,4 +51,9 @@ task functionalTest(type: Test, description: 'Functional tests', dependsOn: [pro
         showStandardStreams = true
     }
     systemProperty 'quarkus.http.host', 'localhost'
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
+}
+
+test {
+    systemProperty "java.util.logging.manager", "org.jboss.logmanager.LogManager"
 }

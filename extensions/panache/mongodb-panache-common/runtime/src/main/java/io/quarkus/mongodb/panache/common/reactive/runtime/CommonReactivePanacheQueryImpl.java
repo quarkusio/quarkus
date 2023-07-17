@@ -2,15 +2,19 @@ package io.quarkus.mongodb.panache.common.reactive.runtime;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
+import org.bson.BsonDocument;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.ReadPreference;
 import com.mongodb.client.model.Collation;
+import com.mongodb.client.model.CountOptions;
 
 import io.quarkus.mongodb.FindOptions;
+import io.quarkus.mongodb.panache.common.reactive.Panache;
 import io.quarkus.mongodb.panache.common.runtime.MongoPropertyUtil;
 import io.quarkus.mongodb.reactive.ReactiveMongoCollection;
 import io.quarkus.panache.common.Page;
@@ -31,6 +35,8 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     private Range range;
 
     private Collation collation;
+
+    private OptionalInt batchSize = OptionalInt.empty();
 
     public CommonReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
         this.collection = collection;
@@ -149,12 +155,26 @@ public class CommonReactivePanacheQueryImpl<Entity> {
         return (CommonReactivePanacheQueryImpl<T>) this;
     }
 
+    public <T extends Entity> CommonReactivePanacheQueryImpl<T> withBatchSize(int batchSize) {
+        this.batchSize = OptionalInt.of(batchSize);
+        return (CommonReactivePanacheQueryImpl<T>) this;
+    }
+
     // Results
 
     @SuppressWarnings("unchecked")
     public Uni<Long> count() {
         if (count == null) {
-            count = mongoQuery == null ? collection.countDocuments() : collection.countDocuments(mongoQuery);
+            CountOptions countOptions = new CountOptions();
+            if (collation != null) {
+                countOptions.collation(collation);
+            }
+
+            if (Panache.getCurrentSession() != null) {
+                count = collection.countDocuments(Panache.getCurrentSession(), getQuery(), countOptions);
+            } else {
+                count = collection.countDocuments(getQuery(), countOptions);
+            }
         }
         return count;
     }
@@ -168,7 +188,8 @@ public class CommonReactivePanacheQueryImpl<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> Multi<T> stream() {
         FindOptions options = buildOptions();
-        return mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        return Panache.getCurrentSession() != null ? collection.find(Panache.getCurrentSession(), getQuery(), options)
+                : collection.find(getQuery(), options);
     }
 
     public <T extends Entity> Uni<T> firstResult() {
@@ -178,14 +199,18 @@ public class CommonReactivePanacheQueryImpl<Entity> {
 
     public <T extends Entity> Uni<Optional<T>> firstResultOptional() {
         FindOptions options = buildOptions(1);
-        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        Multi<T> results = Panache.getCurrentSession() != null
+                ? collection.find(Panache.getCurrentSession(), getQuery(), options)
+                : collection.find(getQuery(), options);
         return results.collect().first().map(o -> Optional.ofNullable(o));
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Uni<T> singleResult() {
         FindOptions options = buildOptions(2);
-        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        Multi<T> results = Panache.getCurrentSession() != null
+                ? collection.find(Panache.getCurrentSession(), getQuery(), options)
+                : collection.find(getQuery(), options);
         return results.collect().asList().map(list -> {
             if (list.size() != 1) {
                 throw new PanacheQueryException("There should be only one result");
@@ -197,7 +222,9 @@ public class CommonReactivePanacheQueryImpl<Entity> {
 
     public <T extends Entity> Uni<Optional<T>> singleResultOptional() {
         FindOptions options = buildOptions(2);
-        Multi<T> results = mongoQuery == null ? collection.find(options) : collection.find(mongoQuery, options);
+        Multi<T> results = Panache.getCurrentSession() != null
+                ? collection.find(Panache.getCurrentSession(), getQuery(), options)
+                : collection.find(getQuery(), options);
         return results.collect().asList().map(list -> {
             if (list.size() == 2) {
                 throw new PanacheQueryException("There should be no more than one result");
@@ -221,6 +248,7 @@ public class CommonReactivePanacheQueryImpl<Entity> {
         if (this.collation != null) {
             options.collation(collation);
         }
+        batchSize.ifPresent(batchSize -> options.batchSize(batchSize));
         return options;
     }
 
@@ -240,5 +268,9 @@ public class CommonReactivePanacheQueryImpl<Entity> {
             options.collation(collation);
         }
         return options.limit(maxResults);
+    }
+
+    private Bson getQuery() {
+        return mongoQuery == null ? new BsonDocument() : mongoQuery;
     }
 }

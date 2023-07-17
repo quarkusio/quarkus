@@ -1,8 +1,16 @@
 package io.quarkus.dev.console;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.io.PrintStream;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 public abstract class QuarkusConsole {
 
@@ -13,6 +21,8 @@ public abstract class QuarkusConsole {
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
     public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    public static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
+    public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
 
     /**
      * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
@@ -39,9 +49,60 @@ public abstract class QuarkusConsole {
 
     public static volatile boolean installed;
 
-    protected volatile Predicate<String> outputFilter;
+    protected static final List<BiPredicate<String, Boolean>> outputFilters = new CopyOnWriteArrayList<>();
 
     private volatile boolean started = false;
+
+    static boolean redirectsInstalled = false;
+
+    public final static PrintStream ORIGINAL_OUT = System.out;
+    public final static PrintStream ORIGINAL_ERR = System.err;
+    public final static InputStream ORIGINAL_IN = System.in;
+
+    public static PrintStream REDIRECT_OUT = null;
+    public static PrintStream REDIRECT_ERR = null;
+    public static StateChangeInputStream REDIRECT_IN;
+    protected volatile boolean userReadInProgress;
+
+    public synchronized static void installRedirects() {
+        if (redirectsInstalled) {
+            return;
+        }
+        redirectsInstalled = true;
+
+        //force console init
+        //otherwise you can get a stack overflow as it sees the redirected output
+        QuarkusConsole.INSTANCE.isInputSupported();
+        REDIRECT_OUT = new RedirectPrintStream(false);
+        REDIRECT_ERR = new RedirectPrintStream(true);
+        REDIRECT_IN = new StateChangeInputStream();
+        System.setOut(REDIRECT_OUT);
+        System.setErr(REDIRECT_ERR);
+        System.setIn(REDIRECT_IN);
+    }
+
+    public synchronized static void uninstallRedirects() {
+        if (!redirectsInstalled) {
+            return;
+        }
+
+        if (REDIRECT_OUT != null) {
+            REDIRECT_OUT.flush();
+            REDIRECT_OUT.close();
+            REDIRECT_OUT = null;
+        }
+        if (REDIRECT_ERR != null) {
+            REDIRECT_ERR.flush();
+            REDIRECT_ERR.close();
+            REDIRECT_ERR = null;
+        }
+        REDIRECT_IN = null;
+        System.setOut(ORIGINAL_OUT);
+        System.setErr(ORIGINAL_ERR);
+        System.setIn(ORIGINAL_IN);
+
+        redirectsInstalled = false;
+    }
 
     public static boolean hasColorSupport() {
         if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
@@ -84,9 +145,27 @@ public abstract class QuarkusConsole {
 
     public abstract void setPromptMessage(String message);
 
-    public abstract void write(String s);
+    public abstract void write(boolean errorStream, String s);
 
-    public abstract void write(byte[] buf, int off, int len);
+    public abstract void write(boolean errorStream, byte[] buf, int off, int len);
+
+    public void exitCliMode() {
+        //noop for the non-aesh console
+    }
+
+    /**
+     * Exposes single character aliases so they can be displayed in the help screen
+     */
+    public Map<Character, String> singleLetterAliases() {
+        return Map.of();
+    }
+
+    /**
+     * runs a single letter alias
+     */
+    public void runAlias(char alias) {
+
+    }
 
     protected String stripAnsiCodes(String s) {
         if (s == null) {
@@ -96,11 +175,96 @@ public abstract class QuarkusConsole {
         return s;
     }
 
-    public void setOutputFilter(Predicate<String> logHandler) {
-        this.outputFilter = logHandler;
+    public static void addOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.add(logHandler);
+    }
+
+    public static void removeOutputFilter(BiPredicate<String, Boolean> logHandler) {
+        outputFilters.remove(logHandler);
+    }
+
+    protected boolean shouldWrite(boolean errorStream, String s) {
+        boolean ok = true;
+        for (var i : outputFilters) {
+            if (!i.test(s, errorStream)) {
+                //no early exit as filters can also record output
+                ok = false;
+            }
+        }
+        return ok;
     }
 
     public boolean isInputSupported() {
         return true;
+    }
+
+    public boolean isAnsiSupported() {
+        return false;
+    }
+
+    protected void userReadStart() {
+
+    }
+
+    protected void userReadStop() {
+
+    }
+
+    public static class StateChangeInputStream extends InputStream {
+
+        private final LinkedBlockingDeque<Integer> queue = new LinkedBlockingDeque<>();
+
+        private volatile boolean reading;
+
+        public synchronized boolean acceptInput(int input) {
+            if (reading) {
+                queue.add(input);
+                notifyAll();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public synchronized int read() throws IOException {
+            reading = true;
+            try {
+                while (queue.isEmpty()) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        throw new InterruptedIOException();
+                    }
+                }
+                return queue.pollFirst();
+            } finally {
+                reading = false;
+            }
+        }
+
+        @Override
+        public synchronized int read(byte[] b, int off, int len) throws IOException {
+            reading = true;
+            int read = 0;
+            try {
+                while (read < len) {
+                    while (queue.isEmpty()) {
+                        try {
+                            wait();
+                        } catch (InterruptedException e) {
+                            throw new InterruptedIOException();
+                        }
+                    }
+                    byte byteValue = queue.poll().byteValue();
+                    b[read++] = byteValue;
+                    if (byteValue == '\n' || byteValue == '\r') {
+                        return read;
+                    }
+                }
+                return read;
+            } finally {
+                reading = false;
+            }
+        }
     }
 }

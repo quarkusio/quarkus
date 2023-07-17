@@ -9,4 +9,13 @@ metadata:
   guide: "https://quarkus.io/guides/amqp"
   categories:
   - "messaging"
-  status: "preview"
+  status: "stable"
+  config:
+  - "mp.messaging."
+  - "quarkus.reactive-messaging."
+  - "quarkus.amqp."
+  codestart:
+    name: "reactive-messaging"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

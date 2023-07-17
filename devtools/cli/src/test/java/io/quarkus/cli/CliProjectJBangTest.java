@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
@@ -53,7 +53,7 @@ public class CliProjectJBangTest {
 
         Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
 
-        String source = CliDriver.readFileAsString(project, javaMain);
+        String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertTrue(source.contains("quarkus-resteasy"),
                 "Generated source should reference resteasy. Found:\n" + source);
 
@@ -76,7 +76,7 @@ public class CliProjectJBangTest {
                 "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
-                "-x vertx-web",
+                "-x reactive-routes",
                 "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
@@ -89,9 +89,9 @@ public class CliProjectJBangTest {
         validateBasicIdentifiers(project, "silly", "my-project", "0.1.0");
         Path javaMain = valdiateJBangSourcePackage(project, "");
 
-        String source = CliDriver.readFileAsString(project, javaMain);
-        Assertions.assertTrue(source.contains("quarkus-vertx-web"),
-                "Generated source should reference vertx-web. Found:\n" + source);
+        String source = CliDriver.readFileAsString(javaMain);
+        Assertions.assertTrue(source.contains("quarkus-reactive-routes"),
+                "Generated source should reference quarkus-reactive-routes. Found:\n" + source);
 
         result = CliDriver.invokeValidateDryRunBuild(project);
 
@@ -114,7 +114,7 @@ public class CliProjectJBangTest {
 
         Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
 
-        String source = CliDriver.readFileAsString(project, javaMain);
+        String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertFalse(source.contains("quarkus-resteasy"),
                 "Generated source should reference resteasy. Found:\n" + source);
         Assertions.assertTrue(source.contains("quarkus-picocli"),
@@ -165,6 +165,37 @@ public class CliProjectJBangTest {
 
         Assertions.assertFalse(result.stdout.contains("offline"),
                 "jbang command should not specify offline\n" + result);
+    }
+
+    @Test
+    public void testCreateArgJava11() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
+                "-e", "-B", "--verbose",
+                "--java", "11");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+
+        String source = CliDriver.readFileAsString(javaMain);
+        Assertions.assertTrue(source.contains("//JAVA 11"),
+                "Generated source should contain //JAVA 11. Found:\n" + source);
+    }
+
+    @Test
+    public void testCreateArgJava17() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
+                "-e", "-B", "--verbose",
+                "--java", "17");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        String source = CliDriver.readFileAsString(javaMain);
+        Assertions.assertTrue(source.contains("//JAVA 17"),
+                "Generated source should contain //JAVA 17. Found:\n" + source);
     }
 
     void validateBasicIdentifiers(Path project, String group, String artifact, String version) throws Exception {

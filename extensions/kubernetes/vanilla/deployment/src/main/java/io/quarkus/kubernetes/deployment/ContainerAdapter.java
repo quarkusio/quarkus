@@ -19,6 +19,8 @@ import io.fabric8.kubernetes.api.model.ContainerBuilder;
  */
 public class ContainerAdapter {
 
+    private static final String ANY = null;
+
     public static Container adapt(io.dekorate.kubernetes.config.Container container) {
         String name = container.getName();
         if (Strings.isNullOrEmpty(name)) {
@@ -34,14 +36,14 @@ public class ContainerAdapter {
                 .withArgs(container.getArguments());
 
         for (Env env : container.getEnvVars()) {
-            builder.accept(new AddEnvVarDecorator(env));
+            builder.accept(new AddEnvVarDecorator(ANY, name, env));
         }
         for (Port port : container.getPorts()) {
             // this was changed to use our patched port decorator
-            builder.accept(new AddPortDecorator(port));
+            builder.accept(new AddPortDecorator(ANY, name, port));
         }
         for (Mount mount : container.getMounts()) {
-            builder.accept(new AddMountDecorator(mount));
+            builder.accept(new AddMountDecorator(ANY, name, mount));
         }
 
         builder.accept(new ApplyImagePullPolicyDecorator(name, container.getImagePullPolicy()));

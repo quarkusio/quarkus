@@ -1,10 +1,14 @@
 package io.quarkus.bootstrap.runner;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
+import java.util.logging.Handler;
+
+import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.graal.ImageInfo;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
-import java.math.BigDecimal;
-import java.util.logging.Handler;
-import org.jboss.logging.Logger;
 
 /**
  * Class that is responsible for printing out timing results.
@@ -85,24 +89,29 @@ public class Timing {
         }
     }
 
-    public static void printStartupTime(String name, String version, String quarkusVersion, String features, String profile,
-            boolean liveCoding, boolean anc) {
+    public static void printStartupTime(String name, String version, String quarkusVersion, String features,
+            List<String> profiles, boolean liveCoding, boolean anc) {
         Timing t = get(anc);
         final long bootTimeNanoSeconds = System.nanoTime() - t.bootStartTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         String safeAppName = (name == null || name.trim().isEmpty()) ? UNSET_VALUE : name;
-        String safeAppVersion = (version == null || version.trim().isEmpty()) ? UNSET_VALUE : version;
+        String safeAppVersion = (version == null || version.trim().isEmpty() || "null".equals(version)) ? UNSET_VALUE : version;
         final String nativeOrJvm = ImageInfo.inImageRuntimeCode() ? "native" : "on JVM";
-        if (UNSET_VALUE.equals(safeAppName) || UNSET_VALUE.equals(safeAppVersion)) {
+
+        if (UNSET_VALUE.equals(safeAppName)) {
             logger.infof("Quarkus %s %s started in %ss. %s", quarkusVersion, nativeOrJvm, secondsRepresentation,
                     t.httpServerInfo);
         } else {
-            logger.infof("%s %s %s (powered by Quarkus %s) started in %ss. %s", name, version, nativeOrJvm, quarkusVersion,
+            String appNameAndVersion = UNSET_VALUE.equals(safeAppVersion) ? name : name + " " + version;
+
+            logger.infof("%s %s (powered by Quarkus %s) started in %ss. %s", appNameAndVersion, nativeOrJvm, quarkusVersion,
                     secondsRepresentation, t.httpServerInfo);
         }
-        logger.infof("Profile %s activated. %s", profile, liveCoding ? "Live Coding activated." : "");
+
+        logger.infof("Profile%s %s activated. %s", profiles.size() > 1 ? "s" : "", String.join(",", profiles),
+                liveCoding ? "Live Coding activated." : "");
         logger.infof("Installed features: [%s]", features);
         t.bootStartTime = -1;
     }
@@ -112,8 +121,9 @@ public class Timing {
         final long stopTimeNanoSeconds = System.nanoTime() - t.bootStopTime;
         final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
-        logger.infof("%s stopped in %ss",
+        logger.infof("%s%s stopped in %ss",
                 (UNSET_VALUE.equals(name) || name == null || name.trim().isEmpty()) ? "Quarkus" : name,
+                auxiliaryApplication ? "(test application)" : "",
                 secondsRepresentation);
         t.bootStopTime = -1;
 
@@ -133,8 +143,8 @@ public class Timing {
 
     public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {
         final BigDecimal secondsRepresentation = BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
-                .divide(BigDecimal.valueOf(1_000_000), BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
-                .divide(BigDecimal.valueOf(1_000), 3, BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
+                .divide(BigDecimal.valueOf(1_000_000), RoundingMode.HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
+                .divide(BigDecimal.valueOf(1_000), 3, RoundingMode.HALF_UP); // Convert to seconds, while preserving 3 digits
         return secondsRepresentation;
     }
 

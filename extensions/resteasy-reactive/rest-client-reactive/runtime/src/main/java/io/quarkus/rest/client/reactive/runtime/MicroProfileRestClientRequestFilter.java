@@ -1,24 +1,26 @@
 package io.quarkus.rest.client.reactive.runtime;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Priority;
-import javax.enterprise.context.RequestScoped;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
-import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
+import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestFilter;
+import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.HeaderFiller;
+import io.quarkus.rest.client.reactive.ReactiveClientHeadersFactory;
 
 @Priority(Integer.MIN_VALUE)
-public class MicroProfileRestClientRequestFilter implements ClientRequestFilter {
+public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClientRequestFilter {
 
     private static final MultivaluedMap<String, String> EMPTY_MAP = new MultivaluedHashMap<>();
 
@@ -29,7 +31,7 @@ public class MicroProfileRestClientRequestFilter implements ClientRequestFilter 
     }
 
     @Override
-    public void filter(ClientRequestContext requestContext) {
+    public void filter(ResteasyReactiveClientRequestContext requestContext) {
         HeaderFiller headerFiller = (HeaderFiller) requestContext.getProperty(HeaderFiller.class.getName());
 
         // mutable collection of headers
@@ -43,7 +45,12 @@ public class MicroProfileRestClientRequestFilter implements ClientRequestFilter 
         // add headers from MP annotations
         if (headerFiller != null) {
             // add headers to a mutable headers collection
-            headerFiller.addHeaders(headers);
+            if (headerFiller instanceof ExtendedHeaderFiller) {
+                ((ExtendedHeaderFiller) headerFiller).addHeaders(headers, requestContext);
+            } else {
+                headerFiller.addHeaders(headers);
+            }
+
         }
 
         MultivaluedMap<String, String> incomingHeaders = MicroProfileRestClientRequestFilter.EMPTY_MAP;
@@ -54,28 +61,53 @@ public class MicroProfileRestClientRequestFilter implements ClientRequestFilter 
             }
         }
 
-        if (clientHeadersFactory instanceof DefaultClientHeadersFactoryImpl) {
-            // When using the default factory, pass the proposed outgoing headers onto the request context.
-            // Propagation with the default factory will then overwrite any values if required.
-            for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
-                requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
-            }
-        }
-
-        if (clientHeadersFactory != null) {
-            incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);
-        }
-
-        for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {
+        // Propagation with the default factory will then overwrite any values if required.
+        for (Map.Entry<String, List<String>> headerEntry : headers.entrySet()) {
             requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+        }
+
+        ClientHeadersFactory clientHeadersFactory = clientHeadersFactory(requestContext);
+        if (clientHeadersFactory != null) {
+            if (clientHeadersFactory instanceof ReactiveClientHeadersFactory) {
+                // reactive
+                ReactiveClientHeadersFactory reactiveClientHeadersFactory = (ReactiveClientHeadersFactory) clientHeadersFactory;
+                requestContext.suspend();
+                reactiveClientHeadersFactory.getHeaders(incomingHeaders, headers).subscribe().with(newHeaders -> {
+                    for (Map.Entry<String, List<String>> headerEntry : newHeaders.entrySet()) {
+                        requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                    }
+                    requestContext.resume();
+                }, requestContext::resume);
+            } else {
+                // blocking
+                incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);
+
+                for (Map.Entry<String, List<String>> headerEntry : incomingHeaders.entrySet()) {
+                    requestContext.getHeaders().put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
+                }
+            }
         }
     }
 
-    private static List<String> castToListOfStrings(List<Object> values) {
+    private ClientHeadersFactory clientHeadersFactory(ResteasyReactiveClientRequestContext requestContext) {
+        if (requestContext.getConfiguration() instanceof ConfigurationImpl) {
+            ConfigurationImpl configuration = (ConfigurationImpl) requestContext.getConfiguration();
+            ClientHeadersFactory localHeadersFactory = configuration.getFromContext(ClientHeadersFactory.class);
+            if (localHeadersFactory != null) {
+                return localHeadersFactory;
+            }
+        }
+
+        return clientHeadersFactory;
+    }
+
+    private static List<String> castToListOfStrings(Collection<Object> values) {
         List<String> result = new ArrayList<>();
         for (Object value : values) {
             if (value instanceof String) {
                 result.add((String) value);
+            } else if (value instanceof Collection) {
+                result.addAll(castToListOfStrings((Collection<Object>) value));
             } else {
                 result.add(String.valueOf(value));
             }

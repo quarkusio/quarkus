@@ -15,7 +15,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import io.quarkus.bootstrap.util.ZipUtils;
+import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public final class CreateUtils {

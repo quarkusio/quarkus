@@ -28,6 +28,7 @@
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- NOTE: We keep this here to test backward compatibility with old testing API -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-amazon-lambda</artifactId>

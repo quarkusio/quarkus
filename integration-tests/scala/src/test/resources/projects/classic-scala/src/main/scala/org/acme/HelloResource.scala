@@ -1,8 +1,8 @@
 package org.acme
 
-import javax.inject.Inject
-import javax.ws.rs.{GET, Path, Produces}
-import javax.ws.rs.core.MediaType
+import jakarta.inject.Inject
+import jakarta.ws.rs.{GET, Path, Produces}
+import jakarta.ws.rs.core.MediaType
 import org.eclipse.microprofile.config.inject.ConfigProperty
 
 import scala.beans.BeanProperty

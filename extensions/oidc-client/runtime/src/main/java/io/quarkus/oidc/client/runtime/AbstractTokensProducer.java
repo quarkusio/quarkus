@@ -3,10 +3,8 @@ package io.quarkus.oidc.client.runtime;
 import java.util.Objects;
 import java.util.Optional;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import jakarta.annotation.PostConstruct;
+import jakarta.inject.Inject;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.client.OidcClient;
@@ -17,18 +15,26 @@ import io.smallrye.mutiny.Uni;
 public abstract class AbstractTokensProducer {
     private OidcClient oidcClient;
 
+    protected boolean earlyTokenAcquisition = true;
+
     @Inject
-    @ConfigProperty(name = "quarkus.oidc-client.early-tokens-acquisition")
-    public boolean earlyTokenAcquisition;
+    public OidcClientsConfig oidcClientsConfig;
 
     final TokensHelper tokensHelper = new TokensHelper();
 
     @PostConstruct
     public void init() {
-        OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
         Optional<String> clientId = Objects.requireNonNull(clientId(), "clientId must not be null");
-        oidcClient = clientId.isPresent() ? Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client")
-                : oidcClients.getClient();
+        OidcClients oidcClients = Arc.container().instance(OidcClients.class).get();
+        if (clientId.isPresent()) {
+            // static named OidcClient
+            oidcClient = Objects.requireNonNull(oidcClients.getClient(clientId.get()), "Unknown client");
+            earlyTokenAcquisition = oidcClientsConfig.namedClients.get(clientId.get()).earlyTokensAcquisition;
+        } else {
+            // default OidcClient
+            earlyTokenAcquisition = oidcClientsConfig.defaultClient.earlyTokensAcquisition;
+            oidcClient = oidcClients.getClient();
+        }
 
         initTokens();
     }

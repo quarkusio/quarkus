@@ -16,7 +16,7 @@ public class ConfigurationException extends RuntimeException implements Configur
     /**
      * Constructs a new {@code ConfigurationException} instance. The message is left blank ({@code null}), and no
      * cause is specified.
-     * 
+     *
      * @param configKeys
      */
     public ConfigurationException(Set<String> configKeys) {
@@ -70,7 +70,7 @@ public class ConfigurationException extends RuntimeException implements Configur
 
     /**
      * Constructs a new {@code ConfigurationException} instance with an initial message and cause.
-     * 
+     *
      * @param msg the message
      * @param cause the cause
      * @param configKeys

@@ -20,7 +20,7 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * This is a Handler running in the regular runtime Vert.x instance
- * and what it does is to take the Vert.x request coming from client (under /q/dev/)
+ * and what it does is to take the Vert.x request coming from client (under /q/dev-v1/)
  * and create the DevConsoleRequest that ends up being sent to the Netty Virtual Channel
  * which is eventually piped into the Netty event loop that powers the Dev Vert.x instance.
  */
@@ -35,11 +35,13 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
             headers.put(entry.getKey(), event.request().headers().getAll(entry.getKey()));
         }
         if (event.getBody() != null) {
+            event.request().resume();
             DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(), headers,
                     event.getBody().getBytes());
             setupFuture(event, request.getResponse());
             DevConsoleManager.sentRequest(request);
         } else if (event.request().isEnded()) {
+            event.request().resume();
             DevConsoleRequest request = new DevConsoleRequest(event.request().method().name(), event.request().uri(), headers,
                     new byte[0]);
             setupFuture(event, request.getResponse());
@@ -54,6 +56,7 @@ public class DevConsoleFilter implements Handler<RoutingContext> {
                     DevConsoleManager.sentRequest(request);
                 }
             });
+            event.request().resume();
         }
 
     }

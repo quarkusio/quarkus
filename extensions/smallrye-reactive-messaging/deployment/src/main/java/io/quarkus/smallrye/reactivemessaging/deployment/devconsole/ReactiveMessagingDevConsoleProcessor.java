@@ -13,6 +13,7 @@ import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
 import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.Connectors;
@@ -22,9 +23,9 @@ import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevReactiveMessa
 public class ReactiveMessagingDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleRuntimeTemplateInfoBuildItem collectInfos() {
+    public DevConsoleRuntimeTemplateInfoBuildItem collectInfos(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         return new DevConsoleRuntimeTemplateInfoBuildItem("reactiveMessagingInfos",
-                new DevReactiveMessagingInfosSupplier());
+                new DevReactiveMessagingInfosSupplier(), this.getClass(), curateOutcomeBuildItem);
     }
 
     @Record(STATIC_INIT)

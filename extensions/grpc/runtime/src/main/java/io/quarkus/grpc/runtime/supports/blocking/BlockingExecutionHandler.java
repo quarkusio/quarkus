@@ -15,34 +15,44 @@ class BlockingExecutionHandler<ReqT> implements Handler<Promise<Object>> {
     private final Consumer<ServerCall.Listener<ReqT>> consumer;
     private final InjectableContext.ContextState state;
     private final ManagedContext requestContext;
+    private final Object lock;
 
     public BlockingExecutionHandler(Consumer<ServerCall.Listener<ReqT>> consumer, Context grpcContext,
             ServerCall.Listener<ReqT> delegate, InjectableContext.ContextState state,
-            ManagedContext requestContext) {
+            ManagedContext requestContext,
+            Object lock) {
         this.consumer = consumer;
         this.grpcContext = grpcContext;
         this.delegate = delegate;
         this.state = state;
         this.requestContext = requestContext;
+        this.lock = lock;
     }
 
     @Override
     public void handle(Promise<Object> event) {
-        final Context previous = Context.current();
-        grpcContext.attach();
-        try {
-            requestContext.activate(state);
+        /*
+         * We lock here because with client side streaming different messages from the same request
+         * might be served by different worker threads. This guarantees memory consistency.
+         * The lock object is assumed to be the request's listener
+         */
+        synchronized (lock) {
+            Context previous = grpcContext.attach();
             try {
-                consumer.accept(delegate);
-            } catch (Throwable any) {
-                event.fail(any);
-                return;
+                requestContext.activate(state);
+                try {
+                    consumer.accept(delegate);
+                } catch (Throwable any) {
+                    event.fail(any);
+                    return;
+                } finally {
+                    requestContext.deactivate();
+                }
+                event.complete();
             } finally {
-                requestContext.deactivate();
+                grpcContext.detach(previous);
             }
-            event.complete();
-        } finally {
-            grpcContext.detach(previous);
         }
     }
+
 }

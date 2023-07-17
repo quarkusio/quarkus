@@ -1,15 +1,17 @@
 package io.quarkus.bootstrap.classloader;
 
-import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
-import io.quarkus.bootstrap.util.IoUtils;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.bootstrap.classloading.DirectoryClassPathElement;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.util.IoUtils;
 
 public class ClassLoadingInterruptTestCase {
 
@@ -22,11 +24,11 @@ public class ClassLoadingInterruptTestCase {
             jar.as(ExplodedExporter.class).exportExploded(path.toFile(), "tmp");
 
             ClassLoader cl = QuarkusClassLoader.builder("test", getClass().getClassLoader(), false)
-                    .addElement(new DirectoryClassPathElement(path.resolve("tmp")))
+                    .addElement(new DirectoryClassPathElement(path.resolve("tmp"), true))
                     .build();
             Class<?> c = cl.loadClass(InterruptClass.class.getName());
             Assertions.assertNotEquals(c, InterruptClass.class);
-            Runnable runnable = (Runnable) c.newInstance();
+            Runnable runnable = (Runnable) c.getDeclaredConstructor().newInstance();
             runnable.run();
         } finally {
             IoUtils.recursiveDelete(path);

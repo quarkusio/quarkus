@@ -1,19 +1,19 @@
 package io.quarkus.hibernate.orm.panache.runtime;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 
-import org.hibernate.query.internal.QueryImpl;
+import org.hibernate.query.spi.AbstractQuery;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.CommonPanacheQueryImpl;
 
-//TODO this class is only needed by the Spring Data JPA module and would be placed there it it weren't for a dev-mode classloader issue
+//TODO this class is only needed by the Spring Data JPA module and would not be placed there if it weren't for a dev-mode classloader issue
 // see https://github.com/quarkusio/quarkus/issues/6214
 public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
 
     public CustomCountPanacheQuery(EntityManager em, Query jpaQuery, String customCountQuery,
             Object paramsArrayOrMap) {
-        super(new CommonPanacheQueryImpl<>(em, castQuery(jpaQuery).getQueryString(), null, paramsArrayOrMap) {
+        super(new CommonPanacheQueryImpl<>(em, castQuery(jpaQuery).getQueryString(), null, null, paramsArrayOrMap) {
             {
                 this.countQuery = customCountQuery;
             }
@@ -21,11 +21,11 @@ public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
     }
 
     @SuppressWarnings("rawtypes")
-    private static QueryImpl castQuery(Query jpaQuery) {
-        if (!(jpaQuery instanceof QueryImpl)) {
+    private static org.hibernate.query.sqm.internal.QuerySqmImpl castQuery(Query jpaQuery) {
+        if (!(jpaQuery instanceof org.hibernate.query.sqm.internal.QuerySqmImpl)) {
             throw new IllegalArgumentException("Unexpected Query class: '" + jpaQuery.getClass().getName() + "', where '"
-                    + QueryImpl.class.getName() + "' is expected.");
+                    + AbstractQuery.class.getName() + "' is expected.");
         }
-        return (QueryImpl) jpaQuery;
+        return (org.hibernate.query.sqm.internal.QuerySqmImpl) jpaQuery;
     }
 }

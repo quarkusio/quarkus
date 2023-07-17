@@ -91,6 +91,12 @@ public class ContainerConfig implements EnvVarHolder {
     Map<String, MountConfig> mounts;
 
     /**
+     * Resources requirements
+     */
+    @ConfigItem
+    ResourcesConfig resources;
+
+    /**
      * Environment variables to add to all containers using the old syntax.
      *
      * @deprecated Use {@link #env} instead using the new syntax as follows:

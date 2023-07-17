@@ -1,38 +1,39 @@
 package io.quarkus.hibernate.orm.runtime.recording;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.hibernate.MappingException;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.Metadata;
 import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.model.IdentifierGeneratorDefinition;
+import org.hibernate.boot.model.NamedEntityGraphDefinition;
 import org.hibernate.boot.model.TypeDefinition;
 import org.hibernate.boot.model.relational.Database;
+import org.hibernate.boot.query.NamedHqlQueryDefinition;
+import org.hibernate.boot.query.NamedNativeQueryDefinition;
+import org.hibernate.boot.query.NamedProcedureCallDefinition;
+import org.hibernate.boot.query.NamedResultSetMappingDescriptor;
+import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.MetadataBuildingOptions;
 import org.hibernate.boot.spi.MetadataImplementor;
-import org.hibernate.cfg.annotations.NamedEntityGraphDefinition;
-import org.hibernate.cfg.annotations.NamedProcedureCallDefinition;
-import org.hibernate.dialect.function.SQLFunction;
-import org.hibernate.engine.ResultSetMappingDefinition;
 import org.hibernate.engine.spi.FilterDefinition;
-import org.hibernate.engine.spi.NamedQueryDefinition;
-import org.hibernate.engine.spi.NamedSQLQueryDefinition;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.id.factory.IdentifierGeneratorFactory;
-import org.hibernate.internal.SessionFactoryImpl;
+import org.hibernate.mapping.Component;
 import org.hibernate.mapping.FetchProfile;
 import org.hibernate.mapping.MappedSuperclass;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
-import org.hibernate.query.spi.NamedQueryRepository;
+import org.hibernate.query.named.NamedObjectRepository;
+import org.hibernate.query.sqm.function.SqmFunctionDescriptor;
+import org.hibernate.query.sqm.function.SqmFunctionRegistry;
 import org.hibernate.type.Type;
-import org.hibernate.type.TypeResolver;
 import org.hibernate.type.spi.TypeConfiguration;
 
 /**
@@ -41,7 +42,7 @@ import org.hibernate.type.spi.TypeConfiguration;
  * The goal is to run the {@link MetadataImpl#validate()} method
  * earlier than when it is normally performed, for two main reasons: further reduce
  * the work that is still necessary when performing a runtime boot, and to be
- * able to still use reflection as it's neccessary e.g. to validate enum fields.
+ * able to still use reflection as it's necessary e.g. to validate enum fields.
  *
  * We also make sure that methods {@link #getSessionFactoryBuilder()} and {@link #buildSessionFactory()}
  * are unavailable, as these would normally trigger an additional validation phase:
@@ -69,9 +70,10 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
                 metadata.getBootstrapContext());
         // This would normally be done by the constructor of SessionFactoryBuilderImpl,
         // but we don't use a builder to create the session factory, for some reason.
-        Map<String, SQLFunction> sqlFunctions = metadata.getSqlFunctionMap();
+
+        Map<String, SqmFunctionDescriptor> sqlFunctions = metadata.getSqlFunctionMap();
         if (sqlFunctions != null) {
-            for (Map.Entry<String, SQLFunction> entry : sqlFunctions.entrySet()) {
+            for (Map.Entry<String, SqmFunctionDescriptor> entry : sqlFunctions.entrySet()) {
                 builder.applySqlFunction(entry.getKey(), entry.getValue());
             }
         }
@@ -135,38 +137,43 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public NamedQueryDefinition getNamedQueryDefinition(final String name) {
-        return metadata.getNamedQueryDefinition(name);
+    public NamedHqlQueryDefinition getNamedHqlQueryMapping(String name) {
+        return metadata.getNamedHqlQueryMapping(name);
     }
 
     @Override
-    public Collection<NamedQueryDefinition> getNamedQueryDefinitions() {
-        return metadata.getNamedQueryDefinitions();
+    public void visitNamedHqlQueryDefinitions(Consumer<NamedHqlQueryDefinition> definitionConsumer) {
+        metadata.visitNamedHqlQueryDefinitions(definitionConsumer);
     }
 
     @Override
-    public NamedSQLQueryDefinition getNamedNativeQueryDefinition(final String name) {
-        return metadata.getNamedNativeQueryDefinition(name);
+    public NamedNativeQueryDefinition getNamedNativeQueryMapping(String name) {
+        return metadata.getNamedNativeQueryMapping(name);
     }
 
     @Override
-    public Collection<NamedSQLQueryDefinition> getNamedNativeQueryDefinitions() {
-        return metadata.getNamedNativeQueryDefinitions();
+    public void visitNamedNativeQueryDefinitions(Consumer<NamedNativeQueryDefinition> definitionConsumer) {
+        metadata.visitNamedNativeQueryDefinitions(definitionConsumer);
     }
 
     @Override
-    public Collection<NamedProcedureCallDefinition> getNamedProcedureCallDefinitions() {
-        return metadata.getNamedProcedureCallDefinitions();
+    public NamedProcedureCallDefinition getNamedProcedureCallMapping(String name) {
+        return metadata.getNamedProcedureCallMapping(name);
     }
 
     @Override
-    public ResultSetMappingDefinition getResultSetMapping(final String name) {
+    public void visitNamedProcedureCallDefinition(Consumer<NamedProcedureCallDefinition> definitionConsumer) {
+        metadata.visitNamedProcedureCallDefinition(definitionConsumer);
+    }
+
+    @Override
+    public NamedResultSetMappingDescriptor getResultSetMapping(String name) {
         return metadata.getResultSetMapping(name);
     }
 
     @Override
-    public Map<String, ResultSetMappingDefinition> getResultSetMappingDefinitions() {
-        return metadata.getResultSetMappingDefinitions();
+    public void visitNamedResultSetMappingDefinition(Consumer<NamedResultSetMappingDescriptor> definitionConsumer) {
+        metadata.visitNamedResultSetMappingDefinition(definitionConsumer);
     }
 
     @Override
@@ -215,17 +222,16 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public Map<String, SQLFunction> getSqlFunctionMap() {
+    public Map<String, SqmFunctionDescriptor> getSqlFunctionMap() {
         return metadata.getSqlFunctionMap();
     }
 
-    //All methods from org.hibernate.engine.spi.Mapping, the parent of Metadata:
-
     @Override
-    @Deprecated
-    public IdentifierGeneratorFactory getIdentifierGeneratorFactory() {
-        return metadata.getIdentifierGeneratorFactory();
+    public Set<String> getContributors() {
+        return metadata.getContributors();
     }
+
+    //All methods from org.hibernate.engine.spi.Mapping, the parent of Metadata:
 
     @Override
     public Type getIdentifierType(final String className) throws MappingException {
@@ -255,13 +261,18 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     }
 
     @Override
-    public TypeResolver getTypeResolver() {
-        return metadata.getTypeResolver();
+    public SqmFunctionRegistry getFunctionRegistry() {
+        return metadata.getFunctionRegistry();
     }
 
     @Override
-    public NamedQueryRepository buildNamedQueryRepository(SessionFactoryImpl sessionFactory) {
+    public NamedObjectRepository buildNamedQueryRepository(SessionFactoryImplementor sessionFactory) {
         return metadata.buildNamedQueryRepository(sessionFactory);
+    }
+
+    @Override
+    public void orderColumns(boolean forceOrdering) {
+        metadata.orderColumns(forceOrdering);
     }
 
     @Override
@@ -272,6 +283,68 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     @Override
     public void initSessionFactory(SessionFactoryImplementor sessionFactoryImplementor) {
         metadata.initSessionFactory(sessionFactoryImplementor);
+    }
+
+    @Override
+    public void visitRegisteredComponents(Consumer<Component> consumer) {
+        metadata.visitRegisteredComponents(consumer);
+    }
+
+    @Override
+    public Component getGenericComponent(Class<?> componentClass) {
+        return metadata.getGenericComponent(componentClass);
+    }
+
+    public Map<String, PersistentClass> getEntityBindingMap() {
+        return metadata.getEntityBindingMap();
+    }
+
+    public Map<String, org.hibernate.mapping.Collection> getCollectionBindingMap() {
+        return metadata.getCollectionBindingMap();
+    }
+
+    public Map<String, TypeDefinition> getTypeDefinitionMap() {
+        return metadata.getTypeDefinitionMap();
+    }
+
+    public Map<String, FetchProfile> getFetchProfileMap() {
+        return metadata.getFetchProfileMap();
+    }
+
+    public Map<Class<?>, MappedSuperclass> getMappedSuperclassMap() {
+        return metadata.getMappedSuperclassMap();
+    }
+
+    public Map<String, IdentifierGeneratorDefinition> getIdGeneratorDefinitionMap() {
+        return metadata.getIdGeneratorDefinitionMap();
+    }
+
+    public Map<String, NamedEntityGraphDefinition> getNamedEntityGraphMap() {
+        return metadata.getNamedEntityGraphMap();
+    }
+
+    public BootstrapContext getBootstrapContext() {
+        return metadata.getBootstrapContext();
+    }
+
+    public Map<String, NamedHqlQueryDefinition> getNamedQueryMap() {
+        return metadata.getNamedQueryMap();
+    }
+
+    public Map<String, NamedNativeQueryDefinition> getNamedNativeQueryMap() {
+        return metadata.getNamedNativeQueryMap();
+    }
+
+    public Map<String, NamedProcedureCallDefinition> getNamedProcedureCallMap() {
+        return metadata.getNamedProcedureCallMap();
+    }
+
+    public Map<String, NamedResultSetMappingDescriptor> getSqlResultSetMappingMap() {
+        return metadata.getSqlResultSetMappingMap();
+    }
+
+    public List<Component> getComposites() {
+        return metadata.getComposites();
     }
 
 }

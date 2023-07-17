@@ -15,14 +15,13 @@ public class CORSConfig {
     /**
      * Origins allowed for CORS
      *
-     * Comma separated list of valid URLs. ex: http://www.quarkus.io,http://localhost:3000
-     * The filter allows any origin if this is not set.
-     *
-     * default: returns any requested origin as valid
+     * Comma separated list of valid URLs, e.g.: http://www.quarkus.io,http://localhost:3000
+     * In case an entry of the list is surrounded by forward slashes,
+     * it is interpreted as a regular expression.
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> origins;
+    public Optional<List<String>> origins = Optional.empty();
 
     /**
      * HTTP methods allowed for CORS
@@ -34,7 +33,7 @@ public class CORSConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> methods;
+    public Optional<List<String>> methods = Optional.empty();
 
     /**
      * HTTP headers allowed for CORS
@@ -46,7 +45,7 @@ public class CORSConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> headers;
+    public Optional<List<String>> headers = Optional.empty();
 
     /**
      * HTTP headers exposed in CORS
@@ -57,14 +56,14 @@ public class CORSConfig {
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<List<String>> exposedHeaders;
+    public Optional<List<String>> exposedHeaders = Optional.empty();
 
     /**
      * The `Access-Control-Max-Age` response header value indicating
      * how long the results of a pre-flight request can be cached.
      */
     @ConfigItem
-    public Optional<Duration> accessControlMaxAge;
+    public Optional<Duration> accessControlMaxAge = Optional.empty();
 
     /**
      * The `Access-Control-Allow-Credentials` header is used to tell the
@@ -72,10 +71,10 @@ public class CORSConfig {
      * the request’s credentials mode Request.credentials is “include”.
      *
      * The value of this header will default to `true` if `quarkus.http.cors.origins` property is set and
-     * there is a match with the precise `Origin` header and that header is not '*'.
+     * there is a match with the precise `Origin` header.
      */
     @ConfigItem
-    public Optional<Boolean> accessControlAllowCredentials;
+    public Optional<Boolean> accessControlAllowCredentials = Optional.empty();
 
     @Override
     public String toString() {

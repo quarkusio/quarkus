@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -25,12 +25,15 @@ public class ExecutorRecorder {
 
     private static final Logger log = Logger.getLogger("io.quarkus.thread-pool");
 
-    public ExecutorRecorder() {
-    }
-
     private static volatile Executor current;
 
-    public ExecutorService setupRunTime(ShutdownContext shutdownContext, ThreadPoolConfig threadPoolConfig,
+    final ThreadPoolConfig threadPoolConfig;
+
+    public ExecutorRecorder(ThreadPoolConfig threadPoolConfig) {
+        this.threadPoolConfig = threadPoolConfig;
+    }
+
+    public ScheduledExecutorService setupRunTime(ShutdownContext shutdownContext,
             LaunchMode launchMode, ThreadFactory threadFactory, ContextHandler<Object> contextHandler) {
         final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig, threadFactory, contextHandler);
         if (launchMode == LaunchMode.DEVELOPMENT) {

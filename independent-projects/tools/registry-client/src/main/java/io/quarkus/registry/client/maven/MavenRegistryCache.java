@@ -1,18 +1,22 @@
 package io.quarkus.registry.client.maven;
 
-import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
-import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.maven.ArtifactCoords;
-import io.quarkus.registry.RegistryResolutionException;
-import io.quarkus.registry.client.RegistryCache;
-import io.quarkus.registry.config.RegistryConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
+
 import org.eclipse.aether.artifact.DefaultArtifact;
+
+import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
+import io.quarkus.devtools.messagewriter.MessageWriter;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.client.RegistryCache;
+import io.quarkus.registry.config.RegistryConfig;
 
 public class MavenRegistryCache implements RegistryCache {
 
@@ -24,8 +28,15 @@ public class MavenRegistryCache implements RegistryCache {
     public MavenRegistryCache(RegistryConfig config, MavenRegistryArtifactResolver resolver,
             MessageWriter log) {
         this.config = config;
-        this.artifacts = Arrays.asList(config.getDescriptor().getArtifact(),
-                config.getNonPlatformExtensions().getArtifact(), config.getPlatforms().getArtifact());
+        final List<ArtifactCoords> artifacts = new ArrayList<>(3);
+        artifacts.add(config.getDescriptor().getArtifact());
+        if (config.getNonPlatformExtensions() != null) {
+            artifacts.add(config.getNonPlatformExtensions().getArtifact());
+        }
+        if (config.getPlatforms() != null) {
+            artifacts.add(config.getPlatforms().getArtifact());
+        }
+        this.artifacts = artifacts;
         this.resolver = Objects.requireNonNull(resolver);
         this.log = Objects.requireNonNull(log);
     }
@@ -42,8 +53,8 @@ public class MavenRegistryCache implements RegistryCache {
                 throw new RegistryResolutionException("Failed to resolve " + coords + " locally", e);
             }
             if (Files.exists(dir)) {
-                try {
-                    Files.list(dir).forEach(path -> {
+                try (Stream<Path> dirPaths = Files.list(dir)) {
+                    dirPaths.forEach(path -> {
                         try {
                             Files.delete(path);
                         } catch (IOException e) {

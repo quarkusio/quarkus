@@ -2,10 +2,10 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic;
 
 import java.util.function.Supplier;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.core.Response;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -16,15 +16,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritenceParentResource;
-import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritenceParentResourceImpl;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResource;
+import io.quarkus.resteasy.reactive.server.test.resource.basic.resource.InheritanceParentResourceImpl;
 import io.quarkus.resteasy.reactive.server.test.simple.PortProviderUtil;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resource
  * @tpChapter Integration tests
- * @tpTestCaseDetails Tests annotation inheritence from interface.
+ * @tpTestCaseDetails Tests annotation inheritance from interface.
  * @tpSince RESTEasy 3.0.20
  */
 @DisplayName("Inheritance Test")
@@ -34,12 +34,12 @@ public class InheritanceTest {
 
     @RegisterExtension
     static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<JavaArchive>() {
+            .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
                     JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(InheritenceParentResource.class);
-                    war.addClasses(PortProviderUtil.class, InheritenceParentResourceImpl.class);
+                    war.addClass(InheritanceParentResource.class);
+                    war.addClasses(PortProviderUtil.class, InheritanceParentResourceImpl.class);
                     return war;
                 }
             });

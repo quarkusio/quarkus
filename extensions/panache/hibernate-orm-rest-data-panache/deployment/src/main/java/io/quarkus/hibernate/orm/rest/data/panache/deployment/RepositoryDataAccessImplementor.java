@@ -4,8 +4,9 @@ import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.Map;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -62,6 +63,31 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
+     * Implements <code>repository.find(query, params).page(page).list()</code>
+     */
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class, String.class, Map.class),
+                getRepositoryInstance(creator), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
+    }
+
+    /**
+     * Implements <code>repository.find(query, sort, params).page(page).list()</code>
+     */
+    @Override
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort, ResultHandle query,
+            ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class, String.class, Sort.class, Map.class),
+                getRepositoryInstance(creator), query, sort, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
+    }
+
+    /**
      * Implements <code>repository.persist(entity)</code>
      */
     @Override
@@ -104,6 +130,15 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
+     * Implements <code>repository.count()</code>
+     */
+    @Override
+    public ResultHandle count(BytecodeCreator creator) {
+        return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "count", long.class),
+                getRepositoryInstance(creator));
+    }
+
+    /**
      * Implements getting repository from Arc container.
      * <code>Arc.container().instance(Repository.class, new Annotation[0]).get()</code>
      */
@@ -111,7 +146,7 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
-                arcContainer, creator.loadClass(repositoryClassName), creator.newArray(Annotation.class, 0));
+                arcContainer, creator.loadClassFromTCCL(repositoryClassName), creator.newArray(Annotation.class, 0));
         ResultHandle instance = creator.invokeInterfaceMethod(
                 ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
 

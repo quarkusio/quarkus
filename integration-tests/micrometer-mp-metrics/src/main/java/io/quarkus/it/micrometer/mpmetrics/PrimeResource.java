@@ -2,10 +2,10 @@ package io.quarkus.it.micrometer.mpmetrics;
 
 import java.util.concurrent.atomic.LongAccumulator;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.*;
@@ -70,7 +70,14 @@ public class PrimeResource {
     }
 
     @Gauge(name = "highestPrimeNumberSoFar", unit = MetricUnits.NONE, description = "Highest prime number so far.")
+    @GET
+    @Path("/blabla") // make this a REST method just to verify that a gauge will still work on it
     public Long highestPrimeNumberSoFar() {
+        return highestPrimeSoFar.get();
+    }
+
+    @Gauge(unit = MetricUnits.NONE, description = "Highest prime number so far.")
+    public Long highestPrimeNumberSoFar2() {
         return highestPrimeSoFar.get();
     }
 }

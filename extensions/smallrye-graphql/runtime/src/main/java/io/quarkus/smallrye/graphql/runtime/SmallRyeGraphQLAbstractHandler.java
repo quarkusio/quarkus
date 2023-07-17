@@ -1,20 +1,27 @@
 package io.quarkus.smallrye.graphql.runtime;
 
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import javax.json.Json;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.JsonReaderFactory;
+import jakarta.json.Json;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonReader;
+import jakarta.json.JsonReaderFactory;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.graphql.execution.ExecutionService;
+import io.smallrye.graphql.execution.context.SmallRyeContextManager;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -24,6 +31,10 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
 
     private final CurrentIdentityAssociation currentIdentityAssociation;
     private final CurrentVertxRequest currentVertxRequest;
+    private final ManagedContext currentManagedContext;
+    private final Handler<Void> currentManagedContextTerminationHandler;
+    private final Handler<Throwable> currentManagedContextExceptionHandler;
+    private final boolean runBlocking;
 
     private volatile ExecutionService executionService;
 
@@ -31,24 +42,42 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
 
     public SmallRyeGraphQLAbstractHandler(
             CurrentIdentityAssociation currentIdentityAssociation,
-            CurrentVertxRequest currentVertxRequest) {
+            CurrentVertxRequest currentVertxRequest,
+            boolean runBlocking) {
 
         this.currentIdentityAssociation = currentIdentityAssociation;
         this.currentVertxRequest = currentVertxRequest;
+        this.currentManagedContext = Arc.container().requestContext();
+        this.runBlocking = runBlocking;
+        this.currentManagedContextTerminationHandler = createCurrentManagedContextTerminationHandler();
+        this.currentManagedContextExceptionHandler = createCurrentManagedContextTerminationHandler();
+    }
+
+    private <T> Handler<T> createCurrentManagedContextTerminationHandler() {
+        return new Handler<>() {
+            @Override
+            public void handle(Object e) {
+                terminate();
+            }
+        };
     }
 
     @Override
     public void handle(final RoutingContext ctx) {
-        ManagedContext requestContext = Arc.container().requestContext();
-        if (requestContext.isActive()) {
+
+        ctx.response()
+                .endHandler(currentManagedContextTerminationHandler)
+                .exceptionHandler(currentManagedContextExceptionHandler)
+                .closeHandler(currentManagedContextTerminationHandler);
+        if (!currentManagedContext.isActive()) {
+            currentManagedContext.activate();
+        }
+        try {
             handleWithIdentity(ctx);
-        } else {
-            try {
-                requestContext.activate();
-                handleWithIdentity(ctx);
-            } finally {
-                requestContext.terminate();
-            }
+            deactivate();
+        } catch (Throwable t) {
+            terminate();
+            throw t;
         }
     }
 
@@ -79,5 +108,34 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
             this.executionService = Arc.container().instance(ExecutionService.class).get();
         }
         return this.executionService;
+    }
+
+    protected Map<String, Object> getMetaData(RoutingContext ctx) {
+        // Add some context to dfe
+        Map<String, Object> metaData = new ConcurrentHashMap<>();
+        metaData.put("runBlocking", runBlocking);
+        metaData.put("httpHeaders", getHeaders(ctx));
+        InjectableContext.ContextState state = currentManagedContext.getState();
+        metaData.put("state", state);
+        return metaData;
+    }
+
+    private Map<String, List<String>> getHeaders(RoutingContext ctx) {
+        Map<String, List<String>> h = new HashMap<>();
+        MultiMap headers = ctx.request().headers();
+        for (String header : headers.names()) {
+            h.put(header, headers.getAll(header));
+        }
+        return h;
+    }
+
+    private void deactivate() {
+        SmallRyeContextManager.clearCurrentSmallRyeContext();
+        currentManagedContext.deactivate();
+    }
+
+    private void terminate() {
+        SmallRyeContextManager.clearCurrentSmallRyeContext();
+        currentManagedContext.terminate();
     }
 }

@@ -1,6 +1,6 @@
 package io.quarkus.restclient.runtime.graal;
 
-import javax.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.ClientBuilder;
 
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.LocalResteasyProviderFactory;

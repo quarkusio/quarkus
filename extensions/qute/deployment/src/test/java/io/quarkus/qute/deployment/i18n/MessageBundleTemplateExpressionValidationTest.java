@@ -1,11 +1,10 @@
 package io.quarkus.qute.deployment.i18n;
 
+import static io.quarkus.qute.i18n.MessageBundle.DEFAULT_NAME;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -18,7 +17,7 @@ public class MessageBundleTemplateExpressionValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(MyBundle.class, Item.class)
                     .addAsResource(new StringAsset(
                             "{@java.util.List<java.lang.Integer> names} {msg:hello('foo')} {msg:hello_and_bye} {msg:hello(1,2)} {#each names}{msg:helloName(it)}{/each}"),
@@ -36,7 +35,7 @@ public class MessageBundleTemplateExpressionValidationTest {
                 if (te == null) {
                     fail("No template exception thrown: " + t);
                 }
-                assertTrue(te.getMessage().contains("Found template problems (4)"), te.getMessage());
+                assertTrue(te.getMessage().contains("Found incorrect expressions (4)"), te.getMessage());
                 assertTrue(te.getMessage().contains("msg:hello('foo')"), te.getMessage());
                 assertTrue(te.getMessage().contains("msg:hello_and_bye"), te.getMessage());
                 assertTrue(te.getMessage().contains("msg:hello(1,2)"), te.getMessage());
@@ -48,7 +47,7 @@ public class MessageBundleTemplateExpressionValidationTest {
         fail();
     }
 
-    @MessageBundle
+    @MessageBundle(value = DEFAULT_NAME)
     public interface MyBundle {
 
         @Message("Hello {item.name}")

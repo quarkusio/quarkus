@@ -23,7 +23,7 @@ class StringPropertyAccessorData {
      */
     static StringPropertyAccessorData from(MethodInfo methodInfo, int matchingParameterIndex, String propertyName,
             IndexView index, String expression) {
-        Type matchingParameterType = methodInfo.parameters().get(matchingParameterIndex);
+        Type matchingParameterType = methodInfo.parameterType(matchingParameterIndex);
         ClassInfo matchingParameterClassInfo = index.getClassByName(matchingParameterType.name());
         if (matchingParameterClassInfo == null) {
             throw new IllegalArgumentException(

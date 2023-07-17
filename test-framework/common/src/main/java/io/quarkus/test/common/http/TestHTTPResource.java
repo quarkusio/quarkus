@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  *
  * This could be a String or URL object, or some other HTTP/Websocket based client.
  *
- * This mechanism is plugable, via {@link TestHTTPResourceProvider}
+ * This mechanism is pluggable, via {@link TestHTTPResourceProvider}
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

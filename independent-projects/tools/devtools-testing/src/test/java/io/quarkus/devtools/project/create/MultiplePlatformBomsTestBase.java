@@ -2,6 +2,20 @@ package io.quarkus.devtools.project.create;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Repository;
+import org.junit.jupiter.api.AfterAll;
+
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.devtools.commands.AddExtensions;
@@ -12,20 +26,10 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.registry.client.TestRegistryClientBuilder;
-import io.quarkus.maven.ArtifactCoords;
+import io.quarkus.maven.dependency.ArtifactCoords;
+import io.quarkus.registry.RegistryResolutionException;
+import io.quarkus.registry.catalog.PlatformStreamCoords;
 import io.quarkus.registry.config.RegistriesConfigLocator;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Repository;
-import org.junit.jupiter.api.AfterAll;
 
 public abstract class MultiplePlatformBomsTestBase {
 
@@ -89,18 +93,29 @@ public abstract class MultiplePlatformBomsTestBase {
 
     protected QuarkusCommandOutcome createProject(Path projectDir, List<String> extensions)
             throws Exception {
-        return createProject(projectDir, null, extensions);
+        return createProject(projectDir, (String) null, extensions);
     }
 
     protected QuarkusCommandOutcome createProject(Path projectDir, String quarkusVersion, List<String> extensions)
             throws Exception {
         return new CreateProject(
                 quarkusVersion == null ? getQuarkusProject(projectDir) : getQuarkusProject(projectDir, quarkusVersion))
-                        .groupId("org.acme")
-                        .artifactId("acme-app")
-                        .version("0.0.1-SNAPSHOT")
-                        .extensions(new HashSet<>(extensions))
-                        .execute();
+                .groupId("org.acme")
+                .artifactId("acme-app")
+                .version("0.0.1-SNAPSHOT")
+                .extensions(new HashSet<>(extensions))
+                .execute();
+    }
+
+    protected QuarkusCommandOutcome createProject(Path projectDir, PlatformStreamCoords stream, List<String> extensions)
+            throws Exception {
+        return new CreateProject(
+                getQuarkusProject(projectDir, stream))
+                .groupId("org.acme")
+                .artifactId("acme-app")
+                .version("0.0.1-SNAPSHOT")
+                .extensions(new HashSet<>(extensions))
+                .execute();
     }
 
     protected List<ArtifactCoords> toPlatformExtensionCoords(String... artifactIds) {
@@ -129,8 +144,7 @@ public abstract class MultiplePlatformBomsTestBase {
     }
 
     protected ArtifactCoords mainPlatformBom() {
-        return new ArtifactCoords(PLATFORM_GROUP_ID_POM_EXPR, PLATFORM_ARTIFACT_ID_POM_EXPR, "pom",
-                PLATFORM_VERSION_POM_EXPR);
+        return ArtifactCoords.pom(PLATFORM_GROUP_ID_POM_EXPR, PLATFORM_ARTIFACT_ID_POM_EXPR, PLATFORM_VERSION_POM_EXPR);
     }
 
     protected void assertModel(final Path projectDir, final List<ArtifactCoords> expectedBoms,
@@ -141,7 +155,7 @@ public abstract class MultiplePlatformBomsTestBase {
         assertThat(model.getProperties().getProperty(PLATFORM_VERSION_POM_PROP)).isEqualTo(platformVersion);
 
         final List<ArtifactCoords> actualBoms = model.getDependencyManagement().getDependencies().stream()
-                .map(d -> new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
+                .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
                         d.getVersion()))
                 .collect(Collectors.toList());
         // TODO the order should be predictable
@@ -151,16 +165,16 @@ public abstract class MultiplePlatformBomsTestBase {
 
         // TODO the order should be predictable
         assertThat(model.getDependencies().stream()
-                .map(d -> new ArtifactCoords(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
+                .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
                 .collect(Collectors.toSet())).containsAll(expectedExtensions);
     }
 
     ArtifactCoords platformExtensionCoords(String artifactId) {
-        return new ArtifactCoords(getMainPlatformKey(), artifactId, "jar", null);
+        return ArtifactCoords.jar(getMainPlatformKey(), artifactId, null);
     }
 
     static ArtifactCoords platformMemberBomCoords(String artifactId) {
-        return new ArtifactCoords(PLATFORM_GROUP_ID_POM_EXPR, artifactId, "pom", PLATFORM_VERSION_POM_EXPR);
+        return ArtifactCoords.pom(PLATFORM_GROUP_ID_POM_EXPR, artifactId, PLATFORM_VERSION_POM_EXPR);
     }
 
     protected QuarkusProject getQuarkusProject(Path projectDir) {
@@ -169,6 +183,12 @@ public abstract class MultiplePlatformBomsTestBase {
 
     protected QuarkusProject getQuarkusProject(Path projectDir, String quarkusVersion) {
         return QuarkusProjectHelper.getProject(projectDir, BuildTool.MAVEN, quarkusVersion);
+    }
+
+    protected QuarkusProject getQuarkusProject(Path projectDir, PlatformStreamCoords stream)
+            throws RegistryResolutionException {
+        return QuarkusProjectHelper.getProject(projectDir,
+                QuarkusProjectHelper.getCatalogResolver().resolveExtensionCatalog(stream), BuildTool.MAVEN);
     }
 
     static Path newProjectDir(String name) {

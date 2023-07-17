@@ -354,7 +354,7 @@ public class TemplateHtmlBuilder {
         //httpRoot can optionally end with a slash
         //also some templates want the returned path to start with a / and some don't
         //to make this work we check if the basePath starts with a / or not, and make sure we
-        //the return value follows the same pattern
+        //return the value that follows the same pattern
 
         if (httpRoot.equals("/")) {
             //leave it alone

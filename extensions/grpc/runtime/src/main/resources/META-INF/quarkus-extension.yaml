@@ -8,4 +8,11 @@ metadata:
     - "web"
     - "serialization"
     - "reactive"
-  status: "experimental"
+  status: "stable"
+  codestart:
+    name: "grpc"
+    languages:
+      - "java"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
+  config:
+  - "quarkus.grpc."

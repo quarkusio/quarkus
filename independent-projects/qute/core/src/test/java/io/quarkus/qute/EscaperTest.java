@@ -2,12 +2,14 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.quarkus.qute.TemplateNode.Origin;
 import java.io.IOException;
+
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.qute.TemplateNode.Origin;
+
 /**
- * 
+ *
  */
 public class EscaperTest {
 
@@ -27,7 +29,7 @@ public class EscaperTest {
     public void testRawStringRevolver() {
 
         Escaper escaper = Escaper.builder().add('a', "A").build();
-        Engine engine = Engine.builder().addValueResolver(ValueResolvers.mapResolver())
+        Engine engine = Engine.builder().addValueResolver(ValueResolvers.mapperResolver())
                 .addValueResolver(ValueResolvers.rawResolver()).addResultMapper(new ResultMapper() {
 
                     @Override

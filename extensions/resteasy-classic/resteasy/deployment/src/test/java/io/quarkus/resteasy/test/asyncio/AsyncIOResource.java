@@ -3,9 +3,9 @@ package io.quarkus.resteasy.test.asyncio;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
 
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;

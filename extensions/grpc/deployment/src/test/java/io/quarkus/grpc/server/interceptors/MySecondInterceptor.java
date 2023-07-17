@@ -1,7 +1,7 @@
 package io.quarkus.grpc.server.interceptors;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.spi.Prioritized;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.Prioritized;
 
 import io.grpc.ForwardingServerCall;
 import io.grpc.Metadata;
@@ -9,8 +9,10 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
+import io.quarkus.grpc.GlobalInterceptor;
 
 @ApplicationScoped
+@GlobalInterceptor
 public class MySecondInterceptor implements ServerInterceptor, Prioritized {
 
     private volatile long callTime;

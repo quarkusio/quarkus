@@ -3,12 +3,10 @@ package io.quarkus.hibernate.orm.multiplepersistenceunits;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import javax.persistence.PersistenceContext;
-import javax.transaction.Transactional;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 
 import org.hibernate.Session;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,7 +18,7 @@ public class MultiplePersistenceUnitsResourceInjectionSessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClass(User.class)
                     .addClass(Plane.class)
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
@@ -56,7 +54,7 @@ public class MultiplePersistenceUnitsResourceInjectionSessionTest {
     public void testUserInInventorySession() {
         User user = new User("gsmet");
         assertThatThrownBy(() -> inventorySession.persist(user)).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown entity");
+                .hasMessageContaining("Unable to locate persister");
     }
 
     @Test

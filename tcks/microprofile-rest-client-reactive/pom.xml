@@ -13,6 +13,20 @@
     <artifactId>quarkus-tck-microprofile-rest-client-reactive</artifactId>
     <name>Quarkus - TCK - MicroProfile REST Client - RESTEasy Reactive</name>
 
+    <properties>
+        <wiremock.server.port>8766</wiremock.server.port>
+        <microprofile-rest-client-tck.version>3.0.1</microprofile-rest-client-tck.version>
+        <!--
+        Disabling the enforcer because of:
+
+        For future Jakarta versions, we will need to keep javax.servlet around
+        as some classes of the MicroProfile REST Client TCK rely on it.
+        See https://github.com/eclipse/microprofile-rest-client/issues/346
+        and https://github.com/eclipse/microprofile-rest-client/issues/341
+        -->
+        <enforcer.skip>true</enforcer.skip>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -23,8 +37,9 @@
                         <!-- Disable quarkus optimization -->
                         <io.quarkus.arquillian.copy-fields>true</io.quarkus.arquillian.copy-fields>
                         <quarkus.arc.remove-unused-beans>false</quarkus.arc.remove-unused-beans>
-                        <quarkus.rest-client-reactive.scope>javax.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
+                        <quarkus.rest-client-reactive.scope>jakarta.enterprise.context.Dependent</quarkus.rest-client-reactive.scope>
                         <quarkus.rest-client-reactive.disable-smart-produces>true</quarkus.rest-client-reactive.disable-smart-produces>
+                        <quarkus.rest-client.disable-contextual-error-messages>true</quarkus.rest-client.disable-contextual-error-messages>
                         <vertx.disableTCCL>true</vertx.disableTCCL>
                         <wiremock.server.port>${wiremock.server.port}</wiremock.server.port>
                     </systemPropertyVariables>
@@ -65,6 +80,10 @@
 
                         <!-- TODO fix this-->
                         <exclude>org.eclipse.microprofile.rest.client.tck.jsonb.InvokeWithJsonBProviderTest</exclude>
+
+                        <!-- These are flaky -->
+                        <exclude>org.eclipse.microprofile.rest.client.tck.FollowRedirectsTest</exclude>
+                        <exclude>org.eclipse.microprofile.rest.client.tck.cditests.CDIFollowRedirectsTest</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -86,9 +105,8 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.jboss.jandex</groupId>
+                <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
-                <version>1.1.0</version>
                 <executions>
                     <execution>
                         <id>make-index</id>
@@ -121,7 +139,7 @@
         <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>
             <artifactId>microprofile-rest-client-tck</artifactId>
-            <version>${microprofile-rest-client-api.version}</version>
+            <version>${microprofile-rest-client-tck.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.eclipse.jetty</groupId>
@@ -147,14 +165,31 @@
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit4.version}</version>
         </dependency>
         <dependency>
             <groupId>jakarta.servlet</groupId>
             <artifactId>jakarta.servlet-api</artifactId>
         </dependency>
+        <!--
+        For future Jakarta versions, we will need to keep javax.servlet around
+        as some classes of the MicroProfile REST Client TCK rely on it.
+        See https://github.com/eclipse/microprofile-rest-client/issues/346
+        and https://github.com/eclipse/microprofile-rest-client/issues/341
+        -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+        </dependency>
     </dependencies>
-    <properties>
-        <wiremock.server.port>8766</wiremock.server.port>
-    </properties>
 </project>

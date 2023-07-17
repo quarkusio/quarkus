@@ -7,6 +7,10 @@ public class BeanDefiningAnnotation {
     private final DotName annotation;
     private final DotName defaultScope;
 
+    public BeanDefiningAnnotation(DotName annotation) {
+        this(annotation, null);
+    }
+
     public BeanDefiningAnnotation(DotName annotation, DotName defaultScope) {
         this.annotation = annotation;
         this.defaultScope = defaultScope;

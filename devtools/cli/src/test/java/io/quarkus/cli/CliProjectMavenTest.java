@@ -11,7 +11,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.devtools.project.codegen.CreateProjectHelper;
+import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import picocli.CommandLine;
 
@@ -51,8 +51,12 @@ public class CliProjectMavenTest {
         String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
-        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy</artifactId>"),
-                "pom.xml should contain quarkus-resteasy:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<artifactId>quarkus-resteasy-reactive</artifactId>"),
+                "pom.xml should contain quarkus-resteasy-reactive:\n" + pomContent);
+
+        // check that the project doesn't have a <description> (a <name> is defined in the profile, it's harder to test)
+        Assertions.assertFalse(pomContent.contains("<description>"),
+                "pom.xml should not contain a description:\n" + pomContent);
 
         CliDriver.valdiateGeneratedSourcePackage(project, "org/acme");
 
@@ -73,12 +77,14 @@ public class CliProjectMavenTest {
 
         List<String> configs = Arrays.asList("custom.app.config1=val1",
                 "custom.app.config2=val2", "lib.config=val3");
+        List<String> data = Arrays.asList("resteasy-reactive-codestart.resource.response=An awesome response");
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--verbose", "-e", "-B",
                 "--no-wrapper", "--package-name=custom.pkg",
                 "--output-directory=" + nested,
                 "--app-config=" + String.join(",", configs),
-                "-x resteasy-reactive,micrometer",
+                "--data=" + String.join(",", data),
+                "-x resteasy-reactive,micrometer-registry-prometheus",
                 "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
@@ -106,6 +112,9 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code. " + result);
         Assertions.assertTrue(result.stdout.contains("WARN"),
                 "Expected a warning that the directory already exists. " + result);
+
+        String greetingResource = CliDriver.readFileAsString(project.resolve("src/main/java/custom/pkg/GreetingResource.java"));
+        Assertions.assertTrue(greetingResource.contains("return \"An awesome response\";"));
     }
 
     @Test
@@ -114,7 +123,7 @@ public class CliProjectMavenTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Path pom = project.resolve("pom.xml");
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertFalse(pomContent.contains("quarkus-qute"),
                 "Dependencies should not contain qute extension by default. Found:\n" + pomContent);
 
@@ -179,13 +188,13 @@ public class CliProjectMavenTest {
     }
 
     @Test
-    public void testDevOptions() throws Exception {
+    public void testDevTestOptions() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        // 1 --clean --tests --suspend
+        // 1 --clean --tests --suspend --offline
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
-                "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen");
+                "--clean", "--tests", "--debug", "--suspend", "--debug-mode=listen", "--offline");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
@@ -206,6 +215,9 @@ public class CliProjectMavenTest {
         Assertions.assertTrue(result.stdout.contains("-Dsuspend"),
                 "mvn command should specify '-Dsuspend'\n" + result);
 
+        Assertions.assertTrue(result.stdout.contains("--offline"),
+                "mvn command should specify --offline\n" + result);
+
         // 2 --no-clean --no-tests --no-debug
         result = CliDriver.execute(project, "dev", "-e", "--dry-run",
                 "--no-clean", "--no-tests", "--no-debug");
@@ -218,10 +230,10 @@ public class CliProjectMavenTest {
         Assertions.assertFalse(result.stdout.contains(" clean"),
                 "mvn command should not specify 'clean'\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("-DskipTests"),
-                "mvn command should specify -DskipTests\n" + result);
-        Assertions.assertTrue(result.stdout.contains("-Dmaven.test.skip=true"),
-                "mvn command should specify -Dmaven.test.skip=true\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-DskipTests"),
+                "mvn command should not specify -DskipTests (ignored)\n" + result);
+        Assertions.assertFalse(result.stdout.contains("-Dmaven.test.skip=true"),
+                "mvn command should not specify -Dmaven.test.skip=true (ignored)\n" + result);
 
         Assertions.assertTrue(result.stdout.contains("-Ddebug=false"),
                 "mvn command should specify '-Ddebug=false'\n" + result);
@@ -247,6 +259,12 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(result.stdout.contains("-Dquarkus.args='arg1 arg2'"),
                 "mvn command should not specify -Dquarkus.args='arg1 arg2'\n" + result);
+
+        // 4 TEST MODE: test --clean --debug --suspend --offline
+        result = CliDriver.execute(project, "test", "-e", "--dry-run",
+                "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
     }
 
     @Test
@@ -286,7 +304,7 @@ public class CliProjectMavenTest {
                 "--output-directory=" + nested,
                 "silly:my-project:0.1.0");
 
-        // We don't need to retest this, just need to make sure all of the arguments were passed through
+        // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         Assertions.assertTrue(result.stdout.contains("Creating an app"),
@@ -304,8 +322,59 @@ public class CliProjectMavenTest {
                 "Output should contain 'Project ArtifactId   my-project', found: " + result.stdout);
         Assertions.assertTrue(noSpaces.contains("ProjectGroupIdsilly"),
                 "Output should contain 'Project GroupId   silly', found: " + result.stdout);
-        Assertions.assertTrue(result.stdout.contains("JAVA"),
-                "Should contain JAVA, found: " + result.stdout);
+    }
+
+    @Test
+    public void testCreateArgJava11() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
+                "-e", "-B", "--verbose",
+                "--java", "11");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path pom = project.resolve("pom.xml");
+        String pomContent = CliDriver.readFileAsString(pom);
+
+        Assertions.assertTrue(pomContent.contains("maven.compiler.release>11<"),
+                "Java 11 should be used when specified. Found:\n" + pomContent);
+    }
+
+    @Test
+    public void testCreateArgJava17() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app",
+                "-e", "-B", "--verbose",
+                "--java", "17");
+
+        // We don't need to retest this, just need to make sure all the arguments were passed through
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+
+        Path pom = project.resolve("pom.xml");
+        String pomContent = CliDriver.readFileAsString(pom);
+
+        Assertions.assertTrue(pomContent.contains("maven.compiler.release>17<"),
+                "Java 17 should be used when specified. Found:\n" + pomContent);
+    }
+
+    @Test
+    public void testCreateNameDescription() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--name", "My name", "--description",
+                "My description");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+
+        String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
+                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+                CreateProjectHelper.DEFAULT_VERSION);
+        Assertions.assertTrue(pomContent.contains("<name>My name</name>"),
+                "pom.xml should contain a name:\n" + pomContent);
+        Assertions.assertTrue(pomContent.contains("<description>My description</description>"),
+                "pom.xml should contain a description:\n" + pomContent);
+
+        result = CliDriver.invokeValidateDryRunBuild(project);
+
+        CliDriver.invokeValidateBuild(project);
     }
 
     String validateBasicIdentifiers(String group, String artifact, String version) throws Exception {
@@ -313,7 +382,7 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(pom.toFile().exists(),
                 "pom.xml should exist: " + pom.toAbsolutePath().toString());
-        String pomContent = CliDriver.readFileAsString(project, pom);
+        String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertTrue(pomContent.contains("<groupId>" + group + "</groupId>"),
                 "pom.xml should contain group id:\n" + pomContent);
         Assertions.assertTrue(pomContent.contains("<artifactId>" + artifact + "</artifactId>"),

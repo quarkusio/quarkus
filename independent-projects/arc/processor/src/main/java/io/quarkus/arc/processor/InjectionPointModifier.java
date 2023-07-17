@@ -1,12 +1,14 @@
 package io.quarkus.arc.processor;
 
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.Type;
+
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
 
 /**
  * Holds all {@link InjectionPointsTransformer} instances and provides helper method to apply them on a given

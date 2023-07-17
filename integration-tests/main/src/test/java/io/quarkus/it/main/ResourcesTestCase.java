@@ -4,7 +4,7 @@ import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.junit.DisabledOnNativeImage;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -21,7 +21,7 @@ public class ResourcesTestCase {
     }
 
     @Test
-    @DisabledOnNativeImage
+    @DisabledOnIntegrationTest
     public void excludedJvm() {
         RestAssured.when()
                 .get("/resources/test-resources/file.adoc")

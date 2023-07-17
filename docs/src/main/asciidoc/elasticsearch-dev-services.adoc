@@ -1,0 +1,65 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Dev Services for Elasticsearch
+
+include::_attributes.adoc[]
+
+If any Elasticsearch-related extension is present (e.g. `quarkus-elasticsearch-rest-client` or `quarkus-hibernate-search-orm-elasticsearch`),
+Dev Services for Elasticsearch automatically starts an Elasticsearch server in dev mode and when running tests.
+So, you don't have to start a server manually.
+The application is configured automatically.
+
+== Enabling / Disabling Dev Services for Elasticsearch
+
+Dev Services for Elasticsearch is automatically enabled unless:
+
+- `quarkus.devservices.enabled` is set to `false`.
+- `quarkus.elasticsearch.devservices.enabled` is set to `false`
+- the hosts property is configured, depending on the extension used it can be:
+    - `quarkus.elasticsearch.hosts`
+    - `quarkus.hibernate-search-orm.elasticsearch.hosts`
+
+Dev Services for Elasticsearch relies on Docker to start the server.
+If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.
+
+== Shared Elasticsearch
+
+Sometimes you need to share the server between applications.
+Dev Services for Elasticsearch implements a _service discovery_ mechanism for your multiple Quarkus applications running in _dev_ mode to share a single server.
+
+NOTE: Dev Services for Elasticsearch starts the container with the `quarkus-dev-service-elasticsearch` label which is used to identify the container.
+
+If you need multiple (shared) servers, you can configure the `quarkus.elasticsearch.devservices.service-name` attribute and indicate the server name.
+It looks for a container with the same value, or starts a new one if none can be found.
+The default service name is `elasticsearch`.
+
+Sharing is enabled by default in dev mode, but disabled in test mode.
+You can disable the sharing with `quarkus.elasticsearch.devservices.shared=false`.
+
+== Setting the port
+
+By default, Dev Services for Elasticsearch picks a random port and configures the application.
+You can set the port by configuring the `quarkus.elasticsearch.devservices.port` property.
+
+Note that the Elasticsearch hosts property is automatically configured with the chosen port.
+
+== Configuring the image
+
+Dev Services for Elasticsearch only support Elasticsearch based images, OpenSearch is not supported at the moment.
+
+If you need to use a different image than the default one you can configure it via:
+[source, properties]
+----
+quarkus.elasticsearch.devservices.image-name={elasticsearch-image}
+----
+
+== Current limitations
+
+Currently, only the default backend for Hibernate Search Elasticsearch is supported, because Dev Services for Elasticsearch can only start one Elasticsearch container.
+
+== Configuration reference
+
+include::{generated-dir}/config/quarkus-elasticsearch-devservices-elasticsearch-dev-services-build-time-config.adoc[opts=optional, leveloffset=+1]

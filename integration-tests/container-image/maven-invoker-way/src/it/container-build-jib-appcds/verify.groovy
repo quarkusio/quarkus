@@ -1,27 +1,21 @@
 import io.quarkus.deployment.util.ExecUtil
-import io.quarkus.runtime.util.JavaVersionUtil
 
 import java.util.concurrent.ThreadLocalRandom
 
-if (!JavaVersionUtil.java11OrHigher) {
-    // AppCDS don't work in Java 8
-    return
-}
-
 try {
-    ExecUtil.exec("docker", "version", "--format", "'{{.Server.Version}}'")
+    ExecUtil.execWithSystemLogging("docker", "version", "--format", "'{{.Server.Version}}'")
 } catch (Exception ignored) {
     return
 }
 
 String image = "${System.getProperty("user.name")}/container-build-jib-appcds:0.1-SNAPSHOT"
-assert ExecUtil.exec("docker", "images", image)
+assert ExecUtil.execWithSystemLogging("docker", "images", image)
 
 String containerName = "container-build-jib-appcds-" + ThreadLocalRandom.current().nextInt(10000)
 int maxTimesToCheck = 10
 int i = 0
 int hostPort = 12345
-assert ExecUtil.exec("docker", "run", "-d", "-p", "$hostPort:8080", "--name", containerName, image)
+assert ExecUtil.execWithSystemLogging("docker", "run", "-d", "-p", "$hostPort:8080", "--name", containerName, image)
 
 while (true) {
     try {
@@ -38,6 +32,6 @@ while (true) {
         }
     }
 }
-assert ExecUtil.exec("docker", "stop", containerName)
-assert ExecUtil.exec("docker", "rm", containerName)
-assert ExecUtil.exec("docker", "rmi", image)
+assert ExecUtil.execWithSystemLogging("docker", "stop", containerName)
+assert ExecUtil.execWithSystemLogging("docker", "rm", containerName)
+assert ExecUtil.execWithSystemLogging("docker", "rmi", image)

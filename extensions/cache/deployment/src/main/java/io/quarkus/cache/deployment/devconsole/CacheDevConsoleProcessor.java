@@ -7,14 +7,16 @@ import io.quarkus.cache.runtime.devconsole.CacheDevConsoleRecorder;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 
 public class CacheDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("cacheInfos", new CaffeineCacheSupplier());
+    public DevConsoleRuntimeTemplateInfoBuildItem collectBeanInfo(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("cacheInfos", new CaffeineCacheSupplier(), this.getClass(),
+                curateOutcomeBuildItem);
     }
 
     @BuildStep

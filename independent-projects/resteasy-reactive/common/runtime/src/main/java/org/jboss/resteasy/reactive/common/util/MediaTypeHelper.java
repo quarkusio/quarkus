@@ -2,36 +2,48 @@ package org.jboss.resteasy.reactive.common.util;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import java.util.regex.Pattern;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  */
-@SuppressWarnings(value = "rawtypes")
+@SuppressWarnings({ "ForLoopReplaceableByForEach" })
 public class MediaTypeHelper {
-    public static final MediaTypeComparator COMPARATOR = new MediaTypeComparator();
+    public static final MediaTypeComparator Q_COMPARATOR = new MediaTypeComparator("q");
+    public static final MediaTypeComparator QS_COMPARATOR = new MediaTypeComparator("qs");
+    private static final String MEDIA_TYPE_SUFFIX_DELIM = "+";
 
-    public static float getQWithParamInfo(MediaType type) {
+    private static float getQTypeWithParamInfo(MediaType type, String parameterName) {
         if (type.getParameters() != null) {
-            String val = type.getParameters().get("q");
+            String val = type.getParameters().get(parameterName);
             try {
                 if (val != null) {
-                    float rtn = Float.valueOf(val);
+                    float rtn = Float.parseFloat(val);
                     if (rtn > 1.0F)
-                        throw new WebApplicationException("Media type q greated than 1" + type.toString(),
+                        throw new WebApplicationException(
+                                String.format("Media type %s greater than 1: %s", parameterName, type),
                                 Response.Status.BAD_REQUEST);
                     return rtn;
                 }
             } catch (NumberFormatException e) {
-                throw new RuntimeException("Media type q value must be a float" + type, e);
+                throw new WebApplicationException(
+                        String.format("Media type %s value must be a float: %s", parameterName, type),
+                        Response.Status.BAD_REQUEST);
             }
         }
         return 2.0f;
+    }
+
+    public static float getQWithParamInfo(MediaType type) {
+        return getQTypeWithParamInfo(type, "q");
     }
 
     /**
@@ -62,13 +74,19 @@ public class MediaTypeHelper {
 
         private static final long serialVersionUID = -5828700121582498092L;
 
+        private final String parameterName;
+
+        public MediaTypeComparator(String parameterName) {
+            this.parameterName = parameterName;
+        }
+
         public int compare(MediaType mediaType2, MediaType mediaType) {
-            float q = getQWithParamInfo(mediaType);
+            float q = getQTypeWithParamInfo(mediaType, parameterName);
             boolean wasQ = q != 2.0f;
             if (q == 2.0f)
                 q = 1.0f;
 
-            float q2 = getQWithParamInfo(mediaType2);
+            float q2 = getQTypeWithParamInfo(mediaType2, parameterName);
             boolean wasQ2 = q2 != 2.0f;
             if (q2 == 2.0f)
                 q2 = 1.0f;
@@ -123,14 +141,28 @@ public class MediaTypeHelper {
     }
 
     public static int compareWeight(MediaType one, MediaType two) {
-        return COMPARATOR.compare(one, two);
+        return Q_COMPARATOR.compare(one, two);
+    }
+
+    public static int compareMatchingMediaTypes(List<MediaType> produces, List<MediaType> mediaTypes1,
+            List<MediaType> mediaTypes2) {
+        int countMediaTypes1 = countMatchingMediaTypes(produces, mediaTypes1);
+        int countMediaTypes2 = countMatchingMediaTypes(produces, mediaTypes2);
+        return (countMediaTypes1 < countMediaTypes2) ? 1 : ((countMediaTypes1 == countMediaTypes2) ? 0 : -1);
     }
 
     public static void sortByWeight(List<MediaType> types) {
         if (hasAtMostOneItem(types)) {
             return;
         }
-        types.sort(COMPARATOR);
+        types.sort(Q_COMPARATOR);
+    }
+
+    public static void sortByQSWeight(List<MediaType> types) {
+        if (hasAtMostOneItem(types)) {
+            return;
+        }
+        types.sort(QS_COMPARATOR);
     }
 
     private static boolean hasAtMostOneItem(List<MediaType> types) {
@@ -248,17 +280,77 @@ public class MediaTypeHelper {
         return false;
     }
 
-    /**
-     * If the supplied media type contains a suffix in the subtype, then this returns a new media type
-     * that uses the suffix as the subtype
-     */
-    public static MediaType withSuffixAsSubtype(MediaType mediaType) {
-        int plusIndex = mediaType.getSubtype().indexOf('+');
-        if ((plusIndex > -1) && (plusIndex < mediaType.getSubtype().length() - 1)) {
-            mediaType = new MediaType(mediaType.getType(),
-                    mediaType.getSubtype().substring(plusIndex + 1),
-                    mediaType.getParameters());
+    public static List<MediaType> toListOfMediaType(String[] mediaTypes) {
+        if (mediaTypes == null || mediaTypes.length == 0) {
+            return Collections.emptyList();
         }
-        return mediaType;
+
+        List<MediaType> list = new ArrayList<>(mediaTypes.length);
+        for (String mediaType : mediaTypes) {
+            list.add(MediaType.valueOf(mediaType));
+        }
+
+        return Collections.unmodifiableList(list);
+    }
+
+    /**
+     * This method ungroups the media types with suffix in separated media types. For example, having the media type
+     * "application/one+two" will return a list containing ["application/one+two", "application/one", "application/two"].
+     * The Media Types without suffix remain as one media type.
+     *
+     * @param mediaTypes the list of media types to separate.
+     * @return the list of ungrouped media types.
+     */
+    public static List<MediaType> getUngroupedMediaTypes(List<MediaType> mediaTypes) {
+        List<MediaType> effectiveMediaTypes = new ArrayList<>();
+        for (MediaType mediaType : mediaTypes) {
+            effectiveMediaTypes.addAll(getUngroupedMediaTypes(mediaType));
+        }
+
+        return Collections.unmodifiableList(effectiveMediaTypes);
+    }
+
+    /**
+     * This method ungroups the media type with suffix in separated media types. For example, having the media type
+     * "application/one+two" will return a list containing ["application/one+two", "application/one", "application/two"].
+     * If the Media Type does not have a suffix, then it's not modified.
+     *
+     * @param mediaType the media type to separate.
+     * @return the list of ungrouped media types.
+     */
+    public static List<MediaType> getUngroupedMediaTypes(MediaType mediaType) {
+        if (mediaType == null) {
+            return Collections.emptyList();
+        }
+
+        if (mediaType.getSubtype() == null || !mediaType.getSubtype().contains(MEDIA_TYPE_SUFFIX_DELIM)) {
+            return Collections.singletonList(mediaType);
+        }
+
+        String[] subTypes = mediaType.getSubtype().split(Pattern.quote(MEDIA_TYPE_SUFFIX_DELIM));
+
+        List<MediaType> effectiveMediaTypes = new ArrayList<>(1 + subTypes.length);
+        effectiveMediaTypes.add(mediaType);
+        for (String subType : subTypes) {
+            effectiveMediaTypes.add(new MediaType(mediaType.getType(), subType, mediaType.getParameters()));
+        }
+
+        return Collections.unmodifiableList(effectiveMediaTypes);
+    }
+
+    private static int countMatchingMediaTypes(List<MediaType> produces, List<MediaType> mediaTypes) {
+        int count = 0;
+        for (int i = 0; i < mediaTypes.size(); i++) {
+            MediaType mediaType = mediaTypes.get(i);
+            for (int j = 0; j < produces.size(); j++) {
+                MediaType produce = produces.get(j);
+                if (mediaType.isCompatible(produce)) {
+                    count++;
+                    break;
+                }
+            }
+        }
+
+        return count;
     }
 }

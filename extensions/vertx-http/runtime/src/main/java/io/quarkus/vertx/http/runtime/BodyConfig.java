@@ -13,7 +13,7 @@ public class BodyConfig {
      * Whether the files sent using {@code multipart/form-data} will be stored locally.
      * <p>
      * If {@code true}, they will be stored in {@code quarkus.http.body-handler.uploads-directory} and will be made
-     * available via {@code io.vertx.ext.web.RoutingContext.fileUploads()}. Otherwise, the the files sent using
+     * available via {@code io.vertx.ext.web.RoutingContext.fileUploads()}. Otherwise, the files sent using
      * {@code multipart/form-data} will not be stored locally, and {@code io.vertx.ext.web.RoutingContext.fileUploads()}
      * will always return an empty collection. Note that even with this option being set to {@code false}, the
      * {@code multipart/form-data} requests will be accepted.
@@ -42,7 +42,7 @@ public class BodyConfig {
      * Whether the uploaded files should be removed after serving the request.
      * <p>
      * If {@code true} the uploaded files stored in {@code quarkus.http.body-handler.uploads-directory} will be removed
-     * after handling the request. Otherwise the files will be left there forever.
+     * after handling the request. Otherwise, the files will be left there forever.
      */
     @ConfigItem(defaultValue = "true")
     public boolean deleteUploadedFilesOnEnd;
@@ -51,8 +51,14 @@ public class BodyConfig {
      * Whether the body buffer should pre-allocated based on the {@code Content-Length} header value.
      * <p>
      * If {@code true} the body buffer is pre-allocated according to the size read from the {@code Content-Length}
-     * header. Otherwise the body buffer is pre-allocated to 1KB, and is resized dynamically
+     * header. Otherwise, the body buffer is pre-allocated to 1KB, and is resized dynamically
      */
     @ConfigItem
     public boolean preallocateBodyBuffer;
+
+    /**
+     * HTTP multipart request related settings
+     */
+    @ConfigItem
+    public MultiPartConfig multipart;
 }

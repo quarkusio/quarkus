@@ -16,6 +16,11 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>
@@ -36,7 +41,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-qute-deployment</artifactId>
+            <artifactId>quarkus-kafka-client-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-qute-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -56,6 +66,21 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-search-orm-elasticsearch-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>
@@ -71,6 +96,7 @@
             <extension>
                 <groupId>kr.motd.maven</groupId>
                 <artifactId>os-maven-plugin</artifactId>
+                <version>${os-maven-plugin.version}</version>
             </extension>
         </extensions>
         <plugins>
@@ -119,7 +145,7 @@
                 <configuration>
                     <skip>false</skip>
                     <systemPropertyVariables>
-                        <quarkus.keycloak.devservices.enabled>false</quarkus.keycloak.devservices.enabled>
+                        <quarkus.devservices.enabled>false</quarkus.devservices.enabled>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

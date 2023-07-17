@@ -17,6 +17,12 @@
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-health</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.eclipse.parsson</groupId>
+                    <artifactId>jakarta.json</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>
@@ -40,7 +46,7 @@
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-maven-plugin</artifactId>
+                <artifactId>quarkus-extension-maven-plugin</artifactId>
                 <configuration>
                     <capabilities>
                         <provides>io.quarkus.smallrye.health</provides>

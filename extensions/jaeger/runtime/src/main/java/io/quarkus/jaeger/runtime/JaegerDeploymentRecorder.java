@@ -1,5 +1,6 @@
 package io.quarkus.jaeger.runtime;
 
+import java.text.NumberFormat;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.function.Function;
@@ -15,7 +16,7 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class JaegerDeploymentRecorder {
     private static final Logger log = Logger.getLogger(JaegerDeploymentRecorder.class);
-    private static final Optional UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
+    private static final Optional<String> UNKNOWN_SERVICE_NAME = Optional.of("quarkus/unknown");
     private static final QuarkusJaegerTracer quarkusTracer = new QuarkusJaegerTracer();
 
     public static String jaegerVersion;
@@ -58,7 +59,7 @@ public class JaegerDeploymentRecorder {
         // Usually the tracer will be registered only here, although consumers
         // could register a different tracer in the code which runs before this class.
         // This is also used in tests.
-        if (!GlobalTracer.isRegistered()) {
+        if (!GlobalTracer.isRegistered() && !jaeger.disableTracerRegistration) {
             log.debugf("Registering tracer to GlobalTracer %s", quarkusTracer);
             GlobalTracer.register(quarkusTracer);
         }
@@ -79,8 +80,9 @@ public class JaegerDeploymentRecorder {
         initTracerProperty("JAEGER_REPORTER_FLUSH_INTERVAL", jaeger.reporterFlushInterval,
                 duration -> String.valueOf(duration.toMillis()));
         initTracerProperty("JAEGER_SAMPLER_TYPE", jaeger.samplerType, type -> type);
-        initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> param.toString());
-        initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort, hostPort -> hostPort.toString());
+        initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> NumberFormat.getInstance().format(param));
+        initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort,
+                hostPort -> String.format("%s:%d", hostPort.getHostString(), hostPort.getPort()));
         initTracerProperty("JAEGER_SERVICE_NAME", jaeger.serviceName, name -> name);
         initTracerProperty("JAEGER_TAGS", jaeger.tags, tags -> tags.toString());
         initTracerProperty("JAEGER_PROPAGATION", jaeger.propagation, format -> format.toString());

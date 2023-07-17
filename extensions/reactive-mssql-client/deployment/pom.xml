@@ -16,13 +16,16 @@
 
     <properties>
         <reactive-mssql.url>vertx-reactive:sqlserver://localhost:1433</reactive-mssql.url>
-        <mssql.image>mcr.microsoft.com/mssql/server:2019-CU8-ubuntu-16.04</mssql.image>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-mssql</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -43,7 +46,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -55,6 +58,22 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+            <scope>test</scope>
+            <type>test-jar</type>
         </dependency>
     </dependencies>
 
@@ -147,7 +166,7 @@
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mcr.microsoft.com/mssql/server:2019-latest images currently running, not just those we just started.
+                            <!--Stops all mcr.microsoft.com/mssql/server images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>

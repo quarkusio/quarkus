@@ -3,7 +3,7 @@ package org.jboss.resteasy.reactive.server.injection;
 public interface ResteasyReactiveInjectionContext {
     Object getHeader(String name, boolean single);
 
-    Object getQueryParameter(String name, boolean single, boolean encoded);
+    Object getQueryParameter(String name, boolean single, boolean encoded, String separator);
 
     String getPathParameter(String name, boolean encoded);
 

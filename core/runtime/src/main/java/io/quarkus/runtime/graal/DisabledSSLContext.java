@@ -20,7 +20,7 @@ import javax.net.ssl.TrustManager;
 public class DisabledSSLContext extends SSLContext {
 
     public DisabledSSLContext() {
-        super(new DisabledSSLContextSpi(), new Provider("DISABLED", 1, "DISABLED") {
+        super(new DisabledSSLContextSpi(), new Provider("DISABLED", "1.0", "DISABLED") {
         }, "DISABLED");
     }
 

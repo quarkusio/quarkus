@@ -2,10 +2,10 @@ package io.quarkus.smallrye.faulttolerance.runtime;
 
 import java.util.concurrent.ExecutorService;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.Alternative;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Alternative;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.context.ManagedExecutor;
 

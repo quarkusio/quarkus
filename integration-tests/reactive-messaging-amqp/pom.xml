@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
 
         <!-- AMQP -->
@@ -59,20 +59,6 @@
             <groupId>org.apache.activemq</groupId>
             <artifactId>artemis-server</artifactId>
             <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jboss.logmanager</groupId>
-                    <artifactId>jboss-logmanager</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.johnzon</groupId>
-                    <artifactId>johnzon-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.activemq</groupId>
@@ -109,7 +95,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

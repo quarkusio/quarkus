@@ -2,8 +2,6 @@ package io.quarkus.hibernate.validator.test.devmode;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,7 +12,7 @@ public class DevModeConstraintValidationTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestBean.class,
+            .withApplicationRoot((jar) -> jar.addClasses(TestBean.class,
                     DevModeTestResource.class, ClassLevelConstraint.class, ClassLevelValidator.class, DependentTestBean.class));
 
     @Test
@@ -50,7 +48,7 @@ public class DevModeConstraintValidationTest {
                 .body(containsString("ok"));
 
         TEST.modifySourceFile("TestBean.java", s -> s.replace("// <placeholder2>",
-                "@javax.validation.constraints.NotNull(message=\"My property message\")"));
+                "@jakarta.validation.constraints.NotNull(message=\"My property message\")"));
 
         RestAssured.given()
                 .header("Content-Type", "application/json")
@@ -71,7 +69,7 @@ public class DevModeConstraintValidationTest {
                 .body(containsString("mymessage"));
 
         TEST.modifySourceFile("DependentTestBean.java", s -> s.replace("/* <placeholder> */",
-                "@javax.validation.constraints.Size(max=1, message=\"My method message\")"));
+                "@jakarta.validation.constraints.Size(max=1, message=\"My method message\")"));
 
         RestAssured.given()
                 .header("Content-Type", "application/json")

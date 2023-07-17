@@ -22,6 +22,13 @@ public final class FlywayRuntimeConfig {
     }
 
     /**
+     * Flag to enable / disable Flyway.
+     *
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Flyway configuration for the default datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT)

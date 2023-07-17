@@ -10,7 +10,6 @@
     <modelVersion>4.0.0</modelVersion>
 
     <properties>
-        <postgres.image>postgres:13.1</postgres.image>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
     </properties>
 
@@ -28,18 +27,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-panache-hibernate-common-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-tree</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-analysis</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -66,6 +53,11 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -167,13 +159,13 @@
                                             <port>5431:5432</port>
                                         </ports>
                                         <wait>
-                                            <tcp>
-                                                <mode>mapped</mode>
-                                                <ports>
-                                                    <port>5432</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>10000</time>
+                                            <!-- For some reason, Postgres will tell us it's ready *twice*,
+                                            and that's the truth the second time only.
+                                            See https://github.com/fabric8io/docker-maven-plugin/issues/628
+                                            See also how the condition is configured in testcontainers:
+                                            https://github.com/testcontainers/testcontainers-java/blob/c64aab9fd5e3a452ee0faf793560327eb4da9841/modules/postgresql/src/main/java/org/testcontainers/containers/PostgreSQLContainer.java#L52-L55 -->
+                                            <time>20000</time>
+                                            <log>(?s)ready to accept connections.*ready to accept connections</log>
                                         </wait>
                                     </run>
                                 </image>
@@ -219,5 +211,32 @@
                 </plugins>
             </build>
         </profile>
+        <!-- Disabled pending fix of #33454 -->
+        <profile>
+            <id>podman</id>
+            <activation>
+                <property>
+                    <name>env.IS_PODMAN</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <enforcer.skip>true</enforcer.skip>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
     </profiles>
 </project>

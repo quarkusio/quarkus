@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.extension.ConditionEvaluationResult.enabled;
 import static org.junit.platform.commons.util.AnnotationUtils.findAnnotation;
 
 import java.lang.annotation.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.function.BooleanSupplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -53,10 +54,11 @@ public class EnabledIfTest {
         private ConditionEvaluationResult map(EnabledIf annotation) {
             for (Class<? extends BooleanSupplier> type : annotation.value()) {
                 try {
-                    if (!type.newInstance().getAsBoolean()) {
+                    if (!type.getConstructor().newInstance().getAsBoolean()) {
                         return disabled(format("Condition %s is false", type.getName()));
                     }
-                } catch (InstantiationException | IllegalAccessException e) {
+                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                        | InvocationTargetException e) {
                     return disabled(format("Unable to evaluate condition: %s", type.getName()));
                 }
             }

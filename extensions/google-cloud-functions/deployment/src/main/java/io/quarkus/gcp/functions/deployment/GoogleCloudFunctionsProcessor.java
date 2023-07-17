@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -14,6 +14,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import com.google.cloud.functions.BackgroundFunction;
+import com.google.cloud.functions.CloudEventsFunction;
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.RawBackgroundFunction;
 
@@ -36,6 +37,7 @@ public class GoogleCloudFunctionsProcessor {
     public static final DotName DOTNAME_HTTP_FUNCTION = DotName.createSimple(HttpFunction.class.getName());
     public static final DotName DOTNAME_BACKGROUND_FUNCTION = DotName.createSimple(BackgroundFunction.class.getName());
     public static final DotName DOTNAME_RAW_BACKGROUND_FUNCTION = DotName.createSimple(RawBackgroundFunction.class.getName());
+    public static final DotName DOTNAME_CLOUD_EVENT_FUNCTION = DotName.createSimple(CloudEventsFunction.class.getName());
 
     @BuildStep
     public FeatureBuildItem feature() {
@@ -56,6 +58,7 @@ public class GoogleCloudFunctionsProcessor {
         Collection<ClassInfo> httpFunctions = index.getAllKnownImplementors(DOTNAME_HTTP_FUNCTION);
         Collection<ClassInfo> backgroundFunctions = index.getAllKnownImplementors(DOTNAME_BACKGROUND_FUNCTION);
         Collection<ClassInfo> rawBackgroundFunctions = index.getAllKnownImplementors(DOTNAME_RAW_BACKGROUND_FUNCTION);
+        Collection<ClassInfo> cloudEventFunctions = index.getAllKnownImplementors(DOTNAME_CLOUD_EVENT_FUNCTION);
 
         List<CloudFunctionBuildItem> cloudFunctions = new ArrayList<>();
         cloudFunctions.addAll(
@@ -65,6 +68,8 @@ public class GoogleCloudFunctionsProcessor {
         cloudFunctions.addAll(
                 registerFunctions(unremovableBeans, rawBackgroundFunctions,
                         GoogleCloudFunctionInfo.FunctionType.RAW_BACKGROUND));
+        cloudFunctions.addAll(
+                registerFunctions(unremovableBeans, cloudEventFunctions, GoogleCloudFunctionInfo.FunctionType.CLOUD_EVENT));
 
         if (cloudFunctions.isEmpty()) {
             throw new BuildException("No Google Cloud Function found on the classpath", Collections.emptyList());
@@ -79,7 +84,7 @@ public class GoogleCloudFunctionsProcessor {
         for (ClassInfo classInfo : functions) {
             String className = classInfo.name().toString();
             unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(className));
-            List<AnnotationInstance> annotationInstances = classInfo.annotations().get(DOTNAME_NAMED);
+            List<AnnotationInstance> annotationInstances = classInfo.annotationsMap().get(DOTNAME_NAMED);
             CloudFunctionBuildItem buildItem = new CloudFunctionBuildItem(className, functionType);
             if (annotationInstances != null) {
                 buildItem.setBeanName(annotationInstances.get(0).value().asString());

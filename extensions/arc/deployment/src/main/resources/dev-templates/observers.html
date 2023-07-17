@@ -15,7 +15,7 @@
       }
       $(".class-candidate").each(function() {
         var className = $(this).text();
-        if (appClassLang(className)) {
+        if (appClassLocation(className)) {
           $(this).addClass("app-class");
         }
       });
@@ -42,7 +42,7 @@
    <tbody>
     {#for observer in info:devBeanInfos.observers}
     <tr>
-      <td>{count}.</td>
+      <td>{observer_count}.</td>
       <td>
        {#if observer.declaringClass}
        <span class="class-candidate">{observer.declaringClass}</span>#{observer.methodName}()

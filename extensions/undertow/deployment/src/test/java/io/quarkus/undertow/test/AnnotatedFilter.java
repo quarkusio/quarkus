@@ -3,12 +3,12 @@ package io.quarkus.undertow.test;
 import java.io.IOException;
 import java.util.Enumeration;
 
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.http.HttpFilter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.http.HttpFilter;
 
 @WebFilter(urlPatterns = "/*")
 public class AnnotatedFilter extends HttpFilter {

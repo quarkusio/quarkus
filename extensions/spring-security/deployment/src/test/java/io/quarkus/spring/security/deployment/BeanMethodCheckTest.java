@@ -6,10 +6,8 @@ import static io.quarkus.security.test.utils.IdentityMock.USER;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -32,7 +30,7 @@ public class BeanMethodCheckTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addClasses(
                             Person.class,
                             PersonChecker.class,

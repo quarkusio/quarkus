@@ -42,7 +42,7 @@ class ArcProxyBeanMetaDataClassNormalizerTest {
     }
 
     /**
-     * Simulates an object injected through @{@link javax.inject.Inject}.
+     * Simulates an object injected through @{@link jakarta.inject.Inject}.
      */
     private static class FirstSubclass extends Original implements Subclass {
     }

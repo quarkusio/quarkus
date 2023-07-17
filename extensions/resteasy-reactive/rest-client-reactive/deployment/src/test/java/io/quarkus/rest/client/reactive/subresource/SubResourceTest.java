@@ -4,21 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -29,11 +29,21 @@ public class SubResourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(RootClient.class, SubClient.class, Resource.class));
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(RootClient.class, SubClient.class, SubSubClient.class, Resource.class));
 
     @TestHTTPResource
     URI baseUri;
+
+    @RestClient
+    RootClient injectedClient;
+
+    @Test
+    void testInjectedClient() {
+        // should result in sending GET /path/rt/mthd/simple
+        String result = injectedClient.sub("rt", "mthd").simpleGet();
+        assertThat(result).isEqualTo("rt/mthd/simple");
+    }
 
     @Test
     void shouldPassParamsToSubResource() {
@@ -41,6 +51,22 @@ public class SubResourceTest {
         RootClient rootClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(RootClient.class);
         String result = rootClient.sub("rt", "mthd").simpleGet();
         assertThat(result).isEqualTo("rt/mthd/simple");
+    }
+
+    @Test
+    void shouldPassParamsToSubSubResource() {
+        // should result in sending GET /path/rt/mthd/sub/simple
+        RootClient rootClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(RootClient.class);
+        String result = rootClient.sub("rt", "mthd").sub().simpleSub();
+        assertThat(result).isEqualTo("rt/mthd/sub/subSimple");
+    }
+
+    @Test
+    void shouldPassPathParamsToSubSubResource() {
+        // should result in sending GET /path/rt/mthd/sub/s/ss
+        RootClient rootClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(RootClient.class);
+        String result = rootClient.sub("rt", "mthd").sub("s").get("ss");
+        assertThat(result).isEqualTo("rt/mthd/sub/s/ss");
     }
 
     @Test
@@ -61,8 +87,24 @@ public class SubResourceTest {
         assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd:ent1t1:prm");
     }
 
+    @Test
+    void shouldDoMultiplePostsInSubSubResource() {
+        RootClient rootClient = RestClientBuilder.newBuilder().baseUri(baseUri).build(RootClient.class);
+        SubSubClient sub = rootClient.sub("rt", "mthd").sub();
+
+        Response result = sub.postWithQueryParam("prm", "ent1t1");
+        assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd/sub:ent1t1:prm");
+        MultivaluedMap<String, Object> headers = result.getHeaders();
+        assertThat(headers.get("overridable").get(0)).isEqualTo("SubSubClient");
+        assertThat(headers.get("fromSubMethod").get(0)).isEqualTo("SubSubClientComputed");
+
+        // check that a second usage of the sub stub works
+        result = sub.postWithQueryParam("prm", "ent1t1");
+        assertThat(result.readEntity(String.class)).isEqualTo("rt/mthd/sub:ent1t1:prm");
+    }
+
     @Path("/path/{rootParam}")
-    @RegisterRestClient
+    @RegisterRestClient(baseUri = "http://localhost:8081")
     @Consumes("text/plain")
     @Produces("text/plain")
     @ClientHeaderParam(name = "fromRoot", value = "headerValue")
@@ -73,6 +115,12 @@ public class SubResourceTest {
         @ClientHeaderParam(name = "fromRootMethod", value = "{fillingMethod}")
         @ClientHeaderParam(name = "overridable", value = "RootClient#sub")
         SubClient sub(@PathParam("rootParam") String rootParam, @PathParam("methodParam") String methodParam);
+
+        // we only add this to make sure that the inclusion of @ClientHeaderParam does not break
+        // when the rest client interface contains a method returning a primitive type
+        @Path("/dummy")
+        @DELETE
+        boolean dummy();
 
         default String fillingMethod() {
             return "RootClientComputed";
@@ -86,6 +134,12 @@ public class SubResourceTest {
         @Path("/simple")
         String simpleGet();
 
+        @Path("/sub")
+        SubSubClient sub();
+
+        @Path("/sub/{methodParam}")
+        SubSubClient sub(@PathParam("methodParam") String methodParam);
+
         @POST
         @ClientHeaderParam(name = "overridable", value = "SubClient")
         @ClientHeaderParam(name = "fromSubMethod", value = "{fillingMethod}")
@@ -93,6 +147,27 @@ public class SubResourceTest {
 
         default String fillingMethod() {
             return "SubClientComputed";
+        }
+    }
+
+    @Consumes("text/plain")
+    @Produces("text/plain")
+    interface SubSubClient {
+        @GET
+        @Path("/subSimple")
+        String simpleSub();
+
+        @GET
+        @Path("/{methodParam}")
+        String get(@PathParam("methodParam") String methodParam);
+
+        @POST
+        @ClientHeaderParam(name = "overridable", value = "SubSubClient")
+        @ClientHeaderParam(name = "fromSubMethod", value = "{fillingMethod}")
+        Response postWithQueryParam(@QueryParam("queryParam") String param, String entity);
+
+        default String fillingMethod() {
+            return "SubSubClientComputed";
         }
     }
 }
@@ -112,8 +187,8 @@ import io.quarkus.rest.client.reactive.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.subresource.SubResourceTest.RootClient;
 import io.quarkus.rest.client.reactive.subresource.SubResourceTest.SubClient;
 import java.io.Closeable;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Configurable;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Configurable;
 import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
 import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -122,6 +197,7 @@ import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 public class SubResourceTest$RootClient$$QuarkusRestClientInterface implements Closeable, RootClient {
    final WebTarget target1_1;
    final WebTarget target1_2;
+   final WebTarget target1_3;
 
    public SubResourceTest$RootClient$$QuarkusRestClientInterface(WebTarget var1) {
       WebTarget var3 = var1.path("/path/{rootParam}");
@@ -138,6 +214,11 @@ public class SubResourceTest$RootClient$$QuarkusRestClientInterface implements C
       String var10 = "/simple";
       var8 = var8.path(var10);
       this.target1_2 = var8;
+      String var12 = "/{methodParam}";
+      WebTarget var11 = var3.path(var12);
+      String var13 = "/sub";
+      var11 = var11.path(var13);
+      this.target1_3 = var11;
    }
 
    public SubClient sub(String var1, String var2) {
@@ -148,12 +229,16 @@ public class SubResourceTest$RootClient$$QuarkusRestClientInterface implements C
       var3.target1 = var4;
       WebTarget var5 = this.target1_2;
       var3.target2 = var5;
+      WebTarget var6 = this.target1_3;
+      var3.target3 = var6;
       return (SubClient)var3;
    }
 
    public void close() {
       ((WebTargetImpl)this.target1_1).getRestClient().close();
       ((WebTargetImpl)this.target1_2).getRestClient().close();
+      ((WebTargetImpl)this.target1_3).getRestClient().close();
+      ((WebTargetImpl)((SubClientf48b9cee6dde6b96b184ff11e432714265b0c2161)this).target3_1).getRestClient().close();
    }
 }
 
@@ -167,13 +252,13 @@ package io.quarkus.rest.client.reactive.subresource;
 import io.quarkus.rest.client.reactive.HeaderFiller;
 import io.quarkus.rest.client.reactive.subresource.SubResourceTest.SubClient;
 import java.lang.reflect.Method;
-import javax.ws.rs.ProcessingException;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.client.Invocation.Builder;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.ProcessingException;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.client.Invocation.Builder;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 // $FF: synthetic class
 public class SubResourceTest$SubCliented77e297b94a7e0aa21c1f7f1d8ba4fbe72d61861 implements SubClient {
@@ -185,6 +270,9 @@ public class SubResourceTest$SubCliented77e297b94a7e0aa21c1f7f1d8ba4fbe72d61861 
    public WebTarget target2;
    private final Method javaMethod2;
    private final HeaderFiller headerFiller2;
+   private static final Method javaMethod3;
+   private final HeaderFiller headerFiller3;
+   final WebTarget target3_1;
 
    public SubResourceTest$SubCliented77e297b94a7e0aa21c1f7f1d8ba4fbe72d61861() {
       Class[] var1 = new Class[]{String.class, String.class};
@@ -197,6 +285,8 @@ public class SubResourceTest$SubCliented77e297b94a7e0aa21c1f7f1d8ba4fbe72d61861 
       this.javaMethod2 = var5;
       SubResourceTest$SubClient312bda50cc002ce8e85608d3afaa6aa0963d20b3$$1$$2 var6 = new SubResourceTest$SubClient312bda50cc002ce8e85608d3afaa6aa0963d20b3$$1$$2();
       this.headerFiller2 = (HeaderFiller)var6;
+      SubResourceTest$SubClient312bda50cc002ce8e85608d3afaa6aa0963d20b3$$1$$3 var3 = new SubResourceTest$SubClient312bda50cc002ce8e85608d3afaa6aa0963d20b3$$1$$3();
+      this.headerFiller3 = (HeaderFiller)var3;
    }
 
    public Response postWithQueryParam(String var1, String var2) {
@@ -252,6 +342,23 @@ public class SubResourceTest$SubCliented77e297b94a7e0aa21c1f7f1d8ba4fbe72d61861 
          }
       }
    }
+
+   public SubSubClient sub() {
+      WebTarget var1 = this.target3;
+      String var2 = this.param0;
+      var1 = var1.resolveTemplate("rootParam", var2);
+      String var3 = this.param1;
+      var1 = var1.resolveTemplate("methodParam", var3);
+      SubSubClient1c9671af03ea8b4ee28b12a00217a058a10ca4033 var7 = new SubSubClient1c9671af03ea8b4ee28b12a00217a058a10ca4033();
+      String var5 = "/sub";
+      WebTarget var4 = var1.path(var5);
+      String var6 = "/simple";
+      var4 = var4.path(var6);
+      this.target3_1 = var4;
+      WebTarget var8 = this.target3_1;
+      var7.target1 = var8;
+      return (SubSubClient)var7;
+   }
 }
 
 
@@ -267,7 +374,7 @@ import io.quarkus.rest.client.reactive.subresource.SubResourceTest.SubClient;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.logging.Logger;
 
 // $FF: synthetic class

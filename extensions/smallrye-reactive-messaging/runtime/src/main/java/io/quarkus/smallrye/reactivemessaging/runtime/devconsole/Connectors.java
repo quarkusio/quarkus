@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.enterprise.event.Observes;
-import javax.inject.Singleton;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.config.Config;
 
@@ -15,7 +15,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevReactiveMessagingInfos.Component;
 import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevReactiveMessagingInfos.ComponentType;
 
-// we use a separate component due to weird class loading issues that occur when accessing config properties 
+// we use a separate component due to weird class loading issues that occur when accessing config properties
 @Singleton
 public class Connectors {
 

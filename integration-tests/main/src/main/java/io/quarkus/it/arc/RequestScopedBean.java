@@ -1,6 +1,6 @@
 package io.quarkus.it.arc;
 
-import javax.enterprise.context.RequestScoped;
+import jakarta.enterprise.context.RequestScoped;
 
 import io.quarkus.it.arc.somepackage.Superclass;
 

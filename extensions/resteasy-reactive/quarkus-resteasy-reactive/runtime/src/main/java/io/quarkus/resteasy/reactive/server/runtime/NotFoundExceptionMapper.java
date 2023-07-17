@@ -23,17 +23,18 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.Variant;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
+import jakarta.ws.rs.core.Variant;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
+import org.jboss.resteasy.reactive.server.core.RuntimeExceptionMapper;
 import org.jboss.resteasy.reactive.server.core.request.ServerDrivenNegotiation;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
@@ -81,12 +82,20 @@ public class NotFoundExceptionMapper {
         }
     }
 
-    @ServerExceptionMapper(value = NotFoundException.class, priority = Priorities.USER + 1)
-    public Response toResponse(HttpHeaders headers) {
+    // we don't use NotFoundExceptionMapper here because that would result in users not being able to provide their own catch-all exception mapper in dev-mode, see https://github.com/quarkusio/quarkus/issues/7883
+    @ServerExceptionMapper(priority = Priorities.USER + 1)
+    public Response toResponse(Throwable t, HttpHeaders headers) {
+        if (!(t instanceof NotFoundException)) {
+            return RuntimeExceptionMapper.IGNORE_RESPONSE;
+        }
         if ((classMappers == null) || classMappers.isEmpty()) {
             return respond(headers);
         }
-        return respond(ResourceDescription.fromClassMappers(classMappers), headers);
+        return respond(getResourceDescriptions(), headers);
+    }
+
+    private List<ResourceDescription> getResourceDescriptions() {
+        return ResourceDescription.fromClassMappers(classMappers);
     }
 
     private Response respond(HttpHeaders headers) {

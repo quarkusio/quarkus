@@ -1,13 +1,13 @@
 package io.quarkus.it.vertx;
 
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
+import static jakarta.ws.rs.core.MediaType.TEXT_PLAIN;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import javax.ws.rs.*;
+import jakarta.ws.rs.*;
 
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;

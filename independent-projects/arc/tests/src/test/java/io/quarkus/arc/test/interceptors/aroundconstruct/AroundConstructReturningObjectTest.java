@@ -3,15 +3,18 @@ package io.quarkus.arc.test.interceptors.aroundconstruct;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.inject.Singleton;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
+
+import jakarta.inject.Singleton;
+import jakarta.interceptor.AroundConstruct;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 
 public class AroundConstructReturningObjectTest {
 

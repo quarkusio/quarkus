@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Properties;
 import java.util.UUID;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -31,25 +31,44 @@ public class AvroKafkaCreator {
 
     @ConfigProperty(name = "kafka.bootstrap.servers")
     String bootstrap;
-    @ConfigProperty(name = "schema.url.confluent")
-    String confluent;
-    @ConfigProperty(name = "schema.url.apicurio")
-    String apicurio;
+
+    @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.apicurio.registry.url")
+    String apicurioRegistryUrl;
+
+    @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.schema.registry.url")
+    String confluentRegistryUrl;
+
+    public AvroKafkaCreator() {
+    }
+
+    public AvroKafkaCreator(String bootstrap, String apicurioRegistryUrl, String confluentRegistryUrl) {
+        this.bootstrap = bootstrap;
+        this.apicurioRegistryUrl = apicurioRegistryUrl;
+        this.confluentRegistryUrl = confluentRegistryUrl;
+    }
+
+    public String getApicurioRegistryUrl() {
+        return apicurioRegistryUrl;
+    }
+
+    public String getConfluentRegistryUrl() {
+        return confluentRegistryUrl;
+    }
 
     public KafkaConsumer<Integer, Pet> createConfluentConsumer(String groupdIdConfig, String subscribtionName) {
-        return createConfluentConsumer(bootstrap, confluent, groupdIdConfig, subscribtionName);
+        return createConfluentConsumer(bootstrap, getConfluentRegistryUrl(), groupdIdConfig, subscribtionName);
     }
 
     public KafkaProducer<Integer, Pet> createConfluentProducer(String clientId) {
-        return createConfluentProducer(bootstrap, confluent, clientId);
+        return createConfluentProducer(bootstrap, getConfluentRegistryUrl(), clientId);
     }
 
     public KafkaConsumer<Integer, Pet> createApicurioConsumer(String groupdIdConfig, String subscribtionName) {
-        return createApicurioConsumer(bootstrap, apicurio, groupdIdConfig, subscribtionName);
+        return createApicurioConsumer(bootstrap, getApicurioRegistryUrl(), groupdIdConfig, subscribtionName);
     }
 
     public KafkaProducer<Integer, Pet> createApicurioProducer(String clientId) {
-        return createApicurioProducer(bootstrap, apicurio, clientId);
+        return createApicurioProducer(bootstrap, getApicurioRegistryUrl(), clientId);
     }
 
     public static KafkaConsumer<Integer, Pet> createConfluentConsumer(String bootstrap, String confluent,

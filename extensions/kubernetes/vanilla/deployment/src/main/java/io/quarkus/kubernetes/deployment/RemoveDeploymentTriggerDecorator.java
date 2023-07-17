@@ -10,6 +10,10 @@ import io.fabric8.openshift.api.model.DeploymentConfigSpecFluent;
 
 public class RemoveDeploymentTriggerDecorator extends NamedResourceDecorator<DeploymentConfigSpecFluent<?>> {
 
+    public RemoveDeploymentTriggerDecorator(String name) {
+        super(name);
+    }
+
     @Override
     public void andThenVisit(DeploymentConfigSpecFluent<?> deploymentConfigSpec, ObjectMeta objectMeta) {
         deploymentConfigSpec.withTriggers(Collections.emptyList());
@@ -18,5 +22,10 @@ public class RemoveDeploymentTriggerDecorator extends NamedResourceDecorator<Dep
     @Override
     public Class<? extends Decorator>[] after() {
         return new Class[] { ApplyDeploymentTriggerDecorator.class };
+    }
+
+    @Override
+    public Class<? extends Decorator>[] before() {
+        return new Class[] { ChangeDeploymentTriggerDecorator.class };
     }
 }

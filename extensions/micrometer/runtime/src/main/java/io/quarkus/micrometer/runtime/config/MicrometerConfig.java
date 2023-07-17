@@ -47,7 +47,7 @@ public final class MicrometerConfig {
 
     /**
      * For MeterRegistry configurations with optional 'enabled' attributes,
-     * determine whether or not the registry is enabled using {@link #registryEnabledDefault}
+     * determine whether the registry is enabled using {@link #registryEnabledDefault}
      * as the default value.
      */
     public boolean checkRegistryEnabledWithDefault(CapabilityEnabled config) {
@@ -64,7 +64,7 @@ public final class MicrometerConfig {
 
     /**
      * For MeterBinder configurations with optional 'enabled' attributes,
-     * determine whether or not the binder is enabled using {@link #binderEnabledDefault}
+     * determine whether the binder is enabled using {@link #binderEnabledDefault}
      * as the default value.
      */
     public boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
@@ -105,6 +105,13 @@ public final class MicrometerConfig {
         public Optional<Boolean> jvm;
 
         public KafkaConfigGroup kafka;
+
+        public RedisConfigGroup redis;
+
+        public GrpcServerConfigGroup grpcServer;
+
+        public GrpcClientConfigGroup grpcClient;
+
         public MPMetricsConfigGroup mpMetrics;
 
         /**
@@ -127,7 +134,7 @@ public final class MicrometerConfig {
         public PrometheusConfigGroup prometheus;
     }
 
-    public static interface CapabilityEnabled {
+    public interface CapabilityEnabled {
         Optional<Boolean> getEnabled();
     }
 }

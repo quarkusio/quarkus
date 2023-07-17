@@ -16,6 +16,9 @@
     <modules>
         <module>datasource</module>
         <module>connection-resolver</module>
+        <module>schema</module>
+        <module>discriminator</module>
+        <module>connection-resolver-legacy-qualifiers</module>
     </modules>
 
 </project>

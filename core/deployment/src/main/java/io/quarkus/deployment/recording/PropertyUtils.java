@@ -23,6 +23,7 @@ final class PropertyUtils {
             Method[] methods = type.getMethods();
 
             Map<String, Method> getters = new HashMap<>();
+            Map<String, Method> isGetters = new HashMap<>();
             Map<String, Method> setters = new HashMap<>();
             for (Method i : methods) {
                 if (i.getName().startsWith("get") && i.getName().length() > 3 && i.getParameterCount() == 0
@@ -37,16 +38,21 @@ final class PropertyUtils {
                 } else if (i.getName().startsWith("is") && i.getName().length() > 3 && i.getParameterCount() == 0
                         && (i.getReturnType() == boolean.class || i.getReturnType() == Boolean.class)) {
                     String name = Character.toLowerCase(i.getName().charAt(2)) + i.getName().substring(3);
-                    getters.put(name, i);
+                    isGetters.put(name, i);
                 } else if (i.getName().startsWith("set") && i.getName().length() > 3 && i.getParameterCount() == 1) {
                     String name = Character.toLowerCase(i.getName().charAt(3)) + i.getName().substring(4);
                     setters.put(name, i);
                 }
             }
+
             Set<String> names = new HashSet<>(getters.keySet());
+            names.addAll(isGetters.keySet());
             names.addAll(setters.keySet());
             for (String i : names) {
                 Method get = getters.get(i);
+                if (get == null) {
+                    get = isGetters.get(i); // If there is no "get" getter, use the "is" getter
+                }
                 Method set = setters.get(i);
                 if (get == null) {
                     ret.add(new Property(i, get, set, set.getParameterTypes()[0]));
@@ -100,6 +106,10 @@ final class PropertyUtils {
 
         public Class<?> getPropertyType() {
             return propertyType;
+        }
+
+        public Class<?> getDeclaringClass() {
+            return readMethod != null ? readMethod.getDeclaringClass() : writeMethod.getDeclaringClass();
         }
 
         public Object read(Object target) {

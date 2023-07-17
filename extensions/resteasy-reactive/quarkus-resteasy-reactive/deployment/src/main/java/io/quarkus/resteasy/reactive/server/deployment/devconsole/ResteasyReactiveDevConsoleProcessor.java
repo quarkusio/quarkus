@@ -7,25 +7,43 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.resteasy.reactive.server.runtime.EndpointScoresSupplier;
+import io.quarkus.resteasy.reactive.server.runtime.ExceptionMappersSupplier;
+import io.quarkus.resteasy.reactive.server.runtime.ParamConverterProvidersSupplier;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.StaticResourcesRecorder;
 
 public class ResteasyReactiveDevConsoleProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleRuntimeTemplateInfoBuildItem collectScores() {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("endpointScores", new EndpointScoresSupplier());
+    public DevConsoleRuntimeTemplateInfoBuildItem collectScores(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("endpointScores", new EndpointScoresSupplier(), this.getClass(),
+                curateOutcomeBuildItem);
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public DevConsoleRuntimeTemplateInfoBuildItem exceptionMappers(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("exceptionMappers", new ExceptionMappersSupplier(), this.getClass(),
+                curateOutcomeBuildItem);
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    public DevConsoleRuntimeTemplateInfoBuildItem paramConverterProviders(CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        return new DevConsoleRuntimeTemplateInfoBuildItem("paramConverterProviders", new ParamConverterProvidersSupplier(),
+                this.getClass(),
+                curateOutcomeBuildItem);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -41,10 +59,13 @@ public class ResteasyReactiveDevConsoleProcessor {
         StaticResourceInfo staticResourceInfo = new StaticResourceInfo();
 
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path resource = i.getChildPath(StaticResourcesRecorder.META_INF_RESOURCES);
-            if (resource != null && Files.exists(resource)) {
-                collectKnownPaths(resource, staticResourceInfo);
-            }
+            i.accept(tree -> {
+                Path resource = tree.getPath(StaticResourcesRecorder.META_INF_RESOURCES);
+                if (resource != null && Files.exists(resource)) {
+                    collectKnownPaths(resource, staticResourceInfo);
+                }
+            });
+
         }
         return new DevConsoleTemplateInfoBuildItem("staticResourceInfo", staticResourceInfo);
     }
@@ -53,7 +74,7 @@ public class ResteasyReactiveDevConsoleProcessor {
 
         try {
             Files.walkFileTree(resource, new SimpleFileVisitor<Path>() {
-                final Stack<StaticResourceInfo.StaticFile> currentFolder = new Stack<>();
+                final Deque<StaticResourceInfo.StaticFile> currentFolder = new ArrayDeque<>();
 
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {

@@ -1,6 +1,6 @@
 package io.quarkus.it.spring.data.jpa;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public class NamedEntity {

@@ -4,8 +4,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.Link;
-import javax.ws.rs.core.MultivaluedMap;
+
+import jakarta.ws.rs.core.Link;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 public class LinkHeaders {
     private final Map<String, Link> linksByRelationship = new HashMap<>();

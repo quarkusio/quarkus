@@ -81,7 +81,7 @@ public class RunningQuarkusApplicationImpl implements RunningQuarkusApplication 
         try {
             Class<?> actualClass = Class.forName(clazz.getName(), true,
                     classLoader);
-            Class<?> cdi = classLoader.loadClass("javax.enterprise.inject.spi.CDI");
+            Class<?> cdi = classLoader.loadClass("jakarta.enterprise.inject.spi.CDI");
             Object instance = cdi.getMethod("current").invoke(null);
             Method selectMethod = cdi.getMethod("select", Class.class, Annotation[].class);
             Object cdiInstance = selectMethod.invoke(instance, actualClass, qualifiers);

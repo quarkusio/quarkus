@@ -11,9 +11,7 @@ import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.Converter;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -22,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigPropertyMapInjectionTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .withApplicationRoot((jar) -> jar
                     .addAsServiceProvider(Converter.class, VersionConverter.class)
                     .addAsResource(new StringAsset(
                             "root.numbers.1=one\n" +

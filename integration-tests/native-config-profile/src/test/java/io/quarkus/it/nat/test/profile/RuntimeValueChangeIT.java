@@ -1,9 +1,9 @@
 package io.quarkus.it.nat.test.profile;
 
-import io.quarkus.test.junit.NativeImageTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
 
-@NativeImageTest
+@QuarkusIntegrationTest
 @TestProfile(RuntimeValueChangeIT.CustomTestProfile.class)
 public class RuntimeValueChangeIT extends RuntimeValueChangeTest {
 }

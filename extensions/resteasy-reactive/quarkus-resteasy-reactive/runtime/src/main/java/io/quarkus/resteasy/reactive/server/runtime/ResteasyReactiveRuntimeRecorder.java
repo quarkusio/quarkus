@@ -1,11 +1,13 @@
 package io.quarkus.resteasy.reactive.server.runtime;
 
-import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.spi.RuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.DefaultRuntimeConfiguration;
+import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 
 import io.quarkus.runtime.RuntimeValue;
@@ -15,50 +17,50 @@ import io.quarkus.vertx.http.runtime.HttpConfiguration;
 @Recorder
 public class ResteasyReactiveRuntimeRecorder {
 
-    public void configure(RuntimeValue<Deployment> deployment, HttpConfiguration configuration) {
-        List<RuntimeConfigurableServerRestHandler> runtimeConfigurableServerRestHandlers = deployment.getValue()
+    final HttpConfiguration httpConf;
+
+    public ResteasyReactiveRuntimeRecorder(HttpConfiguration httpConf) {
+        this.httpConf = httpConf;
+    }
+
+    public Supplier<RuntimeConfiguration> runtimeConfiguration(RuntimeValue<Deployment> deployment,
+            ResteasyReactiveServerRuntimeConfig runtimeConf) {
+        Optional<Long> maxBodySize;
+
+        if (httpConf.limits.maxBodySize.isPresent()) {
+            maxBodySize = Optional.of(httpConf.limits.maxBodySize.get().asLongValue());
+        } else {
+            maxBodySize = Optional.empty();
+        }
+
+        RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpConf.readTimeout,
+                httpConf.body.deleteUploadedFilesOnEnd, httpConf.body.uploadsDirectory,
+                httpConf.body.multipart.fileContentTypes.orElse(null),
+                runtimeConf.multipart().inputPart().defaultCharset(), maxBodySize,
+                httpConf.limits.maxFormAttributeSize.asLongValue());
+
+        deployment.getValue().setRuntimeConfiguration(runtimeConfiguration);
+
+        return new Supplier<>() {
+            @Override
+            public RuntimeConfiguration get() {
+                return runtimeConfiguration;
+            }
+        };
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes", "ForLoopReplaceableByForEach" })
+    public void configureHandlers(RuntimeValue<Deployment> deployment, Map<Class<?>, Supplier<?>> runtimeConfigMap) {
+        List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();
-        for (RuntimeConfigurableServerRestHandler handler : runtimeConfigurableServerRestHandlers) {
-            handler.configure(new RuntimeConfiguration() {
-                @Override
-                public Duration readTimeout() {
-                    return configuration.readTimeout;
-                }
-
-                @Override
-                public Body body() {
-                    return new Body() {
-                        @Override
-                        public boolean deleteUploadedFilesOnEnd() {
-                            return configuration.body.deleteUploadedFilesOnEnd;
-                        }
-
-                        @Override
-                        public String uploadsDirectory() {
-                            return configuration.body.uploadsDirectory;
-                        }
-                    };
-                }
-
-                @Override
-                public Limits limits() {
-                    return new Limits() {
-                        @Override
-                        public Optional<Long> maxBodySize() {
-                            if (configuration.limits.maxBodySize.isPresent()) {
-                                return Optional.of(configuration.limits.maxBodySize.get().asLongValue());
-                            } else {
-                                return Optional.empty();
-                            }
-                        }
-
-                        @Override
-                        public long maxFormAttributeSize() {
-                            return configuration.limits.maxFormAttributeSize.asLongValue();
-                        }
-                    };
-                }
-            });
+        for (int i = 0; i < runtimeConfigurableServerRestHandlers.size(); i++) {
+            GenericRuntimeConfigurableServerRestHandler handler = runtimeConfigurableServerRestHandlers.get(i);
+            Supplier<?> supplier = runtimeConfigMap.get(handler.getConfigurationClass());
+            if (supplier == null) {
+                throw new IllegalStateException(
+                        "Handler '" + handler.getClass().getName() + "' has not been properly configured.");
+            }
+            handler.configure(supplier.get());
         }
     }
 }

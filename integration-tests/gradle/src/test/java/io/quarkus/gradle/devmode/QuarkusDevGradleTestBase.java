@@ -7,12 +7,18 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
@@ -26,30 +32,59 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     private Future<?> quarkusDev;
     protected File projectDir;
 
+    @Override
+    protected void setupTestCommand() {
+        gradleNoWatchFs(false);
+    }
+
     @Test
     public void main() throws Exception {
-
         projectDir = getProjectDir();
         beforeQuarkusDev();
         ExecutorService executor = null;
-        final BuildResult[] buildResult = new BuildResult[1];
+        AtomicReference<BuildResult> buildResult = new AtomicReference<>();
+        List<String> processesBeforeTest = dumpProcesses();
+        List<String> processesAfterTest = Collections.emptyList();
         try {
-            executor = Executors.newSingleThreadExecutor();
-            quarkusDev = executor.submit(new Runnable() {
-                @Override
-                public void run() {
+            try {
+                executor = Executors.newSingleThreadExecutor();
+                quarkusDev = executor.submit(() -> {
                     try {
-                        buildResult[0] = build();
+                        buildResult.set(build());
                     } catch (Exception e) {
                         throw new IllegalStateException("Failed to build the project", e);
                     }
+                });
+                testDevMode();
+            } finally {
+                processesAfterTest = dumpProcesses();
+
+                if (quarkusDev != null) {
+                    quarkusDev.cancel(true);
                 }
-            });
-            testDevMode();
+                if (executor != null) {
+                    executor.shutdownNow();
+                }
+
+                // Kill all processes that were (indirectly) spawned by the current process.
+                List<ProcessHandle> childProcesses = DevModeTestUtils.killDescendingProcesses();
+
+                DevModeTestUtils.awaitUntilServerDown();
+
+                // sanity: forcefully terminate left-over processes
+                childProcesses.forEach(ProcessHandle::destroyForcibly);
+            }
         } catch (Exception | AssertionError e) {
-            if (buildResult[0] != null) {
+            System.err.println("PROCESSES BEFORE TEST:");
+            processesBeforeTest.forEach(System.err::println);
+            System.err.println("PROCESSES AFTER TEST (BEFORE CLEANUP):");
+            processesAfterTest.forEach(System.err::println);
+            System.err.println("PROCESSES AFTER CLEANUP:");
+            dumpProcesses().forEach(System.err::println);
+
+            if (buildResult.get() != null) {
                 System.err.println("BELOW IS THE CAPTURED LOGGING OF THE FAILED GRADLE TEST PROJECT BUILD");
-                System.err.println(buildResult[0].getOutput());
+                System.err.println(buildResult.get().getOutput());
             } else {
                 File logOutput = new File(projectDir, "command-output.log");
                 if (logOutput.exists()) {
@@ -67,22 +102,23 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
             }
             throw e;
         } finally {
-            if (quarkusDev != null) {
-                quarkusDev.cancel(true);
-            }
-            if (executor != null) {
-                executor.shutdownNow();
-            }
-
-            // Kill all processes that were (indirectly) spawned by the current process.
-            DevModeTestUtils.killDescendingProcesses();
-
-            DevModeTestUtils.awaitUntilServerDown();
-
             if (projectDir != null && projectDir.isDirectory()) {
                 FileUtils.deleteQuietly(projectDir);
             }
         }
+    }
+
+    public static List<String> dumpProcesses() {
+        // ProcessHandle.Info.command()/arguments()/commandLine() are always empty on Windows:
+        // https://bugs.openjdk.java.net/browse/JDK-8176725
+        ProcessHandle current = ProcessHandle.current();
+        return Stream.concat(Stream.of(current), current.descendants()).map(p -> {
+            ProcessHandle.Info i = p.info();
+            return String.format("PID %8d (%8d) started:%s CPU:%s - %s", p.pid(),
+                    p.parent().map(ProcessHandle::pid).orElse(-1L),
+                    i.startInstant().orElse(null), i.totalCpuDuration().orElse(null),
+                    i.commandLine().orElse("<command line not available>"));
+        }).collect(Collectors.toList());
     }
 
     protected BuildResult build() throws Exception {
@@ -106,7 +142,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected String[] buildArguments() {
-        return new String[] { "clean", "quarkusDev", "-s" };
+        return new String[] { "clean", "quarkusDev" };
     }
 
     protected void beforeQuarkusDev() throws Exception {
@@ -119,7 +155,7 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected String getHttpResponse(String path) {
-        return getHttpResponse(path, 1, TimeUnit.MINUTES);
+        return getHttpResponse(path, devModeTimeoutSeconds(), TimeUnit.SECONDS);
     }
 
     protected String getHttpResponse(String path, long timeout, TimeUnit tu) {
@@ -143,7 +179,16 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected void assertUpdatedResponseContains(String path, String value) {
-        assertUpdatedResponseContains(path, value, 1, TimeUnit.MINUTES);
+        assertUpdatedResponseContains(path, value, devModeTimeoutSeconds(), TimeUnit.SECONDS);
+    }
+
+    protected int devModeTimeoutSeconds() {
+        // It's a wild guess, but maybe Windows is just slower - at least: a successful Gradle-CI-jobs on Windows is
+        // 2.5x slower than the same Gradle-CI-job on Linux.
+        if (System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows")) {
+            return 90;
+        }
+        return 60;
     }
 
     protected void assertUpdatedResponseContains(String path, String value, long waitAtMost, TimeUnit timeUnit) {

@@ -5,16 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
 
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.rest.client.reactive.HelloClient2;
 import io.quarkus.rest.client.reactive.HelloResource;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -23,10 +22,12 @@ public class ProviderDisabledAutodiscoveryTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class, HelloClient.class, GlobalRequestFilter.class, GlobalResponseFilter.class)
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(HelloResource.class, HelloClient2.class, HelloClient.class, GlobalRequestFilter.class,
+                            GlobalResponseFilter.class)
                     .addAsResource(
                             new StringAsset(setUrlForClass(HelloClient.class)
+                                    + setUrlForClass(HelloClient2.class)
                                     + "quarkus.rest-client-reactive.provider-autodiscovery=false"),
                             "application.properties"));
 

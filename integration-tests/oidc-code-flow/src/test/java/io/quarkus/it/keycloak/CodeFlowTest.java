@@ -228,6 +228,56 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testStateCookieIsPresentButStateParamNot() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-https_test", "tenant-https",
+                    true);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint containing the state and code
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocation.startsWith("https"));
+            endpointLocation = "http" + endpointLocation.substring(5);
+
+            // State cookie is present
+            Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
+            assertNull(stateCookie.getSameSite());
+            verifyCodeVerifier(stateCookie, keycloakUrl);
+
+            // Make a call without an extra state query param, status is 401
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create(endpointLocation + "&state=123").toURL()));
+            assertEquals(401, webResponse.getStatusCode());
+
+            // Make a call without the state query param, confirm the old state cookie is removed, status is 302
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            // the old state cookie has been removed
+            assertNull(webClient.getCookieManager().getCookie(stateCookie.getName()));
+            // new state cookie is created
+            Cookie newStateCookie = getStateCookie(webClient, "tenant-https_test");
+            assertNotEquals(newStateCookie.getName(), stateCookie.getName());
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCodeFlowForceHttpsRedirectUriWithQueryAndPkce() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
@@ -1087,9 +1137,12 @@ public class CodeFlowTest {
 
             doTestAccessAndRefreshTokenInjectionWithoutIndexHtmlAndListener(webClient);
 
-            page = loginForm.getInputByName("login").click();
-
-            assertTrue(page.getBody().asNormalizedText().contains("You are already logged in"));
+            try {
+                page = loginForm.getInputByName("login").click();
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(400, ex.getStatusCode());
+                assertTrue(ex.getResponse().getContentAsString().contains("You are already logged in"));
+            }
             webClient.getCookieManager().clearCookies();
         }
     }

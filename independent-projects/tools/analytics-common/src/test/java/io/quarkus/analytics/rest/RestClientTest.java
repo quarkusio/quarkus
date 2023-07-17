@@ -10,6 +10,7 @@ import static io.quarkus.analytics.common.ContextTestData.createContext;
 import static io.quarkus.analytics.rest.RestClient.IDENTITY_ENDPOINT;
 import static io.quarkus.analytics.rest.RestClient.TRACK_ENDPOINT;
 import static io.quarkus.analytics.util.StringUtils.getObjectMapper;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -99,6 +100,10 @@ class RestClientTest {
         CompletableFuture<HttpResponse<String>> post = restClient.post(identity,
                 new URI("http://localhost:" + MOCK_SERVER_PORT + "/" + IDENTITY_ENDPOINT));
         assertEquals(201, post.get(1, TimeUnit.SECONDS).statusCode());
+
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> wireMockServer.verify(1, postRequestedFor(urlEqualTo("/" + IDENTITY_ENDPOINT))));
+
         wireMockServer.verify(postRequestedFor(urlEqualTo("/" + IDENTITY_ENDPOINT))
                 .withRequestBody(equalToJson(getObjectMapper().writeValueAsString(identity))));
     }

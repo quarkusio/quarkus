@@ -1,21 +1,19 @@
 package io.quarkus.keycloak.pep.deployment;
 
-import org.keycloak.adapters.authentication.ClientCredentialsProvider;
-import org.keycloak.adapters.authentication.ClientIdAndSecretCredentialsProvider;
-import org.keycloak.adapters.authentication.JWTClientCredentialsProvider;
-import org.keycloak.adapters.authentication.JWTClientSecretCredentialsProvider;
-import org.keycloak.adapters.authorization.ClaimInformationPointProviderFactory;
 import org.keycloak.adapters.authorization.cip.ClaimsInformationPointProviderFactory;
 import org.keycloak.adapters.authorization.cip.HttpClaimInformationPointProviderFactory;
+import org.keycloak.adapters.authorization.cip.spi.ClaimInformationPointProviderFactory;
 import org.keycloak.authorization.client.representation.ServerConfiguration;
 import org.keycloak.authorization.client.representation.TokenIntrospectionResponse;
-import org.keycloak.common.crypto.CryptoProvider;
-import org.keycloak.crypto.def.DefaultCryptoProvider;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jwk.JWK;
 import org.keycloak.jose.jws.JWSHeader;
 import org.keycloak.json.StringListMapDeserializer;
 import org.keycloak.json.StringOrArrayDeserializer;
+import org.keycloak.protocol.oidc.client.authentication.ClientCredentialsProvider;
+import org.keycloak.protocol.oidc.client.authentication.ClientIdAndSecretCredentialsProvider;
+import org.keycloak.protocol.oidc.client.authentication.JWTClientCredentialsProvider;
+import org.keycloak.protocol.oidc.client.authentication.JWTClientSecretCredentialsProvider;
 import org.keycloak.protocol.oidc.representations.MTLSEndpointAliases;
 import org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation;
 import org.keycloak.representations.AccessToken;
@@ -80,8 +78,6 @@ public class KeycloakReflectionBuildStep {
         serviceProvider.produce(new ServiceProviderBuildItem(ClaimInformationPointProviderFactory.class.getName(),
                 HttpClaimInformationPointProviderFactory.class.getName(),
                 ClaimsInformationPointProviderFactory.class.getName()));
-        serviceProvider.produce(new ServiceProviderBuildItem(CryptoProvider.class.getName(),
-                DefaultCryptoProvider.class.getName()));
     }
 
     @BuildStep

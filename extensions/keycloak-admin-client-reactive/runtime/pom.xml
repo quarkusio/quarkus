@@ -34,7 +34,7 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-admin-client-jakarta</artifactId>
+            <artifactId>keycloak-admin-client</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.jboss.resteasy</groupId>
@@ -76,7 +76,7 @@
                 <configuration>
                     <removedResources>
                         <artifact>
-                            <key>org.keycloak:keycloak-admin-client-jakarta</key>
+                            <key>org.keycloak:keycloak-admin-client</key>
                             <resources>org/keycloak/admin/client/JacksonProvider.class</resources>
                         </artifact>
                     </removedResources>

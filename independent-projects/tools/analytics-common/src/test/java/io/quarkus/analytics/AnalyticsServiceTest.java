@@ -27,6 +27,7 @@ import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProper
 import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRAALVM_VERSION_VERSION;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.GRADLE_VERSION;
 import static io.quarkus.analytics.dto.segment.ContextBuilder.CommonSystemProperties.MAVEN_VERSION;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,6 +38,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterAll;
@@ -153,9 +155,23 @@ class AnalyticsServiceTest extends AnalyticsServiceTestBase {
                 Map.of(),
                 new File(FILE_LOCATIONS.getFolder().toUri()));
         service.close();
+
+        await().atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> wireMockServer.verify(1, postRequestedFor(urlEqualTo("/v1/track"))));
+
         wireMockServer.verify(postRequestedFor(urlEqualTo("/v1/track"))
                 .withRequestBody(notMatching("null")));
         assertTrue(new File(FILE_LOCATIONS.getFolder().toString() + "/" + FILE_LOCATIONS.lastTrackFileName()).exists());
+    }
+
+    @Test
+    void nullLogger() {
+        AnalyticsService service = new AnalyticsService(FILE_LOCATIONS, null);
+        assertNotNull(service);
+        service.sendAnalytics(TrackEventType.BUILD,
+                mockApplicationModel(),
+                Map.of(),
+                new File(FILE_LOCATIONS.getFolder().toUri()));
     }
 
     private void assertMapEntriesNotEmpty(int size, Map<String, Object> map) {

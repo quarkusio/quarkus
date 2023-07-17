@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.authorization.PolicyEnforcer;
 import org.keycloak.representations.adapters.config.AdapterConfig;
 import org.keycloak.representations.adapters.config.PolicyEnforcerConfig;
@@ -103,7 +102,15 @@ public class KeycloakPolicyEnforcerRecorder {
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
 
-        return new PolicyEnforcer(KeycloakDeploymentBuilder.build(adapterConfig), adapterConfig);
+        return PolicyEnforcer.builder()
+                .authServerUrl(adapterConfig.getAuthServerUrl())
+                .realm(adapterConfig.getRealm())
+                .clientId(adapterConfig.getResource())
+                .credentials(adapterConfig.getCredentials())
+                .bearerOnly(adapterConfig.isBearerOnly())
+                .enforcerConfig(enforcerConfig)
+                .httpClient(new HttpClientBuilder().build(adapterConfig))
+                .build();
     }
 
     private static Map<String, Object> getCredentials(OidcTenantConfig oidcConfig) {

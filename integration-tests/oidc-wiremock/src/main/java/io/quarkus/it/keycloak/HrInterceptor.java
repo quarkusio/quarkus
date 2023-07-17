@@ -1,22 +1,16 @@
 package io.quarkus.it.keycloak;
 
-import jakarta.inject.Inject;
-import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
-import jakarta.interceptor.InvocationContext;
 
-import io.quarkus.oidc.runtime.OidcUtils;
-import io.vertx.ext.web.RoutingContext;
+import io.quarkus.oidc.TenantResolverInterceptor;
 
-@Interceptor
 @HrTenant
-public class HrInterceptor {
-    @Inject
-    RoutingContext routingContext;
+@Interceptor
+public class HrInterceptor extends TenantResolverInterceptor {
 
-    @AroundInvoke
-    Object setTenant(InvocationContext context) throws Exception {
-        routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, "hr");
-        return context.proceed();
+    @Override
+    protected String getTenantId() {
+        return "hr";
     }
+
 }

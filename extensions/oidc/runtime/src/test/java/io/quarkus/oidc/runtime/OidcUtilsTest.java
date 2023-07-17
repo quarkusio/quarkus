@@ -238,7 +238,6 @@ public class OidcUtilsTest {
         assertEquals("https://login.microsoftonline.com/common/v2.0", config.getAuthServerUrl().get());
         assertEquals(List.of("openid", "email", "profile"), config.authentication.scopes.get());
         assertEquals("any", config.getToken().getIssuer().get());
-        assertEquals("azure-access-token-customizer", config.getToken().getCustomizerName().get());
     }
 
     @Test
@@ -249,7 +248,6 @@ public class OidcUtilsTest {
         tenant.setApplicationType(ApplicationType.HYBRID);
         tenant.setAuthServerUrl("http://localhost/wiremock");
         tenant.getToken().setIssuer("http://localhost/wiremock");
-        tenant.getToken().setCustomizerName("");
         tenant.authentication.setScopes(List.of("write"));
         tenant.authentication.setForceRedirectHttpsScheme(false);
 
@@ -261,7 +259,6 @@ public class OidcUtilsTest {
         assertEquals(List.of("write"), config.authentication.scopes.get());
         assertEquals("http://localhost/wiremock", config.getToken().getIssuer().get());
         assertFalse(config.authentication.forceRedirectHttpsScheme.get());
-        assertTrue(config.getToken().getCustomizerName().get().isEmpty());
     }
 
     @Test

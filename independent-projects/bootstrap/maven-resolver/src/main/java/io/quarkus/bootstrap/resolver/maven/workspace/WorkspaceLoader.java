@@ -219,8 +219,22 @@ public class WorkspaceLoader implements WorkspaceModelResolver, WorkspaceReader 
     }
 
     private LocalProject loadProjectModules(LocalProject project, String skipModule) throws BootstrapMavenException {
-        final List<String> modules = project.getModelBuildingResult() == null ? project.getRawModel().getModules()
-                : project.getModelBuildingResult().getEffectiveModel().getModules();
+        final List<String> modules;
+        if (project.getModelBuildingResult() == null) {
+            var projectModel = project.getRawModel();
+            List<String> combinedList = null;
+            for (var profile : projectModel.getProfiles()) {
+                if (!profile.getModules().isEmpty()) {
+                    if (combinedList == null) {
+                        combinedList = new ArrayList<>(projectModel.getModules());
+                    }
+                    combinedList.addAll(profile.getModules());
+                }
+            }
+            modules = combinedList == null ? projectModel.getModules() : combinedList;
+        } else {
+            modules = project.getModelBuildingResult().getEffectiveModel().getModules();
+        }
         if (!modules.isEmpty()) {
             for (String module : modules) {
                 if (module.equals(skipModule)) {

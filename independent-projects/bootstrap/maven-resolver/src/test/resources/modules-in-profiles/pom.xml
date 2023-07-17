@@ -43,5 +43,11 @@
                 <module>rest</module>
             </modules>
         </profile>
+        <profile>
+            <id>other</id>
+            <modules>
+                <module>other</module>
+            </modules>
+        </profile>
     </profiles>
 </project>

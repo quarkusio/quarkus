@@ -59,6 +59,7 @@ public class CodeFlowTest {
 
             Cookie stateCookie = getStateCookie(webClient, null);
             assertNotNull(stateCookie);
+            assertEquals(stateCookie.getName(), "q_auth_Default_test_" + getStateCookieStateParam(stateCookie));
             assertNull(stateCookie.getSameSite());
 
             webClient.getCookieManager().clearCookies();
@@ -673,9 +674,10 @@ public class CodeFlowTest {
             WebResponse webResponse = webClient
                     .loadWebResponse(
                             new WebRequest(URI.create("http://localhost:8081/web-app/callback-jwt-before-redirect").toURL()));
-            assertNotNull(getStateCookie(webClient, "tenant-jwt"));
-            assertNotNull(getStateCookieStateParam(webClient, "tenant-jwt"));
-            assertNull(getStateCookieSavedPath(webClient, "tenant-jwt"));
+            Cookie stateCookie = getNonUniqueStateCookie(webClient, "tenant-jwt");
+            assertEquals(stateCookie.getName(), "q_auth_tenant-jwt");
+            assertNotNull(getStateCookieStateParam(stateCookie));
+            assertNull(getStateCookieSavedPath(stateCookie));
 
             HtmlPage page = webClient.getPage(webResponse.getResponseHeaderValue("location"));
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -1265,12 +1267,26 @@ public class CodeFlowTest {
         return null;
     }
 
+    private Cookie getNonUniqueStateCookie(WebClient webClient, String tenantId) {
+        String cookieName = "q_auth" + (tenantId == null ? "_Default_test" : "_" + tenantId);
+        return webClient.getCookieManager().getCookie(cookieName);
+    }
+
     private String getStateCookieStateParam(WebClient webClient, String tenantId) {
         return getStateCookie(webClient, tenantId).getValue().split("\\|")[0];
     }
 
+    private String getStateCookieStateParam(Cookie stateCookie) {
+        return stateCookie.getValue().split("\\|")[0];
+    }
+
     private String getStateCookieSavedPath(WebClient webClient, String tenantId) {
         String[] parts = getStateCookie(webClient, tenantId).getValue().split("\\|");
+        return parts.length == 2 ? parts[1] : null;
+    }
+
+    private String getStateCookieSavedPath(Cookie stateCookie) {
+        String[] parts = stateCookie.getValue().split("\\|");
         return parts.length == 2 ? parts[1] : null;
     }
 

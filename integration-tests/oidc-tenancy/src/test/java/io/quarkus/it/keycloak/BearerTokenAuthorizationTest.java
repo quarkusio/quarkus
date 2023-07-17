@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.net.URI;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebRequest;
@@ -81,6 +83,22 @@ public class BearerTokenAuthorizationTest {
             assertNull(getSessionCookie(webClient, "tenant-web-app"));
             assertNotNull(getStateCookie(webClient, "tenant-web-app"));
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testJavaScriptRequest() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            try {
+                webClient.addRequestHeader("HX-Request", "true");
+                webClient.getPage("http://localhost:8081/tenant/tenant-web-app-javascript/api/user/webapp");
+                fail("499 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(499, ex.getStatusCode());
+                assertEquals("OIDC", ex.getResponse().getResponseHeaderValue("WWW-Authenticate"));
+            }
 
             webClient.getCookieManager().clearCookies();
         }

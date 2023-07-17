@@ -1072,8 +1072,33 @@ You can check if implementing single-page applications (SPAs) the way it is sugg
 If you prefer to use SPAs and JavaScript APIs such as `Fetch` or `XMLHttpRequest`(XHR) with Quarkus web applications, be aware that OpenID Connect providers might not support cross-origin resource sharing (CORS) for authorization endpoints where the users are authenticated after a redirect from Quarkus. 
 This will lead to authentication failures if the Quarkus application and the OpenID Connect provider are hosted on different HTTP domains, ports, or both.
 
-In such cases, set the `quarkus.oidc.authentication.java-script-auto-redirect` property to `false`, which will instruct Quarkus to return a `499` status code and a `WWW-Authenticate` header with the `OIDC` value. 
-You must also update the browser script to set the `X-Requested-With` header with the `JavaScript` value and reload the last requested page in case of a `499` status code.
+In such cases, set the `quarkus.oidc.authentication.java-script-auto-redirect` property to `false`, which will instruct Quarkus to return a `499` status code and a `WWW-Authenticate` header with the `OIDC` value.
+
+The browser script must set a header to identify the current request as a JavaScript request for `499` status code to be returned when `quarkus.oidc.authentication.java-script-auto-redirect` property is set to `false`.
+
+If the script engine sets an engine-specific request header itself, then you can register a custom `quarkus.oidc.JavaScriptRequestChecker` bean, which will inform Quarkus if the current request is a JavaScript request. For example, if the JavaScript engine sets a header such as `HX-Request: true` then you can have it checked like this:
+
+[source,java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.oidc.JavaScriptRequestChecker;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomJavaScriptRequestChecker implements JavaScriptRequestChecker {
+
+    @Override
+    public boolean isJavaScriptRequest(RoutingContext context) {
+        return "true".equals(context.request().getHeader("HX-Request"));
+    }
+}
+----
+
+and reload the last requested page in case of a `499` status code.
+
+Otherwise you must also update the browser script to set the `X-Requested-With` header with the `JavaScript` value and reload the last requested page in case of a `499` status code.
+
 For example:
 
 [source,javascript]

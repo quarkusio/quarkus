@@ -907,11 +907,16 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * If this property is set to 'true' then a normal 302 redirect response will be returned
          * if the request was initiated via JavaScript API such as XMLHttpRequest or Fetch and the current user needs to be
-         * (re)authenticated which may not be desirable for Single Page Applications since
+         * (re)authenticated which may not be desirable for Single-page applications (SPA) since
          * it automatically following the redirect may not work given that OIDC authorization endpoints typically do not support
          * CORS.
-         * If this property is set to `false` then a status code of '499' will be returned to allow
-         * the client to handle the redirect manually
+         * <p/>
+         * If this property is set to 'false' then a status code of '499' will be returned to allow
+         * SPA to handle the redirect manually if a request header identifying current request as a JavaScript request is found.
+         * 'X-Requested-With' request header with its value set to either `JavaScript` or `XMLHttpRequest` is expected by
+         * default if
+         * this property is enabled. You can register a custom {@linkplain JavaScriptRequestChecker} to do a custom JavaScript
+         * request check instead.
          */
         @ConfigItem(defaultValue = "true")
         public boolean javaScriptAutoRedirect = true;

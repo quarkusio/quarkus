@@ -13,6 +13,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import io.quarkus.oidc.JavaScriptRequestChecker;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
@@ -40,6 +41,9 @@ public class DefaultTenantConfigResolver {
 
     @Inject
     Instance<TenantConfigResolver> tenantConfigResolver;
+
+    @Inject
+    Instance<JavaScriptRequestChecker> javaScriptRequestChecker;
 
     @Inject
     TenantConfigBean tenantConfigBean;
@@ -82,6 +86,9 @@ public class DefaultTenantConfigResolver {
         }
         if (userInfoCache.isAmbiguous()) {
             throw new IllegalStateException("Multiple " + UserInfo.class + " beans registered");
+        }
+        if (javaScriptRequestChecker.isAmbiguous()) {
+            throw new IllegalStateException("Multiple " + JavaScriptRequestChecker.class + " beans registered");
         }
     }
 
@@ -238,6 +245,10 @@ public class DefaultTenantConfigResolver {
 
     public TenantConfigBean getTenantConfigBean() {
         return tenantConfigBean;
+    }
+
+    public JavaScriptRequestChecker getJavaScriptRequestChecker() {
+        return javaScriptRequestChecker.isResolvable() ? javaScriptRequestChecker.get() : null;
     }
 
     private class DefaultStaticTenantResolver implements TenantResolver {

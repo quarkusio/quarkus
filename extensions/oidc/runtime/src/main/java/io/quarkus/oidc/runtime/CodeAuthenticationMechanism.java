@@ -154,8 +154,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             return stateParamIsMissing(oidcTenantConfig, context, cookies, stateQueryParam.size() > 1);
         }
 
+        String stateCookieNameSuffix = oidcTenantConfig.authentication.allowMultipleCodeFlows ? "_" + stateQueryParam.get(0)
+                : "";
         final Cookie stateCookie = context.request().getCookie(
-                getStateCookieName(oidcTenantConfig) + "_" + stateQueryParam.get(0));
+                getStateCookieName(oidcTenantConfig) + stateCookieNameSuffix);
 
         if (stateCookie == null) {
             return stateCookieIsMissing(oidcTenantConfig, context, cookies);
@@ -971,8 +973,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             extraStateValue.setRestorePath("?" + context.request().query());
             cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
         }
+        String stateCookieNameSuffix = configContext.oidcConfig.authentication.allowMultipleCodeFlows ? "_" + uuid : "";
         createCookie(context, configContext.oidcConfig,
-                getStateCookieName(configContext.oidcConfig) + "_" + uuid, cookieValue, 60 * 30);
+                getStateCookieName(configContext.oidcConfig) + stateCookieNameSuffix, cookieValue, 60 * 30);
         return uuid;
     }
 

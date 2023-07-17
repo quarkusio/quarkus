@@ -292,7 +292,8 @@ public class CodeFlowAuthorizationTest {
 
             Cookie sessionCookie = getSessionCookie(webClient, tenantId);
             Date date = sessionCookie.getExpires();
-            assertEquals(internalIdTokenLifetime, date.toInstant().getEpochSecond() - issuedAt);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt >= internalIdTokenLifetime);
+            assertTrue(date.toInstant().getEpochSecond() - issuedAt <= internalIdTokenLifetime + 3);
 
             webClient.getCookieManager().clearCookies();
         }

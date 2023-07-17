@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 
@@ -24,7 +25,7 @@ public class ReactiveGeoCommandsImpl<K, V> extends AbstractGeoCommands<K, V> imp
     static final GeoAddArgs DEFAULT_INSTANCE = new GeoAddArgs();
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveGeoCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
+    public ReactiveGeoCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.reactive = redis;
     }

@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +17,7 @@ public class ReactiveAutoSuggestCommandsImpl<K> extends AbstractAutoSuggestComma
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveAutoSuggestCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveAutoSuggestCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.reactive = redis;
     }

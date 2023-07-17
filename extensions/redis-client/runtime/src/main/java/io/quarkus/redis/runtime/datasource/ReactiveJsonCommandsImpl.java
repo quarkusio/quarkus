@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveJsonCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveJsonCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.reactive = redis;
     }

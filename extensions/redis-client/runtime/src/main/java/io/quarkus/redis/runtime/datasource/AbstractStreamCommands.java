@@ -6,6 +6,7 @@ import static io.quarkus.redis.runtime.datasource.Validation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +28,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
 
-    AbstractStreamCommands(RedisCommandExecutor redis, Class<K> k, Class<F> m, Class<V> v) {
+    AbstractStreamCommands(RedisCommandExecutor redis, Type k, Type m, Type v) {
         super(redis, new Marshaller(k, m, v));
     }
 
@@ -318,7 +319,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         return execute(cmd);
     }
 
-    private <K> void writeStreamsAndIds(Map<K, String> lastIdsPerStream, RedisCommand cmd) {
+    private void writeStreamsAndIds(Map<K, String> lastIdsPerStream, RedisCommand cmd) {
         List<String> ids = new ArrayList<>();
         for (Map.Entry<K, String> entry : lastIdsPerStream.entrySet()) {
             cmd.put(marshaller.encode(entry.getKey()));

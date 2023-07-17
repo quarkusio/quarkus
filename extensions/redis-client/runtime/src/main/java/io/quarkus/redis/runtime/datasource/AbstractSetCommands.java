@@ -5,6 +5,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 
@@ -14,11 +15,11 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
 
-    protected final Class<V> typeOfValue;
+    protected final Type typeOfValue;
 
     public static final Command SINTERCARD = Command.create("sintercard");
 
-    AbstractSetCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractSetCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v), v);
         this.typeOfValue = v;
     }

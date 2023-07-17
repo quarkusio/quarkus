@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -17,7 +18,7 @@ public class ReactiveSetCommandsImpl<K, V> extends AbstractSetCommands<K, V> imp
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveSetCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
+    public ReactiveSetCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.reactive = redis;
     }

@@ -13,6 +13,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.json.JsonCommands;
 import io.quarkus.redis.datasource.json.JsonSetArgs;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
@@ -494,7 +496,23 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(json.jsonType(key, "$.arr[0]")).containsExactly("integer");
         assertThat(json.jsonType("empty", "$")).containsExactly("object");
         assertThat(json.jsonType("empty", "$.a")).isEmpty();
+    }
 
+    @Test
+    public void testJsonWithTypeReference() {
+        var json = ds.json(new TypeReference<List<String>>() {
+            // Empty on purpose
+        });
+
+        var key = List.of("a", "b", "c");
+
+        json.jsonSet(key, "$",
+                new JsonObject().put("a", 2).put("b", 3).put("nested", new JsonObject().put("a", 4).put("b", null)));
+        assertThat(json.jsonGet(key, "$..b")).containsExactly(3, null);
+        JsonObject object = json.jsonGet(key, "..a", "$..b");
+        assertThat(object).hasSize(2);
+        assertThat(object.getJsonArray("..a")).containsExactly(2, 4);
+        assertThat(object.getJsonArray("$..b")).containsExactly(3, null);
     }
 
 }

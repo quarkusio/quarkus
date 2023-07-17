@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,13 +14,13 @@ import io.vertx.mutiny.redis.client.Response;
 public class SScanReactiveCursorImpl<V> extends AbstractRedisCommands implements ReactiveSScanCursor<V> {
 
     private final byte[] key;
-    private final Class<V> typeOfValue;
+    private final Type typeOfValue;
     private final Marshaller marshaller;
     private long cursor;
     private final List<String> extra = new ArrayList<>();
 
     public <K> SScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller,
-            Class<V> typeOfValue, List<String> extra) {
+            Type typeOfValue, List<String> extra) {
         super(redis, marshaller);
         this.key = marshaller.encode(key);
         this.cursor = ReactiveCursor.INITIAL_CURSOR_ID;

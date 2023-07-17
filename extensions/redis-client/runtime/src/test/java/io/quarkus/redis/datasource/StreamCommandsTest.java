@@ -17,6 +17,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.stream.PendingMessage;
 import io.quarkus.redis.datasource.stream.StreamCommands;
 import io.quarkus.redis.datasource.stream.StreamMessage;
@@ -765,6 +767,25 @@ public class StreamCommandsTest extends DatasourceTestBase {
             assertThat(msg.getDurationSinceLastDelivery()).isNotNull();
             assertThat(msg.getConsumer()).isEqualTo("consumer-123");
         });
+    }
+
+    @Test
+    void streamWithTypeReference() {
+        var stream = ds.stream(new TypeReference<List<Integer>>() {
+            // Empty on purpose
+        });
+        stream.xadd("my-stream", Map.of("duration", List.of(1532), "event-id", List.of(5), "user-id", List.of(77788)));
+        stream.xadd("my-stream", Map.of("duration", List.of(1533), "event-id", List.of(6), "user-id", List.of(77788)));
+        stream.xadd("my-stream", Map.of("duration", List.of(1534), "event-id", List.of(7), "user-id", List.of(77788)));
+
+        List<StreamMessage<String, String, List<Integer>>> messages = stream.xread("my-stream", "0-0");
+        assertThat(messages).hasSize(3)
+                .allSatisfy(m -> {
+                    assertThat(m.key()).isEqualTo("my-stream");
+                    assertThat(m.id()).isNotEmpty().contains("-");
+                    assertThat(m.payload()).contains(entry("user-id", List.of(77788))).containsKey("event-id")
+                            .containsKey("duration");
+                });
     }
 
 }

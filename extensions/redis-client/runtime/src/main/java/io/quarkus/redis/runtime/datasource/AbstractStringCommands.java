@@ -6,6 +6,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positiveOrZero;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.string.GetExArgs;
@@ -16,11 +17,11 @@ import io.vertx.mutiny.redis.client.Response;
 
 class AbstractStringCommands<K, V> extends AbstractRedisCommands {
 
-    protected final Class<V> typeOfValue;
+    protected final Type typeOfValue;
 
     public static final Command LCS = Command.create("lcs");
 
-    AbstractStringCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractStringCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
         this.typeOfValue = v;
     }

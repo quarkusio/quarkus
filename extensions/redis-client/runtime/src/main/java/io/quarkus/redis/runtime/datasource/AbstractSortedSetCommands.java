@@ -9,6 +9,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.validate;
 import static java.lang.Double.NEGATIVE_INFINITY;
 import static java.lang.Double.POSITIVE_INFINITY;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,8 +33,8 @@ import io.vertx.redis.client.ResponseType;
 
 class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
 
-    protected final Class<V> typeOfValue;
-    protected final Class<K> typeOfKey;
+    protected final Type typeOfValue;
+    protected final Type typeOfKey;
 
     protected static final ZAggregateArgs DEFAULT_INSTANCE_AGG = new ZAggregateArgs();
     protected static final ZRangeArgs DEFAULT_INSTANCE_RANGE = new ZRangeArgs();
@@ -42,7 +43,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     public static final Command ZMPOP = Command.create("zmpop");
     public static final Command BZMPOP = Command.create("bzmpop");
 
-    AbstractSortedSetCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractSortedSetCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v), v);
         this.typeOfValue = v;
         this.typeOfKey = k;

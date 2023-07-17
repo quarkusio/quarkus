@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.datasource;
 
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 
 import io.smallrye.mutiny.Uni;
@@ -10,7 +11,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractGraphCommands<K> extends AbstractRedisCommands {
 
-    AbstractGraphCommands(RedisCommandExecutor redis, Class<K> k) {
+    AbstractGraphCommands(RedisCommandExecutor redis, Type k) {
         super(redis, new Marshaller(k));
     }
 

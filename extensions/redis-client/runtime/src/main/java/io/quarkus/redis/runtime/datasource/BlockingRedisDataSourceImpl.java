@@ -7,6 +7,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.autosuggest.AutoSuggestCommands;
@@ -187,7 +189,18 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K, F, V> HashCommands<K, F, V> hash(TypeReference<K> redisKeyType, TypeReference<F> typeOfField,
+            TypeReference<V> typeOfValue) {
+        return new BlockingHashCommandsImpl<>(this, reactive.hash(redisKeyType, typeOfField, typeOfValue), timeout);
+    }
+
+    @Override
     public <K1, V1> GeoCommands<K1, V1> geo(Class<K1> redisKeyType, Class<V1> memberType) {
+        return new BlockingGeoCommandsImpl<>(this, reactive.geo(redisKeyType, memberType), timeout);
+    }
+
+    @Override
+    public <K1, V1> GeoCommands<K1, V1> geo(TypeReference<K1> redisKeyType, TypeReference<V1> memberType) {
         return new BlockingGeoCommandsImpl<>(this, reactive.geo(redisKeyType, memberType), timeout);
     }
 
@@ -197,7 +210,17 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K1> KeyCommands<K1> key(TypeReference<K1> redisKeyType) {
+        return new BlockingKeyCommandsImpl<>(this, reactive.key(redisKeyType), timeout);
+    }
+
+    @Override
     public <K1, V1> SortedSetCommands<K1, V1> sortedSet(Class<K1> redisKeyType, Class<V1> valueType) {
+        return new BlockingSortedSetCommandsImpl<>(this, reactive.sortedSet(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K1, V1> SortedSetCommands<K1, V1> sortedSet(TypeReference<K1> redisKeyType, TypeReference<V1> valueType) {
         return new BlockingSortedSetCommandsImpl<>(this, reactive.sortedSet(redisKeyType, valueType), timeout);
     }
 
@@ -212,7 +235,17 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K, V> ValueCommands<K, V> value(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new BlockingStringCommandsImpl<>(this, reactive.value(redisKeyType, valueType), timeout);
+    }
+
+    @Override
     public <K1, V1> SetCommands<K1, V1> set(Class<K1> redisKeyType, Class<V1> memberType) {
+        return new BlockingSetCommandsImpl<>(this, reactive.set(redisKeyType, memberType), timeout);
+    }
+
+    @Override
+    public <K1, V1> SetCommands<K1, V1> set(TypeReference<K1> redisKeyType, TypeReference<V1> memberType) {
         return new BlockingSetCommandsImpl<>(this, reactive.set(redisKeyType, memberType), timeout);
     }
 
@@ -222,7 +255,17 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K1, V1> ListCommands<K1, V1> list(TypeReference<K1> redisKeyType, TypeReference<V1> memberType) {
+        return new BlockingListCommandsImpl<>(this, reactive.list(redisKeyType, memberType), timeout);
+    }
+
+    @Override
     public <K1, V1> HyperLogLogCommands<K1, V1> hyperloglog(Class<K1> redisKeyType, Class<V1> memberType) {
+        return new BlockingHyperLogLogCommandsImpl<>(this, reactive.hyperloglog(redisKeyType, memberType), timeout);
+    }
+
+    @Override
+    public <K1, V1> HyperLogLogCommands<K1, V1> hyperloglog(TypeReference<K1> redisKeyType, TypeReference<V1> memberType) {
         return new BlockingHyperLogLogCommandsImpl<>(this, reactive.hyperloglog(redisKeyType, memberType), timeout);
     }
 
@@ -232,7 +275,18 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K> BitMapCommands<K> bitmap(TypeReference<K> redisKeyType) {
+        return new BlockingBitmapCommandsImpl<>(this, reactive.bitmap(redisKeyType), timeout);
+    }
+
+    @Override
     public <K, F, V> StreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> fieldType, Class<V> valueType) {
+        return new BlockingStreamCommandsImpl<>(this, reactive.stream(redisKeyType, fieldType, valueType), timeout);
+    }
+
+    @Override
+    public <K, F, V> StreamCommands<K, F, V> stream(TypeReference<K> redisKeyType, TypeReference<F> fieldType,
+            TypeReference<V> valueType) {
         return new BlockingStreamCommandsImpl<>(this, reactive.stream(redisKeyType, fieldType, valueType), timeout);
     }
 
@@ -242,7 +296,17 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K> JsonCommands<K> json(TypeReference<K> redisKeyType) {
+        return new BlockingJsonCommandsImpl<>(this, reactive.json(redisKeyType), timeout);
+    }
+
+    @Override
     public <K, V> BloomCommands<K, V> bloom(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingBloomCommandsImpl<>(this, reactive.bloom(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> BloomCommands<K, V> bloom(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
         return new BlockingBloomCommandsImpl<>(this, reactive.bloom(redisKeyType, valueType), timeout);
     }
 
@@ -252,12 +316,27 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K, V> CuckooCommands<K, V> cuckoo(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new BlockingCuckooCommandsImpl<>(this, reactive.cuckoo(redisKeyType, valueType), timeout);
+    }
+
+    @Override
     public <K, V> CountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
         return new BlockingCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType), timeout);
     }
 
     @Override
+    public <K, V> CountMinCommands<K, V> countmin(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
+        return new BlockingCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType), timeout);
+    }
+
+    @Override
     public <K, V> TopKCommands<K, V> topk(Class<K> redisKeyType, Class<V> valueType) {
+        return new BlockingTopKCommandsImpl<>(this, reactive.topk(redisKeyType, valueType), timeout);
+    }
+
+    @Override
+    public <K, V> TopKCommands<K, V> topk(TypeReference<K> redisKeyType, TypeReference<V> valueType) {
         return new BlockingTopKCommandsImpl<>(this, reactive.topk(redisKeyType, valueType), timeout);
     }
 
@@ -277,12 +356,27 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
+    public <K> AutoSuggestCommands<K> autosuggest(TypeReference<K> redisKeyType) {
+        return new BlockingAutoSuggestCommandsImpl<>(this, reactive.autosuggest(redisKeyType), timeout);
+    }
+
+    @Override
     public <K> TimeSeriesCommands<K> timeseries(Class<K> redisKeyType) {
         return new BlockingTimeSeriesCommandsImpl<>(this, reactive.timeseries(redisKeyType), timeout);
     }
 
     @Override
+    public <K> TimeSeriesCommands<K> timeseries(TypeReference<K> redisKeyType) {
+        return new BlockingTimeSeriesCommandsImpl<>(this, reactive.timeseries(redisKeyType), timeout);
+    }
+
+    @Override
     public <V> PubSubCommands<V> pubsub(Class<V> messageType) {
+        return new BlockingPubSubCommandsImpl<>(this, reactive.pubsub(messageType), timeout);
+    }
+
+    @Override
+    public <V> PubSubCommands<V> pubsub(TypeReference<V> messageType) {
         return new BlockingPubSubCommandsImpl<>(this, reactive.pubsub(messageType), timeout);
     }
 

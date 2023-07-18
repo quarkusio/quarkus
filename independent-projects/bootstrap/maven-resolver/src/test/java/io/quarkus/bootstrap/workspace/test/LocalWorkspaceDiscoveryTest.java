@@ -204,11 +204,11 @@ public class LocalWorkspaceDiscoveryTest {
     }
 
     @Test
-    public void loadModulesInProfiles() throws Exception {
+    public void loadEffectiveModelBuilderModulesInProfiles() throws Exception {
         final URL moduleUrl = Thread.currentThread().getContextClassLoader()
                 .getResource("modules-in-profiles/integration-tests/rest-tests");
         assertNotNull(moduleUrl);
-        final Path moduleDir = Paths.get(moduleUrl.toURI());
+        final Path moduleDir = Path.of(moduleUrl.toURI());
 
         final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
                 .setEffectiveModelBuilder(true)
@@ -223,6 +223,28 @@ public class LocalWorkspaceDiscoveryTest {
         assertNotNull(ws.getProject("org.acme", "acme-integration-tests"));
         assertNotNull(ws.getProject("org.acme", "acme-rest-tests"));
         assertEquals(6, ws.getProjects().size());
+    }
+
+    @Test
+    public void loadModulesInProfiles() throws Exception {
+        final URL moduleUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("modules-in-profiles/integration-tests/rest-tests");
+        assertNotNull(moduleUrl);
+        final Path moduleDir = Path.of(moduleUrl.toURI());
+
+        final LocalProject module1 = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setCurrentProject(moduleDir.toString()))
+                .getCurrentProject();
+        final LocalWorkspace ws = module1.getWorkspace();
+
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-parent"));
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-html"));
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-main"));
+        assertNotNull(ws.getProject("org.acme", "quarkus-quickstart-multimodule-rest"));
+        assertNotNull(ws.getProject("org.acme", "acme-integration-tests"));
+        assertNotNull(ws.getProject("org.acme", "acme-rest-tests"));
+        assertNotNull(ws.getProject("org.acme", "other"));
+        assertEquals(7, ws.getProjects().size());
     }
 
     @Test

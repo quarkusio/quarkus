@@ -183,6 +183,7 @@ public class BaseCreateCommand implements Callable<Integer> {
 
         setValue(CreateProjectKey.NO_CODE, !codeGeneration.includeCode);
         setValue(CreateProjectKey.NO_BUILDTOOL_WRAPPER, !codeGeneration.includeWrapper);
+        setValue(CreateProjectKey.NO_DOCKERFILES, !codeGeneration.includeDockerfiles);
     }
 
     protected void setValue(String name, Object value) {

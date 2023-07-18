@@ -66,7 +66,7 @@ prevent the transformation, as the loaded class is not used at runtime.
 
 Quarkus has a number of ClassLoaders. This shows the relationship between them :
 
-image::classloader-hierarchy.svg[alt=Quarkus ClassLoader hierarchy,role="center"]
+image::classloader-hierarchy.png[alt=Quarkus ClassLoader hierarchy,role="center"]
 
 Here are the roles of each ClassLoader:
 

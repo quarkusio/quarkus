@@ -412,6 +412,12 @@ The second one, used also with other reactive features of Quarkus, uses the defa
 ====
 
 [TIP]
+.@RunOnVirtualThread
+====
+For running the blocking processing on Java _virtual threads_, see the xref:messaging-virtual-threads.adoc[Quarkus Virtual Thread support with Reactive Messaging documentation].
+====
+
+[TIP]
 .@Transactional
 ====
 If your method is annotated with `@Transactional`, it will be considered _blocking_ automatically, even if the method is not annotated with `@Blocking`.

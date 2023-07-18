@@ -61,7 +61,7 @@
 
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
         <gitflow-incremental-builder.version>4.4.1</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.90</quarkus-platform-bom-plugin.version>
+        <quarkus-platform-bom-plugin.version>0.0.92</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>

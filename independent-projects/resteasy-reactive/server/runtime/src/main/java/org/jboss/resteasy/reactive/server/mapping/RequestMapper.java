@@ -85,7 +85,7 @@ public class RequestMapper<T> {
                     }
                     matchPos = matcher.end();
                     for (String group : segment.groups) {
-                        params[paramCount++] = URIDecoder.decodeURIComponent(matcher.group(group), false);
+                        params[paramCount++] = matcher.group(group);
                     }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
                     //make sure the literal text is the same

@@ -40,40 +40,36 @@ public class OtlpRecorder {
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
             Supplier<Vertx> vertx) {
-        var result = new LateBoundBatchSpanProcessor();
         URI grpcBaseUri = getGrpcBaseUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
             public LateBoundBatchSpanProcessor apply(
                     SyntheticCreationalContext<LateBoundBatchSpanProcessor> context) {
-                if (otelRuntimeConfig.sdkDisabled()) {
-                    return result;
+                if (otelRuntimeConfig.sdkDisabled() || grpcBaseUri == null) {
+                    return RemoveableLateBoundBatchSpanProcessor.INSTANCE;
                 }
-
                 // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config and was properly validated at startup
-                if (grpcBaseUri != null) {
-                    try {
-                        Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
-                        });
-                        if (spanExporters.isUnsatisfied()) {
-                            var spanExporter = createOtlpGrpcSpanExporter(exporterRuntimeConfig, vertx.get(), grpcBaseUri);
-
-                            BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
-
-                            processorBuilder.setScheduleDelay(otelRuntimeConfig.bsp().scheduleDelay());
-                            processorBuilder.setMaxQueueSize(otelRuntimeConfig.bsp().maxQueueSize());
-                            processorBuilder.setMaxExportBatchSize(otelRuntimeConfig.bsp().maxExportBatchSize());
-                            processorBuilder.setExporterTimeout(otelRuntimeConfig.bsp().exportTimeout());
-                            // processorBuilder.setMeterProvider() // TODO add meter provider to span processor.
-
-                            result.setBatchSpanProcessorDelegate(processorBuilder.build());
-                        }
-                    } catch (IllegalArgumentException iae) {
-                        throw new IllegalStateException("Unable to install OTLP Exporter", iae);
-                    }
+                Instance<SpanExporter> spanExporters = context.getInjectedReference(new TypeLiteral<>() {
+                });
+                if (!spanExporters.isUnsatisfied()) {
+                    return RemoveableLateBoundBatchSpanProcessor.INSTANCE;
                 }
 
-                return result;
+                try {
+                    var spanExporter = createOtlpGrpcSpanExporter(exporterRuntimeConfig, vertx.get(), grpcBaseUri);
+
+                    BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
+
+                    processorBuilder.setScheduleDelay(otelRuntimeConfig.bsp().scheduleDelay());
+                    processorBuilder.setMaxQueueSize(otelRuntimeConfig.bsp().maxQueueSize());
+                    processorBuilder.setMaxExportBatchSize(otelRuntimeConfig.bsp().maxExportBatchSize());
+                    processorBuilder.setExporterTimeout(otelRuntimeConfig.bsp().exportTimeout());
+                    // processorBuilder.setMeterProvider() // TODO add meter provider to span processor.
+
+                    return new LateBoundBatchSpanProcessor(processorBuilder.build());
+                } catch (IllegalArgumentException iae) {
+                    throw new IllegalStateException("Unable to install OTLP Exporter", iae);
+                }
             }
 
             private SpanExporter createOtlpGrpcSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig,

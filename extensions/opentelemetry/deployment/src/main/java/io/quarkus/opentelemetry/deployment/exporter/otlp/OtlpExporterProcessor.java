@@ -17,6 +17,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpExporterProvider;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpRecorder;
+import io.quarkus.vertx.deployment.VertxBuildItem;
 
 @BuildSteps(onlyIf = OtlpExporterProcessor.OtlpExporterEnabled.class)
 public class OtlpExporterProcessor {
@@ -47,9 +48,11 @@ public class OtlpExporterProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            VertxBuildItem vertxBuildItem,
             BeanContainerBuildItem beanContainerBuildItem) {
         recorder.installBatchSpanProcessorForOtlp(otelRuntimeConfig,
                 exporterRuntimeConfig,
+                vertxBuildItem.getVertx(),
                 launchModeBuildItem.getLaunchMode());
     }
 }

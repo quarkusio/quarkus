@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.deployment;
 
+import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.SPI_ROOT;
 import static io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder.OPEN_TELEMETRY_DRIVER;
 import static java.util.stream.Collectors.toList;
 
@@ -17,6 +18,7 @@ import org.jboss.jandex.DotName;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
@@ -40,10 +42,14 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
@@ -73,11 +79,30 @@ public class OpenTelemetryProcessor {
     }
 
     @BuildStep
-    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> services) throws IOException {
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
-                ConfigurableSpanExporterProvider.class.getName()));
+    void registerNativeImageResources(BuildProducer<ServiceProviderBuildItem> services,
+            BuildProducer<RemovedResourceBuildItem> removedResources,
+            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) throws IOException {
+
+        List<String> spanExporterProviders = ServiceUtil.classNamesNamedIn(
+                Thread.currentThread().getContextClassLoader(),
+                SPI_ROOT + ConfigurableSpanExporterProvider.class.getName())
+                .stream()
+                .filter(p -> !OtlpSpanExporterProvider.class.getName().equals(p)).collect(toList()); // filter out OtlpSpanExporterProvider since it depends on OkHttp
+        if (!spanExporterProviders.isEmpty()) {
+            services.produce(
+                    new ServiceProviderBuildItem(ConfigurableSpanExporterProvider.class.getName(), spanExporterProviders));
+        }
+        // remove the service file that contains OtlpSpanExporterProvider
+        removedResources.produce(new RemovedResourceBuildItem(
+                ArtifactKey.fromString("io.opentelemetry:opentelemetry-exporter-otlp"),
+                Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")));
+
+        runtimeReinitialized.produce(
+                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
+
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 ConfigurableSamplerProvider.class.getName()));
+
         // The following are added but not officially supported, yet.
         services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 AutoConfigurationCustomizerProvider.class.getName()));

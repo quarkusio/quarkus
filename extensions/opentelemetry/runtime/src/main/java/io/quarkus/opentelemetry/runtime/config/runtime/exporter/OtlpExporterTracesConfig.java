@@ -31,21 +31,6 @@ public interface OtlpExporterTracesConfig {
     @WithDefault(DEFAULT_GRPC_BASE_URI)
     Optional<String> legacyEndpoint();
 
-    //    /**
-    //     * Sets the certificate chain to use for verifying servers when TLS is enabled. The {@code byte[]}
-    //     * should contain an X.509 certificate collection in PEM format. If not set, TLS connections will
-    //     * use the system default trusted certificates.
-    //     */
-    //    @ConfigItem()
-    //    public Optional<byte[]> certificate;
-
-    //    /**
-    //     * Sets ths client key and the certificate chain to use for verifying client when TLS is enabled.
-    //     * The key must be PKCS8, and both must be in PEM format.
-    //     */
-    //    @ConfigItem()
-    //    public Optional<OtlpExporterRuntimeConfig.ClientTlsConfig> client;
-
     /**
      * Key-value pairs to be used as headers associated with gRPC requests.
      * The format is similar to the {@code OTEL_EXPORTER_OTLP_HEADERS} environment variable,
@@ -72,6 +57,37 @@ public interface OtlpExporterTracesConfig {
      */
     @WithDefault(Protocol.HTTP_PROTOBUF)
     Optional<String> protocol();
+
+    /**
+     * Key/cert configuration in the PEM format.
+     */
+    @WithName("key-cert")
+    KeyCert keyCert();
+
+    /**
+     * Trust configuration in the PEM format.
+     */
+    @WithName("trust-cert")
+    TrustCert trustCert();
+
+    interface KeyCert {
+        /**
+         * Comma-separated list of the path to the key files (Pem format).
+         */
+        Optional<List<String>> keys();
+
+        /**
+         * Comma-separated list of the path to the certificate files (Pem format).
+         */
+        Optional<List<String>> certs();
+    }
+
+    interface TrustCert {
+        /**
+         * Comma-separated list of the trust certificate files (Pem format).
+         */
+        Optional<List<String>> certs();
+    }
 
     public static class Protocol {
         public static final String GRPC = "grpc";

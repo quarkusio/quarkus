@@ -3,20 +3,33 @@ package io.quarkus.opentelemetry.runtime.exporter.otlp;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI;
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig.Protocol.HTTP_PROTOBUF;
 
+import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.spi.CDI;
 
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
-import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporterBuilder;
+import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.exporter.internal.ExporterBuilderUtil;
+import io.opentelemetry.exporter.internal.otlp.OtlpUserAgent;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
 
 @Recorder
 public class OtlpRecorder {
@@ -39,22 +52,23 @@ public class OtlpRecorder {
     public void installBatchSpanProcessorForOtlp(
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            RuntimeValue<Vertx> vertx,
             LaunchMode launchMode) {
 
         if (otelRuntimeConfig.sdkDisabled()) {
             return;
         }
-        String endpoint = resolveEndpoint(exporterRuntimeConfig).trim();
+        String grpcBaseUri = resolveEndpoint(exporterRuntimeConfig).trim();
 
         // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config
-        if (endpoint.length() > 0) {
+        if (grpcBaseUri.length() > 0) {
             try {
                 // Load span exporter if provided by user
                 SpanExporter spanExporter = CDI.current()
                         .select(SpanExporter.class, Any.Literal.INSTANCE).stream().findFirst().orElse(null);
                 // CDI exporter was already added to a processor by OTEL
                 if (spanExporter == null) {
-                    spanExporter = createOtlpGrpcSpanExporter(exporterRuntimeConfig, endpoint);
+                    spanExporter = createOtlpGrpcSpanExporter(exporterRuntimeConfig, grpcBaseUri, vertx.getValue());
 
                     // Create BatchSpanProcessor for OTLP and install into LateBoundBatchSpanProcessor
                     LateBoundBatchSpanProcessor delayedProcessor = CDI.current()
@@ -76,17 +90,26 @@ public class OtlpRecorder {
         }
     }
 
-    private OtlpGrpcSpanExporter createOtlpGrpcSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig, String endpoint) {
-        OtlpGrpcSpanExporterBuilder exporterBuilder = OtlpGrpcSpanExporter.builder()
-                .setEndpoint(endpoint)
-                .setTimeout(exporterRuntimeConfig.traces().timeout());
+    private SpanExporter createOtlpGrpcSpanExporter(OtlpExporterRuntimeConfig exporterRuntimeConfig, String endpoint,
+            Vertx vertx) {
 
-        // FIXME TLS Support. Was not available before but will be available soon.
-        // exporterRuntimeConfig.traces.certificate.ifPresent(exporterBuilder::setTrustedCertificates);
-        // exporterRuntimeConfig.client.ifPresent(exporterBuilder::setClientTls);
+        OtlpExporterTracesConfig tracesConfig = exporterRuntimeConfig.traces();
+        if (tracesConfig.protocol().isPresent()) {
+            if (!tracesConfig.protocol().get().equals(HTTP_PROTOBUF)) {
+                throw new IllegalStateException("Only the GRPC Exporter is currently supported. " +
+                        "Please check `quarkus.otel.exporter.otlp.traces.protocol` property");
+            }
+        }
 
-        if (exporterRuntimeConfig.traces().headers().isPresent()) {
-            List<String> headers = exporterRuntimeConfig.traces().headers().get();
+        boolean compressionEnabled = false;
+        if (tracesConfig.compression().isPresent()) {
+            compressionEnabled = (tracesConfig.compression().get() == CompressionType.GZIP);
+        }
+
+        Map<String, String> headersMap = new HashMap<>();
+        OtlpUserAgent.addUserAgentHeader(headersMap::put);
+        if (tracesConfig.headers().isPresent()) {
+            List<String> headers = tracesConfig.headers().get();
             if (!headers.isEmpty()) {
                 for (String header : headers) {
                     if (header.isEmpty()) {
@@ -95,22 +118,65 @@ public class OtlpRecorder {
                     String[] parts = header.split("=", 2);
                     String key = parts[0].trim();
                     String value = parts[1].trim();
-                    exporterBuilder.addHeader(key, value);
+                    headersMap.put(key, value);
                 }
             }
         }
 
-        if (exporterRuntimeConfig.traces().compression().isPresent()) {
-            exporterBuilder.setCompression(exporterRuntimeConfig.traces().compression().get().getValue());
-        }
+        URI grpcBaseUri = ExporterBuilderUtil.validateEndpoint(endpoint);
+        return new VertxGrpcExporter(
+                "otlp", // use the same as OTel does
+                "span", // use the same as OTel does
+                MeterProvider::noop,
+                grpcBaseUri,
+                compressionEnabled,
+                tracesConfig.timeout(),
+                headersMap,
+                new Consumer<>() {
+                    @Override
+                    public void accept(HttpClientOptions options) {
+                        configureTLS(options);
+                    }
 
-        if (exporterRuntimeConfig.traces().protocol().isPresent()) {
-            if (!exporterRuntimeConfig.traces().protocol().get().equals(HTTP_PROTOBUF)) {
-                throw new IllegalStateException("Only the GRPC Exporter is currently supported. " +
-                        "Please check `quarkus.otel.exporter.otlp.traces.protocol` property");
-            }
-        }
+                    private void configureTLS(HttpClientOptions options) {
+                        // TODO: this can reuse existing stuff when https://github.com/quarkusio/quarkus/pull/33228 is in
+                        options.setKeyCertOptions(toPemKeyCertOptions(tracesConfig));
+                        options.setPemTrustOptions(toPemTrustOptions(tracesConfig));
 
-        return exporterBuilder.build();
+                        if (VertxGrpcExporter.isHttps(grpcBaseUri)) {
+                            options.setSsl(true);
+                            options.setUseAlpn(true);
+                        }
+                    }
+
+                    private KeyCertOptions toPemKeyCertOptions(OtlpExporterTracesConfig configuration) {
+                        PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
+                        OtlpExporterTracesConfig.KeyCert keyCert = configuration.keyCert();
+                        if (keyCert.certs().isPresent()) {
+                            for (String cert : keyCert.certs().get()) {
+                                pemKeyCertOptions.addCertPath(cert);
+                            }
+                        }
+                        if (keyCert.keys().isPresent()) {
+                            for (String cert : keyCert.keys().get()) {
+                                pemKeyCertOptions.addKeyPath(cert);
+                            }
+                        }
+                        return pemKeyCertOptions;
+                    }
+
+                    private PemTrustOptions toPemTrustOptions(OtlpExporterTracesConfig configuration) {
+                        PemTrustOptions pemTrustOptions = new PemTrustOptions();
+                        OtlpExporterTracesConfig.TrustCert trustCert = configuration.trustCert();
+                        if (trustCert.certs().isPresent()) {
+                            for (String cert : trustCert.certs().get()) {
+                                pemTrustOptions.addCertPath(cert);
+                            }
+                        }
+                        return pemTrustOptions;
+                    }
+                },
+                vertx);
+
     }
 }

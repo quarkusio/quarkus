@@ -198,7 +198,7 @@ jobs:
         with:
           name: maven-repo
           path: maven-repo.tgz
-          retention-days: 1
+          retention-days: 7
       - name: Delete Local Artifacts From Cache
         shell: bash
         run: rm -r ~/.m2/repository/io/quarkus

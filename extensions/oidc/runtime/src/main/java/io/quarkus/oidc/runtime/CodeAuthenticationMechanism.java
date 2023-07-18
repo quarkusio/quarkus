@@ -29,6 +29,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
+import io.quarkus.oidc.JavaScriptRequestChecker;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
@@ -511,6 +512,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private boolean isJavaScript(RoutingContext context) {
+        JavaScriptRequestChecker checker = resolver.getJavaScriptRequestChecker();
+        if (checker != null) {
+            return checker.isJavaScriptRequest(context);
+        }
         String value = context.request().getHeader("X-Requested-With");
         return "JavaScript".equals(value) || "XMLHttpRequest".equals(value);
     }

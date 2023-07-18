@@ -10,6 +10,10 @@ import io.quarkus.oidc.TokenCustomizer;
 
 public class TokenCustomizerFinder {
 
+    private TokenCustomizerFinder() {
+
+    }
+
     public static TokenCustomizer find(OidcTenantConfig oidcConfig) {
         if (oidcConfig == null) {
             return null;

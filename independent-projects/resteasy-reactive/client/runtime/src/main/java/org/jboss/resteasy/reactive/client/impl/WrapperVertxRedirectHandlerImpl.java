@@ -30,6 +30,11 @@ public class WrapperVertxRedirectHandlerImpl implements Function<HttpClientRespo
         if (newLocation != null) {
             RequestOptions options = new RequestOptions();
             options.setAbsoluteURI(newLocation.toString());
+            if (httpClientResponse.statusCode() == 307) {
+                // According to https://www.rfc-editor.org/rfc/rfc9110#status.307
+                // HTTP 307 should not change the request method
+                options.setMethod(httpClientResponse.request().getMethod());
+            }
             return Future.succeededFuture(options);
         }
 

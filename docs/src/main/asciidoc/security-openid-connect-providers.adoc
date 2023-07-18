@@ -50,7 +50,9 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Secret>
 ----
 
-TIP: You can also use GitHub provider with `quarkus.oidc.application-type=service`, just set `quarkus.oidc.verify-access-token-with-user-info` configuration property to `true`.
+`quarkus.oidc.provider=github` will request `GitHub` to add a `user:email` scope to issued access tokens. For information about overriding this scope or requesting more scopes, see the  <<provider-scope>> section.
+
+TIP: You can also send access tokens issued by `GitHub` to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications.
 
 [[google]]
 === Google
@@ -103,6 +105,10 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Secret>
 ----
 
+`quarkus.oidc.provider=google` will request `Google` to add `openid`, `email` and `profile` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
+TIP: You can also send access tokens issued by `Google` to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications.
+
 [[microsoft]]
 === Microsoft
 
@@ -144,6 +150,10 @@ quarkus.oidc.provider=microsoft
 quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Secret>
 ----
+
+`quarkus.oidc.provider=microsoft` will request `Microsoft` to add `openid`, `email` and `profile` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
+TIP: You can also send access tokens issued by `Microsoft` to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications but you may need to set `quarkus.oidc.verify-access-token-with-user-info` configuration property to `true` if access tokens issued by Microsoft are not in JWT format.
 
 [NOTE]
 ====
@@ -267,6 +277,8 @@ quarkus.oidc.credentials.jwt.issuer=<App ID Prefix>
 quarkus.oidc.credentials.jwt.subject=<Bundle ID}
 ----
 
+`quarkus.oidc.provider=apple` will request `Apple` to add `openid`, `email` and `name` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
 [[facebook]]
 === Facebook
 
@@ -306,6 +318,8 @@ quarkus.oidc.provider=facebook
 quarkus.oidc.client-id=<App ID>
 quarkus.oidc.credentials.secret=<App secret>
 ----
+
+`quarkus.oidc.provider=facebook` will request `Facebook` to add `email` and `public_profile` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
 
 [[twitter]]
 === Twitter
@@ -364,6 +378,8 @@ quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
 ----
 
+`quarkus.oidc.provider=twitter` will request `Twitter` to add `offline.access`, `tweet.read` and `users.read` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
 [NOTE]
 ====
 Twitter provider requires Proof Key for Code Exchange (PKCE) which is supported by the `quarkus.oidc.provider=twitter` declaration.
@@ -392,6 +408,37 @@ You can now configure your `application.properties`:
 quarkus.oidc.provider=spotify
 quarkus.oidc.client-id=<Client ID>
 quarkus.oidc.credentials.secret=<Client Secret>
+----
+
+`quarkus.oidc.provider=spotiify` will request `Spotify` to add `user-read-private` and `user-read-email` scopes to issued access tokens. For information about overriding these scopes or requesting more scopes, see the  <<provider-scope>> section.
+
+[[provider-scope]]
+== Provider scopes
+
+Each provider declaration will request one or more token scopes added to access tokens issued by a given provider. For example, `quarkus.oidc.provider=google` will request `Google` to add `openid`, `email` and `profile` scopes.
+
+You can override these scopes with `quarkus.oidc.authentication.scopes` property, for example, if you work with `Google` and would not like to have an `email` scope added to access tokens:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.authentication.scopes=oidc,profile
+----
+
+You may also want to add one or more scopes in addition to the scopes requested by default. For example, if you would like to use an access token issued by `Google` to access `Google Calendar` service, you can do it like this:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.authentication.extra-params.scope=https://www.googleapis.com/auth/calendar
+----
+
+It is simpler than using `quarkus.oidc.authentication.scopes` to add a new scope, because `quarkus.oidc.authentication.scopes` overrides the scopes already set by the provider declaration, which is why you need to list all the required scopes in this case:
+
+[source,properties]
+----
+quarkus.oidc.provider=google
+quarkus.oidc.authentication.scopes=oidc,email,profile,https://www.googleapis.com/auth/calendar
 ----
 
 == Support for multiple providers
@@ -461,7 +508,7 @@ Finally,  you need to configure the Google Calendar address and request  the Goo
 
 [source,properties]
 ----
-quarkus.oidc.authentication.scopes=email,profile,https://www.googleapis.com/auth/calendar
+quarkus.oidc.authentication.extra-params.scope=https://www.googleapis.com/auth/calendar
 quarkus.rest-client.google-calendar-api.url=https://www.googleapis.com/calendar/v3
 ----
 

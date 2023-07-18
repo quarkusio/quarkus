@@ -61,6 +61,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     static final String AMP = "&";
     static final String EQ = "=";
+    static final String COMMA = ",";
     static final String UNDERSCORE = "_";
     static final String COOKIE_DELIM = "|";
     static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
@@ -587,6 +588,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             scopes.add(OidcConstants.OPENID_SCOPE);
                         }
                         scopes.addAll(oidcConfigScopes);
+                        // Extra scopes if any
+                        String extraScopeValue = configContext.oidcConfig.getAuthentication().getExtraParams()
+                                .get(OidcConstants.TOKEN_SCOPE);
+                        if (extraScopeValue != null) {
+                            String[] extraScopes = extraScopeValue.split(COMMA);
+                            scopes.addAll(List.of(extraScopes));
+                        }
                         codeFlowParams.append(AMP).append(OidcConstants.TOKEN_SCOPE).append(EQ)
                                 .append(OidcCommonUtils.urlEncode(String.join(" ", scopes)));
 
@@ -1205,6 +1213,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private static void addExtraParamsToUri(StringBuilder builder, Map<String, String> extraParams) {
         if (extraParams != null) {
             for (Map.Entry<String, String> entry : extraParams.entrySet()) {
+                if (entry.getKey().equals(OidcConstants.TOKEN_SCOPE)) {
+                    continue;
+                }
                 builder.append(AMP).append(entry.getKey()).append(EQ).append(OidcCommonUtils.urlEncode(entry.getValue()));
             }
         }

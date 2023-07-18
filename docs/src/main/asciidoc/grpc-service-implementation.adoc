@@ -421,3 +421,7 @@ To disable the gRPC server metrics when `quarkus-micrometer` is used, add the fo
 ----
 quarkus.micrometer.binder.grpc-server.enabled=false
 ----
+
+=== Use virtual threads
+
+To use virtual threads in your gRPC service implementation, check the dedicated xref:./grpc-virtual-threads.adoc[guide].

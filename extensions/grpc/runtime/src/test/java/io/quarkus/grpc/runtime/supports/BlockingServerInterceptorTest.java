@@ -34,7 +34,8 @@ class BlockingServerInterceptorTest {
         InjectableContext.ContextState contextState = mock(InjectableContext.ContextState.class);
         ManagedContext requestContext = mock(ManagedContext.class);
         when(requestContext.getState()).thenReturn(contextState);
-        blockingServerInterceptor = new BlockingServerInterceptor(vertx, Collections.singletonList("blocking"), false) {
+        blockingServerInterceptor = new BlockingServerInterceptor(vertx, Collections.singletonList("blocking"),
+                Collections.emptyList(), null, false) {
             @Override
             protected ManagedContext getRequestContext() {
                 return requestContext;

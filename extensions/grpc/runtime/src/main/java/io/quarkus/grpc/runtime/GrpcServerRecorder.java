@@ -6,6 +6,7 @@ import static io.quarkus.grpc.runtime.GrpcTestPortUtils.testPort;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.InvocationTargetException;
 import java.net.BindException;
 import java.time.Duration;
 import java.util.AbstractMap;
@@ -19,10 +20,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.inject.Instance;
@@ -59,6 +63,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.PortSystemProperties;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -66,6 +71,7 @@ import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -79,11 +85,12 @@ public class GrpcServerRecorder {
     private static final Logger LOGGER = Logger.getLogger(GrpcServerRecorder.class.getName());
 
     private static final AtomicInteger grpcVerticleCount = new AtomicInteger(0);
-
     private static volatile DevModeWrapper devModeWrapper;
     private static volatile List<GrpcServiceDefinition> services = Collections.emptyList();
 
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
+
+    private static final Logger logger = Logger.getLogger(GrpcServerRecorder.class);
 
     public static List<GrpcServiceDefinition> getServices() {
         return services;
@@ -93,7 +100,9 @@ public class GrpcServerRecorder {
             RuntimeValue<Router> routerSupplier,
             GrpcConfiguration cfg,
             ShutdownContext shutdown,
-            Map<String, List<String>> blockingMethodsPerService, LaunchMode launchMode) {
+            Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService,
+            LaunchMode launchMode) {
         GrpcContainer grpcContainer = Arc.container().instance(GrpcContainer.class).get();
         if (grpcContainer == null) {
             throw new IllegalStateException("gRPC not initialized, GrpcContainer not found");
@@ -118,16 +127,20 @@ public class GrpcServerRecorder {
                 // start single server, not in a verticle, regardless of the configuration.instances
                 // for reason unknown to me, verticles occasionally get undeployed on dev mode reload
                 if (GrpcServerReloader.getServer() != null || (provider != null && provider.serverAlreadyExists())) {
-                    devModeReload(grpcContainer, vertx, configuration, provider, blockingMethodsPerService, shutdown);
+                    devModeReload(grpcContainer, vertx, configuration, provider, blockingMethodsPerService,
+                            virtualMethodsPerService, shutdown);
                 } else {
-                    devModeStart(grpcContainer, vertx, configuration, provider, blockingMethodsPerService, shutdown,
+                    devModeStart(grpcContainer, vertx, configuration, provider, blockingMethodsPerService,
+                            virtualMethodsPerService, shutdown,
                             launchMode);
                 }
             } else {
-                prodStart(grpcContainer, vertx, configuration, provider, blockingMethodsPerService, launchMode);
+                prodStart(grpcContainer, vertx, configuration, provider, blockingMethodsPerService, virtualMethodsPerService,
+                        launchMode);
             }
         } else {
-            buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, grpcContainer,
+            buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, virtualMethodsPerService,
+                    grpcContainer,
                     launchMode);
         }
     }
@@ -135,6 +148,7 @@ public class GrpcServerRecorder {
     // TODO -- handle XDS
     private void buildGrpcServer(Vertx vertx, GrpcServerConfiguration configuration, RuntimeValue<Router> routerSupplier,
             ShutdownContext shutdown, Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode) {
 
         GrpcServer server = GrpcServer.server(vertx);
@@ -153,7 +167,7 @@ public class GrpcServerRecorder {
 
         for (GrpcServiceDefinition service : toBeRegistered) {
             ServerServiceDefinition defWithInterceptors = serviceWithInterceptors(
-                    vertx, grpcContainer, blockingMethodsPerService, compressionInterceptor, service,
+                    vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService, compressionInterceptor, service,
                     launchMode == LaunchMode.DEVELOPMENT);
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
             ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(defWithInterceptors, globalInterceptors);
@@ -211,11 +225,14 @@ public class GrpcServerRecorder {
     }
 
     private void prodStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
-            GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService, LaunchMode launchMode) {
+            GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService,
+            LaunchMode launchMode) {
         CompletableFuture<Void> startResult = new CompletableFuture<>();
 
         vertx.deployVerticle(
-                () -> new GrpcServerVerticle(configuration, grpcContainer, provider, launchMode, blockingMethodsPerService),
+                () -> new GrpcServerVerticle(configuration, grpcContainer, provider, launchMode, blockingMethodsPerService,
+                        virtualMethodsPerService),
                 new DeploymentOptions().setInstances(configuration.instances),
                 result -> {
                     if (result.failed()) {
@@ -265,11 +282,13 @@ public class GrpcServerRecorder {
     }
 
     private void devModeStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
-            GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService, ShutdownContext shutdown,
+            GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService,
+            ShutdownContext shutdown,
             LaunchMode launchMode) {
 
         Map.Entry<Integer, Server> portToServer = buildServer(vertx, configuration, provider,
-                blockingMethodsPerService, grpcContainer, launchMode);
+                blockingMethodsPerService, virtualMethodsPerService, grpcContainer, launchMode);
 
         Server server = portToServer.getValue();
         if (provider == null) {
@@ -402,7 +421,8 @@ public class GrpcServerRecorder {
     }
 
     private void devModeReload(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
-            GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService, ShutdownContext shutdown) {
+            GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService, ShutdownContext shutdown) {
         List<GrpcServiceDefinition> services = collectServiceDefinitions(grpcContainer.getServices());
 
         List<ServerServiceDefinition> definitions = new ArrayList<>();
@@ -420,7 +440,7 @@ public class GrpcServerRecorder {
         CompressionInterceptor compressionInterceptor = prepareCompressionInterceptor(configuration);
         for (GrpcServiceDefinition service : services) {
             servicesWithInterceptors.add(
-                    serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService,
+                    serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService,
                             compressionInterceptor, service, true));
         }
 
@@ -458,6 +478,7 @@ public class GrpcServerRecorder {
     @SuppressWarnings("rawtypes")
     private Map.Entry<Integer, Server> buildServer(Vertx vertx, GrpcServerConfiguration configuration,
             GrpcBuilderProvider provider, Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode) {
 
         int port = launchMode == LaunchMode.TEST ? configuration.testPort : configuration.port;
@@ -509,6 +530,7 @@ public class GrpcServerRecorder {
         for (GrpcServiceDefinition service : toBeRegistered) {
             builder.addService(
                     serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService,
+                            virtualMethodsPerService,
                             compressionInterceptor, service, launchMode == LaunchMode.DEVELOPMENT));
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
             definitions.add(service.definition);
@@ -549,7 +571,9 @@ public class GrpcServerRecorder {
     }
 
     private ServerServiceDefinition serviceWithInterceptors(Vertx vertx, GrpcContainer grpcContainer,
-            Map<String, List<String>> blockingMethodsPerService, CompressionInterceptor compressionInterceptor,
+            Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService,
+            CompressionInterceptor compressionInterceptor,
             GrpcServiceDefinition service, boolean devMode) {
         List<ServerInterceptor> interceptors = new ArrayList<>();
         if (compressionInterceptor != null) {
@@ -558,11 +582,13 @@ public class GrpcServerRecorder {
 
         interceptors.addAll(grpcContainer.getSortedPerServiceInterceptors(service.getImplementationClassName()));
 
-        // We only register the blocking interceptor if needed by at least one method of the service.
+        // We only register the blocking interceptor if needed by at least one method of the service (either blocking or runOnVirtualThread)
         if (!blockingMethodsPerService.isEmpty()) {
             List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
-            if (list != null) {
-                interceptors.add(new BlockingServerInterceptor(vertx, list, devMode));
+            List<String> virtuals = virtualMethodsPerService.get(service.getImplementationClassName());
+            if (list != null || virtuals != null) {
+                interceptors
+                        .add(new BlockingServerInterceptor(vertx, list, virtuals, VIRTUAL_EXECUTOR_SUPPLIER.get(), devMode));
             }
         }
         return ServerInterceptors.intercept(service.definition, interceptors);
@@ -574,18 +600,21 @@ public class GrpcServerRecorder {
         private final GrpcBuilderProvider provider;
         private final LaunchMode launchMode;
         private final Map<String, List<String>> blockingMethodsPerService;
+        private final Map<String, List<String>> virtualMethodsPerService;
         private volatile PortSystemProperties portSystemProperties;
 
         private Server grpcServer;
 
         GrpcServerVerticle(GrpcServerConfiguration configuration, GrpcContainer grpcContainer,
                 GrpcBuilderProvider provider, LaunchMode launchMode,
-                Map<String, List<String>> blockingMethodsPerService) {
+                Map<String, List<String>> blockingMethodsPerService,
+                Map<String, List<String>> virtualMethodsPerService) {
             this.configuration = configuration;
             this.grpcContainer = grpcContainer;
             this.provider = provider;
             this.launchMode = launchMode;
             this.blockingMethodsPerService = blockingMethodsPerService;
+            this.virtualMethodsPerService = virtualMethodsPerService;
         }
 
         @Override
@@ -596,7 +625,7 @@ public class GrpcServerRecorder {
                 return;
             }
             Map.Entry<Integer, Server> portToServer = buildServer(getVertx(), configuration, provider,
-                    blockingMethodsPerService, grpcContainer, launchMode);
+                    blockingMethodsPerService, virtualMethodsPerService, grpcContainer, launchMode);
 
             grpcServer = portToServer.getValue();
             if (grpcServer instanceof VertxServer) {
@@ -611,10 +640,14 @@ public class GrpcServerRecorder {
                         }
                         startPromise.fail(effectiveCause);
                     } else {
-                        int actualPort = grpcServer.getPort();
-                        if (actualPort != portToServer.getKey()) {
-                            portSystemProperties = new PortSystemProperties();
-                            portSystemProperties.set("grpc.server", actualPort, launchMode);
+                        try {
+                            int actualPort = grpcServer.getPort();
+                            if (actualPort != portToServer.getKey()) {
+                                portSystemProperties = new PortSystemProperties();
+                                portSystemProperties.set("grpc.server", actualPort, launchMode);
+                            }
+                        } catch (Exception e) {
+                            // Ignore, port reused.
                         }
                         startPromise.complete();
                         grpcVerticleCount.incrementAndGet();
@@ -694,4 +727,75 @@ public class GrpcServerRecorder {
             }
         }
     }
+
+    public static final Supplier<Executor> VIRTUAL_EXECUTOR_SUPPLIER = new Supplier<>() {
+        Executor current = null;
+
+        /**
+         * This method uses reflection in order to allow developers to quickly test quarkus-loom without needing to
+         * change --release, --source, --target flags and to enable previews.
+         * Since we try to load the "Loom-preview" classes/methods at runtime, the application can even be compiled
+         * using java 11 and executed with a loom-compliant JDK.
+         * <p>
+         * IMPORTANT: we still need to use a duplicated context to have all the propagation working.
+         * Thus, the context is captured and applied/terminated in the virtual thread.
+         */
+        @Override
+        public Executor get() {
+            if (current == null) {
+                try {
+                    var virtual = (Executor) Executors.class.getMethod("newVirtualThreadPerTaskExecutor")
+                            .invoke(this);
+                    current = new Executor() {
+                        @Override
+                        public void execute(Runnable command) {
+                            var context = Vertx.currentContext();
+                            if (!(context instanceof ContextInternal)) {
+                                virtual.execute(command);
+                            } else {
+                                virtual.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        final var previousContext = ((ContextInternal) context).beginDispatch();
+                                        try {
+                                            command.run();
+                                        } finally {
+                                            ((ContextInternal) context).endDispatch(previousContext);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    };
+                } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+                    logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
+                    //quite ugly but works
+                    logger.warnf("You weren't able to create an executor that spawns virtual threads, the default" +
+                            " blocking executor will be used, please check that your JDK is compatible with " +
+                            "virtual threads");
+                    //if for some reason a class/method can't be loaded or invoked we return the traditional executor,
+                    // wrapping executeBlocking.
+                    current = new Executor() {
+                        @Override
+                        public void execute(Runnable command) {
+                            var context = Vertx.currentContext();
+                            if (!(context instanceof ContextInternal)) {
+                                Infrastructure.getDefaultWorkerPool().execute(command);
+                            } else {
+                                context.executeBlocking(fut -> {
+                                    try {
+                                        command.run();
+                                        fut.complete(null);
+                                    } catch (Exception e) {
+                                        fut.fail(e);
+                                    }
+                                });
+                            }
+                        }
+                    };
+                }
+            }
+            return current;
+        }
+    };
 }

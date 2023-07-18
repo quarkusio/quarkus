@@ -404,6 +404,20 @@
             </modules>
         </profile>
 
+        <!-- Java 20+ test profile -->
+        <profile>
+            <id>java-20</id>
+            <activation>
+                <property>
+                    <name>!no-test-modules</name>
+                </property>
+                <jdk>[20,)</jdk>
+            </activation>
+            <modules>
+                <module>virtual-threads</module>
+            </modules>
+        </profile>
+
         <!-- Common native image test profile
              WARNING: In this parent profile, you cannot override properties in a submodule!
                       Plugin config can only be overridden (to a certain point) via pluginManagement!

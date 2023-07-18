@@ -28,7 +28,7 @@ public class MutinyServiceBlockingMethodTest {
 
         ClassInfo classInfo = index.getClassByName(className);
 
-        assertThat(GrpcServerProcessor.gatherBlockingMethodNames(classInfo, index))
+        assertThat(GrpcServerProcessor.gatherBlockingOrVirtualMethodNames(classInfo, index, false))
                 .containsExactlyInAnyOrderElementsOf(List.of("sayHello", "wEIRD"));
     }
 

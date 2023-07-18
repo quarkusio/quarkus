@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -27,29 +28,45 @@ import io.vertx.core.Vertx;
 /**
  * gRPC Server interceptor offloading the execution of the gRPC method on a worker thread if the method is annotated
  * with {@link io.smallrye.common.annotation.Blocking}.
- *
+ * <p>
  * For non-annotated methods, the interceptor acts as a pass-through.
  */
 public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean> {
 
     private final Vertx vertx;
     private final Set<String> blockingMethods;
-    private final Map<String, Boolean> cache = new ConcurrentHashMap<>();
+    private final Set<String> virtualMethods;
+    private final Map<String, Boolean> blockingCache = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> virtualCache = new ConcurrentHashMap<>();
     private final boolean devMode;
+    private final Executor virtualThreadExecutor;
 
-    public BlockingServerInterceptor(Vertx vertx, List<String> blockingMethods, boolean devMode) {
+    public BlockingServerInterceptor(Vertx vertx, List<String> blockingMethods, List<String> virtualMethods,
+            Executor virtualThreadExecutor, boolean devMode) {
         this.vertx = vertx;
         this.blockingMethods = new HashSet<>();
+        this.virtualMethods = new HashSet<>();
         this.devMode = devMode;
         for (String method : blockingMethods) {
             this.blockingMethods.add(method.toLowerCase());
         }
+        if (virtualMethods != null) {
+            for (String method : virtualMethods) {
+                this.virtualMethods.add(method.toLowerCase());
+            }
+        }
+        this.virtualThreadExecutor = virtualThreadExecutor;
     }
 
     @Override
     public Boolean apply(String name) {
         String methodName = name.substring(name.lastIndexOf("/") + 1);
         return blockingMethods.contains(methodName.toLowerCase());
+    }
+
+    public Boolean applyVirtual(String name) {
+        String methodName = name.substring(name.lastIndexOf("/") + 1);
+        return virtualMethods.contains(methodName.toLowerCase());
     }
 
     @Override
@@ -66,15 +83,34 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         // For performance purpose, we execute the lookup only once
         String fullMethodName = call.getMethodDescriptor().getFullMethodName();
-        boolean isBlocking = cache.computeIfAbsent(fullMethodName, this);
+        boolean isBlocking = blockingCache.computeIfAbsent(fullMethodName, this);
+        boolean isVirtual = virtualCache.computeIfAbsent(fullMethodName, this::applyVirtual);
 
-        if (isBlocking) {
+        if (isVirtual) {
             final ManagedContext requestContext = getRequestContext();
             // context should always be active here
             // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
-            ReplayListener<ReqT> replay = new ReplayListener<>(state);
+            ReplayListener<ReqT> replay = new ReplayListener<>(state, true);
+            virtualThreadExecutor.execute(() -> {
+                ServerCall.Listener<ReqT> listener;
+                try {
+                    requestContext.activate(state);
+                    listener = next.startCall(call, headers);
+                } finally {
+                    requestContext.deactivate();
+                }
+                replay.setDelegate(listener);
+            });
+            return replay;
+        } else if (isBlocking) {
+            final ManagedContext requestContext = getRequestContext();
+            // context should always be active here
+            // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
+            // that should always be called before this interceptor
+            ContextState state = requestContext.getState();
+            ReplayListener<ReqT> replay = new ReplayListener<>(state, false);
             vertx.executeBlocking(f -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
@@ -96,20 +132,22 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     /**
      * Stores the incoming events until the listener is injected.
      * When injected, replay the events.
-     *
+     * <p>
      * Note that event must be executed in order, explaining why incomingEvents
      * are executed sequentially
      */
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private final InjectableContext.ContextState requestContextState;
+        private final boolean virtual;
 
         // exclusive to event loop context
         private ServerCall.Listener<ReqT> delegate;
         private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
         private boolean isConsumingFromIncomingEvents = false;
 
-        private ReplayListener(InjectableContext.ContextState requestContextState) {
+        private ReplayListener(InjectableContext.ContextState requestContextState, boolean virtual) {
             this.requestContextState = requestContextState;
+            this.virtual = virtual;
         }
 
         /**
@@ -123,14 +161,22 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             if (!this.isConsumingFromIncomingEvents) {
                 Consumer<ServerCall.Listener<ReqT>> consumer = incomingEvents.poll();
                 if (consumer != null) {
-                    executeBlockingWithRequestContext(consumer);
+                    if (virtual) {
+                        executeVirtualWithRequestContext(consumer);
+                    } else {
+                        executeBlockingWithRequestContext(consumer);
+                    }
                 }
             }
         }
 
-        private void executeOnContextOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
+        private void scheduleOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
             if (this.delegate != null && !this.isConsumingFromIncomingEvents) {
-                executeBlockingWithRequestContext(consumer);
+                if (virtual) {
+                    executeVirtualWithRequestContext(consumer);
+                } else {
+                    executeBlockingWithRequestContext(consumer);
+                }
             } else {
                 incomingEvents.add(consumer);
             }
@@ -162,29 +208,50 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             });
         }
 
+        private void executeVirtualWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
+            final Context grpcContext = Context.current();
+            Handler<Promise<Object>> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
+                    requestContextState, getRequestContext(), this);
+            if (devMode) {
+                blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
+                        blockingHandler);
+            }
+            this.isConsumingFromIncomingEvents = true;
+            Handler<Promise<Object>> finalBlockingHandler = blockingHandler;
+            virtualThreadExecutor.execute(() -> {
+                finalBlockingHandler.handle(Promise.promise());
+                Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
+                if (next != null) {
+                    executeVirtualWithRequestContext(next);
+                } else {
+                    this.isConsumingFromIncomingEvents = false;
+                }
+            });
+        }
+
         @Override
         public void onMessage(ReqT message) {
-            executeOnContextOrEnqueue(t -> t.onMessage(message));
+            scheduleOrEnqueue(t -> t.onMessage(message));
         }
 
         @Override
         public void onHalfClose() {
-            executeOnContextOrEnqueue(ServerCall.Listener::onHalfClose);
+            scheduleOrEnqueue(ServerCall.Listener::onHalfClose);
         }
 
         @Override
         public void onCancel() {
-            executeOnContextOrEnqueue(ServerCall.Listener::onCancel);
+            scheduleOrEnqueue(ServerCall.Listener::onCancel);
         }
 
         @Override
         public void onComplete() {
-            executeOnContextOrEnqueue(ServerCall.Listener::onComplete);
+            scheduleOrEnqueue(ServerCall.Listener::onComplete);
         }
 
         @Override
         public void onReady() {
-            executeOnContextOrEnqueue(ServerCall.Listener::onReady);
+            scheduleOrEnqueue(ServerCall.Listener::onReady);
         }
     }
 

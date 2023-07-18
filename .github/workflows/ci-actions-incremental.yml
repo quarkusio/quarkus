@@ -602,7 +602,50 @@ jobs:
             quarkus-quickstarts/target/build-report.json
             quarkus-quickstarts/LICENSE
           retention-days: 2
-
+  virtual-thread-tests:
+    name: Virtual Thread Support Tests - JDK ${{matrix.java.name}}
+    runs-on: ${{matrix.java.os-name}}
+    needs: [build-jdk11, calculate-test-jobs]
+    # Skip main in forks
+    if: "needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "20",
+            java-version: 20,
+            os-name: "ubuntu-latest",
+            extra-args: "--enable-preview"
+          }
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download Maven Repo
+        uses: actions/download-artifact@v3
+        with:
+          name: maven-repo
+          path: .
+      - name: Extract Maven Repo
+        shell: bash
+        run: tar -xzf maven-repo.tgz -C ~
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java.java-version }}
+      - name: Run tests
+        run: |
+          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml -f integration-tests/virtual-threads clean verify -Dextra-args=${{matrix.java.extra-args}}
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-Virtual Thread Support - JDK ${{matrix.java.name}}"
+          path: |
+            integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml
+            integration-tests/virtual-threads/target/build-report.json
+          retention-days: 2
   tcks-test:
     name: MicroProfile TCKs Tests
     needs: [build-jdk11, calculate-test-jobs]

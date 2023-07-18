@@ -216,12 +216,7 @@ public class NativeImageBuildStep {
 
         buildRunner.setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version graalVMVersion = buildRunner.getGraalVMVersion();
-
-        if (graalVMVersion.isDetected()) {
-            checkGraalVMVersion(graalVMVersion);
-        } else {
-            log.error("Unable to get GraalVM version from the native-image binary.");
-        }
+        checkGraalVMVersion(graalVMVersion);
 
         try {
             if (nativeConfig.cleanupServer()) {
@@ -568,7 +563,7 @@ public class NativeImageBuildStep {
             private Path outputDir;
             private String runnerJarName;
             private String noPIE = "";
-            private GraalVM.Version graalVMVersion = GraalVM.Version.UNVERSIONED;
+            private GraalVM.Version graalVMVersion = null;
             private String nativeImageName;
             private boolean classpathIsBroken;
             private boolean containerBuild;

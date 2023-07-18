@@ -86,17 +86,11 @@ public class GraalVMTest {
     }
 
     static void assertVersion(org.graalvm.home.Version graalVmVersion, Distribution distro, Version version) {
-        assertThat(version.isDetected()).isEqualTo(true);
         assertThat(graalVmVersion.compareTo(version.version)).isEqualTo(0);
         assertThat(version.distribution).isEqualTo(distro);
         if (distro == MANDREL) {
             assertThat(version.isMandrel()).isTrue();
         }
-    }
-
-    @Test
-    public void testGraalVMVersionUndetected() {
-        assertThat(Version.of(Stream.of("foo bar")).isDetected()).isFalse();
     }
 
     @Test

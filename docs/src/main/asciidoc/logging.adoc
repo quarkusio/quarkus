@@ -13,7 +13,7 @@ Read about the use of logging API in Quarkus, configuring logging output, and us
 
 Quarkus uses the JBoss Log Manager logging backend for publishing application and framework logs.
 Quarkus supports the JBoss Logging API as well as multiple other logging APIs, seamlessly integrated with JBoss Log Manager.
-You can use any of the <<logging-apis, following APIs>>:
+You can use any of the <<logging-apis,following APIs>>:
 
 * link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
 * JDK `java.util.logging` (JUL)
@@ -52,7 +52,7 @@ public class ExampleResource {
 ----
 
 NOTE: While JBoss Logging routes log messages into JBoss Log Manager directly, one of your libraries might rely on a different logging API.
-In such cases, you need to use a <<logging-apis, logging adapter>> to ensure that its log messages are routed to JBoss Log Manager as well.
+In such cases, you need to use a <<logging-apis,logging adapter>> to ensure that its log messages are routed to JBoss Log Manager as well.
 
 == Get an application logger
 
@@ -67,7 +67,7 @@ In Quarkus, the most common ways to obtain an application logger are by:
 
 With this classic approach, you use a specific API to obtain a logger instance, store it in a static field of a class, and call logging operations upon this instance.
 
-The same flow can be applied with any of the <<logging-apis, supported logging APIs>>.
+The same flow can be applied with any of the <<logging-apis,supported logging APIs>>.
 
 .An example of storing a logger instance into a static field by using the JBoss Logging API:
 [source,java]
@@ -230,9 +230,8 @@ This identifies code like `if(logger.isDebug()) callMethod();` that will never b
 [WARNING]
 ====
 If you add these properties on the command line, ensure the `"` character is escaped properly:
-
 ----
- `-Dquarkus.log.category.\"org.hibernate\".level=TRACE`
+-Dquarkus.log.category.\"org.hibernate\".level=TRACE
 ----
 ====
 
@@ -250,8 +249,6 @@ This category, being the ultimate parent, may contain configuration which applie
 Thus, configurations made under `quarkus.log.console.*`, `quarkus.log.file.*`, and `quarkus.log.syslog.*`, are global and apply for all categories. For more information, see <<loggingConfigurationReference>>.
 
 If you want to configure something extra for a specific category, create a named handler like `quarkus.log.handler.[console|file|syslog].<your-handler-name>.*` and set it up for that category by using `quarkus.log.category.<my-category>.handlers`.
-
-//TODO: Add a better, real-world example of a handler configuration for a more specific category. CC DML
 
 An example use case can be a desire to use a different timestamp format for log messages which are saved to a file than the format used for other handlers.
 
@@ -385,28 +382,109 @@ WARNING: Enabling pretty printing might cause certain processors and JSON parser
 NOTE: Printing the details can be expensive as the values are retrieved from the caller.
 The details include the source class name, source file name, source method name, and source line number.
 
+
 == Log handlers
 
 A log handler is a logging component responsible for the emission of log events to a recipient.
 Quarkus includes several different log handlers: **console**, **file**, and **syslog**.
 
+The featured examples use `com.example` as a logging category.
+
 === Console log handler
 
 The console log handler is enabled by default, and it directs all log events to the application's console, usually the system's `stdout`.
 
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.console.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
+----
+
+* A per-category configuration example:
++
+[source, properties]
+----
+quarkus.log.handler.console.my-console-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
+
+quarkus.log.category."com.example".handlers=my-console-handler
+quarkus.log.category."com.example".use-parent-handlers=false
+----
+
 For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.console-console-logging[console logging configuration] reference.
 
-=== Logging filters
 
-Log handlers, including the console log handler, can be associated with a link:https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/Filter.html[filter] that determines whether a log record should be logged or not.
+=== File log handler
 
-To register a logging filter, annotate a (`final`) class that implements `java.util.logging.Filter` with `@io.quarkus.logging.LoggingFilter` and set the `name` property.
-The filter is then attached to the appropriate handler using the `filter` configuration property.
+By default, the file log handler in Quarkus is disabled.
+Once enabled, it enables the logging of all events to a file on the application's host, while also supporting log file rotation.
+Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while keeping the primary log file up-to-date and manageable.
 
-For instance, if you want to filter out log records containing specific text from the console logs, you can define the text as part of the application configuration instead of hardcoding it.
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.file.enable=true
+quarkus.log.file.path=application.log
+quarkus.log.file.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
+----
 
-.An example of how you can write a filter:
-====
+* A per-category configuration example:
++
+[source, properties]
+----
+quarkus.log.handler.file.my-file-handler.enable=true
+quarkus.log.handler.file.my-file-handler.path=application.log
+quarkus.log.handler.file.my-file-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
+
+quarkus.log.category."com.example".handlers=my-file-handler
+quarkus.log.category."com.example".use-parent-handlers=false
+----
+
+For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.file-file-logging[file logging configuration] reference.
+
+
+=== Syslog log handler
+
+The syslog handler in Quarkus follows the link:https://en.wikipedia.org/wiki/Syslog[Syslog] protocol, which is used to send log messages on Unix-like systems.
+It utilizes the protocol defined in link:https://tools.ietf.org/html/rfc5424[RFC 5424].
+
+By default, the syslog handler is disabled.
+When enabled, it sends all log events to a syslog server, typically the local syslog server for the application.
+
+* A global configuration example:
++
+[source, properties]
+----
+quarkus.log.syslog.enable=true
+quarkus.log.syslog.app-name=my-application
+quarkus.log.syslog.format=%d{yyyy-MM-dd HH:mm:ss} %-5p [%c] (%t) %s%e%n
+----
+
+* A per-category configuration example:
++
+[source, properties]
+----
+quarkus.log.handler.syslog.my-syslog-handler.enable=true
+quarkus.log.handler.syslog.my-syslog-handler.app-name=my-application
+quarkus.log.handler.syslog.my-syslog-handler.format=%d{yyyy-MM-dd HH:mm:ss} [com.example] %s%e%n
+
+quarkus.log.category."com.example".handlers=my-syslog-handler
+quarkus.log.category."com.example".use-parent-handlers=false
+----
+
+For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.syslog-syslog-logging[Syslog logging configuration] reference.
+
+
+== Add a logging filter to your log handler
+
+Log handlers, such as the console log handler, can be linked with a link:https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/Filter.html[filter] that determines whether a log record should be logged.
+
+To register a logging filter:
+
+. Annotate a `final` class that implements `java.util.logging.Filter` with `@io.quarkus.logging.LoggingFilter`, and set the `name` property:
++
+.An example of writing a filter:
 [source,java]
 ----
 import io.quarkus.logging.LoggingFilter;
@@ -428,37 +506,22 @@ public final class TestFilter implements Filter {
     }
 }
 ----
-
-.Then, configure it in the usual Quarkus way, for example, by using `application.properties`:
-[source,properties]
++
+In this example, we exclude log records containing specific text from console logs.
+The specific text to filter on is not hard-coded; instead, it is read from the `my-filter.part` configuration property.
++
+.An example of Configuring the filter in `application.properties`:
+[source, properties]
 ----
 my-filter.part=TEST
 ----
 
-.Lastly, register this filter to the console handler:
+. Attach the filter to the corresponding handler using the `filter` configuration property, located in `application.properties`:
++
 [source, properties]
 ----
 quarkus.log.console.filter=my-filter
 ----
-====
-
-=== File log handler
-
-By default, the file log handler in Quarkus is disabled.
-Once enabled, it enables the logging of all events to a file on the application's host, while also supporting log file rotation.
-Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while keeping the primary log file up-to-date and manageable.
-
-For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.file-file-logging[file logging configuration] reference.
-
-=== Syslog log handler
-
-The syslog handler in Quarkus follows the link:https://en.wikipedia.org/wiki/Syslog[Syslog] protocol, which is used to send log messages on Unix-like systems.
-It utilizes the protocol defined in link:https://tools.ietf.org/html/rfc5424[RFC 5424].
-
-By default, the syslog handler is disabled.
-When enabled, it sends all log events to a syslog server, typically the local syslog server for the application.
-
-For details about its configuration, see the xref:#quarkus-log-logging-log-config_quarkus.log.syslog-syslog-logging[Syslog logging configuration] reference.
 
 
 == Logging configurations examples
@@ -475,10 +538,10 @@ quarkus.console.color=false
 quarkus.log.category."io.quarkus".level=INFO
 ----
 
-NOTE: If you are adding these properties via command line make sure `"` is escaped.
-For example `-Dquarkus.log.category.\"io.quarkus\".level=DEBUG`.
+NOTE: If you add these properties in the command line, ensure `"` is escaped.
+For example, `-Dquarkus.log.category.\"io.quarkus\".level=DEBUG`.
 
-[#category-example]
+[[category-example]]
 .File TRACE logging configuration
 [source, properties]
 ----
@@ -493,7 +556,7 @@ quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
 quarkus.log.category."io.undertow.request.security".level=TRACE
 ----
 
-NOTE: As we don't change the root logger, console log will only contain `INFO` or higher order logs.
+NOTE: As we don't change the root logger, the console log will only contain `INFO` or higher level logs.
 
 [#category-named-handlers-example]
 .Named handlers attached to a category
@@ -523,6 +586,7 @@ quarkus.log.handler.file.CONSOLE_MIRROR.path=quarkus.log
 quarkus.log.handlers=CONSOLE_MIRROR
 ----
 
+
 == Centralized log management
 
 To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see the Quarkus xref:centralized-log-management.adoc[Centralized log management] guide.
@@ -530,7 +594,7 @@ To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see th
 == Configure logging for `@QuarkusTest`
 
 To configure logging for your `@QuarkusTest`, ensure that you configure the `maven-surefire-plugin` accordingly.
-Specifically, you need to set the appropriate `LogManager` by using the `java.util.logging.manager` system property.
+Specifically, set the appropriate `LogManager` by using the `java.util.logging.manager` system property.
 
 .Example Configuration
 [source, xml]
@@ -571,7 +635,7 @@ See also <<getting-started-testing.adoc#test-from-ide,Running `@QuarkusTest` fro
 Quarkus relies on the JBoss Logging library for all the logging requirements.
 
 Suppose you use libraries that depend on other logging libraries, such as Apache Commons Logging, Log4j, or SLF4J.
-In that case, you need to exclude them from the dependencies and use one of the JBoss Logging adapters.
+In that case, exclude them from the dependencies and use one of the JBoss Logging adapters.
 
 This is especially important when building native executables, as you could encounter issues similar to the following when compiling the native executable:
 

@@ -369,6 +369,9 @@ This `synchronized` block is the culprit.
 Replacing it with a lock is a good solution, but it won't be enough: `synchronized` blocks are also used in `executeWithFlags(int flag)`.
 A systematic review of the postgresql-jdbc driver is necessary to make sure that it is compliant with virtual threads.
 
+NOTE: Recent versions of the Postgresql driver and MariaDB driver remove the pinning.
+However, pinning may still happen because of the rest of the stack.
+
 === Reactive drivers at the rescue
 The vertx-sql-client is a reactive client, hence it is not supposed to block while waiting for the completion of a
 transaction with the database.
@@ -437,30 +440,6 @@ of thousands of threads.
 You can refer to link:https://mail.openjdk.org/pipermail/loom-dev/2022-July/004844.html[this mail] to get more information
 on how we envision our future with virtual threads.
 
-=== Our solution to the Netty problem
-In order to avoid this wasting of resource without modifying Netty upstream, we wrote an extension that modifies the
-bytecode of the class responsible for creating the thread locals at build time.
-Using this extension, performance of virtual threads in Quarkus for the Json Serialization test of the Techempower suite
-increased by nearly 80%, making it almost as good as reactive endpoints.
-
-To use it, it needs to be added as a dependency:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-netty-loom-adaptor</artifactId>
-</dependency>
-----
-
-Furthermore, some operations undertaken by this extension need special access, it is necessary to
-
-- compile the application with the flag `-Dnet.bytebuddy.experimental`
-- open the `java.base.lang` module at runtime with the flag `--add-opens java.base/java.lang=ALL-UNNAMED`
-
-This extension is only intended to improve performance, it is perfectly fine not to use it.
-
 === Concerning dev mode
 If you want to use quarkus with the dev mode, it won't be possible to manually specify the flags we mentioned along this guide.
 Instead, you want to specify them all in the configuration of the `quarkus-maven-plugin` as presented below.
@@ -481,11 +460,10 @@ Instead, you want to specify them all in the configuration of the `quarkus-maven
     </executions>
 
     <configuration>
-      <source>19</source>
-      <target>19</target>
+      <source>20</source>
+      <target>20</target>
       <compilerArgs>
         <arg>--enable-preview</arg>
-        <arg>-Dnet.bytebuddy.experimental</arg>
       </compilerArgs>
       <jvmArgs>--enable-preview --add-opens java.base/java.lang=ALL-UNNAMED</jvmArgs>
     </configuration>
@@ -502,11 +480,10 @@ The configuration of the quarkus-maven-plugin will be simpler:
 .pom.xml
 ----
     <configuration>
-      <source>19</source>
-      <target>19</target>
+      <source>20</source>
+      <target>20</target>
       <compilerArgs>
         <arg>--enable-preview</arg>
-        <arg>-Dnet.bytebuddy.experimental</arg>
       </compilerArgs>
       <jvmArgs>--enable-preview</jvmArgs>
     </configuration>

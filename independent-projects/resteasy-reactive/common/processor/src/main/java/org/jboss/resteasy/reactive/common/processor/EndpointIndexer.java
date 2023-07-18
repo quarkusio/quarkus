@@ -822,13 +822,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         Map.Entry<AnnotationTarget, AnnotationInstance> runOnVirtualThreadAnnotation = getInheritableAnnotation(info,
                 RUN_ON_VIRTUAL_THREAD);
 
-        //should the Transactional annotation override the annotation @RunOnVirtualThread ?
-        //here it does : it is impossible for a transaction to run on a virtual thread
-        Map.Entry<AnnotationTarget, AnnotationInstance> transactional = getInheritableAnnotation(info, TRANSACTIONAL); //we treat this the same as blocking, as JTA is blocking, but it is lower priority
-        if (transactional != null) {
-            return false;
-        }
-
         if (runOnVirtualThreadAnnotation != null) {
             if (!JDK_SUPPORTS_VIRTUAL_THREADS) {
                 throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
@@ -894,15 +887,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return false;
         }
         Map.Entry<AnnotationTarget, AnnotationInstance> transactional = getInheritableAnnotation(info, TRANSACTIONAL); //we treat this the same as blocking, as JTA is blocking, but it is lower priority
-        if (transactional != null) {
-            return true;
-        }
         if (defaultValue == BlockingDefault.BLOCKING) {
             return true;
         } else if (defaultValue == BlockingDefault.RUN_ON_VIRTUAL_THREAD) {
             return false;
         } else if (defaultValue == BlockingDefault.NON_BLOCKING) {
             return false;
+        } else if (transactional != null) {
+            return true;
         }
         return doesMethodHaveBlockingSignature(info);
     }

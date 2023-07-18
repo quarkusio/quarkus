@@ -21,7 +21,6 @@ import io.vertx.ext.web.RoutingContext;
 public class CORSFilter implements Handler<RoutingContext> {
 
     private static final Logger LOG = Logger.getLogger(CORSFilter.class);
-    private static final Pattern COMMA_SEPARATED_SPLIT_REGEX = Pattern.compile("\\s*,\\s*");
 
     // This is set in the recorder at runtime.
     // Must be static because the filter is created(deployed) at build time and runtime config is still not available

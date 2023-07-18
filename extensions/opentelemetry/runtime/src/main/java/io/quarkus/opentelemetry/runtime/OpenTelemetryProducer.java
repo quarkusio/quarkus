@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -18,6 +19,7 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
@@ -61,6 +63,14 @@ public class OpenTelemetryProducer {
 
     @Inject
     ApplicationConfig appConfig;
+
+    public void disposeOfOpenTelemetry(@Disposes OpenTelemetry openTelemetry) {
+        if (openTelemetry instanceof OpenTelemetrySdk) {
+            var openTelemetrySdk = ((OpenTelemetrySdk) openTelemetry);
+            openTelemetrySdk.getSdkTracerProvider().forceFlush();
+            openTelemetrySdk.getSdkTracerProvider().shutdown();
+        }
+    }
 
     @Produces
     @Singleton

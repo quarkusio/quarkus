@@ -13,7 +13,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
 
-class OtlpRecorderTest {
+class OtlpExporterProviderTest {
 
     @Test
     public void resolveEndpoint_legacyWins() {

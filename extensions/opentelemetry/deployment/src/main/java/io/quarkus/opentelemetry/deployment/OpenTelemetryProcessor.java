@@ -16,7 +16,6 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 
-import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
@@ -30,6 +29,7 @@ import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.OpenTelemetryInitBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -43,7 +43,6 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
@@ -56,7 +55,6 @@ import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
@@ -185,21 +183,23 @@ public class OpenTelemetryProcessor {
     @Produce(OpenTelemetryInitBuildItem.class)
     void createOpenTelemetry(
             OpenTelemetryRecorder recorder,
-            InstrumentationRecorder instrumentationRecorder,
             CoreVertxBuildItem vertx,
-            LaunchModeBuildItem launchMode,
-            ShutdownContextBuildItem shutdownContextBuildItem) {
+            LaunchModeBuildItem launchMode) {
 
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
             recorder.resetGlobalOpenTelemetryForDevMode();
         }
 
-        RuntimeValue<OpenTelemetry> openTelemetry = recorder.createOpenTelemetry(shutdownContextBuildItem);
-
         recorder.eagerlyCreateContextStorage();
         recorder.storeVertxOnContextStorage(vertx.getVertx());
+    }
 
-        instrumentationRecorder.setTracer(instrumentationRecorder.createTracers(openTelemetry));
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void setupVertx(InstrumentationRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem) {
+
+        recorder.setupVertxTracer(beanContainerBuildItem.getValue());
     }
 
     @BuildStep

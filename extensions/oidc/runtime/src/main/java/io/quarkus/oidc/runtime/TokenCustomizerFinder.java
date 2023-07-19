@@ -5,7 +5,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.Tenant;
+import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TokenCustomizer;
 
 public class TokenCustomizerFinder {
@@ -30,7 +30,7 @@ public class TokenCustomizerFinder {
                 }
             } else {
                 for (InstanceHandle<TokenCustomizer> tokenCustomizer : container.listAll(TokenCustomizer.class)) {
-                    Tenant tenantAnn = tokenCustomizer.get().getClass().getAnnotation(Tenant.class);
+                    TenantFeature tenantAnn = tokenCustomizer.get().getClass().getAnnotation(TenantFeature.class);
                     if (tenantAnn != null && oidcConfig.tenantId.get().equals(tenantAnn.value())) {
                         return tokenCustomizer.get();
                     }

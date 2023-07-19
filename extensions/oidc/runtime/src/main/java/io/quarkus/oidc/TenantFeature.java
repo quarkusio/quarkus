@@ -7,11 +7,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Qualifier which can be used to associate one or more OIDC features with a named tenant.
+ * Annotation which can be used to associate one or more OIDC features with a named tenant.
  */
 @Target({ TYPE })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Tenant {
+public @interface TenantFeature {
     /**
      * Identifies an OIDC tenant to which a given feature applies.
      */

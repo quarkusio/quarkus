@@ -35,7 +35,7 @@ public class DevServicesConfig {
      * string.
      * Set 'quarkus.keycloak.devservices.keycloak-x-image' to override this check.
      */
-    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:22.0.0")
+    @ConfigItem(defaultValue = "quay.io/keycloak/keycloak:22.0.1")
     public String imageName;
 
     /**

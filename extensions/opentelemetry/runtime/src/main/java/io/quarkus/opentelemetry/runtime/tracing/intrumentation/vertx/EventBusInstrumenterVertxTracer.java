@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
+import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.PUBLISH;
 import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.RECEIVE;
-import static io.opentelemetry.instrumentation.api.instrumenter.messaging.MessageOperation.SEND;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import io.opentelemetry.api.OpenTelemetry;
@@ -75,10 +75,10 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
     private static Instrumenter<Message, Message> getProducerInstrumenter(final OpenTelemetry openTelemetry) {
         InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(
                 openTelemetry,
-                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, SEND));
+                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, PUBLISH));
 
         return serverBuilder
-                .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, SEND))
+                .addAttributesExtractor(MessagingAttributesExtractor.create(EventBusAttributesGetter.INSTANCE, PUBLISH))
                 .buildProducerInstrumenter((message, key, value) -> {
                     if (message != null) {
                         message.headers().set(key, value);
@@ -92,11 +92,6 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
         @Override
         public String getSystem(final Message message) {
             return "vert.x";
-        }
-
-        @Override
-        public String getDestinationKind(final Message message) {
-            return message.isSend() ? "queue" : "topic";
         }
 
         @Override

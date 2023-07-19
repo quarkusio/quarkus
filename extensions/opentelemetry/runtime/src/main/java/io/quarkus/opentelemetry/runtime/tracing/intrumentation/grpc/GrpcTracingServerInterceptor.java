@@ -22,8 +22,8 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.net.InetSocketAddressNetServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcServerAttributesExtractor;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.quarkus.grpc.GlobalInterceptor;
@@ -51,7 +51,8 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
             final ServerCall<ReqT, RespT> call, final Metadata headers, final ServerCallHandler<ReqT, RespT> next) {
 
-        GrpcRequest grpcRequest = GrpcRequest.server(call.getMethodDescriptor(), headers, call.getAttributes());
+        GrpcRequest grpcRequest = GrpcRequest.server(call.getMethodDescriptor(), headers, call.getAttributes(),
+                call.getAuthority());
         Context parentContext = Context.current();
         boolean shouldStart = instrumenter.shouldStart(parentContext, grpcRequest);
         if (shouldStart) {
@@ -64,24 +65,24 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         return next.startCall(call, headers);
     }
 
-    private static class GrpcServerNetServerAttributesGetter extends InetSocketAddressNetServerAttributesGetter<GrpcRequest> {
+    private static class GrpcServerNetServerAttributesGetter implements NetServerAttributesGetter<GrpcRequest, Status> {
         @Override
         public String getTransport(final GrpcRequest grpcRequest) {
             return SemanticAttributes.NetTransportValues.IP_TCP;
         }
 
         @Override
-        public String getHostName(GrpcRequest grpcRequest) {
-            return null;
+        public String getServerAddress(GrpcRequest grpcRequest) {
+            return grpcRequest.getLogicalHost();
         }
 
         @Override
-        public Integer getHostPort(GrpcRequest grpcRequest) {
-            return null;
+        public Integer getServerPort(GrpcRequest grpcRequest) {
+            return grpcRequest.getLogicalPort();
         }
 
         @Override
-        protected InetSocketAddress getPeerSocketAddress(GrpcRequest grpcRequest) {
+        public InetSocketAddress getClientInetSocketAddress(GrpcRequest grpcRequest, Status status) {
             SocketAddress socketAddress = grpcRequest.getAttributes().get(Grpc.TRANSPORT_ATTR_REMOTE_ADDR);
             if (socketAddress instanceof InetSocketAddress) {
                 return (InetSocketAddress) socketAddress;
@@ -90,7 +91,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         }
 
         @Override
-        protected InetSocketAddress getHostSocketAddress(GrpcRequest grpcRequest) {
+        public InetSocketAddress getServerInetSocketAddress(GrpcRequest grpcRequest, Status status) {
             SocketAddress socketAddress = grpcRequest.getAttributes().get(Grpc.TRANSPORT_ATTR_LOCAL_ADDR);
             if (socketAddress instanceof InetSocketAddress) {
                 return (InetSocketAddress) socketAddress;

@@ -13,7 +13,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.events.GlobalEventEmitterProvider;
-import io.opentelemetry.api.logs.GlobalLoggerProvider;
 import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.quarkus.arc.SyntheticCreationalContext;
@@ -32,7 +31,6 @@ public class OpenTelemetryRecorder {
     /* STATIC INIT */
     public void resetGlobalOpenTelemetryForDevMode() {
         GlobalOpenTelemetry.resetForTest();
-        GlobalLoggerProvider.resetForTest();
         GlobalEventEmitterProvider.resetForTest();
     }
 
@@ -60,16 +58,16 @@ public class OpenTelemetryRecorder {
 
                 if (oTelRuntimeConfig.sdkDisabled()) {
                     return AutoConfiguredOpenTelemetrySdk.builder()
-                            .setResultAsGlobal(true)
-                            .registerShutdownHook(false)
+                            .setResultAsGlobal()
+                            .disableShutdownHook()
                             .addPropertiesSupplier(() -> oTelConfigs)
                             .build()
                             .getOpenTelemetrySdk();
                 }
 
                 var builder = AutoConfiguredOpenTelemetrySdk.builder()
-                        .setResultAsGlobal(true)
-                        .registerShutdownHook(false)
+                        .setResultAsGlobal()
+                        .disableShutdownHook()
                         .addPropertiesSupplier(() -> oTelConfigs)
                         .setServiceClassLoader(Thread.currentThread().getContextClassLoader());
                 for (var customizer : builderCustomizers) {

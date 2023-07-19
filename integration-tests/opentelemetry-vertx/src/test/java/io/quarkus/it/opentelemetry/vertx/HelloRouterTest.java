@@ -8,7 +8,6 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_RESPONSE_CONTENT_LENGTH;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_DESTINATION_KIND;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_DESTINATION_NAME;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_OPERATION;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.MESSAGING_SYSTEM;
@@ -135,14 +134,12 @@ class HelloRouterTest {
         Map<String, Object> producer = getSpanByKindAndParentId(spans, PRODUCER, server.get("spanId"));
         assertEquals(PRODUCER.toString(), producer.get("kind"));
         assertEquals("vert.x", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_SYSTEM.toString()));
-        assertEquals("topic", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
         assertEquals("bus", ((Map<?, ?>) producer.get("attributes")).get(MESSAGING_DESTINATION_NAME.toString()));
         assertEquals(producer.get("parentSpanId"), server.get("spanId"));
 
         Map<String, Object> consumer = getSpanByKindAndParentId(spans, CONSUMER, producer.get("spanId"));
         assertEquals(CONSUMER.toString(), consumer.get("kind"));
         assertEquals("vert.x", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_SYSTEM.toString()));
-        assertEquals("topic", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_DESTINATION_KIND.toString()));
         assertEquals("bus", ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_DESTINATION_NAME.toString()));
         assertEquals(MessageOperation.RECEIVE.toString().toLowerCase(Locale.ROOT),
                 ((Map<?, ?>) consumer.get("attributes")).get(MESSAGING_OPERATION.toString()));

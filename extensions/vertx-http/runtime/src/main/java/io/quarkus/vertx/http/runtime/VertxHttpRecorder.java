@@ -1173,22 +1173,23 @@ public class VertxHttpRecorder {
                         } else {
                             actualHttpPort = actualPort;
                         }
-                        if (remainingCount.decrementAndGet() == 0) {
-                            //make sure we only set the properties once
-                            if (actualPort != options.getPort()) {
-                                // Override quarkus.http(s)?.(test-)?port
-                                String schema;
-                                if (https) {
-                                    clearHttpsProperty = true;
-                                    schema = "https";
-                                } else {
-                                    clearHttpProperty = true;
-                                    actualHttpPort = actualPort;
-                                    schema = "http";
-                                }
-                                portSystemProperties = new PortSystemProperties();
-                                portSystemProperties.set(schema, actualPort, launchMode);
+                        if (actualPort != options.getPort()) {
+                            // Override quarkus.http(s)?.(test-)?port
+                            String schema;
+                            if (https) {
+                                clearHttpsProperty = true;
+                                schema = "https";
+                            } else {
+                                clearHttpProperty = true;
+                                actualHttpPort = actualPort;
+                                schema = "http";
                             }
+                            portSystemProperties = new PortSystemProperties();
+                            portSystemProperties.set(schema, actualPort, launchMode);
+                        }
+
+                        if (remainingCount.decrementAndGet() == 0) {
+                            //make sure we only complete once
                             startFuture.complete(null);
                         }
 

@@ -32,7 +32,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `validation-quickstart` {quickstarts-tree-url}/validation-quickstart[directory].
+The solution is located in the `validation-quickstart` link:{quickstarts-tree-url}/validation-quickstart[directory].
 
 == Creating the Maven project
 
@@ -247,7 +247,7 @@ Keep in mind that you usually don't want to expose to the public the internals o
 
 Now let's add the simple web page to interact with our `BookResource`.
 Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this {quickstarts-blob-url}/validation-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this link:{quickstarts-blob-url}/validation-quickstart/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 

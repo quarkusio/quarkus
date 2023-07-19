@@ -24,8 +24,8 @@ Quarkus docs use link:https://asciidoc.org/[AsciiDoc] markup.
 
 == Locate the source files for Quarkus docs
 
-- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
-- The Quarkus doc templates are located in the `src/main/asciidoc/_templates` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the link:{quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- The Quarkus doc templates are located in the `src/main/asciidoc/_templates` directory within the `docs` module of the link:{quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
 - Configuration documentation is generated from JavaDoc comments in Java source files.
 - Java, YAML, and other source files can also be xref:doc-reference.adoc#reference-source-code[referenced] by AsciiDoc files.
 - The link:https://quarkus.io/guides/[Quarkus documentation] menu page, also known as the doc index page, is sourced in the link:https://github.com/quarkusio/quarkusio.github.io[quarkusio.github.io] repository.

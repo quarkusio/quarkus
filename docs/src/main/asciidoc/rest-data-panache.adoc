@@ -87,7 +87,7 @@ implementation("io.quarkus:quarkus-resteasy-reactive-jackson")
 * Implement the Panache entities and/or repositories as explained in the xref:hibernate-orm-panache.adoc[Hibernate ORM with Panache] guide.
 * Define the interfaces for generation as explained in the <<hr-generating-resources>> section.
 
-To see the Hibernate ORM REST Data with Panache in action, you can check out the {quickstarts-tree-url}/hibernate-orm-rest-data-panache-quickstart[hibernate-orm-rest-data-panache-quickstart] quickstart.
+To see the Hibernate ORM REST Data with Panache in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-rest-data-panache-quickstart[hibernate-orm-rest-data-panache-quickstart] quickstart.
 
 [[hr-hibernate-reactive]]
 === Hibernate Reactive

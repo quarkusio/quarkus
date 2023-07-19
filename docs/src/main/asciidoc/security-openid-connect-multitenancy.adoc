@@ -44,7 +44,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-openid-connect-multi-tenancy-quickstart` {quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart[directory].
+The solution is located in the `security-openid-connect-multi-tenancy-quickstart` link:{quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -348,8 +348,8 @@ Log in as the `admin` user to access the Keycloak Administration Console. Userna
 
 Now, follow the steps below to import the realms for the two tenants:
 
-* Import the {quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart/config/default-tenant-realm.json[default-tenant-realm.json] to create the default realm
-* Import the {quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart/config/tenant-a-realm.json[tenant-a-realm.json] to create the realm for the tenant `tenant-a`.
+* Import the link:{quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart/config/default-tenant-realm.json[default-tenant-realm.json] to create the default realm
+* Import the link:{quickstarts-tree-url}/security-openid-connect-multi-tenancy-quickstart/config/tenant-a-realm.json[tenant-a-realm.json] to create the realm for the tenant `tenant-a`.
 
 For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 

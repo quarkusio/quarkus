@@ -103,7 +103,7 @@ Your titles and headings must also follow the specific guidance for the Quarkus 
 
 === Source locations
 
-- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the {quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
+- AsciiDoc files are in the `src/main/asciidoc` directory within the `docs` module of the link:{quarkus-base-url}/tree/main/docs[Quarkus GitHub repository].
 - Configuration documentation is generated from JavaDoc comments in Java source files.
 - Java, YAML, and other source files can also be referenced by AsciiDoc files.
 

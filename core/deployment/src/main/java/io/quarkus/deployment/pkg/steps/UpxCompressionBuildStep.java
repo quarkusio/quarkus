@@ -104,8 +104,7 @@ public class UpxCompressionBuildStep {
         List<String> extraArgs = nativeConfig.compression().additionalArgs().orElse(Collections.emptyList());
 
         List<String> commandLine = new ArrayList<>();
-        ContainerRuntimeUtil.ContainerRuntime containerRuntime = nativeConfig.containerRuntime()
-                .orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
+        ContainerRuntimeUtil.ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         commandLine.add(containerRuntime.getExecutableName());
 
         commandLine.add("run");

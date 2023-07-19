@@ -93,22 +93,22 @@
                 <artifactId>gradle-enterprise-maven-extension</artifactId>
                 <configuration>
                     <gradleEnterprise>
-                    <plugins>
-                        <plugin>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <inputs>
-                            <fileSets>
-                            <fileSet>
-                                <name>specs</name>
-                                <paths>
-                                <path>${project.basedir}/disable-unbind-executions</path>
-                                </paths>
-                                <normalization>RELATIVE_PATH</normalization>
-                            </fileSet>
-                            </fileSets>
-                        </inputs>
-                        </plugin>
-                    </plugins>
+                        <plugins>
+                            <plugin>
+                                <artifactId>maven-compiler-plugin</artifactId>
+                                <inputs>
+                                    <fileSets combine.children="append">
+                                        <fileSet>
+                                            <name>specs</name>
+                                            <paths>
+                                                <path>${project.basedir}/disable-unbind-executions</path>
+                                            </paths>
+                                            <normalization>RELATIVE_PATH</normalization>
+                                        </fileSet>
+                                    </fileSets>
+                                </inputs>
+                            </plugin>
+                        </plugins>
                     </gradleEnterprise>
                 </configuration>
                 </plugin>

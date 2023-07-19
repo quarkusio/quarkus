@@ -68,6 +68,11 @@ public class QuarkusEntryPoint {
 
     private static void doReaugment(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
+        if (!Files.exists(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT))) {
+            System.out.println("[ERROR] Re-augmentation was requested, " +
+                    "but the application wasn't built with 'quarkus.package.type=mutable-jar'");
+            return;
+        }
         try (ObjectInputStream in = new ObjectInputStream(
                 Files.newInputStream(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT)))) {
             List<String> paths = (List<String>) in.readObject();

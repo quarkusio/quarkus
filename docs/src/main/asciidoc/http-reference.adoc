@@ -363,7 +363,7 @@ Here's what a full CORS filter configuration could look like, including a regula
 [source, properties]
 ----
 quarkus.http.cors=true
-quarkus.http.cors.origins=http://foo.com,http://www.bar.io,/https://([a-z0-9\\-_]+)\\.app\\.mydomain\\.com/
+quarkus.http.cors.origins=http://foo.com,http://www.bar.io,/https://([a-z0-9\\-_]+)\\\\.app\\\\.mydomain\\\\.com/
 quarkus.http.cors.methods=GET,PUT,POST
 quarkus.http.cors.headers=X-Custom
 quarkus.http.cors.exposed-headers=Content-Disposition
@@ -371,7 +371,12 @@ quarkus.http.cors.access-control-max-age=24H
 quarkus.http.cors.access-control-allow-credentials=true
 ----
 
-`/https://([a-z0-9\\-_]+)\\.app\\.mydomain\\.com/` is treated as a regular expression because it is surrounded by forward slash characters.
+`/https://([a-z0-9\\-_]+)\\\\.app\\\\.mydomain\\\\.com/` is treated as a regular expression because it is surrounded by forward slash characters.
+
+[NOTE]
+====
+If you use regular expressions in an `application.properties` file, make sure 4 backward slashes are used to represent `.` and other regular expression metadata characters as normal characters, for example, `\\\\.` represents a `.` character while `\\.` represents a metadata character allowing for any character.
+====
 
 === Support all origins in devmode
 

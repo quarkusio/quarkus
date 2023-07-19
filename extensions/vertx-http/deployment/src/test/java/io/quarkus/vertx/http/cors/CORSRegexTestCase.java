@@ -26,8 +26,26 @@ public class CORSRegexTestCase {
     }
 
     @Test
+    public void corsRegexValidOrigin2Test() {
+        given().header("Origin", "https://abc-123.app.mydomain.com")
+                .when()
+                .get("/test").then()
+                .statusCode(200)
+                .header("Access-Control-Allow-Origin", "https://abc-123.app.mydomain.com");
+    }
+
+    @Test
     public void corsRegexInvalidOriginTest() {
         given().header("Origin", "https://asdfdomain.com")
+                .when()
+                .get("/test").then()
+                .statusCode(403)
+                .header("Access-Control-Allow-Origin", nullValue());
+    }
+
+    @Test
+    public void corsRegexInvalidOrigin2Test() {
+        given().header("Origin", "https://abc-123app.mydomain.com")
                 .when()
                 .get("/test").then()
                 .statusCode(403)

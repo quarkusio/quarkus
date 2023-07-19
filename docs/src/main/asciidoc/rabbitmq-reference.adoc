@@ -335,6 +335,12 @@ The first one provides more fine-grained tuning such as the worker pool to use a
 The second one, used also with other reactive features of Quarkus, uses the default worker pool and preserves the order.
 ====
 
+[TIP]
+.@RunOnVirtualThread
+====
+For running the blocking processing on Java _virtual threads_, see the xref:messaging-virtual-threads.adoc[Quarkus Virtual Thread support with Reactive Messaging documentation].
+====
+
 == Customizing the underlying RabbitMQ client
 
 The connector uses the Vert.x RabbitMQ client underneath.

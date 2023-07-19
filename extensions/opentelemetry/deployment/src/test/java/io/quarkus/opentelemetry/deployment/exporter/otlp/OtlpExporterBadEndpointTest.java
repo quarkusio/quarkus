@@ -16,7 +16,7 @@ public class OtlpExporterBadEndpointTest {
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.exporter", "cdi")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.endpoint", "httz://nada:zero")
-            .setExpectedException(IllegalStateException.class);
+            .setExpectedException(IllegalArgumentException.class);
 
     @Inject
     OpenTelemetry openTelemetry;

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -18,6 +19,7 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
@@ -28,6 +30,7 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.RemoveableLateBoundBatchSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
@@ -61,6 +64,14 @@ public class OpenTelemetryProducer {
 
     @Inject
     ApplicationConfig appConfig;
+
+    public void disposeOfOpenTelemetry(@Disposes OpenTelemetry openTelemetry) {
+        if (openTelemetry instanceof OpenTelemetrySdk) {
+            var openTelemetrySdk = ((OpenTelemetrySdk) openTelemetry);
+            openTelemetrySdk.getSdkTracerProvider().forceFlush();
+            openTelemetrySdk.getSdkTracerProvider().shutdown();
+        }
+    }
 
     @Produces
     @Singleton
@@ -144,7 +155,8 @@ public class OpenTelemetryProducer {
                                     ConfigProperties configProperties) {
                                 if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                                     idGenerator.stream().findFirst().ifPresent(builder::setIdGenerator); // from cdi
-                                    spanProcessors.stream().forEach(builder::addSpanProcessor);
+                                    spanProcessors.stream().filter(sp -> !(sp instanceof RemoveableLateBoundBatchSpanProcessor))
+                                            .forEach(builder::addSpanProcessor);
                                 }
                                 return builder;
                             }

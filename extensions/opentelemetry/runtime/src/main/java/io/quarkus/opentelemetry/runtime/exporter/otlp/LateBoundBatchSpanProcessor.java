@@ -14,19 +14,13 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
  * is started, enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
  * during static initialization and set a {@link BatchSpanProcessor} delegate during runtime initialization.
  */
-@Deprecated
 public class LateBoundBatchSpanProcessor implements SpanProcessor {
     private static final Logger log = Logger.getLogger(LateBoundBatchSpanProcessor.class);
 
     private boolean warningLogged = false;
     private BatchSpanProcessor delegate;
 
-    /**
-     * Set the actual {@link BatchSpanProcessor} to use as the delegate.
-     *
-     * @param delegate Properly constructed {@link BatchSpanProcessor} for processing spans.
-     */
-    public void setBatchSpanProcessorDelegate(BatchSpanProcessor delegate) {
+    public LateBoundBatchSpanProcessor(BatchSpanProcessor delegate) {
         this.delegate = delegate;
     }
 

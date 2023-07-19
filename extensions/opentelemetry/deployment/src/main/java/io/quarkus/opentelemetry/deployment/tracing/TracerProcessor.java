@@ -143,42 +143,14 @@ public class TracerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    TracerIdGeneratorBuildItem createIdGenerator(TracerRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        return new TracerIdGeneratorBuildItem(recorder.createIdGenerator());
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    TracerResourceBuildItem createResource(TracerRecorder recorder,
-            ApplicationInfoBuildItem appInfo,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        String serviceName = appInfo.getName();
-        String serviceVersion = appInfo.getVersion();
-        return new TracerResourceBuildItem(recorder.createResource(Version.getVersion(), serviceName, serviceVersion));
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    TracerSpanExportersBuildItem createSpanExporters(TracerRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        return new TracerSpanExportersBuildItem(recorder.createSpanExporter());
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    TracerSpanProcessorsBuildItem createSpanProcessors(TracerRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem) {
-        return new TracerSpanProcessorsBuildItem(recorder.createSpanProcessors());
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void setupTracer(
+    void staticInitSetup(
             TracerRecorder recorder,
+            ApplicationInfoBuildItem appInfo,
+            BeanContainerBuildItem beanContainerBuildItem,
             DropNonApplicationUrisBuildItem dropNonApplicationUris,
             DropStaticResourcesBuildItem dropStaticResources) {
-
+        recorder.setAttributes(beanContainerBuildItem.getValue(), Version.getVersion(),
+                appInfo.getName(), appInfo.getVersion());
         recorder.setupSampler(
                 dropNonApplicationUris.getDropNames(),
                 dropStaticResources.getDropNames());

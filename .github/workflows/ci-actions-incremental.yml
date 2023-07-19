@@ -591,6 +591,8 @@ jobs:
         run: |
           git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
           git checkout 3.2
+          export VERSION=3.2.999-SNAPSHOT;
+          sed -r -i "s@<quarkus.platform.version>[^<]+</quarkus.platform.version>@<quarkus.platform.version>${VERSION}</quarkus.platform.version>@" */pom.xml */*/pom.xml
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3

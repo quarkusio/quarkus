@@ -1,5 +1,6 @@
 package io.quarkus.cli;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -48,6 +49,8 @@ public class CliProjectMavenTest {
 
         Assertions.assertTrue(project.resolve("mvnw").toFile().exists(),
                 "Wrapper should exist by default");
+        Assertions.assertTrue(Files.exists(project.resolve("src/main/docker")),
+                "Docker folder should exist by default");
         String pomContent = validateBasicIdentifiers(CreateProjectHelper.DEFAULT_GROUP_ID,
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
@@ -68,6 +71,17 @@ public class CliProjectMavenTest {
         result = CliDriver.execute(workspaceRoot, "create", "app", "-e", "-B", "--verbose");
         Assertions.assertTrue(result.stdout.contains("quarkus create app --help"),
                 "Response should reference --help:\n" + result);
+    }
+
+    @Test
+    public void testCreateAppWithoutDockerfiles() throws Exception {
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--no-dockerfiles", "-e", "-B",
+                "--verbose");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
+        Assertions.assertTrue(result.stdout.contains("SUCCESS"),
+                "Expected confirmation that the project has been created." + result);
+        Assertions.assertFalse(Files.exists(project.resolve("src/main/docker")),
+                "Docker folder should not exist");
     }
 
     @Test

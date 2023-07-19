@@ -51,7 +51,7 @@ public class CliProjectJBangTest {
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
 
-        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
 
         String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertTrue(source.contains("quarkus-resteasy"),
@@ -87,7 +87,7 @@ public class CliProjectJBangTest {
                 "Wrapper should exist by default");
 
         validateBasicIdentifiers(project, "silly", "my-project", "0.1.0");
-        Path javaMain = valdiateJBangSourcePackage(project, "");
+        Path javaMain = validateJBangSourcePackage(project, "");
 
         String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertTrue(source.contains("quarkus-reactive-routes"),
@@ -112,7 +112,7 @@ public class CliProjectJBangTest {
                 CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
 
-        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
 
         String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertFalse(source.contains("quarkus-resteasy"),
@@ -176,7 +176,7 @@ public class CliProjectJBangTest {
         // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
 
         String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertTrue(source.contains("//JAVA 11"),
@@ -192,7 +192,7 @@ public class CliProjectJBangTest {
         // We don't need to retest this, just need to make sure all the arguments were passed through
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
-        Path javaMain = valdiateJBangSourcePackage(project, ""); // no package name
+        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
         String source = CliDriver.readFileAsString(javaMain);
         Assertions.assertTrue(source.contains("//JAVA 17"),
                 "Generated source should contain //JAVA 17. Found:\n" + source);
@@ -206,7 +206,7 @@ public class CliProjectJBangTest {
         // Should the version be stored in metadata anywhere? Is that useful for script management?
     }
 
-    Path valdiateJBangSourcePackage(Path project, String name) {
+    Path validateJBangSourcePackage(Path project, String name) {
         Path packagePath = project.resolve("src/" + name);
         Assertions.assertTrue(packagePath.toFile().exists(),
                 "Package directory should exist: " + packagePath.toAbsolutePath().toString());

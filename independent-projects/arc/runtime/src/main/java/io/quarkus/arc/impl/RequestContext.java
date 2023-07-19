@@ -122,17 +122,20 @@ class RequestContext implements ManagedContext {
     }
 
     @Override
-    public void activate(ContextState initialState) {
+    public ContextState activate(ContextState initialState) {
         if (LOG.isTraceEnabled()) {
             traceActivate(initialState);
         }
         if (initialState == null) {
-            currentContext.set(new RequestContextState(new ConcurrentHashMap<>()));
+            RequestContextState state = new RequestContextState(new ConcurrentHashMap<>());
+            currentContext.set(state);
             // Fire an event with qualifier @Initialized(RequestScoped.class) if there are any observers for it
             fireIfNotEmpty(initializedNotifier);
+            return state;
         } else {
             if (initialState instanceof RequestContextState) {
                 currentContext.set((RequestContextState) initialState);
+                return initialState;
             } else {
                 throw new IllegalArgumentException("Invalid initial state: " + initialState.getClass().getName());
             }

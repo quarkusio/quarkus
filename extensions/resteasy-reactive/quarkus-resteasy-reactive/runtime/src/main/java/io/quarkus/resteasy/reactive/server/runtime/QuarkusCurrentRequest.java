@@ -25,14 +25,12 @@ public class QuarkusCurrentRequest implements CurrentRequest {
     public void set(ResteasyReactiveRequestContext set) {
         if (set == null) {
             try {
-                currentVertxRequest.setOtherHttpContextObject(null);
-                currentVertxRequest.setCurrent(null);
+                currentVertxRequest.setCurrent(null, null);
             } catch (ContextNotActiveException ignored) {
                 // ignored because for HTTP pipelining it can already be closed
             }
         } else {
-            currentVertxRequest.setOtherHttpContextObject(set);
-            currentVertxRequest.setCurrent(set.unwrap(RoutingContext.class));
+            currentVertxRequest.setCurrent(set.unwrap(RoutingContext.class), set);
         }
     }
 }

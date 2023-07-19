@@ -10,19 +10,23 @@ public interface ManagedContext extends InjectableContext {
 
     /**
      * Activate the context with no initial state.
+     *
+     * @return the context state
      */
-    default void activate() {
-        activate(null);
+    default ContextState activate() {
+        return activate(null);
     }
 
     /**
      * Activate the context.
+     * <p>
      * If invoked with {@code null} parameter, a fresh {@link io.quarkus.arc.InjectableContext.ContextState} is
      * automatically created.
      *
      * @param initialState The initial state, may be {@code null}
+     * @return the context state
      */
-    void activate(ContextState initialState);
+    ContextState activate(ContextState initialState);
 
     /**
      * Deactivate the context - do not destoy existing contextual instances.

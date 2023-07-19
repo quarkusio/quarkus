@@ -283,7 +283,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     @Override
     public Uni<Void> invalidateIf(Predicate<Object> predicate) {
         return redis.send(Request.cmd(Command.KEYS).arg(getKeyPattern()))
-                .map(response -> marshaller.decodeAsList(response, String.class))
+                .<List<String>> map(response -> marshaller.decodeAsList(response, String.class))
                 .chain(new Function<List<String>, Uni<?>>() {
                     @Override
                     public Uni<?> apply(List<String> listOfKeys) {

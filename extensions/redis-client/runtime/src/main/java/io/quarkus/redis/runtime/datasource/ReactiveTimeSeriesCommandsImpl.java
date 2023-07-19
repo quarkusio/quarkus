@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,9 +32,9 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
         implements ReactiveTimeSeriesCommands<K>, ReactiveRedisCommands {
 
     private final ReactiveRedisDataSource reactive;
-    protected final Class<K> keyType;
+    protected final Type keyType;
 
-    public ReactiveTimeSeriesCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveTimeSeriesCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.keyType = k;
         this.reactive = redis;

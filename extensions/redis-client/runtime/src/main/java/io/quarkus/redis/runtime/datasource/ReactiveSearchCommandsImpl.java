@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,9 +31,9 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
         implements ReactiveSearchCommands<K>, ReactiveRedisCommands {
 
     private final ReactiveRedisDataSource reactive;
-    protected final Class<K> keyType;
+    protected final Type keyType;
 
-    public ReactiveSearchCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k) {
+    public ReactiveSearchCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k) {
         super(redis, k);
         this.reactive = redis;
         this.keyType = k;

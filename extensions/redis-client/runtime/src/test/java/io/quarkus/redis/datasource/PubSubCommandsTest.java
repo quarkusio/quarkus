@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -15,6 +16,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
@@ -491,6 +494,28 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         subscriber.unsubscribe();
 
         awaitNoMoreActiveChannels();
+    }
+
+    @Test
+    void testPubSubWithTypeReference() {
+        var pubsub = ds.pubsub(new TypeReference<Map<String, Person>>() {
+            // Empty on purpose
+        });
+        List<Person> people = new CopyOnWriteArrayList<>();
+        PubSubCommands.RedisSubscriber subscriber = pubsub.subscribe(channel, map -> people.addAll(map.values()));
+
+        pubsub.publish(channel, Map.of("luke", new Person("luke", "skywalker")));
+
+        Awaitility.await().until(() -> people.size() == 1);
+
+        pubsub.publish(channel, Map.of("leia", new Person("leia", "skywalker")));
+
+        Awaitility.await().until(() -> people.size() == 2);
+
+        subscriber.unsubscribe();
+
+        awaitNoMoreActiveChannels();
+
     }
 
 }

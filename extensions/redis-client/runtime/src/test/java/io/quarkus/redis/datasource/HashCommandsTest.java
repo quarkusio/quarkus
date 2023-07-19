@@ -17,6 +17,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.datasource.hash.HashScanCursor;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
@@ -51,6 +53,34 @@ public class HashCommandsTest extends DatasourceTestBase {
 
         assertThat(hash.hdel("my-hash", "field1")).isEqualTo(1);
         person = hash.hget("my-hash", "field1");
+        assertThat(person).isNull();
+    }
+
+    @Test
+    void HSetWithTypeReference() {
+        var h = ds.hash(new TypeReference<List<Person>>() {
+            // Empty on purpose.
+        });
+        h.hset("my-hash", "l1", List.of(Person.person1, Person.person2));
+        List<Person> person = h.hget("my-hash", "l1");
+        assertThat(person).containsExactly(Person.person1, Person.person2);
+
+        assertThat(h.hdel("my-hash", "l1")).isEqualTo(1);
+        person = h.hget("my-hash", "l1");
+        assertThat(person).isNull();
+    }
+
+    @Test
+    void HSetWithTypeReferenceUsingMaps() {
+        var h = ds.hash(new TypeReference<Map<String, Person>>() {
+            // Empty on purpose.
+        });
+        h.hset("my-hash", "l1", Map.of("a", Person.person1, "b", Person.person2));
+        Map<String, Person> person = h.hget("my-hash", "l1");
+        assertThat(person).containsOnly(entry("a", Person.person1), entry("b", Person.person2));
+
+        assertThat(h.hdel("my-hash", "l1")).isEqualTo(1);
+        person = h.hget("my-hash", "l1");
         assertThat(person).isNull();
     }
 

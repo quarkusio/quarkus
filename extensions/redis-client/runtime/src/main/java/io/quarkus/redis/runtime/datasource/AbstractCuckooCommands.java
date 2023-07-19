@@ -3,6 +3,8 @@ package io.quarkus.redis.runtime.datasource;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
+
 import io.quarkus.redis.datasource.cuckoo.CfInsertArgs;
 import io.quarkus.redis.datasource.cuckoo.CfReserveArgs;
 import io.smallrye.mutiny.Uni;
@@ -11,7 +13,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
 
-    AbstractCuckooCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractCuckooCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
     }
 

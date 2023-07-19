@@ -5,6 +5,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.isNotEmpty;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.positive;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import io.smallrye.mutiny.Uni;
@@ -13,7 +14,7 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class AbstractTopKCommands<K, V> extends AbstractRedisCommands {
 
-    AbstractTopKCommands(RedisCommandExecutor redis, Class<K> k, Class<V> v) {
+    AbstractTopKCommands(RedisCommandExecutor redis, Type k, Type v) {
         super(redis, new Marshaller(k, v));
     }
 

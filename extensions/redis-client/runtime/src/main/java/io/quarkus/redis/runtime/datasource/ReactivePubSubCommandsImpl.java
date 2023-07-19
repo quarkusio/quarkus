@@ -4,6 +4,7 @@ import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,11 +31,11 @@ import io.vertx.mutiny.redis.client.Response;
 
 public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands implements ReactivePubSubCommands<V> {
 
-    private final Class<V> classOfMessage;
+    private final Type classOfMessage;
     private final Redis client;
     private final ReactiveRedisDataSourceImpl datasource;
 
-    public ReactivePubSubCommandsImpl(ReactiveRedisDataSourceImpl ds, Class<V> classOfMessage) {
+    public ReactivePubSubCommandsImpl(ReactiveRedisDataSourceImpl ds, Type classOfMessage) {
         super(ds, new Marshaller(classOfMessage));
         this.client = ds.redis;
         this.datasource = ds;

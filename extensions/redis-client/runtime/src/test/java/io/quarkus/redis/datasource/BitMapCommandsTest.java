@@ -16,6 +16,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.bitmap.BitFieldArgs;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
@@ -207,5 +209,21 @@ public class BitMapCommandsTest extends DatasourceTestBase {
     void setbit() {
         assertThat(bitmap.setbit(key, 0, 1)).isEqualTo(0);
         assertThat(bitmap.setbit(key, 0, 0)).isEqualTo(1);
+    }
+
+    @Test
+    void bitcountWithTypeReference() {
+        var bitmap = ds.bitmap(new TypeReference<List<String>>() {
+            // Empty on purpose
+        });
+        List<String> key = List.of("a", "b", "c");
+        assertThat(bitmap.bitcount(key)).isEqualTo(0);
+
+        bitmap.setbit(key, 0L, 1);
+        bitmap.setbit(key, 1L, 1);
+        bitmap.setbit(key, 2L, 1);
+
+        assertThat(bitmap.bitcount(key)).isEqualTo(3);
+        assertThat(bitmap.bitcount(key, 3, -1)).isEqualTo(0);
     }
 }

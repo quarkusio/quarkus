@@ -1,5 +1,6 @@
 package io.quarkus.redis.runtime.datasource;
 
+import java.lang.reflect.Type;
 import java.util.Map;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
@@ -15,7 +16,7 @@ public class ReactiveStringCommandsImpl<K, V> extends AbstractStringCommands<K, 
 
     private final ReactiveRedisDataSource reactive;
 
-    public ReactiveStringCommandsImpl(ReactiveRedisDataSourceImpl redis, Class<K> k, Class<V> v) {
+    public ReactiveStringCommandsImpl(ReactiveRedisDataSourceImpl redis, Type k, Type v) {
         super(redis, k, v);
         this.reactive = redis;
     }

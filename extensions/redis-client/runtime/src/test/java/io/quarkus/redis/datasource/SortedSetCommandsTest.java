@@ -16,6 +16,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.quarkus.redis.datasource.list.KeyValue;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.sortedset.Range;
@@ -989,5 +991,19 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         ListCommands<String, String> listCommands = ds.list(String.class, String.class);
         assertThat(listCommands.lrange("dest1", 0, -1)).containsExactly("a", "b", "e", "f");
         assertThat(listCommands.lpop("dest2", 100)).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
+    }
+
+    @Test
+    void zaddWithTypeReference() {
+        var set = ds.sortedSet(new TypeReference<List<Place>>() {
+            // Empty on purpose
+        });
+        assertThat(set.zadd(key, 1.0, List.of(Place.crussol, Place.suze))).isTrue();
+        assertThat(set.zadd(key, 1.0, List.of(Place.crussol, Place.suze))).isFalse();
+
+        assertThat(set.zrange(key, 0, -1)).isEqualTo(List.of(List.of(Place.crussol, Place.suze)));
+        assertThat(set.zadd(key, new ScoredValue<>(List.of(Place.grignan), 2.0), new ScoredValue<>(List.of(Place.suze), 3.0)))
+                .isEqualTo(2);
+        assertThat(set.zrange(key, 0, -1)).hasSize(3);
     }
 }

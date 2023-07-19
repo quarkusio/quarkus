@@ -133,8 +133,9 @@ public class NativeTestExtension extends AbstractQuarkusTestWithContextExtension
             hasPerTestResources = testResourceManager.hasPerTestResources();
 
             Map<String, String> additionalProperties = new HashMap<>(testProfileAndProperties.properties);
-            Map<String, String> resourceManagerProps = new HashMap<>(testResourceManager.start());
-            resourceManagerProps.putAll(devServicesProps);
+            Map<String, String> resourceManagerProps = new HashMap<>(devServicesProps);
+            // Allow override of dev services props by integration test extensions
+            resourceManagerProps.putAll(testResourceManager.start());
             Map<String, String> old = new HashMap<>();
             //we also make the dev services config accessible from the test itself
             for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {

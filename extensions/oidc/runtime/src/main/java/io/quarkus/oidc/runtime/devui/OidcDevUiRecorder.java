@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime.devui;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -11,7 +12,7 @@ public class OidcDevUiRecorder {
     public Supplier<OidcDevUiRpcSvcPropertiesBean> prepareRpcServiceProperties(String authorizationUrl, String tokenUrl,
             String logoutUrl, Duration webClientTimeout, Map<String, Map<String, String>> grantOptions,
             Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType, String oidcGrantType,
-            boolean introspectionIsAvailable, String keycloakAdminUrl, Object keycloakRealms, boolean swaggerIsAvailable,
+            boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms, boolean swaggerIsAvailable,
             boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload) {
         return new Supplier<OidcDevUiRpcSvcPropertiesBean>() {
             @Override

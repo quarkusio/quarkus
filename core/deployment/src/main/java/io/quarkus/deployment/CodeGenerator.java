@@ -39,9 +39,18 @@ public class CodeGenerator {
 
     private static final Logger log = Logger.getLogger(CodeGenerator.class);
 
-    private static final List<String> CONFIG_SOURCE_FACTORY_INTERFACES = List.of(
-            "META-INF/services/io.smallrye.config.ConfigSourceFactory",
-            "META-INF/services/org.eclipse.microprofile.config.spi.ConfigSourceProvider");
+    private static final String META_INF_SERVICES = "META-INF/services/";
+
+    private static final List<String> CONFIG_SERVICES = List.of(
+            "org.eclipse.microprofile.config.spi.Converter",
+            "org.eclipse.microprofile.config.spi.ConfigSource",
+            "org.eclipse.microprofile.config.spi.ConfigSourceProvider",
+            "io.smallrye.config.ConfigSourceInterceptor",
+            "io.smallrye.config.ConfigSourceInterceptorFactory",
+            "io.smallrye.config.ConfigSourceFactory",
+            "io.smallrye.config.SecretKeysHandler",
+            "io.smallrye.config.SecretKeysHandlerFactory",
+            "io.smallrye.config.ConfigValidator");
 
     // used by Gradle and Maven
     public static void initAndRun(QuarkusClassLoader classLoader,
@@ -178,18 +187,18 @@ public class CodeGenerator {
 
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
-        // Config instance that is returned by this method should be as close to the one built in the ExtensionLoader as possible
-        final Map<String, List<String>> appModuleConfigFactories = getConfigSourceFactoryImpl(appModel.getAppArtifact());
-        if (!appModuleConfigFactories.isEmpty()) {
-            final Map<String, List<String>> allConfigFactories = new HashMap<>(appModuleConfigFactories.size());
-            final Map<String, byte[]> allowedConfigFactories = new HashMap<>(appModuleConfigFactories.size());
-            final Map<String, byte[]> bannedConfigFactories = new HashMap<>(appModuleConfigFactories.size());
-            for (Map.Entry<String, List<String>> appModuleFactories : appModuleConfigFactories.entrySet()) {
-                final String factoryImpl = appModuleFactories.getKey();
+        final Map<String, List<String>> unavailableConfigServices = getUnavailableConfigServices(appModel.getAppArtifact(),
+                deploymentClassLoader);
+        if (!unavailableConfigServices.isEmpty()) {
+            final Map<String, List<String>> allConfigServices = new HashMap<>(unavailableConfigServices.size());
+            final Map<String, byte[]> allowedConfigServices = new HashMap<>(unavailableConfigServices.size());
+            final Map<String, byte[]> bannedConfigServices = new HashMap<>(unavailableConfigServices.size());
+            for (Map.Entry<String, List<String>> appModuleServices : unavailableConfigServices.entrySet()) {
+                final String service = appModuleServices.getKey();
                 try {
-                    ClassPathUtils.consumeAsPaths(deploymentClassLoader, factoryImpl, p -> {
+                    ClassPathUtils.consumeAsPaths(deploymentClassLoader, service, p -> {
                         try {
-                            allConfigFactories.computeIfAbsent(factoryImpl, k -> new ArrayList<>())
+                            allConfigServices.computeIfAbsent(service, k -> new ArrayList<>())
                                     .addAll(Files.readAllLines(p));
                         } catch (IOException e) {
                             throw new UncheckedIOException("Failed to read " + p, e);
@@ -198,25 +207,25 @@ public class CodeGenerator {
                 } catch (IOException e) {
                     throw new CodeGenException("Failed to read resources from classpath", e);
                 }
-                final List<String> allFactories = allConfigFactories.getOrDefault(factoryImpl, List.of());
-                allFactories.removeAll(appModuleFactories.getValue());
-                if (allFactories.isEmpty()) {
-                    bannedConfigFactories.put(factoryImpl, new byte[0]);
+                final List<String> allServices = allConfigServices.getOrDefault(service, List.of());
+                allServices.removeAll(appModuleServices.getValue());
+                if (allServices.isEmpty()) {
+                    bannedConfigServices.put(service, new byte[0]);
                 } else {
                     final StringJoiner joiner = new StringJoiner(System.lineSeparator());
-                    allFactories.forEach(joiner::add);
-                    allowedConfigFactories.put(factoryImpl, joiner.toString().getBytes());
+                    allServices.forEach(joiner::add);
+                    allowedConfigServices.put(service, joiner.toString().getBytes());
                 }
             }
 
-            // we don't want to load config source factories/providers from the current module because they haven't been compiled yet
+            // we don't want to load config services from the current module because they haven't been compiled yet
             final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
                     deploymentClassLoader, false);
-            if (!allowedConfigFactories.isEmpty()) {
-                configClBuilder.addElement(new MemoryClassPathElement(allowedConfigFactories, true));
+            if (!allowedConfigServices.isEmpty()) {
+                configClBuilder.addElement(new MemoryClassPathElement(allowedConfigServices, true));
             }
-            if (!bannedConfigFactories.isEmpty()) {
-                configClBuilder.addBannedElement(new MemoryClassPathElement(bannedConfigFactories, true));
+            if (!bannedConfigServices.isEmpty()) {
+                configClBuilder.addBannedElement(new MemoryClassPathElement(bannedConfigServices, true));
             }
             deploymentClassLoader = configClBuilder.build();
         }
@@ -226,31 +235,51 @@ public class CodeGenerator {
         } catch (Exception e) {
             throw new CodeGenException("Failed to initialize application configuration", e);
         } finally {
-            if (!appModuleConfigFactories.isEmpty()) {
+            if (!unavailableConfigServices.isEmpty()) {
                 deploymentClassLoader.close();
             }
         }
     }
 
-    private static Map<String, List<String>> getConfigSourceFactoryImpl(ResolvedDependency dep) throws CodeGenException {
-        final Map<String, List<String>> configFactoryImpl = new HashMap<>(CONFIG_SOURCE_FACTORY_INTERFACES.size());
+    private static Map<String, List<String>> getUnavailableConfigServices(ResolvedDependency dep, ClassLoader classLoader)
+            throws CodeGenException {
         try (OpenPathTree openTree = dep.getContentTree().open()) {
-            for (String s : CONFIG_SOURCE_FACTORY_INTERFACES) {
-                openTree.accept(s, v -> {
-                    if (v == null) {
-                        return;
+            return openTree.apply(META_INF_SERVICES, visit -> {
+                if (visit == null) {
+                    // the application module does not include META-INF/services entry
+                    return Map.of();
+                }
+                Map<String, List<String>> unavailableServices = Map.of();
+                var servicesDir = visit.getPath();
+                for (String serviceClass : CONFIG_SERVICES) {
+                    var serviceFile = servicesDir.resolve(serviceClass);
+                    if (!Files.exists(serviceFile)) {
+                        continue;
                     }
+                    final List<String> implList;
                     try {
-                        configFactoryImpl.put(s, Files.readAllLines(v.getPath()));
+                        implList = Files.readAllLines(serviceFile);
                     } catch (IOException e) {
-                        throw new UncheckedIOException("Failed to read " + v.getPath(), e);
+                        throw new UncheckedIOException("Failed to read " + serviceFile, e);
                     }
-                });
-            }
+                    final List<String> unavailableList = new ArrayList<>(implList.size());
+                    for (String impl : implList) {
+                        if (classLoader.getResource(impl.replace('.', '/') + ".class") == null) {
+                            unavailableList.add(impl);
+                        }
+                    }
+                    if (!unavailableList.isEmpty()) {
+                        if (unavailableServices.isEmpty()) {
+                            unavailableServices = new HashMap<>();
+                        }
+                        unavailableServices.put(META_INF_SERVICES + serviceClass, unavailableList);
+                    }
+                }
+                return unavailableServices;
+            });
         } catch (IOException e) {
             throw new CodeGenException("Failed to read " + dep.getResolvedPaths(), e);
         }
-        return configFactoryImpl;
     }
 
     private static Path codeGenOutDir(Path generatedSourcesDir,

@@ -59,6 +59,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
@@ -181,6 +182,18 @@ public class GrpcServerRecorder {
             if (!isGrpc(ctx)) {
                 ctx.next();
             } else {
+                if (!Context.isOnEventLoopThread()) {
+                    Context capturedVertxContext = Vertx.currentContext();
+                    if (capturedVertxContext != null) {
+                        capturedVertxContext.runOnContext(new Handler<Void>() {
+                            @Override
+                            public void handle(Void unused) {
+                                server.handle(ctx.request());
+                            }
+                        });
+                        return;
+                    }
+                }
                 server.handle(ctx.request());
             }
         });

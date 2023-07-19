@@ -120,6 +120,38 @@ Quarkus uses smart defaults when determining the media type of Jakarta REST meth
 The difference between `quarkus-resteasy-reactive` and `quarkus-resteasy` is the use of `text/plain` as the default media type instead of `text/html`
 when the method returns a `String`.
 
+=== Servlets
+
+RESTEasy Reactive does **not** support servlets.
+If your project depends on servlets you have to migrate them.
+A servlet-based JAX-RS implementation must support injections of these types with the `@Context` annotation: `ServletConfig`, `ServletContext`, `HttpServletRequest` and `HttpServletResponse`.
+Since RESTEasy Reactive is not servlet-based these injections will not work.
+
+It is not always obvious that this will fail especially if you depend on an extension like `quarkus-undertow` which supplies the interfaces.
+For example, if you write this you could compile it but get an exception on calling it:
+
+[source, java]
+----
+@Path("/reactive")
+public class ReactiveResource {
+
+    @Context
+    HttpServletRequest httpServletRequest;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String servletContextPath() {
+
+        String contextPath = httpServletRequest.getContextPath();
+
+        return "My context path is: " + contextPath;
+    }
+}
+----
+
+The same is true for your third-party libraries.
+If they happen to depend on servlets you need to find a migration path for them.
+
 == Client
 
 The Reactive REST Client (`quarkus-rest-client-reactive` and its dependencies) replace the legacy `quarkus-rest-client` but leverage Quarkus' build time processing

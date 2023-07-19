@@ -19,7 +19,7 @@ public class RedirectTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(RedirectingResourceClient.class,
+                    .addClasses(RedirectingResourceClient302.class, RedirectingResourceClient307.class,
                             RedirectingResourceWithRegisterProviderRedirectHandlerClient.class,
                             RedirectingResourceWithRedirectHandlerAnnotationClient.class,
                             RedirectingResourceWithSeveralRedirectHandlerAnnotationsClient.class,
@@ -31,50 +31,66 @@ public class RedirectTest {
 
     @Test
     void shouldRedirect3Times_whenMax4() {
-        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+        RedirectingResourceClient302 client = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 .followRedirects(true)
                 .property(QuarkusRestClientProperties.MAX_REDIRECTS, 4)
-                .build(RedirectingResourceClient.class);
+                .build(RedirectingResourceClient302.class);
         Response call = client.call(3);
         assertThat(call.getStatus()).isEqualTo(200);
     }
 
     @Test
     void shouldNotRedirect3Times_whenMax2() {
-        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+        RedirectingResourceClient302 client = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 .followRedirects(true)
                 .property(QuarkusRestClientProperties.MAX_REDIRECTS, 2)
-                .build(RedirectingResourceClient.class);
-        assertThat(client.call(3).getStatus()).isEqualTo(307);
+                .build(RedirectingResourceClient302.class);
+        assertThat(client.call(3).getStatus()).isEqualTo(302);
     }
 
     @Test
     void shouldNotRedirectOnPostMethodsByDefault() {
-        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+        RedirectingResourceClient302 client302 = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 // this property should be ignored in POST
                 .followRedirects(true)
-                .build(RedirectingResourceClient.class);
-        assertThat(client.post().getStatus()).isEqualTo(307);
+                .build(RedirectingResourceClient302.class);
+        assertThat(client302.post().getStatus()).isEqualTo(302);
+
+        RedirectingResourceClient307 client307 = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                // this property should be ignored in POST
+                .followRedirects(true)
+                .build(RedirectingResourceClient307.class);
+        assertThat(client307.post(1).getStatus()).isEqualTo(307);
     }
 
     @Test
     void shouldRedirectWhenUsingCustomRedirectHandlerOnPostMethods() {
-        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+        RedirectingResourceClient302 client302 = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 // this property should be ignored in POST
                 .followRedirects(true)
                 // use custom redirect to enable redirection
                 .register(EnablePostRedirectHandler.class)
-                .build(RedirectingResourceClient.class);
-        assertThat(client.post().getStatus()).isEqualTo(200);
+                .build(RedirectingResourceClient302.class);
+        assertThat(client302.post().getStatus()).isEqualTo(200);
+
+        RedirectingResourceClient307 client307 = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                // this property should be ignored in POST
+                .followRedirects(true)
+                // use custom redirect to enable redirection
+                .register(EnablePostRedirectHandler.class)
+                .build(RedirectingResourceClient307.class);
+        assertThat(client307.post(1).getStatus()).isEqualTo(200);
     }
 
     @Test
     void shouldRedirectWhenRegisterProviderUsingCustomRedirectHandlerOnPostMethods() {
-        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+        RedirectingResourceClient302 client = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 // this property should be ignored in POST
                 .followRedirects(true)
@@ -84,7 +100,7 @@ public class RedirectTest {
 
     @Test
     void shouldRedirectWhenAnnotatedClientRedirectHandlerOnPostMethods() {
-        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+        RedirectingResourceClient302 client = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 // this property should be ignored in POST
                 .followRedirects(true)
@@ -94,11 +110,11 @@ public class RedirectTest {
 
     @Test
     void shouldNotRedirectWhenARedirectHandlerWithMorePriorityIsUsed() {
-        RedirectingResourceClient client = RestClientBuilder.newBuilder()
+        RedirectingResourceClient302 client = RestClientBuilder.newBuilder()
                 .baseUri(uri)
                 // this property should be ignored in POST
                 .followRedirects(true)
                 .build(RedirectingResourceWithSeveralRedirectHandlerAnnotationsClient.class);
-        assertThat(client.post().getStatus()).isEqualTo(307);
+        assertThat(client.post().getStatus()).isEqualTo(302);
     }
 }

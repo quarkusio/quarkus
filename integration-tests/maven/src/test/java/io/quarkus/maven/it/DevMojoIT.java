@@ -63,8 +63,15 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
+    public void testFlattenedPomInTargetDir() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/pom-in-target-dir");
+        run(true);
+        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("Hello from RESTEasy Reactive");
+    }
+
+    @Test
     public void testConfigFactoryInAppModuleBannedInCodeGen() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/codegen-config-factory");
+        testDir = initProject("projects/codegen-config-factory", "projects/codegen-config-factory-banned");
         run(true);
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory")).isEqualTo("n/a");
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-provider")).isEqualTo("n/a");
@@ -76,7 +83,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testConfigFactoryInAppModuleFilteredInCodeGen() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/codegen-config-factory");
+        testDir = initProject("projects/codegen-config-factory", "projects/codegen-config-factory-filtered");
         run(true, "-Dconfig-factory.enabled");
         assertThat(DevModeTestUtils.getHttpResponse("/codegen-config/acme-config-factory"))
                 .isEqualTo("org.acme.config.AcmeConfigSourceFactory");
@@ -1192,7 +1199,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(30, TimeUnit.SECONDS)
-                .until(() -> running.log().contains("skipping quarkus:dev as this is assumed to be a support library"));
+                .until(() -> running.log().contains("Skipping quarkus:dev as this is assumed to be a support library"));
     }
 
     @Test
@@ -1200,7 +1207,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         testDir = initProject("projects/classic-no-build", "projects/classic-no-build-not-enforced");
         runAndCheck("-Dquarkus.enforceBuildGoal=false");
 
-        assertThat(running.log()).doesNotContain("skipping quarkus:dev as this is assumed to be a support library");
+        assertThat(running.log()).doesNotContain("Skipping quarkus:dev as this is assumed to be a support library");
     }
 
     @Test

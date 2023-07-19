@@ -45,6 +45,10 @@ public class BackChannelLogoutTokenCache {
         return entry == null ? null : entry.result;
     }
 
+    public boolean containsTokenVerification(String token) {
+        return cacheMap.containsKey(token);
+    }
+
     public void clearCache() {
         cacheMap.clear();
         size.set(0);

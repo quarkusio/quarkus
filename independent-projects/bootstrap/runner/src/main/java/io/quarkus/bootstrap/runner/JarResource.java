@@ -184,11 +184,11 @@ public class JarResource implements ClassLoadingResource {
             final JarFile zipFileLocal = this.zipFile;
             if (zipFileLocal != null) {
                 try {
+                    this.zipFile = null;
                     zipFileLocal.close();
-                } catch (IOException e) {
+                } catch (Throwable e) {
                     //ignore
                 }
-                this.zipFile = null;
             }
         } finally {
             writeLock.unlock();

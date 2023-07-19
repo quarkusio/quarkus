@@ -16,7 +16,7 @@ import io.quarkus.analytics.config.FileLocationsImpl;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 
 @Disabled("For manual testing purposes only")
-class UserIdManualTest {
+class AnonymousUserIdManualTest {
 
     private final FileLocations fileLocations = FileLocationsImpl.INSTANCE;
 

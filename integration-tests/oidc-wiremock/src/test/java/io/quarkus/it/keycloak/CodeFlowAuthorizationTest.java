@@ -6,7 +6,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -77,7 +76,7 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice, cache size: 0", page.getBody().asNormalizedText());
             assertNotNull(getSessionCookie(webClient, "code-flow"));
-
+            // Logout
             page = webClient.getPage("http://localhost:8081/code-flow/logout");
             assertEquals("Welcome, clientId: quarkus-web-app", page.getBody().asNormalizedText());
             assertNull(getSessionCookie(webClient, "code-flow"));

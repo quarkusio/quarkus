@@ -1,11 +1,12 @@
 package io.quarkus.resteasy.reactive.server.runtime.observability;
 
+import static io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityUtil.*;
+
 import java.util.regex.Pattern;
 
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
-import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.ext.web.RoutingContext;
 
 public class ObservabilityHandler implements ServerRestHandler {
@@ -25,8 +26,7 @@ public class ObservabilityHandler implements ServerRestHandler {
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
-
-        ((HttpServerRequestInternal) (requestContext.unwrap(RoutingContext.class).request())).context()
-                .putLocal("UrlPathTemplate", templatePath);
+        setUrlPathTemplate(requestContext.unwrap(RoutingContext.class), templatePath);
     }
+
 }

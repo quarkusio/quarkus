@@ -40,7 +40,7 @@ To examine the completed example, download the {quickstarts-archive-url}[archive
 git clone {quickstarts-clone-url}
 ----
 
-You can find the solution in the `security-jpa-quickstart` {quickstarts-tree-url}/security-jpa-quickstart[directory] in the upstream {ProductName} community.
+You can find the solution in the `security-jpa-quickstart` link:{quickstarts-tree-url}/security-jpa-quickstart[directory] in the upstream {ProductName} community.
 ====
 
 :sectnums:
@@ -251,7 +251,7 @@ You can configure it to use plain text or custom passwords.
 <5> Allows us to add users while hashing passwords with the proper bcrypt hash.
 
 NOTE: Hibernate Reactive Panache uses `io.quarkus.hibernate.reactive.panache.PanacheEntity` instead of `io.quarkus.hibernate.orm.panache.PanacheEntity`.
-For more information, see  {quickstarts-tree-url}/security-jpa-reactive-quickstart/src/main/java/org/acme/elytron/security/jpa/reactive/User.java[User file].
+For more information, see  link:{quickstarts-tree-url}/security-jpa-reactive-quickstart/src/main/java/org/acme/elytron/security/jpa/reactive/User.java[User file].
 
 === Configure the application
 

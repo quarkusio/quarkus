@@ -45,7 +45,7 @@ We recommend that you follow the instructions in the next sections and create th
 git clone {quickstarts-clone-url}
 ----
 
-* Alternatively, download a {quickstarts-archive-url}[Quickstarts archive]. The solution is located in the `microprofile-metrics-quickstart` {quickstarts-tree-url}/microprofile-metrics-quickstart[directory] and follow with the xref:running-and-using-the-application_{context}[] section.
+* Alternatively, download a {quickstarts-archive-url}[Quickstarts archive]. The solution is located in the `microprofile-metrics-quickstart` link:{quickstarts-tree-url}/microprofile-metrics-quickstart[directory] and follow with the xref:running-and-using-the-application_{context}[] section.
 
 [id="creating-a-maven-project_{context}"]
 == Creating a Maven project

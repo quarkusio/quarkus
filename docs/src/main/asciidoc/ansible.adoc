@@ -6,7 +6,7 @@ include::_attributes.adoc[]
 
 Let’s see how to build and deploy a Quarkus app using https://docs.ansible.com/ansible/latest/index.html[Ansible]. We’ll see how we can automate the entire process, from the code checkout to the application compilation using Maven and then its deployment and start of the service, as a https://systemd.io/[systemd service], on the target system using Ansible and its collection for Quarkus.
 
-The first part, the application code checkout, compilation and packaging on the Ansible (where Ansible runs). We’ll use the getting-started sample application provided in its {quickstarts-tree-url}/getting-started[Quarkus QuickStarts directory] as a base for this tutorial. We’ll also leverage the https://galaxy.ansible.com/middleware_automation/quarkus[Quarkus collection] for Ansible, an extension for Ansible that alleviates the boilerplate required and to quickly build and deploy a Quarkus using Ansible.
+The first part, the application code checkout, compilation and packaging on the Ansible (where Ansible runs). We’ll use the getting-started sample application provided in its link:{quickstarts-tree-url}/getting-started[Quarkus QuickStarts directory] as a base for this tutorial. We’ll also leverage the https://galaxy.ansible.com/middleware_automation/quarkus[Quarkus collection] for Ansible, an extension for Ansible that alleviates the boilerplate required and to quickly build and deploy a Quarkus using Ansible.
 
 == Prerequisites
 

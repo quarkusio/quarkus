@@ -13,7 +13,7 @@ This approach became very popular in the JavaScript world, with frameworks like 
 Quarkus also offers the possibility to use reactive routes.
 You can implement REST API with routes only or combine them with Jakarta REST resources and servlets.
 
-The code presented in this guide is available in this {quickstarts-base-url}[GitHub repository] under the {quickstarts-tree-url}/reactive-routes-quickstart[`reactive-routes-quickstart` directory]
+The code presented in this guide is available in this {quickstarts-base-url}[GitHub repository] under the link:{quickstarts-tree-url}/reactive-routes-quickstart[`reactive-routes-quickstart` directory]
 
 NOTE: Reactive Routes were initially introduced to provide a reactive execution model for HTTP APIs on top of the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture].
 With the introduction of xref:resteasy-reactive.adoc[RESTEasy Reactive], you can now implement reactive HTTP APIs and still use Jakarta REST annotations.

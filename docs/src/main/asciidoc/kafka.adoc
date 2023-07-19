@@ -267,7 +267,7 @@ public class PriceStorage {
 }
 ----
 
-The complete example is available in the `kafka-panache-quickstart` {quickstarts-tree-url}/kafka-panache-quickstart[directory].
+The complete example is available in the `kafka-panache-quickstart` link:{quickstarts-tree-url}/kafka-panache-quickstart[directory].
 
 [NOTE]
 ====

@@ -23,7 +23,7 @@ Either:
 * Clone the git repository: `git clone {quickstarts-clone-url}`, or
 * Download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `micrometer-quickstart` {quickstarts-tree-url}/micrometer-quickstart[directory].
+The solution is located in the `micrometer-quickstart` link:{quickstarts-tree-url}/micrometer-quickstart[directory].
 
 :sectnums:
 :sectnumlevels: 3

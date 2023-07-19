@@ -37,7 +37,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `rest-json-quickstart` {quickstarts-tree-url}/rest-json-quickstart[directory].
+The solution is located in the `rest-json-quickstart` link:{quickstarts-tree-url}/rest-json-quickstart[directory].
 
 == Creating the Maven project
 
@@ -318,7 +318,7 @@ public class CustomJsonbConfig {
 
 Now let's add a simple web page to interact with our `FruitResource`.
 Quarkus automatically serves static resources located under the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this {quickstarts-blob-url}/rest-json-quickstart/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this link:{quickstarts-blob-url}/rest-json-quickstart/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
 
 You can now interact with your REST service:
 

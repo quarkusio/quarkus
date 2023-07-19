@@ -27,7 +27,7 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `openapi-swaggerui-quickstart` {quickstarts-tree-url}/openapi-swaggerui-quickstart[directory].
+The solution is located in the `openapi-swaggerui-quickstart` link:{quickstarts-tree-url}/openapi-swaggerui-quickstart[directory].
 
 == Creating the Maven project
 

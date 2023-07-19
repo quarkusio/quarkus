@@ -44,7 +44,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-openid-connect-quickstart` {quickstarts-tree-url}/security-openid-connect-quickstart[directory].
+The solution is located in the `security-openid-connect-quickstart` link:{quickstarts-tree-url}/security-openid-connect-quickstart[directory].
 
 == Procedure
 
@@ -181,7 +181,7 @@ For more information, see xref:security-openid-connect-oidc-configuration-proper
 
 === Start and configure the Keycloak server
 
-Before you start with configuration, put the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) to import it automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution].
+Before you start with configuration, put the link:{quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) to import it automatically when running in dev mode - unless you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution].
 In this case, the realm file is added to the classpath during the build.
 
 [NOTE]
@@ -203,7 +203,7 @@ You should be able to access your Keycloak Server at http://localhost:8180[local
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
-Import the {quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
+Import the link:{quickstarts-tree-url}/security-openid-connect-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm.
 For more details, see the Keycloak documentation about how to link:https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
 NOTE: If you want to use the Keycloak Admin Client to configure your server from your application, include the

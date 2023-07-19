@@ -19,7 +19,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `hibernate-orm-quickstart` {quickstarts-tree-url}/hibernate-orm-quickstart[directory].
+The solution is located in the `hibernate-orm-quickstart` link:{quickstarts-tree-url}/hibernate-orm-quickstart[directory].
 
 == Setting up and configuring Hibernate ORM
 
@@ -917,7 +917,7 @@ Jump over to xref:datasource.adoc[Quarkus - Datasources] for all details.
 
 Quarkus currently supports the link:{hibernate-orm-docs-url}#multitenacy-separate-database[separate database] approach, the link:{hibernate-orm-docs-url}#multitenacy-separate-schema[separate schema] approach and the link:{hibernate-orm-docs-url}#multitenacy-discriminator[discriminator] approach.
 
-To see multitenancy in action, you can check out the {quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
+To see multitenancy in action, you can check out the link:{quickstarts-tree-url}/hibernate-orm-multi-tenancy-quickstart[hibernate-orm-multi-tenancy-quickstart] quickstart.
 
 === Writing the application
 

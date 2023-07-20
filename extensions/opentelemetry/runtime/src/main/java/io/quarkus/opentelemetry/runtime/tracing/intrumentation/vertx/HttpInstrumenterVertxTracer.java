@@ -156,7 +156,7 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 route = requestSpan.getContext().getLocal("VertxRoute");
             }
 
-            if (route != null && route.length() > 1) {
+            if (route != null && route.length() >= 1) {
                 return route;
             }
 

@@ -6,6 +6,8 @@ import java.util.Map;
 
 import jakarta.inject.Singleton;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -18,12 +20,14 @@ import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.oidc.runtime.OidcConfigPropertySupplier;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRpcSvcPropertiesBean;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 public abstract class AbstractDevConsoleProcessor {
+    private static final Logger LOG = Logger.getLogger(AbstractDevConsoleProcessor.class);
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
     protected static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     protected static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
@@ -111,15 +115,22 @@ public abstract class AbstractDevConsoleProcessor {
             String keycloakAdminUrl,
             Map<String, String> keycloakUsers,
             List<String> keycloakRealms,
-            boolean alwaysLogoutUserInDevUiOnReload) {
+            boolean alwaysLogoutUserInDevUiOnReload, PageBuilder<?> customPage) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
-        // prepare provider component
-        cardPage.addPage(Page
-                .webComponentPageBuilder()
-                .icon("font-awesome-solid:boxes-stacked")
-                .title(oidcProviderName == null ? "OpenId Connect Dev Console" : oidcProviderName + " provider")
-                .componentLink("qwc-oidc-provider.js"));
+        if (customPage == null) {
+            // prepare provider component
+            cardPage.addPage(Page
+                    .webComponentPageBuilder()
+                    .icon("font-awesome-solid:boxes-stacked")
+                    .title(oidcProviderName == null ? "OpenId Connect Dev Console" : oidcProviderName + " provider")
+                    .componentLink("qwc-oidc-provider.js"));
+        } else {
+            // other extension provided customized version of OIDC provider page
+            //            LOG.infof("Default OIDC provider page will be replaced with the '%s' page", customPage.getTitle()); TODO
+            cardPage.addPage(customPage);
+            // even for custom provider page we are going to provide build time and runtime data in case they are needed
+        }
 
         // prepare data for provider component
         final boolean swaggerIsAvailable = capabilities.isPresent(Capability.SMALLRYE_OPENAPI);

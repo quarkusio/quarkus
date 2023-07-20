@@ -23,6 +23,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevConsoleProcessor;
+import io.quarkus.oidc.deployment.devservices.CustomOidcDevUiProviderPageBuildItem;
 import io.quarkus.oidc.deployment.devservices.OidcAuthorizationCodePostHandler;
 import io.quarkus.oidc.deployment.devservices.OidcPasswordClientCredHandler;
 import io.quarkus.oidc.deployment.devservices.OidcTestServiceHandler;
@@ -77,7 +78,8 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             ConfigurationBuildItem configurationBuildItem,
-            Capabilities capabilities) {
+            Capabilities capabilities,
+            Optional<CustomOidcDevUiProviderPageBuildItem> customProviderPage) {
         if (configProps.isPresent() && configProps.get().getConfig().containsKey("keycloak.url")) {
             String realmUrl = configProps.get().getConfig().get("quarkus.oidc.auth-server-url");
             @SuppressWarnings("unchecked")
@@ -107,7 +109,8 @@ public class KeycloakDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     keycloakAdminUrl,
                     users,
                     keycloakRealms,
-                    configProps.get().isContainerRestarted());
+                    configProps.get().isContainerRestarted(),
+                    customProviderPage.map(CustomOidcDevUiProviderPageBuildItem::getOidcProviderPage).orElse(null));
 
             // Also add Admin page
             cardPageBuildItem.addPage(Page.externalPageBuilder("Keycloak Admin")

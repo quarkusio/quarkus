@@ -72,7 +72,7 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
             ConfigurationBuildItem configurationBuildItem,
-            OidcDevUiRecorder recorder) {
+            OidcDevUiRecorder recorder, Optional<CustomOidcDevUiProviderPageBuildItem> customProviderPage) {
         if (!isOidcTenantEnabled() || !isClientIdSet()) {
             return;
         }
@@ -161,7 +161,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                     keycloakAdminUrl,
                     null,
                     null,
-                    true);
+                    true,
+                    customProviderPage.map(CustomOidcDevUiProviderPageBuildItem::getOidcProviderPage).orElse(null));
             cardPageProducer.produce(cardPage);
         }
     }

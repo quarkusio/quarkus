@@ -41,7 +41,6 @@ export class RouterController {
     }
     
     getCurrentTitle(){
-        let dot = "\u00B7";
         let p = this.getCurrentPage();
         if(p){
             if(p.namespaceLabel){
@@ -49,8 +48,21 @@ export class RouterController {
             }else {
                 let md = this.getCurrentMetaData();
                 if(md && md.extensionName){
-                    return md.extensionName + " " + dot + " " + p.title;
+                    return md.extensionName;
                 }else {
+                    return p.title;
+                }
+            }
+        }
+        return null;
+    }
+    
+    getCurrentSubTitle(){
+        let p = this.getCurrentPage();
+        if(p){
+            if(!p.namespaceLabel){
+                let md = this.getCurrentMetaData();
+                if(md && md.extensionName){
                     return p.title;
                 }
             }

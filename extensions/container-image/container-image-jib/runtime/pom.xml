@@ -33,6 +33,9 @@
                             <name>io.quarkus.container.image.jib</name>
                         </providesIf>
                     </capabilities>
+                    <parentFirstArtifacts>
+                        <parentFirstArtifact>com.google.cloud.tools:jib-core</parentFirstArtifact>
+                    </parentFirstArtifacts>
                 </configuration>
             </plugin>
             <plugin>

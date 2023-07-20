@@ -57,8 +57,7 @@ public class EagerSecurityHandler implements ServerRestHandler {
         }
         SecurityCheck check = this.check;
         ResteasyReactiveResourceInfo lazyMethod = requestContext.getTarget().getLazyMethod();
-        MethodDescription methodDescription = new MethodDescription(lazyMethod.getResourceClass().getName(),
-                lazyMethod.getName(), MethodDescription.typesAsStrings(lazyMethod.getParameterTypes()));
+        MethodDescription methodDescription = lazyMethodToMethodDescription(lazyMethod);
         if (check == null) {
             check = Arc.container().instance(SecurityCheckStorage.class).get().getSecurityCheck(methodDescription);
             if (check == null) {
@@ -129,6 +128,11 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         }
                     });
         }
+    }
+
+    static MethodDescription lazyMethodToMethodDescription(ResteasyReactiveResourceInfo lazyMethod) {
+        return new MethodDescription(lazyMethod.getResourceClass().getName(),
+                lazyMethod.getName(), MethodDescription.typesAsStrings(lazyMethod.getParameterTypes()));
     }
 
     private void preventRepeatedSecurityChecks(ResteasyReactiveRequestContext requestContext,

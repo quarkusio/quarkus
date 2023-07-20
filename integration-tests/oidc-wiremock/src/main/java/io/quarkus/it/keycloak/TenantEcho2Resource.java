@@ -12,10 +12,9 @@ import io.quarkus.security.Authenticated;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
-@Tenant("hr")
 @Authenticated
-@Path("/api/tenant-echo")
-public class TenantEchoResource {
+@Path("/api/tenant-echo2")
+public class TenantEcho2Resource {
 
     @Inject
     RoutingContext routingContext;
@@ -23,9 +22,22 @@ public class TenantEchoResource {
     @Inject
     SecurityIdentity identity;
 
+    @Path("/hr")
+    @Tenant("hr")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
-    public String getTenant() {
+    public String getHrTenant() {
+        return getTenant();
+    }
+
+    @Path("/default")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getDefaultTenant() {
+        return getTenant();
+    }
+
+    private String getTenant() {
         return OidcUtils.TENANT_ID_ATTRIBUTE + "=" + routingContext.get(OidcUtils.TENANT_ID_ATTRIBUTE)
                 + ", static.tenant.id=" + routingContext.get("static.tenant.id")
                 + ", name=" + identity.getPrincipal().getName();

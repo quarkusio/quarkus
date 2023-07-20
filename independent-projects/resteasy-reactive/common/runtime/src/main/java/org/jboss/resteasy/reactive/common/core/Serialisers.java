@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.common.core;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -164,7 +163,7 @@ public abstract class Serialisers {
         List<ResourceWriter> ret = new ArrayList<>();
         Deque<Class<?>> toProcess = new LinkedList<>();
         do {
-            if (currentClass == Object.class) {
+            if (currentClass == Object.class && !toProcess.isEmpty()) {
                 //spec extension, look for interfaces as well
                 //we match interfaces before Object
                 Set<Class<?>> seen = new HashSet<>(toProcess);
@@ -182,12 +181,15 @@ public abstract class Serialisers {
             }
             List<ResourceWriter> goodTypeWriters = writers.get(currentClass);
             writerLookup(runtimeType, produces, desired, ret, goodTypeWriters);
-            toProcess.addAll(Arrays.asList(currentClass.getInterfaces()));
+            var prevClass = currentClass;
             // if we're an interface, pretend our superclass is Object to get us through the same logic as a class
             if (currentClass.isInterface()) {
                 currentClass = Object.class;
             } else {
                 currentClass = currentClass.getSuperclass();
+            }
+            if (currentClass != null) {
+                toProcess.addAll(List.of(prevClass.getInterfaces()));
             }
         } while (currentClass != null);
 

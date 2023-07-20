@@ -127,10 +127,14 @@ public class ClassRoutingHandler implements ServerRestHandler {
             if (!accepts.isEmpty()) {
                 boolean hasAtLeastOneMatch = false;
                 for (int i = 0; i < accepts.size(); i++) {
-                    boolean matches = acceptHeaderMatches(target, accepts.get(i));
-                    if (matches) {
-                        hasAtLeastOneMatch = true;
-                        break;
+                    try {
+                        boolean matches = acceptHeaderMatches(target, accepts.get(i));
+                        if (matches) {
+                            hasAtLeastOneMatch = true;
+                            break;
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // the provided header was not valid
                     }
                 }
                 if (!hasAtLeastOneMatch) {
@@ -150,6 +154,10 @@ public class ClassRoutingHandler implements ServerRestHandler {
         }
     }
 
+    /**
+     * @return {@code true} if the provided string matches one of the {@code @Produces} values of the resource method
+     * @throws IllegalArgumentException if the provided string cannot be parsed into a {@link MediaType}
+     */
     private boolean acceptHeaderMatches(RequestMapper.RequestMatch<RuntimeResource> target, String accepts) {
         if ((accepts != null) && !accepts.equals(MediaType.WILDCARD)) {
             int commaIndex = accepts.indexOf(',');
@@ -157,9 +165,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
             MediaType[] producesMediaTypes = target.value.getProduces().getSortedOriginalMediaTypes();
             if (!multipleAcceptsValues && (producesMediaTypes.length == 1)) {
                 // the point of this branch is to eliminate any list creation or string indexing as none is needed
-                MediaType acceptsMediaType = MediaType.valueOf(accepts.trim());
                 MediaType providedMediaType = producesMediaTypes[0];
-                return providedMediaType.isCompatible(acceptsMediaType);
+                return providedMediaType.isCompatible(toMediaType(accepts.trim()));
             } else if (multipleAcceptsValues && (producesMediaTypes.length == 1)) {
                 // this is fairly common case, so we want it to be as fast as possible
                 // we do that by manually splitting the accepts header and immediately checking

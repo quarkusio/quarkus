@@ -5924,10 +5924,6 @@
                         <groupId>com.sun.activation</groupId>
                         <artifactId>jakarta.activation</artifactId>
                     </exclusion>
-                    <exclusion>
-                        <groupId>com.typesafe.netty</groupId>
-                        <artifactId>netty-reactive-streams</artifactId>
-                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>

@@ -154,10 +154,19 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         return uni.runSubscriptionOn(VirtualExecutorSupplier.Instance.get())
                 .onItemOrFailure().transformToUni((item, failure) -> {
                     return Uni.createFrom().emitter(emitter -> {
-                        if (failure != null) {
-                            currentContext.runOnContext(() -> emitter.fail(failure));
+                        if (currentContext != null) {
+                            if (failure != null) {
+                                currentContext.runOnContext(() -> emitter.fail(failure));
+                            } else {
+                                currentContext.runOnContext(() -> emitter.complete(item));
+                            }
                         } else {
-                            currentContext.runOnContext(() -> emitter.complete(item));
+                            // Some method do not have a context (generator methods)
+                            if (failure != null) {
+                                emitter.fail(failure);
+                            } else {
+                                emitter.complete(item);
+                            }
                         }
                     });
                 });

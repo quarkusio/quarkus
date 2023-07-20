@@ -181,13 +181,15 @@ public final class QuarkusMediatorConfigurationUtil {
         AnnotationInstance smallryeBlockingAnnotation = methodInfo.annotation(SMALLRYE_BLOCKING);
         AnnotationInstance transactionalAnnotation = methodInfo.annotation(TRANSACTIONAL);
         AnnotationInstance runOnVirtualThreadAnnotation = methodInfo.annotation(RUN_ON_VIRTUAL_THREAD);
+        // IF @RunOnVirtualThread is used on the declaring class, it forces all @Blocking method to be run on virtual threads.
+        AnnotationInstance runOnVirtualThreadClassAnnotation = methodInfo.declaringClass().annotation(RUN_ON_VIRTUAL_THREAD);
         if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null
                 || runOnVirtualThreadAnnotation != null) {
             mediatorConfigurationSupport.validateBlocking(validationOutput);
             configuration.setBlocking(true);
             if (blockingAnnotation != null) {
                 AnnotationValue ordered = blockingAnnotation.value("ordered");
-                if (runOnVirtualThreadAnnotation != null) {
+                if (runOnVirtualThreadAnnotation != null || runOnVirtualThreadClassAnnotation != null) {
                     if (ordered != null && ordered.asBoolean()) {
                         throw new ConfigurationException(
                                 "The method `" + methodInfo.name()
@@ -203,7 +205,7 @@ public final class QuarkusMediatorConfigurationUtil {
                         !(poolName = blockingAnnotation.value().asString()).equals(Blocking.DEFAULT_WORKER_POOL)) {
                     configuration.setWorkerPoolName(poolName);
                 }
-            } else if (runOnVirtualThreadAnnotation != null) {
+            } else if (runOnVirtualThreadAnnotation != null || runOnVirtualThreadClassAnnotation != null) {
                 configuration.setBlockingExecutionOrdered(false);
                 configuration.setWorkerPoolName(QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER);
             } else {

@@ -56,8 +56,8 @@ You also need to make sure that you are using Java 19 or later, this can be enfo
 .pom.xml
 ----
 <properties>
-    <maven.compiler.source>19</maven.compiler.source>
-    <maven.compiler.target>19</maven.compiler.target>
+    <maven.compiler.source>20</maven.compiler.source>
+    <maven.compiler.target>20</maven.compiler.target>
 </properties>
 ----
 
@@ -73,24 +73,16 @@ or to use the Quarkus Dev mode, insert the following to the `quarkus-maven-plugi
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
+<maven.compiler.release>20</maven.compiler.release>
+<!-- ... -->
 <plugin>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-maven-plugin</artifactId>
-    <version>${quarkus.version}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>build</goal>
-            </goals>
-        </execution>
-    </executions>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>${compiler-plugin.version}</version>
     <configuration>
-      <source>19</source>
-      <target>19</target>
       <compilerArgs>
+        <arg>-parameters</arg>
         <arg>--enable-preview</arg>
       </compilerArgs>
-      <jvmArgs>--enable-preview --add-opens java.base/java.lang=ALL-UNNAMED</jvmArgs>
     </configuration>
 </plugin>
 ----
@@ -143,6 +135,78 @@ public class PriceConsumer {
 Note that by default Reactive Messaging message processing happens sequentially, preserving the order of messages.
 In the same way, `@Blocking(ordered = false)` annotation changes this behaviour,
 using `@RunOnVirtualThread` enforces concurrent message processing without preserving the order.
+
+== Use the @RunOnVirtualThread annotation
+
+=== Methods signatures eligible to @RunOnVirtualThread
+
+Only method can be annotated with `@Blocking` can use `@RunOnVirtualThreads`.
+The eligible method signatures are:
+
+-  `@Outgoing("channel-out") O generator()`
+-  `@Outgoing("channel-out")  Message<O> generator()`
+-  `@Incoming("channel-in") @Outgoing("channel-out") O process(I in)`
+-  `@Incoming("channel-in") @Outgoing("channel-out") Message<O> process(I in)`
+-  `@Incoming("channel-in") void consume(I in)`
+-  `@Incoming("channel-in") Uni<Void> consume(I in)`
+-  `@Incoming("channel-in") Uni<Void> consume(Message<I> msg)`
+-  `@Incoming("channel-in") CompletionStage<Void> consume(I in)`
+-  `@Incoming("channel-in") CompletionStage<Void> consume(Message<I> msg)`
+
+=== Use of @RunOnVirtualThread annotation on methods and classes
+
+You can use the `@RunOnVirtualThread` annotation:
+
+1. directly on a reactive messaging method - this method will be considered _blocking_ and executed on a virtual thread
+2. on the class containing reactive messaging methods - the methods from this class annotation with `@Blocking` will be executed on virtual thread, except if the annotation defines a pool name configured to use regular worker threads
+
+For example, you can use `@RunOnVirtualThread` directly on the method:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyBean {
+
+    @Incoming("in")
+    @Outgoing("out")
+    @RunOnVirtualThread
+    public String process(String s) {
+        // Called on a new virtual thread for every incoming message
+    }
+}
+----
+
+Alternatively, you can use `@RunOnVirtualThread` on the class itself:
+
+[source, java]
+----
+@ApplicationScoped
+@RunOnVirtualThread
+public class MyBean {
+
+    @Incoming("in1")
+    @Outgoing("out1")
+    public String process(String s) {
+        // Called on the event loop - no @Blocking annotation
+    }
+
+    @Incoming("in2")
+    @Outgoing("out2")
+    @Blocking
+    public String process(String s) {
+        // Call on a new virtual thread for every incoming message
+    }
+
+    @Incoming("in3")
+    @Outgoing("out3")
+    @Blocking("my-worker-pool")
+    public String process(String s) {
+        // Called on a regular worker thread from the pool named "my-worker-pool"
+    }
+}
+----
+
+== Control the maximum concurrency
 
 In order to leverage the lightweight nature of virtual threads, the default maximum concurrency for methods annotated with `@RunOnVirtualThread` is 1024.
 As opposed to platform threads, virtual threads are not pooled and created per message. Therefore the maximum concurrency applies separately to all `@RunOnVirtualThread` methods.

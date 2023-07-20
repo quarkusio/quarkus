@@ -2,6 +2,7 @@ package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
@@ -22,7 +23,7 @@ public class TracerProducer {
     }
 
     @Produces
-    @Singleton
+    @ApplicationScoped
     @DefaultBean
     public Tracer getTracer() {
         return GlobalOpenTelemetry.getTracer(INSTRUMENTATION_NAME);

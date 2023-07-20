@@ -1409,7 +1409,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Token customizer name.
          *
          * Allows to select a tenant specific token customizer as a named bean.
-         * Prefer using {@link Tenant} qualifier when registering custom {@link TokenCustomizer}.
+         * Prefer using {@link TenantFeature} qualifier when registering custom {@link TokenCustomizer}.
          * Use this property only to refer to `TokenCustomizer` implementations provided by this extension.
          */
         @ConfigItem

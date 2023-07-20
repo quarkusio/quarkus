@@ -5,11 +5,11 @@ import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
 import io.quarkus.arc.Unremovable;
-import io.quarkus.oidc.Tenant;
+import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TokenCustomizer;
 
 @Singleton
-@Tenant("bearer")
+@TenantFeature("bearer")
 @Unremovable
 public class DefaultTenantTokenCustomizer implements TokenCustomizer {
 

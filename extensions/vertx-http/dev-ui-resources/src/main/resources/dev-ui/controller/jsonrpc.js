@@ -206,6 +206,10 @@ export class JsonRpc {
         }
     }
 
+    getExtensionName(){
+        return this._extensionName;
+    }
+
     static sendJsonRPCMessage(jsonrpcpayload, log=true) {
         if (JsonRpc.webSocket.readyState !== WebSocket.OPEN) {
             JsonRpc.initQueue.push(jsonrpcpayload);

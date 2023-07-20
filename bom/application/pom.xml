@@ -189,7 +189,7 @@
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.2.Final</quarkus-security.version>
         <keycloak.version>21.0.2</keycloak.version>
-        <logstash-gelf.version>1.15.0</logstash-gelf.version>
+        <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.34.0</checker-qual.version>
         <error-prone-annotations.version>2.19.1</error-prone-annotations.version>
         <jib-core.version>0.24.0</jib-core.version>

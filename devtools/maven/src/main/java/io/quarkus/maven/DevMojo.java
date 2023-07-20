@@ -1061,7 +1061,8 @@ public class DevMojo extends AbstractMojo {
         }
 
         // Add other properties that may be required for expansion
-        for (String value : effectiveProperties.values()) {
+        List<String> effectivePropertyValues = new ArrayList<>(effectiveProperties.values());
+        for (String value : effectivePropertyValues) {
             for (String reference : Expression.compile(value, LENIENT_SYNTAX, NO_TRIM).getReferencedStrings()) {
                 String referenceValue = session.getUserProperties().getProperty(reference);
                 if (referenceValue != null) {

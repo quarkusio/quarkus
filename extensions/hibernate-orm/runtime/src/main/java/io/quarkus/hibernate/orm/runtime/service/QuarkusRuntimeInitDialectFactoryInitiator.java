@@ -16,17 +16,16 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     private final String persistenceUnitName;
     private final Dialect dialect;
     private final Optional<String> datasourceName;
-    private final Optional<DatabaseVersion> buildTimeDbVersion;
+    private final DatabaseVersion buildTimeDbVersion;
 
     public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName, Dialect dialect,
             RecordedConfig recordedConfig) {
         this.persistenceUnitName = persistenceUnitName;
         this.dialect = dialect;
         this.datasourceName = recordedConfig.getDataSource();
-        this.buildTimeDbVersion = recordedConfig.getDbVersion().isPresent()
-                // This is the same version, but parsed in a dialect-specific way.
-                ? Optional.of(dialect.getVersion())
-                : Optional.empty();
+        // We set the version from the dialect since if it wasn't provided explicitly through the `recordedConfig.getDbVersion()`
+        // then the version from `DialectVersions.Defaults` will be used:
+        this.buildTimeDbVersion = dialect.getVersion();
     }
 
     @Override

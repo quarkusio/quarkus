@@ -180,12 +180,8 @@ export class QwcMenu extends observeState(LitElement) {
             }
         
             let pageRef = this.routerController.getPageUrlFor(page);
-            const selected = this._selectedPage == page.namespace;
-            let classnames = "item";
-            if(selected){
-                classnames = "item selected";
-            }
-
+            
+            let classnames = this._getClassNames(page, index);
             return html`
             <a class="${classnames}" href="${pageRef}">
                 <vaadin-icon icon="${page.icon}"></vaadin-icon>
@@ -193,6 +189,29 @@ export class QwcMenu extends observeState(LitElement) {
             </a>
             `;        
         }
+    }
+
+    _getClassNames(page, index){
+        
+        const selected = this._selectedPage == page.namespace;
+        if(selected){
+            return "item selected";
+        }
+        
+        // Else check for default
+        let pages = devuiState.menu;
+        let hasMenuItem = false;
+        for (let i = 0; i < pages.length; i++) {
+            if(this._selectedPage === pages[i].namespace){
+                hasMenuItem = true;
+            }
+        }
+
+        if(!hasMenuItem && index === 0){
+            return "item selected";
+        }
+        
+        return "item";
     }
 
     _renderIcon(icon, action){

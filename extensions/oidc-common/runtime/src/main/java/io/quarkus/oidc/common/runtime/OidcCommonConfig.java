@@ -2,6 +2,8 @@ package io.quarkus.oidc.common.runtime;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -300,6 +302,12 @@ public class OidcCommonConfig {
             public Optional<String> subject = Optional.empty();
 
             /**
+             * Additional claims.
+             */
+            @ConfigItem
+            public Map<String, String> claims = new HashMap<>();
+
+            /**
              * Signature algorithm, also used for the {@link #keyFile} property.
              * Supported values: RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, HS256, HS384, HS512.
              */
@@ -366,6 +374,14 @@ public class OidcCommonConfig {
 
             public void setKeyFile(String keyFile) {
                 this.keyFile = Optional.of(keyFile);
+            }
+
+            public Map<String, String> getClaims() {
+                return claims;
+            }
+
+            public void setClaims(Map<String, String> claims) {
+                this.claims = claims;
             }
 
         }

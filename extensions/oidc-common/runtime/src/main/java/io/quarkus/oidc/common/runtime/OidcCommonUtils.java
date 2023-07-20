@@ -345,6 +345,7 @@ public class OidcCommonUtils {
     public static String signJwtWithKey(OidcCommonConfig oidcConfig, String tokenRequestUri, Key key) {
         // 'jti' and 'iat' claims are created by default, 'iat' - is set to the current time
         JwtSignatureBuilder builder = Jwt
+                .claims(additionalClaims(oidcConfig.credentials.jwt.getClaims()))
                 .issuer(oidcConfig.credentials.jwt.issuer.orElse(oidcConfig.clientId.get()))
                 .subject(oidcConfig.credentials.jwt.subject.orElse(oidcConfig.clientId.get()))
                 .audience(oidcConfig.credentials.jwt.getAudience().isPresent()
@@ -365,6 +366,11 @@ public class OidcCommonUtils {
         } else {
             return builder.sign((PrivateKey) key);
         }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static Map<String, Object> additionalClaims(Map<String, String> claims) {
+        return (Map) claims;
     }
 
     private static SignatureAlgorithm getSignatureAlgorithm(Credentials credentials, SignatureAlgorithm defaultAlgorithm) {

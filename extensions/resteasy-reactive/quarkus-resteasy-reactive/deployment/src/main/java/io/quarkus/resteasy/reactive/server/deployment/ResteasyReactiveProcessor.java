@@ -683,6 +683,7 @@ public class ResteasyReactiveProcessor {
                 }
             }
             Map<DotName, ClassInfo> possibleSubResources = new HashMap<>();
+            Set<String> resourceClassNames = null;
             while (!toScan.isEmpty()) {
                 ClassInfo classInfo = toScan.poll();
                 if (scannedResources.containsKey(classInfo.name()) ||
@@ -691,6 +692,25 @@ public class ResteasyReactiveProcessor {
                     continue;
                 }
                 possibleSubResources.put(classInfo.name(), classInfo);
+
+                if (classInfo.isInterface()) {
+                    int resourceClassImplCount = 0;
+                    if (resourceClassNames == null) {
+                        resourceClassNames = resourceClasses.stream().map(ResourceClass::getClassName)
+                                .collect(Collectors.toSet());
+                    }
+                    for (ClassInfo impl : index.getAllKnownImplementors(classInfo.name())) {
+                        if (resourceClassNames.contains(impl.name().toString())) {
+                            resourceClassImplCount++;
+                        }
+                    }
+                    if (resourceClassImplCount > 1) {
+                        // this is the case were an interface doesn't denote a subresource, but it's simply used
+                        // to share method and annotations between Resource classes
+                        continue;
+                    }
+                }
+
                 Optional<ResourceClass> endpoints = serverEndpointIndexer.createEndpoints(classInfo, false);
                 if (endpoints.isPresent()) {
                     subResourceClasses.add(endpoints.get());

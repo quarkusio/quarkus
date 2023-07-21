@@ -389,6 +389,12 @@ public class Encode {
                 result.append(currentChar);
                 continue;
             }
+            if (Character.isHighSurrogate(currentChar)) {
+                String part = segment.substring(i, i + 2);
+                result.append(URLEncoder.encode(part, StandardCharsets.UTF_8));
+                ++i;
+                continue;
+            }
             String encoding = encode(currentChar, encodingMap);
             if (encoding == null) {
                 result.append(currentChar);

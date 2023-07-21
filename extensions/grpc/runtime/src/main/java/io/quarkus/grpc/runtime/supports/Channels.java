@@ -215,7 +215,7 @@ public class Channels {
             }
             Optional<Duration> idleTimeout = config.idleTimeout;
             if (idleTimeout.isPresent()) {
-                builder.keepAliveTimeout(idleTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
+                builder.idleTimeout(idleTimeout.get().toMillis(), TimeUnit.MILLISECONDS);
             }
 
             if (plainText && provider == null) {

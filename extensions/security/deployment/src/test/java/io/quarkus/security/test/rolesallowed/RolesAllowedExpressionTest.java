@@ -39,7 +39,8 @@ public class RolesAllowedExpressionTest {
             "test-profile-admin=batman\n" +
             "%test.test-profile-admin=admin\n" +
             "missing-profile-profile-admin=superman\n" +
-            "%missing-profile.missing-profile-profile-admin=admin\n";
+            "%missing-profile.missing-profile-profile-admin=admin\n" +
+            "all-roles=Administrator,Software,Tester,User\n";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -76,6 +77,19 @@ public class RolesAllowedExpressionTest {
         // test profile
         assertSuccess(() -> bean.testProfile(), "accessibleForTestProfileAdmin", ADMIN);
         assertFailureFor(() -> bean.missingTestProfile(), ForbiddenException.class, ADMIN);
+
+        // property expression with collection separator should be treated as list
+        assertSuccess(() -> bean.list(), "list",
+                new AuthData(Set.of("Administrator"), false, "list"));
+        assertSuccess(() -> bean.list(), "list",
+                new AuthData(Set.of("Software"), false, "list"));
+        assertSuccess(() -> bean.list(), "list",
+                new AuthData(Set.of("Tester"), false, "list"));
+        assertSuccess(() -> bean.list(), "list",
+                new AuthData(Set.of("User"), false, "list"));
+        assertSuccess(() -> bean.list(), "list",
+                new AuthData(Set.of("Administrator", "Software", "Tester", "User"), false, "list"));
+        assertFailureFor(() -> bean.list(), ForbiddenException.class, ADMIN);
     }
 
     @Singleton
@@ -120,6 +134,11 @@ public class RolesAllowedExpressionTest {
         @RolesAllowed("${missing-profile-profile-admin}")
         public final void missingTestProfile() {
             // should throw exception
+        }
+
+        @RolesAllowed("${all-roles}")
+        public final String list() {
+            return "list";
         }
 
     }

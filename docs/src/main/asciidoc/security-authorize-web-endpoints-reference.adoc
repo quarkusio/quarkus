@@ -332,6 +332,7 @@ tester.group=Software
 tester.role=Tester
 %prod.secured=User
 %dev.secured=**
+all-roles=Administrator,Software,Tester,User
 ----
 
 [source,java]
@@ -353,32 +354,38 @@ public class SubjectExposingResource {
     @Path("admin")
     @RolesAllowed("${admin}") <1>
     public String getSubjectSecuredAdmin(@Context SecurityContext sec) {
-        Principal user = sec.getUserPrincipal();
-        String name = user != null ? user.getName() : "anonymous";
-        return name;
+        return getUsername(sec);
     }
 
     @GET
     @Path("software-tester")
     @RolesAllowed("${tester.group}-${tester.role}") <2>
     public String getSubjectSoftwareTester(@Context SecurityContext sec) {
-        Principal user = sec.getUserPrincipal();
-        String name = user != null ? user.getName() : "anonymous";
-        return name;
+        return getUsername(sec);
     }
 
     @GET
     @Path("user")
     @RolesAllowed("${customer:User}") <3>
     public String getSubjectUser(@Context SecurityContext sec) {
-        Principal user = sec.getUserPrincipal();
-        String name = user != null ? user.getName() : "anonymous";
-        return name;
+        return getUsername(sec);
     }
+
     @GET
     @Path("secured")
     @RolesAllowed("${secured}") <4>
     public String getSubjectSecured(@Context SecurityContext sec) {
+        return getUsername(sec);
+    }
+
+    @GET
+    @Path("list")
+    @RolesAllowed("${all-roles}") <5>
+    public String getSubjectList(@Context SecurityContext sec) {
+        return getUsername(sec);
+    }
+
+    private String getUsername(SecurityContext sec) {
         Principal user = sec.getUserPrincipal();
         String name = user != null ? user.getName() : "anonymous";
         return name;
@@ -391,6 +398,7 @@ It is possible to use multiple expressions in the role definition.
 <3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation because we did not set the configuration property `customer`.
 <4> In production, this `/subject/secured` endpoint requires an authenticated user with the `User` role.
 In development mode, it allows any authenticated user.
+<5> Property expression `all-roles` will be treated as a collection type `List`, therefore the endpoint will be accessible for roles `Administrator`, `Software`, `Tester` and `User`.
 
 === Permission annotation
 

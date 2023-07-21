@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -279,6 +280,11 @@ public class BootstrapAppModelFactory {
                     }
                 }
             }
+            System.out.println("HOLLY will resolve app arti " + appArtifact);
+            System.out.println("HOLLY will resolve forced " + Arrays.toString(forcedDependencies.toArray()));
+            System.out.println("HOLLY will resolve mana " + managingProject);
+            System.out.println("HOLLY will resolve reloada " + Arrays.toString(reloadableModules.toArray()));
+
             CurationResult curationResult = new CurationResult(getAppModelResolver()
                     .resolveManagedModel(appArtifact, forcedDependencies, managingProject, reloadableModules));
             if (cachedCpPath != null) {

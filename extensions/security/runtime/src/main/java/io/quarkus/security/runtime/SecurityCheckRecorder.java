@@ -4,6 +4,7 @@ import static io.quarkus.security.runtime.QuarkusSecurityRolesAllowedConfigBuild
 
 import java.lang.reflect.InvocationTargetException;
 import java.security.Permission;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -28,6 +29,7 @@ import io.quarkus.security.runtime.interceptor.check.SupplierRolesAllowedCheck;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityCheckStorage;
 import io.smallrye.config.Expressions;
+import io.smallrye.config.common.utils.StringUtil;
 
 @Recorder
 public class SecurityCheckRecorder {
@@ -69,7 +71,7 @@ public class SecurityCheckRecorder {
     private static Supplier<String[]> resolveRolesAllowedConfigExp(String[] allowedRoles, int[] configExpIndexes,
             int[] configKeys) {
 
-        final String[] roles = Arrays.copyOf(allowedRoles, allowedRoles.length);
+        final List<String> roles = new ArrayList<>(Arrays.asList(allowedRoles));
         return new Supplier<String[]>() {
             @Override
             public String[] get() {
@@ -79,10 +81,29 @@ public class SecurityCheckRecorder {
                     // property expressions are enabled
                     for (int i = 0; i < configExpIndexes.length; i++) {
                         // resolve configuration expressions specified as value of the @RolesAllowed annotation
-                        roles[configExpIndexes[i]] = config.getValue(transformToKey(configKeys[i]), String.class);
+                        var strVal = config.getValue(transformToKey(configKeys[i]), String.class);
+
+                        // treat config value that contains collection separator as a list
+                        // @RolesAllowed({"${my.roles}"}) => my.roles=one,two <=> @RolesAllowed({"one", "two"})
+                        if (strVal != null && strVal.contains(",")) {
+                            var strArr = StringUtil.split(strVal);
+                            if (strArr.length > 1) {
+                                // role order is irrelevant as logical operator between them is OR
+
+                                // first role will go to the original place
+                                strVal = strArr[0];
+
+                                // the rest of the roles will be appended at the end
+                                for (int i1 = 1; i1 < strArr.length; i1++) {
+                                    roles.add(strArr[i1]);
+                                }
+                            }
+                        }
+
+                        roles.set(configExpIndexes[i], strVal);
                     }
                 }
-                return roles;
+                return roles.toArray(String[]::new);
             }
         };
     }

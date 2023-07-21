@@ -1,5 +1,12 @@
 package io.quarkus.resteasy.server.common.deployment;
 
+import static io.quarkus.resteasy.common.spi.ResteasyDotNames.CONTEXT;
+import static io.quarkus.resteasy.common.spi.ResteasyDotNames.COOKIE_PARAM;
+import static io.quarkus.resteasy.common.spi.ResteasyDotNames.FORM_PARAM;
+import static io.quarkus.resteasy.common.spi.ResteasyDotNames.HEADER_PARAM;
+import static io.quarkus.resteasy.common.spi.ResteasyDotNames.MATRIX_PARAM;
+import static io.quarkus.resteasy.common.spi.ResteasyDotNames.PATH_PARAM;
+import static io.quarkus.resteasy.common.spi.ResteasyDotNames.QUERY_PARAM;
 import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
 import java.lang.reflect.InvocationTargetException;
@@ -422,6 +429,15 @@ public class ResteasyServerCommonProcessor {
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(rootPath, path, resteasyInitParameters));
 
+        Set<DotName> restConstructorAnnotations = Set.of(
+                CONTEXT,
+                PATH_PARAM,
+                QUERY_PARAM,
+                HEADER_PARAM,
+                FORM_PARAM,
+                MATRIX_PARAM,
+                COOKIE_PARAM);
+
         Set<DotName> autoInjectAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
                 .collect(Collectors.toSet());
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
@@ -436,10 +452,34 @@ public class ResteasyServerCommonProcessor {
                 ClassInfo clazz = context.getTarget().asClass();
                 if (clazz.declaredAnnotation(ResteasyDotNames.PATH) != null) {
                     // Root resources - no need to add scope, @Path is a bean defining annotation
+                    Transformation transformation = context.transform();
                     if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MyResource.class)
-                        context.transform().add(createTypedAnnotationInstance(clazz)).done();
+                        transformation.add(createTypedAnnotationInstance(clazz));
                     }
+
+                    // If we find a constructor with REST annotations it should be created by RESTEasy and not CDI, so we Veto
+                    // https://issues.redhat.com/browse/RESTEASY-1538
+                    // https://issues.redhat.com/browse/RESTEASY-2183
+                    // https://github.com/jakartaee/rest/issues/633
+                    // https://github.com/jakartaee/rest/issues/938
+                    boolean restConstructorFound = false;
+                    outer: for (MethodInfo constructor : clazz.constructors()) {
+                        for (MethodParameterInfo parameter : constructor.parameters()) {
+                            for (DotName paramAnnotation : restConstructorAnnotations) {
+                                if (parameter.hasAnnotation(paramAnnotation)) {
+                                    restConstructorFound = true;
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+
+                    if (restConstructorFound) {
+                        transformation.add(DotNames.VETOED);
+                    }
+
+                    transformation.done();
                     return;
                 }
                 if (scopes.isScopeIn(context.getAnnotations())) {
@@ -471,6 +511,19 @@ public class ResteasyServerCommonProcessor {
                     if (clazz.declaredAnnotation(DotNames.TYPED) == null) {
                         // Add @Typed(MySubresource.class)
                         transformation.add(createTypedAnnotationInstance(clazz));
+                    }
+                    // Force constructors with arguments to also include @Inject, because sub-resources can be managed by the user
+                    if (!clazz.hasNoArgsConstructor()) {
+                        boolean hasInject = false;
+                        for (final MethodInfo constructor : clazz.constructors()) {
+                            if (constructor.hasAnnotation(DotNames.INJECT)) {
+                                hasInject = true;
+                                break;
+                            }
+                        }
+                        if (!hasInject) {
+                            transformation.add(DotNames.VETOED);
+                        }
                     }
                     transformation.done();
                 }
@@ -645,7 +698,7 @@ public class ResteasyServerCommonProcessor {
             ClassInfo classInfo = index.getClassByName(DotName.createSimple(providerToRegister));
             boolean includeFields = false;
             if (classInfo != null) {
-                includeFields = classInfo.annotationsMap().containsKey(ResteasyDotNames.CONTEXT);
+                includeFields = classInfo.annotationsMap().containsKey(CONTEXT);
             }
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, includeFields, providerToRegister));
         }
@@ -769,7 +822,7 @@ public class ResteasyServerCommonProcessor {
     private static void registerContextProxyDefinitions(IndexView index,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition) {
         // @Context uses proxies for interface injection
-        for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.CONTEXT)) {
+        for (AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
             Type annotatedType = null;
             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                 MethodInfo method = annotation.target().asMethod();
@@ -870,7 +923,7 @@ public class ResteasyServerCommonProcessor {
 
             for (short i = 0; i < method.parametersCount(); i++) {
                 Type parameterType = method.parameterType(i);
-                if (!hasAnnotation(method, i, ResteasyDotNames.CONTEXT)) {
+                if (!hasAnnotation(method, i, CONTEXT)) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
                             .type(parameterType)
                             .index(index)

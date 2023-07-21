@@ -205,6 +205,7 @@ jobs:
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
+      virtual_threads_matrix: ${{ steps.calc-virtual_threads-matrix.outputs.matrix }}
       run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
@@ -224,6 +225,13 @@ jobs:
         id: calc-jvm-matrix
         run: |
           json=$(.github/filter-jvm-tests-json.sh)
+          echo "${json}"
+          echo "matrix=${json}" >> $GITHUB_OUTPUT
+      - name: Calculate matrix from virtual-threads-tests.json
+        id: calc-virtual_threads-matrix
+        run: |
+          echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
+          json=$(.github/filter-virtual-threads-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate run flags
@@ -602,23 +610,17 @@ jobs:
             quarkus-quickstarts/target/build-report.json
             quarkus-quickstarts/LICENSE
           retention-days: 2
-  virtual-thread-tests:
-    name: Virtual Thread Support Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{matrix.java.os-name}}
+  virtual-thread-native-tests:
+    name: Virtual Thread Support Tests Native - ${{matrix.category}}
+    runs-on: ${{matrix.os-name}}
     needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
-    if: "needs.calculate-test-jobs.outputs.run_quickstarts == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 90
+    if: "needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    timeout-minutes: ${{matrix.timeout}}
     strategy:
+      max-parallel: 12
       fail-fast: false
-      matrix:
-        java:
-          - {
-            name: "20",
-            java-version: 20,
-            os-name: "ubuntu-latest",
-            extra-args: "--enable-preview"
-          }
+      matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
       - uses: actions/checkout@v3
       - name: Download Maven Repo
@@ -629,19 +631,28 @@ jobs:
       - name: Extract Maven Repo
         shell: bash
         run: tar -xzf maven-repo.tgz -C ~
-      - name: Set up JDK ${{ matrix.java.java-version }}
+      - name: Set up JDK 20
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: ${{ matrix.java.java-version }}
-      - name: Run tests
+          java-version: 20
+      # We do this so we can get better analytics for the downloaded version of the build images
+      - name: Update Docker Client User Agent
+        shell: bash
         run: |
-          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml -f integration-tests/virtual-threads clean verify -Dnative -Dextra-args=${{matrix.java.extra-args}} -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-20
+          cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
+      - name: Build
+        shell: bash
+        env:
+          TEST_MODULES: ${{matrix.test-modules}}
+          CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
+        run: |
+          export LANG=en_US && ./mvnw $COMMON_MAVEN_ARGS -f integration-tests/virtual-threads -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dextra-args=--enable-preview -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-20
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
         with:
-          name: "build-reports-Virtual Thread Support - JDK ${{matrix.java.name}}"
+          name: "build-reports-Virtual Thread Support Tests Native - ${{matrix.category}}"
           path: |
             integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml
             integration-tests/virtual-threads/target/build-report.json

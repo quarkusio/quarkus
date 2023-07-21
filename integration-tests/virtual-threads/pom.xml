@@ -29,6 +29,9 @@
         <module>mailer-virtual-threads</module>
         <module>redis-virtual-threads</module>
         <module>rest-client-reactive-virtual-threads</module>
+        <module>kafka-virtual-threads</module>
+        <module>amqp-virtual-threads</module>
+        <module>jms-virtual-threads</module>
     </modules>
 
     <build>
@@ -100,12 +103,23 @@
                         <argLine>--enable-preview -Djdk.tracePinnedThreads -Dgradle.scan.captureTestLogging=false</argLine>
                         <skipTests>${skipTests}</skipTests>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <id>pinning-test</id>
+                            <goals>
+                                <goal>test</goal>
+                            </goals>
+                            <configuration>
+                                <includes>
+                                    <include>NoPinningVerify.java</include>
+                                </includes>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${project.version}</version>
-                    <extensions>true</extensions>
                     <executions>
                         <execution>
                             <goals>

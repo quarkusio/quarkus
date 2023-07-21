@@ -28,6 +28,9 @@ public class ResourceTest {
     @TestHTTPResource(value = "/client/ping")
     URL clientUrl;
 
+    @TestHTTPResource(value = "/client2/ping")
+    URL client2Url;
+
     private WebClient webClient;
 
     @BeforeEach
@@ -52,6 +55,13 @@ public class ResourceTest {
     @Test
     public void shouldReturnPongFromClient() throws Exception {
         HttpResponse<?> response = call(clientUrl);
+        // if it's empty, it's because the REST Client is not using the HTTP/2 version
+        assertEquals("pong", response.bodyAsString());
+    }
+
+    @Test
+    public void shouldReturnPongFromManuallyCreatedClient() throws Exception {
+        HttpResponse<?> response = call(client2Url);
         // if it's empty, it's because the REST Client is not using the HTTP/2 version
         assertEquals("pong", response.bodyAsString());
     }

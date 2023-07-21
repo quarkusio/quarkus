@@ -356,6 +356,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2)) {
             clientBuilder.http2((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2));
+        } else if (restClientsConfig.http2) {
+            clientBuilder.http2(true);
         }
 
         Boolean enableCompression = ConfigProvider.getConfig()

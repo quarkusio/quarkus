@@ -222,13 +222,23 @@ public class ResteasyServerCommonProcessor {
         } else {
             excludedClasses = Collections.emptySet();
         }
+        final String appClass;
         if (resteasyConfig.ignoreApplicationClasses) {
             allowedClasses = Collections.emptySet();
+            appClass = null;
         } else {
             applicationPaths = index.getAnnotations(ResteasyDotNames.APPLICATION_PATH);
             allowedClasses = getAllowedClasses(index);
             jaxrsProvidersToRegisterBuildItem = getFilteredJaxrsProvidersToRegisterBuildItem(
                     jaxrsProvidersToRegisterBuildItem, allowedClasses, excludedClasses);
+
+            Collection<ClassInfo> knownApplications = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION);
+            // getAllowedClasses throws an Exception if multiple Applications are found, so we should only get 1
+            if (knownApplications.size() == 1) {
+                appClass = knownApplications.iterator().next().name().toString();
+            } else {
+                appClass = null;
+            }
         }
 
         boolean filterClasses = !allowedClasses.isEmpty() || !excludedClasses.isEmpty();
@@ -264,12 +274,10 @@ public class ResteasyServerCommonProcessor {
 
         final String rootPath;
         final String path;
-        final String appClass;
         if (!applicationPaths.isEmpty()) {
             AnnotationInstance applicationPath = applicationPaths.iterator().next();
             rootPath = "/";
             path = applicationPath.value().asString();
-            appClass = applicationPath.target().asClass().name().toString();
         } else {
             if (resteasyServletMappingBuildItem.isPresent()) {
                 if (resteasyServletMappingBuildItem.get().getPath().endsWith("/*")) {
@@ -279,11 +287,9 @@ public class ResteasyServerCommonProcessor {
                     rootPath = resteasyServletMappingBuildItem.get().getPath();
                 }
                 path = rootPath;
-                appClass = null;
             } else {
                 rootPath = resteasyConfig.path;
                 path = resteasyConfig.path;
-                appClass = null;
             }
         }
 

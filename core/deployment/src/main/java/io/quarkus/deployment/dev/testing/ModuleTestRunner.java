@@ -40,6 +40,7 @@ public class ModuleTestRunner {
     Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener) {
 
         var old = Thread.currentThread().getContextClassLoader();
+        System.out.println("43 HOLLY module test runner setting TCCL to augment classloader");
         Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
         try {
             synchronized (this) {
@@ -84,6 +85,8 @@ public class ModuleTestRunner {
                 @Override
                 public void run() {
                     var old = Thread.currentThread().getContextClassLoader();
+                    System.out.println("88 HOLLY module test runner setting TCCL to augment classloader "
+                            + testApplication.getAugmentClassLoader());
                     Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
                     try {
                         prepared.run();
@@ -92,11 +95,15 @@ public class ModuleTestRunner {
                             runner = null;
                         }
                         Thread.currentThread().setContextClassLoader(old);
+                        System.out.println("97 HOLLY module test runner setting TCCL to old classloader "
+                                + old);
                     }
                 }
             };
         } finally {
             Thread.currentThread().setContextClassLoader(old);
+            System.out.println("104 HOLLY module test runner setting TCCL to old classloader "
+                    + old);
         }
     }
 

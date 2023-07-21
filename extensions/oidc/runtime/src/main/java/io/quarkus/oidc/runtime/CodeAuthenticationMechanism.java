@@ -106,7 +106,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 @Override
                                 public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
                                     return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
-                                            requestParams);
+                                            requestParams, cookies);
                                 }
                             });
                 }
@@ -115,7 +115,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 return Uni.createFrom().failure(new AuthenticationFailedException());
             } else {
                 return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
-                        context.queryParams());
+                        context.queryParams(), cookies);
             }
         }
 
@@ -136,7 +136,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private Uni<SecurityIdentity> processRedirectFromOidc(RoutingContext context, OidcTenantConfig oidcTenantConfig,
-            IdentityProviderManager identityProviderManager, MultiMap requestParams) {
+            IdentityProviderManager identityProviderManager, MultiMap requestParams,
+            Map<String, Cookie> cookies) {
 
         // At this point it has already been detected that some state cookie is available.
         // If the state query parameter is not available or is available but no matching state cookie is found then if
@@ -150,16 +151,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         List<String> stateQueryParam = requestParams.getAll(OidcConstants.CODE_FLOW_STATE);
         if (stateQueryParam.size() != 1) {
-            LOG.debug("State parameter can not be empty or multi-valued if the state cookie is present");
-            return stateCookieIsMissing(oidcTenantConfig, context);
+            return stateParamIsMissing(oidcTenantConfig, context, cookies, stateQueryParam.size() > 1);
         }
 
         final Cookie stateCookie = context.request().getCookie(
                 getStateCookieName(oidcTenantConfig) + "_" + stateQueryParam.get(0));
 
         if (stateCookie == null) {
-            LOG.debug("Matching state cookie is not found");
-            return stateCookieIsMissing(oidcTenantConfig, context);
+            return stateCookieIsMissing(oidcTenantConfig, context, cookies);
         }
 
         String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
@@ -239,14 +238,44 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     }
 
-    private Uni<SecurityIdentity> stateCookieIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context) {
+    private Uni<SecurityIdentity> stateParamIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context,
+            Map<String, Cookie> cookies, boolean multipleStateQueryParams) {
+        if (multipleStateQueryParams) {
+            LOG.warn("State query parameter can not be multi-valued if the state cookie is present");
+            removeStateCookies(oidcTenantConfig, context, cookies);
+            return Uni.createFrom().failure(new AuthenticationCompletionException());
+        }
+        LOG.debug("State parameter can not be empty if the state cookie is present");
+        return stateCookieIsNotMatched(oidcTenantConfig, context, cookies);
+    }
+
+    private Uni<SecurityIdentity> stateCookieIsMissing(OidcTenantConfig oidcTenantConfig, RoutingContext context,
+            Map<String, Cookie> cookies) {
+        LOG.debug("Matching state cookie is not found");
+        return stateCookieIsNotMatched(oidcTenantConfig, context, cookies);
+    }
+
+    private Uni<SecurityIdentity> stateCookieIsNotMatched(OidcTenantConfig oidcTenantConfig, RoutingContext context,
+            Map<String, Cookie> cookies) {
         if (!oidcTenantConfig.authentication.allowMultipleCodeFlows
                 || context.request().path().equals(getRedirectPath(oidcTenantConfig, context))) {
-            return Uni.createFrom().failure(new AuthenticationCompletionException());
-        } else {
-            context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
-            return Uni.createFrom().optional(Optional.empty());
+            if (oidcTenantConfig.authentication.failOnMissingStateParam) {
+                return Uni.createFrom().failure(new AuthenticationCompletionException());
+            } else {
+                removeStateCookies(oidcTenantConfig, context, cookies);
+            }
         }
+        context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
+        return Uni.createFrom().optional(Optional.empty());
+    }
+
+    private void removeStateCookies(OidcTenantConfig oidcTenantConfig, RoutingContext context, Map<String, Cookie> cookies) {
+        for (String name : cookies.keySet()) {
+            if (name.startsWith(OidcUtils.STATE_COOKIE_NAME)) {
+                OidcUtils.removeCookie(context, oidcTenantConfig, name);
+            }
+        }
+
     }
 
     private String getRequestParametersAsQuery(URI requestUri, MultiMap requestParams, OidcTenantConfig oidcConfig) {

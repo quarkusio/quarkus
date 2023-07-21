@@ -28,7 +28,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     protected NativeImageBuildContainerRunner(NativeConfig nativeConfig) {
         this.nativeConfig = nativeConfig;
-        containerRuntime = nativeConfig.containerRuntime().orElseGet(ContainerRuntimeUtil::detectContainerRuntime);
+        containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
 
         this.baseContainerRuntimeArgs = new String[] { "--env", "LANG=C", "--rm" };
 

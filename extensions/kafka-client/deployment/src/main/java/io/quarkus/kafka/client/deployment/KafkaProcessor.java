@@ -53,7 +53,6 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.xerial.snappy.OSInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -95,6 +94,7 @@ import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
 import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
+import io.quarkus.kafka.client.runtime.SnappyRecorder;
 import io.quarkus.kafka.client.runtime.ui.KafkaTopicClient;
 import io.quarkus.kafka.client.runtime.ui.KafkaUiRecorder;
 import io.quarkus.kafka.client.runtime.ui.KafkaUiUtils;
@@ -292,7 +292,7 @@ public class KafkaProcessor {
 
     }
 
-    @BuildStep(onlyIf = { IsSnappy.class, NativeOrNativeSourcesBuild.class })
+    @BuildStep(onlyIf = { HasSnappy.class, NativeOrNativeSourcesBuild.class })
     public void handleSnappyInNative(NativeImageRunnerBuildItem nativeImageRunner,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs) {
@@ -307,19 +307,17 @@ public class KafkaProcessor {
             String path = root + dir + "/" + snappyNativeLibraryName;
             nativeLibs.produce(new NativeImageResourceBuildItem(path));
         } else { // otherwise the native lib of the platform this build runs on
-            String dir = OSInfo.getNativeLibFolderPathForCurrentOS();
+            String dir = SnappyUtils.getNativeLibFolderPathForCurrentOS();
             String snappyNativeLibraryName = System.mapLibraryName("snappyjava");
             String path = root + dir + "/" + snappyNativeLibraryName;
             nativeLibs.produce(new NativeImageResourceBuildItem(path));
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = HasSnappy.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadSnappyIfEnabled(KafkaRecorder recorder, KafkaBuildTimeConfig config) {
-        if (config.snappyEnabled) {
-            recorder.loadSnappy();
-        }
+    void loadSnappyIfEnabled(SnappyRecorder recorder, KafkaBuildTimeConfig config) {
+        recorder.loadSnappy();
     }
 
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
@@ -585,17 +583,17 @@ public class KafkaProcessor {
                 .build();
     }
 
-    public static final class IsSnappy implements BooleanSupplier {
+    public static final class HasSnappy implements BooleanSupplier {
 
         private final KafkaBuildTimeConfig config;
 
-        public IsSnappy(KafkaBuildTimeConfig config) {
+        public HasSnappy(KafkaBuildTimeConfig config) {
             this.config = config;
         }
 
         @Override
         public boolean getAsBoolean() {
-            return config.snappyEnabled;
+            return QuarkusClassLoader.isClassPresentAtRuntime("org.xerial.snappy.OSInfo") && config.snappyEnabled;
         }
     }
 

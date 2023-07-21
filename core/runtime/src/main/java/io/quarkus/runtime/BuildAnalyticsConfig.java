@@ -23,7 +23,7 @@ public class BuildAnalyticsConfig {
     /**
      * The Segment base URI.
      */
-    @ConfigItem
+    @ConfigItem(name = "uri.base")
     public Optional<String> uriBase;
 
     /**

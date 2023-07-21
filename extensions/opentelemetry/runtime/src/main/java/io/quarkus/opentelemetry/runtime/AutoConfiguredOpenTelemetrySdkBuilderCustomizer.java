@@ -11,6 +11,7 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.resources.Resource;
@@ -19,6 +20,7 @@ import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
+import io.quarkus.opentelemetry.TextMapPropagatorCustomizer;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.RemoveableLateBoundBatchSpanProcessor;
@@ -162,6 +164,40 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             return builder;
                         }
                     });
+        }
+    }
+
+    @Singleton
+    final class TextMapPropagatorCustomizers implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
+
+        private final List<TextMapPropagatorCustomizer> customizers;
+
+        public TextMapPropagatorCustomizers(@All List<TextMapPropagatorCustomizer> customizers) {
+            this.customizers = customizers;
+        }
+
+        @Override
+        public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
+            for (TextMapPropagatorCustomizer customizer : customizers) {
+                builder.addPropagatorCustomizer(
+                        new BiFunction<>() {
+                            @Override
+                            public TextMapPropagator apply(TextMapPropagator textMapPropagator,
+                                    ConfigProperties configProperties) {
+                                return customizer.customize(new TextMapPropagatorCustomizer.Context() {
+                                    @Override
+                                    public TextMapPropagator propagator() {
+                                        return textMapPropagator;
+                                    }
+
+                                    @Override
+                                    public ConfigProperties otelConfigProperties() {
+                                        return configProperties;
+                                    }
+                                });
+                            }
+                        });
+            }
         }
     }
 }

@@ -35,6 +35,7 @@ import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
@@ -221,6 +222,22 @@ public class HttpSecurityRecorder {
             Map<String, List<String>> roleToPermissionsStr, BiFunction<String, String[], Permission> permissionCreator) {
         final Map<String, Set<Permission>> roleToPermissions = createPermissions(roleToPermissionsStr, permissionCreator);
         return new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(rolesAllowed, roleToPermissions));
+    }
+
+    public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
+            Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> endpointRuntimeValToInterceptor) {
+
+        final Map<MethodDescription, Consumer<RoutingContext>> endpointToInterceptor = new HashMap<>();
+        for (var entry : endpointRuntimeValToInterceptor.entrySet()) {
+            endpointToInterceptor.put(entry.getKey().getValue(), entry.getValue());
+        }
+
+        return new Supplier<EagerSecurityInterceptorStorage>() {
+            @Override
+            public EagerSecurityInterceptorStorage get() {
+                return new EagerSecurityInterceptorStorage(endpointToInterceptor);
+            }
+        };
     }
 
     private static Map<String, Set<Permission>> createPermissions(Map<String, List<String>> roleToPermissions,

@@ -672,52 +672,40 @@ In this example, the value of the last request path segment is a tenant ID, but 
 [[annotations-tenant-resolver]]
 === Resolve with annotations
 
-You can use the annotations and CDI interceptors for resolving the tenant identifiers as an alternative to using
-`quarkus.oidc.TenantResolver`. This can be done by setting the value for the key `OidcUtils.TENANT_ID_ATTRIBUTE` on
-the current `RoutingContext`.
-
-Assuming your application supports two OIDC tenants (`hr`, and default) first you need to define one
-annotation per tenant ID other than default:
+You can use the `io.quarkus.oidc.Tenant` annotation for resolving the tenant identifiers as an alternative to using `io.quarkus.oidc.TenantResolver`.
 
 [NOTE]
 ====
 Proactive HTTP authentication must be disabled (`quarkus.http.auth.proactive=false`) for this to work. For more information, see xref:security-proactive-authentication.adoc[Proactive authentication].
 ====
 
-[source,java]
-----
-@Inherited
-@InterceptorBinding
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
-public @interface HrTenant {
-}
-----
-
-Next, you'll need one interceptor for each of those annotations:
+Assuming your application supports two OIDC tenants (`hr`, and default), all resource methods and classes
+carrying `@Tenant("hr")` will be authenticated using the OIDC provider configured by `quarkus.oidc.hr.auth-server-url`,
+while all other classes and methods will still be authenticated using the default OIDC provider.
 
 [source,java]
 ----
-package io.quarkus.it.keycloak;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
-import jakarta.interceptor.Interceptor;
+import io.quarkus.oidc.Tenant;
+import io.quarkus.security.Authenticated;
 
-import io.quarkus.oidc.TenantResolverInterceptor;
+@Authenticated
+@Path("/api/hello")
+public class HelloResource {
 
-@HrTenant
-@Interceptor
-public class HrInterceptor extends TenantResolverInterceptor {
-    @Override
-    protected String getTenantId() {
-        return "hr";
+    @Tenant("hr") <1>
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String sayHello() {
+        return "Hello!";
     }
 }
-
 ----
-
-Now all methods and classes carrying `@HrTenant` will be authenticated using the OIDC provider configured by
-`quarkus.oidc.hr.auth-server-url`, while all other classes and methods will still be authenticated using the default
-OIDC provider.
+<1> The `io.quarkus.oidc.Tenant` annotation must be placed either on resource class or resource method.
 
 [[tenant-config-resolver]]
 == Dynamic tenant configuration resolution

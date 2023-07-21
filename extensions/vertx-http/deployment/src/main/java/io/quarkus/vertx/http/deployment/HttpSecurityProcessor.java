@@ -1,17 +1,22 @@
 package io.quarkus.vertx.http.deployment;
 
+import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+
 import java.security.Permission;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -27,14 +32,17 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.StringPermission;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AuthenticatedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.DenySecurityPolicy;
+import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
@@ -47,10 +55,9 @@ import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SupplierImpl;
 import io.vertx.core.http.ClientAuth;
+import io.vertx.ext.web.RoutingContext;
 
 public class HttpSecurityProcessor {
-
-    private static final DotName PERMISSION = DotName.createSimple(Permission.class.getName());
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
@@ -272,6 +279,40 @@ public class HttpSecurityProcessor {
             if (!buildTimeConfig.auth.permissions.isEmpty()) {
                 throw new IllegalStateException("HTTP permissions have been set however security is not enabled");
             }
+        }
+    }
+
+    @BuildStep
+    void collectEagerSecurityInterceptors(List<EagerSecurityInterceptorCandidateBuildItem> interceptorCandidates,
+            HttpBuildTimeConfig buildTimeConfig, Capabilities capabilities,
+            BuildProducer<EagerSecurityInterceptorBuildItem> interceptorsProducer) {
+        if (!buildTimeConfig.auth.proactive && capabilities.isPresent(Capability.SECURITY)
+                && !interceptorCandidates.isEmpty()) {
+            List<MethodInfo> allInterceptedMethodInfos = interceptorCandidates
+                    .stream()
+                    .map(EagerSecurityInterceptorCandidateBuildItem::getMethodInfo)
+                    .collect(Collectors.toList());
+            Map<RuntimeValue<MethodDescription>, Consumer<RoutingContext>> methodToInterceptor = interceptorCandidates
+                    .stream()
+                    .collect(Collectors.toMap(EagerSecurityInterceptorCandidateBuildItem::getDescriptionRuntimeValue,
+                            EagerSecurityInterceptorCandidateBuildItem::getSecurityInterceptor));
+            interceptorsProducer.produce(new EagerSecurityInterceptorBuildItem(allInterceptedMethodInfos, methodToInterceptor));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void produceEagerSecurityInterceptorStorage(HttpSecurityRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> producer,
+            Optional<EagerSecurityInterceptorBuildItem> interceptors) {
+        if (interceptors.isPresent()) {
+            producer.produce(SyntheticBeanBuildItem
+                    .configure(EagerSecurityInterceptorStorage.class)
+                    .scope(ApplicationScoped.class)
+                    .supplier(
+                            recorder.createSecurityInterceptorStorage(interceptors.get().methodCandidateToSecurityInterceptor))
+                    .unremovable()
+                    .done());
         }
     }
 

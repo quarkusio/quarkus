@@ -176,6 +176,7 @@ import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.Authenticati
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.ForbiddenExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.UnauthorizedExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler;
+import io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityInterceptorHandler;
 import io.quarkus.resteasy.reactive.server.runtime.security.SecurityContextOverrideHandler;
 import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
@@ -198,6 +199,7 @@ import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.ForbiddenException;
+import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
@@ -1485,11 +1487,12 @@ public class ResteasyReactiveProcessor {
 
     @BuildStep
     MethodScannerBuildItem integrateEagerSecurity(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
-            HttpBuildTimeConfig httpBuildTimeConfig) {
+            HttpBuildTimeConfig httpBuildTimeConfig, Optional<EagerSecurityInterceptorBuildItem> eagerSecurityInterceptors) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return null;
         }
 
+        final boolean applySecurityInterceptors = eagerSecurityInterceptors.isPresent();
         final boolean denyJaxRs = ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.security.jaxrs.deny-unannotated-endpoints", Boolean.class).orElse(false);
         final boolean hasDefaultJaxRsRolesAllowed = ConfigProvider.getConfig()
@@ -1507,6 +1510,17 @@ public class ResteasyReactiveProcessor {
                 if (securityHandlerList == null && (denyJaxRs || hasDefaultJaxRsRolesAllowed)) {
                     securityHandlerList = Collections
                             .singletonList(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
+                }
+                if (applySecurityInterceptors && eagerSecurityInterceptors.get().applyInterceptorOn(method)) {
+                    List<HandlerChainCustomizer> nextSecurityHandlerList = new ArrayList<>();
+                    nextSecurityHandlerList.add(EagerSecurityInterceptorHandler.Customizer.newInstance());
+
+                    // EagerSecurityInterceptorHandler must be run before EagerSecurityHandler
+                    if (securityHandlerList != null) {
+                        nextSecurityHandlerList.addAll(securityHandlerList);
+                    }
+
+                    securityHandlerList = List.copyOf(nextSecurityHandlerList);
                 }
                 return Objects.requireNonNullElse(securityHandlerList, Collections.emptyList());
             }

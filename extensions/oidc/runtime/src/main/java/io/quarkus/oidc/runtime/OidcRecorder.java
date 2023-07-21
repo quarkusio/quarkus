@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -28,15 +29,18 @@ import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.security.spi.runtime.MethodDescription;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.ProxyOptions;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -83,6 +87,10 @@ public class OidcRecorder {
                         ExecutorRecorder.getCurrent());
             }
         };
+    }
+
+    public RuntimeValue<MethodDescription> methodInfoToDescription(String className, String methodName, String[] paramTypes) {
+        return new RuntimeValue<>(new MethodDescription(className, methodName, paramTypes));
     }
 
     private Uni<TenantConfigContext> createDynamicTenantContext(Vertx vertx,
@@ -477,5 +485,14 @@ public class OidcRecorder {
         return new OidcConfigurationMetadata(tokenUri,
                 introspectionUri, authorizationUri, jwksUri, userInfoUri, endSessionUri,
                 oidcConfig.token.issuer.orElse(null));
+    }
+
+    public Consumer<RoutingContext> createTenantResolverInterceptor(String tenantId) {
+        return new Consumer<RoutingContext>() {
+            @Override
+            public void accept(RoutingContext routingContext) {
+                routingContext.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
+            }
+        };
     }
 }

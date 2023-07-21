@@ -43,7 +43,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in {quickstarts-tree-url}/optaplanner-quickstart[the `optaplanner-quickstart` directory].
+The solution is located in link:{quickstarts-tree-url}/optaplanner-quickstart[the `optaplanner-quickstart` directory].
 
 == Prerequisites
 
@@ -1097,4 +1097,4 @@ public class TimeTableResourceTest {
 
 . Build an attractive web UI on top of these REST methods to visualize the timetable.
 
-Take a look at {quickstarts-tree-url}/optaplanner-quickstart[the quickstart source code] to see how this all turns out.
+Take a look at link:{quickstarts-tree-url}/optaplanner-quickstart[the quickstart source code] to see how this all turns out.

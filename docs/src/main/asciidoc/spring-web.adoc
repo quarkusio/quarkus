@@ -25,7 +25,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `spring-web-quickstart` {quickstarts-tree-url}/spring-web-quickstart[directory].
+The solution is located in the `spring-web-quickstart` link:{quickstarts-tree-url}/spring-web-quickstart[directory].
 
 == Creating the Maven project
 

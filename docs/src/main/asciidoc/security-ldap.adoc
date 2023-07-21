@@ -37,7 +37,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-ldap-quickstart` {quickstarts-tree-url}/security-ldap-quickstart[directory].
+The solution is located in the `security-ldap-quickstart` link:{quickstarts-tree-url}/security-ldap-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -169,9 +169,9 @@ quarkus.security.ldap.identity-mapping.attribute-mappings."0".filter-base-dn=ou=
 
 %test.quarkus.security.ldap.dir-context.url=ldap://127.0.0.1:10389 <3>
 ----
-<1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported {quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
+<1> You need to provide the URL to an LDAP server. This example requires the LDAP server to have imported link:{quarkus-blob-url}/test-framework/ldap/src/main/resources/quarkus-io.ldif[this LDIF file].
 <2> `{0}` is substituted by the `uid`.
-<3> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as {quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.
+<3> The URL used by our test resource. Tests may leverage `LdapServerTestResource` provided by Quarkus as link:{quickstarts-blob-url}/security-ldap-quickstart/src/test/java/org/acme/elytron/security/ldap/ElytronLdapExtensionTestResources.java[we do] in the test coverage of the example application.
 
 The `elytron-security-ldap` extension requires a dir-context and an identity-mapping with at least one attribute-mapping to authenticate the user and its identity.
 

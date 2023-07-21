@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -20,6 +21,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.jaxb.deployment.JaxbClassesToBeBoundBuildItem;
+import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 
 public class ResteasyJaxbProcessor {
 
@@ -59,6 +61,23 @@ public class ResteasyJaxbProcessor {
     @BuildStep
     void build(BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_JAXB));
+    }
+
+    @BuildStep
+    void registerProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> jaxrsProviders) {
+        Set<String> providers = Set.of(
+                "org.jboss.resteasy.plugins.providers.SourceProvider",
+                "org.jboss.resteasy.plugins.providers.jaxb.JAXBXmlSeeAlsoProvider",
+                "org.jboss.resteasy.plugins.providers.jaxb.JAXBXmlRootElementProvider",
+                "org.jboss.resteasy.plugins.providers.jaxb.JAXBElementProvider",
+                "org.jboss.resteasy.plugins.providers.jaxb.JAXBXmlTypeProvider",
+                "org.jboss.resteasy.plugins.providers.jaxb.CollectionProvider",
+                "org.jboss.resteasy.plugins.providers.jaxb.MapProvider",
+                "org.jboss.resteasy.plugins.providers.jaxb.XmlJAXBContextFinder");
+
+        for (String provider : providers) {
+            jaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(provider));
+        }
     }
 
     private void addReflectiveClass(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, boolean methods, boolean fields,

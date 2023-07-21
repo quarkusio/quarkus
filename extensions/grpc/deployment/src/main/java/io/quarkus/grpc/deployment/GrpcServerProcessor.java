@@ -5,6 +5,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.grpc.deployment.GrpcDotNames.BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.MUTINY_SERVICE;
 import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
+import static io.quarkus.grpc.deployment.GrpcDotNames.RUN_ON_VIRTUAL_THREAD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 import static java.util.Arrays.asList;
@@ -118,6 +119,8 @@ public class GrpcServerProcessor {
 
         // generated bean class -> blocking methods
         Map<DotName, Set<String>> generatedBeans = new HashMap<>();
+        // generated bean class -> virtual methods
+        Map<DotName, Set<String>> virtuals = new HashMap<>();
         String[] excludedPackages = { "grpc.health.v1", "io.grpc.reflection" };
 
         // We need to transform the generated bean and register a bindable service if:
@@ -169,20 +172,32 @@ public class GrpcServerProcessor {
             if (!excluded) {
                 log.debugf("Registering generated gRPC bean %s that will delegate to %s", generatedBean, userDefinedBean);
                 delegatingBeans.produce(new DelegatingGrpcBeanBuildItem(generatedBean, userDefinedBean));
-                Set<String> blockingMethods = gatherBlockingMethodNames(userDefinedBean, index.getIndex());
-
+                Set<String> blockingMethods = gatherBlockingOrVirtualMethodNames(userDefinedBean, index.getIndex(), false);
+                Set<String> virtualMethods = gatherBlockingOrVirtualMethodNames(userDefinedBean, index.getIndex(), true);
                 generatedBeans.put(generatedBean.name(), blockingMethods);
+                virtuals.put(generatedBean.name(), virtualMethods);
             }
         }
 
-        if (!generatedBeans.isEmpty()) {
+        if (!generatedBeans.isEmpty() || !virtuals.isEmpty()) {
             // For every suitable bean we must:
             // (a) add @Singleton and @GrpcService
             // (b) register a BindableServiceBuildItem, incl. all blocking methods (derived from the user-defined impl)
-            for (Entry<DotName, Set<String>> entry : generatedBeans.entrySet()) {
-                BindableServiceBuildItem bindableService = new BindableServiceBuildItem(entry.getKey());
-                for (String blockingMethod : entry.getValue()) {
-                    bindableService.registerBlockingMethod(blockingMethod);
+            Set<DotName> names = new HashSet<>(generatedBeans.keySet());
+            names.addAll(virtuals.keySet());
+            for (DotName name : names) {
+                BindableServiceBuildItem bindableService = new BindableServiceBuildItem(name);
+                var blocking = generatedBeans.get(name);
+                var rovt = virtuals.get(name);
+                if (blocking != null) {
+                    for (String blockingMethod : blocking) {
+                        bindableService.registerBlockingMethod(blockingMethod);
+                    }
+                }
+                if (rovt != null) {
+                    for (String virtualMethod : rovt) {
+                        bindableService.registerVirtualMethod(virtualMethod);
+                    }
                 }
                 bindables.produce(bindableService);
             }
@@ -220,9 +235,13 @@ public class GrpcServerProcessor {
                 continue;
             }
             BindableServiceBuildItem item = new BindableServiceBuildItem(service.name());
-            Set<String> blockingMethods = gatherBlockingMethodNames(service, index);
+            Set<String> blockingMethods = gatherBlockingOrVirtualMethodNames(service, index, false);
+            Set<String> virtualMethods = gatherBlockingOrVirtualMethodNames(service, index, true);
             for (String method : blockingMethods) {
                 item.registerBlockingMethod(method);
+            }
+            for (String method : virtualMethods) {
+                item.registerVirtualMethod(method);
             }
             bindables.produce(item);
         }
@@ -255,6 +274,7 @@ public class GrpcServerProcessor {
     private enum BlockingMode {
         UNDEFINED(false),
         BLOCKING(true),
+        VIRTUAL_THREAD(true),
         NON_BLOCKING(false),
         // @Transactional on a method
         IMPLICIT(true);
@@ -270,17 +290,24 @@ public class GrpcServerProcessor {
             Supplier<String> exceptionMsgSupplier) {
         boolean blocking = checker.test(BLOCKING);
         boolean nonBlocking = checker.test(NON_BLOCKING);
+        boolean vt = checker.test(RUN_ON_VIRTUAL_THREAD);
         if (blocking && nonBlocking) {
             throw new DeploymentException(exceptionMsgSupplier.get());
         }
-        if (blocking) {
+        if (nonBlocking && vt) {
+            throw new DeploymentException(exceptionMsgSupplier.get());
+        }
+        if (blocking && !vt) {
             return BlockingMode.BLOCKING;
+        }
+        if (vt) {
+            return BlockingMode.VIRTUAL_THREAD;
         }
         if (nonBlocking) {
             return BlockingMode.NON_BLOCKING;
         }
         boolean transactional = checker.test(TRANSACTIONAL);
-        if (transactional) {
+        if (transactional) { // Cannot be on a virtual thread here.
             return BlockingMode.IMPLICIT;
         }
         return BlockingMode.UNDEFINED;
@@ -294,7 +321,8 @@ public class GrpcServerProcessor {
     private static BlockingMode inheritedBlockingMode(Predicate<DotName> checker,
             BlockingMode currentlyKnownMode) {
         boolean transactional = checker.test(TRANSACTIONAL);
-        if (transactional) {
+        boolean vt = checker.test(RUN_ON_VIRTUAL_THREAD);
+        if (transactional && !vt) {
             return BlockingMode.IMPLICIT;
         }
         return currentlyKnownMode;
@@ -310,7 +338,7 @@ public class GrpcServerProcessor {
      * <p>
      * Otherwise returns the "topmost" "non-explicit" annotation (aka {@link jakarta.transaction.Transactional}).
      */
-    private static boolean methodIsBlocking(List<ClassInfo> classes, String methodName, Type[] methodArgs) {
+    private static BlockingMode getMethodBlockingMode(List<ClassInfo> classes, String methodName, Type[] methodArgs) {
         BlockingMode classModeInherited = BlockingMode.UNDEFINED;
         BlockingMode methodMode = BlockingMode.UNDEFINED;
         for (int i = 0; i < classes.size(); i++) {
@@ -327,10 +355,11 @@ public class GrpcServerProcessor {
                 };
                 methodMode = nonInheritedBlockingMode(annotationOnMethod,
                         () -> "Method '" + method.declaringClass().name() + "#" + method.name() +
-                                "' contains both @Blocking and @NonBlocking annotations.");
+                                "' contains both @Blocking and @NonBlocking or both @NonBlocking and @RunOnVirtualThread annotations.");
                 if (methodMode == BlockingMode.UNDEFINED) {
                     methodMode = nonInheritedBlockingMode(annotationOnClass,
-                            () -> "Class '" + ci.name() + "' contains both @Blocking and @NonBlocking annotations.");
+                            () -> "Class '" + ci.name()
+                                    + "' contains both @Blocking and @NonBlocking or both @NonBlocking and @RunOnVirtualThread annotations.");
                 }
 
                 // Handles the case when a method's overridden without an explicit annotation and @Transactional is defined on a superclass
@@ -346,9 +375,9 @@ public class GrpcServerProcessor {
             }
         }
         if (methodMode != BlockingMode.UNDEFINED) {
-            return methodMode.blocking;
+            return methodMode;
         }
-        return classModeInherited.blocking;
+        return classModeInherited;
     }
 
     /**
@@ -374,7 +403,7 @@ public class GrpcServerProcessor {
      * <li>Else: non-blocking.</li>
      * </ol>
      */
-    static Set<String> gatherBlockingMethodNames(ClassInfo service, IndexView index) {
+    static Set<String> gatherBlockingOrVirtualMethodNames(ClassInfo service, IndexView index, boolean virtual) {
 
         Set<String> result = new HashSet<>();
 
@@ -418,7 +447,11 @@ public class GrpcServerProcessor {
             }
 
             // Find the annotations for the current method.
-            if (methodIsBlocking(classes, methodName, implBaseMethod.parameterTypes().toArray(new Type[0]))) {
+            BlockingMode blocking = getMethodBlockingMode(classes, methodName,
+                    implBaseMethod.parameterTypes().toArray(new Type[0]));
+            if (virtual && blocking == BlockingMode.VIRTUAL_THREAD) {
+                result.add(methodName);
+            } else if (blocking.blocking) {
                 result.add(methodName);
             }
         }
@@ -563,6 +596,7 @@ public class GrpcServerProcessor {
             List<AdditionalGlobalInterceptorBuildItem> additionalGlobalInterceptors,
             List<DelegatingGrpcBeanBuildItem> delegatingGrpcBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+
             RecorderContext recorderContext,
             GrpcServerRecorder recorder) {
 
@@ -659,13 +693,19 @@ public class GrpcServerProcessor {
                 blocking.put(bindable.serviceClass.toString(), bindable.blockingMethods);
             }
         }
+        Map<String, List<String>> virtuals = new HashMap<>();
+        for (BindableServiceBuildItem bindable : bindables) {
+            if (bindable.hasVirtualMethods()) {
+                virtuals.put(bindable.serviceClass.toString(), bindable.virtualMethods);
+            }
+        }
 
         if (!bindables.isEmpty()
                 || (LaunchMode.current() == LaunchMode.DEVELOPMENT && buildTimeConfig.devMode.forceServerStart)) {
             //Uses mainrouter when the 'quarkus.http.root-path' is not '/'
             recorder.initializeGrpcServer(vertx.getVertx(),
                     routerBuildItem.getMainRouter() != null ? routerBuildItem.getMainRouter() : routerBuildItem.getHttpRouter(),
-                    config, shutdown, blocking, launchModeBuildItem.getLaunchMode());
+                    config, shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;

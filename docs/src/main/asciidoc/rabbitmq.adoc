@@ -396,7 +396,7 @@ version: '2'
 services:
 
   rabbit:
-    image: rabbitmq:3.9-management
+    image: rabbitmq:3.12-management
     ports:
       - "5672:5672"
     networks:

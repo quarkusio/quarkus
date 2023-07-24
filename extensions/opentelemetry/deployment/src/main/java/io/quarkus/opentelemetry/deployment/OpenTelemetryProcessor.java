@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
@@ -72,7 +73,10 @@ public class OpenTelemetryProcessor {
     AdditionalBeanBuildItem ensureProducerIsRetained() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
-                .addBeanClass(OpenTelemetryProducer.class)
+                .addBeanClasses(OpenTelemetryProducer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class)
                 .build();
     }
 

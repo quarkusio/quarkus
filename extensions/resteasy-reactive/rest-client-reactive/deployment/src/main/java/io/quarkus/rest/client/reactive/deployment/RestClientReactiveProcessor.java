@@ -2,6 +2,8 @@ package io.quarkus.rest.client.reactive.deployment;
 
 import static io.quarkus.arc.processor.MethodDescriptors.MAP_PUT;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_EXCEPTION_MAPPER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAM;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
@@ -12,7 +14,7 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVI
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.RESPONSE_EXCEPTION_MAPPER;
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.CDI_WRAPPER_SUFFIX;
 import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isImplementorOf;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION;
@@ -122,6 +124,8 @@ class RestClientReactiveProcessor {
             CLIENT_HEADER_PARAMS,
             CLIENT_QUERY_PARAM,
             CLIENT_QUERY_PARAMS,
+            CLIENT_FORM_PARAM,
+            CLIENT_FORM_PARAMS,
             REGISTER_CLIENT_HEADERS);
 
     @BuildStep

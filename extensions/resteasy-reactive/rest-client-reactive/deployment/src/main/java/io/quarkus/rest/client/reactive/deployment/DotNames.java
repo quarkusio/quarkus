@@ -14,6 +14,8 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
+import io.quarkus.rest.client.reactive.ClientFormParam;
+import io.quarkus.rest.client.reactive.ClientFormParams;
 import io.quarkus.rest.client.reactive.ClientQueryParam;
 import io.quarkus.rest.client.reactive.ClientQueryParams;
 import io.quarkus.rest.client.reactive.ClientRedirectHandler;
@@ -27,6 +29,8 @@ public class DotNames {
 
     public static final DotName CLIENT_QUERY_PARAM = DotName.createSimple(ClientQueryParam.class.getName());
     public static final DotName CLIENT_QUERY_PARAMS = DotName.createSimple(ClientQueryParams.class.getName());
+    public static final DotName CLIENT_FORM_PARAM = DotName.createSimple(ClientFormParam.class.getName());
+    public static final DotName CLIENT_FORM_PARAMS = DotName.createSimple(ClientFormParams.class.getName());
     public static final DotName REGISTER_CLIENT_HEADERS = DotName.createSimple(RegisterClientHeaders.class.getName());
     public static final DotName CLIENT_REQUEST_FILTER = DotName.createSimple(ClientRequestFilter.class.getName());
     public static final DotName CLIENT_RESPONSE_FILTER = DotName.createSimple(ClientResponseFilter.class.getName());

@@ -2,6 +2,8 @@ package io.quarkus.rest.client.reactive.deployment;
 
 import static io.quarkus.arc.processor.DotNames.STRING;
 import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAM;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_FORM_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
@@ -25,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.Configurable;
+import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
@@ -47,7 +51,9 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
+import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartForm;
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -69,6 +75,8 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.jaxrs.client.reactive.deployment.JaxrsClientReactiveEnricher;
+import io.quarkus.rest.client.reactive.ClientFormParam;
+import io.quarkus.rest.client.reactive.ClientQueryParam;
 import io.quarkus.rest.client.reactive.ComputedParamContext;
 import io.quarkus.rest.client.reactive.HeaderFiller;
 import io.quarkus.rest.client.reactive.deployment.MicroProfileRestClientEnricher.RestClientAnnotationExpressionParser.Node;
@@ -124,6 +132,14 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             ComputedParamContextImpl.class, "getMethodParameterFromContext", Object.class, ClientRequestContext.class,
             int.class);
 
+    private static final MethodDescriptor MAP_CONTAINS_KEY_METHOD = MethodDescriptor.ofMethod(Map.class,
+            "containsKey", boolean.class, Object.class);
+    private static final MethodDescriptor MULTIVALUED_MAP_ADD_ALL_METHOD = MethodDescriptor.ofMethod(MultivaluedMap.class,
+            "addAll", void.class, Object.class, List.class);
+    private static final MethodDescriptor QUARKUS_MULTIPART_FORM_ATTRIBUTE_METHOD = MethodDescriptor.ofMethod(
+            QuarkusMultipartForm.class,
+            "attribute", QuarkusMultipartForm.class, String.class, String.class, String.class);
+
     private static final Type STRING_TYPE = Type.create(DotName.STRING_NAME, Type.Kind.CLASS);
 
     private final Map<ClassInfo, String> interfaceMocks = new HashMap<>();
@@ -172,10 +188,13 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     @Override
     public void forWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo interfaceClass, MethodInfo method,
             AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
-        Map<String, QueryData> queryParamsByName = new HashMap<>();
-        collectClientQueryParamData(interfaceClass, method, queryParamsByName);
-        for (var headerEntry : queryParamsByName.entrySet()) {
-            addQueryParam(method, methodCreator, headerEntry.getValue(), webTarget, generatedClasses, index);
+
+        Map<String, ParamData> queryParamsByName = new HashMap<>();
+        collectClientParamData(interfaceClass, method, queryParamsByName,
+                CLIENT_QUERY_PARAM, CLIENT_QUERY_PARAMS, ClientQueryParam.class.getSimpleName());
+
+        for (var queryEntry : queryParamsByName.entrySet()) {
+            addQueryParam(method, methodCreator, queryEntry.getValue(), webTarget, generatedClasses, index);
         }
     }
 
@@ -184,70 +203,178 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             ClassInfo subInterfaceClass, MethodInfo rootMethod, MethodInfo subMethod,
             AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
 
-        Map<String, QueryData> queryParamsByName = new HashMap<>();
-        collectClientQueryParamData(rootInterfaceClass, rootMethod, queryParamsByName);
-        collectClientQueryParamData(subInterfaceClass, subMethod, queryParamsByName);
+        Map<String, ParamData> queryParamsByName = new HashMap<>();
+        collectClientParamData(rootInterfaceClass, rootMethod, queryParamsByName,
+                CLIENT_QUERY_PARAM, CLIENT_QUERY_PARAMS, ClientQueryParam.class.getSimpleName());
+        collectClientParamData(subInterfaceClass, subMethod, queryParamsByName,
+                CLIENT_QUERY_PARAM, CLIENT_QUERY_PARAMS, ClientQueryParam.class.getSimpleName());
+
         for (var headerEntry : queryParamsByName.entrySet()) {
             addQueryParam(subMethod, methodCreator, headerEntry.getValue(), webTarget, generatedClasses, index);
         }
     }
 
-    private void collectClientQueryParamData(ClassInfo interfaceClass, MethodInfo method,
-            Map<String, QueryData> headerFillersByName) {
-        AnnotationInstance classLevelHeader = interfaceClass.declaredAnnotation(CLIENT_QUERY_PARAM);
-        if (classLevelHeader != null) {
-            headerFillersByName.put(classLevelHeader.value("name").asString(),
-                    new QueryData(classLevelHeader, interfaceClass));
-        }
-        putAllQueryAnnotations(headerFillersByName,
-                interfaceClass,
-                extractAnnotations(interfaceClass.declaredAnnotation(CLIENT_QUERY_PARAMS)));
+    @Override
+    public AssignableResultHandle handleFormParams(MethodCreator methodCreator, IndexView index, ClassInfo interfaceClass,
+            MethodInfo method, BuildProducer<GeneratedClassBuildItem> generatedClasses, AssignableResultHandle formParams,
+            boolean multipart) {
 
-        Map<String, QueryData> methodLevelHeadersByName = new HashMap<>();
-        AnnotationInstance methodLevelHeader = method.annotation(CLIENT_QUERY_PARAM);
-        if (methodLevelHeader != null) {
-            methodLevelHeadersByName.put(methodLevelHeader.value("name").asString(),
-                    new QueryData(methodLevelHeader, interfaceClass));
-        }
-        putAllQueryAnnotations(methodLevelHeadersByName, interfaceClass,
-                extractAnnotations(method.annotation(CLIENT_QUERY_PARAMS)));
+        Map<String, ParamData> formParamsByName = new HashMap<>();
+        collectClientParamData(interfaceClass, method, formParamsByName,
+                CLIENT_FORM_PARAM, CLIENT_FORM_PARAMS, ClientFormParam.class.getSimpleName());
 
-        headerFillersByName.putAll(methodLevelHeadersByName);
+        if (!formParamsByName.isEmpty() && formParams == null) {
+            formParams = createFormData(methodCreator, multipart);
+        }
+
+        for (var formEntry : formParamsByName.entrySet()) {
+            addFormParam(method, methodCreator, formEntry.getValue(), generatedClasses, index, formParams, multipart);
+        }
+
+        return formParams;
     }
 
-    private void putAllQueryAnnotations(Map<String, QueryData> headerMap, ClassInfo interfaceClass,
-            AnnotationInstance[] annotations) {
+    @Override
+    public AssignableResultHandle handleFormParamsForSubResource(MethodCreator methodCreator, IndexView index,
+            ClassInfo rootInterfaceClass, ClassInfo subInterfaceClass, MethodInfo rootMethod, MethodInfo subMethod,
+            AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            AssignableResultHandle formParams, boolean multipart) {
+
+        Map<String, ParamData> formParamsByName = new HashMap<>();
+        collectClientParamData(rootInterfaceClass, rootMethod, formParamsByName,
+                CLIENT_FORM_PARAM, CLIENT_FORM_PARAMS, ClientFormParam.class.getSimpleName());
+        collectClientParamData(subInterfaceClass, subMethod, formParamsByName,
+                CLIENT_FORM_PARAM, CLIENT_FORM_PARAMS, ClientFormParam.class.getSimpleName());
+
+        if (!formParamsByName.isEmpty() && formParams == null) {
+            formParams = createFormData(methodCreator, multipart);
+        }
+
+        for (var formEntry : formParamsByName.entrySet()) {
+            addFormParam(subMethod, methodCreator, formEntry.getValue(), generatedClasses, index, formParams, multipart);
+        }
+
+        return formParams;
+    }
+
+    private AssignableResultHandle createFormData(BytecodeCreator methodCreator, boolean multipart) {
+        AssignableResultHandle formParams;
+        if (multipart) {
+            formParams = methodCreator.createVariable(QuarkusMultipartForm.class);
+            methodCreator.assign(formParams,
+                    methodCreator.newInstance(MethodDescriptor.ofConstructor(QuarkusMultipartForm.class)));
+        } else {
+            formParams = methodCreator.createVariable(MultivaluedMap.class);
+            methodCreator.assign(formParams,
+                    methodCreator.newInstance(MethodDescriptor.ofConstructor(MultivaluedHashMap.class)));
+        }
+        return formParams;
+    }
+
+    private void addQueryParam(MethodInfo declaringMethod, MethodCreator methodCreator,
+            ParamData paramData, AssignableResultHandle webTargetImpl,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, IndexView index) {
+
+        String paramName = paramData.annotation.value("name").asString();
+
+        Supplier<ResultHandle> existenceChecker = () -> methodCreator.invokeStaticMethod(
+                MethodDescriptor.ofMethod(ClientQueryParamSupport.class, "isQueryParamPresent", boolean.class,
+                        WebTargetImpl.class, String.class),
+                webTargetImpl, methodCreator.load(paramName));
+
+        BiConsumer<BytecodeCreator, ResultHandle> paramAdder = (creator, valuesList) -> creator.assign(webTargetImpl,
+                creator.invokeVirtualMethod(WEB_TARGET_IMPL_QUERY_PARAMS, webTargetImpl, methodCreator.load(paramName),
+                        valuesList));
+
+        addParam(declaringMethod, methodCreator, paramData, generatedClasses, index, CLIENT_QUERY_PARAM,
+                ClientQueryParam.class.getSimpleName(), paramName, existenceChecker, paramAdder);
+    }
+
+    private void addFormParam(MethodInfo declaringMethod, MethodCreator methodCreator,
+            ParamData paramData, BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            IndexView index, AssignableResultHandle formParams, boolean multipart) {
+
+        String paramName = paramData.annotation.value("name").asString();
+
+        Supplier<ResultHandle> existenceChecker = () -> methodCreator.invokeInterfaceMethod(MAP_CONTAINS_KEY_METHOD,
+                formParams, methodCreator.load(paramName));
+
+        BiConsumer<BytecodeCreator, ResultHandle> paramAdder = (creator, valuesList) -> {
+            if (multipart) {
+                String filename = null;
+                AnnotationInstance partFileName = declaringMethod.annotation(ResteasyReactiveDotNames.PART_FILE_NAME);
+                if (partFileName != null && partFileName.value() != null) {
+                    filename = partFileName.value().asString();
+                }
+
+                ForEachLoop loop = creator.forEach(valuesList);
+                BytecodeCreator block = loop.block();
+
+                block.invokeVirtualMethod(QUARKUS_MULTIPART_FORM_ATTRIBUTE_METHOD, formParams, block.load(paramName),
+                        loop.element(), block.load(filename));
+            } else {
+                creator.invokeInterfaceMethod(
+                        MULTIVALUED_MAP_ADD_ALL_METHOD, formParams, creator.load(paramName), valuesList);
+            }
+        };
+
+        addParam(declaringMethod, methodCreator, paramData, generatedClasses, index, CLIENT_FORM_PARAM,
+                ClientFormParam.class.getSimpleName(), paramName, existenceChecker, paramAdder);
+    }
+
+    private void collectClientParamData(ClassInfo interfaceClass, MethodInfo method,
+            Map<String, ParamData> paramFillersByName,
+            DotName clientParamAnnotation, DotName clientParamsAnnotation,
+            String annotationName) {
+        AnnotationInstance classLevelParam = interfaceClass.declaredAnnotation(clientParamAnnotation);
+        if (classLevelParam != null) {
+            paramFillersByName.put(classLevelParam.value("name").asString(),
+                    new ParamData(classLevelParam, interfaceClass));
+        }
+        putAllParamAnnotations(paramFillersByName,
+                interfaceClass,
+                extractAnnotations(interfaceClass.declaredAnnotation(clientParamsAnnotation)), annotationName);
+
+        Map<String, ParamData> methodLevelParamsByName = new HashMap<>();
+        AnnotationInstance methodLevelParam = method.annotation(clientParamAnnotation);
+        if (methodLevelParam != null) {
+            methodLevelParamsByName.put(methodLevelParam.value("name").asString(),
+                    new ParamData(methodLevelParam, interfaceClass));
+        }
+        putAllParamAnnotations(methodLevelParamsByName, interfaceClass,
+                extractAnnotations(method.annotation(clientParamsAnnotation)), annotationName);
+
+        paramFillersByName.putAll(methodLevelParamsByName);
+    }
+
+    private void putAllParamAnnotations(Map<String, ParamData> paramMap, ClassInfo interfaceClass,
+            AnnotationInstance[] annotations, String annotationName) {
         for (AnnotationInstance annotation : annotations) {
             String name = annotation.value("name").asString();
-            if (headerMap.put(name, new QueryData(annotation, interfaceClass)) != null) {
-                throw new RestClientDefinitionException("Duplicate ClientQueryParam annotation for query parameter: " + name +
+            if (paramMap.put(name, new ParamData(annotation, interfaceClass)) != null) {
+                throw new RestClientDefinitionException("Duplicate " + annotationName + " annotation for parameter: " + name +
                         " on " + annotation.target());
             }
         }
     }
 
-    private void addQueryParam(MethodInfo declaringMethod, MethodCreator methodCreator,
-            QueryData queryData,
-            AssignableResultHandle webTargetImpl, BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            IndexView index) {
+    private void addParam(MethodInfo declaringMethod, MethodCreator methodCreator,
+            ParamData paramData, BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            IndexView index, DotName clientParamAnnotation, String annotationName, String paramName,
+            Supplier<ResultHandle> existenceChecker,
+            BiConsumer<BytecodeCreator, ResultHandle> paramAdder) {
 
-        AnnotationInstance annotation = queryData.annotation;
-        ClassInfo declaringClass = queryData.definingClass;
+        AnnotationInstance annotation = paramData.annotation;
+        ClassInfo declaringClass = paramData.definingClass;
 
-        String queryName = annotation.value("name").asString();
-        ResultHandle queryNameHandle = methodCreator.load(queryName);
-
-        ResultHandle isQueryParamPresent = methodCreator.invokeStaticMethod(
-                MethodDescriptor.ofMethod(ClientQueryParamSupport.class, "isQueryParamPresent", boolean.class,
-                        WebTargetImpl.class, String.class),
-                webTargetImpl, queryNameHandle);
-        BytecodeCreator creator = methodCreator.ifTrue(isQueryParamPresent).falseBranch();
+        ResultHandle isParamPresent = existenceChecker.get();
+        BytecodeCreator creator = methodCreator.ifTrue(isParamPresent).falseBranch();
 
         String[] values = annotation.value().asStringArray();
 
         if (values.length == 0) {
-            log.warnv("Ignoring ClientQueryParam that specifies an empty array of header values for header {} on {}",
-                    annotation.value("name").asString(), annotation.target());
+            log.warnv("Ignoring {} that specifies an empty array of values for parameter {} on {}",
+                    annotationName, annotation.value("name").asString(), annotation.target());
             return;
         }
 
@@ -256,21 +383,20 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             ResultHandle valuesList = creator.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
             for (String value : values) {
                 if (value.contains("${")) {
-                    ResultHandle queryValueFromConfig = creator.invokeStaticMethod(
+                    ResultHandle paramValueFromConfig = creator.invokeStaticMethod(
                             MethodDescriptor.ofMethod(ConfigUtils.class, "interpolate", String.class, String.class,
                                     boolean.class),
                             creator.load(value), creator.load(required));
-                    creator.ifNotNull(queryValueFromConfig)
-                            .trueBranch().invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, queryValueFromConfig);
+                    creator.ifNotNull(paramValueFromConfig)
+                            .trueBranch().invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, paramValueFromConfig);
                 } else {
                     creator.invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, creator.load(value));
                 }
             }
 
-            creator.assign(webTargetImpl, creator.invokeVirtualMethod(WEB_TARGET_IMPL_QUERY_PARAMS, webTargetImpl,
-                    queryNameHandle, valuesList));
+            paramAdder.accept(creator, valuesList);
         } else { // method call :O {some.package.ClassName.methodName} or {defaultMethodWithinThisInterfaceName}
-            // if `!required` an exception on header filling does not fail the invocation:
+            // if `!required` an exception on param filling does not fail the invocation:
             boolean required = annotation.valueWithDefault(index, "required").asBoolean();
 
             BytecodeCreator methodCallCreator = creator;
@@ -282,8 +408,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             }
             String methodName = values[0].substring(1, values[0].length() - 1); // strip curly braces
 
-            MethodInfo queryValueMethod;
-            ResultHandle queryValue;
+            MethodInfo paramValueMethod;
+            ResultHandle paramValue;
             if (methodName.contains(".")) {
                 // calling a static method
                 int endOfClassName = methodName.lastIndexOf('.');
@@ -293,61 +419,59 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                 ClassInfo clazz = index.getClassByName(DotName.createSimple(className));
                 if (clazz == null) {
                     throw new RestClientDefinitionException(
-                            "Class " + className + " used in ClientQueryParam on " + declaringClass + " not found");
+                            "Class " + className + " used in " + annotationName + " on " + declaringClass + " not found");
                 }
-                queryValueMethod = findMethod(clazz, declaringClass, staticMethodName, CLIENT_QUERY_PARAM.toString());
+                paramValueMethod = findMethod(clazz, declaringClass, staticMethodName, clientParamAnnotation.toString());
 
-                if (queryValueMethod.parametersCount() == 0) {
-                    queryValue = methodCallCreator.invokeStaticMethod(queryValueMethod);
-                } else if (queryValueMethod.parametersCount() == 1 && isString(queryValueMethod.parameterType(0))) {
-                    queryValue = methodCallCreator.invokeStaticMethod(queryValueMethod, methodCallCreator.load(queryName));
+                if (paramValueMethod.parametersCount() == 0) {
+                    paramValue = methodCallCreator.invokeStaticMethod(paramValueMethod);
+                } else if (paramValueMethod.parametersCount() == 1 && isString(paramValueMethod.parameterType(0))) {
+                    paramValue = methodCallCreator.invokeStaticMethod(paramValueMethod, methodCallCreator.load(paramName));
                 } else {
                     throw new RestClientDefinitionException(
-                            "ClientQueryParam method " + declaringClass.toString() + "#" + staticMethodName
-                                    + " has too many parameters, at most one parameter, header name, expected");
+                            annotationName + " method " + declaringClass.toString() + "#" + staticMethodName
+                                    + " has too many parameters, at most one parameter, param name, expected");
                 }
             } else {
                 // interface method
                 String mockName = mockInterface(declaringClass, generatedClasses, index);
                 ResultHandle interfaceMock = methodCallCreator.newInstance(MethodDescriptor.ofConstructor(mockName));
 
-                queryValueMethod = findMethod(declaringClass, declaringClass, methodName, CLIENT_QUERY_PARAM.toString());
+                paramValueMethod = findMethod(declaringClass, declaringClass, methodName, clientParamAnnotation.toString());
 
-                if (queryValueMethod == null) {
+                if (paramValueMethod == null) {
                     throw new RestClientDefinitionException(
-                            "ClientQueryParam method " + methodName + " not found on " + declaringClass);
+                            annotationName + " method " + methodName + " not found on " + declaringClass);
                 }
 
-                if (queryValueMethod.parametersCount() == 0) {
-                    queryValue = methodCallCreator.invokeInterfaceMethod(queryValueMethod, interfaceMock);
-                } else if (queryValueMethod.parametersCount() == 1 && isString(queryValueMethod.parameterType(0))) {
-                    queryValue = methodCallCreator.invokeInterfaceMethod(queryValueMethod, interfaceMock,
-                            methodCallCreator.load(queryName));
+                if (paramValueMethod.parametersCount() == 0) {
+                    paramValue = methodCallCreator.invokeInterfaceMethod(paramValueMethod, interfaceMock);
+                } else if (paramValueMethod.parametersCount() == 1 && isString(paramValueMethod.parameterType(0))) {
+                    paramValue = methodCallCreator.invokeInterfaceMethod(paramValueMethod, interfaceMock,
+                            methodCallCreator.load(paramName));
                 } else {
                     throw new RestClientDefinitionException(
-                            "ClientQueryParam method " + declaringClass + "#" + methodName
-                                    + " has too many parameters, at most one parameter, header name, expected");
+                            annotationName + " method " + declaringClass + "#" + methodName
+                                    + " has too many parameters, at most one parameter, param name, expected");
                 }
 
             }
 
-            Type returnType = queryValueMethod.returnType();
+            Type returnType = paramValueMethod.returnType();
             ResultHandle valuesList;
             if (isStringArray(returnType)) {
                 // repack array to list
-                valuesList = methodCallCreator.invokeStaticMethod(
-                        ARRAYS_AS_LIST, queryValue);
+                valuesList = methodCallCreator.invokeStaticMethod(ARRAYS_AS_LIST, paramValue);
             } else if (isString(returnType)) {
                 valuesList = methodCallCreator.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
-                methodCallCreator.invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, queryValue);
+                methodCallCreator.invokeInterfaceMethod(LIST_ADD_METHOD, valuesList, paramValue);
             } else {
                 throw new RestClientDefinitionException("Method " + declaringClass.toString() + "#" + methodName
-                        + " has an unsupported return type for ClientQueryParam. " +
+                        + " has an unsupported return type for " + annotationName + ". " +
                         "Only String and String[] return types are supported");
             }
-            methodCallCreator.assign(webTargetImpl,
-                    methodCallCreator.invokeVirtualMethod(WEB_TARGET_IMPL_QUERY_PARAMS, webTargetImpl, queryNameHandle,
-                            valuesList));
+
+            paramAdder.accept(methodCallCreator, valuesList);
 
             if (!required) {
                 CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
@@ -355,8 +479,8 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                         MethodDescriptor.ofMethod(Logger.class, "getLogger", Logger.class, String.class),
                         catchBlock.load(declaringClass.name().toString()));
                 String errorMessage = String.format(
-                        "Invoking query param generation method '%s' for '%s' on method '%s#%s' failed",
-                        methodName, queryName, declaringClass.name(), declaringMethod.name());
+                        "Invoking param generation method '%s' for '%s' on method '%s#%s' failed",
+                        methodName, paramName, declaringClass.name(), declaringMethod.name());
                 catchBlock.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(Logger.class, "warn", void.class, Object.class, Throwable.class),
                         log,
@@ -375,7 +499,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
         addJavaMethodToContext(javaMethodField, subMethodCreator, invocationBuilder);
 
-        Map<String, HeaderData> headerFillersByName = new HashMap<>();
+        Map<String, ParamData> headerFillersByName = new HashMap<>();
         collectHeaderFillers(rootInterfaceClass, rootMethod, headerFillersByName);
         collectHeaderFillers(subInterfaceClass, subMethod, headerFillersByName);
         String subHeaderFillerName = subInterfaceClass.name().toString() + sha1(rootInterfaceClass.name().toString()) +
@@ -394,7 +518,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
         // header filler
 
-        Map<String, HeaderData> headerFillersByName = new HashMap<>();
+        Map<String, ParamData> headerFillersByName = new HashMap<>();
 
         collectHeaderFillers(interfaceClass, method, headerFillersByName);
 
@@ -407,7 +531,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             MethodCreator methodCreator, MethodInfo method,
             AssignableResultHandle invocationBuilder, IndexView index,
             BuildProducer<GeneratedClassBuildItem> generatedClasses, int methodIndex, String fillerClassName,
-            Map<String, HeaderData> headerFillersByName) {
+            Map<String, ParamData> headerFillersByName) {
         FieldDescriptor headerFillerField = FieldDescriptor.of(classCreator.getClassName(),
                 "headerFiller" + methodIndex, HeaderFiller.class);
         classCreator.getFieldCreator(headerFillerField).setModifiers(Modifier.PRIVATE | Modifier.FINAL);
@@ -435,7 +559,7 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                                 MethodDescriptor.ofMethod(HeaderFiller.class, "addHeaders", void.class,
                                         MultivaluedMap.class, ResteasyReactiveClientRequestContext.class));
 
-                for (Map.Entry<String, HeaderData> headerEntry : headerFillersByName.entrySet()) {
+                for (Map.Entry<String, ParamData> headerEntry : headerFillersByName.entrySet()) {
                     addHeaderParam(method, fillHeaders, headerEntry.getValue(), generatedClasses,
                             fillerClassName, index);
                 }
@@ -474,21 +598,21 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     }
 
     private void collectHeaderFillers(ClassInfo interfaceClass, MethodInfo method,
-            Map<String, HeaderData> headerFillersByName) {
+            Map<String, ParamData> headerFillersByName) {
         AnnotationInstance classLevelHeader = interfaceClass.declaredAnnotation(CLIENT_HEADER_PARAM);
         if (classLevelHeader != null) {
             headerFillersByName.put(classLevelHeader.value("name").asString(),
-                    new HeaderData(classLevelHeader, interfaceClass));
+                    new ParamData(classLevelHeader, interfaceClass));
         }
         putAllHeaderAnnotations(headerFillersByName,
                 interfaceClass,
                 extractAnnotations(interfaceClass.declaredAnnotation(CLIENT_HEADER_PARAMS)));
 
-        Map<String, HeaderData> methodLevelHeadersByName = new HashMap<>();
+        Map<String, ParamData> methodLevelHeadersByName = new HashMap<>();
         AnnotationInstance methodLevelHeader = method.annotation(CLIENT_HEADER_PARAM);
         if (methodLevelHeader != null) {
             methodLevelHeadersByName.put(methodLevelHeader.value("name").asString(),
-                    new HeaderData(methodLevelHeader, interfaceClass));
+                    new ParamData(methodLevelHeader, interfaceClass));
         }
         putAllHeaderAnnotations(methodLevelHeadersByName, interfaceClass,
                 extractAnnotations(method.annotation(CLIENT_HEADER_PARAMS)));
@@ -514,11 +638,11 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
                         methodCreator.load(INVOKED_METHOD_PROP), javaMethodAsObject));
     }
 
-    private void putAllHeaderAnnotations(Map<String, HeaderData> headerMap, ClassInfo interfaceClass,
+    private void putAllHeaderAnnotations(Map<String, ParamData> headerMap, ClassInfo interfaceClass,
             AnnotationInstance[] annotations) {
         for (AnnotationInstance annotation : annotations) {
             String headerName = annotation.value("name").asString();
-            if (headerMap.put(headerName, new HeaderData(annotation, interfaceClass)) != null) {
+            if (headerMap.put(headerName, new ParamData(annotation, interfaceClass)) != null) {
                 throw new RestClientDefinitionException("Duplicate ClientHeaderParam annotation for header: " + headerName +
                         " on " + annotation.target());
             }
@@ -527,13 +651,13 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
 
     // fillHeaders takes `MultivaluedMap<String, String>` as param and modifies it
     private void addHeaderParam(MethodInfo declaringMethod, MethodCreator fillHeadersCreator,
-            HeaderData headerData,
+            ParamData paramData,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             String fillerClassName,
             IndexView index) {
 
-        AnnotationInstance annotation = headerData.annotation;
-        ClassInfo declaringClass = headerData.definingClass;
+        AnnotationInstance annotation = paramData.annotation;
+        ClassInfo declaringClass = paramData.definingClass;
 
         String headerName = annotation.value("name").asString();
 
@@ -917,30 +1041,15 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
     }
 
     /**
-     * ClientHeaderParam annotations can be defined on a JAX-RS interface or a sub-client (sub-resource).
-     * If we're filling headers for a sub-client, we need to know the defining class of the ClientHeaderParam
+     * ClientxxxParam annotations can be defined on a JAX-RS interface or a sub-client (sub-resource).
+     * If we're filling parameters for a sub-client, we need to know the defining class of the ClientxxxParam
      * to properly resolve default methods of the "root" client
      */
-    private static class HeaderData {
+    private static class ParamData {
         private final AnnotationInstance annotation;
         private final ClassInfo definingClass;
 
-        public HeaderData(AnnotationInstance annotation, ClassInfo definingClass) {
-            this.annotation = annotation;
-            this.definingClass = definingClass;
-        }
-    }
-
-    /**
-     * ClientQueryParam annotations can be defined on a JAX-RS interface or a sub-client (sub-resource).
-     * If we're adding query params for a sub-client, we need to know the defining class of the ClientHeaderParam
-     * to properly resolve default methods of the "root" client
-     */
-    private static class QueryData {
-        private final AnnotationInstance annotation;
-        private final ClassInfo definingClass;
-
-        public QueryData(AnnotationInstance annotation, ClassInfo definingClass) {
+        public ParamData(AnnotationInstance annotation, ClassInfo definingClass) {
             this.annotation = annotation;
             this.definingClass = definingClass;
         }

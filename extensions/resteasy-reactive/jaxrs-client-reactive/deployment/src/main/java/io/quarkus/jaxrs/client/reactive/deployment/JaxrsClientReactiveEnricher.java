@@ -45,6 +45,15 @@ public interface JaxrsClientReactiveEnricher {
             MethodInfo rootMethod, MethodInfo subMethod, AssignableResultHandle webTarget,
             BuildProducer<GeneratedClassBuildItem> generatedClasses);
 
+    AssignableResultHandle handleFormParams(MethodCreator methodCreator, IndexView index, ClassInfo interfaceClass,
+            MethodInfo method, BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            AssignableResultHandle formParams, boolean multipart);
+
+    AssignableResultHandle handleFormParamsForSubResource(MethodCreator methodCreator, IndexView index,
+            ClassInfo rootInterfaceClass, ClassInfo subInterfaceClass, MethodInfo rootMethod, MethodInfo subMethod,
+            AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            AssignableResultHandle formParams, boolean multipart);
+
     /**
      * Method-level alterations
      *

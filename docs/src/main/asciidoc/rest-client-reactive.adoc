@@ -219,7 +219,82 @@ Note that if an interface method contains an argument annotated with `@QueryPara
 priority over anything specified in any `@ClientQueryParam` annotation.
 ====
 
-More information about this annotation can be found on the javadoc of
+More information about this annotation can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus/quarkus-rest-client-reactive/latest/io/quarkus/rest/client/reactive/ClientQueryParam.html[`@ClientQueryParam`].
+
+=== Form Parameters
+
+Form parameters can be specified using `@RestForm` (or `@FormParam`) annotations:
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestForm;
+
+import jakarta.ws.rs.PORT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.core.MultivaluedMap;
+import java.util.Map;
+import java.util.Set;
+
+@Path("/extensions")
+@RegisterRestClient(configKey = "extensions-api")
+public interface ExtensionsService {
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    Set<Extension> postId(@FormParam("id") Integer id);
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    Set<Extension> postName(@RestForm String name);
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    Set<Extension> postFilter(@RestForm Map<String, String> filter);
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    Set<Extension> postFilters(@RestForm MultivaluedMap<String, String> filters);
+
+}
+----
+
+==== Using @ClientFormParam
+
+Form parameters can also be specified using `@ClientFormParam`, similar to `@ClientQueryParam`:
+
+[source, java]
+----
+@ClientFormParam(name = "my-param", value = "${my.property-value}")
+public interface Client {
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    String postWithParam();
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @ClientFormParam(name = "some-other-param", value = "other")
+    String postWithOtherParam();
+
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @ClientFormParam(name = "param-from-method", value = "{with-param}")
+    String postFromMethod();
+
+    default String withParam(String name) {
+        if ("param-from-method".equals(name)) {
+            return "test";
+        }
+        throw new IllegalArgumentException();
+    }
+}
+----
+
+More information about this annotation can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus/quarkus-rest-client-reactive/latest/io/quarkus/rest/client/reactive/ClientFormParam.html[`@ClientFormParam`].
 
 === Path Parameters
 
@@ -520,7 +595,7 @@ A HTTP server can redirect a response to another location by sending a response 
 - `quarkus.rest-client.follow-redirects` to enable redirection for all REST clients.
 - `quarkus.rest-client.<client-prefix>.follow-redirects` to enable redirection for a specific REST client.
 
-If this property is true, then REST Client will perform a new request that it receives a redirection response from the HTTP server. 
+If this property is true, then REST Client will perform a new request that it receives a redirection response from the HTTP server.
 
 Additionally, we can limit the number of redirections using the property "max-redirects".
 
@@ -994,7 +1069,7 @@ QuarkusRestClientBuilder.newBuilder()
 
 === Injecting the `jakarta.ws.rs.ext.Providers` instance in filters
 
-The `jakarta.ws.rs.ext.Providers` is useful when we need to lookup the provider instances of the current client. 
+The `jakarta.ws.rs.ext.Providers` is useful when we need to lookup the provider instances of the current client.
 
 We can get the `Providers` instance in our filters from the request context as follows:
 
@@ -1086,7 +1161,7 @@ NOTE: Methods annotated with `@ClientExceptionMapper` can also take a `java.lang
 
 === Using @Blocking annotation in exception mappers
 
-In cases that warrant using `InputStream` as the return type of REST Client method (such as when large amounts of data need to be read): 
+In cases that warrant using `InputStream` as the return type of REST Client method (such as when large amounts of data need to be read):
 
 [source, java]
 ----
@@ -1120,8 +1195,8 @@ public class MyResponseExceptionMapper implements ResponseExceptionMapper<Runtim
 }
 ----
 
-<1> With the `@Blocking` annotation, the MyResponseExceptionMapper exception mapper will be executed in the worker thread pool. 
-<2> Reading the entity is now allowed because we're executing the mapper on the worker thread pool. 
+<1> With the `@Blocking` annotation, the MyResponseExceptionMapper exception mapper will be executed in the worker thread pool.
+<2> Reading the entity is now allowed because we're executing the mapper on the worker thread pool.
 
 Note that you can also use the `@Blocking` annotation when using @ClientExceptionMapper:
 
@@ -1288,7 +1363,7 @@ As previously mentioned, the body parameter needs to be properly crafted by the 
 
 === Receiving compressed messages
 REST Client Reactive also supports receiving compressed messages using GZIP. You can enable the HTTP compression support by adding the property `quarkus.http.enable-compression=true`.
-When this feature is enabled and a server returns a response that includes the header `Content-Encoding: gzip`, REST Client Reactive will automatically decode the content and proceed with the message handling. 
+When this feature is enabled and a server returns a response that includes the header `Content-Encoding: gzip`, REST Client Reactive will automatically decode the content and proceed with the message handling.
 
 == Proxy support
 REST Client Reactive supports sending requests through a proxy.

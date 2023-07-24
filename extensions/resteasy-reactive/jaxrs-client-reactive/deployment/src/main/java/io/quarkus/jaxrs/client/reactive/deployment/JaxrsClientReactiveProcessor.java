@@ -1037,6 +1037,8 @@ public class JaxrsClientReactiveProcessor {
                         enricher.getEnricher()
                                 .forWebTarget(methodCreator, index, interfaceClass, jandexMethod, methodTarget,
                                         generatedClasses);
+                        formParams = enricher.getEnricher().handleFormParams(methodCreator, index, interfaceClass, jandexMethod,
+                                generatedClasses, formParams, multipart);
                     }
 
                     AssignableResultHandle builder = methodCreator.createVariable(Invocation.Builder.class);
@@ -1660,6 +1662,9 @@ public class JaxrsClientReactiveProcessor {
                         enricher.getEnricher()
                                 .forSubResourceWebTarget(subMethodCreator, index, interfaceClass, subInterface,
                                         jandexMethod, jandexSubMethod, methodTarget, generatedClasses);
+                        formParams = enricher.getEnricher().handleFormParamsForSubResource(subMethodCreator, index,
+                                interfaceClass, subInterface, jandexMethod, jandexSubMethod, methodTarget, generatedClasses,
+                                formParams, multipart);
                     }
 
                     AssignableResultHandle builder = subMethodCreator.createVariable(Invocation.Builder.class);

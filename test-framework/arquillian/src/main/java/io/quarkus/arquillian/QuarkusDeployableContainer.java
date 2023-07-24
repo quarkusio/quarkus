@@ -242,7 +242,11 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
         URI uri = URI.create(testUri);
         HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
         // This is to work around https://github.com/arquillian/arquillian-core/issues/216
-        httpContext.add(new Servlet("dummy", "/"));
+        String path = uri.getPath();
+        if (path == null || path.isEmpty()) {
+            path = "/";
+        }
+        httpContext.add(new Servlet("dummy", path));
         metadata.addContext(httpContext);
         return metadata;
     }

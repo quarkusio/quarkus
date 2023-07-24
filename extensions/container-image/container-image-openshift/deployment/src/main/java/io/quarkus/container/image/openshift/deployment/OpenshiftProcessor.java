@@ -260,7 +260,7 @@ public class OpenshiftProcessor {
 
         Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
                 .stream()
-                .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
+                .filter(r -> r.getName().endsWith(File.separator + "openshift.yml"))
                 .findFirst();
 
         if (openshiftYml.isEmpty()) {
@@ -336,7 +336,7 @@ public class OpenshiftProcessor {
                     + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
             Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
                     .stream()
-                    .filter(r -> r.getName().endsWith("kubernetes" + File.separator + "openshift.yml"))
+                    .filter(r -> r.getName().endsWith(File.separator + "openshift.yml"))
                     .findFirst();
 
             if (openshiftYml.isEmpty()) {

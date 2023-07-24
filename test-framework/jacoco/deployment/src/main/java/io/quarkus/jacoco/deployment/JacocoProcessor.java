@@ -36,9 +36,6 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 
 public class JacocoProcessor {
 
-    public static final String JACOCO_QUARKUS_EXEC = "jacoco-quarkus.exec";
-    public static final String JACOCO_REPORT = "jacoco-report";
-
     @BuildStep(onlyIf = IsTest.class)
     FeatureBuildItem feature() {
         return new FeatureBuildItem("jacoco");
@@ -57,7 +54,8 @@ public class JacocoProcessor {
             return;
         }
 
-        String dataFile = getFilePath(config.dataFile, outputTargetBuildItem.getOutputDirectory(), JACOCO_QUARKUS_EXEC);
+        String dataFile = getFilePath(config.dataFile, outputTargetBuildItem.getOutputDirectory(),
+                JacocoConfig.JACOCO_QUARKUS_EXEC);
         System.setProperty("jacoco-agent.destfile", dataFile);
         if (!config.reuseDataFile) {
             Files.deleteIfExists(Paths.get(dataFile));
@@ -97,7 +95,7 @@ public class JacocoProcessor {
             info.dataFile = dataFile;
 
             File targetdir = new File(
-                    getFilePath(config.reportLocation, outputTargetBuildItem.getOutputDirectory(), JACOCO_REPORT));
+                    getFilePath(config.reportLocation, outputTargetBuildItem.getOutputDirectory(), JacocoConfig.JACOCO_REPORT));
             info.reportDir = targetdir.getAbsolutePath();
             String includes = String.join(",", config.includes);
             String excludes = String.join(",", config.excludes.orElse(Collections.emptyList()));
@@ -123,7 +121,8 @@ public class JacocoProcessor {
 
     private void addProjectModule(ResolvedDependency module, JacocoConfig config, ReportInfo info, String includes,
             String excludes, Set<String> classes, Set<String> sources) throws Exception {
-        String dataFile = getFilePath(config.dataFile, module.getWorkspaceModule().getBuildDir().toPath(), JACOCO_QUARKUS_EXEC);
+        String dataFile = getFilePath(config.dataFile, module.getWorkspaceModule().getBuildDir().toPath(),
+                JacocoConfig.JACOCO_QUARKUS_EXEC);
         info.savedData.add(new File(dataFile).getAbsolutePath());
         if (module.getSources() == null) {
             return;

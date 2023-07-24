@@ -3,6 +3,7 @@ package io.quarkus.jacoco.runtime;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -10,11 +11,17 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class JacocoConfig {
 
+    public static final String JACOCO_QUARKUS_EXEC = "jacoco-quarkus.exec";
+    public static final String JACOCO_REPORT = "jacoco-report";
+    public static final String TARGET_JACOCO_QUARKUS_EXEC = "target/" + JACOCO_QUARKUS_EXEC;
+    public static final String TARGET_JACOCO_REPORT = "target/" + JACOCO_REPORT;
+
     /**
-     * The jacoco data file. By default this will be target/jacoco-quarkus.exec.
+     * The jacoco data file.
      * The path can be relative (to the module) or absolute.
      */
     @ConfigItem
+    @ConfigDocDefault(TARGET_JACOCO_QUARKUS_EXEC)
     public Optional<String> dataFile;
 
     /**
@@ -83,9 +90,10 @@ public class JacocoConfig {
     public Optional<List<String>> excludes;
 
     /**
-     * The location of the report files. By default this will be target/jacoco-report.
+     * The location of the report files.
      * The path can be relative (to the module) or absolute.
      */
     @ConfigItem
+    @ConfigDocDefault(TARGET_JACOCO_REPORT)
     public Optional<String> reportLocation;
 }

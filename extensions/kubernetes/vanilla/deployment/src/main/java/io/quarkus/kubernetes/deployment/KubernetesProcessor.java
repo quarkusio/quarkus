@@ -183,8 +183,7 @@ class KubernetesProcessor {
                     }
                 });
 
-                Path targetDirectory = kubernetesConfig.outputDirectory.map(d -> Paths.get("").toAbsolutePath().resolve(d))
-                        .orElse(outputTarget.getOutputDirectory().resolve(KUBERNETES));
+                Path targetDirectory = kubernetesConfig.getEffectiveOutputDirectory(outputTarget.getOutputDirectory());
 
                 // write the generated resources to the filesystem
                 generatedResourcesMap = session.close();

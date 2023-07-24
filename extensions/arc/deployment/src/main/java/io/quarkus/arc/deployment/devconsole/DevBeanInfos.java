@@ -58,6 +58,10 @@ public class DevBeanInfos {
         return removedDecorators;
     }
 
+    public Map<String, DependencyGraph> getDependencyGraphs() {
+        return dependencyGraphs;
+    }
+
     public String getBeanDescription() {
         return DevConsoleManager.getGlobal(ArcDevConsoleProcessor.BEAN_DESCRIPTION);
     }

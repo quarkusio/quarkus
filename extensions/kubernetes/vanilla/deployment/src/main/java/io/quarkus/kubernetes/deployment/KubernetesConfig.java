@@ -3,8 +3,11 @@ package io.quarkus.kubernetes.deployment;
 import static io.quarkus.kubernetes.deployment.Constants.CRONJOB;
 import static io.quarkus.kubernetes.deployment.Constants.DEPLOYMENT;
 import static io.quarkus.kubernetes.deployment.Constants.JOB;
+import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.deployment.Constants.STATEFULSET;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -613,5 +616,18 @@ public class KubernetesConfig implements PlatformConfiguration {
         }
 
         return DeploymentResourceKind.Deployment;
+    }
+
+    /**
+     * Resolve the effective output directory where to generate the Kubernetes manifests.
+     * If the `quarkus.kubernetes.output-directory` property is not provided, then the default project output directory will be
+     * used.
+     *
+     * @param projectOutputDirectory The project output target.
+     * @return the effective output directory.
+     */
+    public Path getEffectiveOutputDirectory(Path projectOutputDirectory) {
+        return outputDirectory.map(d -> Paths.get("").toAbsolutePath().resolve(d))
+                .orElse(projectOutputDirectory.resolve(KUBERNETES));
     }
 }

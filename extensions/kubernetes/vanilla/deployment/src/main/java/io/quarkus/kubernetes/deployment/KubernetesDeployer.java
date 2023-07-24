@@ -110,6 +110,7 @@ public class KubernetesDeployer {
             List<KubernetesDeploymentClusterBuildItem> deploymentClusters,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             OutputTargetBuildItem outputTarget,
+            KubernetesConfig kubernetesConfig,
             OpenshiftConfig openshiftConfig,
             ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo,
@@ -137,7 +138,8 @@ public class KubernetesDeployer {
 
         try (final KubernetesClient client = kubernetesClientBuilder.buildClient()) {
             deploymentResult
-                    .produce(deploy(selectedDeploymentTarget.get().getEntry(), client, outputTarget.getOutputDirectory(),
+                    .produce(deploy(selectedDeploymentTarget.get().getEntry(), client,
+                            kubernetesConfig.getEffectiveOutputDirectory(outputTarget.getOutputDirectory()),
                             openshiftConfig, applicationInfo, optionalResourceDefinitions));
         }
     }
@@ -191,8 +193,7 @@ public class KubernetesDeployer {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
                 + " in namespace: " + namespace + ".");
-        File manifest = outputDir.resolve(KUBERNETES).resolve(deploymentTarget.getName().toLowerCase() + ".yml")
-                .toFile();
+        File manifest = outputDir.resolve(deploymentTarget.getName().toLowerCase() + ".yml").toFile();
 
         try (FileInputStream fis = new FileInputStream(manifest)) {
             KubernetesList list = Serialization.unmarshalAsList(fis);

@@ -3,7 +3,8 @@ package io.quarkus.devservices.common;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -43,7 +44,8 @@ public final class ConfigureUtil {
         }
 
         String hostName = (hostNamePrefix + "-" + Base58.randomString(5)).toLowerCase(Locale.ROOT);
-        container.setNetworkAliases(Collections.singletonList(hostName));
+        // some containers might try to add their own aliases on start, so we want to keep this list modifiable:
+        container.setNetworkAliases(new ArrayList<>(List.of(hostName)));
 
         return hostName;
     }

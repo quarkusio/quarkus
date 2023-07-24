@@ -13,6 +13,7 @@
 :gradle-version: ${gradle-wrapper.version}
 :elasticsearch-version: ${elasticsearch-server.version}
 :elasticsearch-image: ${elasticsearch.image}
+:opensearch-image: ${opensearch.image}
 :infinispan-version: ${infinispan.version}
 :infinispan-protostream-version: ${infinispan.protostream.version}
 :logstash-image: ${logstash.image}

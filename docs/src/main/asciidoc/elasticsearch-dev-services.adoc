@@ -4,8 +4,9 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Elasticsearch
-
 include::_attributes.adoc[]
+:categories: data
+:summary: Start Elasticsearch automatically in dev and test modes
 
 If any Elasticsearch-related extension is present (e.g. `quarkus-elasticsearch-rest-client` or `quarkus-hibernate-search-orm-elasticsearch`),
 Dev Services for Elasticsearch automatically starts an Elasticsearch server in dev mode and when running tests.
@@ -48,12 +49,28 @@ Note that the Elasticsearch hosts property is automatically configured with the 
 
 == Configuring the image
 
-Dev Services for Elasticsearch only support Elasticsearch based images, OpenSearch is not supported at the moment.
+Dev Services for Elasticsearch support distributions based on both Elasticsearch and OpenSearch images.
 
-If you need to use a different image than the default one you can configure it via:
-[source, properties]
+When using Hibernate Search, Dev Services will default to Elasticsearch or OpenSearch based on Hibernate Search configuration.
+
+Otherwise, Dev Services will default to Elasticsearch. To use OpenSearch, configure the distribution explicitly:
+[source,properties,subs="attributes"]
+----
+quarkus.elasticsearch.devservices.distribution=opensearch
+----
+
+If you need to use a different Elasticsearch or OpenSearch image than the default one you can configure it via:
+[source,properties,subs="attributes"]
 ----
 quarkus.elasticsearch.devservices.image-name={elasticsearch-image}
+----
+
+For exotic image names, Quarkus might be unable to infer the distribution (`elastic` or `opensearch`).
+In these cases starting the Dev Services will fail, and you will need to configure the distribution explicitly:
+[source,properties,subs="attributes"]
+----
+quarkus.elasticsearch.devservices.image-name=my-custom-image-with-no-clue-about-the-distribution:1.0
+quarkus.elasticsearch.devservices.distribution=elasticsearch
 ----
 
 == Current limitations

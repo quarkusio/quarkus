@@ -26,15 +26,18 @@ public @interface CustomSerialization {
      * needed
      * (this type will be a generic type if the method returns such a generic type) and returns the instance of the custom
      * {@code ObjectWriter}.
-     *
+     * <p>
      * Quarkus will construct one instance of this {@code BiFunction} for each JAX-RS resource method that is annotated with
      * {@code CustomSerialization} and once an instance is created it will be cached for subsequent usage by that resource
      * method.
-     *
-     * The class MUST contain a no-args constructor and it is advisable that it contains no state that is updated outside
+     * <p>
+     * The {@code BiFunction} MUST contain a no-args constructor.
+     * <p>
+     * Furthermore, it is advisable that it contains no state that is updated outside
      * its constructor.
-     * Furthermore, the {@code ObjectMapper} should NEVER be changed any way as it is the global ObjectMapper that is
-     * accessible to the entire Quarkus application.
+     * <p>
+     * Finally and most importantly, the {@code ObjectMapper} should NEVER be changed any way as it is the global ObjectMapper
+     * that is accessible to the entire Quarkus application.
      */
     Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> value();
 }

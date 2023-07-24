@@ -170,6 +170,26 @@ config is required.
 WARNING: Using both the extension and the plugin requires special configuration, if you add both you will get lots of errors about classes
 already being instrumented. The configuration needed is detailed below.
 
+== Working with multi-module projects
+
+Up until `3.2`, `data-file` and `report-location` were always relative to the module's build output directory, which prevented from
+working with multi-module projects where you want to aggregate all coverages into a single parent directory. Starting in `3.3`, 
+specifying a `data-file` or `report-location` will assume the path as is. Here is an example on how to set up the `surefire` plugin:
+
+[source, xml]
+----
+<plugin>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <configuration>
+    <systemPropertyVariables>
+      <quarkus.jacoco.data-file>${maven.multiModuleProjectDirectory}/target/jacoco.exec</quarkus.jacoco.data-file>
+      <quarkus.jacoco.reuse-data-file>true</quarkus.jacoco.reuse-data-file>
+      <quarkus.jacoco.report-location>${maven.multiModuleProjectDirectory}/target/coverage</quarkus.jacoco.report-location>
+    </systemPropertyVariables>
+  </configuration>
+</plugin
+----
+
 == Running the tests with coverage
 
 Run `mvn verify`, the tests will be run and the results will end up in `target/jacoco-reports`. This is all that is needed,

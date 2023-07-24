@@ -76,7 +76,8 @@ public class OpenTelemetryProcessor {
                 .addBeanClasses(OpenTelemetryProducer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
-                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class)
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
+                        AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TextMapPropagatorCustomizers.class)
                 .build();
     }
 

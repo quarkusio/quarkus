@@ -636,7 +636,7 @@ jobs:
           java-version: ${{ matrix.java.java-version }}
       - name: Run tests
         run: |
-          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml -f integration-tests/virtual-threads clean verify -Dextra-args=${{matrix.java.extra-args}}
+          export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml -f integration-tests/virtual-threads clean verify -Dnative -Dextra-args=${{matrix.java.extra-args}} -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-20
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}

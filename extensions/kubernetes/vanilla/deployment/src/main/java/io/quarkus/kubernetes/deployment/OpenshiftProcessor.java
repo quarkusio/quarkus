@@ -43,6 +43,7 @@ import io.quarkus.container.spi.ContainerImageCustomNameBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
+import io.quarkus.container.spi.SingleSegmentContainerImageRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -109,13 +110,15 @@ public class OpenshiftProcessor {
     @BuildStep
     public void populateInternalRegistry(OpenshiftConfig openshiftConfig, ContainerImageConfig containerImageConfig,
             Capabilities capabilities,
-            BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry) {
+            BuildProducer<FallbackContainerImageRegistryBuildItem> containerImageRegistry,
+            BuildProducer<SingleSegmentContainerImageRequestBuildItem> singleSegmentContainerImageRequest) {
 
         if (!containerImageConfig.registry.isPresent() && !containerImageConfig.image.isPresent()) {
             DeploymentResourceKind deploymentResourceKind = openshiftConfig.getDeploymentResourceKind(capabilities);
             if (deploymentResourceKind != DeploymentResourceKind.DeploymentConfig) {
                 if (openshiftConfig.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
                     //Don't need fallback namespace, we use local lookup instead.
+                    singleSegmentContainerImageRequest.produce(new SingleSegmentContainerImageRequestBuildItem());
                 } else {
                     containerImageRegistry.produce(new FallbackContainerImageRegistryBuildItem(DOCKERIO_REGISTRY));
                 }

@@ -1846,6 +1846,7 @@ how to use it.
 Here are some more advanced topics that you may not need to know about initially, but
 could prove useful for more complex use cases.
 
+[#execution-model-blocking-non-blocking]
 === Execution model, blocking, non-blocking
 
 [[execution-model]]
@@ -1853,7 +1854,7 @@ could prove useful for more complex use cases.
 RESTEasy Reactive is implemented using two main thread types:
 
 - Event-loop threads: which are responsible, among other things, for reading bytes from the HTTP request and
- writing bytes back to the HTTP response
+writing bytes back to the HTTP response
 - Worker threads: they are pooled and can be used to offload long-running operations
 
 The event-loop threads (also called IO threads) are responsible for actually performing all the IO

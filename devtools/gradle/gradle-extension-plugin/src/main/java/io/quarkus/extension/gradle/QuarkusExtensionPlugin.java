@@ -73,6 +73,7 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
             //This must be run after the extension has been configured
             Project deploymentProject = findDeploymentProject(project, quarkusExt);
             if (deploymentProject != null) {
+                deploymentProject.getPlugins().apply(JavaPlugin.class);
                 ApplicationDeploymentClasspathBuilder.initConfigurations(deploymentProject);
                 deploymentProject.getPlugins().withType(
                         JavaPlugin.class,

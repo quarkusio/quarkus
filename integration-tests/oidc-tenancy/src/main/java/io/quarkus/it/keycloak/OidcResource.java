@@ -115,8 +115,10 @@ public class OidcResource {
     @Produces("application/json")
     @Path("introspect")
     public String introspect(@FormParam("client_id") String clientId, @FormParam("client_secret") String clientSecret,
-            @HeaderParam("Authorization") String authorization) throws Exception {
+            @HeaderParam("Authorization") String authorization, @FormParam("token") String token) throws Exception {
         introspectionEndpointCallCount++;
+
+        boolean activeStatus = introspection && !token.endsWith("-invalid");
 
         String introspectionClientId = "none";
         String introspectionClientSecret = "none";
@@ -139,7 +141,7 @@ public class OidcResource {
         }
 
         return "{" +
-                "   \"active\": " + introspection + "," +
+                "   \"active\": " + activeStatus + "," +
                 "   \"scope\": \"user\"," +
                 "   \"email\": \"user@gmail.com\"," +
                 "   \"username\": \"alice\"," +

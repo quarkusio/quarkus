@@ -437,6 +437,27 @@ include::{generated-dir}/config/quarkus-vertx-http-config-group-access-log-confi
 Use `quarkus.http.access-log.exclude-pattern=/some/path/.*` to exclude all entries concerning the path `/some/path/...` (_including subsequent paths_) from the log.
 ====
 
+== Arbitrary customizations
+
+Quarkus allows users to arbitrarily customize the options of HTTP servers started by Quarkus via the use of `io.quarkus.vertx.http.HttpServerOptionsCustomizer`.
+For example, if the HTTP port needs to be set programmatically, then the following code could be used:
+
+[source,java]
+----
+import jakarta.inject.Singleton;
+import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+
+@Singleton <1>
+public static class MyCustomizer implements HttpServerOptionsCustomizer {
+
+    @Override
+    public void customizeHttpServer(HttpServerOptions options) { <2>
+        options.setPort(9998);
+    }
+}
+----
+<1> By making the class a managed bean, Quarkus will take the customizer into account when it starts the Vert.x servers
+<2> In this case, we only care about customizing the HTTP server, so we just override the `customizeHttpServer` method, but users should be aware that `HttpServerOptionsCustomizer` allows configuring the HTTPS and Domain Socket servers as well
 
 [[reverse-proxy]]
 == Running behind a reverse proxy

@@ -1,5 +1,6 @@
 package io.quarkus.narayana.jta.deployment;
 
+import static io.quarkus.datasource.common.runtime.DataSourceUtil.dataSourcePropertyKeys;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.HashMap;
@@ -52,6 +53,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -153,12 +155,40 @@ class NarayanaJtaProcessor {
     @Record(RUNTIME_INIT)
     @Consume(NarayanaInitBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    public void startRecoveryService(NarayanaJtaRecorder recorder,
+    public void startRecoveryService(NarayanaJtaRecorder recorder, ConfigurationBuildItem configurationBuildItem,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems, TransactionManagerConfiguration transactions) {
         Map<Boolean, String> namedDataSources = new HashMap<>();
 
         jdbcDataSourceBuildItems.forEach(i -> namedDataSources.put(i.isDefault(), i.getName()));
-        recorder.startRecoveryService(transactions, namedDataSources);
+        Map<String, String> dsToConfigKey = getDsWithoutDisabledTransactions(
+                configurationBuildItem.getReadResult().getBuildTimeRunTimeValues(), namedDataSources);
+
+        recorder.startRecoveryService(transactions, namedDataSources, dsToConfigKey);
+    }
+
+    private static Map<String, String> getDsWithoutDisabledTransactions(Map<String, String> buildTimeRunTimeValues,
+            Map<Boolean, String> dataSources) {
+        Map<String, String> dsToTransactionIntegration = new HashMap<>();
+        for (String dataSourceName : dataSources.values()) {
+            List<String> transactionsPropertyKeys = dataSourcePropertyKeys(dataSourceName, "jdbc.transactions");
+            boolean propertyExplicitlyDefined = false;
+            for (String propertyKey : transactionsPropertyKeys) {
+                // get datasource 'io.quarkus.agroal.runtime.TransactionIntegration'
+                String transactionIntegration = buildTimeRunTimeValues.get(propertyKey);
+                if (transactionIntegration != null) {
+                    propertyExplicitlyDefined = true;
+                    if (!"disabled".equalsIgnoreCase(transactionIntegration)) {
+                        dsToTransactionIntegration.put(dataSourceName, propertyKey);
+                        break;
+                    }
+                }
+            }
+            if (!propertyExplicitlyDefined) {
+                // by default transaction capabilities are enabled
+                dsToTransactionIntegration.put(dataSourceName, transactionsPropertyKeys.get(0));
+            }
+        }
+        return dsToTransactionIntegration;
     }
 
     @BuildStep(onlyIf = IsTest.class)

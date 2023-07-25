@@ -708,7 +708,7 @@ quarkus.datasource.reactive.url[1]=postgresql://host2:5432/default
 quarkus.datasource.reactive.url[2]=postgresql://host3:5432/default
 ----
 
-== Pooled Connection `idle-timeout`
+== Pooled connection `idle-timeout`
 
 Reactive datasources can be configured with an `idle-timeout`.
 It is the maximum time a connection remains unused in the pool before it is closed.

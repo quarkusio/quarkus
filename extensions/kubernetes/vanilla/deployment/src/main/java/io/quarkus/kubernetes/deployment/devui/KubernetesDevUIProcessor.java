@@ -1,7 +1,8 @@
-package io.quarkus.kubernetes.deployment.devconsole;
+package io.quarkus.kubernetes.deployment.devui;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -11,43 +12,48 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.builder.BuildResult;
-import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
 import io.quarkus.kubernetes.deployment.SelectedKubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.runtime.devui.KubernetesManifestService;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 
-public class KubernetesDevConsoleProcessor {
-
+public class KubernetesDevUIProcessor {
     static volatile List<Manifest> manifests;
     static final Holder holder = new Holder();
 
-    @BuildStep
-    void builder(BuildProducer<DevConsoleTemplateInfoBuildItem> infos) {
-        manifests = null; // ensures that the manifests are re-generated when a live-load is performed
-        infos.produce(new DevConsoleTemplateInfoBuildItem("holder", holder));
+    @BuildStep(onlyIf = IsDevelopment.class)
+    CardPageBuildItem create(CurateOutcomeBuildItem bi) {
+        CardPageBuildItem pageBuildItem = new CardPageBuildItem();
+        pageBuildItem.addPage(Page.webComponentPageBuilder()
+                .title("Kubernetes Manifests")
+                .componentLink("qwc-kubernetes-manifest.js")
+                .icon("font-awesome-solid:rocket"));
+
+        return pageBuildItem;
     }
 
-    public static class GeneratedKubernetesResourceHandler implements BiConsumer<Map<String, byte[]>, BuildResult> {
-        @Override
-        public void accept(Map<String, byte[]> context, BuildResult buildResult) {
-            // the idea here is to only display the content of the manifest file that will be selected for deployment
-            var selectedTargetBI = buildResult
-                    .consumeOptional(SelectedKubernetesDeploymentTargetBuildItem.class);
-            if (selectedTargetBI == null) {
-                return;
-            }
-
-            var generatedFilesBI = buildResult
-                    .consumeMulti(GeneratedKubernetesResourceBuildItem.class);
-            for (var bi : generatedFilesBI) {
-                if (bi.getName().startsWith(selectedTargetBI.getEntry().getName())
-                        && bi.getName().endsWith(".yml")) {
-                    context.put(bi.getName(), bi.getContent());
+    @BuildStep(onlyIf = IsDevelopment.class)
+    JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
+        DevConsoleManager.register("kubernetes-generate-manifest", ignored -> {
+            try {
+                List<Manifest> manifests = holder.getManifests();
+                // Avoid relying on databind.
+                Map<String, String> map = new LinkedHashMap<>();
+                for (Manifest manifest : manifests) {
+                    map.put(manifest.getName(), manifest.getContent());
                 }
+                return map;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
-        }
+        });
+        return new JsonRPCProvidersBuildItem(KubernetesManifestService.class);
     }
 
     public static final class Holder {
@@ -75,6 +81,27 @@ public class KubernetesDevConsoleProcessor {
                 }
             }
             return manifests;
+        }
+    }
+
+    public static class GeneratedKubernetesResourceHandler implements BiConsumer<Map<String, byte[]>, BuildResult> {
+        @Override
+        public void accept(Map<String, byte[]> context, BuildResult buildResult) {
+            // the idea here is to only display the content of the manifest file that will be selected for deployment
+            var selectedTargetBI = buildResult
+                    .consumeOptional(SelectedKubernetesDeploymentTargetBuildItem.class);
+            if (selectedTargetBI == null) {
+                return;
+            }
+
+            var generatedFilesBI = buildResult
+                    .consumeMulti(GeneratedKubernetesResourceBuildItem.class);
+            for (var bi : generatedFilesBI) {
+                if (bi.getName().startsWith(selectedTargetBI.getEntry().getName())
+                        && bi.getName().endsWith(".yml")) {
+                    context.put(bi.getName(), bi.getContent());
+                }
+            }
         }
     }
 

@@ -450,6 +450,19 @@ So, the data written in the duplicated context (and the request scope, as the re
 
 However, thread locals are not propagated.
 
+== Virtual thread names
+
+Virtual threads are created without a thread name by default, which is not practical to identify the execution for debugging and logging purposes.
+Quarkus managed virtual threads are named and prefixed with `quarkus-virtual-thread-`.
+You can customize this prefix, or disable the naming altogether configuring an empty value:
+
+[source, properties]
+----
+quarkus.virtual-threads.name-prefix=
+
+----
+
+
 == Additional references
 
 - https://dl.acm.org/doi/10.1145/3583678.3596895[Considerations for integrating virtual threads in a Java framework: a Quarkus example in a resource-constrained environment]

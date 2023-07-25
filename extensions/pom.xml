@@ -16,6 +16,7 @@
     <modules>
         <!-- Netty loom adaptor-->
         <module>netty-loom-adaptor</module>
+        <module>virtual-threads</module>
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>

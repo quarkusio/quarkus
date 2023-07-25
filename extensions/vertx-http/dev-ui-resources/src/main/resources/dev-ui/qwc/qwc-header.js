@@ -264,7 +264,6 @@ export class QwcHeader extends observeState(LitElement) {
             this._rightSideNav = html`
                 <div class="app-info">
                     ${devuiState.applicationInfo.applicationName} ${devuiState.applicationInfo.applicationVersion}
-                    <vaadin-button theme="secondary" @click="${this._previousDevUI}">Back to the previous Dev UI</vaadin-button>
                 </div>`;
         }
     }
@@ -308,11 +307,6 @@ export class QwcHeader extends observeState(LitElement) {
             this.routerController.goHome();
             notifier.showErrorMessage("Seems like your server is not available.  <br/>Error : <code>" + error + "</code>","middle");
         });
-    }
-
-    _previousDevUI(){
-        let pdui = this.routerController.getBasePath().replace("/dev-ui", "/dev-v1");;
-        window.open(pdui, "_self").focus();
     }
 }
 customElements.define('qwc-header', QwcHeader);

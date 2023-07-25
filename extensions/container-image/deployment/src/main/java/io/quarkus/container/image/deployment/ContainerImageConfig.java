@@ -15,22 +15,22 @@ public class ContainerImageConfig {
     /**
      * The group the container image will be part of
      */
-    @ConfigItem(defaultValue = "${user.name}")
+    @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> group;
+    Optional<String> group; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * The name of the container image. If not set defaults to the application name
      */
     @ConfigItem(defaultValue = "${quarkus.application.name:unset}")
     @ConvertWith(TrimmedStringConverter.class)
-    public String name;
+    String name; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * The tag of the container image. If not set defaults to the application version
      */
     @ConfigItem(defaultValue = "${quarkus.application.version:latest}")
-    public Optional<String> tag;
+    Optional<String> tag; //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * Additional tags of the container image.
@@ -109,27 +109,5 @@ public class ContainerImageConfig {
 
     public boolean isPushExplicitlyDisabled() {
         return push.isPresent() && !push.get();
-    }
-
-    /**
-     * Since user.name which is default value can be uppercase and uppercase values are not allowed
-     * in the repository part of image references, we need to make the username lowercase.
-     * If spaces exist in the user name, we replace them with the dash character.
-     *
-     * We purposely don't change the value of an explicitly set group.
-     */
-    public Optional<String> getEffectiveGroup() {
-        if (group.isPresent()) {
-            String originalGroup = group.get();
-            if (originalGroup.equals(System.getProperty("user.name"))) {
-                if (originalGroup.isEmpty()) {
-                    return Optional.empty();
-                }
-                return Optional.of(originalGroup.toLowerCase().replace(' ', '-'));
-            } else if (originalGroup.isEmpty()) {
-                return Optional.empty();
-            }
-        }
-        return group;
     }
 }

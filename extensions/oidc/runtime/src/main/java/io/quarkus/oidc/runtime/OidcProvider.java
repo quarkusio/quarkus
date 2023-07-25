@@ -267,13 +267,15 @@ public class OidcProvider implements Closeable {
                 });
     }
 
-    public Uni<TokenIntrospection> introspectToken(String token) {
+    public Uni<TokenIntrospection> introspectToken(String token, boolean fallbackFromJwkMatch) {
         if (client.getMetadata().getIntrospectionUri() == null) {
-            LOG.debugf(
-                    "Token issued to client %s can not be introspected because the introspection endpoint address is unknown - "
-                            + "please check if your OpenId Connect Provider supports the token introspection",
+            String errorMessage = String.format("Token issued to client %s "
+                    + (fallbackFromJwkMatch ? "does not have a matching verification key and it " : "")
+                    + "can not be introspected because the introspection endpoint address is unknown - "
+                    + "please check if your OpenId Connect Provider supports the token introspection",
                     oidcConfig.clientId.get());
-            throw new AuthenticationFailedException();
+
+            throw new AuthenticationFailedException(errorMessage);
         }
         return client.introspectToken(token).onItemOrFailure()
                 .transform(new BiFunction<TokenIntrospection, Throwable, TokenIntrospection>() {

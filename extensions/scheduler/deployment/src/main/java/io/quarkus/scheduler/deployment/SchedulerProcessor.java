@@ -1,7 +1,6 @@
 package io.quarkus.scheduler.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 import static org.jboss.jandex.AnnotationValue.createArrayValue;
 import static org.jboss.jandex.AnnotationValue.createBooleanValue;
@@ -54,7 +53,6 @@ import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.runtime.BeanLookupSupplier;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -68,9 +66,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -83,7 +78,6 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.ScheduledExecution;
-import io.quarkus.scheduler.Scheduler;
 import io.quarkus.scheduler.common.runtime.DefaultInvoker;
 import io.quarkus.scheduler.common.runtime.MutableScheduledMethod;
 import io.quarkus.scheduler.common.runtime.SchedulerContext;
@@ -91,7 +85,6 @@ import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.quarkus.scheduler.runtime.SchedulerRecorder;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
-import io.quarkus.scheduler.runtime.devconsole.SchedulerDevConsoleRecorder;
 
 public class SchedulerProcessor {
 
@@ -323,19 +316,6 @@ public class SchedulerProcessor {
                 .done());
 
         return new FeatureBuildItem(Feature.SCHEDULER);
-    }
-
-    @BuildStep
-    @Record(value = STATIC_INIT, optional = true)
-    public DevConsoleRouteBuildItem devConsole(BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> infos,
-            SchedulerDevConsoleRecorder recorder, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("schedulerContext",
-                new BeanLookupSupplier(SchedulerContext.class), this.getClass(), curateOutcomeBuildItem));
-        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("scheduler",
-                new BeanLookupSupplier(Scheduler.class), this.getClass(), curateOutcomeBuildItem));
-        infos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("configLookup",
-                recorder.getConfigLookup(), this.getClass(), curateOutcomeBuildItem));
-        return new DevConsoleRouteBuildItem("schedules", "POST", recorder.invokeHandler());
     }
 
     @BuildStep

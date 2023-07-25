@@ -104,11 +104,13 @@ public class NarayanaJtaRecorder {
         instance.setTablePrefix(config.objectStore.tablePrefix);
     }
 
-    public void startRecoveryService(final TransactionManagerConfiguration transactions, Map<Boolean, String> dataSources) {
+    public void startRecoveryService(final TransactionManagerConfiguration transactions, Map<Boolean, String> dataSources,
+            Map<String, String> dsWithInvalidTransactionsToConfigKey) {
         if (transactions.objectStore.type.equals(ObjectStoreType.JDBC)) {
+            final String dsName;
             if (transactions.objectStore.datasource.isEmpty()) {
-                dataSources.keySet().stream().filter(i -> i).findFirst().orElseThrow(
-                        () -> new ConfigurationException(
+                dsName = dataSources.entrySet().stream().filter(Map.Entry::getKey).map(Map.Entry::getValue).findFirst()
+                        .orElseThrow(() -> new ConfigurationException(
                                 "The Narayana JTA extension does not have a datasource configured,"
                                         + " so it defaults to the default datasource,"
                                         + " but that datasource is not configured."
@@ -117,7 +119,7 @@ public class NarayanaJtaRecorder {
                                         + " or configure the datasource to use in the Narayana JTA extension "
                                         + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource."));
             } else {
-                String dsName = transactions.objectStore.datasource.get();
+                dsName = transactions.objectStore.datasource.get();
                 dataSources.values().stream().filter(i -> i.equals(dsName)).findFirst()
                         .orElseThrow(() -> new ConfigurationException(
                                 "The Narayana JTA extension is configured to use the datasource '"
@@ -127,6 +129,16 @@ public class NarayanaJtaRecorder {
                                         + " referring to https://quarkus.io/guides/datasource for guidance,"
                                         + " or configure another datasource to use in the Narayana JTA extension "
                                         + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource."));
+            }
+            if (dsWithInvalidTransactionsToConfigKey.containsKey(dsName)) {
+                throw new ConfigurationException(String.format(
+                        "The Narayana JTA extension is configured to use the '%s' JDBC "
+                                + "datasource as the transaction log storage, "
+                                + "but that datasource does not have transaction capabilities disabled. "
+                                + "To solve this, please set '%s=disabled', or configure another datasource "
+                                + "with disabled transaction capabilities as the JDBC object store. "
+                                + "Please refer to the https://quarkus.io/guides/transaction#jdbcstore for more information.",
+                        dsName, dsWithInvalidTransactionsToConfigKey.get(dsName)));
             }
         }
         if (transactions.enableRecovery) {

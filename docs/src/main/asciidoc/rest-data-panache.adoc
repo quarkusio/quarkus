@@ -597,3 +597,35 @@ Both responses would also contain these headers:
 * Link: < http://example.com/people?page=1&size=2 >; rel="next"
 
 A `previous` link header (and hal link) would not be included, because the previous page does not exist.
+
+== Include/Exclude Jakarta REST classes
+
+=== Using Build time conditions
+
+Quarkus enables the inclusion or exclusion of Jakarta REST Resources, Providers and Features directly thanks to build time conditions in the same that it does for CDI beans.
+Thus, the REST Data with Panache interfaces can be annotated with profile conditions (`@io.quarkus.arc.profile.IfBuildProfile` or `@io.quarkus.arc.profile.UnlessBuildProfile`) and/or with property conditions (`io.quarkus.arc.properties.IfBuildProperty` or `io.quarkus.arc.properties.UnlessBuildProperty`) to indicate to Quarkus at build time under which conditions the generated Jakarta REST classes should be included.
+
+In the following example, Quarkus will include the generated resource from the `PeopleResource` interface if and only if the build profile `app1` has been enabled.
+
+[source,java]
+----
+@IfBuildProfile("app1")
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+}
+----
+
+
+=== Using a runtime property
+
+IMPORTANT: This option is only available when using the RESTEasy Reactive Quarkus extension.
+
+Quarkus can also conditionally disable the generated Jakarta REST Resources based on the value of runtime properties using the `@io.quarkus.resteasy.reactive.server.EndpointDisabled` annotation.
+
+In the following example, Quarkus will exclude the generated resource from the `PeopleResource` interface at runtime if the application has `some.property` configured to `"disable"`.
+
+[source,java]
+----
+@EndpointDisabled(name = "some.property", stringValue = "disable")
+public interface PeopleResource extends PanacheEntityResource<Person, Long> {
+}
+----

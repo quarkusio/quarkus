@@ -424,12 +424,12 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 }
             }
             LOG.debug("Starting the opaque token introspection");
-            return introspectTokenUni(resolvedContext, token);
+            return introspectTokenUni(resolvedContext, token, false);
         } else if (resolvedContext.provider.getMetadata().getJsonWebKeySetUri() == null
                 || resolvedContext.oidcConfig.token.requireJwtIntrospectionOnly) {
             // Verify JWT token with the remote introspection
             LOG.debug("Starting the JWT token introspection");
-            return introspectTokenUni(resolvedContext, token);
+            return introspectTokenUni(resolvedContext, token, false);
         } else {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
             try {
@@ -458,32 +458,47 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private Uni<TokenVerificationResult> refreshJwksAndVerifyTokenUni(TenantConfigContext resolvedContext, String token,
             boolean enforceAudienceVerification) {
         return resolvedContext.provider.refreshJwksAndVerifyJwtToken(token, enforceAudienceVerification)
-                .onFailure(f -> f.getCause() instanceof UnresolvableKeyException
-                        && resolvedContext.oidcConfig.token.allowJwtIntrospection)
-                .recoverWithUni(f -> introspectTokenUni(resolvedContext, token));
+                .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
+                .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, true));
     }
 
-    private Uni<TokenVerificationResult> introspectTokenUni(TenantConfigContext resolvedContext, final String token) {
+    private static boolean fallbackToIntrospectionIfNoMatchingKey(Throwable f, TenantConfigContext resolvedContext) {
+        if (!(f.getCause() instanceof UnresolvableKeyException)) {
+            LOG.debug("Local JWT token verification has failed, skipping the token introspection");
+            return false;
+        } else if (!resolvedContext.oidcConfig.token.allowJwtIntrospection) {
+            LOG.debug("JWT token does not have a matching verification key but JWT token introspection is disabled");
+            return false;
+        } else {
+            LOG.debug("Local JWT token verification has failed, attempting the token introspection");
+            return true;
+        }
+
+    }
+
+    private Uni<TokenVerificationResult> introspectTokenUni(TenantConfigContext resolvedContext, final String token,
+            boolean fallbackFromJwkMatch) {
         TokenIntrospectionCache tokenIntrospectionCache = tenantResolver.getTokenIntrospectionCache();
         Uni<TokenIntrospection> tokenIntrospectionUni = tokenIntrospectionCache == null ? null
                 : tokenIntrospectionCache
                         .getIntrospection(token, resolvedContext.oidcConfig, getIntrospectionRequestContext);
         if (tokenIntrospectionUni == null) {
-            tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token);
+            tokenIntrospectionUni = newTokenIntrospectionUni(resolvedContext, token, fallbackFromJwkMatch);
         } else {
             tokenIntrospectionUni = tokenIntrospectionUni.onItem().ifNull()
                     .switchTo(new Supplier<Uni<? extends TokenIntrospection>>() {
                         @Override
                         public Uni<TokenIntrospection> get() {
-                            return newTokenIntrospectionUni(resolvedContext, token);
+                            return newTokenIntrospectionUni(resolvedContext, token, fallbackFromJwkMatch);
                         }
                     });
         }
         return tokenIntrospectionUni.onItem().transform(t -> new TokenVerificationResult(null, t));
     }
 
-    private Uni<TokenIntrospection> newTokenIntrospectionUni(TenantConfigContext resolvedContext, String token) {
-        Uni<TokenIntrospection> tokenIntrospectionUni = resolvedContext.provider.introspectToken(token);
+    private Uni<TokenIntrospection> newTokenIntrospectionUni(TenantConfigContext resolvedContext, String token,
+            boolean fallbackFromJwkMatch) {
+        Uni<TokenIntrospection> tokenIntrospectionUni = resolvedContext.provider.introspectToken(token, fallbackFromJwkMatch);
         if (tenantResolver.getTokenIntrospectionCache() == null || !resolvedContext.oidcConfig.allowTokenIntrospectionCache) {
             return tokenIntrospectionUni;
         } else {

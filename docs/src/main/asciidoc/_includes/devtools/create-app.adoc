@@ -99,3 +99,8 @@ ifndef::devtools-no-gradle[]
 To create a Gradle project, add the `-DbuildTool=gradle` or `-DbuildTool=gradle-kotlin-dsl` option.
 endif::[]
 ****
+
+For Windows users:
+
+- If using cmd, (don't use backward slash `\` and put everything on the same line)
+- If using Powershell, wrap `-D` parameters in double quotes e.g. `"-DprojectArtifactId={create-app-artifact-id}"`

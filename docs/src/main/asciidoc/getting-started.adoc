@@ -62,17 +62,10 @@ The solution is located in the `getting-started` link:{quickstarts-tree-url}/get
 
 The easiest way to create a new Quarkus project is to open a terminal and run the following command:
 
-For Linux & MacOS users
-
 :create-app-artifact-id: getting-started
 :create-app-extensions: resteasy-reactive
 :create-app-code:
 include::{includes}/devtools/create-app.adoc[]
-
-For Windows users:
-
-- If using cmd , (don't use backward slash `\` and put everything on the same line)
-- If using Powershell , wrap `-D` parameters in double quotes e.g. `"-DprojectArtifactId=getting-started"`
 
 It generates the following in `./getting-started`:
 

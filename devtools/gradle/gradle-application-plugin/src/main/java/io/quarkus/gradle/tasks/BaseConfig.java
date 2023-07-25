@@ -1,6 +1,9 @@
 package io.quarkus.gradle.tasks;
 
+import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -18,7 +21,7 @@ import io.quarkus.runtime.configuration.ConfigInstantiator;
 final class BaseConfig {
     private final Manifest manifest;
     private final PackageConfig packageConfig;
-    private final Map<String, String> quarkusProperties;
+    private final Map<String, String> configMap;
 
     // Note: EffectiveConfig has all the code to load the configurations from all the sources.
     BaseConfig(EffectiveConfig config) {
@@ -31,8 +34,7 @@ final class BaseConfig {
         manifest.attributes(packageConfig.manifest.attributes);
         packageConfig.manifest.manifestSections.forEach((section, attribs) -> manifest.attributes(attribs, section));
 
-        this.quarkusProperties = config.configMap().entrySet().stream().filter(e -> e.getKey().startsWith("quarkus."))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        configMap = config.configMap();
     }
 
     PackageConfig packageConfig() {
@@ -47,7 +49,12 @@ final class BaseConfig {
         return manifest;
     }
 
-    Map<String, String> quarkusProperties() {
-        return quarkusProperties;
+    Map<String, String> cachingRelevantProperties(List<String> propertyPatterns) {
+        List<Pattern> patterns = propertyPatterns.stream().map(s -> "^(" + s + ")$").map(Pattern::compile)
+                .collect(Collectors.toList());
+        Predicate<Map.Entry<String, ?>> keyPredicate = e -> patterns.stream().anyMatch(p -> p.matcher(e.getKey()).matches());
+        return configMap.entrySet().stream()
+                .filter(keyPredicate)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

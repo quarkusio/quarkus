@@ -1,7 +1,6 @@
 package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
-import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -102,7 +101,7 @@ public class TestHTTPResourceManager {
                     }
                     f.setAccessible(true);
                     try {
-                        f.set(testCase, provider.provide(new URI(val), f));
+                        f.set(testCase, provider.provide(val, f));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

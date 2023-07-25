@@ -45,7 +45,6 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     static final String NEW_AUTHENTICATION = "new_authentication";
 
     private static final Uni<TokenVerificationResult> NULL_CODE_ACCESS_TOKEN_UNI = Uni.createFrom().nullItem();
-    private static final Uni<UserInfo> NULL_USER_INFO_UNI = Uni.createFrom().nullItem();
     private static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
 
     @Inject
@@ -107,21 +106,21 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             // Typically it will be done for bearer access tokens therefore even if the access token has expired
             // the client will be able to refresh if needed, no refresh token is available to Quarkus during the
             // bearer access token verification
-
-            Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)
-                    ? getUserInfoUni(vertxContext, request, resolvedContext)
-                    : NULL_USER_INFO_UNI;
-
-            return userInfo.onItemOrFailure().transformToUni(
-                    new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
-                        @Override
-                        public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
-                            if (t != null) {
-                                return Uni.createFrom().failure(new AuthenticationFailedException(t));
+            if (resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
+                return getUserInfoUni(vertxContext, request, resolvedContext).onItemOrFailure().transformToUni(
+                        new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
+                            @Override
+                            public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
+                                if (t != null) {
+                                    return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                }
+                                return validateTokenWithUserInfoAndCreateIdentity(vertxContext, request, resolvedContext,
+                                        userInfo);
                             }
-                            return validateTokenWithUserInfoAndCreateIdentity(vertxContext, request, resolvedContext, userInfo);
-                        }
-                    });
+                        });
+            } else {
+                return validateTokenWithUserInfoAndCreateIdentity(vertxContext, request, resolvedContext, null);
+            }
         } else {
             final Uni<TokenVerificationResult> primaryTokenUni;
             if (isInternalIdToken(request)) {
@@ -184,7 +183,20 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                         Uni<TokenVerificationResult> tokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken(),
                                 false, userInfo);
 
-                        return createSecurityIdentityWithOidcServer(tokenUni, vertxContext, request, resolvedContext, userInfo);
+                        return tokenUni.onItemOrFailure()
+                                .transformToUni(
+                                        new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
+                                            @Override
+                                            public Uni<SecurityIdentity> apply(TokenVerificationResult result, Throwable t) {
+                                                if (t != null) {
+                                                    return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                                }
+
+                                                return createSecurityIdentityWithOidcServer(result, vertxContext, request,
+                                                        resolvedContext, userInfo);
+                                            }
+                                        });
+
                     }
                 });
     }
@@ -193,20 +205,32 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             RoutingContext vertxContext, TokenAuthenticationRequest request,
             TenantConfigContext resolvedContext) {
 
-        Uni<UserInfo> userInfo = resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)
-                ? getUserInfoUni(vertxContext, request, resolvedContext)
-                : NULL_USER_INFO_UNI;
-
-        return userInfo.onItemOrFailure().transformToUni(
-                new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
+        return tokenUni.onItemOrFailure()
+                .transformToUni(new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
                     @Override
-                    public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
+                    public Uni<SecurityIdentity> apply(TokenVerificationResult result, Throwable t) {
                         if (t != null) {
                             return Uni.createFrom().failure(new AuthenticationFailedException(t));
                         }
-                        return createSecurityIdentityWithOidcServer(tokenUni, vertxContext, request, resolvedContext, userInfo);
+                        if (resolvedContext.oidcConfig.authentication.isUserInfoRequired().orElse(false)) {
+                            return getUserInfoUni(vertxContext, request, resolvedContext).onItemOrFailure().transformToUni(
+                                    new BiFunction<UserInfo, Throwable, Uni<? extends SecurityIdentity>>() {
+                                        @Override
+                                        public Uni<SecurityIdentity> apply(UserInfo userInfo, Throwable t) {
+                                            if (t != null) {
+                                                return Uni.createFrom().failure(new AuthenticationFailedException(t));
+                                            }
+                                            return createSecurityIdentityWithOidcServer(result, vertxContext, request,
+                                                    resolvedContext, userInfo);
+                                        }
+                                    });
+                        } else {
+                            return createSecurityIdentityWithOidcServer(result, vertxContext, request, resolvedContext, null);
+                        }
+
                     }
                 });
+
     }
 
     private boolean isOpaqueAccessToken(RoutingContext vertxContext, TokenAuthenticationRequest request,
@@ -222,108 +246,100 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         return false;
     }
 
-    private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(Uni<TokenVerificationResult> tokenUni,
+    private Uni<SecurityIdentity> createSecurityIdentityWithOidcServer(TokenVerificationResult result,
             RoutingContext vertxContext, TokenAuthenticationRequest request, TenantConfigContext resolvedContext,
             final UserInfo userInfo) {
 
-        return tokenUni.onItemOrFailure()
-                .transformToUni(new BiFunction<TokenVerificationResult, Throwable, Uni<? extends SecurityIdentity>>() {
-                    @Override
-                    public Uni<SecurityIdentity> apply(TokenVerificationResult result, Throwable t) {
-                        if (t != null) {
-                            return Uni.createFrom().failure(new AuthenticationFailedException(t));
-                        }
-                        // Token has been verified, as a JWT or an opaque token, possibly involving
-                        // an introspection request.
-                        final TokenCredential tokenCred = request.getToken();
+        // Token has been verified, as a JWT or an opaque token, possibly involving
+        // an introspection request.
+        final TokenCredential tokenCred = request.getToken();
 
-                        JsonObject tokenJson = result.localVerificationResult;
-                        if (tokenJson == null) {
-                            // JSON token representation may be null not only if it is an opaque access token
-                            // but also if it is JWT and no JWK with a matching kid is available, asynchronous
-                            // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
-                            tokenJson = OidcUtils.decodeJwtContent(tokenCred.getToken());
-                        }
-                        if (tokenJson != null) {
-                            try {
-                                OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig.token, tokenJson);
-                                JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
-                                        userInfo);
-                                SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
-                                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult);
-                                // If the primary token is a bearer access token then there's no point of checking if
-                                // it should be refreshed as RT is only available for the code flow tokens
-                                if (isIdToken(request)
-                                        && tokenAutoRefreshPrepared(result, vertxContext, resolvedContext.oidcConfig)) {
-                                    return Uni.createFrom().failure(new TokenAutoRefreshException(securityIdentity));
-                                } else {
-                                    return Uni.createFrom().item(securityIdentity);
-                                }
-                            } catch (Throwable ex) {
-                                return Uni.createFrom().failure(new AuthenticationFailedException(ex));
-                            }
-                        } else if (isIdToken(request)
-                                || tokenCred instanceof AccessTokenCredential
-                                        && !((AccessTokenCredential) tokenCred).isOpaque()) {
-                            return Uni.createFrom()
-                                    .failure(new AuthenticationFailedException("JWT token can not be converted to JSON"));
-                        } else {
-                            // ID Token or Bearer access token has been introspected or verified via Userinfo acquisition
-                            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
-                            builder.addCredential(tokenCred);
-                            OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
-                            OidcUtils.setSecurityIdentityConfigMetadata(builder, resolvedContext);
-                            final String userName;
-                            if (result.introspectionResult == null) {
-                                if (resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection &&
-                                        resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)) {
-                                    if (resolvedContext.oidcConfig.token.principalClaim.isPresent() && userInfo != null) {
-                                        userName = userInfo.getString(resolvedContext.oidcConfig.token.principalClaim.get());
-                                    } else {
-                                        userName = "";
-                                    }
-                                } else {
-                                    // we don't expect this to ever happen
-                                    LOG.debug("Illegal state - token introspection result is not available.");
-                                    return Uni.createFrom().failure(new AuthenticationFailedException());
-                                }
-                            } else {
-                                OidcUtils.setSecurityIdentityIntrospection(builder, result.introspectionResult);
-                                String principalName = result.introspectionResult.getUsername();
-                                if (principalName == null) {
-                                    principalName = result.introspectionResult.getSubject();
-                                }
-                                userName = principalName != null ? principalName : "";
-
-                                Set<String> scopes = result.introspectionResult.getScopes();
-                                if (scopes != null) {
-                                    builder.addRoles(scopes);
-                                }
-                            }
-                            builder.setPrincipal(new Principal() {
-                                @Override
-                                public String getName() {
-                                    return userName != null ? userName : "";
-                                }
-                            });
-                            if (userInfo != null) {
-                                OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig,
-                                        new JsonObject(userInfo.getJsonObject().toString()));
-                            }
-                            OidcUtils.setBlockingApiAttribute(builder, vertxContext);
-                            OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);
-                            OidcUtils.setRoutingContextAttribute(builder, vertxContext);
-                            SecurityIdentity identity = builder.build();
-                            // If the primary token is a bearer access token then there's no point of checking if
-                            // it should be refreshed as RT is only available for the code flow tokens
-                            if (isIdToken(request)
-                                    && tokenAutoRefreshPrepared(result, vertxContext, resolvedContext.oidcConfig)) {
-                                return Uni.createFrom().failure(new TokenAutoRefreshException(identity));
-                            }
-                            return Uni.createFrom().item(identity);
-                        }
+        JsonObject tokenJson = result.localVerificationResult;
+        if (tokenJson == null) {
+            // JSON token representation may be null not only if it is an opaque access token
+            // but also if it is JWT and no JWK with a matching kid is available, asynchronous
+            // JWK refresh has not finished yet, but the fallback introspection request has succeeded.
+            tokenJson = OidcUtils.decodeJwtContent(tokenCred.getToken());
+        }
+        if (tokenJson != null) {
+            try {
+                OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig.token, tokenJson);
+                JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
+                        userInfo);
+                SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
+                        resolvedContext, tokenJson, rolesJson, userInfo, result.introspectionResult);
+                // If the primary token is a bearer access token then there's no point of checking if
+                // it should be refreshed as RT is only available for the code flow tokens
+                if (isIdToken(request)
+                        && tokenAutoRefreshPrepared(result, vertxContext, resolvedContext.oidcConfig)) {
+                    return Uni.createFrom().failure(new TokenAutoRefreshException(securityIdentity));
+                } else {
+                    return Uni.createFrom().item(securityIdentity);
+                }
+            } catch (Throwable ex) {
+                return Uni.createFrom().failure(new AuthenticationFailedException(ex));
+            }
+        } else if (isIdToken(request)
+                || tokenCred instanceof AccessTokenCredential
+                        && !((AccessTokenCredential) tokenCred).isOpaque()) {
+            return Uni.createFrom()
+                    .failure(new AuthenticationFailedException("JWT token can not be converted to JSON"));
+        } else {
+            // ID Token or Bearer access token has been introspected or verified via Userinfo acquisition
+            QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
+            builder.addCredential(tokenCred);
+            OidcUtils.setSecurityIdentityUserInfo(builder, userInfo);
+            OidcUtils.setSecurityIdentityConfigMetadata(builder, resolvedContext);
+            final String userName;
+            if (result.introspectionResult == null) {
+                if (resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection &&
+                        resolvedContext.oidcConfig.token.verifyAccessTokenWithUserInfo.orElse(false)) {
+                    if (resolvedContext.oidcConfig.token.principalClaim.isPresent() && userInfo != null) {
+                        userName = userInfo.getString(resolvedContext.oidcConfig.token.principalClaim.get());
+                    } else {
+                        userName = "";
                     }
-                });
+                } else {
+                    // we don't expect this to ever happen
+                    LOG.debug("Illegal state - token introspection result is not available.");
+                    return Uni.createFrom().failure(new AuthenticationFailedException());
+                }
+            } else {
+                OidcUtils.setSecurityIdentityIntrospection(builder, result.introspectionResult);
+                String principalName = result.introspectionResult.getUsername();
+                if (principalName == null) {
+                    principalName = result.introspectionResult.getSubject();
+                }
+                userName = principalName != null ? principalName : "";
+
+                Set<String> scopes = result.introspectionResult.getScopes();
+                if (scopes != null) {
+                    builder.addRoles(scopes);
+                }
+            }
+            builder.setPrincipal(new Principal() {
+                @Override
+                public String getName() {
+                    return userName != null ? userName : "";
+                }
+            });
+            if (userInfo != null) {
+                OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig,
+                        new JsonObject(userInfo.getJsonObject().toString()));
+            }
+            OidcUtils.setBlockingApiAttribute(builder, vertxContext);
+            OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);
+            OidcUtils.setRoutingContextAttribute(builder, vertxContext);
+            SecurityIdentity identity = builder.build();
+            // If the primary token is a bearer access token then there's no point of checking if
+            // it should be refreshed as RT is only available for the code flow tokens
+            if (isIdToken(request)
+                    && tokenAutoRefreshPrepared(result, vertxContext, resolvedContext.oidcConfig)) {
+                return Uni.createFrom().failure(new TokenAutoRefreshException(identity));
+            }
+            return Uni.createFrom().item(identity);
+        }
+
     }
 
     private static boolean isInternalIdToken(TokenAuthenticationRequest request) {

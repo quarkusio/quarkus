@@ -74,6 +74,7 @@ public class TenantResource {
             response += (",introspection_client_id:" + introspection.getString("introspection_client_id"));
             response += (",introspection_client_secret:" + introspection.getString("introspection_client_secret"));
             response += (",active:" + introspection.getBoolean("active"));
+            response += (",userinfo:" + getUserInfo().getPreferredUserName());
             response += (",cache-size:" + tokenCache.getCacheSize());
         }
 

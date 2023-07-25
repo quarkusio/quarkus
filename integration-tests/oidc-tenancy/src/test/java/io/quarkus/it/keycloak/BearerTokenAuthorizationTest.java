@@ -491,13 +491,33 @@ public class BearerTokenAuthorizationTest {
                     .statusCode(200)
                     .body(equalTo(
                             "tenant-oidc-introspection-only:alice,client_id:client-introspection-only,"
-                                    + "introspection_client_id:none,introspection_client_secret:none,active:true,cache-size:0"));
+                                    + "introspection_client_id:none,introspection_client_secret:none,active:true,userinfo:alice,cache-size:0"));
         }
 
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("3"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
         RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().get("/cache/size").then().body(equalTo("0"));
+    }
+
+    @Test
+    public void testNoUserInfoCallIfTokenIsInvalid() {
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/cache/clear").then().body(equalTo("0"));
+
+        String jwt = getAccessTokenFromSimpleOidc("2");
+        // Modify the signature
+        jwt += "-invalid";
+        RestAssured.given().auth().oauth2(jwt)
+                .when().get("/tenant/tenant-oidc-introspection-only/api/user")
+                .then()
+                .statusCode(401);
+
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
         RestAssured.when().get("/cache/size").then().body(equalTo("0"));
     }
 
@@ -537,7 +557,7 @@ public class BearerTokenAuthorizationTest {
                     .statusCode(200)
                     .body(equalTo(
                             "tenant-oidc-introspection-only-cache:alice,client_id:client-introspection-only-cache,"
-                                    + "introspection_client_id:bob,introspection_client_secret:bob_secret,active:true,cache-size:"
+                                    + "introspection_client_id:bob,introspection_client_secret:bob_secret,active:true,userinfo:alice,cache-size:"
                                     + expectedCacheSize));
         }
         RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));

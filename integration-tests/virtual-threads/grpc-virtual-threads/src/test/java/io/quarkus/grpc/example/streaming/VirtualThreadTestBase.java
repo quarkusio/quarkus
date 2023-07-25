@@ -1,6 +1,7 @@
 package io.quarkus.grpc.example.streaming;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.is;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -12,6 +13,7 @@ import com.google.protobuf.EmptyProtos;
 import io.grpc.testing.integration.Messages;
 import io.grpc.testing.integration.TestServiceGrpc;
 import io.quarkus.grpc.GrpcClient;
+import io.restassured.RestAssured;
 
 @SuppressWarnings("NewClassNamingConvention")
 public class VirtualThreadTestBase {
@@ -43,6 +45,14 @@ public class VirtualThreadTestBase {
             assertThat(r.getPayload().getBody().toStringUtf8()).isEqualTo("HELLO");
         });
         assertThat(count).hasValue(3);
+    }
+
+    @Test
+    void testGrpcClient() {
+        RestAssured.get("/endpoint")
+                .then()
+                .statusCode(200)
+                .body(is("HELLO"));
     }
 
 }

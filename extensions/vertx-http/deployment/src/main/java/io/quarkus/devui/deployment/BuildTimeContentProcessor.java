@@ -116,6 +116,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("echarts-pie", contextRoot + "echarts/echarts-pie.js");
         internalImportMapBuildItem.add("echarts-horizontal-stacked-bar",
                 contextRoot + "echarts/echarts-horizontal-stacked-bar.js");
+        internalImportMapBuildItem.add("echarts-force-graph",
+                contextRoot + "echarts/echarts-force-graph.js");
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");

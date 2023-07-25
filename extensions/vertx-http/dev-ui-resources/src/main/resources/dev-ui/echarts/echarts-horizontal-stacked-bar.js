@@ -53,6 +53,7 @@ class EchartsHorizontalStackedBar extends EchartsAbstractCanvas {
         // Legend
         option.legend = new Object();
         option.legend.show = false;
+        
         // Grid
         option.grid = new Object();
         option.grid.left = '3%';

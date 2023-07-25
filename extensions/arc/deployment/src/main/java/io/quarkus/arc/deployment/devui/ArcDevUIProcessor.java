@@ -47,6 +47,9 @@ public class ArcDevUIProcessor {
                     .staticLabel(String.valueOf(beans.size())));
 
             pageBuildItem.addBuildTimeData(BEANS, toDevBeanWithInterceptorInfo(beans, beanInfos));
+
+            pageBuildItem.addBuildTimeData(BEAN_IDS_WITH_DEPENDENCY_GRAPHS, beanInfos.getDependencyGraphs().keySet());
+            pageBuildItem.addBuildTimeData(DEPENDENCY_GRAPHS, beanInfos.getDependencyGraphs());
         }
 
         List<DevObserverInfo> observers = beanInfos.getObservers();
@@ -167,6 +170,8 @@ public class ArcDevUIProcessor {
         return false;
     }
 
+    private static final String BEAN_IDS_WITH_DEPENDENCY_GRAPHS = "beanIdsWithDependencyGraphs";
+    private static final String DEPENDENCY_GRAPHS = "dependencyGraphs";
     private static final String BEANS = "beans";
     private static final String OBSERVERS = "observers";
     private static final String INTERCEPTORS = "interceptors";

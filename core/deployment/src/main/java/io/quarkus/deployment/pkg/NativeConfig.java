@@ -199,6 +199,15 @@ public interface NativeConfig {
     Optional<Boolean> containerBuild();
 
     /**
+     * Explicit configuration option to generate a native Position Independent Executable (PIE) for Linux.
+     * If the system supports PIE generation, the default behaviour is to disable it for
+     * <a href="https://www.redhat.com/en/blog/position-independent-executable-pie-performance">performance reasons</a>.
+     * However, some systems can only run position-independent executables,
+     * so this option enables the generation of such native executables.
+     */
+    Optional<Boolean> pie();
+
+    /**
      * If this build is done using a remote docker daemon.
      */
     @WithDefault("false")

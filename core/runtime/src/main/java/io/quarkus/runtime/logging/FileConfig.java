@@ -62,14 +62,14 @@ public class FileConfig {
      * File rotation config.
      * The time interval is determined by the content of the <code>fileSuffix</code> property.
      * The size interval is determined by the content of the <code>maxFileSize</code> property.
-     * If both are used, the rotating will be based on time then size.
+     * If both are used, the rotating will be based on time, then on size.
      */
     RotationConfig rotation;
 
     @ConfigGroup
     public static class RotationConfig {
         /**
-         * The maximum file size of the log file after which a rotation is executed.
+         * The maximum log file size, after which a rotation is executed.
          */
         @ConfigItem(defaultValue = "10M")
         MemorySize maxFileSize;
@@ -81,7 +81,7 @@ public class FileConfig {
         int maxBackupIndex;
 
         /**
-         * File handler rotation file suffix.
+         * The file handler rotation file suffix.
          * When used, the file will be rotated based on its suffix.
          *
          * Example fileSuffix: .yyyy-MM-dd

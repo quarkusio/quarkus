@@ -39,6 +39,7 @@ public abstract class AbstractQuarkusExtension {
     protected final Property<String> finalName;
     private final MapProperty<String, String> forcedPropertiesProperty;
     protected final MapProperty<String, String> quarkusBuildProperties;
+    protected final ListProperty<String> cachingRelevantProperties;
     private final ListProperty<String> ignoredEntries;
     private final FileCollection classpath;
     private final Property<BaseConfig> baseConfig;
@@ -52,6 +53,7 @@ public abstract class AbstractQuarkusExtension {
         this.finalName.convention(project.provider(() -> String.format("%s-%s", project.getName(), project.getVersion())));
         this.forcedPropertiesProperty = project.getObjects().mapProperty(String.class, String.class);
         this.quarkusBuildProperties = project.getObjects().mapProperty(String.class, String.class);
+        this.cachingRelevantProperties = project.getObjects().listProperty(String.class).value(List.of("quarkus[.].*"));
         this.ignoredEntries = project.getObjects().listProperty(String.class);
         this.ignoredEntries.convention(
                 project.provider(() -> baseConfig().packageConfig().userConfiguredIgnoredEntries.orElse(emptyList())));

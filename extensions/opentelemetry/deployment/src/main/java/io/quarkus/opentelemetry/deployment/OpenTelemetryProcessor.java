@@ -9,13 +9,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Singleton;
+
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
 
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
@@ -31,6 +38,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
+import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
@@ -49,10 +57,11 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
-import io.quarkus.opentelemetry.runtime.OpenTelemetryProducer;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
+import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -73,12 +82,32 @@ public class OpenTelemetryProcessor {
     AdditionalBeanBuildItem ensureProducerIsRetained() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
-                .addBeanClasses(OpenTelemetryProducer.class,
+                .addBeanClasses(
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SamplerCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TracerProviderCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.TextMapPropagatorCustomizers.class)
                 .build();
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    SyntheticBeanBuildItem openTelemetryBean(OpenTelemetryRecorder recorder, OTelRuntimeConfig oTelRuntimeConfig) {
+        return SyntheticBeanBuildItem.configure(OpenTelemetry.class)
+                .defaultBean()
+                .setRuntimeInit()
+                .unremovable()
+                .scope(Singleton.class)
+                .addInjectionPoint(
+                        ParameterizedType.create(
+                                DotName.createSimple(Instance.class),
+                                new Type[] { ClassType.create(
+                                        DotName.createSimple(
+                                                AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class.getName())) },
+                                null))
+                .createWith(recorder.opentelemetryBean(oTelRuntimeConfig))
+                .destroyer(OpenTelemetryDestroyer.class)
+                .done();
     }
 
     @BuildStep

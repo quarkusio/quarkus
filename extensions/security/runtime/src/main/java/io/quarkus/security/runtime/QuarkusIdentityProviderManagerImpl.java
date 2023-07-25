@@ -1,12 +1,13 @@
 package io.quarkus.security.runtime;
 
+import static io.quarkus.security.spi.runtime.BlockingSecurityExecutor.createBlockingExecutor;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -21,8 +22,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.identity.request.AuthenticationRequest;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 
 /**
  * A manager that can be used to get a specific type of identity provider.
@@ -32,7 +33,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
 
     private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers;
     private final List<SecurityIdentityAugmentor> augmenters;
-    private final Executor blockingExecutor;
+    private final BlockingSecurityExecutor blockingExecutor;
 
     private final AuthenticationRequestContext blockingRequestContext = new AuthenticationRequestContext() {
         @Override
@@ -48,21 +49,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                             return Uni.createFrom().failure(t);
                         }
                     } else {
-                        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super SecurityIdentity>>() {
-                            @Override
-                            public void accept(UniEmitter<? super SecurityIdentity> uniEmitter) {
-                                blockingExecutor.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try {
-                                            uniEmitter.complete(function.get());
-                                        } catch (Throwable t) {
-                                            uniEmitter.fail(t);
-                                        }
-                                    }
-                                });
-                            }
-                        });
+                        return blockingExecutor.executeBlocking(function);
                     }
                 }
             });
@@ -199,7 +186,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
 
         private final Map<Class<? extends AuthenticationRequest>, List<IdentityProvider>> providers = new HashMap<>();
         private final List<SecurityIdentityAugmentor> augmentors = new ArrayList<>();
-        private Executor blockingExecutor;
+        private BlockingSecurityExecutor blockingExecutor;
         private boolean built = false;
 
         /**
@@ -231,8 +218,17 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
          * @param blockingExecutor The executor to use for blocking tasks
          * @return this builder
          */
-        public Builder setBlockingExecutor(Executor blockingExecutor) {
+        public Builder setBlockingExecutor(BlockingSecurityExecutor blockingExecutor) {
             this.blockingExecutor = blockingExecutor;
+            return this;
+        }
+
+        /**
+         * @param blockingExecutor The executor to use for blocking tasks
+         * @return this builder
+         */
+        public Builder setBlockingExecutor(Executor blockingExecutor) {
+            this.blockingExecutor = createBlockingExecutor(() -> blockingExecutor);
             return this;
         }
 

@@ -510,12 +510,21 @@ public static class MyCustomizer implements HttpServerOptionsCustomizer {
         sslUpdater.run();
 
         // update ssl material every day
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(sslUpdater, 1, 1, TimeUnit.DAYS);
+        Executors.newSingleThreadScheduledExecutor()
+                 .scheduleAtFixedRate(sslUpdater, 1, 1, TimeUnit.DAYS);
+
+        KeyCertOptions keyCertOptions = baseSslFactory.getKeyManager()
+                .map(KeyCertOptions::wrap)
+                .orElseThrow();
+
+        TrustOptions trustOptions = baseSslFactory.getTrustManager()
+                .map(TrustOptions::wrap)
+                .orElseThrow();
 
         options.setSsl(true)
                .setPort(8443)
-               .setKeyCertOptions(KeyCertOptions.wrap(baseSslFactory.getKeyManager().orElseThrow()))
-               .setTrustOptions(TrustOptions.wrap(baseSslFactory.getTrustManager().orElseThrow()));
+               .setKeyCertOptions(keyCertOptions)
+               .setTrustOptions(trustOptions);
     }
 }
 ----

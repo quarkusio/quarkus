@@ -24,7 +24,7 @@ export class QwcSmallryeReactiveMessagingChannels extends LitElement {
     `;
 
     static properties = {
-        "_channels": {state: true, type: Array}
+        _channels: {state: true, type: Array}
     }
 
     /**

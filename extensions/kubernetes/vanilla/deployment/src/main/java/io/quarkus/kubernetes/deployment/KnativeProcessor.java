@@ -165,7 +165,7 @@ public class KnativeProcessor {
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, "http");
         result.addAll(KubernetesCommonHelper.createDecorators(project, KNATIVE, name, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations,
-                labels, command, port, livenessPath, readinessPath, startupProbePath,
+                labels, image, command, port, livenessPath, readinessPath, startupProbePath,
                 roles, clusterRoles, serviceAccounts, roleBindings));
 
         image.ifPresent(i -> {

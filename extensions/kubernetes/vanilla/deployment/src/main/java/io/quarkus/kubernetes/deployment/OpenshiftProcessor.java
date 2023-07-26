@@ -222,7 +222,7 @@ public class OpenshiftProcessor {
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config, config.route.targetPort);
         result.addAll(KubernetesCommonHelper.createDecorators(project, OPENSHIFT, name, config,
                 metricsConfiguration, kubernetesClientConfiguration,
-                annotations, labels, command,
+                annotations, labels, image, command,
                 port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));
 
         if (config.flavor == v3) {

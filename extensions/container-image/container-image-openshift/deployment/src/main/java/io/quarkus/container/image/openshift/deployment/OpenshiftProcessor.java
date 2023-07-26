@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
 import io.dekorate.kubernetes.decorator.AddDockerConfigJsonSecretDecorator;
-import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -262,7 +261,6 @@ public class OpenshiftProcessor {
                     applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
             decorator.produce(new DecoratorBuildItem(OPENSHIFT,
                     new ApplyDockerImageRepositoryToImageStream(applicationInfo.getName(), repositoryWithRegistry)));
-            decorator.produce(new DecoratorBuildItem(OPENSHIFT, new AddImagePullSecretDecorator(name, imagePushSecret)));
         });
     }
 

@@ -397,8 +397,12 @@ public class SpringDIProcessor {
                 }
                 addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
             } else if (fieldInfo.hasAnnotation(CDI_INJECT_ANNOTATION)) {
-                // Mix case of JSR-303 support in Spring
-                addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
+                boolean isSpringBean = fieldInfo.declaringClass().annotations().stream()
+                        .anyMatch(ai -> stereotypeScopes.keySet().contains(ai.name()));
+                if (isSpringBean) {
+                    // Mix case of JSR-303 support in Spring
+                    addAllAnnotationOnListField(target, annotationsToAdd, fieldInfo);
+                }
             } else if (fieldInfo.hasAnnotation(SPRING_VALUE_ANNOTATION)) {
                 final AnnotationInstance annotation = fieldInfo.annotation(SPRING_VALUE_ANNOTATION);
                 addSpringValueAnnotations(target, annotation, true, annotationsToAdd);

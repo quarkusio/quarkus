@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.deployment.devconsole;
+package io.quarkus.smallrye.reactivemessaging.deployment.devui;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
@@ -12,23 +12,17 @@ import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devui.spi.page.CardPageBuildItem;
+import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
-import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.Connectors;
-import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevConsoleRecorder;
-import io.quarkus.smallrye.reactivemessaging.runtime.devconsole.DevReactiveMessagingInfosSupplier;
+import io.quarkus.smallrye.reactivemessaging.runtime.devui.Connectors;
+import io.quarkus.smallrye.reactivemessaging.runtime.devui.DevConsoleRecorder;
+import io.quarkus.smallrye.reactivemessaging.runtime.devui.ReactiveMessagingJsonRpcService;
 
-public class ReactiveMessagingDevConsoleProcessor {
+public class ReactiveMessagingDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleRuntimeTemplateInfoBuildItem collectInfos(CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("reactiveMessagingInfos",
-                new DevReactiveMessagingInfosSupplier(), this.getClass(), curateOutcomeBuildItem);
-    }
-
-    @Record(STATIC_INIT)
+    @io.quarkus.deployment.annotations.Record(STATIC_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
     public void collectInjectionInfo(DevConsoleRecorder recorder, BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
         Map<String, String> emitters = new HashMap<>();
@@ -59,4 +53,19 @@ public class ReactiveMessagingDevConsoleProcessor {
         return AdditionalBeanBuildItem.unremovableOf(Connectors.class);
     }
 
+    @BuildStep(onlyIf = IsDevelopment.class)
+    CardPageBuildItem create() {
+        CardPageBuildItem card = new CardPageBuildItem();
+        card.addPage(Page.webComponentPageBuilder()
+                .title("Channels")
+                .componentLink("qwc-smallrye-reactive-messaging-channels.js")
+                .icon("font-awesome-solid:diagram-project"));
+
+        return card;
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
+        return new JsonRPCProvidersBuildItem(ReactiveMessagingJsonRpcService.class);
+    }
 }

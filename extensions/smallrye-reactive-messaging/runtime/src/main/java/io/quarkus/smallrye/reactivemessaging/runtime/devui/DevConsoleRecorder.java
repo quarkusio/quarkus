@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.runtime.devconsole;
+package io.quarkus.smallrye.reactivemessaging.runtime.devui;
 
 import java.util.HashMap;
 import java.util.Map;

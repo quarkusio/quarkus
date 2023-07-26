@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.runtime.devconsole;
+package io.quarkus.smallrye.reactivemessaging.runtime.devui;
 
 import java.util.List;
 
@@ -9,8 +9,6 @@ import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 public class ReactiveMessagingJsonRpcService {
-
-    // IMPORTANT: To avoid having to depend on jackson, we build a JSON array containing the description of the channels.
 
     public JsonArray getInfo() {
         JsonArray result = new JsonArray();

@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devconsole;
+package io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devui;
 
 import java.util.function.Supplier;
 

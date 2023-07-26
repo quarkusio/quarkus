@@ -1,24 +1,15 @@
-package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment.devconsole;
+package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment.devui;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
-import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devconsole.DevRabbitMqHttpPortSupplier;
-import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devconsole.RabbitHttpPortFinder;
-import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devconsole.RabbitMqJsonRpcService;
+import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devui.RabbitHttpPortFinder;
+import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devui.RabbitMqJsonRpcService;
 
-public class RabbitDevConsoleProcessor {
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleRuntimeTemplateInfoBuildItem collectInfos(CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("rabbitHttpPort",
-                new DevRabbitMqHttpPortSupplier(), this.getClass(), curateOutcomeBuildItem);
-    }
+public class RabbitDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     AdditionalBeanBuildItem beans() {

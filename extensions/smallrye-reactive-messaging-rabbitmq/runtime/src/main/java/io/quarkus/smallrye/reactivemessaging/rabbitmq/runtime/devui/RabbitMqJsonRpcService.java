@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devconsole;
+package io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.devui;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;

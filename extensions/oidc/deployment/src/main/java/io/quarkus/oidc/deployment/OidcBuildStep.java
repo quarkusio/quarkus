@@ -75,8 +75,8 @@ public class OidcBuildStep {
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
         // TODO: By default quarkus.oidc.application-type = service
         // Also look at other options (web-app, hybrid)
-        securityInformationProducer
-                .produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
+        //securityInformationProducer
+        //        .produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
     }
 
     @BuildStep

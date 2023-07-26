@@ -4,6 +4,7 @@ import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSea
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addBackendIndexConfig;
 import static io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchConfigUtil.addConfig;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -28,6 +29,7 @@ import org.hibernate.search.backend.elasticsearch.cfg.ElasticsearchIndexSettings
 import org.hibernate.search.backend.elasticsearch.index.layout.IndexLayoutStrategy;
 import org.hibernate.search.engine.cfg.BackendSettings;
 import org.hibernate.search.engine.cfg.EngineSettings;
+import org.hibernate.search.engine.environment.bean.BeanReference;
 import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
@@ -35,6 +37,7 @@ import org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrat
 import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBooter;
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
 import org.hibernate.search.mapper.orm.coordination.common.spi.CoordinationStrategy;
+import org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigurer;
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
@@ -209,7 +212,7 @@ public class HibernateSearchElasticsearchRecorder {
 
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.MAPPING_CONFIGURER,
-                    new QuarkusHibernateOrmSearchMappingConfigurer(rootAnnotationMappedClasses));
+                    collectAllHibernateOrmSearchMappingConfigurers());
 
             addConfig(propertyCollector,
                     HibernateOrmMapperSettings.COORDINATION_STRATEGY,
@@ -240,6 +243,24 @@ public class HibernateSearchElasticsearchRecorder {
             for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
                 listener.contributeBootProperties(propertyCollector);
             }
+        }
+
+        private List<BeanReference<HibernateOrmSearchMappingConfigurer>> collectAllHibernateOrmSearchMappingConfigurers() {
+            List<BeanReference<HibernateOrmSearchMappingConfigurer>> configurers = new ArrayList<>();
+            // 1. We add the quarkus-specific configurer:
+            configurers
+                    .add(BeanReference.ofInstance(new QuarkusHibernateOrmSearchMappingConfigurer(rootAnnotationMappedClasses)));
+            // 2. Then we check if any configurers were supplied by a user be it through a property or via an extension:
+            Optional<List<BeanReference<HibernateOrmSearchMappingConfigurer>>> beanReferences = HibernateSearchBeanUtil
+                    .multiExtensionBeanReferencesFor(
+                            buildTimeConfig.mapping().configurer(),
+                            HibernateOrmSearchMappingConfigurer.class,
+                            persistenceUnitName, null, null);
+            if (beanReferences.isPresent()) {
+                configurers.addAll(beanReferences.get());
+            }
+
+            return configurers;
         }
 
         @Override

@@ -50,6 +50,11 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
      */
     CoordinationConfig coordination();
 
+    /**
+     * Configuration for mapping.
+     */
+    MappingConfig mapping();
+
     @ConfigGroup
     interface ElasticsearchBackendBuildTimeConfig {
         /**
@@ -212,6 +217,30 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          */
         @ConfigDocDefault("none")
         Optional<String> strategy();
+    }
+
+    @ConfigGroup
+    interface MappingConfig {
+        /**
+         * One or more xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean references]
+         * to the component(s) used to configure Hibernate Search mapping.
+         *
+         * The referenced beans must implement `HibernateOrmSearchMappingConfigurer`.
+         *
+         * See xref:hibernate-search-orm-elasticsearch.adoc#programmatic-mapping[Programmatic mapping] for an example
+         * on how mapping configurers can be used to apply programmatic mappings.
+         *
+         * [NOTE]
+         * ====
+         * Instead of setting this configuration property,
+         * you can simply annotate your custom `HibernateOrmSearchMappingConfigurer` implementations with `@SearchExtension`
+         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
+         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+         * ====
+         *
+         * @asciidoclet
+         */
+        Optional<List<String>> configurer();
     }
 
 }

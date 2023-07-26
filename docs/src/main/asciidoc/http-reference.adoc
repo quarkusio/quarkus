@@ -233,10 +233,6 @@ values:
 
 NOTE: if you use `redirect` or `disabled` and have not added an SSL certificate or keystore, your server will not start!
 
-=== Advanced SSL configuration
-
-By default, Quarkus has the option to configure SSL with properties. However, if more advanced configuration is required it can be provided programmatically as shown in another section here: xref:ssl-customizations[]
-
 == Additional HTTP Headers
 
 To enable HTTP headers to be sent on every response, add the following properties:
@@ -470,29 +466,69 @@ public static class MyCustomizer implements HttpServerOptionsCustomizer {
 
 === SSL customizations
 
-Quarkus has simple ssl configuration available as shown in section xref:ssl[]. However, it can be customized programmatically for advanced use cases such as SSL Hot Reloading, using JDK, OS and custom trusted Certificate Authorities or using PEM files. Below is an example code snippet which allows to supply a custom `X509KeyManager` and `X509TrustManager`. Third party libraries such as link:https://github.com/Hakky54/sslcontext-kickstart[SSLContext-Kickstart] can provide these kind of custom ssl objects.
+Quarkus has simple ssl configuration available as shown in section xref:ssl[]. However, it can be customized programmatically for advanced use cases such as SSL Hot Reloading, using JDK, OS and custom trusted Certificate Authorities or using PEM files. Below is an example code snippet which allows to supply a custom `X509KeyManager` and `X509TrustManager` with reloading enabled. Third party libraries such as link:https://github.com/Hakky54/sslcontext-kickstart[SSLContext-Kickstart] can provide these kind of custom ssl objects.
 
 [source,java]
 ----
 import jakarta.inject.Singleton;
 import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
-import javax.net.ssl.X509KeyManager;
-import javax.net.ssl.X509TrustManager;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.TrustOptions;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import nl.altindag.ssl.SSLFactory;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Singleton
 public static class MyCustomizer implements HttpServerOptionsCustomizer {
 
     @Override
     public void customizeHttpServer(HttpServerOptions options) {
-        X509KeyManager keyManager = null;     // your custom KeyManager instance
-        X509TrustManager trustManager = null; // your custom TrustManager instance
+        Path identityPath = Paths.get("/path/to/your/identity.jks");
+        Path truststorePath = Paths.get("/path/to/your/truststore.jks");
+        char[] password = "password".toCharArray();
+
+        SSLFactory baseSslFactory = SSLFactory.builder()
+                .withDummyIdentityMaterial()
+                .withDummyTrustMaterial()
+                .withSwappableIdentityMaterial()
+                .withSwappableTrustMaterial()
+                .build();
+
+        Runnable sslUpdater = () -> {
+            SSLFactory updatedSslFactory = SSLFactory.builder()
+                  .withIdentityMaterial(identityPath, password)
+                  .withTrustMaterial(truststorePath, password)
+                  .build();
+
+            SSLFactoryUtils.reload(baseSslFactory, updatedSslFactory);
+        };
+
+        // initial update of ssl material to replace the dummies
+        sslUpdater.run();
+
+        // update ssl material every day
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(sslUpdater, 1, 1, TimeUnit.DAYS);
 
         options.setSsl(true)
                .setPort(8443)
-               .setKeyCertOptions(KeyCertOptions.wrap(keyManager))
-               .setTrustOptions(TrustOptions.wrap(trustManager));
+               .setKeyCertOptions(KeyCertOptions.wrap(baseSslFactory.getKeyManager().orElseThrow()))
+               .setTrustOptions(TrustOptions.wrap(baseSslFactory.getTrustManager().orElseThrow()));
     }
 }
+----
+
+To use the SSLFactory you need to explicitly include `io.github.hakky54:sslcontext-kickstart`:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.github.hakky54</groupId>
+    <artifactId>sslcontext-kickstart</artifactId>
+</dependency>
 ----
 
 [[reverse-proxy]]

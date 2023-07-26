@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import io.quarkus.jackson.ObjectMapperCustomizer;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.quarkus.rest.client.reactive.jackson.ClientObjectMapper;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
@@ -76,15 +77,15 @@ public class DifferentObjectMapperForClientAndServerTest {
     }
 
     /**
-     * Because MyClientNotUnwrappingRootElement is using `@RegisterProvider(ClientObjectMapperNotUnwrappingRootElement.class)`
+     * Because MyClientNotUnwrappingRootElement uses `@ClientObjectMapper`
      * which is configured with: `.disable(DeserializationFeature.UNWRAP_ROOT_VALUE)`.
      */
     @Test
     void shouldClientUseCustomObjectMapperNotUnwrappingRootElement() {
-        assertFalse(ClientObjectMapperNotUnwrappingRootElement.USED.get());
+        assertFalse(MyClientNotUnwrappingRootElement.CUSTOM_OBJECT_MAPPER_USED.get());
         Request request = clientNotUnwrappingRootElement.get();
         assertNull(request.value);
-        assertTrue(ClientObjectMapperNotUnwrappingRootElement.USED.get());
+        assertTrue(MyClientNotUnwrappingRootElement.CUSTOM_OBJECT_MAPPER_USED.get());
     }
 
     @Path("/server")
@@ -106,10 +107,19 @@ public class DifferentObjectMapperForClientAndServerTest {
 
     @Path("/server")
     @Produces(MediaType.APPLICATION_JSON)
-    @RegisterProvider(ClientObjectMapperNotUnwrappingRootElement.class)
     public interface MyClientNotUnwrappingRootElement {
+        AtomicBoolean CUSTOM_OBJECT_MAPPER_USED = new AtomicBoolean(false);
+
         @GET
         Request get();
+
+        @ClientObjectMapper
+        static ObjectMapper objectMapper(ObjectMapper defaultObjectMapper) {
+            CUSTOM_OBJECT_MAPPER_USED.set(true);
+            return defaultObjectMapper.copy()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .disable(DeserializationFeature.UNWRAP_ROOT_VALUE);
+        }
     }
 
     public static class Request {
@@ -154,19 +164,6 @@ public class DifferentObjectMapperForClientAndServerTest {
         public ObjectMapper getContext(Class<?> type) {
             USED.set(true);
             return new ObjectMapper().enable(DeserializationFeature.UNWRAP_ROOT_VALUE);
-        }
-    }
-
-    public static class ClientObjectMapperNotUnwrappingRootElement implements ContextResolver<ObjectMapper> {
-
-        static final AtomicBoolean USED = new AtomicBoolean(false);
-
-        @Override
-        public ObjectMapper getContext(Class<?> type) {
-            USED.set(true);
-            return new ObjectMapper()
-                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    .disable(DeserializationFeature.UNWRAP_ROOT_VALUE);
         }
     }
 

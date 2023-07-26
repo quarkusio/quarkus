@@ -269,6 +269,7 @@ class RestClientReactiveProcessor {
     @BuildStep
     void registerProvidersFromAnnotations(CombinedIndexBuildItem indexBuildItem,
             List<RegisterProviderAnnotationInstanceBuildItem> registerProviderAnnotationInstances,
+            List<AnnotationToRegisterIntoClientContextBuildItem> annotationsToRegisterIntoClientContext,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
@@ -333,6 +334,11 @@ class RestClientReactiveProcessor {
             Map<String, GeneratedClassResult> generatedProviders = new HashMap<>();
             populateClientExceptionMapperFromAnnotations(generatedClasses, reflectiveClasses, index, generatedProviders);
             populateClientRedirectHandlerFromAnnotations(generatedClasses, reflectiveClasses, index, generatedProviders);
+            for (AnnotationToRegisterIntoClientContextBuildItem annotation : annotationsToRegisterIntoClientContext) {
+                populateClientProviderFromAnnotations(annotation, generatedClasses, reflectiveClasses,
+                        index, generatedProviders);
+            }
+
             addGeneratedProviders(index, constructor, annotationsByClassName, generatedProviders);
 
             constructor.returnValue(null);
@@ -587,6 +593,29 @@ class RestClientReactiveProcessor {
                 reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
                         .serialization(false).build());
             }
+        }
+    }
+
+    private void populateClientProviderFromAnnotations(AnnotationToRegisterIntoClientContextBuildItem annotationBuildItem,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index,
+            Map<String, GeneratedClassResult> generatedProviders) {
+
+        ClientContextResolverHandler handler = new ClientContextResolverHandler(annotationBuildItem.getAnnotation(),
+                annotationBuildItem.getExpectedReturnType(),
+                new GeneratedClassGizmoAdaptor(generatedClasses, true));
+        for (AnnotationInstance instance : index.getAnnotations(annotationBuildItem.getAnnotation())) {
+            GeneratedClassResult result = handler.generateContextResolver(instance);
+            if (result == null) {
+                continue;
+            }
+            if (generatedProviders.containsKey(result.interfaceName)) {
+                throw new IllegalStateException("Only a single instance of '" + annotationBuildItem.getAnnotation()
+                        + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
+            }
+            generatedProviders.put(result.interfaceName, result);
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+                    .serialization(false).build());
         }
     }
 

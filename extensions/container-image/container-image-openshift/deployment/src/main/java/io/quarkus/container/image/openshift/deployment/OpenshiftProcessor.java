@@ -29,6 +29,8 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.dekorate.kubernetes.decorator.AddDockerConfigJsonSecretDecorator;
+import io.dekorate.kubernetes.decorator.AddImagePullSecretDecorator;
 import io.dekorate.utils.Packaging;
 import io.dekorate.utils.Serialization;
 import io.fabric8.kubernetes.api.model.HasMetadata;
@@ -58,6 +60,7 @@ import io.quarkus.container.spi.ContainerImagePushRequestBuildItem;
 import io.quarkus.deployment.IsNormalNotRemoteDev;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.GeneratedFileSystemResourceBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -81,6 +84,7 @@ public class OpenshiftProcessor {
     private static final String BUILD_CONFIG_NAME = "openshift.io/build-config.name";
     private static final String RUNNING = "Running";
     private static final String JAVA_APP_JAR = "JAVA_APP_JAR";
+    private static final String OPENSHIFT_INTERNAL_REGISTRY = "openshift-image-registry";
 
     private static final int LOG_TAIL_SIZE = 10;
     private static final Logger LOG = Logger.getLogger(OpenshiftProcessor.class);
@@ -231,6 +235,35 @@ public class OpenshiftProcessor {
                         .produce(KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments.get()));
             }
         }
+    }
+
+    @BuildStep(onlyIf = { OpenshiftBuild.class })
+    public void configureExternalRegistry(ApplicationInfoBuildItem applicationInfo,
+            OpenshiftConfig openshiftConfig,
+            ContainerImageInfoBuildItem containerImageInfo,
+            BuildProducer<DecoratorBuildItem> decorator) {
+        containerImageInfo.registry.ifPresent(registry -> {
+            final String name = applicationInfo.getName();
+            final String serviceAccountName = applicationInfo.getName();
+            String imagePushSecret = openshiftConfig.imagePushSecret.orElse(applicationInfo.getName() + "-push-secret");
+            String repositoryWithRegistry = registry + "/" + containerImageInfo.getRepository();
+
+            if (registry.contains(OPENSHIFT_INTERNAL_REGISTRY)) {
+                //no special handling of secrets is really needed.
+            } else if (containerImageInfo.username.isPresent() && containerImageInfo.password.isPresent()) {
+                decorator.produce(new DecoratorBuildItem(OPENSHIFT,
+                        new AddDockerConfigJsonSecretDecorator(imagePushSecret, containerImageInfo.registry.get(),
+                                containerImageInfo.username.get(), containerImageInfo.password.get())));
+            } else {
+                LOG.warn("An external image registry has been specified, but no push secret or credentials.");
+            }
+
+            decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyDockerImageOutputToBuildConfigDecorator(
+                    applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
+            decorator.produce(new DecoratorBuildItem(OPENSHIFT,
+                    new ApplyDockerImageRepositoryToImageStream(applicationInfo.getName(), repositoryWithRegistry)));
+            decorator.produce(new DecoratorBuildItem(OPENSHIFT, new AddImagePullSecretDecorator(name, imagePushSecret)));
+        });
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)

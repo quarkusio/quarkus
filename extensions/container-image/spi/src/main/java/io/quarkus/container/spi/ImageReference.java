@@ -16,6 +16,7 @@
 
 package io.quarkus.container.spi;
 
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,7 +78,7 @@ public class ImageReference {
 
     private static final Pattern REFERENCE_PATTERN = Pattern.compile(REFERENCE_REGEX);
 
-    private final String registry;
+    private final Optional<String> registry;
     private final String repository;
     private final String tag;
     private final String digest;
@@ -148,7 +149,7 @@ public class ImageReference {
 
         // If no registry was matched, use Docker Hub by default.
         if (StringUtil.isNullOrEmpty(registry)) {
-            registry = DOCKER_HUB_REGISTRY;
+            registry = null;
         }
 
         if (StringUtil.isNullOrEmpty(repository)) {
@@ -162,7 +163,7 @@ public class ImageReference {
          */
         if (!registry.contains(".") && !registry.contains(":") && !"localhost".equals(registry)) {
             repository = registry + "/" + repository;
-            registry = DOCKER_HUB_REGISTRY;
+            registry = null;
         }
 
         /*
@@ -188,16 +189,19 @@ public class ImageReference {
         return new ImageReference(registry, repository, tag, digest);
     }
 
-    private ImageReference(
-            String registry, String repository, String tag, String digest) {
-        this.registry = registry;
+    private ImageReference(String registry, String repository, String tag, String digest) {
+        this.registry = Optional.ofNullable(registry);
         this.repository = repository;
         this.tag = tag;
         this.digest = digest;
     }
 
-    public String getRegistry() {
+    public Optional<String> getRegistry() {
         return registry;
+    }
+
+    public String getEffectiveRegistry() {
+        return registry.orElse(DOCKER_HUB_REGISTRY);
     }
 
     public String getRepository() {

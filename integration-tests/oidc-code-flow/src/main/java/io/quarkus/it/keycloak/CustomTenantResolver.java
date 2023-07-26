@@ -65,6 +65,15 @@ public class CustomTenantResolver implements TenantResolver {
             }
         }
 
+        if (path.contains("tenant-nonce")) {
+            if (context.getCookie("q_session_tenant-nonce") != null) {
+                context.put("reauthenticated", "true");
+                return context.get(OidcUtils.TENANT_ID_ATTRIBUTE);
+            } else {
+                return "tenant-nonce";
+            }
+        }
+
         if (path.contains("tenant-xhr")) {
             return "tenant-xhr";
         }

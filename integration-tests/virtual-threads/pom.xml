@@ -23,7 +23,16 @@
         <enforce-test-deps-scope.skip>true</enforce-test-deps-scope.skip>
     </properties>
 
-    <!-- modules are in profile test-modules -->
+    <modules>
+        <module>grpc-virtual-threads</module>
+        <module>resteasy-reactive-virtual-threads</module>
+        <module>mailer-virtual-threads</module>
+        <module>redis-virtual-threads</module>
+        <module>rest-client-reactive-virtual-threads</module>
+        <module>kafka-virtual-threads</module>
+        <module>amqp-virtual-threads</module>
+        <module>jms-virtual-threads</module>
+    </modules>
 
     <build>
         <plugins>
@@ -90,15 +99,27 @@
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                             <maven.home>${maven.home}</maven.home>
                         </systemPropertyVariables>
-                        <argLine>--enable-preview -Djdk.tracePinnedThreads</argLine>
+                        <!-- gradle scan capture test logging disabled: System.out in virtual threads cause pinning when enabled. -->
+                        <argLine>--enable-preview -Djdk.tracePinnedThreads -Dgradle.scan.captureTestLogging=false</argLine>
                         <skipTests>${skipTests}</skipTests>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <id>pinning-test</id>
+                            <goals>
+                                <goal>test</goal>
+                            </goals>
+                            <configuration>
+                                <includes>
+                                    <include>NoPinningVerify.java</include>
+                                </includes>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${project.version}</version>
-                    <extensions>true</extensions>
                     <executions>
                         <execution>
                             <goals>
@@ -204,13 +225,6 @@
             <activation>
                 <jdk>[20,)</jdk>
             </activation>
-            <modules>
-                <module>grpc-virtual-threads</module>
-                <module>resteasy-reactive-virtual-threads</module>
-                <module>mailer-virtual-threads</module>
-                <module>redis-virtual-threads</module>
-                <module>rest-client-reactive-virtual-threads</module>
-            </modules>
             <properties>
                 <maven.compiler.release>20</maven.compiler.release>
                 <impsort.skip>true</impsort.skip> <!-- impsort does not handle java 20 -->

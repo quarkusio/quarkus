@@ -388,6 +388,8 @@
                 <module>istio</module>
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
+                <!-- Virtual threads test -->
+                <module>virtual-threads</module>
             </modules>
         </profile>
 
@@ -402,20 +404,6 @@
             </activation>
             <modules>
                 <module>java-17</module>
-            </modules>
-        </profile>
-
-        <!-- Java 20+ test profile -->
-        <profile>
-            <id>java-20</id>
-            <activation>
-                <property>
-                    <name>!no-test-modules</name>
-                </property>
-                <jdk>[20,)</jdk>
-            </activation>
-            <modules>
-                <module>virtual-threads</module>
             </modules>
         </profile>
 

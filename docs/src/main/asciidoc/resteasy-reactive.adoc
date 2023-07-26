@@ -1976,6 +1976,16 @@ public class Endpoint {
 }
 ----
 
+[NOTE]
+====
+You can change the log level of the thrown `WebApplicationException` exceptions by configuring the following property `quarkus.log.category."WebApplicationException".level` like so:
+
+[source, properties]
+----
+quarkus.log.category."WebApplicationException".level=DEBUG
+----
+====
+
 If your endpoint method is delegating calls to another service layer which
 does not know of Jakarta REST, you need a way to turn service exceptions to an
 HTTP response, and you can do that using the

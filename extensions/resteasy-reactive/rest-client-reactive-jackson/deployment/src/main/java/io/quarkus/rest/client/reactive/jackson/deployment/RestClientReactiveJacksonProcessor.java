@@ -10,10 +10,16 @@ import java.util.List;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
 
+import org.jboss.jandex.DotName;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.rest.client.reactive.deployment.AnnotationToRegisterIntoClientContextBuildItem;
+import io.quarkus.rest.client.reactive.jackson.ClientObjectMapper;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyReader;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyWriter;
 import io.quarkus.resteasy.reactive.jackson.deployment.processor.ResteasyReactiveJacksonProviderDefinedBuildItem;
@@ -41,6 +47,12 @@ public class RestClientReactiveJacksonProcessor {
     @BuildStep
     ReinitializeVertxJsonBuildItem vertxJson() {
         return new ReinitializeVertxJsonBuildItem();
+    }
+
+    @BuildStep
+    void additionalProviders(BuildProducer<AnnotationToRegisterIntoClientContextBuildItem> annotation) {
+        annotation.produce(new AnnotationToRegisterIntoClientContextBuildItem(DotName.createSimple(ClientObjectMapper.class),
+                ObjectMapper.class));
     }
 
     @BuildStep

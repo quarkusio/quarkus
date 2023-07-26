@@ -9,6 +9,7 @@ import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
 import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.ROUTE;
 import static io.quarkus.kubernetes.deployment.Constants.STARTUP_PROBE;
+import static io.quarkus.kubernetes.deployment.KubernetesCommonHelper.printMessageAboutPortsThatCantChange;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.MANAGEMENT_PORT_NAME;
 import static io.quarkus.kubernetes.deployment.KubernetesConfigUtil.managementPortIsEnabled;
 import static io.quarkus.kubernetes.deployment.OpenshiftConfig.OpenshiftFlavor.v3;
@@ -378,6 +379,8 @@ public class OpenshiftProcessor {
                         || !config.route.targetPort.equals(MANAGEMENT_PORT_NAME))) {
             result.add(new DecoratorBuildItem(OPENSHIFT, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
         }
+
+        printMessageAboutPortsThatCantChange(OPENSHIFT, ports, config);
         return result;
     }
 

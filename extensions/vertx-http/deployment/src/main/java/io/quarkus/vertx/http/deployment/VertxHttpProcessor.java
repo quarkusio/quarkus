@@ -174,26 +174,16 @@ class VertxHttpProcessor {
 
     @BuildStep
     public void kubernetes(BuildProducer<KubernetesPortBuildItem> kubernetesPorts) {
-        if (isSslConfigured()) {
-            // ssl is not disabled
-            int sslPort = ConfigProvider.getConfig()
-                    .getOptionalValue("quarkus.http.ssl-port", Integer.class)
-                    .orElse(8443);
-            kubernetesPorts.produce(new KubernetesPortBuildItem(sslPort, "https"));
-        }
-
-        int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
-        kubernetesPorts.produce(new KubernetesPortBuildItem(port, "http"));
+        kubernetesPorts.produce(KubernetesPortBuildItem.fromRuntimeConfiguration("http", "quarkus.http.port", 8080, true));
+        kubernetesPorts.produce(
+                KubernetesPortBuildItem.fromRuntimeConfiguration("https", "quarkus.http.ssl-port", 8443, isSslConfigured()));
     }
 
     @BuildStep
     public KubernetesPortBuildItem kubernetesForManagement(
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
-        if (managementInterfaceBuildTimeConfig.enabled) {
-            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
-            return new KubernetesPortBuildItem(port, "management");
-        }
-        return null;
+        return KubernetesPortBuildItem.fromRuntimeConfiguration("management", "quarkus.management.port", 9000,
+                managementInterfaceBuildTimeConfig.enabled);
     }
 
     @BuildStep

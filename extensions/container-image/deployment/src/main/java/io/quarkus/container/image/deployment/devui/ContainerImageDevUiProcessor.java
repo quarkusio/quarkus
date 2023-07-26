@@ -1,4 +1,4 @@
-package io.quarkus.container.image.deployment.devconsole;
+package io.quarkus.container.image.deployment.devui;
 
 import java.util.List;
 import java.util.Map;

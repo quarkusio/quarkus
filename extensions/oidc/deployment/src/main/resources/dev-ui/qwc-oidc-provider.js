@@ -854,7 +854,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         let address;
         let state;
         if (propertiesState.keycloakAdminUrl && propertiesState.keycloakRealms?.length > 0) {
-            address = this._getKeycloakTokenUrl();
+            address = this._getKeycloakAuthorizationUrl();
             state = QwcOidcProvider._makeId() + "_" + this._selectedRealm + "_" + clientId;
         } else {
             address = propertiesState.authorizationUrl ?? '';
@@ -1225,6 +1225,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _getKeycloakTokenUrl() {
+        return propertiesState.keycloakAdminUrl + "/realms/" + this._selectedRealm + "/protocol/openid-connect/token";
+    }
+    
+    _getKeycloakAuthorizationUrl() {
         return propertiesState.keycloakAdminUrl + "/realms/" + this._selectedRealm + "/protocol/openid-connect/auth";
     }
 }

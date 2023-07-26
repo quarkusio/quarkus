@@ -60,6 +60,7 @@ import io.vertx.core.impl.VertxBuilder;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.impl.VertxThread;
 import io.vertx.core.spi.VertxThreadFactory;
+import io.vertx.core.spi.file.FileResolver;
 import io.vertx.core.spi.resolver.ResolverProvider;
 
 @Recorder
@@ -219,9 +220,13 @@ public class VertxCoreRecorder {
                 return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode, nonDevModeTccl);
             }
         };
+        // temporary workaround until Vert.x allows us to override the protocols only
+        // see https://github.com/quarkusio/quarkus/issues/28474
+        FileResolver fileResolver = new VertxFileResolver();
         if (conf != null && conf.cluster != null && conf.cluster.clustered) {
             CompletableFuture<Vertx> latch = new CompletableFuture<>();
             new VertxBuilder(options)
+                    .fileResolver(fileResolver)
                     .threadFactory(vertxThreadFactory)
                     .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
                     .init().clusteredVertx(new Handler<AsyncResult<Vertx>>() {
@@ -237,6 +242,7 @@ public class VertxCoreRecorder {
             vertx = latch.join();
         } else {
             vertx = new VertxBuilder(options)
+                    .fileResolver(fileResolver)
                     .threadFactory(vertxThreadFactory)
                     .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
                     .init().vertx();

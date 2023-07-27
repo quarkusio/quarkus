@@ -1,8 +1,10 @@
-package io.quarkus.datasource.runtime;
+package io.quarkus.datasource.runtime.devui;
 
 import java.util.ServiceLoader;
 
 import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.datasource.runtime.DatabaseSchemaProvider;
 
 @ApplicationScoped
 public class DatasourceJsonRpcService {

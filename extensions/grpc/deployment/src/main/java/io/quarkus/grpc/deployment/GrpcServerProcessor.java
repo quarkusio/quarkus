@@ -75,7 +75,6 @@ import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider;
 import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
 import io.quarkus.grpc.auth.GrpcSecurityRecorder;
-import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;

@@ -205,7 +205,7 @@ jobs:
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
-      virtual_threads_matrix: ${{ steps.calc-virtual_threads-matrix.outputs.matrix }}
+      virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
       run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
@@ -228,7 +228,7 @@ jobs:
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from virtual-threads-tests.json
-        id: calc-virtual_threads-matrix
+        id: calc-virtual-threads-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
           json=$(.github/filter-virtual-threads-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')

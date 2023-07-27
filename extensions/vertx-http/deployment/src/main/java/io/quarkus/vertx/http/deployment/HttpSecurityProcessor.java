@@ -1,5 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
+import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
 import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
 import java.security.Permission;
@@ -54,6 +55,7 @@ import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.PermitSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.RolesAllowedHttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SupplierImpl;
+import io.quarkus.vertx.http.runtime.security.VertxBlockingSecurityExecutor;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
@@ -261,6 +263,9 @@ public class HttpSecurityProcessor {
         }
 
         if (capabilities.isPresent(Capability.SECURITY)) {
+            beanProducer
+                    .produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                            .addBeanClass(VertxBlockingSecurityExecutor.class).setDefaultScope(APPLICATION_SCOPED).build());
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
                             .addBeanClass(HttpAuthorizer.class).build());

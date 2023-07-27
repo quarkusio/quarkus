@@ -175,7 +175,9 @@ public class GrpcServerProcessor {
                 Set<String> blockingMethods = gatherBlockingOrVirtualMethodNames(userDefinedBean, index.getIndex(), false);
                 Set<String> virtualMethods = gatherBlockingOrVirtualMethodNames(userDefinedBean, index.getIndex(), true);
                 generatedBeans.put(generatedBean.name(), blockingMethods);
-                virtuals.put(generatedBean.name(), virtualMethods);
+                if (!virtualMethods.isEmpty()) {
+                    virtuals.put(generatedBean.name(), virtualMethods);
+                }
             }
         }
 
@@ -451,7 +453,7 @@ public class GrpcServerProcessor {
                     implBaseMethod.parameterTypes().toArray(new Type[0]));
             if (virtual && blocking == BlockingMode.VIRTUAL_THREAD) {
                 result.add(methodName);
-            } else if (blocking.blocking) {
+            } else if (!virtual && blocking.blocking) {
                 result.add(methodName);
             }
         }

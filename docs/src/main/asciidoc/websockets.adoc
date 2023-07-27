@@ -95,6 +95,7 @@ public class ChatSocket {
 
     @OnOpen
     public void onOpen(Session session, @PathParam("username") String username) {
+        broadcast("User " + username + " joined");
         sessions.put(username, session);
     }
 
@@ -112,11 +113,7 @@ public class ChatSocket {
 
     @OnMessage
     public void onMessage(String message, @PathParam("username") String username) {
-        if (message.equalsIgnoreCase("_ready_")) {
-            broadcast("User " + username + " joined");
-        } else {
-            broadcast(">> " + username + ": " + message);
-        }
+        broadcast(">> " + username + ": " + message);
     }
 
     private void broadcast(String message) {

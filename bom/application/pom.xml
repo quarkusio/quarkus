@@ -89,7 +89,7 @@
         <jboss-metadata-web.version>16.0.0.Final</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <graal-sdk.version>22.3.2</graal-sdk.version>
+        <graal-sdk.version>23.0.1</graal-sdk.version>
         <graal-svm.version>${graal-sdk.version}</graal-svm.version>
         <gizmo.version>1.6.1.Final</gizmo.version>
         <jackson-bom.version>2.15.2</jackson-bom.version>

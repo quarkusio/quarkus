@@ -293,7 +293,7 @@ Although the root logger's handlers are usually configured directly via `quarkus
 
 == Logging format
 
-Quarkus uses a pattern-based logging formatter that generates human-readable text logs by default, but you can also  configure the format for each log handler by using a dedicated property.
+Quarkus uses a pattern-based logging formatter that generates human-readable text logs by default, but you can also configure the format for each log handler by using a dedicated property.
 
 For the console handler, the property is `quarkus.log.console.format`.
 
@@ -324,8 +324,8 @@ The logging format string supports the following symbols:
 |%t|Thread name|Render the thread name.
 |%t{id}|Thread ID|Render the thread ID.
 |%z{<zone name>}|Time zone|Set the time zone of the output to `<zone name>`.
-|%X{<MDC property name>}|Mapped Diagnostics Context Value|Renders the value from Mapped Diagnostics Context
-|%X|Mapped Diagnostics Context Values|Renders all the values from Mapped Diagnostics Context in format {property.key=property.value}
+|%X{<MDC property name>}|Mapped Diagnostic Context Value|Renders the value from Mapped Diagnostic Context
+|%X|Mapped Diagnostic Context Values|Renders all the values from Mapped Diagnostic Context in format {property.key=property.value}
 |%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format {value1.value2}
 |===
 
@@ -333,7 +333,7 @@ The logging format string supports the following symbols:
 [id="alt-console-format"]
 === Alternative console logging formats
 
-The flexibility to change console log format is a useful feature you can use, for example, when the output of the Quarkus application is captured by a service that process and store the log information for later analysis.
+Changing the console log format is useful, for example, when the console output of the Quarkus application is captured by a service that processes and stores the log information for later analysis.
 
 
 [id="json-logging"]
@@ -528,7 +528,7 @@ quarkus.log.console.filter=my-filter
 ----
 
 
-== Logging configurations examples
+== Examples of logging configurations
 
 The following examples show some of the ways in which you can configure logging in Quarkus:
 
@@ -741,7 +741,7 @@ implementation("org.jboss.slf4j:slf4j-jboss-logmanager")
 
 === Use MDC to add contextual log information
 
-Quarkus overrides log MDC (Mapped Diagnostic Context) to improve the compatibility with its reactive core.
+Quarkus overrides the logging Mapped Diagnostic Context (MDC) to improve the compatibility with its reactive core.
 
 ==== Add and read MDC data
 

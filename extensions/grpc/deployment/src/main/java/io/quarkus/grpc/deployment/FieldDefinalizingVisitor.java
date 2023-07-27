@@ -1,4 +1,4 @@
-package io.quarkus.grpc.deployment.devmode;
+package io.quarkus.grpc.deployment;
 
 import static java.util.Arrays.asList;
 

@@ -45,6 +45,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
     private SelfSignedCertificate serverTls;
     private SelfSignedCertificate clientTlS;
     private boolean enableTLS = false;
+    private boolean preventTrustCert = false;
     private boolean enableCompression = false;
     private Vertx vertx;
 
@@ -58,6 +59,11 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
         var enableTLSStr = initArgs.get("enableTLS");
         if (enableTLSStr != null && !enableTLSStr.isEmpty()) {
             enableTLS = Boolean.parseBoolean(enableTLSStr);
+
+            var preventTrustCertStr = initArgs.get("preventTrustCert");
+            if (preventTrustCertStr != null && !preventTrustCertStr.isEmpty()) {
+                preventTrustCert = Boolean.parseBoolean(preventTrustCertStr);
+            }
         }
 
         var enableCompressionStr = initArgs.get("enableCompression");
@@ -112,7 +118,9 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
         if (enableTLS) {
             result.put("quarkus.otel.exporter.otlp.traces.endpoint",
                     "https://" + collector.getHost() + ":" + collector.getMappedPort(COLLECTOR_OTLP_GRPC_MTLS_PORT));
-            result.put("quarkus.otel.exporter.otlp.traces.trust-cert.certs", serverTls.certificatePath());
+            if (!preventTrustCert) {
+                result.put("quarkus.otel.exporter.otlp.traces.trust-cert.certs", serverTls.certificatePath());
+            }
             result.put("quarkus.otel.exporter.otlp.traces.key-cert.certs", clientTlS.certificatePath());
             result.put("quarkus.otel.exporter.otlp.traces.key-cert.keys", clientTlS.privateKeyPath());
         } else {

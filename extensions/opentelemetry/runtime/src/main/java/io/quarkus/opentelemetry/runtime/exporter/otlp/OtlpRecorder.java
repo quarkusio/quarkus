@@ -25,6 +25,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
@@ -39,7 +40,7 @@ public class OtlpRecorder {
     public Function<SyntheticCreationalContext<LateBoundBatchSpanProcessor>, LateBoundBatchSpanProcessor> batchSpanProcessorForOtlp(
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            Supplier<Vertx> vertx) {
+            TlsConfig tlsConfig, Supplier<Vertx> vertx) {
         URI grpcBaseUri = getGrpcBaseUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
@@ -127,6 +128,10 @@ public class OtlpRecorder {
                                 if (VertxGrpcExporter.isHttps(grpcBaseUri)) {
                                     options.setSsl(true);
                                     options.setUseAlpn(true);
+                                }
+                                if (tlsConfig.trustAll) {
+                                    options.setTrustAll(true);
+                                    options.setVerifyHost(false);
                                 }
                             }
 

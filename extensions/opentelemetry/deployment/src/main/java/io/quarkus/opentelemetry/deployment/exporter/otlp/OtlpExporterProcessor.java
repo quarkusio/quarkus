@@ -28,6 +28,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRunt
 import io.quarkus.opentelemetry.runtime.exporter.otlp.EndUserSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.LateBoundBatchSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpRecorder;
+import io.quarkus.runtime.TlsConfig;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 
 @BuildSteps(onlyIf = OtlpExporterProcessor.OtlpExporterEnabled.class)
@@ -62,6 +63,7 @@ public class OtlpExporterProcessor {
     SyntheticBeanBuildItem createBatchSpanProcessor(OtlpRecorder recorder,
             OTelRuntimeConfig otelRuntimeConfig,
             OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            TlsConfig tlsConfig,
             CoreVertxBuildItem vertxBuildItem) {
         return SyntheticBeanBuildItem
                 .configure(LateBoundBatchSpanProcessor.class)
@@ -71,7 +73,7 @@ public class OtlpExporterProcessor {
                 .unremovable()
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
-                .createWith(recorder.batchSpanProcessorForOtlp(otelRuntimeConfig, exporterRuntimeConfig,
+                .createWith(recorder.batchSpanProcessorForOtlp(otelRuntimeConfig, exporterRuntimeConfig, tlsConfig,
                         vertxBuildItem.getVertx()))
                 .done();
 

@@ -1,5 +1,8 @@
 package io.quarkus.oidc.token.propagation;
 
+import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.JWT_PROPAGATE_TOKEN_CREDENTIAL;
+import static io.quarkus.oidc.token.propagation.TokenPropagationConstants.OIDC_PROPAGATE_TOKEN_CREDENTIAL;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Optional;
@@ -19,10 +22,15 @@ import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.token.propagation.runtime.AbstractTokenRequestFilter;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
+import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.vertx.core.Vertx;
 
 public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     // note: We can't use constructor injection for these fields because they are registered by RESTEasy
     // which doesn't know about CDI at the point of registration
+
+    private static final String ERROR_MSG = "OIDC Token Propagation requires a safe (isolated) Vert.x sub-context because configuration property 'quarkus.oidc-token-propagation.enabled-during-authentication' has been set to true, but the current context hasn't been flagged as such.";
+    private final boolean enabledDuringAuthentication;
 
     @Inject
     Instance<TokenCredential> accessToken;
@@ -36,6 +44,11 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
 
     OidcClient exchangeTokenClient;
     String exchangeTokenProperty;
+
+    public AccessTokenRequestFilter() {
+        this.enabledDuringAuthentication = Boolean.getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL)
+                || Boolean.getBoolean(JWT_PROPAGATE_TOKEN_CREDENTIAL);
+    }
 
     @PostConstruct
     public void initExchangeTokenClient() {
@@ -60,8 +73,12 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
 
     @Override
     public void filter(ClientRequestContext requestContext) throws IOException {
-        if (verifyTokenInstance(requestContext, accessToken)) {
-            propagateToken(requestContext, exchangeTokenIfNeeded(accessToken.get().getToken()));
+        if (acquireTokenCredentialFromCtx(requestContext)) {
+            propagateToken(requestContext, exchangeTokenIfNeeded(getTokenCredentialFromContext().getToken()));
+        } else {
+            if (verifyTokenInstance(requestContext, accessToken)) {
+                propagateToken(requestContext, exchangeTokenIfNeeded(accessToken.get().getToken()));
+            }
         }
     }
 
@@ -73,5 +90,25 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
         } else {
             return token;
         }
+    }
+
+    private boolean acquireTokenCredentialFromCtx(ClientRequestContext requestContext) {
+        if (enabledDuringAuthentication) {
+            TokenCredential tokenCredential = getTokenCredentialFromContext();
+            if (tokenCredential != null) {
+                if (tokenCredential.getToken() == null) {
+                    abortRequest(requestContext);
+                } else {
+                    return true;
+                }
+            }
+            // this means auth is already done, and we need to use CDI
+        }
+        return false;
+    }
+
+    private static TokenCredential getTokenCredentialFromContext() {
+        VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
+        return Vertx.currentContext().getLocal(TokenCredential.class.getName());
     }
 }

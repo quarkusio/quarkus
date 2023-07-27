@@ -8,6 +8,8 @@ import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import io.quarkus.security.identity.CurrentIdentityAssociation;
+
 @Path("/frontend")
 public class FrontendResource {
     @Inject
@@ -17,10 +19,24 @@ public class FrontendResource {
     @Inject
     JsonWebToken jwt;
 
+    @Inject
+    CurrentIdentityAssociation identityAssociation;
+
     @GET
     @Path("token-propagation")
     @RolesAllowed("admin")
     public String userNameTokenPropagation() {
+        return getResponseWithExchangedUsername();
+    }
+
+    @GET
+    @Path("token-propagation-with-augmentor")
+    @RolesAllowed("tester") // tester role is granted by SecurityIdentityAugmentor
+    public String userNameTokenPropagationWithSecIdentityAugmentor() {
+        return getResponseWithExchangedUsername();
+    }
+
+    private String getResponseWithExchangedUsername() {
         if ("alice".equals(jwt.getName())) {
             return "Token issued to " + jwt.getName() + " has been exchanged, new user name: "
                     + accessTokenPropagationService.getUserName();

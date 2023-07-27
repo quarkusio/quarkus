@@ -296,6 +296,7 @@ class AgroalProcessor {
             jdbcDataSource.produce(new JdbcDataSourceBuildItem(dataSourceName,
                     aggregatedBuildTimeConfigBuildItem.getDbKind(),
                     aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion,
+                    aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions != TransactionIntegration.DISABLED,
                     aggregatedBuildTimeConfigBuildItem.isDefault()));
         }
     }

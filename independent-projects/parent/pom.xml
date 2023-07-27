@@ -420,6 +420,23 @@
                     <artifactId>versions-maven-plugin</artifactId>
                     <version>${version.versions.plugin}</version>
                 </plugin>
+
+                <plugin>
+                    <groupId>com.gradle</groupId>
+                    <artifactId>gradle-enterprise-maven-extension</artifactId>
+                    <configuration>
+                        <gradleEnterprise>
+                            <normalization>
+                                <systemProperties>
+                                    <ignoredKeys>
+                                        <ignore>maven.repo.local</ignore>
+                                    </ignoredKeys>
+                                </systemProperties>
+                            </normalization>
+                        </gradleEnterprise>
+                    </configuration>
+                </plugin>
+
             </plugins>
         </pluginManagement>
     </build>

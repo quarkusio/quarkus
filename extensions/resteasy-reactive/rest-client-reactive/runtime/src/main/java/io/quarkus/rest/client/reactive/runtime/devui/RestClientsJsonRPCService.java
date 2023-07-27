@@ -1,4 +1,4 @@
-package io.quarkus.rest.client.reactive.runtime.devconsole;
+package io.quarkus.rest.client.reactive.runtime.devui;
 
 import java.util.Comparator;
 

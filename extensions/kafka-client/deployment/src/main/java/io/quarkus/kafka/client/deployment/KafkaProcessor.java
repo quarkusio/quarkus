@@ -72,7 +72,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
-import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
@@ -87,17 +86,13 @@ import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleWebjarBuildItem;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
 import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.runtime.SnappyRecorder;
-import io.quarkus.kafka.client.runtime.ui.KafkaTopicClient;
-import io.quarkus.kafka.client.runtime.ui.KafkaUiRecorder;
-import io.quarkus.kafka.client.runtime.ui.KafkaUiUtils;
+import io.quarkus.kafka.client.runtime.devui.KafkaTopicClient;
+import io.quarkus.kafka.client.runtime.devui.KafkaUiUtils;
 import io.quarkus.kafka.client.serialization.BufferDeserializer;
 import io.quarkus.kafka.client.serialization.BufferSerializer;
 import io.quarkus.kafka.client.serialization.JsonArrayDeserializer;
@@ -108,7 +103,6 @@ import io.quarkus.kafka.client.serialization.JsonbDeserializer;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
-import io.quarkus.maven.dependency.GACT;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 public class KafkaProcessor {
@@ -158,11 +152,6 @@ public class KafkaProcessor {
 
     static final DotName PARTITION_ASSIGNER = DotName
             .createSimple("org.apache.kafka.clients.consumer.internals.PartitionAssignor");
-    private static final GACT DEVCONSOLE_WEBJAR_ARTIFACT_KEY = new GACT("io.quarkus",
-            "quarkus-kafka-client-deployment", null, "jar");
-    private static final String DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH = "dev-static/";
-    public static final String KAFKA_ADMIN_PATH = "kafka-admin";
-    public static final String KAFKA_RESOURCES_ROOT_PATH = "kafka-ui";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -553,33 +542,6 @@ public class KafkaProcessor {
                 .addBeanClass(KafkaTopicClient.class)
                 .addBeanClass(KafkaUiUtils.class)
                 .setUnremovable()
-                .build();
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void registerKafkaUiExecHandler(
-            Capabilities capabilities,
-            BuildProducer<DevConsoleRouteBuildItem> routeProducer,
-            KafkaUiRecorder recorder) {
-        if (capabilities.isPresent(Capability.VERTX_HTTP)) {
-            routeProducer.produce(DevConsoleRouteBuildItem.builder()
-                    .method("POST")
-                    .handler(recorder.kafkaControlHandler())
-                    .path(KAFKA_ADMIN_PATH)
-                    .bodyHandlerRequired()
-                    .build());
-        }
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    public DevConsoleWebjarBuildItem setupWebJar(LaunchModeBuildItem launchModeBuildItem) {
-        if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
-            return null;
-        }
-        return DevConsoleWebjarBuildItem.builder().artifactKey(DEVCONSOLE_WEBJAR_ARTIFACT_KEY)
-                .root(DEVCONSOLE_WEBJAR_STATIC_RESOURCES_PATH)
-                .routeRoot(KAFKA_RESOURCES_ROOT_PATH)
                 .build();
     }
 

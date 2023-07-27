@@ -782,6 +782,15 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> scopes = Optional.empty();
 
         /**
+         * Require that ID token includes `nonce` claim which must match `nonce` authentication request query parameter.
+         * Enabling this property can help mitigate replay attacks.
+         * Do not enable this property if your OpenId Connect provider does not support setting `nonce` in ID token
+         * or if you work with OAuth2 provider such as `GitHub` which does not issue ID tokens.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean nonceRequired = false;
+
+        /**
          * Add the 'openid' scope automatically to the list of scopes. This is required for OpenId Connect providers
          * but will not work for OAuth2 providers such as Twitter OAuth2 which does not accept that scope and throws an error.
          */
@@ -945,11 +954,22 @@ public class OidcTenantConfig extends OidcCommonConfig {
         /**
          * Secret which will be used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
          * This secret should be at least 32 characters long.
+         *
+         * @deprecated Use {@link #stateSecret} property instead.
+         */
+        @ConfigItem
+        @Deprecated(forRemoval = true)
+        public Optional<String> pkceSecret = Optional.empty();
+
+        /**
+         * Secret which will be used to encrypt Proof Key for Code Exchange (PKCE) code verifier and/or nonce in the code flow
+         * state.
+         * This secret should be at least 32 characters long.
          * <p/>
          * If this secret is not set, the client secret configured with
          * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` will be checked.
          * Finally, `quarkus.oidc.credentials.jwt.secret` which can be used for `client_jwt_secret` authentication will be
-         * checked. Client secret will not be used as a PKCE code verifier encryption secret if it is less than 32 characters
+         * checked. Client secret will not be used as a state encryption secret if it is less than 32 characters
          * long.
          * </p>
          * The secret will be auto-generated if it remains uninitialized after checking all of these properties.
@@ -957,7 +977,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * Error will be reported if the secret length is less than 16 characters.
          */
         @ConfigItem
-        public Optional<String> pkceSecret = Optional.empty();
+        public Optional<String> stateSecret = Optional.empty();
 
         public Optional<Duration> getInternalIdTokenLifespan() {
             return internalIdTokenLifespan;
@@ -975,10 +995,12 @@ public class OidcTenantConfig extends OidcCommonConfig {
             this.pkceRequired = Optional.of(pkceRequired);
         }
 
+        @Deprecated(forRemoval = true)
         public Optional<String> getPkceSecret() {
             return pkceSecret;
         }
 
+        @Deprecated(forRemoval = true)
         public void setPkceSecret(String pkceSecret) {
             this.pkceSecret = Optional.of(pkceSecret);
         }
@@ -1157,6 +1179,22 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setAllowMultipleCodeFlows(boolean allowMultipleCodeFlows) {
             this.allowMultipleCodeFlows = allowMultipleCodeFlows;
+        }
+
+        public boolean isNonceRequired() {
+            return nonceRequired;
+        }
+
+        public void setNonceRequired(boolean nonceRequired) {
+            this.nonceRequired = nonceRequired;
+        }
+
+        public Optional<String> getStateSecret() {
+            return stateSecret;
+        }
+
+        public void setStateSecret(Optional<String> stateSecret) {
+            this.stateSecret = stateSecret;
         }
     }
 

@@ -181,14 +181,14 @@ public class CodeFlowDevModeTestCase {
                             String line = null;
                             while ((line = reader.readLine()) != null) {
                                 if (line.contains(
-                                        "Secret key for encrypting PKCE code verifier is missing, auto-generating it")) {
+                                        "Secret key for encrypting state cookie is missing, auto-generating it")) {
                                     checkPassed.set(true);
                                 }
                             }
                         }
                     }
                 });
-        assertTrue(checkPassed.get(), "Can not confirm Secret key for encrypting PKCE code verifier has been generated");
+        assertTrue(checkPassed.get(), "Can not confirm Secret key for encrypting state cookie has been generated");
     }
 
 }

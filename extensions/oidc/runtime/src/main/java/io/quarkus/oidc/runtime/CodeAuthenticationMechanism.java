@@ -623,9 +623,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         PkceStateBean pkceStateBean = createPkceStateBean(configContext);
 
                         // state
+                        String nonce = configContext.oidcConfig.authentication.nonceRequired ? UUID.randomUUID().toString()
+                                : null;
+
                         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_STATE).append(EQ)
                                 .append(generateCodeFlowState(context, configContext, redirectPath, requestQueryParams,
-                                        pkceStateBean != null ? pkceStateBean.getCodeVerifier() : null));
+                                        (pkceStateBean != null ? pkceStateBean.getCodeVerifier() : null), nonce));
 
                         if (pkceStateBean != null) {
                             codeFlowParams
@@ -634,6 +637,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             codeFlowParams
                                     .append(AMP).append(OidcConstants.PKCE_CODE_CHALLENGE_METHOD).append(EQ)
                                     .append(OidcConstants.PKCE_CODE_CHALLENGE_S256);
+                        }
+
+                        if (nonce != null) {
+                            codeFlowParams.append(AMP).append(OidcConstants.NONCE).append(EQ).append(nonce);
                         }
 
                         // extra redirect parameters, see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequests
@@ -739,6 +746,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 internalIdToken = true;
                             }
                         } else {
+                            if (!verifyNonce(configContext.oidcConfig, stateBean, tokens.getIdToken())) {
+                                return Uni.createFrom().failure(new AuthenticationCompletionException());
+                            }
                             internalIdToken = false;
                         }
 
@@ -814,6 +824,21 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
     }
 
+    private static boolean verifyNonce(OidcTenantConfig oidcConfig, CodeAuthenticationStateBean stateBean, String idToken) {
+        if (oidcConfig.authentication.nonceRequired) {
+            if (stateBean != null && stateBean.getNonce() != null) {
+                JsonObject idTokenClaims = OidcUtils.decodeJwtContent(idToken);
+                if (stateBean.getNonce().equals(idTokenClaims.getString(OidcConstants.NONCE))) {
+                    return true;
+                }
+            }
+            LOG.errorf("ID token 'nonce' does not match the authentication request 'nonce' value");
+            return false;
+        } else {
+            return true;
+        }
+    }
+
     private static Object errorMessage(Throwable t) {
         return t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
     }
@@ -822,14 +847,16 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             TenantConfigContext configContext) {
         if (parsedStateCookieValue.length == 2) {
             CodeAuthenticationStateBean bean = new CodeAuthenticationStateBean();
-            if (!configContext.oidcConfig.authentication.pkceRequired.orElse(false)) {
+            Authentication authentication = configContext.oidcConfig.authentication;
+            boolean pkceRequired = authentication.pkceRequired.orElse(false);
+            if (!pkceRequired && !authentication.nonceRequired) {
                 bean.setRestorePath(parsedStateCookieValue[1]);
                 return bean;
             }
 
             JsonObject json = null;
             try {
-                json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getPkceSecretKey());
+                json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getStateEncryptionKey());
             } catch (Exception ex) {
                 LOG.errorf("State cookie value can not be decrypted for the %s tenant",
                         configContext.oidcConfig.tenantId.get());
@@ -837,6 +864,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
             bean.setRestorePath(json.getString(STATE_COOKIE_RESTORE_PATH));
             bean.setCodeVerifier(json.getString(OidcConstants.PKCE_CODE_VERIFIER));
+            bean.setNonce(json.getString(OidcConstants.NONCE));
             return bean;
         }
         return null;
@@ -943,12 +971,13 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String generateCodeFlowState(RoutingContext context, TenantConfigContext configContext,
-            String redirectPath, MultiMap requestQueryWithoutForwardedParams, String pkceCodeVerifier) {
+            String redirectPath, MultiMap requestQueryWithoutForwardedParams, String pkceCodeVerifier, String nonce) {
         String uuid = UUID.randomUUID().toString();
         String cookieValue = uuid;
 
-        boolean restorePath = isRestorePath(configContext.oidcConfig.getAuthentication());
-        if (restorePath || pkceCodeVerifier != null) {
+        Authentication authentication = configContext.oidcConfig.getAuthentication();
+        boolean restorePath = isRestorePath(authentication);
+        if (restorePath || pkceCodeVerifier != null || nonce != null) {
             CodeAuthenticationStateBean extraStateValue = new CodeAuthenticationStateBean();
             if (restorePath) {
                 String requestQuery = context.request().query();
@@ -978,6 +1007,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 }
             }
             extraStateValue.setCodeVerifier(pkceCodeVerifier);
+            extraStateValue.setNonce(nonce);
             if (!extraStateValue.isEmpty()) {
                 cookieValue += (COOKIE_DELIM + encodeExtraStateValue(extraStateValue, configContext));
             }
@@ -997,14 +1027,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private String encodeExtraStateValue(CodeAuthenticationStateBean extraStateValue, TenantConfigContext configContext) {
-        if (extraStateValue.getCodeVerifier() != null) {
+        if (extraStateValue.getCodeVerifier() != null || extraStateValue.getNonce() != null) {
             JsonObject json = new JsonObject();
-            json.put(OidcConstants.PKCE_CODE_VERIFIER, extraStateValue.getCodeVerifier());
+            if (extraStateValue.getCodeVerifier() != null) {
+                json.put(OidcConstants.PKCE_CODE_VERIFIER, extraStateValue.getCodeVerifier());
+            }
+            if (extraStateValue.getNonce() != null) {
+                json.put(OidcConstants.NONCE, extraStateValue.getNonce());
+            }
             if (extraStateValue.getRestorePath() != null) {
                 json.put(STATE_COOKIE_RESTORE_PATH, extraStateValue.getRestorePath());
             }
             try {
-                return OidcUtils.encryptJson(json, configContext.getPkceSecretKey());
+                return OidcUtils.encryptJson(json, configContext.getStateEncryptionKey());
             } catch (Exception ex) {
                 LOG.errorf("State containing the code verifier can not be encrypted: %s", ex.getMessage());
                 throw new AuthenticationCompletionException(ex);

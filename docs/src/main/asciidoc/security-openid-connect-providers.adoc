@@ -386,7 +386,7 @@ Twitter provider requires Proof Key for Code Exchange (PKCE) which is supported 
 Quarkus has to encrypt the current PKCE code verifier in a state cookie while the authorization code flow with Twitter is in progress and it will
 generate a secure random secret key for encrypting it.
 
-You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.pkce-secret` property but
+You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.state-secret` property but
 note that this secret should be 32 characters long, and an error will be reported if it is less than 16 characters long.
 ====
 

@@ -1,12 +1,13 @@
 package io.quarkus.narayana.jta.deployment;
 
-import static io.quarkus.datasource.common.runtime.DataSourceUtil.dataSourcePropertyKeys;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.Interceptor;
@@ -45,6 +46,7 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -53,7 +55,6 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -155,40 +156,18 @@ class NarayanaJtaProcessor {
     @Record(RUNTIME_INIT)
     @Consume(NarayanaInitBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    public void startRecoveryService(NarayanaJtaRecorder recorder, ConfigurationBuildItem configurationBuildItem,
+    public void startRecoveryService(NarayanaJtaRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems, TransactionManagerConfiguration transactions) {
-        Map<Boolean, String> namedDataSources = new HashMap<>();
+        Map<String, String> configuredDataSourcesConfigKeys = jdbcDataSourceBuildItems.stream()
+                .map(j -> j.getName())
+                .collect(Collectors.toMap(Function.identity(),
+                        n -> DataSourceUtil.dataSourcePropertyKey(n, "jdbc.transactions")));
+        Set<String> dataSourcesWithTransactionIntegration = jdbcDataSourceBuildItems.stream()
+                .filter(j -> j.isTransactionIntegrationEnabled())
+                .map(j -> j.getName())
+                .collect(Collectors.toSet());
 
-        jdbcDataSourceBuildItems.forEach(i -> namedDataSources.put(i.isDefault(), i.getName()));
-        Map<String, String> dsToConfigKey = getDsWithoutDisabledTransactions(
-                configurationBuildItem.getReadResult().getBuildTimeRunTimeValues(), namedDataSources);
-
-        recorder.startRecoveryService(transactions, namedDataSources, dsToConfigKey);
-    }
-
-    private static Map<String, String> getDsWithoutDisabledTransactions(Map<String, String> buildTimeRunTimeValues,
-            Map<Boolean, String> dataSources) {
-        Map<String, String> dsToTransactionIntegration = new HashMap<>();
-        for (String dataSourceName : dataSources.values()) {
-            List<String> transactionsPropertyKeys = dataSourcePropertyKeys(dataSourceName, "jdbc.transactions");
-            boolean propertyExplicitlyDefined = false;
-            for (String propertyKey : transactionsPropertyKeys) {
-                // get datasource 'io.quarkus.agroal.runtime.TransactionIntegration'
-                String transactionIntegration = buildTimeRunTimeValues.get(propertyKey);
-                if (transactionIntegration != null) {
-                    propertyExplicitlyDefined = true;
-                    if (!"disabled".equalsIgnoreCase(transactionIntegration)) {
-                        dsToTransactionIntegration.put(dataSourceName, propertyKey);
-                        break;
-                    }
-                }
-            }
-            if (!propertyExplicitlyDefined) {
-                // by default transaction capabilities are enabled
-                dsToTransactionIntegration.put(dataSourceName, transactionsPropertyKeys.get(0));
-            }
-        }
-        return dsToTransactionIntegration;
+        recorder.startRecoveryService(transactions, configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration);
     }
 
     @BuildStep(onlyIf = IsTest.class)

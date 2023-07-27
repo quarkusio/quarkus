@@ -61,13 +61,6 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
-            <!-- avoid the native compilation to fail because this would pull netty, without the extension -->
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>
             <scope>test</scope>
         </dependency>

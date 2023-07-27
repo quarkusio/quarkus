@@ -17,10 +17,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -41,9 +37,9 @@ import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
-public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
+public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     static volatile Vertx vertxInstance;
-    private static final Logger LOG = Logger.getLogger(OidcDevConsoleProcessor.class);
+    private static final Logger LOG = Logger.getLogger(OidcDevUIProcessor.class);
 
     private static final String TENANT_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "tenant-enabled";
     private static final String DISCOVERY_ENABLED_CONFIG_KEY = CONFIG_PREFIX + "discovery-enabled";
@@ -63,11 +59,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    void prepareOidcDevConsole(BuildProducer<DevConsoleTemplateInfoBuildItem> devConsoleInfo,
-            BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> devConsoleRuntimeInfo,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
-            BuildProducer<DevConsoleRouteBuildItem> devConsoleRoute,
-            Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem,
+    void prepareOidcDevConsole(CuratedApplicationShutdownBuildItem closeBuildItem,
+            Capabilities capabilities,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<CardPageBuildItem> cardPageProducer,
@@ -107,35 +100,8 @@ public class OidcDevConsoleProcessor extends AbstractDevConsoleProcessor {
                 }
             }
             String providerName = tryToGetProviderName(authServerUrl);
-            if (KEYCLOAK.equals(providerName)) {
-                devConsoleInfo.produce(new DevConsoleTemplateInfoBuildItem("keycloakAdminUrl",
-                        authServerUrl.substring(0, authServerUrl.indexOf("/realms/"))));
-            }
             boolean metadataNotNull = metadata != null;
 
-            // old DEV UI
-            produceDevConsoleTemplateItems(capabilities,
-                    devConsoleInfo,
-                    devConsoleRuntimeInfo,
-                    curateOutcomeBuildItem,
-                    providerName,
-                    getApplicationType(providerConfig),
-                    oidcConfig.devui.grant.type.isPresent() ? oidcConfig.devui.grant.type.get().getGrantType() : "code",
-                    metadataNotNull ? metadata.getString("authorization_endpoint") : null,
-                    metadataNotNull ? metadata.getString("token_endpoint") : null,
-                    metadataNotNull ? metadata.getString("end_session_endpoint") : null,
-                    metadataNotNull
-                            ? (metadata.containsKey("introspection_endpoint") || metadata.containsKey("userinfo_endpoint"))
-                            : checkProviderUserInfoRequired(providerConfig));
-
-            produceDevConsoleRouteItems(devConsoleRoute,
-                    new OidcTestServiceHandler(vertxInstance, oidcConfig.devui.webClientTimeout),
-                    new OidcAuthorizationCodePostHandler(vertxInstance, oidcConfig.devui.webClientTimeout,
-                            oidcConfig.devui.grantOptions),
-                    new OidcPasswordClientCredHandler(vertxInstance, oidcConfig.devui.webClientTimeout,
-                            oidcConfig.devui.grantOptions));
-
-            // new DEV UI
             final String keycloakAdminUrl;
             if (KEYCLOAK.equals(providerName)) {
                 keycloakAdminUrl = authServerUrl.substring(0, authServerUrl.indexOf("/realms/"));

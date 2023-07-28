@@ -236,6 +236,43 @@ public class OpenTelemetryTest {
     }
 
     @Test
+    void testBaggagePath() {
+        given()
+                .contentType("application/json")
+                .when().get("/slashpath-baggage")
+                .then()
+                .statusCode(200)
+                .body("message", equalTo("baggage-value"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 3);
+        List<Map<String, Object>> spans = getSpans();
+        assertEquals(3, spans.size());
+        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+
+        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals(SERVER.toString(), server.get("kind"));
+        verifyResource(server);
+        assertEquals("GET /slashpath-baggage", server.get("name"));
+        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
+        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
+        assertFalse((Boolean) server.get("parent_valid"));
+        assertFalse((Boolean) server.get("parent_remote"));
+
+        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, server.get("spanId"));
+        assertEquals(CLIENT.toString(), client.get("kind"));
+        assertEquals("GET", client.get("name"));
+        assertEquals("http://localhost:8081/from-baggage", client.get("attr_http.url"));
+        assertEquals("200", client.get("attr_http.status_code"));
+        assertEquals(client.get("parentSpanId"), server.get("spanId"));
+
+        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
+        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        verifyResource(clientServer);
+        assertEquals("GET /from-baggage", clientServer.get("name"));
+        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+    }
+
+    @Test
     void testChainedResourceTracing() {
         given()
                 .contentType("application/json")

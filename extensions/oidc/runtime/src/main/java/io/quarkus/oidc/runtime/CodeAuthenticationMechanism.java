@@ -42,6 +42,7 @@ import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.AuthenticationRedirectException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -74,9 +75,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private static final String INTERNAL_IDTOKEN_HEADER = "internal";
     private static final Logger LOG = Logger.getLogger(CodeAuthenticationMechanism.class);
 
-    private final BlockingTaskRunner<String> createTokenStateRequestContext = new BlockingTaskRunner<String>();
-    private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext = new BlockingTaskRunner<AuthorizationCodeTokens>();
+    private final BlockingTaskRunner<String> createTokenStateRequestContext;
+    private final BlockingTaskRunner<AuthorizationCodeTokens> getTokenStateRequestContext;
     private final SecureRandom secureRandom = new SecureRandom();
+
+    public CodeAuthenticationMechanism(BlockingSecurityExecutor blockingExecutor) {
+        this.createTokenStateRequestContext = new BlockingTaskRunner<>(blockingExecutor);
+        this.getTokenStateRequestContext = new BlockingTaskRunner<>(blockingExecutor);
+    }
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {

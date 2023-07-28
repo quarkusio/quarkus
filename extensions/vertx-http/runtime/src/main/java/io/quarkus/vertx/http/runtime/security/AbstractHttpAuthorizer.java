@@ -4,18 +4,18 @@ import java.io.IOException;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.BlockingOperationControl;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.ForbiddenException;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationController;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
 import io.vertx.ext.web.RoutingContext;
@@ -31,52 +31,37 @@ abstract class AbstractHttpAuthorizer {
     private final IdentityProviderManager identityProviderManager;
     private final AuthorizationController controller;
     private final List<HttpSecurityPolicy> policies;
+    private final BlockingSecurityExecutor blockingExecutor;
 
     AbstractHttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
-            AuthorizationController controller, List<HttpSecurityPolicy> policies) {
+            AuthorizationController controller, List<HttpSecurityPolicy> policies,
+            BlockingSecurityExecutor blockingExecutor) {
         this.httpAuthenticator = httpAuthenticator;
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
         this.policies = policies;
+        this.blockingExecutor = blockingExecutor;
     }
 
     /**
      * context that allows for running blocking tasks
      */
-    private static final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT = new HttpSecurityPolicy.AuthorizationRequestContext() {
+    private final HttpSecurityPolicy.AuthorizationRequestContext CONTEXT = new HttpSecurityPolicy.AuthorizationRequestContext() {
         @Override
-        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identity,
+        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identityUni,
                 BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
-            if (BlockingOperationControl.isBlockingAllowed()) {
-                try {
-                    HttpSecurityPolicy.CheckResult res = function.apply(context, identity.await().indefinitely());
-                    return Uni.createFrom().item(res);
-                } catch (Throwable t) {
-                    return Uni.createFrom().failure(t);
-                }
-            }
-            try {
-                return Uni.createFrom().emitter(new Consumer<UniEmitter<? super HttpSecurityPolicy.CheckResult>>() {
-                    @Override
-                    public void accept(UniEmitter<? super HttpSecurityPolicy.CheckResult> uniEmitter) {
-
-                        ExecutorRecorder.getCurrent().execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    HttpSecurityPolicy.CheckResult val = function.apply(context,
-                                            identity.await().indefinitely());
-                                    uniEmitter.complete(val);
-                                } catch (Throwable t) {
-                                    uniEmitter.fail(t);
+            return identityUni
+                    .flatMap(new Function<SecurityIdentity, Uni<? extends HttpSecurityPolicy.CheckResult>>() {
+                        @Override
+                        public Uni<? extends HttpSecurityPolicy.CheckResult> apply(SecurityIdentity identity) {
+                            return blockingExecutor.executeBlocking(new Supplier<HttpSecurityPolicy.CheckResult>() {
+                                @Override
+                                public HttpSecurityPolicy.CheckResult get() {
+                                    return function.apply(context, identity);
                                 }
-                            }
-                        });
-                    }
-                });
-            } catch (Exception e) {
-                return Uni.createFrom().failure(e);
-            }
+                            });
+                        }
+                    });
         }
     };
 

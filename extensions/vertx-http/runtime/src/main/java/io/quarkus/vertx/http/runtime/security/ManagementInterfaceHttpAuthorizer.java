@@ -7,6 +7,7 @@ import jakarta.inject.Singleton;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.AuthorizationController;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -18,7 +19,8 @@ public class ManagementInterfaceHttpAuthorizer extends AbstractHttpAuthorizer {
 
     public ManagementInterfaceHttpAuthorizer(HttpAuthenticator httpAuthenticator,
             IdentityProviderManager identityProviderManager,
-            AuthorizationController controller, ManagementPathMatchingHttpSecurityPolicy installedPolicy) {
+            AuthorizationController controller, ManagementPathMatchingHttpSecurityPolicy installedPolicy,
+            BlockingSecurityExecutor blockingExecutor) {
         super(httpAuthenticator, identityProviderManager, controller,
                 List.of(new HttpSecurityPolicy() {
 
@@ -28,6 +30,6 @@ public class ManagementInterfaceHttpAuthorizer extends AbstractHttpAuthorizer {
                         return installedPolicy.checkPermission(request, identity, requestContext);
                     }
 
-                }));
+                }), blockingExecutor);
     }
 }

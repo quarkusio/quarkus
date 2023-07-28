@@ -27,7 +27,6 @@ import io.quarkus.oidc.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.common.runtime.OidcCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
-import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.TlsConfig;
@@ -83,8 +82,7 @@ public class OidcRecorder {
                             public Uni<TenantConfigContext> apply(OidcTenantConfig config) {
                                 return createDynamicTenantContext(vertxValue, config, tlsConfig, config.getTenantId().get());
                             }
-                        },
-                        ExecutorRecorder.getCurrent());
+                        });
             }
         };
     }

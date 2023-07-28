@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 
@@ -22,6 +23,7 @@ import com.arjuna.ats.jta.common.jtaPropertyManager;
 import com.arjuna.common.internal.util.propertyservice.BeanPopulator;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -104,29 +106,47 @@ public class NarayanaJtaRecorder {
         instance.setTablePrefix(config.objectStore.tablePrefix);
     }
 
-    public void startRecoveryService(final TransactionManagerConfiguration transactions, Map<Boolean, String> dataSources) {
+    public void startRecoveryService(final TransactionManagerConfiguration transactions,
+            Map<String, String> configuredDataSourcesConfigKeys,
+            Set<String> dataSourcesWithTransactionIntegration) {
+
         if (transactions.objectStore.type.equals(ObjectStoreType.JDBC)) {
+            final String objectStoreDataSourceName;
             if (transactions.objectStore.datasource.isEmpty()) {
-                dataSources.keySet().stream().filter(i -> i).findFirst().orElseThrow(
-                        () -> new ConfigurationException(
-                                "The Narayana JTA extension does not have a datasource configured,"
-                                        + " so it defaults to the default datasource,"
-                                        + " but that datasource is not configured."
-                                        + " To solve this, either configure the default datasource,"
-                                        + " referring to https://quarkus.io/guides/datasource for guidance,"
-                                        + " or configure the datasource to use in the Narayana JTA extension "
-                                        + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource."));
+                if (!DataSourceUtil.hasDefault(configuredDataSourcesConfigKeys.keySet())) {
+                    throw new ConfigurationException(
+                            "The Narayana JTA extension does not have a datasource configured as the JDBC object store,"
+                                    + " so it defaults to the default datasource,"
+                                    + " but that datasource is not configured."
+                                    + " To solve this, either configure the default datasource,"
+                                    + " referring to https://quarkus.io/guides/datasource for guidance,"
+                                    + " or configure the datasource to use in the Narayana JTA extension "
+                                    + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource.");
+                }
+                objectStoreDataSourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
             } else {
-                String dsName = transactions.objectStore.datasource.get();
-                dataSources.values().stream().filter(i -> i.equals(dsName)).findFirst()
-                        .orElseThrow(() -> new ConfigurationException(
-                                "The Narayana JTA extension is configured to use the datasource '"
-                                        + dsName
-                                        + "' but that datasource is not configured."
-                                        + " To solve this, either configure datasource " + dsName
-                                        + " referring to https://quarkus.io/guides/datasource for guidance,"
-                                        + " or configure another datasource to use in the Narayana JTA extension "
-                                        + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource."));
+                objectStoreDataSourceName = transactions.objectStore.datasource.get();
+
+                if (!configuredDataSourcesConfigKeys.keySet().contains(objectStoreDataSourceName)) {
+                    throw new ConfigurationException(
+                            "The Narayana JTA extension is configured to use the datasource '"
+                                    + objectStoreDataSourceName
+                                    + "' but that datasource is not configured."
+                                    + " To solve this, either configure datasource " + objectStoreDataSourceName
+                                    + " referring to https://quarkus.io/guides/datasource for guidance,"
+                                    + " or configure another datasource to use in the Narayana JTA extension "
+                                    + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource.");
+                }
+            }
+            if (dataSourcesWithTransactionIntegration.contains(objectStoreDataSourceName)) {
+                throw new ConfigurationException(String.format(
+                        "The Narayana JTA extension is configured to use the '%s' JDBC "
+                                + "datasource as the transaction log storage, "
+                                + "but that datasource does not have transaction capabilities disabled. "
+                                + "To solve this, please set '%s=disabled', or configure another datasource "
+                                + "with disabled transaction capabilities as the JDBC object store. "
+                                + "Please refer to the https://quarkus.io/guides/transaction#jdbcstore for more information.",
+                        objectStoreDataSourceName, configuredDataSourcesConfigKeys.get(objectStoreDataSourceName)));
             }
         }
         if (transactions.enableRecovery) {

@@ -267,11 +267,9 @@ class AgroalProcessor {
             return;
         }
 
-        for (Map.Entry<String, DataSourceSupport.Entry> entry : getDataSourceSupport(aggregatedBuildTimeConfigBuildItems,
-                sslNativeConfig,
-                capabilities).entries.entrySet()) {
+        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
 
-            String dataSourceName = entry.getKey();
+            String dataSourceName = aggregatedBuildTimeConfigBuildItem.getName();
 
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(AgroalDataSource.class)
@@ -284,7 +282,7 @@ class AgroalProcessor {
                     // are created after runtime configuration has been set up
                     .createWith(recorder.agroalDataSourceSupplier(dataSourceName, dataSourcesRuntimeConfig));
 
-            if (entry.getValue().isDefault) {
+            if (aggregatedBuildTimeConfigBuildItem.isDefault()) {
                 configurator.addQualifier(Default.class);
             } else {
                 // this definitely not ideal, but 'elytron-jdbc-security' uses it (although it could be easily changed)
@@ -298,9 +296,10 @@ class AgroalProcessor {
             syntheticBeanBuildItemBuildProducer.produce(configurator.done());
 
             jdbcDataSource.produce(new JdbcDataSourceBuildItem(dataSourceName,
-                    entry.getValue().resolvedDbKind,
-                    entry.getValue().dbVersion,
-                    entry.getValue().isDefault));
+                    aggregatedBuildTimeConfigBuildItem.getDbKind(),
+                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion,
+                    aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions != TransactionIntegration.DISABLED,
+                    aggregatedBuildTimeConfigBuildItem.isDefault()));
         }
     }
 

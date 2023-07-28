@@ -553,7 +553,7 @@ It generates the UUID at startup time.
 So, the value changes between startups, including reloads in dev mode.
 
 You can access the generated value using the `quarkus.uuid` property.
-Use <<property-expressions, expressions>> to access it: `${quarkus.uuid}`.
+Use <<property-expressions,expressions>> to access it: `${quarkus.uuid}`.
 For example, it can be useful to configure a Kafka client with a unique consumer group:
 
 [source, properties]

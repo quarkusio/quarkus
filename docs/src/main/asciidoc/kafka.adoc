@@ -714,7 +714,7 @@ The `checkpoint` commit strategy is an experimental feature and can change in th
 
 Smallrye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
 An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external 
-<<state-stores, state store>>, such as a relational database or a key-value store.
+<<state-stores,state store>>, such as a relational database or a key-value store.
 As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer. 
 This local state will be periodically persisted to the state store and will be associated with the offset of the record that produced it.
 
@@ -1589,7 +1589,7 @@ NOTE: With JSON serialization correctly configured, you can also use `Publisher<
 === Serializing via Jackson
 
 Quarkus has built-in support for JSON serialization and deserialization based on Jackson.
-It will also <<serialization-generation, generate>> the serializer and deserializer for you, so you do not have to configure anything.
+It will also <<serialization-generation,generate>> the serializer and deserializer for you, so you do not have to configure anything.
 When generation is disabled, you can use the provided `ObjectMapperSerializer` and `ObjectMapperDeserializer` as explained below.
 
 There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.

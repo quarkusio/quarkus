@@ -612,7 +612,7 @@ See also link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-sear
 
 
 [TIP]
-For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference,Configuration Reference>>.
 
 [[dev-services]]
 === Dev Services (Configuration Free Databases)

@@ -1373,7 +1373,7 @@ If the guide includes an `application.properties` example, a tip must be include
 [source, asciidoc]
 ----
 [TIP]
-For more information about the extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+For more information about the extension configuration please refer to the <<configuration-reference,Configuration Reference>>.
 ----
 
 And at the end of the guide, the extensive configuration documentation:
@@ -3029,7 +3029,7 @@ Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make
 
 * Your extension is published in Maven Central
 
-* Your extension repository is configured to use the <<ecosystem-ci, Ecosystem CI>>.
+* Your extension repository is configured to use the <<ecosystem-ci,Ecosystem CI>>.
 
 Then you must create a pull request adding a `your-extension.yaml` file in the `extensions/` directory in the link:https://github.com/quarkusio/quarkus-extension-catalog[Quarkus Extension Catalog]. The YAML must have the following structure:
 

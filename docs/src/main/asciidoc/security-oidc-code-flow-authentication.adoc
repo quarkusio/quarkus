@@ -267,7 +267,7 @@ quarkus.oidc.tls.trust-store-password=${trust-store-password}
 ==== Introspection endpoint authentication
 
 Some OIDC providers require authenticating to its introspection endpoint by using Basic authentication and with credentials that are different to the `client_id` and `client_secret`.
-If you have previously configured security authentication to support either the`client_secret_basic` or `client_secret_post` client authentication methods as described in the <<oidc-provider-client-authentication, OIDC provider client authentication>>  section, you might need to apply the additional configuration, as follows.
+If you have previously configured security authentication to support either the`client_secret_basic` or `client_secret_post` client authentication methods as described in the <<oidc-provider-client-authentication,OIDC provider client authentication>>  section, you might need to apply the additional configuration, as follows.
 
 If the tokens have to be introspected and the introspection endpoint-specific authentication mechanism is required, then you can configure `quarkus-oidc`, as follows:
 
@@ -677,7 +677,7 @@ quarkus.http.auth.permission.public.policy=permit
 ----
 
 You may also need to set `quarkus.oidc.authentication.cookie-path` to a path value common to all the application resources which is `/` in this example.
-For more information, see the <<oidc-cookies, Cookies>> section.
+For more information, see the <<oidc-cookies,Cookies>> section.
 
 [NOTE]
 ====
@@ -791,7 +791,7 @@ public class ServiceResource {
 [[oidc-session]]
 ====== Using `OidcSession` for local logout
 
-`io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`, which can help to perform a <<local-logout, Local logout>>, retrieve the current session's tenant identifier, and check when the session will expire. 
+`io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`, which can help to perform a <<local-logout,Local logout>>, retrieve the current session's tenant identifier, and check when the session will expire.
 More useful methods will be added to it over time.
 [[session-management]]
 
@@ -1327,7 +1327,7 @@ If a custom realm file has to be imported into Keycloak before running the tests
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-Finally, write a test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section.
+Finally, write a test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
 The only difference is that `@QuarkusTestResource` is no longer needed:
 
 [source, java]
@@ -1384,7 +1384,7 @@ And configure the Maven Surefire plugin as follows:
 
 (and similarly the Maven Failsafe plugin when testing in native image).
 
-And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section.
+And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
 The only difference is the name of `QuarkusTestResource`:
 
 [source, java]

@@ -472,7 +472,7 @@ If one of those extensions is present, then creating a container image for the n
 ====
 If you're running a remote Docker daemon, you need to replace `quarkus.native.container-build=true` with `quarkus.native.remote-container-build=true`.
 
-See <<tip-quarkus-native-remote-container-build, Creating a Linux executable without GraalVM installed>> for more details.
+See <<tip-quarkus-native-remote-container-build,Creating a Linux executable without GraalVM installed>> for more details.
 ====
 
 * `quarkus.container-image.build=true` instructs Quarkus to create a container-image using the final application artifact (which is the native executable in this case)

@@ -316,7 +316,7 @@ More details about this extension and its configuration can be found in the http
 
 
 [TIP]
-For more information about the Mailer configuration please refer to the <<configuration-reference, Configuration Reference>>.
+For more information about the Mailer configuration please refer to the <<configuration-reference,Configuration Reference>>.
 
 == Configuring a trust store
 

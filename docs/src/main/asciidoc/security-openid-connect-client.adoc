@@ -329,11 +329,11 @@ org.acme.security.openid.connect.client.RestClientWithTokenPropagationFilter/mp-
 
 This configuration references Keycloak which will be used by `ProtectedResource` to verify the incoming access tokens and by `OidcClient` to get the tokens for a user `alice` using a `password` grant. Both RESTClients point to `ProtectedResource`'s HTTP address.
 
-NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in dev or test modes. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in dev or test modes. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information.
 
 == Starting and Configuring the Keycloak Server
 
-NOTE: Do not start the Keycloak server when you run the application in dev mode or test modes - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information. Make sure to put the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
+NOTE: Do not start the Keycloak server when you run the application in dev mode or test modes - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information. Make sure to put the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
 
 To start a Keycloak Server you can use Docker and just run the following command:
 
@@ -411,7 +411,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 == Testing the Application
 
-See <<keycloak-dev-mode, Running the Application in Dev mode>> section above about testing your application in dev mode.
+See <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in dev mode.
 
 You can test the application launched in JVM or Native modes with `curl`.
 

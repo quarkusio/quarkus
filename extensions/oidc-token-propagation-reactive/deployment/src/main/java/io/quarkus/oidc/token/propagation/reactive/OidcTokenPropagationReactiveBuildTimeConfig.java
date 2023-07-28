@@ -21,7 +21,7 @@ public class OidcTokenPropagationReactiveBuildTimeConfig {
      * to propagate the current token to acquire additional roles for the `SecurityIdentity`.
      *
      * Note, this feature relies on a duplicated context. More information about Vert.x duplicated
-     * context can be found in xref:duplicated-context[this guide].
+     * context can be found in xref:duplicated-context.adoc[this guide].
      *
      * @asciidoclet
      */

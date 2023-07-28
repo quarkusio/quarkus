@@ -782,7 +782,7 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> scopes = Optional.empty();
 
         /**
-         * Require that ID token includes `nonce` claim which must match `nonce` authentication request query parameter.
+         * Require that ID token includes a `nonce` claim which must match `nonce` authentication request query parameter.
          * Enabling this property can help mitigate replay attacks.
          * Do not enable this property if your OpenId Connect provider does not support setting `nonce` in ID token
          * or if you work with OAuth2 provider such as `GitHub` which does not issue ID tokens.
@@ -1302,6 +1302,15 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public Optional<List<String>> audience = Optional.empty();
 
         /**
+         * Require that the token includes a `sub` (subject) claim which is a unique
+         * and never reassigned identifier for the current user.
+         * Note that if you enable this property and if UserInfo is also required then
+         * both the token and UserInfo `sub` claims must be present and match each other.
+         */
+        @ConfigItem(defaultValue = "false")
+        public boolean subjectRequired = false;
+
+        /**
          * A map of required claims and their expected values.
          * For example, `quarkus.oidc.token.required-claims.org_id = org_xyz` would require tokens to have the `org_id` claim to
          * be present and set to `org_xyz`.
@@ -1605,6 +1614,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
 
         public void setCustomizerName(String customizerName) {
             this.customizerName = Optional.of(customizerName);
+        }
+
+        public boolean isSubjectRequired() {
+            return subjectRequired;
+        }
+
+        public void setSubjectRequired(boolean subjectRequired) {
+            this.subjectRequired = subjectRequired;
         }
     }
 

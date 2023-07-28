@@ -494,10 +494,15 @@ public class BearerTokenAuthorizationTest {
                                     + "introspection_client_id:none,introspection_client_secret:none,active:true,userinfo:alice,cache-size:0"));
         }
 
+        RestAssured.given().auth().oauth2(getAccessTokenFromSimpleOidc("987654321", "2"))
+                .when().get("/tenant/tenant-oidc-introspection-only/api/user")
+                .then()
+                .statusCode(401);
+
         RestAssured.when().get("/oidc/jwk-endpoint-call-count").then().body(equalTo("0"));
-        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("4"));
         RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
-        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("3"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("4"));
         RestAssured.when().get("/cache/size").then().body(equalTo("0"));
     }
 
@@ -645,8 +650,13 @@ public class BearerTokenAuthorizationTest {
     }
 
     private String getAccessTokenFromSimpleOidc(String kid) {
+        return getAccessTokenFromSimpleOidc("123456789", kid);
+    }
+
+    private String getAccessTokenFromSimpleOidc(String subject, String kid) {
         String json = RestAssured
                 .given()
+                .queryParam("sub", subject)
                 .queryParam("kid", kid)
                 .formParam("grant_type", "authorization_code")
                 .when()

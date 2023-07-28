@@ -752,7 +752,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 internalIdToken = true;
                             }
                         } else {
-                            if (!verifyNonce(configContext.oidcConfig, stateBean, tokens.getIdToken())) {
+                            if (!prepareNonceForVerification(context, configContext.oidcConfig, stateBean,
+                                    tokens.getIdToken())) {
                                 return Uni.createFrom().failure(new AuthenticationCompletionException());
                             }
                             internalIdToken = false;
@@ -830,15 +831,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 });
     }
 
-    private static boolean verifyNonce(OidcTenantConfig oidcConfig, CodeAuthenticationStateBean stateBean, String idToken) {
+    private static boolean prepareNonceForVerification(RoutingContext context, OidcTenantConfig oidcConfig,
+            CodeAuthenticationStateBean stateBean, String idToken) {
         if (oidcConfig.authentication.nonceRequired) {
             if (stateBean != null && stateBean.getNonce() != null) {
-                JsonObject idTokenClaims = OidcUtils.decodeJwtContent(idToken);
-                if (stateBean.getNonce().equals(idTokenClaims.getString(OidcConstants.NONCE))) {
-                    return true;
-                }
+                // Avoid parsing the token now
+                context.put(OidcConstants.NONCE, stateBean.getNonce());
+                return true;
             }
-            LOG.errorf("ID token 'nonce' does not match the authentication request 'nonce' value");
+            LOG.errorf("ID token 'nonce' is required but the authentication request 'nonce' is not found in the state cookie");
             return false;
         } else {
             return true;

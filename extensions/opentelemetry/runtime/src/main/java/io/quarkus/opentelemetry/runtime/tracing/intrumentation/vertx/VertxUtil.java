@@ -2,15 +2,15 @@ package io.quarkus.opentelemetry.runtime.tracing.intrumentation.vertx;
 
 import java.util.regex.Pattern;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.util.AsciiString;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.impl.headers.HeadersMultiMap;
 
 public final class VertxUtil {
     private static final String X_FORWARDED_FOR = "X-Forwarded-For";
     private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?");
     private static final String FORWARDED = "Forwarded";
-    private static final String COMMA_SPLITTER = ",";
-    private static final String COLON_SPLITTER = ":";
-    private static final int SPLIT_LIMIT = -1;
 
     private VertxUtil() {
     }
@@ -28,28 +28,48 @@ public final class VertxUtil {
     }
 
     private static String getXForwardedHeaderValue(HttpServerRequest httpServerRequest) {
-        var xForwardedForHeader = httpServerRequest.getHeader(X_FORWARDED_FOR);
-        if (xForwardedForHeader == null) {
-            return null;
-        }
-        return xForwardedForHeader.split(COMMA_SPLITTER, SPLIT_LIMIT)[0];
+        return copyUntil(httpServerRequest.getHeader(X_FORWARDED_FOR), ',');
     }
 
     private static String getHostHeader(HttpServerRequest httpRequest) {
-        String header = httpRequest.getHeader("host");
-        if (header == null) {
-            return null;
-        }
-        return header.split(COLON_SPLITTER, SPLIT_LIMIT)[0];
+        return copyUntil(vertxGetHeader(httpRequest, HttpHeaderNames.HOST, "host"), ':');
     }
 
-    private static String getHostPortHeader(HttpServerRequest httpRequest) {
-        String header = httpRequest.getHeader("host");
-        if (header == null) {
+    private static String vertxGetHeader(HttpServerRequest httpRequest, AsciiString vertHeaderName, String headerName) {
+        var headers = httpRequest.headers();
+        if (headers instanceof HeadersMultiMap) {
+            return headers.get(vertHeaderName);
+        }
+        return headers.get(headerName);
+    }
+
+    private static String copyUntil(String s, char c) {
+        if (s == null) {
             return null;
         }
-        String[] headerValues = header.split(COLON_SPLITTER, SPLIT_LIMIT);
-        return headerValues.length > 1 ? headerValues[1] : null;
+        final int first = s.indexOf(c);
+        if (first == -1) {
+            return "";
+        }
+        return s.substring(0, first);
+    }
+
+    private static Long parseHostPortHeaderAsLong(HttpServerRequest httpRequest) {
+        String host = vertxGetHeader(httpRequest, HttpHeaderNames.HOST, "host");
+        if (host == null) {
+            return null;
+        }
+        final int startPort = host.indexOf(':');
+        // we assume the format host:port
+        if (startPort == -1) {
+            return null;
+        }
+        try {
+            return Long.parseLong(host, startPort + 1, host.length(), 10);
+        } catch (NumberFormatException ignore) {
+            // this includes further presence of `:`
+            return null;
+        }
     }
 
     public static String extractClientIP(HttpServerRequest httpServerRequest) {
@@ -77,13 +97,9 @@ public final class VertxUtil {
     }
 
     public static Long extractRemoteHostPort(HttpServerRequest httpRequest) {
-        String portString = getHostPortHeader(httpRequest);
-        if (portString != null) {
-            try {
-                return Long.parseLong(portString);
-            } catch (NumberFormatException e) {
-                //ignore
-            }
+        Long portAsString = parseHostPortHeaderAsLong(httpRequest);
+        if (portAsString != null) {
+            return portAsString;
         }
         if (httpRequest.remoteAddress() != null) {
             return Integer.toUnsignedLong(httpRequest.remoteAddress().port());

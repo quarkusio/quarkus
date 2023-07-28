@@ -247,6 +247,15 @@ class HibernateValidatorProcessor {
                     if (configMappings.contains(declaringClass.name())) {
                         configMappingsConstraints.add(builtinConstraintCandidate);
                     }
+                } else if (annotation.target().kind() == AnnotationTarget.Kind.TYPE) {
+                    AnnotationTarget target = annotation.target().asType().enclosingTarget();
+                    if (target.kind() == AnnotationTarget.Kind.METHOD) {
+                        MethodInfo methodInfo = target.asMethod();
+                        ClassInfo declaringClass = methodInfo.declaringClass();
+                        if (configMappings.contains(declaringClass.name())) {
+                            configMappingsConstraints.add(builtinConstraintCandidate);
+                        }
+                    }
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     ClassInfo classInfo = annotation.target().asClass();
                     if (configMappings.contains(classInfo.name())) {

@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import jakarta.enterprise.inject.Instance;
@@ -42,7 +43,14 @@ public abstract class AbstractEndUserTest {
     @BeforeEach
     @AfterEach
     protected void reset() {
-        inMemorySpanExporter.reset();
+        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+            // make sure spans from previous tests are not included
+            List<SpanData> finishedSpanItems = inMemorySpanExporter.getFinishedSpanItems();
+            if (finishedSpanItems.size() > 0) {
+                inMemorySpanExporter.reset();
+            }
+            return finishedSpanItems.size() == 0;
+        });
     }
 
     protected List<SpanData> getSpans() {

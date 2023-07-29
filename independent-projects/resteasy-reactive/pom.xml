@@ -15,7 +15,7 @@
     <name>RESTEasy Reactive - Parent pom</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
-    <version>2.16.999-SNAPSHOT</version>
+    <version>2.16.9.Final</version>
 
     <licenses>
         <license>

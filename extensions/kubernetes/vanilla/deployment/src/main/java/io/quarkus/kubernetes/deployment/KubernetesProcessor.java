@@ -55,6 +55,7 @@ import io.quarkus.kubernetes.spi.DecoratorBuildItem;
 import io.quarkus.kubernetes.spi.DekorateOutputBuildItem;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesOutputDirectoryBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesPortBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
@@ -113,7 +114,8 @@ class KubernetesProcessor {
             BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
-            BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer) {
+            BuildProducer<GeneratedKubernetesResourceBuildItem> generatedKubernetesResourceProducer,
+            BuildProducer<KubernetesOutputDirectoryBuildItem> outputDirectoryBuildItemBuildProducer) {
 
         List<ConfiguratorBuildItem> allConfigurators = new ArrayList<>(configurators);
         List<ConfigurationSupplierBuildItem> allConfigurationSuppliers = new ArrayList<>(configurationSuppliers);
@@ -183,8 +185,10 @@ class KubernetesProcessor {
                     }
                 });
 
-                Path targetDirectory = kubernetesConfig.outputDirectory.map(d -> Paths.get("").toAbsolutePath().resolve(d))
-                        .orElse(outputTarget.getOutputDirectory().resolve(KUBERNETES));
+                Path targetDirectory = getEffectiveOutputDirectory(kubernetesConfig, project.getRoot(),
+                        outputTarget.getOutputDirectory());
+
+                outputDirectoryBuildItemBuildProducer.produce(new KubernetesOutputDirectoryBuildItem(targetDirectory));
 
                 // write the generated resources to the filesystem
                 generatedResourcesMap = session.close();
@@ -277,5 +281,20 @@ class KubernetesProcessor {
         }
 
         return buildDir.resolve(QUARKUS_RUN_JAR);
+    }
+
+    /**
+     * Resolve the effective output directory where to generate the Kubernetes manifests.
+     * If the `quarkus.kubernetes.output-directory` property is not provided, then the default project output directory will be
+     * used.
+     *
+     * @param config The Kubernetes configuration.
+     * @param projectLocation The project location.
+     * @param projectOutputDirectory The project output target.
+     * @return the effective output directory.
+     */
+    private Path getEffectiveOutputDirectory(KubernetesConfig config, Path projectLocation, Path projectOutputDirectory) {
+        return config.outputDirectory.map(d -> projectLocation.resolve(d))
+                .orElse(projectOutputDirectory.resolve(KUBERNETES));
     }
 }

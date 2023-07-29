@@ -34,7 +34,7 @@ gcloud auth login
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `funqy-google-cloud-functions-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-google-cloud-functions-quickstart[directory].
+The solution is located in the `funqy-google-cloud-functions-quickstart` link:{quickstarts-tree-url}/funqy-quickstarts/funqy-google-cloud-functions-quickstart[directory].
 
 == Creating the Maven Deployment Project
 

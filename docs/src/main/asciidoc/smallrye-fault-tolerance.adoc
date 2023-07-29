@@ -36,7 +36,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `microprofile-fault-tolerance-quickstart` {quickstarts-tree-url}/microprofile-fault-tolerance-quickstart[directory].
+The solution is located in the `microprofile-fault-tolerance-quickstart` link:{quickstarts-tree-url}/microprofile-fault-tolerance-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -501,7 +501,7 @@ implementation("io.quarkus:quarkus-smallrye-fault-tolerance")
 == Additional resources
 
 SmallRye Fault Tolerance has more features than shown here.
-Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.2.0/index.html[SmallRye Fault Tolerance documentation] to learn about them.
+Please check the link:https://smallrye.io/docs/smallrye-fault-tolerance/6.2.6/index.html[SmallRye Fault Tolerance documentation] to learn about them.
 
 In Quarkus, you can use the SmallRye Fault Tolerance optional features out of the box.
 
@@ -519,7 +519,7 @@ The entire point of context propagation is to make sure the new thread has the s
 ====
 
 Non-compatible mode is enabled by default.
-This means that methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without any `@Asynchronous`, `@Blocking` or `@NonBlocking` annotation.
+This means that methods that return `CompletionStage` (or `Uni`) have asynchronous fault tolerance applied without any `@Asynchronous`, `@AsynchronousNonBlocking`, `@Blocking` or `@NonBlocking` annotation.
 It also means that circuit breaker, fallback and retry automatically inspect the exception cause chain if the exception itself is insufficient to decide what should happen.
 
 [NOTE]
@@ -533,7 +533,7 @@ smallrye.faulttolerance.mp-compatibility=true
 ----
 ====
 
-The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.2.0/reference/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
+The link:https://smallrye.io/docs/smallrye-fault-tolerance/6.2.6/reference/programmatic-api.html[programmatic API] is present, including Mutiny support, and integrated with the declarative, annotation-based API.
 You can use the `FaultTolerance` and `MutinyFaultTolerance` APIs out of the box.
 
 Support for Kotlin is present (assuming you use the Quarkus extension for Kotlin), so you can guard your `suspend` functions with fault tolerance annotations.

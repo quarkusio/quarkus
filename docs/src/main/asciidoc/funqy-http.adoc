@@ -29,7 +29,7 @@ include::{includes}/prerequisites.adoc[]
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `funqy-http-quickstart` {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[directory].
+The solution is located in the `funqy-http-quickstart` link:{quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart[directory].
 
 == The Code
 
@@ -66,11 +66,11 @@ The HTTP POST or GET methods can be used to invoke on a function.  The return va
 is marshalled to JSON using the Jackson JSON library.  Jackson annotations can be used.  If your function
 has an input parameter, a POST invocation must use JSON as the input type.  Jackson is also used here for unmarshalling.
 
-You can invoke the `hello` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
+You can invoke the `hello` function defined in link:{quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
 by pointing your browser to http://localhost:8080/hello
 
 Invoking the other functions in the quickstart requires an HTTP POST.
-To execute the `greet` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/GreetingFunction.java[GreetingFunction.java]
+To execute the `greet` function defined in link:{quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/GreetingFunction.java[GreetingFunction.java]
 invoke this curl script.
 
 [source,bash]
@@ -82,7 +82,7 @@ curl "http://localhost:8080/greet" \
 ----
 
 Primitive types can also be passed as input using the standard JSON mapping for them.
-To execute the `toLowerCase` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
+To execute the `toLowerCase` function defined in link:{quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
 invoke this curl script:
 
 [source,bash]
@@ -93,7 +93,7 @@ curl "http://localhost:8080/toLowerCase" \
 -d '"HELLO WORLD"'
 ----
 
-To execute the `double` function defined in {quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
+To execute the `double` function defined in link:{quickstarts-tree-url}/funqy-quickstarts/funqy-http-quickstart/src/main/java/org/acme/funqy/PrimitiveFunctions.java[PrimitiveFunctions.java]
 invoke this curl script:
 
 [source,bash]

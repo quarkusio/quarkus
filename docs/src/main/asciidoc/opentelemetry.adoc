@@ -38,7 +38,7 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `opentelemetry-quickstart` {quickstarts-tree-url}/opentelemetry-quickstart[directory].
+The solution is located in the `opentelemetry-quickstart` link:{quickstarts-tree-url}/opentelemetry-quickstart[directory].
 
 == Creating the Maven project
 

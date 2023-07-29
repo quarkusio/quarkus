@@ -47,7 +47,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `security-openid-connect-client-quickstart` {quickstarts-tree-url}/security-openid-connect-client-quickstart[directory].
+The solution is located in the `security-openid-connect-client-quickstart` link:{quickstarts-tree-url}/security-openid-connect-client-quickstart[directory].
 
 == Creating the Maven Project
 
@@ -333,7 +333,7 @@ NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures
 
 == Starting and Configuring the Keycloak Server
 
-NOTE: Do not start the Keycloak server when you run the application in dev mode or test modes - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information. Make sure to put the {quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a {quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
+NOTE: Do not start the Keycloak server when you run the application in dev mode or test modes - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information. Make sure to put the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] on the classpath (`target/classes` directory) so that it gets imported automatically when running in dev mode - unless you have already built a link:{quickstarts-tree-url}/security-openid-connect-quickstart[complete solution] in which case this realm file will be added to the classpath during the build.
 
 To start a Keycloak Server you can use Docker and just run the following command:
 
@@ -348,7 +348,7 @@ You should be able to access your Keycloak Server at http://localhost:8180[local
 
 Log in as the `admin` user to access the Keycloak Administration Console. Username should be `admin` and password `admin`.
 
-Import the {quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
+Import the link:{quickstarts-tree-url}/security-openid-connect-client-quickstart/config/quarkus-realm.json[realm configuration file] to create a new realm. For more details, see the Keycloak documentation about how to https://www.keycloak.org/docs/latest/server_admin/index.html#_create-realm[create a new realm].
 
 This `quarkus` realm file will add a `frontend` client, and `alice` and `admin` users. `alice` has a `user` role, `admin` - both `user` and `admin` roles.
 

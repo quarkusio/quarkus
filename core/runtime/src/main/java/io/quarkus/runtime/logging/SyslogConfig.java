@@ -22,7 +22,7 @@ public class SyslogConfig {
 
     /**
      *
-     * The IP address and port of the syslog server
+     * The IP address and port of the Syslog server
      */
     @ConfigItem(defaultValue = "localhost:514")
     InetSocketAddress endpoint;
@@ -52,19 +52,19 @@ public class SyslogConfig {
     SyslogType syslogType;
 
     /**
-     * Sets the protocol used to connect to the syslog server
+     * Sets the protocol used to connect to the Syslog server
      */
     @ConfigItem(defaultValue = "tcp")
     Protocol protocol;
 
     /**
-     * Set to {@code true} if the message being sent should be prefixed with the size of the message
+     * If enabled, the message being sent is prefixed with the size of the message
      */
     @ConfigItem
     boolean useCountingFraming;
 
     /**
-     * Set to {@code true} if the message should be truncated
+     * Set to {@code true} to truncate the message if it exceeds maximum length
      */
     @ConfigItem(defaultValue = "true")
     boolean truncate;
@@ -84,7 +84,7 @@ public class SyslogConfig {
     String format;
 
     /**
-     * The log level specifying, which message levels will be logged by syslog logger
+     * The log level specifying what message levels will be logged by the Syslog logger
      */
     @ConfigItem(defaultValue = "ALL")
     Level level;

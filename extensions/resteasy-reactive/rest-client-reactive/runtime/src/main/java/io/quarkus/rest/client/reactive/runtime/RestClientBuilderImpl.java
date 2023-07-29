@@ -36,6 +36,7 @@ import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.restclient.config.RestClientLoggingConfig;
@@ -302,9 +303,14 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             throw new IllegalStateException("No URL specified. Cannot build a rest client without URL");
         }
 
+        ArcContainer arcContainer = Arc.container();
+        if (arcContainer == null) {
+            throw new IllegalStateException("The Reactive REST Client is not meant to be used outside of Quarkus");
+        }
+
         RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));
 
-        AnnotationRegisteredProviders annotationRegisteredProviders = Arc.container()
+        AnnotationRegisteredProviders annotationRegisteredProviders = arcContainer
                 .instance(AnnotationRegisteredProviders.class).get();
         for (Map.Entry<Class<?>, Integer> mapper : annotationRegisteredProviders.getProviders(aClass).entrySet()) {
             register(mapper.getKey(), mapper.getValue());
@@ -322,7 +328,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
         clientBuilder.followRedirects(followRedirects);
 
-        RestClientsConfig restClientsConfig = Arc.container().instance(RestClientsConfig.class).get();
+        RestClientsConfig restClientsConfig = arcContainer.instance(RestClientsConfig.class).get();
 
         RestClientLoggingConfig logging = restClientsConfig.logging;
         LoggingScope loggingScope = logging != null ? logging.scope.map(LoggingScope::forName).orElse(LoggingScope.NONE)
@@ -333,7 +339,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         if (clientLogger != null) {
             clientBuilder.clientLogger(clientLogger);
         } else {
-            InstanceHandle<ClientLogger> clientLoggerInstance = Arc.container().instance(ClientLogger.class);
+            InstanceHandle<ClientLogger> clientLoggerInstance = arcContainer.instance(ClientLogger.class);
             if (clientLoggerInstance.isAvailable()) {
                 clientBuilder.clientLogger(clientLoggerInstance.get());
             }
@@ -356,6 +362,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2)) {
             clientBuilder.http2((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2));
+        } else if (restClientsConfig.http2) {
+            clientBuilder.http2(true);
         }
 
         Boolean enableCompression = ConfigProvider.getConfig()

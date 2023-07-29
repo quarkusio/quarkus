@@ -80,7 +80,7 @@ And here is an example of the data payload being sent:
     },
     "timezone": "Europe/Lisbon"
   },
-  "event": "PROD_BUILD",
+  "event": "BUILD",
   "integrations": {},
   "messageId": "api-2PCI9LWQM8oRyHIS6fCQMIQ0dlR",
   "originalTimestamp": "2023-05-01T15:21:22.266033Z",

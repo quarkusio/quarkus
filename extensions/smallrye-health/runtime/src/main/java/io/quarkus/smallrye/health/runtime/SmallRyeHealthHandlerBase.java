@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.health.runtime;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
@@ -10,6 +9,7 @@ import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
@@ -18,7 +18,9 @@ import io.vertx.ext.web.RoutingContext;
 
 abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
 
-    protected abstract SmallRyeHealth getHealth(SmallRyeHealthReporter reporter, RoutingContext routingContext);
+    private static final Logger log = Logger.getLogger(SmallRyeHealthHandlerBase.class);
+
+    protected abstract Uni<SmallRyeHealth> getHealth(SmallRyeHealthReporter reporter, RoutingContext routingContext);
 
     @Override
     public void handle(RoutingContext ctx) {
@@ -41,19 +43,30 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
             Arc.container().instance(CurrentIdentityAssociation.class).get().setIdentity(user.getSecurityIdentity());
         }
         SmallRyeHealthReporter reporter = Arc.container().instance(SmallRyeHealthReporter.class).get();
-        SmallRyeHealth health = getHealth(reporter, ctx);
-        HttpServerResponse resp = ctx.response();
-        if (health.isDown()) {
-            resp.setStatusCode(503);
-        }
-        resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
-        Buffer buffer = Buffer.buffer(256); // this size seems to cover the basic health checks
-        try (BufferOutputStream outputStream = new BufferOutputStream(buffer);) {
-            reporter.reportHealth(outputStream, health);
-            resp.end(buffer);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        getHealth(reporter, ctx).subscribe().with(health -> {
+            HttpServerResponse resp = ctx.response();
+            if (health.isDown()) {
+                resp.setStatusCode(503);
+            }
+            resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8");
+            Buffer buffer = Buffer.buffer(256); // this size seems to cover the basic health checks
+            try (BufferOutputStream outputStream = new BufferOutputStream(buffer)) {
+                reporter.reportHealth(outputStream, health);
+            } catch (Throwable e) {
+                log.error("Unable to prepare health response message", e);
+                resp.setStatusCode(500);
+                resp.end();
+            } finally {
+                if (!resp.ended()) {
+                    resp.end(buffer);
+                }
+            }
+        }, throwable -> {
+            log.error("Unable to prepare health response message", throwable);
+            HttpServerResponse resp = ctx.response();
+            resp.setStatusCode(500);
+            resp.end();
+        });
     }
 
 }

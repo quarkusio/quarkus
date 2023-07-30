@@ -39,8 +39,8 @@ That thread is dedicated to this specific processing until the processing comple
 Thus, you can use _Thread Locals_ to propagate data along the processing, and no other processing unit will use that thread until the completion of the current one.
 
 With the reactive model, the code runs on event loop threads.
-These event loops execute multiple concurrent processing units. F
-or example, the same event loop can handle multiple concurrent HTTP requests.
+These event loops execute multiple concurrent processing units. For example,
+the same event loop can handle multiple concurrent HTTP requests.
 The following picture illustrates this reactive execution model:
 
 image::reactive-continuation.png[alt=Continuation in the reactive execution model, width=80%, align=center]

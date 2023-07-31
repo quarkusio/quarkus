@@ -82,6 +82,10 @@ public abstract class DevUIJsonRPCTest {
 
                 socket.writeTextMessage(request);
 
+                socket.exceptionHandler((e) -> {
+                    e.printStackTrace();
+                    vertx.close();
+                });
                 socket.closeHandler(v -> {
                     vertx.close();
                 });

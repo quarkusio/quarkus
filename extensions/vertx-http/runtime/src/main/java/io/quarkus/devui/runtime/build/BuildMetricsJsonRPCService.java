@@ -10,6 +10,11 @@ import io.vertx.core.json.JsonObject;
 @ApplicationScoped
 public class BuildMetricsJsonRPCService {
 
+    public JsonArray getBuildItems() {
+        Map<String, Object> buildStepMetrics = buildStepMetrics();
+        return (JsonArray) buildStepMetrics.get("items");
+    }
+
     public BuildMetrics getBuildMetrics() {
         BuildMetrics buildMetrics = new BuildMetrics();
         Map<String, Object> buildStepMetrics = buildStepMetrics();

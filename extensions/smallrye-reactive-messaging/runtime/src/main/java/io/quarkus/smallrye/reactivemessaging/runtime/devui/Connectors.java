@@ -92,8 +92,8 @@ public class Connectors {
         String prefix = connectorPropertyName.substring(0, connectorPropertyName.length() - connectorSuffix.length());
         for (String propertyName : config.getPropertyNames()) {
             if (propertyName.startsWith(prefix) && !propertyName.equals(connectorPropertyName)) {
-                properties.put(propertyName.substring(prefix.length() + 1, propertyName.length()),
-                        config.getValue(propertyName, String.class));
+                properties.put(propertyName.substring(prefix.length() + 1),
+                        config.getOptionalValue(propertyName, String.class).orElse(""));
             }
         }
         return properties;

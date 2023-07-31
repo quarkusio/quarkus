@@ -55,7 +55,7 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 continue;
                             }
                             if (instance.name().equals(MOCKITO_CONFIG)
-                                    && instance.target().asField().hasAnnotation(INJECT_MOCK)) {
+                                    && !instance.target().asField().hasAnnotation(INJECT_MOCK)) {
                                 continue;
                             }
                             AnnotationValue allowScopeConversionValue = instance.value("convertScopes");

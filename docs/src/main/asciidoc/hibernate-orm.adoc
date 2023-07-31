@@ -1242,3 +1242,82 @@ to tell Quarkus it should be used in the default persistence unit.
 +
 For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
 <2> Implement `org.hibernate.engine.jdbc.spi.StatementInspector`.
+
+[[json_xml_serialization_deserialization]]
+== Customizing JSON/XML serialization/deserialization
+
+By default, Quarkus will try to automatically configure format mappers depending on available extensions.
+Globally configured `ObjectMapper` (or `Jsonb`) will be used for serialization/deserialization operations when Jackson (or JSON-B) is available.
+Jackson will take precedence if both Jackson and JSON-B are available at the same time.
+
+JSON and XML serialization/deserialization in Hibernate ORM can be customized by implementing a `org.hibernate.type.format.FormatMapper`
+and annotating the implementation with the appropriate qualifiers:
+
+[source,java]
+----
+@JsonFormat // <1>
+@PersistenceUnitExtension // <2>
+public class MyJsonFormatMapper implements FormatMapper { // <3>
+    @Override
+    public String inspect(String sql) {
+        // ...
+        return sql;
+    }
+    @Override
+    public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+        // ...
+    }
+
+    @Override
+    public <T> String toString(T value, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+       // ...
+    }
+}
+----
+<1> Annotate the format mapper implementation with the `@JsonFormat` qualifier
+to tell Quarkus that this mapper is specific to JSON serialization/deserialization.
++
+<2> Annotate the format mapper implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<3> Implement `org.hibernate.type.format.FormatMapper`.
+
+In case of a custom XML format mapper, a different CDI qualifier must be applied:
+
+[source,java]
+----
+@XmlFormat // <1>
+@PersistenceUnitExtension // <2>
+public class MyJsonFormatMapper implements FormatMapper { // <3>
+    @Override
+    public String inspect(String sql) {
+        // ...
+        return sql;
+    }
+    @Override
+    public <T> T fromString(CharSequence charSequence, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+        // ...
+    }
+
+    @Override
+    public <T> String toString(T value, JavaType<T> javaType, WrapperOptions wrapperOptions) {
+       // ...
+    }
+}
+----
+<1> Annotate the format mapper implementation with the `@XmlFormat` qualifier
+to tell Quarkus that this mapper is specific to XML serialization/deserialization.
++
+<2> Annotate the format mapper implementation with the `@PersistenceUnitExtension` qualifier
+to tell Quarkus it should be used in the default persistence unit.
++
+For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
+<3> Implement `org.hibernate.type.format.FormatMapper`.
+
+[NOTE]
+====
+Format mappers *must* have both `@PersistenceUnitExtension` and either `@JsonFormat` or `@XmlFormat` CDI qualifiers applied.
+
+Having multiple JSON (or XML) format mappers registered for the same persistence unit will result in an exception, because of the ambiguity.
+====

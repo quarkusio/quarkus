@@ -32,10 +32,12 @@ public interface Capability {
     String LRA_PARTICIPANT = QUARKUS_PREFIX + ".lra.participant";
 
     String JACKSON = QUARKUS_PREFIX + ".jackson";
+    String JSONB = QUARKUS_PREFIX + ".jsonb";
+
+    String JAXB = QUARKUS_PREFIX + ".jaxb";
+    String JAXP = QUARKUS_PREFIX + ".jaxp";
 
     String KOTLIN = QUARKUS_PREFIX + ".kotlin";
-
-    String JSONB = QUARKUS_PREFIX + ".jsonb";
 
     String HAL = QUARKUS_PREFIX + ".hal";
 

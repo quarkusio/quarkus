@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLXML;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +35,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.it.jpa.postgresql.otherpu.EntityWithXmlOtherPU;
+
 /**
  * First we run a smoke test for basic Hibernate ORM functionality,
  * then we specifically focus on supporting the PgSQLXML mapping abilities for XML types:
@@ -44,6 +48,9 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
     @Inject
     EntityManagerFactory entityManagerFactory;
+    @Inject
+    @PersistenceUnit("other")
+    EntityManagerFactory otherEntityManagerFactory;
 
     @Inject
     DataSource ds;
@@ -51,7 +58,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            doStuffWithHibernate(entityManagerFactory);
+            doStuffWithHibernate(entityManagerFactory, otherEntityManagerFactory);
             doStuffWithDatasource();
         } catch (Exception e) {
             reportException("An error occurred while performing Hibernate operations", e, resp);
@@ -123,7 +130,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     /**
      * Lists the various operations we want to test for:
      */
-    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory) {
+    private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory,
+            EntityManagerFactory otherEntityManagerFactory) {
 
         //Store some well known Person instances we can then test on:
         storeTestPersons(entityManagerFactory);
@@ -133,6 +141,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
         //Try a JPA named query:
         verifyJPANamedQuery(entityManagerFactory);
+
+        doXmlStuff(entityManagerFactory, otherEntityManagerFactory);
     }
 
     private static void verifyJPANamedQuery(final EntityManagerFactory emf) {
@@ -208,6 +218,47 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
     private static String randomName() {
         return UUID.randomUUID().toString();
+    }
+
+    private static void doXmlStuff(EntityManagerFactory emf, EntityManagerFactory otherEmf) {
+        try (EntityManager em = emf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
+            transaction.begin();
+
+            EntityWithXml entity = new EntityWithXml(
+                    new EntityWithXml.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
+            em.persist(entity);
+            transaction.commit();
+
+            transaction.begin();
+            List<EntityWithXml> entities = em
+                    .createQuery("select e from EntityWithXml e", EntityWithXml.class)
+                    .getResultList();
+            if (entities.isEmpty()) {
+                throw new AssertionError("No entities with XML were found");
+            }
+            transaction.commit();
+
+            transaction.begin();
+            em.createQuery("delete from EntityWithXml").executeUpdate();
+            transaction.commit();
+        }
+
+        try (EntityManager em = otherEmf.createEntityManager()) {
+            EntityTransaction transaction = em.getTransaction();
+            transaction.begin();
+            EntityWithXmlOtherPU otherPU = new EntityWithXmlOtherPU(
+                    new EntityWithXmlOtherPU.ToBeSerializedWithDateTime(LocalDate.of(2023, 7, 28)));
+            em.persist(otherPU);
+            transaction.commit();
+            throw new AssertionError(
+                    "Our custom XML format mapper throws exceptions. So we were expecting commit to fail, but it did not!");
+        } catch (Exception e) {
+            if (!(e.getCause() instanceof IllegalArgumentException)
+                    && !e.getCause().getMessage().contains("I cannot convert anything to XML")) {
+                throw new AssertionError("Transaction failed for a different reason than expected.", e);
+            }
+        }
     }
 
     private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {

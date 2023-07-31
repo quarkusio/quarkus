@@ -61,7 +61,8 @@ public class HibernateOrmCdiProcessor {
             ClassNames.TENANT_RESOLVER,
             ClassNames.TENANT_CONNECTION_RESOLVER,
             ClassNames.INTERCEPTOR,
-            ClassNames.STATEMENT_INSPECTOR);
+            ClassNames.STATEMENT_INSPECTOR,
+            ClassNames.FORMAT_MAPPER);
 
     @BuildStep
     AnnotationsTransformerBuildItem convertJpaResourceAnnotationsToQualifier(
@@ -247,11 +248,13 @@ public class HibernateOrmCdiProcessor {
     @BuildStep
     void registerAnnotations(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
-        // add the @PersistenceUnit and @PersistenceUnitExtension classes
+        // add the @PersistenceUnit, @PersistenceUnitExtension, @JsonFormat and @XmlFormat classes
         // otherwise they won't be registered as qualifiers
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClasses(ClassNames.QUARKUS_PERSISTENCE_UNIT.toString(),
-                        ClassNames.PERSISTENCE_UNIT_EXTENSION.toString())
+                        ClassNames.PERSISTENCE_UNIT_EXTENSION.toString(),
+                        ClassNames.JSON_FORMAT.toString(),
+                        ClassNames.XML_FORMAT.toString())
                 .build());
 
         // Register the default scope for @PersistenceUnitExtension and make such beans unremovable by default

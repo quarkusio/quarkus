@@ -54,8 +54,10 @@ public interface OtlpExporterTracesConfig {
     /**
      * OTLP defines the encoding of telemetry data and the protocol used to exchange data between the client and the
      * server. Depending on the exporter, the available protocols will be different.
+     * <p>
+     * Currently, only {@code grpc} and {@code http} are allowed.
      */
-    @WithDefault(Protocol.HTTP_PROTOBUF)
+    @WithDefault(Protocol.GRPC)
     Optional<String> protocol();
 
     /**
@@ -89,9 +91,8 @@ public interface OtlpExporterTracesConfig {
         Optional<List<String>> certs();
     }
 
-    public static class Protocol {
+    class Protocol {
         public static final String GRPC = "grpc";
         public static final String HTTP_PROTOBUF = "http/protobuf";
-        public static final String HTTP_JSON = "http/json";
     }
 }

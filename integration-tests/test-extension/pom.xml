@@ -15,6 +15,7 @@
 
     <modules>
         <module>extension</module>
+        <module>extension-that-defines-junit-test-extensions</module>
         <module>tests</module>
     </modules>
 </project>

@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import com.google.common.collect.ImmutableMap;
 
 import io.quarkus.maven.it.RunAndCheckMojoTestBase;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 public class ScalaDevModeIT extends RunAndCheckMojoTestBase {
 
@@ -32,7 +31,7 @@ public class ScalaDevModeIT extends RunAndCheckMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -44,7 +43,7 @@ public class ScalaDevModeIT extends RunAndCheckMojoTestBase {
         // Wait until we get "carambar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
     }
 
     @Test
@@ -64,7 +63,7 @@ public class ScalaDevModeIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Hello"));
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Hello"));
 
         final File greetingScala = externalJarDir.toPath().resolve("src").resolve("main")
                 .resolve("scala").resolve("org").resolve("acme").resolve("lib")
@@ -87,7 +86,7 @@ public class ScalaDevModeIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("Bonjour"));
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("Bonjour"));
 
         // Change bonjour() method content in Greeting.java
         filter(greetingScala, Map.of("Bonjour", "Bonjour!"));
@@ -99,6 +98,6 @@ public class ScalaDevModeIT extends RunAndCheckMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/hello").contains("BONJOUR!"));
+                .until(() -> devModeClient.getHttpResponse("/hello").contains("BONJOUR!"));
     }
 }

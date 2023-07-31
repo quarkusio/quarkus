@@ -16,22 +16,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class ContinuousTestingMavenTestUtils {
 
-    static final URL DEFAULT;
-
-    static {
-        try {
-            DEFAULT = new URL("http://localhost:8080/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/status");
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static final int DEFAULT_PORT = 8080;
 
     long runtToWaitFor = 1;
     ObjectMapper objectMapper = new ObjectMapper();
     final URL url;
 
+    protected static URL getDefaultUrl(int port) {
+        try {
+            return new URL("http://localhost:" + port + "/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/status");
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public ContinuousTestingMavenTestUtils() {
-        this(DEFAULT);
+        this(getDefaultUrl(DEFAULT_PORT));
+    }
+
+    public ContinuousTestingMavenTestUtils(int port) {
+        this(getDefaultUrl(port));
     }
 
     public ContinuousTestingMavenTestUtils(URL url) {

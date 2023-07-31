@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 /**
  * <p>
@@ -28,7 +27,7 @@ public class CodeGenIT extends RunAndCheckMojoTestBase {
     public void shouldCompileAndRunWithCodegenEnabled() throws MavenInvocationException, FileNotFoundException {
         testDir = initProject("projects/proto-gen");
         run(true);
-        assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("Hello, World!");
+        assertThat(devModeClient.getHttpResponse("/hello")).isEqualTo("Hello, World!");
     }
 
     @Test

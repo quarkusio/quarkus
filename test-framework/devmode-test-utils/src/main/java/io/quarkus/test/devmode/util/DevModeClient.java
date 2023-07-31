@@ -20,7 +20,17 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-public class DevModeTestUtils {
+public class DevModeClient {
+
+    private final int port;
+
+    public DevModeClient() {
+        this(8080);
+    }
+
+    public DevModeClient(int port) {
+        this.port = port;
+    }
 
     public static List<ProcessHandle> killDescendingProcesses() {
         // Warning: Do not try to evaluate ProcessHandle.Info.arguments() or .commandLine() as those are always empty on Windows:
@@ -51,7 +61,7 @@ public class DevModeTestUtils {
         FileUtils.write(input, data, "UTF-8");
     }
 
-    public static void awaitUntilServerDown() {
+    public void awaitUntilServerDown() {
         await().atMost(1, TimeUnit.MINUTES).until(() -> {
             try {
                 get(); // Ignore result on purpose
@@ -62,11 +72,11 @@ public class DevModeTestUtils {
         });
     }
 
-    public static String getHttpResponse() {
+    public String getHttpResponse() {
         return getHttpResponse(() -> null);
     }
 
-    public static String getHttpResponse(Supplier<String> brokenReason) {
+    public String getHttpResponse(Supplier<String> brokenReason) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -90,11 +100,11 @@ public class DevModeTestUtils {
         return resp.get();
     }
 
-    public static String getHttpErrorResponse() {
+    public String getHttpErrorResponse() {
         return getHttpErrorResponse(() -> null);
     }
 
-    public static String getHttpErrorResponse(Supplier<String> brokenReason) {
+    public String getHttpErrorResponse(Supplier<String> brokenReason) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -117,23 +127,23 @@ public class DevModeTestUtils {
         return resp.get();
     }
 
-    public static String getHttpResponse(String path) {
+    public String getHttpResponse(String path) {
         return getHttpResponse(path, false);
     }
 
-    public static String getHttpResponse(String path, Supplier<String> brokenReason) {
+    public String getHttpResponse(String path, Supplier<String> brokenReason) {
         return getHttpResponse(path, false, brokenReason);
     }
 
-    public static String getHttpResponse(String path, boolean allowError) {
+    public String getHttpResponse(String path, boolean allowError) {
         return getHttpResponse(path, allowError, () -> null);
     }
 
-    public static String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason) {
+    public String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason) {
         return getHttpResponse(path, allowError, brokenReason, 1, TimeUnit.MINUTES);
     }
 
-    public static String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason, long timeout,
+    public String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason, long timeout,
             TimeUnit tu) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
@@ -145,7 +155,7 @@ public class DevModeTestUtils {
                         return true;
                     }
                     try {
-                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                        URL url = new URL("http://localhost:" + port + ((path.startsWith("/") ? path : "/" + path)));
                         String content;
                         if (!allowError) {
                             content = IOUtils.toString(url, StandardCharsets.UTF_8);
@@ -168,17 +178,17 @@ public class DevModeTestUtils {
         return resp.get();
     }
 
-    public static boolean getHttpResponse(String path, int expectedStatus) {
+    public boolean getHttpResponse(String path, int expectedStatus) {
         return getHttpResponse(path, expectedStatus, 5, TimeUnit.MINUTES);
     }
 
-    public static boolean getHttpResponse(String path, int expectedStatus, long timeout, TimeUnit tu) {
+    public boolean getHttpResponse(String path, int expectedStatus, long timeout, TimeUnit tu) {
         AtomicBoolean code = new AtomicBoolean();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(timeout, tu).until(() -> {
                     try {
-                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                        URL url = new URL("http://localhost:" + port + ((path.startsWith("/") ? path : "/" + path)));
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                         // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
                         connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
@@ -195,13 +205,13 @@ public class DevModeTestUtils {
     }
 
     // will fail if it receives any http response except the expected one
-    public static boolean getStrictHttpResponse(String path, int expectedStatus) {
+    public boolean getStrictHttpResponse(String path, int expectedStatus) {
         AtomicBoolean code = new AtomicBoolean();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(5, TimeUnit.MINUTES).until(() -> {
                     try {
-                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                        URL url = new URL("http://localhost:" + port + ((path.startsWith("/") ? path : "/" + path)));
                         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                         // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
                         connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
@@ -215,17 +225,17 @@ public class DevModeTestUtils {
         return code.get();
     }
 
-    public static String get() throws IOException {
-        return get("http://localhost:8080");
+    public String get() throws IOException {
+        return get("http://localhost:" + port);
     }
 
-    public static String get(String urlStr) throws IOException {
+    public String get(String urlStr) throws IOException {
         return IOUtils.toString(new URL(urlStr), StandardCharsets.UTF_8);
     }
 
-    public static boolean isCode(String path, int code) {
+    public boolean isCode(String path, int code) {
         try {
-            URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+            URL url = new URL("http://localhost:" + port + ((path.startsWith("/") ? path : "/" + path)));
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             // the default Accept header used by HttpURLConnection is not compatible with
             // RESTEasy negotiation as it uses q=.2

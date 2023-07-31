@@ -23,7 +23,7 @@ import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.SourceType;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
@@ -84,7 +84,7 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
         final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/foo/GreetingResource.java")
                 .toFile();
-        DevModeTestUtils.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
+        DevModeClient.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(secondBuild.getTasks().get(":quarkusBuild"))).isTrue();

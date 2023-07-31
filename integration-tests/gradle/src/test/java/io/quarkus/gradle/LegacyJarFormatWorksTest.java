@@ -13,7 +13,7 @@ import org.apache.commons.io.FileUtils;
 import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class LegacyJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
 
@@ -31,13 +31,15 @@ public class LegacyJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
         File output = new File(projectDir, "build/output.log");
         output.createNewFile();
         Process process = launch(runnerJar, output);
+        DevModeClient devModeClient = new DevModeClient();
+
         try {
             //Wait until server up
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
                         .atMost(1, TimeUnit.MINUTES)
-                        .until(() -> DevModeTestUtils.isCode("/hello", 200));
+                        .until(() -> devModeClient.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
@@ -46,7 +48,7 @@ public class LegacyJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
             assertThat(logs).contains("INFO").contains("cdi, resteasy");
 
             // test that the application name and version are properly set
-            assertThat(DevModeTestUtils.getHttpResponse("/hello")).isEqualTo("hello");
+            assertThat(devModeClient.getHttpResponse("/hello")).isEqualTo("hello");
         } finally {
             process.destroy();
         }

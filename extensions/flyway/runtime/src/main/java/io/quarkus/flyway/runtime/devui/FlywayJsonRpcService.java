@@ -153,7 +153,7 @@ public class FlywayJsonRpcService {
                     return new FlywayActionResponse("success",
                             "Initial migration created, Flyway will now manage this datasource");
                 } catch (Throwable t) {
-                    new FlywayActionResponse("error", t.getMessage());
+                    return new FlywayActionResponse("error", t.getMessage());
                 }
             }
             return errorNoScript(ds);
@@ -184,7 +184,7 @@ public class FlywayJsonRpcService {
         return null;
     }
 
-    static class FlywayDatasource {
+    public static class FlywayDatasource {
         public String name;
         public boolean hasMigrations;
         public boolean createPossible;
@@ -199,7 +199,7 @@ public class FlywayJsonRpcService {
         }
     }
 
-    static class FlywayActionResponse {
+    public static class FlywayActionResponse {
         public String type;
         public String message;
         public int number;

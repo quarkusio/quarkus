@@ -399,6 +399,15 @@ public class FastBootMetadataBuilder {
             }
         }
 
+        // If there's any mapping lib that we can work with available we'll set the default mapper:
+        if (puDefinition.getJsonMapperCreator().isPresent()) {
+            cfg.put(AvailableSettings.JSON_FORMAT_MAPPER, puDefinition.getJsonMapperCreator().get().create());
+        }
+        // If there's any mapping lib that we can work with available we'll set the default mapper:
+        if (puDefinition.getXmlMapperCreator().isPresent()) {
+            cfg.put(AvailableSettings.XML_FORMAT_MAPPER, puDefinition.getXmlMapperCreator().get().create());
+        }
+
         return mergedSettings;
     }
 

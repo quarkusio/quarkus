@@ -244,10 +244,10 @@ public class VertxHttpRecorder {
         Supplier<Vertx> supplier = VertxCoreRecorder.getVertx();
         Vertx vertx;
         if (supplier == null) {
-            VertxConfiguration vertxConfiguration = ConfigUtils.configBuilder(true, LaunchMode.DEVELOPMENT)
+            VertxConfiguration vertxConfiguration = ConfigUtils.emptyConfigBuilder()
+                    .addDiscoveredSources()
                     .withMapping(VertxConfiguration.class)
-                    .build()
-                    .getConfigMapping(VertxConfiguration.class);
+                    .build().getConfigMapping(VertxConfiguration.class);
             vertx = VertxCoreRecorder.recoverFailedStart(vertxConfiguration).get();
         } else {
             vertx = supplier.get();

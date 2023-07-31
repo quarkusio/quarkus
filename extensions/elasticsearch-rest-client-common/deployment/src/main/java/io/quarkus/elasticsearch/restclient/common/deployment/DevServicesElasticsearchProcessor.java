@@ -212,6 +212,11 @@ public class DevServicesElasticsearchProcessor {
             container.addEnv("ES_JAVA_OPTS", config.javaOpts);
             // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
             container.addEnv("xpack.security.enabled", "false");
+            // Disable disk-based shard allocation thresholds:
+            // in a single-node setup they just don't make sense,
+            // and lead to problems on large disks with little space left.
+            // See https://www.elastic.co/guide/en/elasticsearch/reference/8.8/modules-cluster.html#disk-based-shard-allocation
+            container.addEnv( "cluster.routing.allocation.disk.threshold_enabled", "false" );
 
             container.start();
             return new DevServicesResultBuildItem.RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),

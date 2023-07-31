@@ -350,6 +350,7 @@ If you want to use Docker to run an Elasticsearch instance, you can use the foll
 [source,bash,subs=attributes+]
 ----
 docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m"\
+       -e "cluster.routing.allocation.disk.threshold_enabled=false"
        --rm -p 9200:9200 {elasticsearch-image}
 ----
 

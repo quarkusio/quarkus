@@ -78,7 +78,7 @@ public class RestDataProcessor {
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
 
         for (RestDataResourceBuildItem resourceBuildItem : resourceBuildItems) {
-            if (!excludedClasses.contains(resourceBuildItem.getResourceMetadata().getResourceInterface())) {
+            if (!excludedClasses.contains(resourceBuildItem.getResourceMetadata().getResourceName())) {
                 ResourceMetadata resourceMetadata = resourceBuildItem.getResourceMetadata();
                 ResourceProperties resourceProperties = getResourceProperties(resourcePropertiesProvider,
                         resourceMetadata, resourcePropertiesBuildItems);

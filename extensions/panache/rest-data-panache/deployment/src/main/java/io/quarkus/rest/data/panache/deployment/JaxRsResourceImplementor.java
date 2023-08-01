@@ -26,6 +26,7 @@ import io.quarkus.rest.data.panache.deployment.methods.GetMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.ListMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.MethodImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.UpdateMethodImplementor;
+import io.quarkus.rest.data.panache.deployment.methods.UserMethodsWithTransactionalImplementor;
 import io.quarkus.rest.data.panache.deployment.methods.hal.ListHalMethodImplementor;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.runtime.util.HashUtil;
@@ -48,6 +49,7 @@ class JaxRsResourceImplementor {
                 new AddMethodImplementor(capabilities),
                 new UpdateMethodImplementor(capabilities),
                 new DeleteMethodImplementor(capabilities),
+                new UserMethodsWithTransactionalImplementor(capabilities),
                 // The list hal endpoint needs to be added for both resteasy classic and resteasy reactive
                 // because the pagination links are programmatically added.
                 new ListHalMethodImplementor(capabilities));
@@ -77,7 +79,7 @@ class JaxRsResourceImplementor {
                 .classOutput(classOutput).className(controllerClassName);
 
         if (resourceMetadata.getResourceInterface() != null) {
-            classCreatorBuilder.interfaces(resourceMetadata.getResourceInterface());
+            classCreatorBuilder.interfaces(resourceMetadata.getResourceInterface().name().toString());
         }
 
         ClassCreator classCreator = classCreatorBuilder.build();

@@ -39,6 +39,10 @@
       <artifactId>quarkus-vertx-deployment</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-virtual-threads-deployment</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.commonmark</groupId>
       <artifactId>commonmark</artifactId>
     </dependency>

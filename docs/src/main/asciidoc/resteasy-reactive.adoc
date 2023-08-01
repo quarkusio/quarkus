@@ -1425,12 +1425,12 @@ public User userPrivate() {
 When the result the `userPublic` method is serialized, the `id` field will not be contained in the response as the `Public` view does not include it.
 The result of `userPrivate` however will include the `id` as expected when serialized.
 
-===== Completely customized per method serialization
+===== Completely customized per method serialization/deserialization
 
-There are times when you need to completely customize the serialization of a POJO on a per Jakarta REST method basis. For such use cases, the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` annotation
-is a great tool, as it allows you to configure a per-method `com.fasterxml.jackson.databind.ObjectWriter` which can be configured at will.
+There are times when you need to completely customize the serialization/deserialization of a POJO on a per Jakarta REST method basis. For such use cases, the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` and `@io.quarkus.resteasy.reactive.jackson.CustomDeserialization` annotations.
+is a great tool, as it allows you to configure a per-method `com.fasterxml.jackson.databind.ObjectWriter`/`com.fasterxml.jackson.databind.ObjectReader` which can be configured at will.
 
-Here is an example use case:
+Here is an example use case to customize the `com.fasterxml.jackson.databind.ObjectWriter`:
 
 [source,java]
 ----
@@ -1458,6 +1458,31 @@ public static class UnquotedFields implements BiFunction<ObjectMapper, Type, Obj
 Essentially what this class does is force Jackson to not include quotes in the field names.
 
 It is important to note that this customization is only performed for the serialization of the Jakarta REST methods that use `@CustomSerialization(UnquotedFields.class)`.
+
+Following the previous example, let's now customize the `com.fasterxml.jackson.databind.ObjectReader` to read JSON requests with unquoted field names:
+
+[source,java]
+----
+@CustomDeserialization(SupportUnquotedFields.class)
+@POST
+@Path("/use-of-custom-deserializer")
+public void useOfCustomSerializer(User request) {
+    // ...
+}
+----
+
+where `SupportUnquotedFields` is a `BiFunction` defined as so:
+
+[source,java]
+----
+public static class SupportUnquotedFields implements BiFunction<ObjectMapper, Type, ObjectReader> {
+
+    @Override
+    public ObjectReader apply(ObjectMapper objectMapper, Type type) {
+        return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
+    }
+}
+----
 
 === XML serialisation
 

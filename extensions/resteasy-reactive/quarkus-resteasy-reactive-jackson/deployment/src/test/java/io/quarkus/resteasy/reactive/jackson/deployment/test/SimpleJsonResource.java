@@ -24,10 +24,13 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import com.fasterxml.jackson.annotation.JsonView;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.core.json.JsonWriteFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
+import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
 import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
@@ -56,11 +59,18 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return person;
     }
 
-    @CustomSerialization(UnquotedFieldsPersonBiFunction.class)
+    @CustomSerialization(UnquotedFieldsPersonSerialization.class)
     @GET
     @Path("custom-serialized-person")
     public Person getCustomSerializedPerson() {
         return getPerson();
+    }
+
+    @CustomDeserialization(UnquotedFieldsPersonDeserialization.class)
+    @POST
+    @Path("custom-deserialized-person")
+    public Person echoCustomDeserializedPerson(Person request) {
+        return request;
     }
 
     @EnableSecureSerialization
@@ -180,7 +190,8 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return reversed;
     }
 
-    @CustomSerialization(UnquotedFieldsPersonBiFunction.class)
+    @CustomDeserialization(UnquotedFieldsPersonDeserialization.class)
+    @CustomSerialization(UnquotedFieldsPersonSerialization.class)
     @POST
     @Path("/custom-serialized-people")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -261,7 +272,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return testUser();
     }
 
-    @CustomSerialization(UnquotedFieldsPersonBiFunction.class)
+    @CustomSerialization(UnquotedFieldsPersonSerialization.class)
     @GET
     @Path("/invalid-use-of-custom-serializer")
     public User invalidUseOfCustomSerializer() {
@@ -308,11 +319,11 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return item.getContent().getName();
     }
 
-    public static class UnquotedFieldsPersonBiFunction implements BiFunction<ObjectMapper, Type, ObjectWriter> {
+    public static class UnquotedFieldsPersonSerialization implements BiFunction<ObjectMapper, Type, ObjectWriter> {
 
         public static final AtomicInteger count = new AtomicInteger();
 
-        public UnquotedFieldsPersonBiFunction() {
+        public UnquotedFieldsPersonSerialization() {
             count.incrementAndGet();
         }
 
@@ -325,6 +336,26 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 throw new IllegalArgumentException("Only Person type can be handled");
             }
             return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+        }
+    }
+
+    public static class UnquotedFieldsPersonDeserialization implements BiFunction<ObjectMapper, Type, ObjectReader> {
+
+        public static final AtomicInteger count = new AtomicInteger();
+
+        public UnquotedFieldsPersonDeserialization() {
+            count.incrementAndGet();
+        }
+
+        @Override
+        public ObjectReader apply(ObjectMapper objectMapper, Type type) {
+            if (type instanceof ParameterizedType) {
+                type = ((ParameterizedType) type).getActualTypeArguments()[0];
+            }
+            if (!type.getTypeName().equals(Person.class.getName())) {
+                throw new IllegalArgumentException("Only Person type can be handled");
+            }
+            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
         }
     }
 

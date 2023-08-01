@@ -45,6 +45,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
+import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
 import io.quarkus.resteasy.reactive.jackson.DisableSecureSerialization;
 import io.quarkus.resteasy.reactive.jackson.EnableSecureSerialization;
@@ -77,6 +78,7 @@ public class ResteasyReactiveJacksonProcessor {
 
     private static final DotName JSON_VIEW = DotName.createSimple(JsonView.class.getName());
     private static final DotName CUSTOM_SERIALIZATION = DotName.createSimple(CustomSerialization.class.getName());
+    private static final DotName CUSTOM_DESERIALIZATION = DotName.createSimple(CustomDeserialization.class.getName());
     private static final DotName SECURE_FIELD = DotName.createSimple(SecureField.class.getName());
     private static final DotName DISABLE_SECURE_SERIALIZATION = DotName
             .createSimple(DisableSecureSerialization.class.getName());
@@ -262,6 +264,36 @@ public class ResteasyReactiveJacksonProcessor {
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
                                     .build());
                     recorder.recordCustomSerialization(getMethodId(instance.target().asMethod()),
+                            biFunctionType.name().toString());
+                }
+            }
+            if (resourceClass.annotationsMap().containsKey(CUSTOM_DESERIALIZATION)) {
+                jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_DESERIALIZATION);
+                for (AnnotationInstance instance : resourceClass.annotationsMap().get(CUSTOM_DESERIALIZATION)) {
+                    AnnotationValue annotationValue = instance.value();
+                    if (annotationValue == null) {
+                        continue;
+                    }
+                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
+                        continue;
+                    }
+                    Type biFunctionType = annotationValue.asClass();
+                    if (biFunctionType == null) {
+                        continue;
+                    }
+                    ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
+                    if (biFunctionClassInfo == null) {
+                        // be lenient
+                    } else {
+                        if (!biFunctionClassInfo.hasNoArgsConstructor()) {
+                            throw new IllegalArgumentException(
+                                    "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
+                        }
+                    }
+                    reflectiveClassProducer.produce(
+                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
+                                    .build());
+                    recorder.recordCustomDeserialization(getMethodId(instance.target().asMethod()),
                             biFunctionType.name().toString());
                 }
             }

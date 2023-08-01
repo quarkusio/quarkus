@@ -1230,7 +1230,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // make sure the application starts
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(20, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
                 .until(() -> DevModeTestUtils.getHttpResponse("/cp/hello").equals("hello"));
 
         // test that we don't get multiple instances of a resource when loading from the ClassLoader

@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.runtime;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -165,12 +166,12 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
     }
 
     @ConfigGroup
-    public interface AnalysisConfig {
+    interface AnalysisConfig {
         /**
-         * A xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to the component
-         * used to configure full text analysis (e.g. analyzers, normalizers).
+         * One or more xref:hibernate-search-orm-elasticsearch.adoc#bean-reference-note-anchor[bean references]
+         * to the component(s) used to configure full text analysis (e.g. analyzers, normalizers).
          *
-         * The referenced bean must implement `ElasticsearchAnalysisConfigurer`.
+         * The referenced beans must implement `ElasticsearchAnalysisConfigurer`.
          *
          * See xref:hibernate-search-orm-elasticsearch.adoc#analysis-configurer[Setting up the analyzers] for more
          * information.
@@ -178,14 +179,14 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * [NOTE]
          * ====
          * Instead of setting this configuration property,
-         * you can simply annotate your custom `ElasticsearchAnalysisConfigurer` implementation with `@SearchExtension`
+         * you can simply annotate your custom `ElasticsearchAnalysisConfigurer` implementations with `@SearchExtension`
          * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
          * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
          * ====
          *
          * @asciidoclet
          */
-        Optional<String> configurer();
+        Optional<List<String>> configurer();
     }
 
     @ConfigGroup
@@ -208,7 +209,7 @@ public interface HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit {
          * this strategy will create an index named `myindex`, and will not use any alias.
          *
          * See
-         * link:{hibernate-search-doc-prefix}#backend-elasticsearch-indexlayout[this section of the reference documentation]
+         * link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
          * for more information.
          *
          * [NOTE]

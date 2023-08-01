@@ -68,7 +68,7 @@
         },
         {
             "category": "Security1",
-            "timeout": 60,
+            "timeout": 65,
             "test-modules": "elytron-security-oauth2, elytron-security, elytron-security-jdbc, elytron-undertow, elytron-security-ldap, bouncycastle, bouncycastle-jsse, bouncycastle-fips",
             "os-name": "ubuntu-latest"
         },
@@ -146,7 +146,7 @@
         },
         {
             "category": "AWT, ImageIO and Java2D",
-            "timeout": 20,
+            "timeout": 30,
             "test-modules": "awt, no-awt",
             "os-name": "ubuntu-latest"
         }

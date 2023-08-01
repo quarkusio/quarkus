@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -19,6 +20,7 @@ import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.DurationConverter;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
@@ -93,11 +95,40 @@ public class OpenTelemetryRecorder {
                         if (configValue.getValue() != null) {
                             NameIterator name = new NameIterator(propertyName);
                             name.next();
-                            oTelConfigs.put(name.getName().substring(name.getPosition() + 1), configValue.getValue());
+                            oTelConfigs.put(name.getName().substring(name.getPosition() + 1), getValue(configValue));
                         }
                     }
                 }
                 return oTelConfigs;
+            }
+
+            /**
+             * Transforms the value to what OTel expects
+             * TODO: this is super simplistic, and should be more modular if needed
+             */
+            private String getValue(ConfigValue configValue) {
+                String name = configValue.getName();
+                if (name.endsWith("timeout") || name.endsWith("delay")) {
+                    String value = configValue.getValue();
+                    if (DurationConverter.DIGITS.asPredicate().test(value)) {
+                        // OTel regards values without a unit to me milliseconds instead of seconds
+                        // that java.time.Duration assumes, so let's just not do any conversion and let OTel handle with it
+                        return value;
+                    }
+                    Duration duration;
+                    try {
+                        duration = DurationConverter.parseDuration(value);
+                    } catch (Exception ignored) {
+                        // it's not a Duration, so we can't do much
+                        return configValue.getValue();
+                    }
+                    try {
+                        return duration.toMillis() + "ms";
+                    } catch (Exception ignored) {
+                        return duration.toSeconds() + "s";
+                    }
+                }
+                return configValue.getValue();
             }
         };
     }

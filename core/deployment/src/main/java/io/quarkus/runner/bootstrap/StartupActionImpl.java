@@ -148,7 +148,7 @@ public class StartupActionImpl implements StartupAction {
             try {
                 final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
                         runtimeClassLoader);
-                configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG.getName())
+                configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
                         .invoke(null);
             } catch (Throwable t2) {
                 t.addSuppressed(t2);
@@ -260,7 +260,7 @@ public class StartupActionImpl implements StartupAction {
                 try {
                     final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
                             runtimeClassLoader);
-                    configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG.getName())
+                    configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
                             .invoke(null);
                 } catch (Throwable t2) {
                     t.addSuppressed(t2);

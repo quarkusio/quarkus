@@ -76,24 +76,12 @@ public final class ConfigUtils {
      */
     public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered,
             final LaunchMode launchMode) {
-        return configBuilder(runTime, false, addDiscovered, launchMode);
-    }
-
-    /**
-     * Get the basic configuration builder.
-     *
-     * @param runTime {@code true} if the configuration is run time, {@code false} if build time
-     * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
-     * @return the configuration builder
-     */
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean bootstrap,
-            final boolean addDiscovered, final LaunchMode launchMode) {
         SmallRyeConfigBuilder builder = emptyConfigBuilder();
 
-        if (launchMode.isDevOrTest() && (runTime || bootstrap)) {
+        if (launchMode.isDevOrTest() && runTime) {
             builder.withSources(new RuntimeOverrideConfigSource(Thread.currentThread().getContextClassLoader()));
         }
-        if (runTime || bootstrap) {
+        if (runTime) {
             builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
         }
         if (addDiscovered) {

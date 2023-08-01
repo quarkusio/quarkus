@@ -6,8 +6,6 @@ import io.quarkus.annotation.processor.Constants;
 
 public enum ConfigPhase implements Comparable<ConfigPhase> {
     RUN_TIME("The configuration is overridable at runtime", "", "RunTime"),
-    BOOTSTRAP("The configuration is used to bootstrap runtime Config Sources and is overridable at runtime",
-            "", "Bootstrap"),
     BUILD_TIME("The configuration is not overridable at runtime", Constants.CONFIG_PHASE_BUILD_TIME_ILLUSTRATION, "BuildTime"),
     BUILD_AND_RUN_TIME_FIXED("The configuration is not overridable at runtime", Constants.CONFIG_PHASE_BUILD_TIME_ILLUSTRATION,
             "BuildTime");
@@ -37,14 +35,6 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
                             return 0;
                         default:
                             return -1;
-                    }
-                }
-                case BOOTSTRAP: {
-                    switch (secondPhase) {
-                        case BOOTSTRAP:
-                            return 0;
-                        default:
-                            return 1;
                     }
                 }
                 case RUN_TIME: {

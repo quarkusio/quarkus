@@ -323,7 +323,6 @@
                 <module>logging-gelf</module>
                 <module>cache</module>
                 <module>qute</module>
-                <module>bootstrap-config</module>
                 <module>injectmock</module>
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>

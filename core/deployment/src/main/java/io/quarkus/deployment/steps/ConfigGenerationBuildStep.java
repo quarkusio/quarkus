@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -41,7 +39,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.AdditionalBootstrapConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
@@ -54,8 +51,6 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
-import io.quarkus.deployment.builditem.StaticInitConfigSourceFactoryBuildItem;
-import io.quarkus.deployment.builditem.StaticInitConfigSourceProviderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
@@ -80,7 +75,6 @@ import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.ConfigSourceFactory;
-import io.smallrye.config.PropertiesLocationConfigSourceFactory;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -91,15 +85,6 @@ public class ConfigGenerationBuildStep {
     private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(
             SmallRyeConfigBuilder.class, "withSources",
             SmallRyeConfigBuilder.class, ConfigSource[].class);
-
-    @BuildStep
-    void staticInitSources(
-            BuildProducer<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviderBuildItem,
-            BuildProducer<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactoryBuildItem) {
-
-        staticInitConfigSourceFactoryBuildItem.produce(new StaticInitConfigSourceFactoryBuildItem(
-                PropertiesLocationConfigSourceFactory.class.getName()));
-    }
 
     @BuildStep
     void buildTimeRunTimeConfig(
@@ -271,9 +256,6 @@ public class ConfigGenerationBuildStep {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             LiveReloadBuildItem liveReloadBuildItem,
-            List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders,
-            List<StaticInitConfigSourceProviderBuildItem> staticInitConfigSourceProviders,
-            List<StaticInitConfigSourceFactoryBuildItem> staticInitConfigSourceFactories,
             List<ConfigMappingBuildItem> configMappings,
             List<StaticInitConfigBuilderBuildItem> staticInitConfigBuilders,
             List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders)
@@ -290,14 +272,8 @@ public class ConfigGenerationBuildStep {
         Set<String> discoveredConfigSourceProviders = discoverService(ConfigSourceProvider.class, reflectiveClass);
         Set<String> discoveredConfigSourceFactories = discoverService(ConfigSourceFactory.class, reflectiveClass);
 
-        Set<String> staticConfigSourceProviders = new HashSet<>();
-        staticConfigSourceProviders.addAll(staticSafeServices(discoveredConfigSourceProviders));
-        staticConfigSourceProviders.addAll(staticInitConfigSourceProviders.stream()
-                .map(StaticInitConfigSourceProviderBuildItem::getProviderClassName).collect(toSet()));
-        Set<String> staticConfigSourceFactories = new HashSet<>();
-        staticConfigSourceFactories.addAll(staticSafeServices(discoveredConfigSourceFactories));
-        staticConfigSourceFactories.addAll(staticInitConfigSourceFactories.stream()
-                .map(StaticInitConfigSourceFactoryBuildItem::getFactoryClassName).collect(Collectors.toSet()));
+        Set<String> staticConfigSourceProviders = staticSafeServices(discoveredConfigSourceProviders);
+        Set<String> staticConfigSourceFactories = staticSafeServices(discoveredConfigSourceFactories);
 
         // TODO - duplicated now builderMappings. Still required to filter the unknown properties
         Set<ConfigClassWithPrefix> staticMappings = new HashSet<>();
@@ -323,8 +299,6 @@ public class ConfigGenerationBuildStep {
                 .setLiveReloadPossible(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
                         || launchModeBuildItem.isAuxiliaryApplication())
                 .setAdditionalTypes(typeItems.stream().map(ConfigurationTypeBuildItem::getValueType).collect(toList()))
-                .setAdditionalBootstrapConfigSourceProviders(
-                        getAdditionalBootstrapConfigSourceProviders(additionalBootstrapConfigSourceProviders))
                 .setStaticConfigSources(staticSafeServices(discoveredConfigSources))
                 .setStaticConfigSourceProviders(staticConfigSourceProviders)
                 .setStaticConfigSourceFactories(staticConfigSourceFactories)
@@ -346,18 +320,6 @@ public class ConfigGenerationBuildStep {
         if (!launchMode.isDevOrTest()) {
             ConfigDiagnostic.unknownProperties(unknownBuildProperties);
         }
-    }
-
-    private static List<String> getAdditionalBootstrapConfigSourceProviders(
-            List<AdditionalBootstrapConfigSourceProviderBuildItem> additionalBootstrapConfigSourceProviders) {
-        if (additionalBootstrapConfigSourceProviders.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<String> result = new ArrayList<>(additionalBootstrapConfigSourceProviders.size());
-        for (AdditionalBootstrapConfigSourceProviderBuildItem provider : additionalBootstrapConfigSourceProviders) {
-            result.add(provider.getProviderClassName());
-        }
-        return result;
     }
 
     @BuildStep

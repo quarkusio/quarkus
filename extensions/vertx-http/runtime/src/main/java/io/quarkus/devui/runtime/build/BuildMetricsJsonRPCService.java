@@ -1,5 +1,6 @@
 package io.quarkus.devui.runtime.build;
 
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -9,6 +10,19 @@ import io.vertx.core.json.JsonObject;
 
 @ApplicationScoped
 public class BuildMetricsJsonRPCService {
+
+    public BuildExecutionMetrics getThreadSlotRecords() {
+        BuildExecutionMetrics buildExecutionMetrics = new BuildExecutionMetrics();
+        Map<String, Object> buildStepMetrics = buildStepMetrics();
+        buildExecutionMetrics.threadSlotRecords = (Map<String, JsonArray>) buildStepMetrics.get("threadSlotRecords");
+        buildExecutionMetrics.slots = (List) buildStepMetrics.get("slots");
+        return buildExecutionMetrics;
+    }
+
+    public JsonArray getBuildItems() {
+        Map<String, Object> buildStepMetrics = buildStepMetrics();
+        return (JsonArray) buildStepMetrics.get("items");
+    }
 
     public BuildMetrics getBuildMetrics() {
         BuildMetrics buildMetrics = new BuildMetrics();
@@ -44,5 +58,10 @@ public class BuildMetricsJsonRPCService {
         public int numberOfThreads;
         public Long duration;
         public JsonArray records;
+    }
+
+    static class BuildExecutionMetrics {
+        public List<Long> slots;
+        public Map<String, JsonArray> threadSlotRecords;
     }
 }

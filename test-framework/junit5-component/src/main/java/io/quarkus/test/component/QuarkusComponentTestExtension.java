@@ -155,7 +155,7 @@ public class QuarkusComponentTestExtension
     private static final String KEY_TEST_INSTANCE = "testInstance";
     private static final String KEY_CONFIG = "config";
 
-    private static final String TARGET_TEST_CLASSES = "target/test-classes";
+    private static final String QUARKUS_TEST_COMPONENT_OUTPUT_DIRECTORY = "quarkus.test.component.output-directory";
 
     private final Map<String, String> configProperties;
     private final List<Class<?>> additionalComponentClasses;
@@ -522,9 +522,7 @@ public class QuarkusComponentTestExtension
             // NOTE: previously we kept the generated framework classes (to speedup subsequent test runs) but that breaks the existing @QuarkusTests
             Set<Path> generatedResources = new HashSet<>();
 
-            File generatedSourcesDirectory = new File("target/generated-arc-sources");
-            File componentsProviderFile = new File(generatedSourcesDirectory + "/" + nameToPath(testClass.getPackage()
-                    .getName()), ComponentsProvider.class.getSimpleName());
+            File componentsProviderFile = getComponentsProviderFile(testClass);
             if (testClass.getClassLoader() instanceof QuarkusClassLoader) {
                 //continuous testing environment
                 Map<String, byte[]> classes = new HashMap<>();
@@ -552,15 +550,7 @@ public class QuarkusComponentTestExtension
                     }
                 });
             } else {
-                String testPath = testClass.getClassLoader().getResource(testClass.getName().replace(".", "/") + ".class")
-                        .getFile();
-                int targetClassesIndex = testPath.indexOf(TARGET_TEST_CLASSES);
-                if (targetClassesIndex == -1) {
-                    throw new IllegalStateException("Invalid test path: " + testPath);
-                }
-                String testClassesRootPath = testPath.substring(0, targetClassesIndex);
-                File testOutputDirectory = new File(testClassesRootPath + TARGET_TEST_CLASSES);
-
+                File testOutputDirectory = getTestOutputDirectory(testClass);
                 builder.setOutput(new ResourceOutput() {
                     @Override
                     public void writeResource(Resource resource) throws IOException {
@@ -877,8 +867,8 @@ public class QuarkusComponentTestExtension
         return false;
     }
 
-    private String nameToPath(String packName) {
-        return packName.replace('.', '/');
+    private String nameToPath(String name) {
+        return name.replace('.', File.separatorChar);
     }
 
     @SuppressWarnings("unchecked")
@@ -1039,6 +1029,45 @@ public class QuarkusComponentTestExtension
 
     private boolean resolvesToBuiltinBean(Class<?> rawType) {
         return Instance.class.isAssignableFrom(rawType) || Event.class.equals(rawType) || BeanManager.class.equals(rawType);
+    }
+
+    private File getTestOutputDirectory(Class<?> testClass) {
+        String outputDirectory = System.getProperty(QUARKUS_TEST_COMPONENT_OUTPUT_DIRECTORY);
+        File testOutputDirectory;
+        if (outputDirectory != null) {
+            testOutputDirectory = new File(outputDirectory);
+        } else {
+            // org.acme.Foo -> org/acme/Foo.class
+            String testClassResourceName = testClass.getName().replace('.', '/') + ".class";
+            // org/acme/Foo.class -> /some/path/to/project/target/test-classes/org/acme/Foo.class
+            String testPath = testClass.getClassLoader().getResource(testClassResourceName).getFile();
+            // /some/path/to/project/target/test-classes/org/acme/Foo.class -> /some/path/to/project/target/test-classes
+            String testClassesRootPath = testPath.substring(0, testPath.length() - testClassResourceName.length());
+            testOutputDirectory = new File(testClassesRootPath);
+        }
+        if (!testOutputDirectory.canWrite()) {
+            throw new IllegalStateException("Invalid test output directory: " + testOutputDirectory);
+        }
+        return testOutputDirectory;
+    }
+
+    private File getComponentsProviderFile(Class<?> testClass) {
+        File generatedSourcesDirectory;
+        File targetDir = new File("target");
+        if (targetDir.canWrite()) {
+            // maven build
+            generatedSourcesDirectory = new File("target/generated-arc-sources");
+        } else {
+            File buildDir = new File("build");
+            if (buildDir.canWrite()) {
+                // gradle build
+                generatedSourcesDirectory = new File("build/generated-arc-sources");
+            } else {
+                generatedSourcesDirectory = new File("quarkus-component-test/generated-arc-sources");
+            }
+        }
+        return new File(generatedSourcesDirectory,
+                nameToPath(testClass.getPackage().getName()) + File.pathSeparator + ComponentsProvider.class.getSimpleName());
     }
 
 }

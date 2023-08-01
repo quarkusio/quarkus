@@ -305,7 +305,12 @@ public class AmqpDevServicesProcessor {
             if (dockerImageName.getRepository().endsWith("artemiscloud/activemq-artemis-broker")) {
                 waitingFor(Wait.forLogMessage(".*AMQ241004.*", 1)); // Artemis console available.
             } else {
-                throw new IllegalArgumentException("Only artemiscloud/activemq-artemis-broker images are supported");
+                log.infof(
+                        "Detected a different image (%s) for the Dev Service for AMQP. Ensure it's compatible with artemiscloud/activemq-artemis-broker. "
+                                +
+                                "Refer to https://quarkus.io/guides/amqp-dev-services#configuring-the-image for details.",
+                        dockerImageName);
+                log.info("Skipping startup probe for the Dev Service for AMQP as it does not use the default image.");
             }
         }
 

@@ -118,6 +118,8 @@ public class BuildTimeContentProcessor {
                 contextRoot + "echarts/echarts-horizontal-stacked-bar.js");
         internalImportMapBuildItem.add("echarts-force-graph",
                 contextRoot + "echarts/echarts-force-graph.js");
+        internalImportMapBuildItem.add("echarts-bar-stack",
+                contextRoot + "echarts/echarts-bar-stack.js");
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");

@@ -9,8 +9,9 @@ import '@vaadin/text-field';
 import '@vaadin/vertical-layout';
 import '@vaadin/horizontal-layout';
 import '@vaadin/progress-bar';
+import '@vaadin/button';
 import './qwc-build-step-graph.js';
-
+import './qwc-build-steps-execution-graph.js';
 
 /**
  * This component shows the Build Steps
@@ -57,6 +58,7 @@ export class QwcBuildSteps extends QwcHotReloadElement {
   static properties = {
     _buildMetrics: { state: true },
     _selectedBuildStep: {state: true},
+    _showBuildStepsExecutionGraph: {state: true},
     _filtered: {state: true, type: Array}
   };
 
@@ -64,6 +66,7 @@ export class QwcBuildSteps extends QwcHotReloadElement {
     super();
     this._buildMetrics = null;
     this._selectedBuildStep = null;
+    this._showBuildStepsExecutionGraph = false;
     this.hotReload();
   }
 
@@ -109,7 +112,9 @@ export class QwcBuildSteps extends QwcHotReloadElement {
   _render() {
     if(this._selectedBuildStep){
       return this._renderBuildStepGraph();
-    }else{
+    }else if(this._showBuildStepsExecutionGraph){
+        return this._renderBuildStepsExecutionGraph();
+    }else{    
       return this._renderBuildStepList();
     }
   }
@@ -117,7 +122,13 @@ export class QwcBuildSteps extends QwcHotReloadElement {
   _renderBuildStepList(){
 
       return html`<div class="build-steps">
-            <div class="summary">Executed <strong>${this._buildMetrics.records.length}</strong> build steps on <strong>${this._buildMetrics.numberOfThreads}</strong> threads in <strong>${this._buildMetrics.duration} ms</strong>.</div>
+            <div class="summary">
+                Executed <strong>${this._buildMetrics.records.length}</strong> build steps on <strong>${this._buildMetrics.numberOfThreads}</strong> threads in <strong>${this._buildMetrics.duration} ms</strong>.
+                <vaadin-button theme="tertiary" @click="${this._showBuildStepsChart}">
+                    <vaadin-icon icon="font-awesome-solid:chart-simple" slot="prefix"></vaadin-icon>
+                    Build Steps Concurrent Execution Chart
+                </vaadin-button>
+            </div>
             <vaadin-text-field
                     placeholder="Filter"
                     style="width: 100%;"
@@ -157,13 +168,18 @@ export class QwcBuildSteps extends QwcHotReloadElement {
   }
 
   _renderBuildStepGraph(){
-  
       return html`<qwc-build-step-graph class="graph"
                       stepId="${this._selectedBuildStep.stepId}"
                       extensionName="${this.jsonRpc.getExtensionName()}"
                       @build-steps-graph-back=${this._showBuildStepsList}></qwc-build-step-graph>`;
   
   }
+
+  _renderBuildStepsExecutionGraph(){
+      return html`<qwc-build-steps-execution-graph class="graph"                      
+                      extensionName="${this.jsonRpc.getExtensionName()}"
+                      @build-steps-graph-back=${this._showBuildStepsList}></qwc-build-steps-execution-graph>`;
+  }  
 
   _stepIdRenderer(record) {
     return html`<code>${record.stepId}</code>`;
@@ -175,11 +191,17 @@ export class QwcBuildSteps extends QwcHotReloadElement {
 
   _showGraph(buildStep){
     this._selectedBuildStep = buildStep;
+    this._showBuildStepsExecutionGraph = false;
   }
 
   _showBuildStepsList(){
     this._selectedBuildStep = null;
+    this._showBuildStepsExecutionGraph = false;
   }
 
+  _showBuildStepsChart(){
+      this._selectedBuildStep = null;
+      this._showBuildStepsExecutionGraph = true;
+  }
 }
 customElements.define('qwc-build-steps', QwcBuildSteps);

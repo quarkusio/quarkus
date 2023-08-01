@@ -262,7 +262,7 @@ quarkus.datasource.jdbc.additional-jdbc-properties.socketFactory=com.google.clou
 <4> We add the `socketFactory` additional JDBC property to configure the socket factory used to connect to Cloud SQL,
 this one is coming from the `postgres-socket-factory` dependency.
 
-NOTE: If you use Hibernate ORM, you also need to configure `quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQL10Dialect`
+NOTE: If you use Hibernate ORM, you also need to configure `quarkus.hibernate-orm.dialect=org.hibernate.dialect.PostgreSQLDialect`
 as Hibernate ORM would not be able to automatically detect the dialect of your database.
 
 WARNING: Using a PostgreSQL socket factory is not possible in dev mode at the moment

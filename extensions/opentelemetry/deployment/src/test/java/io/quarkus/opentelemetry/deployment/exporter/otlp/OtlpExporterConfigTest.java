@@ -19,7 +19,7 @@ public class OtlpExporterConfigTest {
             .overrideConfigKey("otel.exporter.otlp.traces.protocol", "http/protobuf")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.endpoint", "http://localhost ")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50")
-            .overrideConfigKey("quarkus.otel.bsp.export.timeout", "1s");
+            .overrideConfigKey("quarkus.otel.bsp.export.timeout", "PT1S");
 
     @Inject
     OtlpExporterRuntimeConfig config;

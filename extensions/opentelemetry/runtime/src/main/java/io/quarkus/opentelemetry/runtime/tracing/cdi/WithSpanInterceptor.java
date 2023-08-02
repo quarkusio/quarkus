@@ -37,7 +37,7 @@ public class WithSpanInterceptor {
                 INSTRUMENTATION_NAME,
                 new MethodRequestSpanNameExtractor());
 
-        MethodSpanAttributesExtractor<MethodRequest, Void> attributesExtractor = MethodSpanAttributesExtractor.newInstance(
+        MethodSpanAttributesExtractor<MethodRequest, Void> attributesExtractor = MethodSpanAttributesExtractor.create(
                 MethodRequest::getMethod,
                 new WithSpanParameterAttributeNamesExtractor(),
                 MethodRequest::getArgs);

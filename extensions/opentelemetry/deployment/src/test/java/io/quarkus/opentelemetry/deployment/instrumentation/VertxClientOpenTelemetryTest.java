@@ -132,6 +132,40 @@ public class VertxClientOpenTelemetryTest {
     }
 
     @Test
+    void query() throws Exception {
+        HttpResponse<Buffer> response = WebClient.create(vertx)
+                .get(uri.getPort(), uri.getHost(), "/hello?name=foo")
+                .send()
+                .toCompletionStage().toCompletableFuture()
+                .get();
+
+        assertEquals(HTTP_OK, response.statusCode());
+
+        List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
+
+        SpanData client = getSpanByKindAndParentId(spans, CLIENT, "0000000000000000");
+        assertEquals(CLIENT, client.getKind());
+        assertEquals("GET", client.getName());
+        assertEquals(HTTP_OK, client.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HttpMethod.GET, client.getAttributes().get(HTTP_METHOD));
+        assertEquals(uri.toString() + "hello?name=foo", client.getAttributes().get(HTTP_URL));
+        assertEquals(uri.getHost(), client.getAttributes().get(NET_PEER_NAME));
+        assertEquals(uri.getPort(), client.getAttributes().get(NET_PEER_PORT));
+
+        SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
+        assertEquals(SERVER, server.getKind());
+        assertEquals("GET /hello", server.getName());
+        assertEquals(HTTP_OK, server.getAttributes().get(HTTP_STATUS_CODE));
+        assertEquals(HttpMethod.GET, server.getAttributes().get(HTTP_METHOD));
+        assertEquals("/hello", server.getAttributes().get(HTTP_ROUTE));
+        assertEquals(uri.getHost(), server.getAttributes().get(NET_HOST_NAME));
+        assertEquals(uri.getPort(), server.getAttributes().get(NET_HOST_PORT));
+        assertEquals(uri.getPath() + "hello?name=foo", server.getAttributes().get(HTTP_TARGET));
+
+        assertEquals(client.getTraceId(), server.getTraceId());
+    }
+
+    @Test
     void multiple() throws Exception {
         HttpResponse<Buffer> response = WebClient.create(vertx)
                 .get(uri.getPort(), uri.getHost(), "/multiple")
@@ -165,6 +199,7 @@ public class VertxClientOpenTelemetryTest {
                 Future<HttpResponse<Buffer>> two = webClient.get(port, host, "/hello/goku").send();
                 CompositeFuture.join(one, two).onComplete(event -> rc.response().end());
             });
+            router.get("/hello?name=foo").handler(rc -> rc.response().end("hello foo"));
         }
     }
 }

@@ -1,12 +1,15 @@
 package io.quarkus.it.opentelemetry.grpc;
 
-import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_METHOD;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_ROUTE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_TARGET;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_PORT;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_SOCK_HOST_ADDR;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_SOCK_PEER_ADDR;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_SOCK_PEER_PORT;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_TRANSPORT;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_GRPC_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_METHOD;
@@ -88,10 +91,10 @@ public class OpenTelemetryGrpcTest {
         assertEquals("helloworld.Greeter", getAttributes(server).get(RPC_SERVICE.getKey()));
         assertEquals("SayHello", getAttributes(server).get(RPC_METHOD.getKey()));
         assertEquals(Status.Code.OK.value(), getAttributes(server).get(RPC_GRPC_STATUS_CODE.getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.peer.addr").getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.peer.port").getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.host.addr").getKey()));
-        assertNotNull(getAttributes(server).get(stringKey("net.sock.host.port").getKey()));
+        assertNotNull(getAttributes(server).get(NET_SOCK_PEER_ADDR.getKey()));
+        assertNotNull(getAttributes(server).get(NET_SOCK_PEER_PORT.getKey()));
+        assertNotNull(getAttributes(server).get(NET_SOCK_HOST_ADDR.getKey()));
+        assertNotNull(getAttributes(server).get(NET_HOST_PORT.getKey()));
         assertEquals("ip_tcp", getAttributes(server).get(NET_TRANSPORT.getKey()));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
     }

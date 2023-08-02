@@ -51,6 +51,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
+import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
@@ -243,8 +244,10 @@ public class VertxHttpRecorder {
         Supplier<Vertx> supplier = VertxCoreRecorder.getVertx();
         Vertx vertx;
         if (supplier == null) {
-            VertxConfiguration vertxConfiguration = new VertxConfiguration();
-            ConfigInstantiator.handleObject(vertxConfiguration);
+            VertxConfiguration vertxConfiguration = ConfigUtils.emptyConfigBuilder()
+                    .addDiscoveredSources()
+                    .withMapping(VertxConfiguration.class)
+                    .build().getConfigMapping(VertxConfiguration.class);
             vertx = VertxCoreRecorder.recoverFailedStart(vertxConfiguration).get();
         } else {
             vertx = supplier.get();

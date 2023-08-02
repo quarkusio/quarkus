@@ -38,6 +38,7 @@ import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -157,13 +158,16 @@ public final class HibernateReactiveProcessor {
         }
 
         // we only support the default pool for now
+        DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
+                .get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+
         Optional<String> explicitDialect = hibernateOrmConfig.defaultPersistenceUnit.dialect.dialect;
-        Optional<String> explicitDbMinVersion = dataSourcesBuildTimeConfig.defaultDataSource.dbVersion;
+        Optional<String> explicitDbMinVersion = defaultDataSourceBuildTimeConfig.dbVersion();
         Optional<String> dbKindOptional = DefaultDataSourceDbKindBuildItem.resolve(
-                dataSourcesBuildTimeConfig.defaultDataSource.dbKind,
+                defaultDataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
-                dataSourcesBuildTimeConfig.defaultDataSource.devservices.enabled
-                        .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                defaultDataSourceBuildTimeConfig.devservices().enabled()
+                        .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
 
         if (dbKindOptional.isPresent()) {

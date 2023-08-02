@@ -38,14 +38,11 @@ import io.agroal.api.security.SimplePassword;
 import io.agroal.api.transaction.TransactionIntegration;
 import io.agroal.narayana.NarayanaTransactionIntegration;
 import io.quarkus.agroal.DataSource;
-import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig.DataSourceJdbcOuterNamedBuildTimeConfig;
-import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig.DataSourceJdbcOuterNamedRuntimeConfig;
 import io.quarkus.agroal.runtime.JdbcDriver.JdbcDriverLiteral;
 import io.quarkus.arc.Arc;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourceRuntimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
@@ -137,12 +134,14 @@ public class DataSources {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
         }
 
-        DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = getDataSourceJdbcBuildTimeConfig(dataSourceName);
-        DataSourceRuntimeConfig dataSourceRuntimeConfig = getDataSourceRuntimeConfig(dataSourceName);
-        DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = getDataSourceJdbcRuntimeConfig(dataSourceName);
+        DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
+                .dataSources().get(dataSourceName).jdbc();
+        DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourcesRuntimeConfig.dataSources().get(dataSourceName);
+        DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
+                .getDataSourceJdbcRuntimeConfig(dataSourceName);
 
         DataSourceSupport.Entry matchingSupportEntry = dataSourceSupport.entries.get(dataSourceName);
-        if (!dataSourceJdbcRuntimeConfig.url.isPresent()) {
+        if (!dataSourceJdbcRuntimeConfig.url().isPresent()) {
             //this is not an error situation, because we want to allow the situation where a JDBC extension
             //is installed but has not been configured
             return new UnconfiguredDataSource(
@@ -161,10 +160,11 @@ public class DataSources {
                     "Unable to load the datasource driver " + resolvedDriverClass + " for datasource " + dataSourceName, e);
         }
 
-        String jdbcUrl = dataSourceJdbcRuntimeConfig.url.get();
+        String jdbcUrl = dataSourceJdbcRuntimeConfig.url().get();
 
-        if (dataSourceJdbcBuildTimeConfig.tracing) {
-            boolean tracingEnabled = dataSourceJdbcRuntimeConfig.tracing.enabled.orElse(dataSourceJdbcBuildTimeConfig.tracing);
+        if (dataSourceJdbcBuildTimeConfig.tracing()) {
+            boolean tracingEnabled = dataSourceJdbcRuntimeConfig.tracing().enabled()
+                    .orElse(dataSourceJdbcBuildTimeConfig.tracing());
 
             if (tracingEnabled) {
                 String rootTracingUrl = !jdbcUrl.startsWith(JDBC_TRACING_URL_PREFIX)
@@ -173,7 +173,7 @@ public class DataSources {
 
                 StringBuilder tracingURL = new StringBuilder(rootTracingUrl);
 
-                if (dataSourceJdbcRuntimeConfig.tracing.traceWithActiveSpanOnly) {
+                if (dataSourceJdbcRuntimeConfig.tracing().traceWithActiveSpanOnly()) {
                     if (!tracingURL.toString().contains("?")) {
                         tracingURL.append("?");
                     }
@@ -181,12 +181,12 @@ public class DataSources {
                     tracingURL.append("traceWithActiveSpanOnly=true");
                 }
 
-                if (dataSourceJdbcRuntimeConfig.tracing.ignoreForTracing.isPresent()) {
+                if (dataSourceJdbcRuntimeConfig.tracing().ignoreForTracing().isPresent()) {
                     if (!tracingURL.toString().contains("?")) {
                         tracingURL.append("?");
                     }
 
-                    Arrays.stream(dataSourceJdbcRuntimeConfig.tracing.ignoreForTracing.get().split(";"))
+                    Arrays.stream(dataSourceJdbcRuntimeConfig.tracing().ignoreForTracing().get().split(";"))
                             .filter(query -> !query.isEmpty())
                             .forEach(query -> tracingURL.append("ignoreForTracing=")
                                     .append(query.replaceAll("\"", "\\\""))
@@ -209,7 +209,7 @@ public class DataSources {
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
 
         // Set pool-less mode
-        if (!dataSourceJdbcRuntimeConfig.poolingEnabled) {
+        if (!dataSourceJdbcRuntimeConfig.poolingEnabled()) {
             dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.AGROAL_POOLLESS);
         }
 
@@ -257,7 +257,7 @@ public class DataSources {
             dataSource.setPoolInterceptors(interceptorList);
         }
 
-        if (dataSourceJdbcBuildTimeConfig.telemetry && dataSourceJdbcRuntimeConfig.telemetry.orElse(true)) {
+        if (dataSourceJdbcBuildTimeConfig.telemetry() && dataSourceJdbcRuntimeConfig.telemetry().orElse(true)) {
             // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
             // use an optional CDI bean as we can't reference optional OpenTelemetry classes here
             dataSource = agroalOpenTelemetryWrapper.get().apply(dataSource);
@@ -274,22 +274,22 @@ public class DataSources {
             boolean mpMetricsPresent) {
         connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
-        connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks);
+        connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks());
 
-        if (dataSourceJdbcRuntimeConfig.transactionIsolationLevel.isPresent()) {
+        if (dataSourceJdbcRuntimeConfig.transactionIsolationLevel().isPresent()) {
             connectionFactoryConfiguration
                     .jdbcTransactionIsolation(
-                            dataSourceJdbcRuntimeConfig.transactionIsolationLevel.get());
+                            dataSourceJdbcRuntimeConfig.transactionIsolationLevel().get());
         }
 
-        if (dataSourceJdbcBuildTimeConfig.transactions != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
+        if (dataSourceJdbcBuildTimeConfig.transactions() != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                     transactionSynchronizationRegistry, null, false,
-                    dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+                    dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
                             && transactionRuntimeConfig.enableRecovery
                                     ? xaResourceRecoveryRegistry
                                     : null);
-            if (dataSourceJdbcBuildTimeConfig.transactions == io.quarkus.agroal.runtime.TransactionIntegration.XA
+            if (dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
                     && !transactionRuntimeConfig.enableRecovery) {
                 log.warnv(
                         "Datasource {0} enables XA but transaction recovery is not enabled. Please enable transaction recovery by setting quarkus.transaction-manager.enable-recovery=true, otherwise data may be lost if the application is terminated abruptly",
@@ -299,64 +299,62 @@ public class DataSources {
         }
 
         // New connection SQL
-        if (dataSourceJdbcRuntimeConfig.newConnectionSql.isPresent()) {
-            connectionFactoryConfiguration.initialSql(dataSourceJdbcRuntimeConfig.newConnectionSql.get());
+        if (dataSourceJdbcRuntimeConfig.newConnectionSql().isPresent()) {
+            connectionFactoryConfiguration.initialSql(dataSourceJdbcRuntimeConfig.newConnectionSql().get());
         }
 
         // metrics
-        if (dataSourceJdbcBuildTimeConfig.enableMetrics.isPresent()) {
-            dataSourceConfiguration.metricsEnabled(dataSourceJdbcBuildTimeConfig.enableMetrics.get());
+        if (dataSourceJdbcBuildTimeConfig.enableMetrics().isPresent()) {
+            dataSourceConfiguration.metricsEnabled(dataSourceJdbcBuildTimeConfig.enableMetrics().get());
         } else {
             // if the enable-metrics property is unspecified, treat it as true if MP Metrics are being exposed
-            dataSourceConfiguration.metricsEnabled(dataSourcesBuildTimeConfig.metricsEnabled && mpMetricsPresent);
+            dataSourceConfiguration.metricsEnabled(dataSourcesBuildTimeConfig.metricsEnabled() && mpMetricsPresent);
         }
 
         // Authentication
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            NamePrincipal username = new NamePrincipal(dataSourceRuntimeConfig.username.get());
+        if (dataSourceRuntimeConfig.username().isPresent()) {
+            NamePrincipal username = new NamePrincipal(dataSourceRuntimeConfig.username().get());
             connectionFactoryConfiguration
                     .principal(username).recoveryPrincipal(username);
         }
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password.get());
+        if (dataSourceRuntimeConfig.password().isPresent()) {
+            SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password().get());
             connectionFactoryConfiguration
                     .credential(password).recoveryCredential(password);
         }
 
         // credentials provider
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             connectionFactoryConfiguration
                     .credential(new AgroalVaultCredentialsProviderPassword(name, credentialsProvider));
         }
 
         // Extra JDBC properties
-        for (Map.Entry<String, String> entry : dataSourceJdbcRuntimeConfig.additionalJdbcProperties.entrySet()) {
+        for (Map.Entry<String, String> entry : dataSourceJdbcRuntimeConfig.additionalJdbcProperties().entrySet()) {
             connectionFactoryConfiguration.jdbcProperty(entry.getKey(), entry.getValue());
         }
 
         // Pool size configuration:
-        poolConfiguration.minSize(dataSourceJdbcRuntimeConfig.minSize);
-        poolConfiguration.maxSize(dataSourceJdbcRuntimeConfig.maxSize);
-        if (dataSourceJdbcRuntimeConfig.initialSize.isPresent() && dataSourceJdbcRuntimeConfig.initialSize.getAsInt() > 0) {
-            poolConfiguration.initialSize(dataSourceJdbcRuntimeConfig.initialSize.getAsInt());
+        poolConfiguration.minSize(dataSourceJdbcRuntimeConfig.minSize());
+        poolConfiguration.maxSize(dataSourceJdbcRuntimeConfig.maxSize());
+        if (dataSourceJdbcRuntimeConfig.initialSize().isPresent() && dataSourceJdbcRuntimeConfig.initialSize().getAsInt() > 0) {
+            poolConfiguration.initialSize(dataSourceJdbcRuntimeConfig.initialSize().getAsInt());
         }
 
         // Connection management
         poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
-        if (dataSourceJdbcRuntimeConfig.acquisitionTimeout.isPresent()) {
-            poolConfiguration.acquisitionTimeout(dataSourceJdbcRuntimeConfig.acquisitionTimeout.get());
+        if (dataSourceJdbcRuntimeConfig.acquisitionTimeout().isPresent()) {
+            poolConfiguration.acquisitionTimeout(dataSourceJdbcRuntimeConfig.acquisitionTimeout().get());
         }
-        if (dataSourceJdbcRuntimeConfig.backgroundValidationInterval.isPresent()) {
-            poolConfiguration.validationTimeout(dataSourceJdbcRuntimeConfig.backgroundValidationInterval.get());
+        poolConfiguration.validationTimeout(dataSourceJdbcRuntimeConfig.backgroundValidationInterval());
+        if (dataSourceJdbcRuntimeConfig.foregroundValidationInterval().isPresent()) {
+            poolConfiguration.idleValidationTimeout(dataSourceJdbcRuntimeConfig.foregroundValidationInterval().get());
         }
-        if (dataSourceJdbcRuntimeConfig.foregroundValidationInterval.isPresent()) {
-            poolConfiguration.idleValidationTimeout(dataSourceJdbcRuntimeConfig.foregroundValidationInterval.get());
-        }
-        if (dataSourceJdbcRuntimeConfig.validationQuerySql.isPresent()) {
-            String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql.get();
+        if (dataSourceJdbcRuntimeConfig.validationQuerySql().isPresent()) {
+            String validationQuery = dataSourceJdbcRuntimeConfig.validationQuerySql().get();
             poolConfiguration.connectionValidator(new ConnectionValidator() {
 
                 @Override
@@ -371,62 +369,18 @@ public class DataSources {
                 }
             });
         }
-        if (dataSourceJdbcRuntimeConfig.idleRemovalInterval.isPresent()) {
-            poolConfiguration.reapTimeout(dataSourceJdbcRuntimeConfig.idleRemovalInterval.get());
+        poolConfiguration.reapTimeout(dataSourceJdbcRuntimeConfig.idleRemovalInterval());
+        if (dataSourceJdbcRuntimeConfig.leakDetectionInterval().isPresent()) {
+            poolConfiguration.leakTimeout(dataSourceJdbcRuntimeConfig.leakDetectionInterval().get());
         }
-        if (dataSourceJdbcRuntimeConfig.leakDetectionInterval.isPresent()) {
-            poolConfiguration.leakTimeout(dataSourceJdbcRuntimeConfig.leakDetectionInterval.get());
+        if (dataSourceJdbcRuntimeConfig.maxLifetime().isPresent()) {
+            poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime().get());
         }
-        if (dataSourceJdbcRuntimeConfig.maxLifetime.isPresent()) {
-            poolConfiguration.maxLifetime(dataSourceJdbcRuntimeConfig.maxLifetime.get());
+        if (dataSourceJdbcRuntimeConfig.transactionRequirement().isPresent()) {
+            poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement().get());
         }
-        if (dataSourceJdbcRuntimeConfig.transactionRequirement.isPresent()) {
-            poolConfiguration.transactionRequirement(dataSourceJdbcRuntimeConfig.transactionRequirement.get());
-        }
-        poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport);
-        poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose);
-    }
-
-    public DataSourceBuildTimeConfig getDataSourceBuildTimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesBuildTimeConfig.defaultDataSource;
-        }
-
-        DataSourceBuildTimeConfig namedConfig = dataSourcesBuildTimeConfig.namedDataSources.get(dataSourceName);
-
-        return namedConfig != null ? namedConfig : new DataSourceBuildTimeConfig();
-    }
-
-    public DataSourceJdbcBuildTimeConfig getDataSourceJdbcBuildTimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesJdbcBuildTimeConfig.jdbc;
-        }
-
-        DataSourceJdbcOuterNamedBuildTimeConfig namedOuterConfig = dataSourcesJdbcBuildTimeConfig.namedDataSources
-                .get(dataSourceName);
-
-        return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcBuildTimeConfig();
-    }
-
-    public DataSourceRuntimeConfig getDataSourceRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesRuntimeConfig.defaultDataSource;
-        }
-
-        DataSourceRuntimeConfig namedConfig = dataSourcesRuntimeConfig.namedDataSources.get(dataSourceName);
-
-        return namedConfig != null ? namedConfig : new DataSourceRuntimeConfig();
-    }
-
-    public DataSourceJdbcRuntimeConfig getDataSourceJdbcRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return dataSourcesJdbcRuntimeConfig.jdbc;
-        }
-
-        DataSourceJdbcOuterNamedRuntimeConfig namedOuterConfig = dataSourcesJdbcRuntimeConfig.namedDataSources
-                .get(dataSourceName);
-
-        return namedOuterConfig != null ? namedOuterConfig.jdbc : new DataSourceJdbcRuntimeConfig();
+        poolConfiguration.enhancedLeakReport(dataSourceJdbcRuntimeConfig.extendedLeakReport());
+        poolConfiguration.flushOnClose(dataSourceJdbcRuntimeConfig.flushOnClose());
     }
 
     /**

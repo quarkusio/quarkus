@@ -40,7 +40,6 @@ import io.vertx.mssqlclient.MSSQLPool;
 import io.vertx.sqlclient.PoolOptions;
 import io.vertx.sqlclient.impl.Utils;
 
-@SuppressWarnings("deprecation")
 @Recorder
 public class MSSQLPoolRecorder {
 
@@ -57,9 +56,9 @@ public class MSSQLPoolRecorder {
         MSSQLPool mssqlPool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactiveMSSQLConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
+                dataSourcesReactiveMSSQLConfig.dataSources().get(dataSourceName).reactive().mssql());
 
         shutdown.addShutdownTask(mssqlPool::close);
         return new RuntimeValue<>(mssqlPool);
@@ -87,10 +86,10 @@ public class MSSQLPoolRecorder {
             List<MSSQLConnectOptions> mssqlConnectOptionsList,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<MSSQLConnectOptions>> supplier;
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, mssqlConnectOptionsList,
                     MSSQLConnectOptions::new);
         } else {
@@ -106,22 +105,22 @@ public class MSSQLPoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize());
 
-        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
-            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
+        if (dataSourceReactiveRuntimeConfig.idleTimeout().isPresent()) {
+            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout().get().toMillis());
             poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
         }
 
-        if (dataSourceReactiveRuntimeConfig.shared) {
+        if (dataSourceReactiveRuntimeConfig.shared()) {
             poolOptions.setShared(true);
-            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
-                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            if (dataSourceReactiveRuntimeConfig.name().isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name().get());
             }
         }
 
-        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
-            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize().isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize().getAsInt()));
         } else if (eventLoopCount != null) {
             poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
@@ -133,8 +132,8 @@ public class MSSQLPoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
         MSSQLConnectOptions mssqlConnectOptions;
-        if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
+        if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
+            List<String> urls = dataSourceReactiveRuntimeConfig.url().get();
             if (urls.size() > 1) {
                 log.warn("The Reactive MSSQL client does not support multiple URLs. The first one will be used, and " +
                         "others will be ignored.");
@@ -149,23 +148,23 @@ public class MSSQLPoolRecorder {
             mssqlConnectOptions = new MSSQLConnectOptions();
         }
 
-        if (dataSourceReactiveMSSQLConfig.packetSize.isPresent()) {
-            mssqlConnectOptions.setPacketSize(dataSourceReactiveMSSQLConfig.packetSize.getAsInt());
+        if (dataSourceReactiveMSSQLConfig.packetSize().isPresent()) {
+            mssqlConnectOptions.setPacketSize(dataSourceReactiveMSSQLConfig.packetSize().getAsInt());
         }
 
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            mssqlConnectOptions.setUser(dataSourceRuntimeConfig.username.get());
+        if (dataSourceRuntimeConfig.username().isPresent()) {
+            mssqlConnectOptions.setUser(dataSourceRuntimeConfig.username().get());
         }
 
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            mssqlConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
+        if (dataSourceRuntimeConfig.password().isPresent()) {
+            mssqlConnectOptions.setPassword(dataSourceRuntimeConfig.password().get());
         }
 
         // credentials provider
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             Map<String, String> credentials = credentialsProvider.getCredentials(name);
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
@@ -177,28 +176,28 @@ public class MSSQLPoolRecorder {
             }
         }
 
-        mssqlConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts);
+        mssqlConnectOptions.setReconnectAttempts(dataSourceReactiveRuntimeConfig.reconnectAttempts());
 
-        mssqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval.toMillis());
+        mssqlConnectOptions.setReconnectInterval(dataSourceReactiveRuntimeConfig.reconnectInterval().toMillis());
 
-        mssqlConnectOptions.setSsl(dataSourceReactiveMSSQLConfig.ssl);
+        mssqlConnectOptions.setSsl(dataSourceReactiveMSSQLConfig.ssl());
 
-        mssqlConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll);
+        mssqlConnectOptions.setTrustAll(dataSourceReactiveRuntimeConfig.trustAll());
 
-        configurePemTrustOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem);
-        configureJksTrustOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks);
-        configurePfxTrustOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx);
+        configurePemTrustOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePem());
+        configureJksTrustOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificateJks());
+        configurePfxTrustOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.trustCertificatePfx());
 
-        configurePemKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem);
-        configureJksKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks);
-        configurePfxKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx);
+        configurePemKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePem());
+        configureJksKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificateJks());
+        configurePfxKeyCertOptions(mssqlConnectOptions, dataSourceReactiveRuntimeConfig.keyCertificatePfx());
 
-        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.isPresent()) {
+        if (dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().isPresent()) {
             mssqlConnectOptions.setHostnameVerificationAlgorithm(
-                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm.get());
+                    dataSourceReactiveRuntimeConfig.hostnameVerificationAlgorithm().get());
         }
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(mssqlConnectOptions::addProperty);
+        dataSourceReactiveRuntimeConfig.additionalProperties().forEach(mssqlConnectOptions::addProperty);
 
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with mssql.
         // with the client_name as tag.

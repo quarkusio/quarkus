@@ -3,31 +3,27 @@ package io.quarkus.datasource.runtime;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.WithConverter;
 
 @ConfigGroup
-public class DataSourceRuntimeConfig {
+public interface DataSourceRuntimeConfig {
 
     /**
      * The datasource username
      */
-    @ConfigItem
-    public Optional<String> username = Optional.empty();
+    Optional<String> username();
 
     /**
      * The datasource password
      */
-    @ConfigItem
-    public Optional<String> password = Optional.empty();
+    Optional<String> password();
 
     /**
      * The credentials provider name
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProvider = Optional.empty();
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> credentialsProvider();
 
     /**
      * The credentials provider bean name.
@@ -37,7 +33,6 @@ public class DataSourceRuntimeConfig {
      * <p>
      * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
      */
-    @ConfigItem
-    @ConvertWith(TrimmedStringConverter.class)
-    public Optional<String> credentialsProviderName = Optional.empty();
+    @WithConverter(TrimmedStringConverter.class)
+    Optional<String> credentialsProviderName();
 }

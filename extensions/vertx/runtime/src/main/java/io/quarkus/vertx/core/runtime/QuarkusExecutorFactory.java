@@ -53,20 +53,20 @@ public class QuarkusExecutorFactory implements ExecutorServiceFactory {
         builder.setMaximumPoolSize(maxConcurrency != null ? maxConcurrency : Math.max(8 * cpus, 200));
 
         if (conf != null) {
-            if (conf.queueSize.isPresent()) {
-                if (conf.queueSize.getAsInt() < 0) {
+            if (conf.queueSize().isPresent()) {
+                if (conf.queueSize().getAsInt() < 0) {
                     builder.setMaximumQueueSize(Integer.MAX_VALUE);
                 } else {
-                    builder.setMaximumQueueSize(conf.queueSize.getAsInt());
+                    builder.setMaximumQueueSize(conf.queueSize().getAsInt());
                 }
             }
-            builder.setGrowthResistance(conf.growthResistance);
-            builder.setKeepAliveTime(conf.keepAliveTime);
+            builder.setGrowthResistance(conf.growthResistance());
+            builder.setKeepAliveTime(conf.keepAliveTime());
         }
 
         final EnhancedQueueExecutor eqe = builder.build();
 
-        if (conf != null && conf.prefill) {
+        if (conf != null && conf.prefill()) {
             eqe.prestartAllCoreThreads();
         }
 

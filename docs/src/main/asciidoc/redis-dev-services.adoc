@@ -15,7 +15,7 @@ Quarkus will automatically start a Redis container when running tests or dev mod
 
 Available properties to customize the Redis DevService.
 
-include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-config-group-client-dev-services-config.adoc[opts=optional, leveloffset=+1]
 
 When running the production version of the application, the Redis connection need to be configured as normal,
 so if you want to include a production database config in your `application.properties` and continue to use Dev Services

@@ -183,7 +183,7 @@ context can have spans in which it's safe, followed by spans in which it's not s
 
 To mark a context as safe, you can:
 
-1. Use the `io.quarkus.vertx.core.runtime.context.SafeVertxContext` annotation
+1. Use the `io.quarkus.vertx.SafeVertxContext` annotation
 2. Use the `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle` class
 
 By using the `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle` class, the current context can be explicitly marked as `safe`, or it can be explicitly marked as `unsafe`; there's a third state which is the default of any new context: `unmarked`.

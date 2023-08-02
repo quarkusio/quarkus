@@ -1,4 +1,4 @@
-package io.quarkus.vertx.core.runtime.context;
+package io.quarkus.vertx;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;

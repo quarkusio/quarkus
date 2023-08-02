@@ -1,5 +1,8 @@
 package io.quarkus.vertx.core.runtime.context;
 
+import static jakarta.interceptor.Interceptor.Priority.PLATFORM_BEFORE;
+
+import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -7,9 +10,11 @@ import jakarta.interceptor.Interceptor;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.ArcInvocationContext;
+import io.quarkus.vertx.SafeVertxContext;
 import io.vertx.core.Vertx;
 
 @SafeVertxContext
+@Priority(PLATFORM_BEFORE)
 @Interceptor
 public class SafeVertxContextInterceptor {
 

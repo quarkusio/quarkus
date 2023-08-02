@@ -122,7 +122,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
 
     private static ArtifactCoords getProjectQuarkusPlatformBOM(ProjectState currentState) {
         for (ArtifactCoords c : currentState.getPlatformBoms()) {
-            if (c.getArtifactId().equals(ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID)) {
+            if (c.getArtifactId().equals(ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID)
+                    || c.getArtifactId().equals(ToolsConstants.UNIVERSE_PLATFORM_BOM_ARTIFACT_ID)) {
                 return c;
             }
         }

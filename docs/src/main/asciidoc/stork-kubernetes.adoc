@@ -108,7 +108,7 @@ implementation("io.quarkus:quarkus-container-image-jib")
 
 Let's start with the very beginning: the service we will discover, select and call.
 
-The Red and Blue are two simple REST services serving an endpoint responding `Hello from Red!` and `Hello from Blue!` respectively. The code of both applications has been developed following the https://quarkus.io/guides/getting-started[Getting Started Guide].
+The Red and Blue are two simple REST services serving an endpoint responding `Hello from Red!` and `Hello from Blue!` respectively. The code of both applications has been developed following the xref:getting-started.adoc[Getting Started Guide].
 
 As the goal of this guide is to show how to use Stork Kubernetes service discovery, we won't provide the specifics steps for the Red and Blue services. Their container images are already built and available in a public registry:
 
@@ -409,7 +409,7 @@ The `quarkus.container-image.registry` contains the container registry to use.
 The `quarkus.kubernetes.ingress.expose` indicates that the service will be accessible from the outside of the cluster.
 The `quarkus.kubernetes.ingress.host` contains the url to access the service. We are using https://nip.io/[nip.io] wildcard for IP address mappings.
 
-For a more customized configuration you can check the https://quarkus.io/guides/deploying-to-kubernetes[Deploying to Kubernetes guide]
+For a more customized configuration you can check the xref:deploying-to-kubernetes.adoc[Deploying to Kubernetes guide]
 
 == Build and push the container image
 

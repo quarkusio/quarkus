@@ -407,7 +407,7 @@ To exclude only a particular datasource from the health check, use:
 
 === Datasource metrics
 
-If you are using the link:https://quarkus.io/guides/micrometer[`quarkus-micrometer`] or link:https://quarkus.io/guides/smallrye-metrics[`quarkus-smallrye-metrics`] extension, `quarkus-agroal` can contribute some datasource-related metrics to the metric registry.
+If you are using the xref:micrometer.adoc[`quarkus-micrometer`] or xref:smallrye-metrics.adoc[`quarkus-smallrye-metrics`] extension, `quarkus-agroal` can contribute some datasource-related metrics to the metric registry.
 This can be activated by setting the `quarkus.datasource.metrics.enabled` property to `true`.
 
 For the exposed metrics to contain any actual values, a metric collection must be enabled internally by the Agroal mechanisms.

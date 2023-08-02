@@ -36,7 +36,7 @@ include::{includes}/prerequisites.adoc[]
 
 . Create a working branch for your project by using your version control system.
 
-. To use the Quarkus CLI in the next step, link:https://quarkus.io/guides/cli-tooling#installing-the-cli[install the latest version of the Quarkus CLI].
+. To use the Quarkus CLI in the next step, xref:cli-tooling.adoc#installing-the-cli[install the latest version of the Quarkus CLI].
 Confirm the version number using `quarkus -v`.
 
 . Go to the project directory and update the project to the latest stream:

@@ -82,7 +82,7 @@ Check the associated documentation to learn how to use them.
 
 |AMQP Client
 |`io.quarkus:quarkus-smallrye-reactive-messaging-amqp` (extension)
-|https://quarkus.io/guides/amqp
+|xref:amqp.adoc
 
 |Circuit Breaker
 |`io.smallrye.reactive:smallrye-mutiny-vertx-circuit-breaker` (external dependency)
@@ -94,15 +94,15 @@ Check the associated documentation to learn how to use them.
 
 |DB2 Client
 |`io.quarkus:quarkus-reactive-db2-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc
 
 |Kafka Client
 |`io.quarkus:quarkus-smallrye-reactive-messaging-kafka` (extension)
-|https://quarkus.io/guides/kafka
+|xref:kafka.adoc
 
 |Mail Client
 |`io.quarkus:quarkus-mailer` (extension)
-|https://quarkus.io/guides/mailer
+|xref:mailer.adoc
 
 |MQTT Client
 |`io.quarkus:quarkus-smallrye-reactive-messaging-mqtt` (extension)
@@ -110,19 +110,19 @@ Check the associated documentation to learn how to use them.
 
 |MS SQL Client
 |`io.quarkus:quarkus-reactive-mssql-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc
 
 |MySQL Client
 |`io.quarkus:quarkus-reactive-mysql-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc
 
 |Oracle Client
 |`io.quarkus:quarkus-reactive-oracle-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc
 
 |PostgreSQL Client
 |`io.quarkus:quarkus-reactive-pg-client` (extension)
-|https://quarkus.io/guides/reactive-sql-clients
+|xref:reactive-sql-clients.adoc
 
 |RabbitMQ Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-rabbitmq-client` (external dependency)
@@ -130,7 +130,7 @@ Check the associated documentation to learn how to use them.
 
 |Redis Client
 |`io.quarkus:quarkus-redis-client` (extension)
-|https://quarkus.io/guides/redis
+|xref:redis.adoc
 
 |Web Client
 |`io.smallrye.reactive:smallrye-mutiny-vertx-web-client` (external dependency)

@@ -334,7 +334,7 @@ As a result, the `security-jpa` defaults to using bcrypt-hashed passwords.
 
 == Test your application by using Dev Services for PostgreSQL
 
-Complete the integration testing of your application in JVM and native modes by using xref:https://quarkus.io/guides/dev-services#databases[Dev Services for PostgreSQL] before you run your application in production mode.
+Complete the integration testing of your application in JVM and native modes by using xref:dev-services.adoc#databases[Dev Services for PostgreSQL] before you run your application in production mode.
 
 To run your application in dev mode:
 

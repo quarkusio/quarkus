@@ -1,10 +1,7 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.DotName;
 
-import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -14,26 +11,18 @@ import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 
 /**
- * Propagate the user methods annotated with `@Transactional`.
- * This implementor is only used if Hibernate ORM is present.
+ * Propagate all the user methods that have annotations.
+ *
+ * This is necessary when users use annotations with an interceptor binding like `@Transactional`.
  */
-public final class UserMethodsWithTransactionalImplementor implements MethodImplementor {
-
-    public static final DotName TRANSACTIONAL = DotName.createSimple("jakarta.transaction.Transactional");
-
-    private final Capabilities capabilities;
-
-    public UserMethodsWithTransactionalImplementor(Capabilities capabilities) {
-        this.capabilities = capabilities;
-    }
+public final class UserMethodsWithAnnotationsImplementor implements MethodImplementor {
 
     @Override
     public void implement(ClassCreator classCreator, ResourceMetadata resourceMetadata,
             ResourceProperties resourceProperties, FieldDescriptor resourceField) {
-        if (capabilities.isPresent(Capability.HIBERNATE_ORM) && resourceMetadata.getResourceInterface() != null) {
+        if (resourceMetadata.getResourceInterface() != null) {
             for (var methodInfo : resourceMetadata.getResourceInterface().methods()) {
-                // we only need to propagate the user methods annotated with `@Transactional`
-                if (methodInfo.hasAnnotation(TRANSACTIONAL)) {
+                if (methodInfo.isDefault() && !methodInfo.annotations().isEmpty()) {
                     MethodCreator methodCreator = classCreator.getMethodCreator(MethodDescriptor.of(methodInfo));
                     methodCreator.setSignature(methodInfo.genericSignatureIfRequired());
                     for (var annotation : methodInfo.annotations()) {

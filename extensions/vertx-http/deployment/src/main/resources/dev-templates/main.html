@@ -9,7 +9,6 @@
         <link rel="stylesheet" href="{devRootAppend}/resources/css/bootstrap.min.css">
         <link rel="stylesheet" href="{devRootAppend}/resources/fontawesome/css/all.min.css">
         <link rel="stylesheet" href="{devRootAppend}/resources/css/dev-console.css?2">
-        <link rel="stylesheet" href="{devRootAppend}/resources/css/logstream.css">
         <link rel="stylesheet" href="{devRootAppend}/resources/css/tests.css">
         {#insert styleref /}
         
@@ -78,49 +77,11 @@
             {#insert body/}
         </div>
 
-        <!-- Footer -->
-        <div id="devUiFooter" class="footer fixed-bottom">
-
-            <div id="devUiFooterToolbar" class="container-fluid bg-dark position-sticky">
-                <div class="row">
-                    <div class="col-sm">
-                        <div class="row">
-                            <div class="col-md-auto pr-0">
-                                <a id="devUiFooterOpenButton" class="btn devUiFooterButton hideOnOpenFooter">
-                                    <i class="fas fa-caret-up fa-lg"></i> Open
-                                </a>
-                                <a id="devUiFooterCloseButton" class="btn devUiFooterButton showOnOpenFooter">
-                                    <i class="fas fa-caret-down fa-lg"></i> Close
-                                </a>
-                            </div>
-                            <div class="col-md-auto px-0">
-                                {#include logmanagerNav /}
-                            </div>
-                            <div class="col">
-                                <a id="devUiFooterResizeButton" class="btn devUiFooterButton float-right showOnOpenFooter">
-                                    <i class="fas fa-arrows-alt-v"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="testsInFooter" class="col-sm">
-                        {#include testsNav}{/include}
-                    </div>
-                </div>
-            </div>
-            
-            <div id="devUiFooterContent">
-                {#include logmanagerLog}{/include}
-            </div>
-        </div>
-        
-        {#include logmanagerModals /}
         {#include testsModals /}
 
         <script src="{devRootAppend}/resources/js/jquery.min.js"></script>
         <script src="{devRootAppend}/resources/js/bootstrap.bundle.min.js"></script>
         <script src="{devRootAppend}/resources/js/dev-console.js"></script>
-        <script src="{devRootAppend}/resources/js/logstream.js"></script>
         <script src="{devRootAppend}/resources/js/tests.js"></script>
         {#insert scriptref /}
         

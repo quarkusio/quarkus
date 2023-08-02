@@ -9,8 +9,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class JibConfig {
+@ConfigRoot(name = "jib", phase = ConfigPhase.BUILD_TIME)
+public class ContainerImageJibConfig {
 
     public static final String DEFAULT_WORKING_DIR = "/home/jboss";
     /**

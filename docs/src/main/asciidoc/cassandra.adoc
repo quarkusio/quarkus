@@ -789,8 +789,7 @@ until your application actually connects and hits the database for the first tim
 
 == Running in native mode
 
-If you installed GraalVM, you can link:https://quarkus.io/guides/building-native-image[build a
-native image] using:
+If you installed GraalVM, you can xref:building-native-image.adoc[build a native image] using:
 
 [source,shell]
 ----
@@ -830,8 +829,8 @@ that needs to interact with the Cassandra database.
 
 Using lazy initialization speeds up your application startup time, and avoids startup failures if
 the Cassandra database is not available. However, it could also prove dangerous if your code is
-fully non-blocking, for example if it uses https://quarkus.io/guides/reactive-routes[reactive
-routes]. Indeed, the lazy initialization could accidentally happen on a thread that is not allowed
+fully non-blocking, for example if it uses xref:reactive-routes.adoc[reactive routes].
+Indeed, the lazy initialization could accidentally happen on a thread that is not allowed
 to block, such as a Vert.x event loop thread. Therefore, setting `quarkus.cassandra.init.eager-init`
 to `false` and injecting `QuarkusCqlSession` should be avoided in these contexts.
 

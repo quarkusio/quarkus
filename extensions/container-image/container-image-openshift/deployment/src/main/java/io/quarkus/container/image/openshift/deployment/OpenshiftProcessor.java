@@ -95,11 +95,11 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
-    public void openshiftPrepareJvmDockerBuild(OpenshiftConfig openshiftConfig,
+    public void openshiftPrepareJvmDockerBuild(ContainerImageOpenshiftConfig openshiftConfig,
             S2iConfig s2iConfig,
             OutputTargetBuildItem out,
             BuildProducer<DecoratorBuildItem> decorator) {
-        OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
+        ContainerImageOpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
         if (config.buildStrategy == BuildStrategy.DOCKER) {
             decorator.produce(new DecoratorBuildItem(new ApplyDockerfileToBuildConfigDecorator(null,
                     findMainSourcesRoot(out.getOutputDirectory()).getValue().resolve(openshiftConfig.jvmDockerfile))));
@@ -110,11 +110,11 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { OpenshiftBuild.class, NativeBuild.class })
-    public void openshiftPrepareNativeDockerBuild(OpenshiftConfig openshiftConfig,
+    public void openshiftPrepareNativeDockerBuild(ContainerImageOpenshiftConfig openshiftConfig,
             S2iConfig s2iConfig,
             OutputTargetBuildItem out,
             BuildProducer<DecoratorBuildItem> decorator) {
-        OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
+        ContainerImageOpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
         if (config.buildStrategy == BuildStrategy.DOCKER) {
             decorator.produce(new DecoratorBuildItem(new ApplyDockerfileToBuildConfigDecorator(null,
                     findMainSourcesRoot(out.getOutputDirectory()).getValue().resolve(openshiftConfig.nativeDockerfile))));
@@ -125,7 +125,7 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
-    public void openshiftRequirementsJvm(OpenshiftConfig openshiftConfig,
+    public void openshiftRequirementsJvm(ContainerImageOpenshiftConfig openshiftConfig,
             S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -137,11 +137,11 @@ public class OpenshiftProcessor {
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
-        OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
+        ContainerImageOpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
         String outputJarFileName = jarBuildItem.getPath().getFileName().toString();
         String jarFileName = config.jarFileName.orElse(outputJarFileName);
         String baseJvmImage = config.baseJvmImage
-                .orElse(OpenshiftConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
+                .orElse(ContainerImageOpenshiftConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
 
         boolean hasCustomJarPath = config.jarFileName.isPresent() || config.jarDirectory.isPresent();
         boolean hasCustomJvmArguments = config.jvmArguments.isPresent();
@@ -180,7 +180,7 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class, NativeBuild.class })
-    public void openshiftRequirementsNative(OpenshiftConfig openshiftConfig,
+    public void openshiftRequirementsNative(ContainerImageOpenshiftConfig openshiftConfig,
             S2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
@@ -190,8 +190,8 @@ public class OpenshiftProcessor {
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
-        OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
-        boolean usingDefaultBuilder = ImageUtil.getRepository(OpenshiftConfig.DEFAULT_BASE_NATIVE_IMAGE)
+        ContainerImageOpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
+        boolean usingDefaultBuilder = ImageUtil.getRepository(ContainerImageOpenshiftConfig.DEFAULT_BASE_NATIVE_IMAGE)
                 .equals(ImageUtil.getRepository(config.baseNativeImage));
         String outputNativeBinaryFileName = nativeImage.getPath().getFileName().toString();
 
@@ -203,7 +203,7 @@ public class OpenshiftProcessor {
         //The default openshift builder for native builds, renames the native binary.
         //To make things easier for the user, we need to handle it.
         if (usingDefaultBuilder && !config.nativeBinaryFileName.isPresent()) {
-            nativeBinaryFileName = OpenshiftConfig.DEFAULT_NATIVE_TARGET_FILENAME;
+            nativeBinaryFileName = ContainerImageOpenshiftConfig.DEFAULT_NATIVE_TARGET_FILENAME;
         } else {
             nativeBinaryFileName = config.nativeBinaryFileName.orElse(outputNativeBinaryFileName);
         }
@@ -239,7 +239,7 @@ public class OpenshiftProcessor {
 
     @BuildStep(onlyIf = { OpenshiftBuild.class })
     public void configureExternalRegistry(ApplicationInfoBuildItem applicationInfo,
-            OpenshiftConfig openshiftConfig,
+            ContainerImageOpenshiftConfig openshiftConfig,
             ContainerImageInfoBuildItem containerImageInfo,
             BuildProducer<DecoratorBuildItem> decorator) {
         containerImageInfo.registry.ifPresent(registry -> {
@@ -267,7 +267,7 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
-    public void openshiftBuildFromJar(OpenshiftConfig openshiftConfig,
+    public void openshiftBuildFromJar(ContainerImageOpenshiftConfig openshiftConfig,
             S2iConfig s2iConfig,
             ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClientBuilder,
@@ -281,7 +281,7 @@ public class OpenshiftProcessor {
             // used to ensure that the jar has been built
             JarBuildItem jar) {
 
-        OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
+        ContainerImageOpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
         if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
         }
@@ -339,7 +339,7 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class, NativeBuild.class })
-    public void openshiftBuildFromNative(OpenshiftConfig openshiftConfig, S2iConfig s2iConfig,
+    public void openshiftBuildFromNative(ContainerImageOpenshiftConfig openshiftConfig, S2iConfig s2iConfig,
             ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
@@ -351,7 +351,7 @@ public class OpenshiftProcessor {
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
             NativeImageBuildItem nativeImage) {
 
-        OpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
+        ContainerImageOpenshiftConfig config = mergeConfig(openshiftConfig, s2iConfig);
 
         if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
@@ -392,7 +392,7 @@ public class OpenshiftProcessor {
 
     public static void createContainerImage(KubernetesClientBuilder kubernetesClientBuilder,
             GeneratedFileSystemResourceBuildItem openshiftManifests,
-            OpenshiftConfig openshiftConfig,
+            ContainerImageOpenshiftConfig openshiftConfig,
             String base,
             Path output,
             Path... additional) {
@@ -456,7 +456,7 @@ public class OpenshiftProcessor {
     }
 
     private static void openshiftBuild(List<HasMetadata> buildResources, File binaryFile,
-            OpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
+            ContainerImageOpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
         distinct(buildResources).stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
                 .forEach(bc -> {
                     Build build = startOpenshiftBuild(bc, binaryFile, openshiftConfig, kubernetesClientBuilder);
@@ -474,7 +474,7 @@ public class OpenshiftProcessor {
      * @param kubernetesClientBuilder The kubernetes client builder
      */
     private static Build startOpenshiftBuild(BuildConfig buildConfig, File binaryFile,
-            OpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
+            ContainerImageOpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
         try (KubernetesClient kubernetesClient = kubernetesClientBuilder.build()) {
             OpenShiftClient client = toOpenshiftClient(kubernetesClient);
             try {
@@ -495,7 +495,7 @@ public class OpenshiftProcessor {
         }
     }
 
-    private static void waitForOpenshiftBuild(Build build, OpenshiftConfig openshiftConfig,
+    private static void waitForOpenshiftBuild(Build build, ContainerImageOpenshiftConfig openshiftConfig,
             KubernetesClientBuilder kubernetesClientBuilder) {
 
         while (isNew(build) || isPending(build) || isRunning(build)) {

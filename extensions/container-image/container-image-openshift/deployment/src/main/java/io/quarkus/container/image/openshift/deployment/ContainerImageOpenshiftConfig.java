@@ -12,8 +12,8 @@ import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public class OpenshiftConfig {
+@ConfigRoot(name = "openshift", phase = ConfigPhase.BUILD_TIME)
+public class ContainerImageOpenshiftConfig {
 
     public static final String DEFAULT_BASE_JVM_JDK11_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11:1.16";
     public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.16";

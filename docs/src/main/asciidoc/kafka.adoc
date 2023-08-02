@@ -788,7 +788,7 @@ Quarkus provides following state store implementations:
 
 - `quarkus-redis`: Uses the xref:redis-reference.adoc[`quarkus-redis-client`] extension to persist processing states. 
 Jackson is used to serialize processing state in Json. For complex objects it is required to configure the `checkpoint.state-type` property with the class name of the object.
-By default, the state store uses the default redis client, but if a link:https://quarkus.io/guides/redis-reference#default-and-named-clients[named client] is to be used, the client name can be specified using the `mp.messaging.incoming.[channel-name].checkpoint.quarkus-redis.client-name` property.
+By default, the state store uses the default redis client, but if a xref:redis-reference.adoc#default-and-named-clients[named client] is to be used, the client name can be specified using the `mp.messaging.incoming.[channel-name].checkpoint.quarkus-redis.client-name` property.
 Processing states will be stored in Redis using the key naming scheme `[consumer-group-id]:[topic]:[partition]`.
 
 For example the configuration of the previous code would be the following:
@@ -1300,7 +1300,7 @@ While a transaction is in progress, subsequent calls to the `withTransaction`, i
 
 Note that in Reactive Messaging, the execution of processing methods, is already serialized, unless `@Blocking(ordered = false)` is used.
 If `withTransaction` can be called concurrently, for example from a REST endpoint, it is recommended to limit the concurrency of the execution.
-This can be done using the `@Bulkhead` annotation from link:https://quarkus.io/guides/smallrye-fault-tolerance[_Microprofile Fault Tolerance_].
+This can be done using the `@Bulkhead` annotation from xref:smallrye-fault-tolerance.adoc[_Microprofile Fault Tolerance_].
 
 An example usage can be found in <<chaining-kafka-transactions-with-hibernate-reactive-transactions>>.
 ====

@@ -227,9 +227,6 @@ public class ResteasyReactiveJacksonProcessor {
                     if (annotationValue == null) {
                         continue;
                     }
-                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
-                        continue;
-                    }
                     Type[] jsonViews = annotationValue.asClassArray();
                     if ((jsonViews == null) || (jsonViews.length == 0)) {
                         continue;
@@ -244,9 +241,6 @@ public class ResteasyReactiveJacksonProcessor {
                     if (annotationValue == null) {
                         continue;
                     }
-                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
-                        continue;
-                    }
                     Type biFunctionType = annotationValue.asClass();
                     if (biFunctionType == null) {
                         continue;
@@ -263,8 +257,7 @@ public class ResteasyReactiveJacksonProcessor {
                     reflectiveClassProducer.produce(
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
                                     .build());
-                    recorder.recordCustomSerialization(getMethodId(instance.target().asMethod()),
-                            biFunctionType.name().toString());
+                    recorder.recordCustomSerialization(getTargetId(instance.target()), biFunctionType.name().toString());
                 }
             }
             if (resourceClass.annotationsMap().containsKey(CUSTOM_DESERIALIZATION)) {
@@ -274,9 +267,6 @@ public class ResteasyReactiveJacksonProcessor {
                     if (annotationValue == null) {
                         continue;
                     }
-                    if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
-                        continue;
-                    }
                     Type biFunctionType = annotationValue.asClass();
                     if (biFunctionType == null) {
                         continue;
@@ -293,8 +283,7 @@ public class ResteasyReactiveJacksonProcessor {
                     reflectiveClassProducer.produce(
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
                                     .build());
-                    recorder.recordCustomDeserialization(getMethodId(instance.target().asMethod()),
-                            biFunctionType.name().toString());
+                    recorder.recordCustomDeserialization(getTargetId(instance.target()), biFunctionType.name().toString());
                 }
             }
         }
@@ -391,10 +380,12 @@ public class ResteasyReactiveJacksonProcessor {
                 }
             }
             if (hasSecureFields) {
-                AnnotationInstance customSerializationAnnotation = methodInfo.annotation(CUSTOM_SERIALIZATION);
-                if (customSerializationAnnotation != null) {
+                AnnotationInstance customSerializationAtClassAnnotation = methodInfo.declaringClass()
+                        .declaredAnnotation(CUSTOM_SERIALIZATION);
+                AnnotationInstance customSerializationAtMethodAnnotation = methodInfo.annotation(CUSTOM_SERIALIZATION);
+                if (customSerializationAtMethodAnnotation != null || customSerializationAtClassAnnotation != null) {
                     log.warn("Secure serialization will not be applied to method: '" + methodInfo.declaringClass().name() + "#"
-                            + methodInfo.name() + "' because it is annotated with @CustomSerialization.");
+                            + methodInfo.name() + "' because the method or class are annotated with @CustomSerialization.");
                 } else {
                     result.add(new ResourceMethodCustomSerializationBuildItem(methodInfo, entry.getActualClassInfo(),
                             SecurityCustomSerialization.class));
@@ -406,6 +397,21 @@ public class ResteasyReactiveJacksonProcessor {
                 producer.produce(bi);
             }
         }
+    }
+
+    private String getTargetId(AnnotationTarget target) {
+        if (target.kind() == AnnotationTarget.Kind.CLASS) {
+            return getClassId(target.asClass());
+        } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
+            return getMethodId(target.asMethod());
+        }
+
+        throw new UnsupportedOperationException("The `@CustomSerialization` and `@CustomDeserialization` annotations can only "
+                + "be used in methods or classes.");
+    }
+
+    private String getClassId(ClassInfo classInfo) {
+        return classInfo.name().toString();
     }
 
     private String getMethodId(MethodInfo methodInfo) {

@@ -23,12 +23,12 @@ public class ResteasyReactiveServerJacksonRecorder {
         jsonViewMap.put(methodId, loadClass(className));
     }
 
-    public void recordCustomSerialization(String methodId, String className) {
-        customSerializationMap.put(methodId, loadClass(className));
+    public void recordCustomSerialization(String target, String className) {
+        customSerializationMap.put(target, loadClass(className));
     }
 
-    public void recordCustomDeserialization(String methodId, String className) {
-        customDeserializationMap.put(methodId, loadClass(className));
+    public void recordCustomDeserialization(String target, String className) {
+        customDeserializationMap.put(target, loadClass(className));
     }
 
     public void configureShutdown(ShutdownContext shutdownContext) {
@@ -52,9 +52,19 @@ public class ResteasyReactiveServerJacksonRecorder {
     }
 
     @SuppressWarnings("unchecked")
+    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> customSerializationForClass(Class<?> clazz) {
+        return (Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>>) customSerializationMap.get(clazz.getName());
+    }
+
+    @SuppressWarnings("unchecked")
     public static Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> customDeserializationForMethod(
             String methodId) {
         return (Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>>) customDeserializationMap.get(methodId);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> customDeserializationForClass(Class<?> clazz) {
+        return (Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>>) customDeserializationMap.get(clazz.getName());
     }
 
     private Class<?> loadClass(String className) {

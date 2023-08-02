@@ -7,6 +7,7 @@ import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWrite
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +37,7 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
     private final Providers providers;
     private final ObjectWriter defaultWriter;
     private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ObjectWriter> perTypeWriter = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectWriter> contextResolverMap = new ConcurrentHashMap<>();
 
     @Inject
@@ -53,34 +55,50 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
             stream.write(((String) o).getBytes(StandardCharsets.UTF_8));
         } else {
             ObjectMapper effectiveMapper = getEffectiveMapper(o, context);
-
-            // First test the names to see if JsonView is used. We do this to avoid doing reflection for the common case
-            // where JsonView is not used
+            ObjectWriter effectiveWriter = getEffectiveWriter(effectiveMapper);
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
             if (resourceInfo != null) {
-                String methodId = resourceInfo.getMethodId();
-                var customSerializationValue = ResteasyReactiveServerJacksonRecorder.customSerializationForMethod(methodId);
-                if (customSerializationValue != null) {
-                    ObjectWriter objectWriter = perMethodWriter.computeIfAbsent(methodId,
-                            new MethodObjectWriterFunction(customSerializationValue, genericType, effectiveMapper));
-                    Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(methodId);
-                    if (jsonViewValue != null) {
-                        objectWriter = objectWriter.withView(jsonViewValue);
-                    }
-                    objectWriter.writeValue(stream, o);
-                    return;
+                ObjectWriter writerFromAnnotation = getObjectWriterFromAnnotations(resourceInfo, genericType, effectiveMapper);
+                if (writerFromAnnotation != null) {
+                    effectiveWriter = writerFromAnnotation;
                 }
 
-                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(methodId);
+                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
                 if (jsonViewValue != null) {
-                    getEffectiveWriter(effectiveMapper).withView(jsonViewValue).writeValue(stream, o);
-                    return;
+                    effectiveWriter = effectiveWriter.withView(jsonViewValue);
                 }
             }
-            getEffectiveWriter(effectiveMapper).writeValue(stream, o);
+            effectiveWriter.writeValue(stream, o);
         }
         // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
         stream.close();
+    }
+
+    private ObjectWriter getObjectWriterFromAnnotations(ResteasyReactiveResourceInfo resourceInfo, Type type,
+            ObjectMapper mapper) {
+        // Check `@CustomSerialization` annotated in methods
+        String methodId = resourceInfo.getMethodId();
+        var customSerializationValue = ResteasyReactiveServerJacksonRecorder.customSerializationForMethod(methodId);
+        if (customSerializationValue != null) {
+            return perMethodWriter.computeIfAbsent(methodId,
+                    new MethodObjectWriterFunction(customSerializationValue, type, mapper));
+        }
+
+        // Otherwise, check `@CustomSerialization` annotated in class. In this case, we use the effective type for caching up
+        // the object.
+        customSerializationValue = ResteasyReactiveServerJacksonRecorder
+                .customSerializationForClass(resourceInfo.getResourceClass());
+        if (customSerializationValue != null) {
+            Type effectiveType = type;
+            if (type instanceof ParameterizedType) {
+                effectiveType = ((ParameterizedType) type).getActualTypeArguments()[0];
+            }
+
+            return perTypeWriter.computeIfAbsent(effectiveType.getTypeName(),
+                    new MethodObjectWriterFunction(customSerializationValue, type, mapper));
+        }
+
+        return null;
     }
 
     private ObjectWriter getEffectiveWriter(ObjectMapper effectiveMapper) {

@@ -5,6 +5,7 @@ import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWrite
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,6 +42,7 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
     private final ObjectMapper originalMapper;
     private final Providers providers;
     private final ConcurrentMap<String, ObjectReader> perMethodReader = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ObjectReader> perTypeReader = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectReader> contextResolverMap = new ConcurrentHashMap<>();
 
     @Inject
@@ -118,6 +120,35 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
         return e.getMessage().startsWith("No content");
     }
 
+    private ObjectReader getObjectReaderFromAnnotations(ResteasyReactiveResourceInfo resourceInfo, Type type,
+            ObjectMapper mapper) {
+        // Check `@CustomDeserialization` annotated in methods
+        String methodId = resourceInfo.getMethodId();
+        var customDeserializationValue = ResteasyReactiveServerJacksonRecorder.customDeserializationForMethod(methodId);
+        if (customDeserializationValue != null) {
+            return perMethodReader.computeIfAbsent(methodId,
+                    new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(customDeserializationValue, type,
+                            mapper));
+        }
+
+        // Otherwise, check `@CustomDeserialization` annotated in class. In this case, we use the effective type for caching up
+        // the object.
+        customDeserializationValue = ResteasyReactiveServerJacksonRecorder
+                .customDeserializationForClass(resourceInfo.getResourceClass());
+        if (customDeserializationValue != null) {
+            Type effectiveType = type;
+            if (type instanceof ParameterizedType) {
+                effectiveType = ((ParameterizedType) type).getActualTypeArguments()[0];
+            }
+
+            return perTypeReader.computeIfAbsent(effectiveType.getTypeName(),
+                    new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(customDeserializationValue, type,
+                            mapper));
+        }
+
+        return null;
+    }
+
     private ObjectReader getEffectiveReader(Class<Object> type, Type genericType, MediaType responseMediaType) {
         ObjectMapper effectiveMapper = getEffectiveMapper(type, responseMediaType);
         ObjectReader effectiveReader = defaultReader;
@@ -136,20 +167,12 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
         if (context != null) {
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
             if (resourceInfo != null) {
-                String methodId = resourceInfo.getMethodId();
-                var customDeserializationValue = ResteasyReactiveServerJacksonRecorder.customDeserializationForMethod(methodId);
-                if (customDeserializationValue != null) {
-                    ObjectReader objectReader = perMethodReader.computeIfAbsent(methodId,
-                            new MethodObjectReaderFunction(customDeserializationValue, genericType, effectiveMapper));
-                    Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(methodId);
-                    if (jsonViewValue != null) {
-                        objectReader = objectReader.withView(jsonViewValue);
-                    }
-
-                    return objectReader;
+                ObjectReader readerFromAnnotation = getObjectReaderFromAnnotations(resourceInfo, genericType, effectiveMapper);
+                if (readerFromAnnotation != null) {
+                    effectiveReader = readerFromAnnotation;
                 }
 
-                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(methodId);
+                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
                 if (jsonViewValue != null) {
                     return effectiveReader.withView(jsonViewValue);
                 }

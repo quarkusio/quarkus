@@ -527,7 +527,7 @@ public class VertxCoreRecorder {
 
     public ThreadFactory createThreadFactory(LaunchMode launchMode) {
         Optional<ClassLoader> nonDevModeTccl = setupThreadFactoryTccl(launchMode);
-        AtomicInteger threadCount = new AtomicInteger(0);
+        AtomicInteger threadCount = new AtomicInteger();
         return new ThreadFactory() {
             @Override
             public Thread newThread(Runnable runnable) {

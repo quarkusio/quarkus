@@ -1,12 +1,10 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -68,7 +66,7 @@ final class VertxGrpcExporter implements SpanExporter {
             Vertx vertx) {
         this.type = type;
         this.exporterMetrics = ExporterMetrics.createGrpcOkHttp(exporterName, type, meterProviderSupplier);
-        this.server = SocketAddress.inetSocketAddress(getPort(grpcBaseUri), grpcBaseUri.getHost());
+        this.server = SocketAddress.inetSocketAddress(OtlpExporterUtil.getPort(grpcBaseUri), grpcBaseUri.getHost());
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         var httpClientOptions = new HttpClientOptions()
@@ -77,22 +75,6 @@ final class VertxGrpcExporter implements SpanExporter {
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this gRPC client
         clientOptionsCustomizer.accept(httpClientOptions);
         this.client = GrpcClient.client(vertx, httpClientOptions);
-    }
-
-    private static int getPort(URI uri) {
-        int originalPort = uri.getPort();
-        if (originalPort > -1) {
-            return originalPort;
-        }
-
-        if (isHttps(uri)) {
-            return 443;
-        }
-        return 80;
-    }
-
-    static boolean isHttps(URI uri) {
-        return "https".equals(uri.getScheme().toLowerCase(Locale.ROOT));
     }
 
     private CompletableResultCode export(TraceRequestMarshaler marshaler, int numItems) {
@@ -160,18 +142,6 @@ final class VertxGrpcExporter implements SpanExporter {
         return CompletableResultCode.ofSuccess();
     }
 
-    private static final class NonCopyingByteArrayOutputStream extends ByteArrayOutputStream {
-
-        public NonCopyingByteArrayOutputStream(int size) {
-            super(size);
-        }
-
-        @Override
-        public byte[] toByteArray() {
-            return buf;
-        }
-    }
-
     private static final class ClientRequestOnSuccessHandler implements Handler<GrpcClientRequest<Buffer, Buffer>> {
 
         private final Map<String, String> headers;
@@ -224,7 +194,7 @@ final class VertxGrpcExporter implements SpanExporter {
 
             try {
                 int messageSize = marshaler.getBinarySerializedSize();
-                var baos = new NonCopyingByteArrayOutputStream(messageSize);
+                var baos = new NonCopyingByteArrayOutputStream(messageSize); // TODO: we can probably use Vert.x / Netty buffering here
                 marshaler.writeBinaryTo(baos);
                 Buffer buffer = Buffer.buffer(messageSize);
                 buffer.appendBytes(baos.toByteArray());

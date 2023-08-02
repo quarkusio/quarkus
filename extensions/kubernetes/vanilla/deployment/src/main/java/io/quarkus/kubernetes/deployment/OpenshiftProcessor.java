@@ -40,7 +40,6 @@ import io.dekorate.s2i.decorator.AddDockerImageStreamResourceDecorator;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.ImageUtil;
 import io.quarkus.container.spi.BaseImageInfoBuildItem;
-import io.quarkus.container.spi.ContainerImageCustomNameBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
@@ -100,12 +99,6 @@ public class OpenshiftProcessor {
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.apiGroup,
                     deploymentResourceKind.apiVersion, deploymentResourceKind.kind, name));
         }
-    }
-
-    @BuildStep
-    public void populateCustomImageName(OpenshiftConfig openshiftConfig,
-            BuildProducer<ContainerImageCustomNameBuildItem> containerImageCustomName) {
-        openshiftConfig.name.ifPresent(name -> containerImageCustomName.produce(new ContainerImageCustomNameBuildItem(name)));
     }
 
     @BuildStep

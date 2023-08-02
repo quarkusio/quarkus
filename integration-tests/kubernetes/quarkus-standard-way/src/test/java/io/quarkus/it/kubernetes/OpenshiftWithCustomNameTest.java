@@ -72,14 +72,6 @@ public class OpenshiftWithCustomNameTest {
                         assertThat(t.getMetadata()).satisfies(metadata -> assertThat(metadata.getLabels()).containsAnyOf(
                                 entry("app.kubernetes.io/name", CUSTOM_NAME),
                                 entry("app.kubernetes.io/version", "0.1-SNAPSHOT")));
-
-                        assertThat(t.getSpec()).satisfies(podSpec -> {
-                            assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                                assertThat(container.getImage())
-                                        .isEqualTo(
-                                                "testme/" + CUSTOM_NAME + ":0.1-SNAPSHOT");
-                            });
-                        });
                     });
                 });
             });

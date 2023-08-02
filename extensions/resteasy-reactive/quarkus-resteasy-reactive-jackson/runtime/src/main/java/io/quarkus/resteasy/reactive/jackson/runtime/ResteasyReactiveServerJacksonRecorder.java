@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.runtime.ShutdownContext;
@@ -16,6 +17,7 @@ public class ResteasyReactiveServerJacksonRecorder {
 
     private static final Map<String, Class<?>> jsonViewMap = new HashMap<>();
     private static final Map<String, Class<?>> customSerializationMap = new HashMap<>();
+    private static final Map<String, Class<?>> customDeserializationMap = new HashMap<>();
 
     public void recordJsonView(String methodId, String className) {
         jsonViewMap.put(methodId, loadClass(className));
@@ -25,12 +27,17 @@ public class ResteasyReactiveServerJacksonRecorder {
         customSerializationMap.put(methodId, loadClass(className));
     }
 
+    public void recordCustomDeserialization(String methodId, String className) {
+        customDeserializationMap.put(methodId, loadClass(className));
+    }
+
     public void configureShutdown(ShutdownContext shutdownContext) {
         shutdownContext.addShutdownTask(new Runnable() {
             @Override
             public void run() {
                 jsonViewMap.clear();
                 customSerializationMap.clear();
+                customDeserializationMap.clear();
             }
         });
     }
@@ -42,6 +49,12 @@ public class ResteasyReactiveServerJacksonRecorder {
     @SuppressWarnings("unchecked")
     public static Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> customSerializationForMethod(String methodId) {
         return (Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>>) customSerializationMap.get(methodId);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> customDeserializationForMethod(
+            String methodId) {
+        return (Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>>) customDeserializationMap.get(methodId);
     }
 
     private Class<?> loadClass(String className) {

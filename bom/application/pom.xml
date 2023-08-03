@@ -225,23 +225,23 @@
         <async-http-client.version>2.12.3</async-http-client.version>
         <!-- Dev UI -->
         <importmap.version>1.0.8</importmap.version>
-        <vaadin.version>24.1.3</vaadin.version>
-        <lit.version>2.7.6</lit.version>
-        <lit-element.version>3.3.2</lit-element.version>
-        <lit-html.version>2.7.5</lit-html.version>
+        <vaadin.version>24.1.4</vaadin.version>
+        <lit.version>2.8.0</lit.version>
+        <lit-element.version>3.3.3</lit-element.version>
+        <lit-html.version>2.8.0</lit-html.version>
         <ssr-dom-shim.version>1.1.1</ssr-dom-shim.version>
         <trusted-types.version>2.0.3</trusted-types.version>
-        <reactive-element.version>1.6.2</reactive-element.version>
+        <reactive-element.version>1.6.3</reactive-element.version>
         <vaadin-usage-statistics.version>2.1.2</vaadin-usage-statistics.version>
         <vaadin-development-mode-detector.version>2.0.6</vaadin-development-mode-detector.version>
         <polymer.version>3.5.1</polymer.version>
         <shadycss.version>1.11.2</shadycss.version>
-        <dedupe-mixin.version>1.3.1</dedupe-mixin.version>
+        <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
         <vaadin-router.version>1.7.5</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>5.4.3</echarts.version>
         <wc-codemirror.version>2.1.0</wc-codemirror.version>
-        <es-module-shims.version>1.7.3</es-module-shims.version>
+        <es-module-shims.version>1.8.0</es-module-shims.version>
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
     </properties>
 

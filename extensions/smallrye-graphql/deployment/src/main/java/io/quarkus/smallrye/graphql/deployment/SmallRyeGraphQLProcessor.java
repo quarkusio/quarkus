@@ -146,6 +146,8 @@ public class SmallRyeGraphQLProcessor {
     private static final List<String> SUPPORTED_WEBSOCKET_SUBPROTOCOLS = List.of(SUBPROTOCOL_GRAPHQL_WS,
             SUBPROTOCOL_GRAPHQL_TRANSPORT_WS);
 
+    private static final int GRAPHQL_WEBSOCKET_HANDLER_ORDER = -10000;
+
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
         featureProducer.produce(new FeatureBuildItem(Feature.SMALLRYE_GRAPHQL));
@@ -370,7 +372,7 @@ public class SmallRyeGraphQLProcessor {
                         runBlocking);
 
         HttpRootPathBuildItem.Builder subscriptionsBuilder = httpRootPathBuildItem.routeBuilder()
-                .orderedRoute(graphQLConfig.rootPath, Integer.MIN_VALUE)
+                .orderedRoute(graphQLConfig.rootPath, GRAPHQL_WEBSOCKET_HANDLER_ORDER)
                 .handler(graphqlOverWebsocketHandler);
         routeProducer.produce(subscriptionsBuilder.build());
 

@@ -20,6 +20,12 @@ public class UpdateDependencyVersionOperation implements RewriteOperation {
     @Override
     public Map<String, Object> single(BuildTool buildTool) {
         switch (buildTool) {
+            case GRADLE:
+                return Map.of("org.openrewrite.gradle.UpgradeDependencyVersion",
+                        Map.of(
+                                "groupId", groupId,
+                                "artifactId", artifactId,
+                                "newVersion", newVersion));
             case MAVEN:
                 return Map.of("org.openrewrite.maven.UpgradeDependencyVersion",
                         Map.of(

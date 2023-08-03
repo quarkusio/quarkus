@@ -488,6 +488,7 @@ public class StreamProcessor {
 }
 ----
 
+[[execution_model]]
 == Execution Model
 
 Quarkus Messaging sits on top of the xref:quarkus-reactive-architecture.adoc#engine[reactive engine] of Quarkus and leverages link:{eclipse-vertx}[Eclipse Vert.x] to dispatch messages for processing.
@@ -559,6 +560,100 @@ This creates four copies of the incoming channel under the hood, wiring them to 
 Depending on the broker technology, this can be useful to increase the application's throughput by processing multiple messages concurrently
 while still preserving the partial order of messages received in different copies.
 This is the case, for example, for Kafka, where multiple consumers can consume different topic partitions.
+
+== Context Propagation
+
+In Quarkus Messaging, the default mechanism for propagating context between different processing stages is the
+link:https://smallrye.io/smallrye-reactive-messaging/latest/concepts/message-context[message context].
+This provides a consistent way to pass context information along with the message as it flows through different stages.
+
+=== Interaction with Mutiny and MicroProfile Context Propagation
+
+Mutiny, which is the foundation of reactive programming in Quarkus, is integrated with the MicroProfile Context Propagation.
+This integration enables automatic capturing and restoring of context across asynchronous boundaries.
+To learn more about context propagation in Quarkus and Mutiny, refer to the xref:context-propagation.adoc[Context Propagation] guide.
+
+However, Quarkus Messaging needs to coordinate multiple asynchronous boundaries.
+This is why the default context propagation can result in unexpected behavior in some cases, especially using `Emitters`.
+
+To ensure consistent behavior, Quarkus Messaging disables the propagation of any context during message dispatching, through internal channels or connectors.
+This means that Emitters won't capture the caller context, and incoming channels won't dispatch messages by activating a context (ex. the request context).
+
+For example, you might want to propagate the caller context from an incoming HTTP request to the message processing stage.
+For emitters, instead of using the regular `Emitter` or `MutinyEmitter`, you can inject the `ContextualEmitter` to make sure the message captures the caller context.
+This ensures consistent and predictable behaviour by relying on the message context handling provided by the framework.
+
+For example, let `RequestScopedBean` a request-scoped bean, `ContextualEmitter` can be used to dispatch messages locally through the internal channel `app`:
+
+[source, java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.MediaType;
+
+import org.eclipse.microprofile.reactive.messaging.Channel;
+
+import io.quarkus.logging.Log;
+import io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitter;
+import io.smallrye.mutiny.Uni;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
+
+@Path("/")
+public class Resource {
+
+    @Channel("app")
+    ContextualEmitter<String> emitter;
+
+    @Inject
+    RequestScopedBean requestScopedBean;
+
+    @POST
+    @Path("/send")
+    public void send(String message) {
+        requestScopedBean.setValue("Hello");
+        emitter.sendAndAwait(message);
+    }
+
+}
+----
+
+Then the request-scoped bean can be accessed in the message processing stage, regardless of the <<execution_model>>:
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+
+import io.quarkus.logging.Log;
+import io.smallrye.reactive.messaging.annotations.Blocking;
+
+
+@ApplicationScoped
+public class Processor {
+
+    @Inject
+    RequestScopedBean requestScopedBean;
+
+    @Incoming("app")
+    @Blocking
+    public void process(String message) {
+        Log.infof("Message %s from request %s", message, requestScopedBean.getValue());
+    }
+
+}
+----
+
+=== Request Context Activation
+
+In some cases, you might need to activate the request context while processing messages consumed from a broker.
+While using `@ActivateRequestContext` on the `@Incoming` method is an option, it's lifecycle does not follow that of a Quarkus Messaging message.
+For incoming channels, you can enable the request scope activation with the build time property `quarkus.messaging.request-scoped.enabled=true`.
+This will activate the request context for each message processed by the incoming channel, and close the context once the message is processed.
 
 == Health Checks
 

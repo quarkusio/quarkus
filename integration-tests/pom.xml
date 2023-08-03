@@ -339,6 +339,7 @@
                 <module>reactive-messaging-rabbitmq-dyn</module>
                 <module>reactive-messaging-hibernate-reactive</module>
                 <module>reactive-messaging-hibernate-orm</module>
+                <module>reactive-messaging-context-propagation</module>
                 <module>rest-client</module>
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>

@@ -18,7 +18,9 @@ export class QwcKafkaConsumerGroups extends QwcHotReloadElement {
             flex-direction: column;
             overflow: hidden;
         }
-
+        .backButton{
+            margin-left: 10px;
+        }
         .table {
             height: 100%;
         }
@@ -121,7 +123,7 @@ export class QwcKafkaConsumerGroups extends QwcHotReloadElement {
             let name = this._selectedConsumerGroups[0].name;
             let members = this._selectedConsumerGroups[0].members;
             return html`<div class="top-bar">
-                            <vaadin-button @click="${() => {this._selectedConsumerGroups = []}}">
+                            <vaadin-button @click="${() => {this._selectedConsumerGroups = []}}" class="backButton">
                                 <vaadin-icon icon="font-awesome-solid:caret-left" slot="prefix"></vaadin-icon>
                                 Back
                             </vaadin-button>

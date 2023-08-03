@@ -20,6 +20,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -194,10 +195,9 @@ final class VertxGrpcExporter implements SpanExporter {
 
             try {
                 int messageSize = marshaler.getBinarySerializedSize();
-                var baos = new NonCopyingByteArrayOutputStream(messageSize); // TODO: we can probably use Vert.x / Netty buffering here
-                marshaler.writeBinaryTo(baos);
                 Buffer buffer = Buffer.buffer(messageSize);
-                buffer.appendBytes(baos.toByteArray());
+                var os = new BufferOutputStream(buffer);
+                marshaler.writeBinaryTo(os);
                 request.send(buffer).onSuccess(new Handler<>() {
                     @Override
                     public void handle(GrpcClientResponse<Buffer, Buffer> response) {

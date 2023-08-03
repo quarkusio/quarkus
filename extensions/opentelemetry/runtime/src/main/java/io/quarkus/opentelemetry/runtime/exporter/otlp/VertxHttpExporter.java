@@ -2,7 +2,6 @@ package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
 import static io.quarkus.opentelemetry.runtime.exporter.otlp.OtlpExporterUtil.getPort;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -18,6 +17,7 @@ import io.opentelemetry.exporter.internal.otlp.traces.TraceRequestMarshaler;
 import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
+import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -129,9 +129,9 @@ final class VertxHttpExporter implements SpanExporter {
                             })
                                     .putHeader("Content-Type", contentType);
 
-                            ByteArrayOutputStream os; // TODO: we can probably use Vert.x / Netty buffering here
+                            Buffer buffer = Buffer.buffer(contentLength);
+                            OutputStream os = new BufferOutputStream(buffer);
                             if (compressionEnabled) {
-                                os = new ByteArrayOutputStream(contentLength);
                                 clientRequest.putHeader("Content-Encoding", "gzip");
                                 try (var gzos = new GZIPOutputStream(os)) {
                                     marshaler.accept(gzos);
@@ -139,7 +139,6 @@ final class VertxHttpExporter implements SpanExporter {
                                     throw new IllegalStateException(e);
                                 }
                             } else {
-                                os = new NonCopyingByteArrayOutputStream(contentLength);
                                 marshaler.accept(os);
                             }
 
@@ -149,7 +148,7 @@ final class VertxHttpExporter implements SpanExporter {
                                 }
                             }
 
-                            clientRequest.send(Buffer.buffer(os.toByteArray()));
+                            clientRequest.send(buffer);
 
                         }
                     })

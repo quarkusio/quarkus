@@ -137,6 +137,12 @@ To trigger a container image build:
 
 The build that will be performed is a _s2i binary_ build.
 The input of the build is the jar that has been built locally and the output of the build is an `ImageStream` that is configured to automatically trigger a deployment.
+The base/builder image is specified using `base-jvm-image` and `base-native-image` for jvm and native mode respectively. An ImageStream for the image is automatically generated, unless these properties are used to reference an existing ImageStreamTag in the internal openshift registry. For example:
+
+[source,properties]
+----
+quarkus.openshift.base-jvm-image=image-registry.openshift-image-registry.svc:5000/some-project/openjdk-11:17.1.16.
+----
 
 [NOTE]
 ====

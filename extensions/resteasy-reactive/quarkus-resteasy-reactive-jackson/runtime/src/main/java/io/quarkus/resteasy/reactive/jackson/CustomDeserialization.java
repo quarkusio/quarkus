@@ -18,7 +18,7 @@ import io.smallrye.common.annotation.Experimental;
  */
 @Experimental(value = "Remains to be determined if this is the best possible API for users to configure per Resource Method Deserialization")
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
+@Target({ ElementType.METHOD, ElementType.TYPE })
 public @interface CustomDeserialization {
 
     /**

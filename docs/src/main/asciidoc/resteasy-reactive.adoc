@@ -1427,8 +1427,7 @@ The result of `userPrivate` however will include the `id` as expected when seria
 
 ===== Completely customized per method serialization/deserialization
 
-There are times when you need to completely customize the serialization/deserialization of a POJO on a per Jakarta REST method basis. For such use cases, the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` and `@io.quarkus.resteasy.reactive.jackson.CustomDeserialization` annotations.
-is a great tool, as it allows you to configure a per-method `com.fasterxml.jackson.databind.ObjectWriter`/`com.fasterxml.jackson.databind.ObjectReader` which can be configured at will.
+There are times when you need to completely customize the serialization/deserialization of a POJO on a per Jakarta REST method basis or on a per Jakarta REST resource basis. For such use cases, you can use the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` and `@io.quarkus.resteasy.reactive.jackson.CustomDeserialization` annotations in the REST method or in the REST resource at class level. These annotations allow you to fully configure the `com.fasterxml.jackson.databind.ObjectWriter`/`com.fasterxml.jackson.databind.ObjectReader`.
 
 Here is an example use case to customize the `com.fasterxml.jackson.databind.ObjectWriter`:
 

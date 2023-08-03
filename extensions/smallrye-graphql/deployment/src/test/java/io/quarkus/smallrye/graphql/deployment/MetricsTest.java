@@ -34,9 +34,6 @@ public class MetricsTest {
     @Test
     public void testQuery() {
         MetricRegistry metricRegistry = MetricRegistries.get(MetricRegistry.Type.VENDOR);
-        SimpleTimer metric = metricRegistry.getSimpleTimers()
-                .get(new MetricID("mp_graphql", new Tag("type", "QUERY"), new Tag("name", "ping"), new Tag("source", "false")));
-        assertNotNull(metric, "Metrics should be registered eagerly");
 
         String pingRequest = getPayload("{\n" +
                 "  ping {\n" +
@@ -54,6 +51,10 @@ public class MetricsTest {
                 .statusCode(200)
                 .and()
                 .body(CoreMatchers.containsString("{\"data\":{\"ping\":{\"message\":\"pong\"}}}"));
+
+        SimpleTimer metric = metricRegistry.getSimpleTimers()
+                .get(new MetricID("mp_graphql", new Tag("name", "ping"), new Tag("source", "false"), new Tag("type", "QUERY")));
+        assertNotNull(metric, "Metrics should be registered eagerly");
 
         assertEquals(1L, metric.getCount(), "Metric should be updated after querying");
     }

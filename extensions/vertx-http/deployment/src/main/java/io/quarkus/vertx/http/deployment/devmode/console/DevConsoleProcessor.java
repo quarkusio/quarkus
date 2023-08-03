@@ -50,7 +50,6 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
-import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
@@ -417,11 +416,6 @@ public class DevConsoleProcessor {
                     .handler(recorder.fileSystemStaticHandler(result.getWebRootConfigurations(), shutdownContext))
                     .build());
         }
-    }
-
-    @BuildStep(onlyIf = { IsDevelopment.class })
-    public DevConsoleTemplateInfoBuildItem config(List<DevServiceDescriptionBuildItem> serviceDescriptions) {
-        return new DevConsoleTemplateInfoBuildItem("devServices", serviceDescriptions);
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

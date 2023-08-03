@@ -41,29 +41,11 @@ public class CertificateConfig {
     public Optional<String> credentialsProviderName = Optional.empty();
 
     /**
-     * The file path to a server certificate or certificate chain in PEM format.
-     *
-     * @deprecated Use {@link #files} instead.
-     */
-    @ConfigItem
-    @Deprecated
-    public Optional<Path> file;
-
-    /**
      * The list of path to server certificates using the PEM format.
      * Specifying multiple files require SNI to be enabled.
      */
     @ConfigItem
     public Optional<List<Path>> files;
-
-    /**
-     * The file path to the corresponding certificate private key file in PEM format.
-     *
-     * @deprecated Use {@link #keyFiles} instead.
-     */
-    @ConfigItem
-    @Deprecated
-    public Optional<Path> keyFile;
 
     /**
      * The list of path to server certificates private key file using the PEM format.

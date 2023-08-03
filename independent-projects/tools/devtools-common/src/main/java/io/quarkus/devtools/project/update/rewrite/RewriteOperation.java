@@ -1,5 +1,6 @@
-package io.quarkus.devtools.project.update;
+package io.quarkus.devtools.project.update.rewrite;
 
+import java.util.List;
 import java.util.Map;
 
 import io.quarkus.devtools.project.BuildTool;
@@ -17,5 +18,12 @@ public interface RewriteOperation {
      * @param buildTool
      * @return
      */
-    Map<String, Object> toMap(BuildTool buildTool);
+    default Map<String, Object> single(BuildTool buildTool) {
+        return Map.of();
+    }
+
+    default List<Map<String, Object>> multi(BuildTool buildTool) {
+        return List.of(single(buildTool));
+    }
+
 }

@@ -1,9 +1,9 @@
-package io.quarkus.devtools.project.update.operations;
+package io.quarkus.devtools.project.update.rewrite.operations;
 
 import java.util.Map;
 
 import io.quarkus.devtools.project.BuildTool;
-import io.quarkus.devtools.project.update.RewriteOperation;
+import io.quarkus.devtools.project.update.rewrite.RewriteOperation;
 
 public class UpdateDependencyVersionOperation implements RewriteOperation {
 
@@ -18,7 +18,7 @@ public class UpdateDependencyVersionOperation implements RewriteOperation {
     }
 
     @Override
-    public Map<String, Object> toMap(BuildTool buildTool) {
+    public Map<String, Object> single(BuildTool buildTool) {
         switch (buildTool) {
             case MAVEN:
                 return Map.of("org.openrewrite.maven.UpgradeDependencyVersion",

@@ -1,4 +1,4 @@
-package io.quarkus.devtools.commands;
+package io.quarkus.devtools.project;
 
 import java.util.Collection;
 import java.util.Map;

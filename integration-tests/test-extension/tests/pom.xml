@@ -106,6 +106,7 @@
                       <path>application.properties</path>
                       <ignoredProperties>
                         <ignore>quarkus.bt.classpath-recording.record-file</ignore>
+                        <ignore>%test.quarkus.bt.classpath-recording.record-file</ignore>
                       </ignoredProperties>
                     </propertiesNormalization>
                   </propertiesNormalizations>

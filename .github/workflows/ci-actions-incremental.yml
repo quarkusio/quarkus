@@ -192,6 +192,7 @@ jobs:
           name: "build-reports-Initial JDK 11 Build"
           path: |
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -348,6 +349,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
       - name: Upload gc.log
@@ -444,6 +446,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -514,6 +517,7 @@ jobs:
             **/build/test-results/test/TEST-*.xml
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -589,6 +593,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -696,6 +701,7 @@ jobs:
           path: |
             integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml
             integration-tests/virtual-threads/target/build-report.json
+            integration-tests/virtual-threads/target/gradle-build-scan-url.txt
           retention-days: 2
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -760,6 +766,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -849,6 +856,7 @@ jobs:
             **/target/*-reports/TEST-*.xml
             **/build/test-results/test/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 

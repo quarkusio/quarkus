@@ -25,8 +25,8 @@ public class DevConsoleConfigMisinterpretedDoubleUnderscoreTest {
 
     @Test
     public void testNoFailure() {
-        RestAssured.get("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
+        RestAssured.get("q/dev-ui/configuration-form-editor")
                 .then()
-                .statusCode(200).body(Matchers.containsString("Config Editor"));
+                .statusCode(200).body(Matchers.containsString("loading"));
     }
 }

@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.runtime.devmode;
+package io.quarkus.devui.runtime.config;
 
 import java.util.List;
 

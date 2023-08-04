@@ -2,8 +2,6 @@ package io.quarkus.devui.runtime.config;
 
 import java.util.List;
 
-import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
-
 public class ConfigDescriptionBean {
     private List<ConfigDescription> allConfig;
 

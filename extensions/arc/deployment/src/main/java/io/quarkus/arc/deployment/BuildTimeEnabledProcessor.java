@@ -39,7 +39,6 @@ import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.arc.properties.UnlessBuildProperty;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 public class BuildTimeEnabledProcessor {
@@ -59,8 +58,8 @@ public class BuildTimeEnabledProcessor {
             IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER);
 
     @BuildStep
-    void ifBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
-        List<AnnotationInstance> annotationInstances = getAnnotations(index.getIndex(), IF_BUILD_PROFILE);
+    void ifBuildProfile(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
+        List<AnnotationInstance> annotationInstances = getAnnotations(index.getImmutableIndex(), IF_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
             boolean enabled = BuildProfile.from(instance).enabled();
             if (enabled) {
@@ -73,8 +72,8 @@ public class BuildTimeEnabledProcessor {
     }
 
     @BuildStep
-    void unlessBuildProfile(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
-        List<AnnotationInstance> annotationInstances = getAnnotations(index.getIndex(), UNLESS_BUILD_PROFILE);
+    void unlessBuildProfile(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> producer) {
+        List<AnnotationInstance> annotationInstances = getAnnotations(index.getImmutableIndex(), UNLESS_BUILD_PROFILE);
         for (AnnotationInstance instance : annotationInstances) {
             boolean enabled = BuildProfile.from(instance).disabled();
             if (enabled) {
@@ -87,13 +86,13 @@ public class BuildTimeEnabledProcessor {
     }
 
     @BuildStep
-    void ifBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
+    void ifBuildProperty(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
         buildProperty(IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
             @Override
             public Boolean apply(String stringValue, String expectedStringValue) {
                 return stringValue.equals(expectedStringValue);
             }
-        }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
+        }, index.getImmutableIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
             @Override
             public void accept(AnnotationTarget target, Boolean enabled) {
                 conditions.produce(new BuildTimeConditionBuildItem(target, enabled));
@@ -102,13 +101,13 @@ public class BuildTimeEnabledProcessor {
     }
 
     @BuildStep
-    void unlessBuildProperty(CombinedIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
+    void unlessBuildProperty(BeanArchiveIndexBuildItem index, BuildProducer<BuildTimeConditionBuildItem> conditions) {
         buildProperty(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, new BiFunction<String, String, Boolean>() {
             @Override
             public Boolean apply(String stringValue, String expectedStringValue) {
                 return !stringValue.equals(expectedStringValue);
             }
-        }, index.getIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
+        }, index.getImmutableIndex(), new BiConsumer<AnnotationTarget, Boolean>() {
             @Override
             public void accept(AnnotationTarget target, Boolean enabled) {
                 conditions.produce(new BuildTimeConditionBuildItem(target, enabled));

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -51,6 +52,9 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
+
+    @Parameter(defaultValue = "${session}", readonly = true)
+    MavenSession session;
 
     @Component
     protected RepositorySystem repoSystem;

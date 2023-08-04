@@ -637,6 +637,58 @@ unless it is the main application module already configured with the quarkus-mav
 
 More information on this topic can be found on the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
 
+[[maven-test-configuration]]
+=== Maven test plugin configuration
+
+`maven-surefire-plugin` and `maven-failsafe-plugin` configurations showed above will work in most cases. However, there could be cases when extra configuration will be required.
+
+The reason is that, Quarkus may need to re-resolve application dependencies during the test phase to set up the test classpath for the tests. The original Maven resolver used in previous build phases
+will not be available in the test process and, as a conseqence, Quarkus will need to initialize a new one. To make sure the new resolver is initialized correctly, the relevant configuration options
+will need to be passed to the test process.
+
+==== Maven user settings
+
+A path to the Maven user settings file may need to be passed to test processes, for example, in case the Maven build process was not launched using the default `mvn` scripts included in the Maven distribution.
+It could be done in the following way:
+
+[source,xml,subs=attributes+]
+----
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <configuration>
+                <systemPropertyVariables>
+                    <!-- skip -->
+                    <maven.settings>${session.request.userSettingsFile.absolutePath}</maven.settings>
+                </systemPropertyVariables>
+            </configuration>
+        </plugin>
+----
+
+==== Remote repository access through authenticated HTTPS
+
+In case a remote Maven repository requires link:https://maven.apache.org/guides/mini/guide-repository-ssl.html[authenticated HTTPS access configuration], some or all of the following properties will need to be passed to the test plugins:
+
+[source,xml,subs=attributes+]
+----
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire-plugin.version}</version>
+            <configuration>
+                <systemPropertyVariables>
+                    <!-- skip -->
+                    <javax.net.ssl.keyStoreType>${javax.net.ssl.keyStoreType}</javax.net.ssl.keyStoreType>
+                    <javax.net.ssl.keyStore>${javax.net.ssl.keyStore}</javax.net.ssl.keyStore>
+                    <javax.net.ssl.keyStorePassword>${javax.net.ssl.keyStorePassword}</javax.net.ssl.keyStorePassword>
+                    <javax.net.ssl.trustStore>${javax.net.ssl.trustStore}</javax.net.ssl.trustStore>
+                    <javax.net.ssl.trustStorePassword>${javax.net.ssl.trustStorePassword}</javax.net.ssl.trustStorePassword>
+                </systemPropertyVariables>
+            </configuration>
+        </plugin>
+----
+
 [[maven-configuration-profile]]
 === Building with a specific configuration profile
 

@@ -41,9 +41,20 @@ if (System.env.GITHUB_ACTIONS) {
         buildScan.tag('pr-' + prnumber)
     }
 
-    buildScan.buildScanPublished {  publishedBuildScan ->
-        new File(System.env.GITHUB_STEP_SUMMARY).withWriterAppend { out ->
-            out.println("\n[Build scan for '${mvnCommand}' in ${jobName}](${publishedBuildScan.buildScanUri})\n")
+    buildScan.buildScanPublished {  publishedBuildScan -> {
+            File target = new File("target")
+            if (!target.exists()) {
+                target.mkdir()
+            }
+            File gradleBuildScanUrlFile = new File("target/gradle-build-scan-url.txt")
+            if (!gradleBuildScanUrlFile.exists()) {
+                gradleBuildScanUrlFile.withWriter { out ->
+                    out.print(publishedBuildScan.buildScanUri)
+                }
+            }
+            new File(System.env.GITHUB_STEP_SUMMARY).withWriterAppend { out ->
+                out.println("\n[Build scan for '${mvnCommand}' in ${jobName}](${publishedBuildScan.buildScanUri})\n")
+            }
         }
     }
 }

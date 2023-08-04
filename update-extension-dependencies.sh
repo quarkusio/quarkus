@@ -14,7 +14,7 @@ then
   echo ''
   echo 'Building bom-descriptor-json...'
   echo ''
-  mvn -q -e clean package -f "${PRG_PATH}/devtools/bom-descriptor-json" -Denforcer.skip $*
+  mvn -q -e -Dscan=false clean package -f "${PRG_PATH}/devtools/bom-descriptor-json" -Denforcer.skip $*
 else
   read -n1 -p 'Build the entire project with relocations? [y/n] ' ANSWER
   echo ''
@@ -23,7 +23,7 @@ else
     echo ''
     echo 'Building entire project with relocations...'
     echo ''
-    mvn -q -e -Dquickly -Dno-test-modules -Prelocations -T0.8C -f "${PRG_PATH}" $*
+    mvn -q -e -Dscan=false -Dquickly -Dno-test-modules -Prelocations -T0.8C -f "${PRG_PATH}" $*
   else
     echo ''
     echo 'Aborted!'
@@ -108,7 +108,7 @@ echo ''
 echo 'Sanity check...'
 echo ''
 # sanity check; make sure nothing stupid was added like non-existing deps
-mvn dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" -pl devtools/bom-descriptor-json,docs $*
+mvn -Dscan=false dependency:resolve validate -Dsilent -q -f "${PRG_PATH}" -pl devtools/bom-descriptor-json,docs $*
 
 # CI only: verify that no pom.xml was touched (if changes are found, committer forgot to run script or to add changes)
 if [ "${CI:-}" == true ] && [ $(git status -s -u no '*pom.xml' | wc -l) -ne 0 ]

@@ -193,7 +193,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addGetAnnotation(methodCreator);
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesJsonAnnotation(methodCreator, resourceProperties);
-        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
         addSecurityAnnotations(methodCreator, resourceProperties);
@@ -280,7 +280,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         addGetAnnotation(methodCreator);
         addPathAnnotation(methodCreator, resourceProperties.getPath(RESOURCE_METHOD_NAME));
         addProducesJsonAnnotation(methodCreator, resourceProperties);
-        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, Response.Status.OK, resourceMetadata.getEntityType(), true);
         addSecurityAnnotations(methodCreator, resourceProperties);

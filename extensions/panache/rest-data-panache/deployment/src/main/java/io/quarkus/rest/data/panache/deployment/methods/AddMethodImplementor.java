@@ -114,7 +114,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
         addContextAnnotation(methodCreator.getParameterAnnotations(1));
         addConsumesAnnotation(methodCreator, APPLICATION_JSON);
         addProducesJsonAnnotation(methodCreator, resourceProperties);
-        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         addOpenApiResponseAnnotation(methodCreator, Response.Status.CREATED, resourceMetadata.getEntityType());
         addSecurityAnnotations(methodCreator, resourceProperties);
         // Add parameter annotations
@@ -130,7 +130,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
             ResultHandle entity = tryBlock.invokeVirtualMethod(
                     ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Object.class, Object.class),
                     resource, entityToSave);
-            tryBlock.returnValue(responseImplementor.created(tryBlock, entity));
+            tryBlock.returnValue(responseImplementor.created(tryBlock, entity, resourceProperties));
             tryBlock.close();
         } else {
             ResultHandle uniEntity = methodCreator.invokeVirtualMethod(
@@ -138,7 +138,7 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
                     resource, entityToSave);
 
             methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntity, EXCEPTION_MESSAGE,
-                    (body, item) -> body.returnValue(responseImplementor.created(body, item))));
+                    (body, item) -> body.returnValue(responseImplementor.created(body, item, resourceProperties))));
         }
 
         methodCreator.close();

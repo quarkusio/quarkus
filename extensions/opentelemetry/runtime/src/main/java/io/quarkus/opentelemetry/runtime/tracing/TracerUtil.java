@@ -15,20 +15,18 @@ public class TracerUtil {
     }
 
     public static Resource mapResourceAttributes(List<String> resourceAttributes, String serviceName) {
-        if (resourceAttributes.isEmpty()) {
-            return Resource.empty();
-        }
-        AttributesBuilder attributesBuilder = Attributes.builder();
-        var attrNameToValue = OpenTelemetryUtil.convertKeyValueListToMap(resourceAttributes);
+        final AttributesBuilder attributesBuilder = Attributes.builder();
 
-        // override both default (app name) and explicitly set resource attribute
-        // it needs to be done manually because OpenTelemetry correctly sets 'otel.service.name'
-        // to existing (incoming) resource, but customizer output replaces originally set service name
+        if (!resourceAttributes.isEmpty()) {
+            OpenTelemetryUtil
+                    .convertKeyValueListToMap(resourceAttributes)
+                    .forEach(attributesBuilder::put);
+        }
+
         if (serviceName != null) {
-            attrNameToValue.put(SERVICE_NAME.getKey(), serviceName);
+            attributesBuilder.put(SERVICE_NAME.getKey(), serviceName);
         }
 
-        attrNameToValue.forEach(attributesBuilder::put);
         return Resource.create(attributesBuilder.build());
     }
 }

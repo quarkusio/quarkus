@@ -2,7 +2,12 @@
 // Configure build scan publication
 boolean publish = true
 if(session?.getRequest()?.getBaseDirectory() != null) {
-    def testBuildPaths = [ '/target/codestart-test/', '/target/it/', '/target/test-classes/', '/target/test-project/']
+    def testBuildPaths = [
+        File.separator + 'target' + File.separator + 'codestart-test' + File.separator,
+        File.separator + 'target' + File.separator + 'it' + File.separator,
+        File.separator + 'target' + File.separator + 'test-classes' + File.separator,
+        File.separator + 'target' + File.separator + 'test-project' + File.separator
+    ]
     publish = testBuildPaths.every {testBuildPath -> !session.getRequest().getBaseDirectory().contains(testBuildPath) }
     if(!publish) {
         // do not publish a build scan for test builds

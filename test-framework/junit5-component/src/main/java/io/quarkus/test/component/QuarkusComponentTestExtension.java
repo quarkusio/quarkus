@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -142,6 +143,13 @@ public class QuarkusComponentTestExtension
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor,
         TestInstancePreDestroyCallback, ConfigSource {
 
+    /**
+     * By default, test config properties take precedence over system properties (400), ENV variables (300) and
+     * application.properties (250)
+     *
+     */
+    public static final int DEFAULT_CONFIG_SOURCE_ORDINAL = 500;
+
     private static final Logger LOG = Logger.getLogger(QuarkusComponentTestExtension.class);
 
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
@@ -162,6 +170,7 @@ public class QuarkusComponentTestExtension
     private final List<MockBeanConfiguratorImpl<?>> mockConfigurators;
     private final AtomicBoolean useDefaultConfigProperties = new AtomicBoolean();
     private final AtomicBoolean addNestedClassesAsComponents = new AtomicBoolean(true);
+    private final AtomicInteger configSourceOrdinal = new AtomicInteger(DEFAULT_CONFIG_SOURCE_ORDINAL);
 
     // Used for declarative registration
     public QuarkusComponentTestExtension() {
@@ -233,6 +242,18 @@ public class QuarkusComponentTestExtension
         return this;
     }
 
+    /**
+     * Set the ordinal of the config source used for all test config properties. By default,
+     * {@value #DEFAULT_CONFIG_SOURCE_ORDINAL} is used.
+     *
+     * @param val
+     * @return the extension
+     */
+    public QuarkusComponentTestExtension setConfigSourceOrdinal(int val) {
+        this.configSourceOrdinal.set(val);
+        return this;
+    }
+
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
         long start = System.nanoTime();
@@ -273,6 +294,7 @@ public class QuarkusComponentTestExtension
                 this.useDefaultConfigProperties.set(true);
             }
             this.addNestedClassesAsComponents.set(testAnnotation.addNestedClassesAsComponents());
+            this.configSourceOrdinal.set(testAnnotation.configSourceOrdinal());
         }
         // All fields annotated with @Inject represent component classes
         Class<?> current = testClass;
@@ -398,8 +420,7 @@ public class QuarkusComponentTestExtension
 
     @Override
     public int getOrdinal() {
-        // System properties (400) and ENV variables (300) take precedence but application.properties has lower priority (250)
-        return 275;
+        return configSourceOrdinal.get();
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {

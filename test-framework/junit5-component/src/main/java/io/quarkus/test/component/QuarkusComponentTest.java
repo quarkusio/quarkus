@@ -50,4 +50,11 @@ public @interface QuarkusComponentTest {
      * @see #value()
      */
     boolean addNestedClassesAsComponents() default true;
+
+    /**
+     * The ordinal of the config source used for all test config properties.
+     *
+     * @see QuarkusComponentTestExtension#setConfigSourceOrdinal(int)
+     */
+    int configSourceOrdinal() default QuarkusComponentTestExtension.DEFAULT_CONFIG_SOURCE_ORDINAL;
 }

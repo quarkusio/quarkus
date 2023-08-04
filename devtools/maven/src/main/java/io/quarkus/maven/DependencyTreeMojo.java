@@ -8,6 +8,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -36,6 +37,9 @@ public class DependencyTreeMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
+
+    @Parameter(defaultValue = "${session}", readonly = true)
+    protected MavenSession session;
 
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     private List<RemoteRepository> repos;
@@ -130,6 +134,7 @@ public class DependencyTreeMojo extends AbstractMojo {
     protected MavenArtifactResolver resolver() {
         return resolver == null
                 ? resolver = workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
+                        .setUserSettings(session.getRequest().getUserSettingsFile())
                         // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
                         // e.g. -Dquarkus.platform.version=xxx
                         //.setRepositorySystem(repoSystem)

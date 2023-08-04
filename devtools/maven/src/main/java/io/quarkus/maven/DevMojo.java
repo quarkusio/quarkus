@@ -1137,6 +1137,7 @@ public class DevMojo extends AbstractMojo {
             bootstrapProvider.close();
         } else {
             final BootstrapMavenContextConfig<?> mvnConfig = BootstrapMavenContext.config()
+                    .setUserSettings(session.getRequest().getUserSettingsFile())
                     .setRemoteRepositories(repos)
                     .setWorkspaceDiscovery(true)
                     .setPreferPomsFromWorkspace(true)

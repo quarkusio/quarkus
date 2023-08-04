@@ -1,8 +1,11 @@
 package io.quarkus.vertx.http.devconsole;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
@@ -13,25 +16,26 @@ import io.restassured.RestAssured;
  * The config editor is a deployment side handler, so this test that the deployment side functions of the dev console
  * handle body handlers correctly.
  */
-public class DevConsoleConfigEditorBodyHandlerTest {
+public class DevConsoleConfigEditorBodyHandlerTest extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar.addClass(BodyHandlerBean.class));
 
+    public DevConsoleConfigEditorBodyHandlerTest() {
+        super("devui-configuration");
+    }
+
     @Test
-    public void testChangeHttpRoute() {
+    public void testChangeHttpRoute() throws Exception {
         RestAssured.with()
                 .get("q/arc/beans")
                 .then()
                 .statusCode(200);
-        RestAssured.with().formParam("name", "quarkus.http.root-path")
-                .formParam("value", "/foo")
-                .formParam("action", "updateProperty")
-                .redirects().follow(false)
-                .post("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
-                .then()
-                .statusCode(303);
+        super.executeJsonRPCMethod("updateProperty",
+                Map.of(
+                        "name", "quarkus.http.root-path",
+                        "value", "/foo"));
         RestAssured.with()
                 .get("q/arc/beans")
                 .then()

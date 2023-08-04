@@ -1,30 +1,34 @@
 package io.quarkus.vertx.http.devconsole;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class DevConsoleConfigEditorTest {
+public class DevConsoleConfigEditorTest extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withEmptyApplication();
 
+    public DevConsoleConfigEditorTest() {
+        super("devui-configuration");
+    }
+
     @Test
-    public void testChangeHttpRoute() {
+    public void testChangeHttpRoute() throws Exception {
         RestAssured.with()
                 .get("q/arc/beans")
                 .then()
                 .statusCode(200);
-        RestAssured.with().formParam("name", "quarkus.http.root-path")
-                .formParam("value", "/foo")
-                .formParam("action", "updateProperty")
-                .redirects().follow(false)
-                .post("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
-                .then()
-                .statusCode(303);
+        super.executeJsonRPCMethod("updateProperty",
+                Map.of(
+                        "name", "quarkus.http.root-path",
+                        "value", "/foo"));
         RestAssured.with()
                 .get("q/arc/beans")
                 .then()
@@ -37,18 +41,15 @@ public class DevConsoleConfigEditorTest {
     }
 
     @Test
-    public void testSetEmptyValue() {
+    public void testSetEmptyValue() throws Exception {
         RestAssured.with()
                 .get("q/arc/beans")
                 .then()
                 .statusCode(200);
-        RestAssured.with().formParam("name", "quarkus.http.root-path")
-                .formParam("value", "")
-                .formParam("action", "updateProperty")
-                .redirects().follow(false)
-                .post("q/dev-v1/io.quarkus.quarkus-vertx-http/config")
-                .then()
-                .statusCode(303);
+        super.executeJsonRPCMethod("updateProperty",
+                Map.of(
+                        "name", "quarkus.http.root-path",
+                        "value", ""));
         RestAssured.with()
                 .get("q/arc/beans")
                 .then()

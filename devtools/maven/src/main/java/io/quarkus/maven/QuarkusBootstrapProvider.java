@@ -180,6 +180,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                 if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST || isWorkspaceDiscovery(mojo)) {
                     return workspaceProvider.createArtifactResolver(
                             BootstrapMavenContext.config()
+                                    // it's important to pass user settings in case the process was not launched using the original mvn script
+                                    // for example using org.codehaus.plexus.classworlds.launcher.Launcher
+                                    .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
                                     .setCurrentProject(mojo.mavenProject().getFile().toString())
                                     .setPreferPomsFromWorkspace(true)
                                     .setProjectModelProvider(getProjectMap(mojo.mavenSession())::get));

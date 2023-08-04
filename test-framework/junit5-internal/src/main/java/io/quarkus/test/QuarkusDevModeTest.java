@@ -58,16 +58,25 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 /**
- * A test extension for testing Quarkus development mode in extensions. Intended for use by extension developers
- * testing their extension functionality in dev mode. Unlike {@link QuarkusUnitTest} this will test against
- * a clean deployment for each test method. This is necessary to prevent undefined behaviour by making sure the
- * deployment starts in a clean state for each test.
+ * A test extension for <strong>black-box</strong> testing of Quarkus development mode in extensions.
  * <p>
+ * Intended for use by extension developers testing their extension functionality in dev mode.
  * <p>
- * NOTE: These tests do not run with {@link io.quarkus.runtime.LaunchMode#TEST} but rather with
- * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT}. This is necessary to ensure dev mode is tested correctly.
- * <p>
+ * Note that unlike {@link QuarkusUnitTest}:
+ * <ul>
+ * <li>Tests run in black-box mode: the classloader of test methods
+ * does not give access to the running Quarkus application,
+ * so things like CDI will not work.
+ * You should define REST endpoints that perform the actions you want to simulate in your tests,
+ * and call those REST endpoints in your tests using e.g. RestAssured.</li>
+ * <li>Each test method will run in a clean deployment.
+ * This is necessary to prevent undefined behaviour by making sure the
+ * deployment starts in a clean state for each test.</li>
+ * <li>Tests do not run with {@link io.quarkus.runtime.LaunchMode#TEST} but rather with
+ * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT}.
+ * This is necessary to ensure dev mode is tested correctly.
  * A side effect of this is that the tests will run on port 8080 by default instead of port 8081.
+ * </ul>
  */
 public class QuarkusDevModeTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {

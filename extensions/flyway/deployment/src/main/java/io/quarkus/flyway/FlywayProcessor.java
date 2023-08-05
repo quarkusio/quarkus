@@ -47,7 +47,6 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -62,15 +61,18 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
+import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
+import io.quarkus.flyway.runtime.FlywayInitTask;
 import io.quarkus.flyway.runtime.FlywayRecorder;
-import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 class FlywayProcessor {
 
     private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
 
+    private static final String FLYWAY_INIT_TASK = "flyway-init-task";
+    private static final String FLYWAY_CONTAINER_BEAN_NAME_PREFIX = "flyway_container_";
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
@@ -166,6 +168,10 @@ class FlywayProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             MigrationStateBuildItem migrationsBuildItem) {
+
+        // Init Task
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayInitTask.class).setUnremovable().build());
         // make a FlywayContainerProducer bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(FlywayContainerProducer.class).setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON).build());
@@ -182,7 +188,27 @@ class FlywayProcessor {
             if (!hasMigrations) {
                 createPossible = sqlGeneratorBuildItems.stream().anyMatch(s -> s.getDatabaseName().equals(dataSourceName));
             }
-            SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayContainerConfigurator = SyntheticBeanBuildItem
+                    .configure(FlywayContainer.class)
+                    .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
+                    .setRuntimeInit()
+                    .unremovable()
+                    .supplier(recorder.flywayContainerSupplier(dataSourceName,
+                            hasMigrations, createPossible));
+
+            if (DataSourceUtil.isDefault(dataSourceName)) {
+                flywayContainerConfigurator.addQualifier(Default.class);
+            } else {
+                String beanName = FLYWAY_CONTAINER_BEAN_NAME_PREFIX + dataSourceName;
+                flywayContainerConfigurator.name(beanName);
+                flywayContainerConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
+                flywayContainerConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName)
+                        .done();
+            }
+
+            syntheticBeanBuildItemBuildProducer.produce(flywayContainerConfigurator.done());
+
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayConfigurator = SyntheticBeanBuildItem
                     .configure(Flyway.class)
                     .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
                     .setRuntimeInit()
@@ -191,45 +217,38 @@ class FlywayProcessor {
                             hasMigrations, createPossible));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {
-                configurator.addQualifier(Default.class);
+                flywayConfigurator.addQualifier(Default.class);
             } else {
                 String beanName = FLYWAY_BEAN_NAME_PREFIX + dataSourceName;
-                configurator.name(beanName);
-
-                configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
-                configurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();
+                flywayConfigurator.name(beanName);
+                flywayConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
+                flywayConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();
             }
 
-            syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+            syntheticBeanBuildItemBuildProducer.produce(flywayConfigurator.done());
+
         }
     }
 
     @BuildStep
     @Consume(BeanContainerBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public ServiceStartBuildItem startActions(FlywayRecorder recorder,
-            FlywayRuntimeConfig config,
+    public void startActions(FlywayRecorder recorder,
+            MigrationStateBuildItem migrationsBuildItem,
+            List<InitTaskCompletedBuildItem> completedInitTasks,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
-            BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
-            MigrationStateBuildItem migrationsBuildItem) {
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
 
-        recorder.doStartActions();
-
-        // once we are done running the migrations, we produce a build item indicating that the
-        // schema is "ready"
-        schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
-        initializationCompleteBuildItem.produce(new InitTaskCompletedBuildItem("flyway"));
-        return new ServiceStartBuildItem("flyway");
+        if (completedInitTasks.stream().anyMatch(c -> c.getName().equals(FLYWAY_INIT_TASK))) {
+            schemaReadyBuildItem.produce(new JdbcDataSourceSchemaReadyBuildItem(migrationsBuildItem.hasMigrations));
+            serviceStart.produce(new ServiceStartBuildItem("flyway"));
+        }
     }
 
     @BuildStep
-    public InitTaskBuildItem configureInitTask(ApplicationInfoBuildItem app) {
+    public InitTaskBuildItem configureInitTask() {
         return InitTaskBuildItem.create()
-                .withName(app.getName() + "-flyway-init")
-                .withTaskEnvVars(Map.of("QUARKUS_INIT_AND_EXIT", "true", "QUARKUS_FLYWAY_ENABLED", "true"))
-                .withAppEnvVars(Map.of("QUARKUS_FLYWAY_ENABLED", "false"))
-                .withSharedEnvironment(true)
-                .withSharedFilesystem(true);
+                .withName("flyway-init-task");
     }
 
     private Set<String> getDataSourceNames(List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems) {

@@ -126,6 +126,12 @@
             <artifactId>smallrye-mutiny-vertx-web-client</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.quarkus.resteasy.reactive</groupId>
+            <artifactId>resteasy-reactive-client</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

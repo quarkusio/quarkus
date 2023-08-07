@@ -16,6 +16,7 @@ import io.quarkus.kubernetes.spi.KubernetesInitContainerBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesJobBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.PolicyRule;
 
 public class InitTaskProcessor {
@@ -34,6 +35,7 @@ public class InitTaskProcessor {
             BuildProducer<KubernetesEnvBuildItem> env,
             BuildProducer<KubernetesRoleBuildItem> roles,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
             BuildProducer<DecoratorBuildItem> decorators) {
 
         boolean generateRoleForJobs = false;
@@ -73,6 +75,7 @@ public class InitTaskProcessor {
                             List.of("get"))),
                     target));
             roleBindings.produce(new KubernetesRoleBindingBuildItem(null, "view-jobs", false, target));
+            serviceAccount.produce(new KubernetesServiceAccountBuildItem(true));
         }
     }
 }

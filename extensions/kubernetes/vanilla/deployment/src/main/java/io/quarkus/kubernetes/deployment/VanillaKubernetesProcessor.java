@@ -314,11 +314,13 @@ public class VanillaKubernetesProcessor {
             BuildProducer<KubernetesEnvBuildItem> env,
             BuildProducer<KubernetesRoleBuildItem> roles,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
+
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         if (config.externalizeInit) {
             InitTaskProcessor.process(KUBERNETES, name, image, initTasks, config.initTasks,
-                    jobs, initContainers, env, roles, roleBindings, decorators);
+                    jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
         }
     }
 }

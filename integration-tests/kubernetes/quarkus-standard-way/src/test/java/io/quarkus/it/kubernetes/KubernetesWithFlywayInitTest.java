@@ -65,6 +65,7 @@ public class KubernetesWithFlywayInitTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
+                        assertThat(podSpec.getServiceAccountName()).isEqualTo(NAME);
                         assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getName()).isEqualTo("init");
                             assertThat(container.getImage()).isEqualTo("groundnuty/k8s-wait-for:no-root-v1.7");

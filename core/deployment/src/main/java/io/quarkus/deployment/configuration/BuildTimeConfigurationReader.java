@@ -80,6 +80,7 @@ import io.smallrye.config.SecretKeys;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SysPropConfigSource;
+import io.smallrye.config.common.utils.StringUtil;
 
 /**
  * A configuration reader.
@@ -1017,6 +1018,9 @@ public final class BuildTimeConfigurationReader {
                             properties.add(property);
                         } else {
                             properties.remove(property);
+                            if (configSource instanceof EnvConfigSource) {
+                                properties.remove(StringUtil.toLowerCaseAndDotted(property));
+                            }
                         }
                     }
                 } else {

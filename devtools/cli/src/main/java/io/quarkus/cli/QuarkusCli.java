@@ -93,11 +93,14 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         boolean interactiveMode = Arrays.stream(args).noneMatch(arg -> arg.equals("--cli-test"));
         Optional<String> testDir = Arrays.stream(args).dropWhile(arg -> !arg.equals("--cli-test-dir")).skip(1).findFirst();
         boolean helpCommand = Arrays.stream(args).anyMatch(arg -> arg.equals("--help"));
+        boolean pluginCommand = args.length >= 1 && (args[0].equals("plug") || args[0].equals("plugin"));
+
         try {
             boolean existingCommand = checkMissingCommand(cmd, args).isEmpty();
-            // If the command already exists and is not a help command (that lists subcommands), then just execute
-            // without dealing with plugins
-            if (existingCommand && !helpCommand) {
+            // If the command already exists and is not a help command (that lists subcommands) or plugin command, then just execute
+            // without dealing with plugins.
+            // The reason that we check if its a plugin command is that plugin commands need PluginManager initialization.
+            if (existingCommand && !helpCommand && !pluginCommand) {
                 return cmd.execute(args);
             }
             PluginCommandFactory pluginCommandFactory = new PluginCommandFactory(output);

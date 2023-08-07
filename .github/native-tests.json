@@ -39,7 +39,7 @@
         {
             "category": "Data6",
             "timeout": 95,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling",
             "os-name": "ubuntu-latest"
         },
         {

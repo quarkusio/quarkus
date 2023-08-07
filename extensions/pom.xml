@@ -101,7 +101,6 @@
         <module>hibernate-search-orm-coordination-outbox-polling</module>
         <module>elasticsearch-rest-client-common</module>
         <module>elasticsearch-rest-client</module>
-        <module>elasticsearch-rest-high-level-client</module>
         <module>elasticsearch-java-client</module>
         <module>kafka-client</module>
         <module>kafka-streams</module>

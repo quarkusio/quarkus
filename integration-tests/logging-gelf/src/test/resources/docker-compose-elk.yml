@@ -7,6 +7,7 @@ services:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       discovery.type: "single-node"
       xpack.security.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: false
     networks:
       - elk
 

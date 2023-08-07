@@ -3,18 +3,16 @@ package io.quarkus.vertx.http.runtime;
 import java.time.Duration;
 import java.util.Optional;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
+import io.smallrye.config.WithDefault;
 
 /**
  * config for the form authentication mechanism
  */
-@ConfigGroup
-public class FormAuthConfig {
+public interface FormAuthConfig {
     /**
      * SameSite attribute values for the session and location cookies.
      */
-    public enum CookieSameSite {
+    enum CookieSameSite {
         STRICT,
         LAX,
         NONE
@@ -23,45 +21,45 @@ public class FormAuthConfig {
     /**
      * If form authentication is enabled.
      */
-    @ConfigItem
-    public boolean enabled;
+    @WithDefault("false")
+    boolean enabled();
 
     /**
      * The login page. Redirect to login page can be disabled by setting `quarkus.http.auth.form.login-page=`.
      */
-    @ConfigItem(defaultValue = "/login.html")
-    public Optional<String> loginPage;
+    @WithDefault("/login.html")
+    Optional<String> loginPage();
 
     /**
      * The post location.
      */
-    @ConfigItem(defaultValue = "/j_security_check")
-    public String postLocation;
+    @WithDefault("/j_security_check")
+    String postLocation();
 
     /**
      * The username field name.
      */
-    @ConfigItem(defaultValue = "j_username")
-    public String usernameParameter;
+    @WithDefault("j_username")
+    String usernameParameter();
 
     /**
      * The password field name.
      */
-    @ConfigItem(defaultValue = "j_password")
-    public String passwordParameter;
+    @WithDefault("j_password")
+    String passwordParameter();
 
     /**
      * The error page. Redirect to error page can be disabled by setting `quarkus.http.auth.form.error-page=`.
      */
-    @ConfigItem(defaultValue = "/error.html")
-    public Optional<String> errorPage;
+    @WithDefault("/error.html")
+    Optional<String> errorPage();
 
     /**
      * The landing page to redirect to if there is no saved page to redirect back to.
      * Redirect to landing page can be disabled by setting `quarkus.http.auth.form.landing-page=`.
      */
-    @ConfigItem(defaultValue = "/index.html")
-    public Optional<String> landingPage;
+    @WithDefault("/index.html")
+    Optional<String> landingPage();
 
     /**
      * Option to disable redirect to landingPage if there is no saved page to redirect back to. Form Auth POST is followed
@@ -71,24 +69,24 @@ public class FormAuthConfig {
      *             (via `quarkus.http.auth.form.landing-page=`). Quarkus will ignore this configuration property
      *             if there is no landing page.
      */
-    @ConfigItem(defaultValue = "true")
+    @WithDefault("true")
     @Deprecated
-    public boolean redirectAfterLogin;
+    boolean redirectAfterLogin();
 
     /**
      * Option to control the name of the cookie used to redirect the user back
      * to where he wants to get access to.
      */
-    @ConfigItem(defaultValue = "quarkus-redirect-location")
-    public String locationCookie;
+    @WithDefault("quarkus-redirect-location")
+    String locationCookie();
 
     /**
      * The inactivity (idle) timeout
      *
      * When inactivity timeout is reached, cookie is not renewed and a new login is enforced.
      */
-    @ConfigItem(defaultValue = "PT30M")
-    public Duration timeout;
+    @WithDefault("PT30M")
+    Duration timeout();
 
     /**
      * How old a cookie can get before it will be replaced with a new cookie with an updated timeout, also
@@ -105,30 +103,30 @@ public class FormAuthConfig {
      * In other words no timeout is tracked on the server side; the timestamp is encoded and encrypted in the cookie itself,
      * and it is decrypted and parsed with each request.
      */
-    @ConfigItem(defaultValue = "PT1M")
-    public Duration newCookieInterval;
+    @WithDefault("PT1M")
+    Duration newCookieInterval();
 
     /**
      * The cookie that is used to store the persistent session
      */
-    @ConfigItem(defaultValue = "quarkus-credential")
-    public String cookieName;
+    @WithDefault("quarkus-credential")
+    String cookieName();
 
     /**
      * The cookie path for the session and location cookies.
      */
-    @ConfigItem(defaultValue = "/")
-    public Optional<String> cookiePath = Optional.of("/");
+    @WithDefault("/")
+    Optional<String> cookiePath();
 
     /**
      * Set the HttpOnly attribute to prevent access to the cookie via JavaScript.
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean httpOnlyCookie;
+    @WithDefault("false")
+    boolean httpOnlyCookie();
 
     /**
      * SameSite attribute for the session and location cookies.
      */
-    @ConfigItem(defaultValue = "strict")
-    public CookieSameSite cookieSameSite = CookieSameSite.STRICT;
+    @WithDefault("strict")
+    CookieSameSite cookieSameSite();
 }

@@ -33,7 +33,7 @@ public class ConfiguredPathInfo {
 
     public String getEndpointPath(NonApplicationRootPathBuildItem nonAppRoot, ManagementInterfaceBuildTimeConfig mibt,
             LaunchModeBuildItem mode) {
-        if (management && mibt.enabled) {
+        if (management && mibt.enabled()) {
             var prefix = NonApplicationRootPathBuildItem.getManagementUrlPrefix(mode);
             return prefix + endpointPath;
         }

@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
-import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
 import java.security.Permission;
 import java.util.HashMap;
@@ -72,19 +71,19 @@ public class HttpSecurityProcessor {
         producer.produce(new HttpSecurityPolicyBuildItem("permit", new SupplierImpl<>(new PermitSecurityPolicy())));
         producer.produce(
                 new HttpSecurityPolicyBuildItem("authenticated", new SupplierImpl<>(new AuthenticatedHttpSecurityPolicy())));
-        if (!buildTimeConfig.auth.permissions.isEmpty()) {
+        if (!buildTimeConfig.auth().permissions().isEmpty()) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
         }
         Map<String, BiFunction<String, String[], Permission>> permClassToCreator = new HashMap<>();
-        for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth.rolePolicy.entrySet()) {
+        for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth().rolePolicy().entrySet()) {
             PolicyConfig policyConfig = e.getValue();
-            if (policyConfig.permissions.isEmpty()) {
+            if (policyConfig.permissions().isEmpty()) {
                 producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(),
-                        new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed))));
+                        new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed()))));
             } else {
                 // create HTTP Security policy that checks allowed roles and grants SecurityIdentity permissions to
                 // requests that this policy allows to proceed
-                var permissionCreator = permClassToCreator.computeIfAbsent(policyConfig.permissionClass,
+                var permissionCreator = permClassToCreator.computeIfAbsent(policyConfig.permissionClass(),
                         new Function<String, BiFunction<String, String[], Permission>>() {
                             @Override
                             public BiFunction<String, String[], Permission> apply(String s) {
@@ -92,11 +91,11 @@ public class HttpSecurityProcessor {
                                     return recorder.stringPermissionCreator();
                                 }
                                 boolean constructorAcceptsActions = validateConstructor(combinedIndexBuildItem.getIndex(),
-                                        policyConfig.permissionClass);
+                                        policyConfig.permissionClass());
                                 return recorder.customPermissionCreator(s, constructorAcceptsActions);
                             }
                         });
-                var policy = recorder.createRolesAllowedPolicy(policyConfig.rolesAllowed, policyConfig.permissions,
+                var policy = recorder.createRolesAllowedPolicy(policyConfig.rolesAllowed(), policyConfig.permissions(),
                         permissionCreator);
                 producer.produce(new HttpSecurityPolicyBuildItem(e.getKey(), policy));
             }
@@ -166,11 +165,11 @@ public class HttpSecurityProcessor {
             HttpSecurityRecorder recorder,
             HttpBuildTimeConfig buildTimeConfig,
             BuildProducer<RouteBuildItem> filterBuildItemBuildProducer) {
-        if (!buildTimeConfig.auth.proactive) {
-            filterBuildItemBuildProducer.produce(RouteBuildItem.builder().route(buildTimeConfig.auth.form.postLocation)
+        if (!buildTimeConfig.auth().proactive()) {
+            filterBuildItemBuildProducer.produce(RouteBuildItem.builder().route(buildTimeConfig.auth().form().postLocation())
                     .handler(recorder.formAuthPostHandler()).build());
         }
-        if (buildTimeConfig.auth.form.enabled) {
+        if (buildTimeConfig.auth().form().enabled()) {
             return SyntheticBeanBuildItem.configure(FormAuthenticationMechanism.class)
                     .types(HttpAuthenticationMechanism.class)
                     .setRuntimeInit()
@@ -212,8 +211,8 @@ public class HttpSecurityProcessor {
                 .setRuntimeInit()
                 .scope(Singleton.class)
                 .supplier(recorder.setupBasicAuth(buildTimeConfig));
-        if (!buildTimeConfig.auth.form.enabled && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
-                && !buildTimeConfig.auth.basic.orElse(false)) {
+        if (!buildTimeConfig.auth().form().enabled() && !isMtlsClientAuthenticationEnabled(buildTimeConfig)
+                && !buildTimeConfig.auth().basic().orElse(false)) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
@@ -225,12 +224,12 @@ public class HttpSecurityProcessor {
     public static boolean applicationBasicAuthRequired(HttpBuildTimeConfig buildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig) {
         //basic auth explicitly disabled
-        if (buildTimeConfig.auth.basic.isPresent() && !buildTimeConfig.auth.basic.get()) {
+        if (buildTimeConfig.auth().basic().isPresent() && !buildTimeConfig.auth().basic().get()) {
             return false;
         }
-        if (!buildTimeConfig.auth.basic.orElse(false)) {
-            if ((buildTimeConfig.auth.form.enabled || isMtlsClientAuthenticationEnabled(buildTimeConfig))
-                    || managementInterfaceBuildTimeConfig.auth.basic.orElse(false)) {
+        if (!buildTimeConfig.auth().basic().orElse(false)) {
+            if ((buildTimeConfig.auth().form().enabled() || isMtlsClientAuthenticationEnabled(buildTimeConfig))
+                    || managementInterfaceBuildTimeConfig.auth().basic().orElse(false)) {
                 //if form auth is enabled and we are not then we don't install
                 return false;
             }
@@ -258,7 +257,7 @@ public class HttpSecurityProcessor {
             policyMap.put(e.getName(), e.policySupplier);
         }
 
-        if (!buildTimeConfig.auth.form.enabled && buildTimeConfig.auth.basic.orElse(false)) {
+        if (!buildTimeConfig.auth().form().enabled() && buildTimeConfig.auth().basic().orElse(false)) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
@@ -271,17 +270,17 @@ public class HttpSecurityProcessor {
                             .addBeanClass(HttpAuthorizer.class).build());
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive),
+                            recorder.authenticationMechanismHandler(buildTimeConfig.auth().proactive()),
                             FilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
 
-            if (!buildTimeConfig.auth.permissions.isEmpty()) {
+            if (!buildTimeConfig.auth().permissions().isEmpty()) {
                 beanContainerListenerBuildItemBuildProducer
                         .produce(new BeanContainerListenerBuildItem(recorder.initPermissions(buildTimeConfig, policyMap)));
             }
         } else {
-            if (!buildTimeConfig.auth.permissions.isEmpty()) {
+            if (!buildTimeConfig.auth().permissions().isEmpty()) {
                 throw new IllegalStateException("HTTP permissions have been set however security is not enabled");
             }
         }
@@ -291,7 +290,7 @@ public class HttpSecurityProcessor {
     void collectEagerSecurityInterceptors(List<EagerSecurityInterceptorCandidateBuildItem> interceptorCandidates,
             HttpBuildTimeConfig buildTimeConfig, Capabilities capabilities,
             BuildProducer<EagerSecurityInterceptorBuildItem> interceptorsProducer) {
-        if (!buildTimeConfig.auth.proactive && capabilities.isPresent(Capability.SECURITY)
+        if (!buildTimeConfig.auth().proactive() && capabilities.isPresent(Capability.SECURITY)
                 && !interceptorCandidates.isEmpty()) {
             List<MethodInfo> allInterceptedMethodInfos = interceptorCandidates
                     .stream()
@@ -322,6 +321,6 @@ public class HttpSecurityProcessor {
     }
 
     private static boolean isMtlsClientAuthenticationEnabled(HttpBuildTimeConfig buildTimeConfig) {
-        return !ClientAuth.NONE.equals(buildTimeConfig.tlsClientAuth);
+        return !ClientAuth.NONE.equals(buildTimeConfig.tlsClientAuth());
     }
 }

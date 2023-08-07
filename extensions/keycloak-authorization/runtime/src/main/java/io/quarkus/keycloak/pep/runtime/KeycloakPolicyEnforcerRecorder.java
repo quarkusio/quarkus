@@ -47,7 +47,7 @@ public class KeycloakPolicyEnforcerRecorder {
             @Override
             public PolicyEnforcerResolver get() {
                 return new PolicyEnforcerResolver(defaultPolicyEnforcer, policyEnforcerTenants,
-                        httpConfiguration.readTimeout.toMillis());
+                        httpConfiguration.readTimeout().toMillis());
             }
         };
     }

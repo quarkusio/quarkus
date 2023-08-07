@@ -227,7 +227,7 @@ class ReactiveRoutesProcessor {
                     // access the SecurityIdentity in a synchronous manner
                     final boolean blocking = annotationStore.hasAnnotation(method, DotNames.BLOCKING);
                     final boolean alwaysAuthenticateRoute;
-                    if (!httpBuildTimeConfig.auth.proactive && !blocking) {
+                    if (!httpBuildTimeConfig.auth().proactive() && !blocking) {
                         final DotName returnTypeName = method.returnType().name();
                         // method either returns 'something' in a synchronous manner or void (in which case we can't tell)
                         final boolean possiblySynchronousResponse = !returnTypeName.equals(DotNames.UNI)

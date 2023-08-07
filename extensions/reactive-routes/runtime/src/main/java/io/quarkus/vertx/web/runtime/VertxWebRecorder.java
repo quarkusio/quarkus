@@ -52,10 +52,10 @@ public class VertxWebRecorder {
     }
 
     public Handler<RoutingContext> compressRouteHandler(Handler<RoutingContext> routeHandler, HttpCompression compression) {
-        if (httpBuildTimeConfig.enableCompression) {
+        if (httpBuildTimeConfig.enableCompression()) {
             return new HttpCompressionHandler(routeHandler, compression,
                     compression == HttpCompression.UNDEFINED
-                            ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes.orElse(List.of()))
+                            ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes().orElse(List.of()))
                             : Set.of());
         } else {
             return routeHandler;

@@ -11,41 +11,22 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
-import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
-import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.smallrye.config.SmallRyeConfig;
 
-public class OpenTelemetryServiceNameTest {
+public abstract class OpenTelemetryServiceNameBaseTest {
 
-    private static final String SERVICE_NAME = "FrankBullitt";
+    protected static final String SERVICE_NAME = "FrankBullitt";
 
-    @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TestSpanExporter.class)
-                    .addClass(TestSpanExporterProvider.class)
-                    .addAsResource("resource-config/application.properties", "application.properties")
-                    .addAsResource(
-                            "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
-            .overrideRuntimeConfigKey("quarkus.otel.service.name", SERVICE_NAME);
-
-    @Inject
-    SmallRyeConfig config;
     @Inject
     TestSpanExporter spanExporter;
 
     @Test
-    void testSvcNameHasPriorityOverAppNameAndResourceAttr() {
+    void testServiceName() {
         RestAssured.when()
                 .get("/hello").then()
                 .statusCode(200)

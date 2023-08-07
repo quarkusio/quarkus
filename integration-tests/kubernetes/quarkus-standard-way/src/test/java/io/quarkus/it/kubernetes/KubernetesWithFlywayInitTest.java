@@ -27,6 +27,7 @@ import io.quarkus.test.QuarkusProdModeTest;
 public class KubernetesWithFlywayInitTest {
 
     private static final String NAME = "kubernetes-with-flyway";
+    private static final String IMAGE_PULL_SECRET = "my-pull-secret";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -34,6 +35,7 @@ public class KubernetesWithFlywayInitTest {
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogFileName("k8s.log")
+            .overrideConfigKey("quarkus.kubernetes.image-pull-secrets", IMAGE_PULL_SECRET)
             .setForcedDependencies(Arrays.asList(
                     new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
                     new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
@@ -65,6 +67,8 @@ public class KubernetesWithFlywayInitTest {
             assertThat(d.getSpec()).satisfies(deploymentSpec -> {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
+                        assertThat(podSpec.getImagePullSecrets()).singleElement()
+                                .satisfies(s -> assertThat(s.getName()).isEqualTo(IMAGE_PULL_SECRET));
                         assertThat(podSpec.getServiceAccountName()).isEqualTo(NAME);
                         assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getName()).isEqualTo("init");
@@ -87,6 +91,8 @@ public class KubernetesWithFlywayInitTest {
                 assertThat(jobSpec.getCompletionMode()).isEqualTo("NonIndexed");
                 assertThat(jobSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
+                        assertThat(podSpec.getImagePullSecrets()).singleElement()
+                                .satisfies(s -> assertThat(s.getName()).isEqualTo(IMAGE_PULL_SECRET));
                         assertThat(podSpec.getRestartPolicy()).isEqualTo("OnFailure");
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
                             assertThat(container.getName()).isEqualTo(NAME + "-flyway-init");

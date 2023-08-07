@@ -160,11 +160,11 @@ jobs:
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
           ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          if [ -s gib-impacted.log ]
+          if [ -f gib-impacted.log ]
           then
             GIB_IMPACTED=$(cat gib-impacted.log)
           else
-            GIB_IMPACTED=''
+            GIB_IMPACTED='_all_'
           fi
           echo "GIB_IMPACTED: ${GIB_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
@@ -238,7 +238,10 @@ jobs:
         id: calc-run-flags
         run: |
           run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_quickstarts=true; run_tcks=true
-          if [ -n "${GIB_IMPACTED_MODULES}" ]
+          if [ -z "${GIB_IMPACTED_MODULES}" ]
+          then
+            run_jvm=false; run_devtools=false; run_gradle=false; run_maven=false; run_quickstarts=false; run_tcks=false
+          elif [ "${GIB_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven)|tcks/.*'; then run_jvm=false; fi

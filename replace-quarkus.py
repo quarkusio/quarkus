@@ -7,6 +7,9 @@ def load_exclusions():
         return json.load(file)
 
 def replace_instances(directory, exclusions):
+    output_directory = os.path.join(directory, 'output')
+    os.makedirs(output_directory, exist_ok=True)  # Create the output directory if it doesn't exist
+
     for filename in os.listdir(directory):
         # Skip filenames that contain the substring "attributes.adoc"
         if 'attributes.adoc' in filename:
@@ -55,8 +58,8 @@ def replace_instances(directory, exclusions):
 
                     new_content.append(line)
 
-            # Write the modified content back to the file
-            with open(os.path.join(directory, filename), 'w') as file:
+            # Write the modified content back to the file in the output directory
+            with open(os.path.join(output_directory, filename), 'w') as file:
                 file.writelines(new_content)
 
 # Provide the path to the directory containing the AsciiDoc files

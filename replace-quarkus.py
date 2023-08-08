@@ -1,7 +1,12 @@
 import os
 import re
+import json
 
-def replace_instances(directory):
+def load_exclusions():
+    with open('exclusion-list.json', 'r') as file:
+        return json.load(file)
+
+def replace_instances(directory, exclusions):
     for filename in os.listdir(directory):
         # Skip filenames that contain the substring "attributes.adoc"
         if 'attributes.adoc' in filename:
@@ -30,7 +35,12 @@ def replace_instances(directory):
                         new_content.append(line)
                         continue
 
-                    # Perform replacements on lines that are not headings or inside comment blocks
+                    # Skip replacements for exclusion list
+                    if any(exclusion in line for exclusion in exclusions):
+                        new_content.append(line)
+                        continue
+
+                    # Perform replacements on lines that are not headings, inside comment blocks, or in the exclusion list
                     occurrences = [match.start() for match in re.finditer(r'\bQuarkus\b', line)]
                     if occurrences:
                         if not found_first_instance:
@@ -51,4 +61,5 @@ def replace_instances(directory):
 
 # Provide the path to the directory containing the AsciiDoc files
 directory_path = './docs/src/main/asciidoc'
-replace_instances(directory_path)
+exclusions = load_exclusions()
+replace_instances(directory_path, exclusions)

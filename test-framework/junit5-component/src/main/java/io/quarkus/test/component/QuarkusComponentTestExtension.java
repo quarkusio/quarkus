@@ -505,6 +505,9 @@ public class QuarkusComponentTestExtension
             throw new IllegalStateException("Failed to create index", e);
         }
 
+        ClassLoader testClassClassLoader = testClass.getClassLoader();
+        // The test class is loaded by the QuarkusClassLoader in continuous testing environment
+        boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
         ClassLoader oldTccl = Thread.currentThread().getContextClassLoader();
 
         IndexView computingIndex = BeanArchives.buildComputingBeanArchiveIndex(oldTccl,
@@ -541,11 +544,13 @@ public class QuarkusComponentTestExtension
 
             // We need collect all generated resources so that we can remove them after the test
             // NOTE: previously we kept the generated framework classes (to speedup subsequent test runs) but that breaks the existing @QuarkusTests
-            Set<Path> generatedResources = new HashSet<>();
+            Set<Path> generatedResources;
 
+            // E.g. target/generated-arc-sources/org/acme/ComponentsProvider
             File componentsProviderFile = getComponentsProviderFile(testClass);
-            if (testClass.getClassLoader() instanceof QuarkusClassLoader) {
-                //continuous testing environment
+
+            if (isContinuousTesting) {
+                generatedResources = Set.of();
                 Map<String, byte[]> classes = new HashMap<>();
                 builder.setOutput(new ResourceOutput() {
                     @Override
@@ -566,11 +571,12 @@ public class QuarkusComponentTestExtension
                                 }
                                 break;
                             default:
-                                throw new IllegalArgumentException();
+                                throw new IllegalArgumentException("Unsupported resource type: " + resource.getType());
                         }
                     }
                 });
             } else {
+                generatedResources = new HashSet<>();
                 File testOutputDirectory = getTestOutputDirectory(testClass);
                 builder.setOutput(new ResourceOutput() {
                     @Override
@@ -590,7 +596,7 @@ public class QuarkusComponentTestExtension
                                 }
                                 break;
                             default:
-                                throw new IllegalArgumentException();
+                                throw new IllegalArgumentException("Unsupported resource type: " + resource.getType());
                         }
                     }
                 });
@@ -748,7 +754,9 @@ public class QuarkusComponentTestExtension
             }
 
             // Use a custom ClassLoader to load the generated ComponentsProvider file
-            QuarkusComponentTestClassLoader testClassLoader = new QuarkusComponentTestClassLoader(oldTccl,
+            // In continuous testing the CL that loaded the test class must be used as the parent CL
+            QuarkusComponentTestClassLoader testClassLoader = new QuarkusComponentTestClassLoader(
+                    isContinuousTesting ? testClassClassLoader : oldTccl,
                     componentsProviderFile,
                     null);
             Thread.currentThread().setContextClassLoader(testClassLoader);
@@ -1077,18 +1085,18 @@ public class QuarkusComponentTestExtension
         File targetDir = new File("target");
         if (targetDir.canWrite()) {
             // maven build
-            generatedSourcesDirectory = new File("target/generated-arc-sources");
+            generatedSourcesDirectory = new File(targetDir, "generated-arc-sources");
         } else {
             File buildDir = new File("build");
             if (buildDir.canWrite()) {
                 // gradle build
-                generatedSourcesDirectory = new File("build/generated-arc-sources");
+                generatedSourcesDirectory = new File(buildDir, "generated-arc-sources");
             } else {
                 generatedSourcesDirectory = new File("quarkus-component-test/generated-arc-sources");
             }
         }
-        return new File(generatedSourcesDirectory,
-                nameToPath(testClass.getPackage().getName()) + File.pathSeparator + ComponentsProvider.class.getSimpleName());
+        return new File(new File(generatedSourcesDirectory, nameToPath(testClass.getPackage().getName())),
+                ComponentsProvider.class.getSimpleName());
     }
 
 }

@@ -122,6 +122,13 @@ public interface DataSourceReactiveRuntimeConfig {
     Optional<Duration> idleTimeout();
 
     /**
+     * The maximum time a connection remains in the pool, after which it will be closed
+     * upon return and replaced as necessary.
+     */
+    @ConfigDocDefault("no timeout")
+    Optional<Duration> maxLifetime();
+
+    /**
      * Set to true to share the pool among datasources.
      * There can be multiple shared pools distinguished by <name>name</name>, when no specific name is set,
      * the <code>__vertx.DEFAULT</code> name is used.

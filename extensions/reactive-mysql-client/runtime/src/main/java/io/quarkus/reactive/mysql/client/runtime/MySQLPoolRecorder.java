@@ -2,6 +2,7 @@ package io.quarkus.reactive.mysql.client.runtime;
 
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertOptions;
@@ -107,8 +108,13 @@ public class MySQLPoolRecorder {
         poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize());
 
         if (dataSourceReactiveRuntimeConfig.idleTimeout().isPresent()) {
-            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout().get().toMillis());
-            poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+            var idleTimeout = unitised(dataSourceReactiveRuntimeConfig.idleTimeout().get());
+            poolOptions.setIdleTimeout(idleTimeout.value).setIdleTimeoutUnit(idleTimeout.unit);
+        }
+
+        if (dataSourceReactiveRuntimeConfig.maxLifetime().isPresent()) {
+            var maxLifetime = unitised(dataSourceReactiveRuntimeConfig.maxLifetime().get());
+            poolOptions.setMaxLifetime(maxLifetime.value).setMaxLifetimeUnit(maxLifetime.unit);
         }
 
         if (dataSourceReactiveRuntimeConfig.shared()) {

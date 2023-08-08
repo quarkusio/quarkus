@@ -12,12 +12,9 @@ import io.quarkus.test.ProdBuildResults;
 import io.quarkus.test.ProdModeTestResults;
 import io.quarkus.test.QuarkusProdModeTest;
 
-/**
- * This is similar to OpenshiftWithRemoteRegistryPushTest, but uses `quarkus.container-image.image` instead.
- */
-public class OpenshiftWithRemoteImagePushTest extends BaseOpenshiftWithRemoteRegistry {
+public class KubernetesWithImagePushTest extends BaseWithRemoteRegistry {
 
-    private static final String APP_NAME = "openshift-with-remote-image-push";
+    private static final String APP_NAME = "kubernetes-with-remote-image-push";
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
@@ -28,14 +25,16 @@ public class OpenshiftWithRemoteImagePushTest extends BaseOpenshiftWithRemoteReg
             .overrideConfigKey("quarkus.container-image.image", "quay.io/user/" + APP_NAME + ":1.0")
             .overrideConfigKey("quarkus.container-image.username", "me")
             .overrideConfigKey("quarkus.container-image.password", "pass")
-            .overrideConfigKey("quarkus.openshift.generate-image-pull-secret", "true")
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
+            .overrideConfigKey("quarkus.kubernetes.generate-image-pull-secret", "true")
+            .setForcedDependencies(List.of(
+                    Dependency.of("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
+                    Dependency.of("io.quarkus", "quarkus-container-image-docker", Version.getVersion())));
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
 
     @Test
     public void assertGeneratedResources() throws IOException {
-        assertGeneratedResources(APP_NAME, "1.0", prodModeTestResults.getBuildDir());
+        assertGeneratedResources(APP_NAME, "kubernetes", prodModeTestResults.getBuildDir());
     }
 }

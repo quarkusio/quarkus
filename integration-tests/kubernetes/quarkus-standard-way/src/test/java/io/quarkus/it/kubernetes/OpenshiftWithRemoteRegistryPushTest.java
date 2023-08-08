@@ -25,6 +25,7 @@ public class OpenshiftWithRemoteRegistryPushTest extends BaseOpenshiftWithRemote
             .overrideConfigKey("quarkus.container-image.registry", "quay.io")
             .overrideConfigKey("quarkus.container-image.username", "me")
             .overrideConfigKey("quarkus.container-image.password", "pass")
+            .overrideConfigKey("quarkus.openshift.generate-image-pull-secret", "true")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-openshift", Version.getVersion())));
 
     @ProdBuildResults

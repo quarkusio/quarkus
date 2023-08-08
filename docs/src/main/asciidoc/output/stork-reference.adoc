@@ -1,0 +1,77 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Stork Reference Guide
+:extension-status: preview
+
+include::_attributes.adoc[]
+
+This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
+It explains the configuration and usage of SmallRye Stork integration in {product-name-first}.
+
+include::{includes}/extension-status.adoc[]
+
+== Supported clients
+
+The current integration of Stork supports:
+
+* the Reactive REST Client
+* the gRPC clients
+
+Warning: The gRPC client integration does not support statistic-based load balancers.
+
+== Available service discovery and selection
+
+Check the https://smallrye.io/smallrye-stork[SmallRye Stork website] to find more about the provided service discovery and selection.
+
+== Using Stork in Kubernetes
+
+Stork provides a service discovery support for Kubernetes, which goes beyond what Kubernetes provides by default.
+It looks for all the pods backing up a Kubernetes service, but instead of applying a round-robin (as Kubernetes would do), it gives you the option to select the pod using a Stork load-balancer.
+
+To use this feature, add the following dependency to your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.smallrye.stork</groupId>
+    <artifactId>stork-service-discovery-kubernetes</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.smallrye.stork:stork-service-discovery-kubernetes")
+----
+
+For each service expected to be exposed as a Kubernetes Service, configure the lookup:
+
+[source, properties]
+----
+quarkus.stork.my-service.service-discovery.type=kubernetes
+quarkus.stork.my-service.service-discovery.k8s-namespace=my-namespace
+----
+
+Stork looks for the Kubernetes Service with the given name (`my-service` in the previous example) in the specified namespace.
+Instead of using the Kubernetes Service IP directly and let Kubernetes handle the selection and balancing, Stork inspects the service and retrieves the list of pods providing the service. Then, it can select the instance.
+
+For a full example of using Stork with Kubernetes, please read the xref:stork-kubernetes.adoc[Using Stork with Kubernetes guide].
+
+== Extending Stork
+
+Stork is extensible.
+You can implement your own service discovery or service selection provider.
+
+To learn about custom service discovery and service selection, check:
+
+- https://smallrye.io/smallrye-stork/latest/service-discovery/custom-service-discovery/[Implement a custom service discover provider]
+- https://smallrye.io/smallrye-stork/latest/load-balancer/custom-load-balancer/[Implement a custom service selection provider]
+
+
+
+
+

@@ -1,0 +1,158 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Continuous Testing
+include::_attributes.adoc[]
+:categories: core
+:summary: Get early test feedback with Continuous Testing.
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+Learn how to use continuous testing in your {product-name-first} Application.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+* The completed greeter application from the xref:getting-started.adoc[Getting Started Guide]
+
+== Introduction
+
+{product-name} supports continuous testing, where tests run immediately after code changes have been saved. This allows you to
+get instant feedback on your code changes. {product-name} detects which tests cover which code, and uses this information to
+only run the relevant tests when code is changed.
+
+== Solution
+
+Start the xref:getting-started.adoc[Getting Started] application (or any other application) using:
+
+include::{includes}/devtools/dev.adoc[]
+
+{product-name} will start in development mode as normal, but down the bottom of the screen you should see the following:
+
+[source]
+----
+--
+Tests paused, press [r] to resume, [h] for more options>
+----
+
+Press `r` and the tests will start running. You should see the status change down the bottom of the screen as they
+are running, and it should finish with:
+
+[source]
+----
+--
+Tests all passed, 2 tests were run, 0 were skipped. Tests took 1470ms.
+Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>
+----
+
+
+NOTE: If you want continuous testing to start automatically you can set `quarkus.test.continuous-testing=enabled` in
+`application.properties`. If you don't want it at all you can change this to `disabled`.
+
+
+Now you can start making changes to your application. Go into the `GreetingResource` and change the hello endpoint to
+return `"hello world"`, and save the file. {product-name} should immediately re-run the test, and you should get output similar
+to the following:
+
+[source]
+----
+2021-05-11 14:21:34,338 ERROR [io.qua.test] (Test runner thread) Test GreetingResourceTest#testHelloEndpoint() failed
+: java.lang.AssertionError: 1 expectation failed.
+Response body doesn't match expectation.
+Expected: is "hello"
+  Actual: hello world
+
+	at io.restassured.internal.ValidatableResponseImpl.body(ValidatableResponseImpl.groovy)
+	at org.acme.getting.started.GreetingResourceTest.testHelloEndpoint(GreetingResourceTest.java:21)
+
+
+--
+Test run failed, 2 tests were run, 1 failed, 0 were skipped. Tests took 295ms
+Press [r] to re-run, [v] to view full results, [p] to pause, [h] for more options>
+----
+
+Change it back and the tests will run again.
+
+== Controlling Continuous Testing
+
+There are various hotkeys you can use to control continuous testing. Pressing `h` will display the following list
+of commands:
+
+[source]
+----
+The following commands are available:
+[r] - Re-run all tests
+[f] - Re-run failed tests
+[b] - Toggle 'broken only' mode, where only failing tests are run (disabled)
+[v] - Print failures from the last test run
+[p] - Pause tests
+[o] - Toggle test output (disabled)
+[i] - Toggle instrumentation based reload (disabled)
+[l] - Toggle live reload (enabled)
+[s] - Force restart
+[h] - Display this help
+[q] - Quit
+----
+
+These are explained below:
+
+[r] - Re-run all tests::
+This will re-run every test
+
+[f] - Re-run failed tests::
+This will re-run every failing test
+
+[b] - Toggle 'broken only' mode, where only failing tests are run::
+Broken only mode will only run tests that have previously failed, even if other tests would normally be affected by a code
+change. This can be useful if you are modifying code that is used by lots of tests, but you only want to focus on debugging
+the failing one.
+
+[v] - Print failures from the last test run::
+Prints the failures to the console again, this can be useful if there has been lots of console output since the last run.
+
+[p] - Pause tests::
+Temporarily stops running tests. This can be useful if you are making lots of changes, and don't want feedback until they
+are all done.
+
+[o] - Toggle test output::
+By default test output is filtered and not displayed on the console, so that test output and dev mode output is not
+interleaved. Enabling test output will print output to the console when tests are run. Even when output is disabled
+the filtered output is saved and can be viewed in the Dev UI.
+
+[i] - Toggle instrumentation based reload::
+This is not directly related to testing, but allows you to toggle instrumentation based reload. This will allow live reload
+to avoid a restart if a change does not affect the structure of a class, which gives a faster reload and allows you to keep
+state.
+
+[l] - Toggle live reload::
+This is not directly related to testing, but allows you to turn live reload on and off.
+
+[s] - Force restart::
+This will force a scan for changed files, and will perform a live reload with and changes. Note that even if there are no
+changes the application will still restart. This will still work even if live reload is disabled.
+
+== Continuous Testing Without Dev Mode
+
+It is possible to run continuous testing without starting dev mode. This can be useful if dev mode will interfere with
+your tests (e.g. running wiremock on the same port), or if you only want to develop using tests. To start continuous testing
+mode run `mvn quarkus:test`.
+
+NOTE: The Dev UI is not available when running in continuous testing mode, as this is provided by dev mode.
+
+== Multi-module Projects
+
+Note that continuous testing supports multi-module projects, so tests in modules other than the application can still
+be run when files are changed. The modules that are run can be controlled using config as listed below.
+
+This is enabled by default, and can be disabled via `quarkus.test.only-test-application-module=true`.
+
+== Configuring Continuous Testing
+
+Continuous testing supports multiple configuration options that can be used to limit the tests that are run, and
+to control the output. The configuration properties are shown below:
+
+include::{generated-dir}/config/quarkus-test-dev-testing-test-config.adoc[opts=optional, leveloffset=+2]
+

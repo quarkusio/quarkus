@@ -1,0 +1,517 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Getting Started to SmallRye Reactive Messaging with Apache Pulsar
+include::_attributes.adoc[]
+:categories: messaging
+:summary: This guide demonstrates how your {product-name-first} application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
+
+This guide demonstrates how your {product-name} application can utilize SmallRye Reactive Messaging to interact with Apache Pulsar.
+
+== Prerequisites
+
+:prerequisites-docker-compose:
+include::{includes}/prerequisites.adoc[]
+
+== Architecture
+
+In this guide, we are going to develop two applications communicating with Pulsar.
+The first application sends a _quote request_ to Pulsar and consumes Pulsar messages from the _quote_ topic.
+The second application receives the _quote request_ and sends a _quote_ back.
+
+// TODO pulsar
+image::kafka-qs-architecture.png[alt=Architecture, align=center]
+
+The first application, the _producer_, will let the user request some quotes over an HTTP endpoint.
+For each quote request a random identifier is generated and returned to the user, to mark the quote request as _pending_.
+At the same time, the generated request id is sent over a Pulsar topic `quote-requests`.
+
+// TODO pulsar
+image::kafka-qs-app-screenshot.png[alt=Producer App UI, align=center]
+
+The second application, the _processor_, will read from the `quote-requests` topic, put a random price to the quote, and send it to a Pulsar topic named `quotes`.
+
+Lastly, the _producer_ will read the quotes and send them to the browser using server-sent events.
+The user will therefore see the quote price updated from _pending_ to the received price in real-time.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create applications step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `pulsar-quickstart` link:{quickstarts-tree-url}/pulsar-quickstart[directory].
+
+== Creating the Maven Project
+
+First, we need to create two projects: the _producer_ and the _processor_.
+
+To create the _producer_ project, in a terminal run:
+
+:create-app-artifact-id: pulsar-quickstart-producer
+:create-app-extensions: resteasy-reactive-jackson,smallrye-reactive-messaging-pulsar
+:create-app-post-command:
+include::{includes}/devtools/create-app.adoc[]
+
+This command creates the project structure and selects two {product-name} extensions we will be using:
+
+1. RESTEasy Reactive and its Jackson support (to handle JSON) to serve the HTTP endpoint.
+2. The Pulsar connector for Reactive Messaging
+
+To create the _processor_ project, from the same directory, run:
+
+:create-app-artifact-id: pulsar-quickstart-processor
+:create-app-extensions: smallrye-reactive-messaging-pulsar
+:create-app-post-command:
+include::{includes}/devtools/create-app.adoc[]
+
+At that point, you should have the following structure:
+
+[source, text]
+----
+.
+├── pulsar-quickstart-processor
+│  ├── README.md
+│  ├── mvnw
+│  ├── mvnw.cmd
+│  ├── pom.xml
+│  └── src
+│     └── main
+│        ├── docker
+│        ├── java
+│        └── resources
+│           └── application.properties
+└── pulsar-quickstart-producer
+   ├── README.md
+   ├── mvnw
+   ├── mvnw.cmd
+   ├── pom.xml
+   └── src
+      └── main
+         ├── docker
+         ├── java
+         └── resources
+            └── application.properties
+----
+
+Open the two projects in your favorite IDE.
+
+[TIP]
+.Dev Services
+====
+No need to start a Pulsar broker when using the dev mode or for tests.
+{product-name} starts a broker for you automatically.
+See xref:pulsar.adoc[Dev Services for Pulsar] for details.
+====
+
+== The Quote object
+
+The `Quote` class will be used in both _producer_ and _processor_ projects.
+For the sake of simplicity, we will duplicate the class.
+In both projects, create the `src/main/java/org/acme/pulsar/model/Quote.java` file, with the following content:
+
+[source,java]
+----
+package org.acme.pulsar.model;
+
+public class Quote {
+
+    public String id;
+    public int price;
+
+    /**
+    * Default constructor required for Jackson serializer
+    */
+    public Quote() { }
+
+    public Quote(String id, int price) {
+        this.id = id;
+        this.price = price;
+    }
+
+    @Override
+    public String toString() {
+        return "Quote{" +
+                "id='" + id + '\'' +
+                ", price=" + price +
+                '}';
+    }
+}
+----
+
+JSON representation of `Quote` objects will be used in messages sent to the Pulsar topic
+and also in the server-sent events sent to web browsers.
+
+{product-name} has built-in capabilities to deal with JSON Pulsar messages.
+In a following section, we will create serializer/deserializer classes for Jackson.
+
+== Sending quote request
+
+Inside the _producer_ project, create the `src/main/java/org/acme/pulsar/producer/QuotesResource.java` file and add the following content:
+
+[source,java]
+----
+package org.acme.pulsar.producer;
+
+import java.util.UUID;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.acme.pulsar.model.Quote;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+
+@Path("/quotes")
+public class QuotesResource {
+
+    @Channel("quote-requests")
+    Emitter<String> quoteRequestEmitter; // <1>
+
+    /**
+     * Endpoint to generate a new quote request id and send it to "quote-requests" Pulsar topic using the emitter.
+     */
+    @POST
+    @Path("/request")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String createRequest() {
+        UUID uuid = UUID.randomUUID();
+        quoteRequestEmitter.send(uuid.toString()); // <2>
+        return uuid.toString(); // <3>
+    }
+}
+----
+<1> Inject a Reactive Messaging `Emitter` to send messages to the `quote-requests` channel.
+<2> On a post request, generate a random UUID and send it to the Pulsar topic using the emitter.
+<3> Return the same UUID to the client.
+
+
+The `quote-requests` channel is going to be managed as a Pulsar topic, as that's the only connector on the classpath.
+If not indicated otherwise, like in this example, {product-name} uses the channel name as topic name.
+So, in this example, the application writes into the `quote-requests` topic.
+{product-name} also configures the serializer automatically, because it finds that the `Emitter` produces `String` values.
+
+TIP: When you have multiple connectors, you would need to indicate which connector you want to use in the application configuration.
+
+== Processing quote requests
+
+Now let's consume the quote request and give out a price.
+Inside the _processor_ project, create the `src/main/java/org/acme/pulsar/processor/QuotesProcessor.java` file and add the following content:
+
+[source, java]
+----
+package org.acme.pulsar.processor;
+
+import java.util.Random;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.acme.pulsar.model.Quote;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import io.smallrye.reactive.messaging.annotations.Blocking;
+
+/**
+ * A bean consuming data from the "quote-requests" Pulsar topic (mapped to "requests" channel) and giving out a random quote.
+ * The result is pushed to the "quotes" Pulsar topic.
+ */
+@ApplicationScoped
+public class QuotesProcessor {
+
+    private Random random = new Random();
+
+    @Incoming("requests") // <1>
+    @Outgoing("quotes")   // <2>
+    @Blocking             // <3>
+    public Quote process(String quoteRequest) throws InterruptedException {
+        // simulate some hard working task
+        Thread.sleep(200);
+        return new Quote(quoteRequest, random.nextInt(100));
+    }
+}
+
+----
+<1> Indicates that the method consumes the items from the `requests` channel.
+<2> Indicates that the objects returned by the method are sent to the `quotes` channel.
+<3> Indicates that the processing is _blocking_ and cannot be run on the caller thread.
+
+For every Pulsar _message_ from the `quote-requests` topic, Reactive Messaging calls the `process` method, and sends the returned `Quote` object to the `quotes` channel.
+In this case, we need to configure the channel in the `application.properties` file, to configures the `requests` and `quotes` channels:
+
+[source, properties]
+----
+%dev.quarkus.http.port=8081
+
+# Configure the incoming `quote-requests` Pulsar topic
+mp.messaging.incoming.requests.topic=quote-requests
+mp.messaging.incoming.requests.subscriptionInitialPosition=Earliest
+----
+
+Note that in this case we have one incoming and one outgoing connector configuration, each one distinctly named.
+The configuration keys are structured as follows:
+
+`mp.messaging.[outgoing|incoming].{channel-name}.property=value`
+
+The `channel-name` segment must match the value set in the `@Incoming` and `@Outgoing` annotation:
+
+* `quote-requests` -> Pulsar topic from which we read the quote requests
+* `quotes` -> Pulsar topic in which we write the quotes
+
+[NOTE]
+====
+More details about this configuration is available on the https://pulsar.apache.org/docs/3.0.x/concepts-messaging/ section from the Pulsar documentation.
+These properties are configured with the prefix `pulsar`.
+An exhaustive list of configuration properties is available in xref:pulsar.adoc#pulsar-configuration[Pulsar Reference Guide - Configuration].
+====
+
+`mp.messaging.incoming.requests.subscriptionInitialPosition=Earliest` instructs the application to start reading the topics from the first message on the topic, when there is no previously acked messages.
+In other words, it will also process messages sent before we start the processor application.
+
+There is no need to set schemas.
+{product-name} detects them, and if none are found, generates them using appropriate schema types.
+Structured types like `Quote` bean use JSON schema.
+
+== Receiving quotes
+
+Back to our _producer_ project.
+Let's modify the `QuotesResource` to consume quotes from Pulsar and send them back to the client via Server-Sent Events:
+
+[source,java]
+----
+import io.smallrye.mutiny.Multi;
+
+...
+
+@Channel("quotes")
+Multi<Quote> quotes; // <1>
+
+/**
+ * Endpoint retrieving the "quotes" Pulsar topic and sending the items to a server sent event.
+ */
+@GET
+@Produces(MediaType.SERVER_SENT_EVENTS) // <2>
+public Multi<Quote> stream() {
+    return quotes; // <3>
+}
+----
+<1> Injects the `quotes` channel using the `@Channel` qualifier
+<2> Indicates that the content is sent using `Server Sent Events`
+<3> Returns the stream (_Reactive Stream_)
+
+No need to configure anything, as {product-name} will automatically associate the `quotes` channel to the `quotes` Pulsar topic.
+It will also generate a deserializer for the `Quote` class.
+
+[TIP]
+====
+.Message Schemas in Pulsar
+In this example we used JSON Schema with Pulsar messages.
+For more options on Pulsar Schemas, see xref:pulsar.adoc#pulsar-schema[Pulsar Reference Guide - Schema].
+
+// TODO write about schema
+====
+
+== The HTML page
+
+Final touch, the HTML page requesting quotes and displaying the prices obtained over SSE.
+
+Inside the _pulsar-quickstart-producer_ project, create the `src/main/resources/META-INF/resources/quotes.html` file with the following content:
+
+[source, html]
+----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Prices</title>
+
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly.min.css">
+    <link rel="stylesheet" type="text/css"
+          href="https://cdnjs.cloudflare.com/ajax/libs/patternfly/3.24.0/css/patternfly-additions.min.css">
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Quotes</h2>
+            <button class="btn btn-info" id="request-quote">Request Quote</button>
+            <div class="quotes"></div>
+        </div>
+    </div>
+</div>
+</body>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $("#request-quote").click((event) => {
+        fetch("/quotes/request", {method: "POST"})
+        .then(res => res.text())
+        .then(qid => {
+            var row = $(`<h4 class='col-md-12' id='${qid}'>Quote # <i>${qid}</i> | <strong>Pending</strong></h4>`);
+            $(".quotes").prepend(row);
+        });
+    });
+
+    var source = new EventSource("/quotes");
+    source.onmessage = (event) => {
+      var json = JSON.parse(event.data);
+      $(`#${json.id}`).html((index, html) => {
+        return html.replace("Pending", `\$\xA0${json.price}`);
+      });
+    };
+</script>
+</html>
+----
+
+Nothing spectacular here.
+When the user clicks the button, HTTP request is made to request a quote, and a pending quote is added to the list.
+On each quote received over SSE, the corresponding item in the list is updated.
+
+== Get it running
+
+You just need to run both applications.
+In one terminal, run:
+
+[source,bash]
+----
+mvn -f pulsar-quickstart-producer quarkus:dev
+----
+
+In another terminal, run:
+
+[source, bash]
+----
+mvn -f pulsar-quickstart-processor quarkus:dev
+----
+
+{product-name} starts a Pulsar broker automatically, configures the application and shares the Pulsar broker instance between different applications.
+See xref:pulsar.adoc[Dev Services for Pulsar] for more details.
+
+Open `http://localhost:8080/quotes.html` in your browser and request some quotes by clicking the button.
+
+== Running in JVM or Native mode
+
+When not running in dev or test mode, you will need to start your Pulsar broker.
+// TODO
+You can follow the instructions from the https://pulsar.apache.org/docs/3.0.x/getting-started-docker/[Run a standalone Pulsar cluster in Docker] or create a `docker-compose.yaml` file with the following content:
+
+[source, yaml]
+----
+version: '3.8'
+
+services:
+
+  pulsar:
+    image: apachepulsar/pulsar:3.0.0
+    command: [
+      "sh", "-c",
+      "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss"
+    ]
+
+    ports:
+      - "6650:6650"
+      - "8080:8080"
+    tmpfs:
+      - /pulsar/data
+    healthcheck:
+      test: curl --fail http://localhost:8080/admin/v2/clusters || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+    environment:
+      PULSAR_PREFIX_advertisedListeners: internal:pulsar://localhost:6650,external:pulsar://pulsar:6650
+      PULSAR_PREFIX_transactionCoordinatorEnabled: true
+      PULSAR_PREFIX_systemTopicEnabled: true
+    networks:
+      - pulsar-quickstart-network
+
+  producer:
+    image: quarkus-quickstarts/pulsar-quickstart-producer:1.0-${QUARKUS_MODE:-jvm}
+    depends_on:
+      pulsar:
+        condition: service_healthy
+    build:
+      context: pulsar-quickstart-producer
+      dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+      PULSAR_CLIENT_SERVICE_URL: pulsar://pulsar:6650
+    ports:
+      - "8082:8080"
+    networks:
+      - pulsar-quickstart-network
+
+  processor:
+    image: quarkus-quickstarts/pulsar-quickstart-processor:1.0-${QUARKUS_MODE:-jvm}
+    depends_on:
+      pulsar:
+        condition: service_healthy
+    build:
+      context: pulsar-quickstart-processor
+      dockerfile: src/main/docker/Dockerfile.${QUARKUS_MODE:-jvm}
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+      QUARKUS_HTTP_PORT: 8082
+      PULSAR_CLIENT_SERVICE_URL: pulsar://pulsar:6650
+    ports:
+      - "8083:8080"
+    networks:
+      - pulsar-quickstart-network
+
+networks:
+  pulsar-quickstart-network:
+    name: pulsar-quickstart
+----
+
+Make sure you first build both applications in JVM mode with:
+
+[source, bash]
+----
+mvn -f pulsar-quickstart-producer package
+mvn -f pulsar-quickstart-processor package
+----
+
+Once packaged, run `docker-compose up`.
+
+NOTE: This is a development cluster, do not use in production.
+
+You can also build and run our applications as native executables.
+First, compile both applications as native:
+
+[source, bash]
+----
+mvn -f pulsar-quickstart-producer package -Dnative -Dquarkus.native.container-build=true
+mvn -f pulsar-quickstart-processor package -Dnative -Dquarkus.native.container-build=true
+----
+
+Run the system with:
+
+[source, bash]
+----
+export QUARKUS_MODE=native
+docker-compose up --build
+----
+
+== Going further
+
+This guide has shown how you can interact with Pulsar using {product-name}.
+It utilizes https://smallrye.io/smallrye-reactive-messaging[SmallRye Reactive Messaging] to build data streaming applications.
+
+For the exhaustive list of features and configuration options, check the xref:pulsar.adoc[Reference guide for Apache Pulsar Extension].
+
+[NOTE]
+====
+In this guide we explore Smallrye Reactive Messaging framework to interact with Apache Pulsar.
+xref:pulsar.adoc#pulsar-clients[using Pulsar clients directly].
+====

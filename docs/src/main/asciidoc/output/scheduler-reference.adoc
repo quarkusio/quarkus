@@ -1,0 +1,422 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Scheduler Reference Guide
+include::_attributes.adoc[]
+:categories: miscellaneous
+:summary: Learn more about the Scheduler extension.
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+Modern applications often need to run specific tasks periodically.
+There are two scheduler extensions in {product-name-first}.
+The `quarkus-scheduler` extension brings the API and a lightweight in-memory scheduler implementation.
+The `quarkus-quartz` extension implements the API from the `quarkus-scheduler` extension and contains a scheduler implementation based on the Quartz library.
+You will only need `quarkus-quartz` for more advanced scheduling use cases, such as persistent tasks and clustering.
+
+NOTE: If you add the `quarkus-quartz` dependency to your project the lightweight scheduler implementation from the `quarkus-scheduler` extension is automatically disabled. 
+
+== Scheduled Methods
+
+A method annotated with `@io.quarkus.scheduler.Scheduled` is automatically scheduled for invocation.
+A scheduled method must not be abstract or private.
+It may be either static or non-static.
+A scheduled method can be annotated with interceptor bindings, such as `@jakarta.transaction.Transactional` and `@org.eclipse.microprofile.metrics.annotation.Counted`.
+
+NOTE: If there is a bean class that has no scope and declares at least one non-static method annotated with `@Scheduled` then `@Singleton` is used.
+
+Furthermore, the annotated method must return `void` and either declare no parameters or one parameter of type `io.quarkus.scheduler.ScheduledExecution`.
+
+TIP: The annotation is repeatable so a single method could be scheduled multiple times.
+
+[WARNING]
+====
+Subclasses never inherit the metadata of a `@Scheduled` method declared on a superclass. In the following example, the `everySecond()` method is only invoked upon the instance of `Jobs`.
+[source,java]
+----
+class Jobs {
+
+   @Scheduled(every = "1s")
+   void everySecond() {
+     // ..do something 
+   }
+}
+
+@Singleton
+class MyJobs extends Jobs {
+}
+----
+====
+
+A CDI event of type `io.quarkus.scheduler.SuccessfulExecution` is fired synchronously and asynchronously when an execution of a scheduled method is successful. A CDI event of type `io.quarkus.scheduler.FailedExecution` is fired synchronously and asynchronously  when an execution of a scheduled method throws an exception.
+
+=== Triggers
+
+A trigger is defined either by the `@Scheduled#cron()` or by the `@Scheduled#every()` attribute.
+If both are specified, the cron expression takes precedence.
+If none is specified, the build fails with an `IllegalStateException`.
+
+==== CRON
+
+A CRON trigger is defined by a cron-like expression.
+For example `"0 15 10 * * ?"` fires at 10:15am every day.
+
+.CRON Trigger Example
+[source,java]
+----
+@Scheduled(cron = "0 15 10 * * ?")
+void fireAt10AmEveryDay() { }
+----
+
+The syntax used in CRON expressions is controlled by the `quarkus.scheduler.cron-type` property.
+The values can be `cron4j`, `quartz`, `unix` and `spring`.
+`quartz` is used by default.
+
+The `cron` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that "{property.path}" style expressions are still supported but don't offer the full functionality of Property Expressions.)
+
+
+.CRON Config Property Example
+[source,java]
+----
+@Scheduled(cron = "${myMethod.cron.expr}")
+void myMethod() { }
+----
+
+If you wish to disable a specific scheduled method, you can set its cron expression to `"off"` or `"disabled"`.
+
+.application.properties
+[source,properties]
+----
+myMethod.cron.expr=disabled
+----
+
+Property Expressions allow you to define a default value that is used, if the property is not configured.
+
+.CRON Config Property Example with default `0 0 15 ? * MON *`
+[source,java]
+----
+@Scheduled(cron = "${myMethod.cron.expr:0 0 15 ? * MON *}")
+void myMethod() { }
+----
+
+If the property `myMethod.cron.expr` is undefined or `null`, the default value (`0 0 15 ? * MON *`) will be used.
+
+===== Time Zones
+
+The cron expression is evaluated in the context of the default time zone.
+However, it is also possible to associate the cron expression with a specific time zone.
+
+.Time Zone Example
+[source,java]
+----
+@Scheduled(cron = "0 15 10 * * ?", timeZone = "Europe/Prague") <1>
+void myMethod() { }
+----
+<1> The time zone ID is parsed using `java.time.ZoneId#of(String)`.
+
+The `timeZone` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
+Property Expressions.
+
+.Time Zone Configuration Property Example
+[source,java]
+----
+@Scheduled(cron = "0 15 10 * * ?", timeZone = "{myMethod.timeZone}")
+void myMethod() { }
+----
+
+==== Intervals
+
+An interval trigger defines a period between invocations.
+The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value of `@Scheduled#every()` is parsed with `java.time.Duration#parse(CharSequence)`. 
+However, if an expression starts with a digit then the `PT` prefix is added automatically.
+So for example, `15m` can be used instead of `PT15M` and is parsed as "15 minutes".
+
+.Interval Trigger Example
+[source,java]
+----
+@Scheduled(every = "15m")
+void every15Mins() { }
+----
+
+The `every` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
+
+.Interval Config Property Example
+[source,java]
+----
+@Scheduled(every = "${myMethod.every.expr}")
+void myMethod() { }
+----
+
+Intervals can be disabled by setting their value to `"off"` or `"disabled"`.
+So for example a Property Expression with the default value `"off"` can be used to disable the trigger if its Config Property has not been set.
+
+.Interval Config Property Example with a Default Value
+[source,java]
+----
+@Scheduled(every = "${myMethod.every.expr:off}")
+void myMethod() { }
+----
+
+
+=== Identity
+
+By default, a unique identifier is generated for each scheduled method.
+This identifier is used in log messages, during debugging and as a parameter of some `io.quarkus.scheduler.Scheduler` methods.
+Therefore, a possibility to specify an explicit identifier may come in handy.
+
+.Identity Example
+[source,java]
+----
+@Scheduled(identity = "myScheduledMethod")
+void myMethod() { }
+----
+
+The `identity` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
+
+.Interval Config Property Example
+[source,java]
+----
+@Scheduled(identity = "${myMethod.identity.expr}")
+void myMethod() { }
+----
+
+=== Delayed Execution
+
+`@Scheduled` provides two ways to delay the time a trigger should start firing at.
+
+`@Scheduled#delay()` and `@Scheduled#delayUnit()` form the initial delay together.
+
+[source,java]
+----
+@Scheduled(every = "2s", delay = 2, delayUnit = TimeUnit.HOUR) <1>
+void everyTwoSeconds() { }
+----
+<1> The trigger fires for the first time two hours after the application start.
+
+NOTE: The final value is always rounded to full second.
+
+`@Scheduled#delayed()` is a text alternative to the properties above.
+The period expression is based on the ISO-8601 duration format `PnDTnHnMn.nS` and the value is parsed with `java.time.Duration#parse(CharSequence)`. 
+However, if an expression starts with a digit, the `PT` prefix is added automatically.
+So for example, `15s` can be used instead of `PT15S` and is parsed as "15 seconds".
+
+[source,java]
+----
+@Scheduled(every = "2s", delayed = "2h")
+void everyTwoSeconds() { }
+----
+
+NOTE: If `@Scheduled#delay()` is set to a value greater than zero the value of `@Scheduled#delayed()` is ignored.
+
+The main advantage over `@Scheduled#delay()` is that the value is configurable.
+The `delay` attribute supports <<config-reference#property-expressions,Property Expressions>> including default values and nested
+Property Expressions. (Note that `"{property.path}"` style expressions are still supported but don't offer the full functionality of Property Expressions.)
+
+
+[source,java]
+----
+@Scheduled(every = "2s", delayed = "${myMethod.delay.expr}") <1>
+void everyTwoSeconds() { }
+----
+<1> The config property `myMethod.delay.expr` is used to set the delay.
+
+[[concurrent_execution]]
+=== Concurrent Execution
+
+By default, a scheduled method can be executed concurrently.
+Nevertheless, it is possible to specify the strategy to handle concurrent executions via `@Scheduled#concurrentExecution()`.
+
+[source,java]
+----
+import static io.quarkus.scheduler.Scheduled.ConcurrentExecution.SKIP;
+
+@Scheduled(every = "1s", concurrentExecution = SKIP) <1>
+void nonConcurrent() {
+  // we can be sure that this method is never executed concurrently
+}
+----
+<1> Concurrent executions are skipped.
+
+TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
+
+NOTE: Note that only executions within the same application instance are considered. This feature is not intended to work across the cluster.
+
+[[conditional_execution]]
+=== Conditional Execution
+
+You can define the logic to skip any execution of a scheduled method via `@Scheduled#skipExecutionIf()`.
+The specified bean class must implement `io.quarkus.scheduler.Scheduled.SkipPredicate` and the execution is skipped if the result of the `test()` method is `true`.
+
+[source,java]
+----
+class Jobs {
+  
+   @Scheduled(every = "1s", skipExecutionIf = MyPredicate.class) <1>
+   void everySecond() {
+     // do something every second...
+   }
+}
+
+@Singleton <2>
+class MyPredicate implements SkipPredicate {
+
+   @Inject
+   MyService service;
+
+   boolean test(ScheduledExecution execution) {
+       return !service.isStarted(); <3>
+   }
+}
+----
+<1> A bean instance of `MyPredicate.class` is used to evaluate whether an execution should be skipped. There must be exactly one bean that has the specified class in its set of bean types, otherwise the build fails.
+<2> The scope of the bean must be active during execution.
+<3> `Jobs.everySecond()` is skipped until `MyService.isStarted()` returns `true`.
+
+Note that this is an equivalent of the following code:
+
+[source,java]
+----
+class Jobs {
+
+   @Inject
+   MyService service;
+  
+   @Scheduled(every = "1s")
+   void everySecond() {
+     if (service.isStarted()) {
+        // do something every second...
+     }
+   }
+}
+----
+
+The main idea is to keep the logic to skip the execution outside the scheduled business methods so that it can be reused and refactored easily.
+
+TIP: A CDI event of type `io.quarkus.scheduler.SkippedExecution` is fired when an execution of a scheduled method is skipped.
+
+[[non-blocking-methods]]
+=== Non-blocking Methods
+
+By default, a scheduled method is executed on the main executor for blocking tasks. 
+As a result, a technology that is designed to run on a Vert.x event loop (such as Hibernate Reactive) cannot be used inside the method body.
+For this reason, a scheduled method that returns `java.util.concurrent.CompletionStage<Void>` or `io.smallrye.mutiny.Uni<Void>`, or is annotated with `@io.smallrye.common.annotation.NonBlocking` is executed on the Vert.x event loop instead.
+
+[source,java]
+----
+class Jobs {
+  
+   @Scheduled(every = "1s")
+   Uni<Void> everySecond() { <1>
+     // ...do something async
+   }
+}
+----
+<1> The return type `Uni<Void>` instructs the scheduler to execute the method on the Vert.x event loop.
+
+== Scheduler
+
+{product-name} provides a built-in bean of type `io.quarkus.scheduler.Scheduler` that can be injected and used to pause/resume the scheduler and individual scheduled methods identified by a specific `Scheduled#identity()`.
+
+.Scheduler Injection Example
+[source,java]
+----
+import io.quarkus.scheduler.Scheduler;
+
+class MyService {
+
+   @Inject
+   Scheduler scheduler;
+
+   void ping() {
+      scheduler.pause(); <1>
+      scheduler.pause("myIdentity"); <2>
+      if (scheduler.isRunning()) {
+         throw new IllegalStateException("This should never happen!");
+      }
+      scheduler.resume("myIdentity"); <3>
+      scheduler.resume(); <4>
+      scheduler.getScheduledJobs(); <5>
+      Trigger jobTrigger = scheduler.getScheduledJob("myIdentity"); <6>
+      if (jobTrigger != null && jobTrigger.isOverdue()){ <7>
+        // the job is late to the party.
+      }
+   }
+}
+----
+<1> Pause all triggers.
+<2> Pause a specific scheduled method by its identity
+<3> Resume a specific scheduled method by its identity
+<4> Resume the scheduler.
+<5> List all jobs in the scheduler.
+<6> Get Trigger metadata for a specific scheduled job by its identity.
+<7> You can configure the grace period for isOverdue() with quarkus.scheduler.overdue-grace-period
+
+NOTE: A CDI event is fired synchronously and asynchronously when the scheduler or a scheduled job is paused/resumed. The payload is `io.quarkus.scheduler.SchedulerPaused`, `io.quarkus.scheduler.SchedulerResumed`, `io.quarkus.scheduler.ScheduledJobPaused` and `io.quarkus.scheduler.ScheduledJobResumed` respectively.
+
+[[programmatic_scheduling]]
+== Programmatic Scheduling
+
+An injected `io.quarkus.scheduler.Scheduler` can be also used to schedule a job programmatically.
+
+.Programmatic Scheduling
+[source,java]
+----
+import io.quarkus.scheduler.Scheduler;
+
+@ApplicationScoped
+class MyJobs {
+
+    @Inject
+    Scheduler scheduler;
+
+    void addMyJob() { <1>
+        scheduler.newJob("myJob")
+            .setCron("0/5 * * * * ?")
+            .setTask(executionContext -> { <2>
+                // do something important every 5 seconds
+            })
+            .schedule(); <3>
+    }
+    
+    void removeMyJob() {
+        scheduler.unscheduleJob("myJob"); <4>
+    } 
+}
+----
+<1> This is a programmatic alternative to a method annotated with `@Scheduled(identity = "myJob", cron = "0/5 * * * * ?")`.
+<2> The business logic is defined in a callback.
+<3> The job is scheduled once the `JobDefinition#schedule()` method is called.
+<4> A job that was added programmatically can be also removed.
+
+NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling via `quarkus.scheduler.start-mode=forced`.
+
+NOTE: If the xref:quartz.adoc[Quartz extension] is present then the Quartz API can be also used to schedule a job programmatically.
+
+== Scheduled Methods and Testing
+
+It is often desirable to disable the scheduler when running the tests.
+The scheduler can be disabled through the runtime config property `quarkus.scheduler.enabled`.
+If set to `false` the scheduler is not started even though the application contains scheduled methods.
+You can even disable the scheduler for particular <<getting-started-testing#testing_different_profiles,Test Profiles>>.
+
+== Metrics
+
+Some basic metrics are published out of the box if `quarkus.scheduler.metrics.enabled` is set to `true` and a metrics extension is present. 
+
+If the xref:telemetry-micrometer.adoc[Micrometer extension] is present, then a `@io.micrometer.core.annotation.Timed` interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `io.micrometer.core.instrument.Timer` with name `scheduled.methods` and a `io.micrometer.core.instrument.LongTaskTimer` with name `scheduled.methods.running` are registered. The fully qualified name of the declaring class and the name of a `@Scheduled` method are used as tags.
+
+If the xref:smallrye-metrics.adoc[SmallRye Metrics extension] is present, then a `@org.eclipse.microprofile.metrics.annotation.Timed`  interceptor binding is added to all `@Scheduled` methods automatically (unless it's already present) and a `org.eclipse.microprofile.metrics.Timer` is created for each `@Scheduled` method. The name consists of the fully qualified name of the declaring class and the name of a `@Scheduled` method. The timer has a tag `scheduled=true`.
+
+== OpenTelemetry Tracing
+
+If `quarkus.scheduler.tracing.enabled` is set to `true` and the xref:opentelemetry.adoc[OpenTelemetry extension] is present then the `@io.opentelemetry.instrumentation.annotations.WithSpan` annotation is added automatically to every `@Scheduled` method. As a result, each execution of this method has a new `io.opentelemetry.api.trace.Span` associated.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-scheduler.adoc[leveloffset=+1, opts=optional]

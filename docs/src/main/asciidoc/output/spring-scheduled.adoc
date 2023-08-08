@@ -1,0 +1,244 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus Extension for Spring Scheduling API
+include::_attributes.adoc[]
+:categories: compatibility
+:summary: While you are encouraged to use the Scheduler or Quartz extensions to schedule tasks, {product-name-first} provides a compatibility layer for Spring Scheduled in the form of the spring-scheduled extension.
+
+While users are encouraged to use xref:scheduler.adoc#standard-scheduling[regular {product-name} scheduler], {product-name} provides a compatibility layer for Spring Scheduled in the form of the `spring-scheduled` extension.
+
+This guide explains how a {product-name} application can leverage the well known Spring Scheduled annotation to configure and schedule tasks.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+* Some familiarity with the Spring Web extension
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `spring-scheduled-quickstart` link:{quickstarts-tree-url}/spring-scheduled-quickstart[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+:create-app-artifact-id: spring-scheduler-quickstart
+:create-app-extensions: resteasy-reactive,spring-scheduled
+include::{includes}/devtools/create-app.adoc[]
+
+This command generates a Maven project with the `spring-scheduled` extension.
+
+If you already have your {product-name} project configured, you can add the `spring-scheduled` extension
+to your project by running the following command in your project base directory:
+
+:add-extension-extensions: spring-scheduled
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-spring-scheduled</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-spring-scheduled")
+----
+
+== Creating a scheduled job
+
+In the `org.acme.spring.scheduler` package, create the `CounterBean` class, with the following content:
+
+[source,java]
+----
+package org.acme.spring.scheduler;
+
+import org.springframework.scheduling.annotation.Scheduled;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import jakarta.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped              // <1>
+public class CounterBean {
+
+    private AtomicInteger counter = new AtomicInteger();
+
+    public int get() {   // <2>
+        return counter.get();
+    }
+
+    @Scheduled(cron="*/5 * * * * ?")   // <3>
+    void cronJob() {
+        counter.incrementAndGet();      //<4>
+        System.out.println("Cron expression hardcoded");
+    }
+
+    @Scheduled(cron = "{cron.expr}")   //<5>
+    void cronJobWithExpressionInConfig() {
+        counter.incrementAndGet();
+        System.out.println("Cron expression configured in application.properties");
+    }
+
+    @Scheduled(fixedRate = 1000)    //<6>
+    void jobAtFixedRate() {
+        counter.incrementAndGet();
+        System.out.println("Fixed Rate expression");
+    }
+
+    @Scheduled(fixedRateString = "${fixedRate.expr}")      //<7>
+    void jobAtFixedRateInConfig() {
+        counter.incrementAndGet();
+        System.out.println("Fixed Rate expression configured in application.properties");
+    }
+}
+----
+<1> Declare the bean in the _application_ scope. Spring only detects @Scheduled annotations in beans.
+<2> The `get()` method allows retrieving the current value.
+<3> Use the Spring `@Scheduled` annotation with a cron-like expression to instruct {product-name} to schedule this method run.  In this example we're scheduling a task to be executed at 10:15am every day.
+<4> The code is pretty straightforward. Every day at 10:15am, the counter is incremented.
+<5> Define a job with a cron-like expression `cron.expr` which is configurable in `application.properties`.
+<6> Define a method to be executed at a fixed interval of time. The period is expressed in milliseconds.
+<7> Define a job to be executed at a fixed interval of time `fixedRate.expr` which is configurable in `application.properties`.
+
+== Updating the application configuration file
+
+Edit the `application.properties` file and add the `cron.expr` and the `fixedRate.expr` configuration:
+[source,properties]
+----
+# The syntax used by Spring for cron expressions is the same as which is used by regular {product-name} scheduler.
+cron.expr=*/5 * * * * ?
+fixedRate.expr=1000
+----
+
+== Creating the resource and the test
+
+Create the `CountResource` class with the following content:
+
+[source,java]
+----
+package org.acme.spring.scheduler;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/count")
+public class CountResource {
+
+    @Inject
+    CounterBean counter;    // <1>
+
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "count: " + counter.get();   // <2>
+    }
+}
+----
+<1> Inject the `CounterBean`
+<2> Send back the current counter value
+
+We also need to update the tests. Edit the `CountResourceTest` class to match:
+
+[source, java]
+----
+package org.acme.spring.scheduler;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class CountResourceTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+                .when().get("/count")
+                .then()
+                .statusCode(200)
+                .body(containsString("count"));  // <1>
+    }
+
+}
+----
+<1> Ensure that the response contains `count`
+
+== Package and run the application
+
+Run the application with:
+
+include::{includes}/devtools/dev.adoc[]
+
+In another terminal, run `curl localhost:8080/count` to check the counter value.
+After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
+
+Observe the console to verify that the following messages has been displayed:
+- `Cron expression hardcoded`
+- `Cron expression configured in application.properties`
+- `Fixed Rate expression`
+- `Fixed Rate expression configured in application.properties`
+These messages indicate that the executions of methods annotated with `@Scheduled` have been triggered.
+
+As usual, the application can be packaged using:
+
+include::{includes}/devtools/build.adoc[]
+
+And executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::{includes}/devtools/build-native.adoc[]
+
+== Using Property Expressions
+
+{product-name} supports the use of property expressions in the `application.properties` file so to externalize the configuration of the tasks you should store the properties in the `application.properties` file and use the
+`fixedRateString`, `initialDelayString` params respectively.
+
+Note that this configuration is a build time configuration, the property expression will be resolved at build time.
+
+== Unsupported Spring Scheduled functionalities
+
+{product-name} currently only supports a subset of the functionalities that Spring @Scheduled provides with more features being planned.
+Currently, the `fixedDelay` and `fixedDelayString` parameters are not supported, in other words, `@Scheduled` methods are always executed independently.
+
+== Important Technical Note
+
+Please note that the Spring support in {product-name} does not start a Spring Application Context nor are any Spring infrastructure classes run.
+Spring classes and annotations are only used for reading metadata and / or are used as user code method return types or parameter types.
+What that means for end users, is that adding arbitrary Spring libraries will not have any effect. Moreover, Spring infrastructure
+classes (like `org.springframework.beans.factory.config.BeanPostProcessor` for example) will not be executed.
+
+
+== More Spring guides
+
+{product-name} has more Spring compatibility features. See the following guides for more details:
+
+* xref:spring-di.adoc[{product-name} - Extension for Spring DI]
+* xref:spring-web.adoc[{product-name} - Extension for Spring Web]
+* xref:spring-data-jpa.adoc[{product-name} - Extension for Spring Data JPA]
+* xref:spring-data-rest.adoc[{product-name} - Extension for Spring Data REST]
+* xref:spring-cloud-config-client.adoc[{product-name} - Reading properties from Spring Cloud Config Server]
+* xref:spring-boot-properties.adoc[{product-name} - Extension for Spring Boot properties]
+* xref:spring-cache.adoc[{product-name} - Extension for Spring Cache]
+* xref:spring-security.adoc[{product-name} - Extension for Spring Security]

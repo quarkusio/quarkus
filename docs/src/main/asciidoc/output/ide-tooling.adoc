@@ -1,0 +1,162 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Quarkus Tools in your favorite IDE
+include::_attributes.adoc[]
+:categories: getting-started
+:summary: Learn more about {product-name-first} integrations in IDEs.
+
+The following IDEs have support for the community developed {product-name} Tools:
+
+* https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus[{product-name} Tools for Visual Studio Code]
+* https://marketplace.eclipse.org/content/quarkus-tools[{product-name} Tools for Eclipse]
+* https://plugins.jetbrains.com/plugin/13234-quarkus/versions[{product-name} Tools for IntelliJ IDEA]
+* https://github.com/eclipse-che/che-devfile-registry/tree/main/devfiles/quarkus[{product-name} Tools for Eclipse Che]
+
+In addition, IntelliJ IDEA has additional support for {product-name} in their Ultimate non-open source version.
+
+* https://www.jetbrains.com/help/idea/quarkus.html[IntelliJ IDEA Ultimate Edition built-in {product-name} support]
+
+The table below gives an overview of the current IDEs with links and a high-level overview of their features.
+
+:vscode-logo: https://simpleicons.org/icons/visualstudiocode.svg
+:eclipse-logo: https://simpleicons.org/icons/eclipseide.svg
+:intellij-logo: https://simpleicons.org/icons/intellijidea.svg
+:che-logo: https://simpleicons.org/icons/eclipseche.svg
+[cols="6*^", header]
+|===
+| .
+| image:{vscode-logo}[VSCode,100,100]
+{empty} +
+VSCode {product-name} Tools
+| image:{eclipse-logo}[Eclipse,100,100]
+{empty} +
+Eclipse {product-name} Tools
+| image:{intellij-logo}[IntelliJ,100,100]
+{empty} +
+IntelliJ {product-name} Tools
+| image:{intellij-logo}[IntelliJ,100,100]
+{empty} +
+IntelliJ IDEA Ultimate
+| image:{che-logo}[Eclipse Che,100,100]
+{empty} +
+Eclipse Che
+
+|Description
+|Visual Studio Code extension to install using the marketplace
+|Eclipse plugin to install into Eclipse using an update-site
+|IntelliJ IDEA plugin that works in IntelliJ IDEA Community and Ultimate. Available from Marketplace.
+|Built-in {product-name} features available only in IntelliJ IDEA Ultimate
+|Built-in {product-name} features available in Eclipse Che incl. che.openshift.io.
+
+|Status
+|Stable
+|Stable
+|Stable
+|Stable
+|Stable
+
+|Downloads
+| https://marketplace.visualstudio.com/items?itemName=redhat.vscode-quarkus[Marketplace]
+{empty} +
+ https://download.jboss.org/jbosstools/vscode/snapshots/vscode-quarkus/?C=M;O=D[Development Builds]
+| https://download.jboss.org/jbosstools/photon/snapshots/builds/jbosstools-quarkus_master/[Development Update Site]
+| https://plugins.jetbrains.com/plugin/13234-quarkus/versions[Marketplace]
+{empty} +
+https://download.jboss.org/jbosstools/intellij/snapshots/intellij-quarkus/[Development Builds]
+| https://www.jetbrains.com/idea/nextversion/[Installer]
+| https://che.openshift.io/f?url=https://raw.githubusercontent.com/redhat-developer/devfile/master/getting-started/quarkus/devfile.yaml[Start Che Workspace]
+
+|Source
+|https://github.com/redhat-developer/vscode-quarkus[GitHub]
+|https://github.com/jbosstools/jbosstools-quarkus[GitHub]
+|https://github.com/redhat-developer/intellij-quarkus[GitHub]
+|Closed-Source
+|
+
+|https://github.com/redhat-developer/quarkus-ls[{product-name} Language Server]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Wizards w/code.quarkus.io
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|Custom Wizard
+|icon:times[]
+|icon:times[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+
+|Config editor
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Config autocompletion
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|Config validation
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|Config jump to definition
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|?
+|icon:check[]
+
+|Config profiles
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|Config outline
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Easy Launch debug/dev:mode
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:check[]
+
+|{product-name} Code Snippets
+|icon:check[]
+|icon:check[]
+|icon:check[]
+|icon:times[]
+|icon:check[]
+
+|Injection Discovery/Navigation
+|icon:times[]
+|icon:times[]
+|icon:times[]
+|icon:check[]
+|icon:times[]
+|===

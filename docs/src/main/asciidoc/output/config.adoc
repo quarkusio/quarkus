@@ -1,0 +1,244 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Configuring Your Application
+include::_attributes.adoc[]
+:categories: core
+:summary: Hardcoded values in your code is a no go (even if we all did it at some point ;-)). In this guide, we learn how to configure your application.
+
+IMPORTANT: The content of this guide and been revised and split into additional topics. Please check the
+<<additional-information,Additional Information>> section.
+
+
+Hardcoded values in your code are a _no-go_ (even if we all did it at some point ;-)).
+In this guide, we will learn how to configure a {product-name-first} application.
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `config-quickstart` link:{quickstarts-tree-url}/config-quickstart[directory].
+
+== Create the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+:create-app-artifact-id: config-quickstart
+:create-app-extensions: resteasy-reactive
+include::{includes}/devtools/create-app.adoc[]
+
+It generates:
+
+* the Maven structure
+* a landing page accessible on `http://localhost:8080`
+* example `Dockerfile` files for both `native` and `jvm` modes
+* the application configuration file
+
+== Create the configuration
+
+A {product-name} application uses the https://github.com/smallrye/smallrye-config[SmallRye Config] API to provide all
+mechanisms related with configuration.
+
+By default, {product-name} reads configuration properties from <<config-reference.adoc#configuration-sources,several sources>>.
+For the purpose of this guide, we will use an application configuration file located in `src/main/resources/application.properties`.
+
+Edit the file with the following content:
+
+.application.properties
+[source,properties]
+----
+# Your configuration properties
+greeting.message = hello
+greeting.name = quarkus
+----
+
+== Create a REST resource
+
+Create the `org.acme.config.GreetingResource` REST resource with the following content:
+
+[source,java]
+----
+package org.acme.config;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/greeting")
+public class GreetingResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "Hello RESTEasy";
+    }
+}
+----
+
+== Inject the configuration
+
+{product-name} uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] annotations to inject the
+configuration properties in the application.
+
+[source,java]
+----
+@ConfigProperty(name = "greeting.message") <1>
+String message;
+----
+<1> You can use `@Inject @ConfigProperty` or just `@ConfigProperty`. The `@Inject` annotation is not necessary for
+members annotated with `@ConfigProperty`.
+
+NOTE: If the application attempts to inject a configuration property that is not set, an error is thrown.
+
+Edit the `org.acme.config.GreetingResource`, and introduce the following configuration properties:
+
+[source,java]
+----
+@ConfigProperty(name = "greeting.message") <1>
+String message;
+
+@ConfigProperty(name = "greeting.suffix", defaultValue="!") <2>
+String suffix;
+
+@ConfigProperty(name = "greeting.name")
+Optional<String> name; <3>
+----
+<1> If you do not provide a value for this property, the application startup fails with `jakarta.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
+<2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
+<3> This property is optional - an empty `Optional` is injected if the configuration does not provide a value for `greeting.name`.
+
+Now, modify the `hello` method to use the injected properties:
+
+[source,java]
+----
+@GET
+@Produces(MediaType.TEXT_PLAIN)
+public String hello() {
+    return message + " " + name.orElse("world") + suffix;
+}
+----
+
+TIP: Use `@io.smallrye.config.ConfigMapping` annotation to group multiple configurations in a single interface. Please,
+check the https://smallrye.io/smallrye-config/Main/config/mappings/[Config Mappings] documentation.
+
+== Update the test
+
+We also need to update the functional test to reflect the changes made to the endpoint.
+Create the `src/test/java/org/acme/config/GreetingResourceTest.java` file with the following content:
+
+[source,java]
+----
+package org.acme.config;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@QuarkusTest
+public class GreetingResourceTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+          .when().get("/greeting")
+          .then()
+             .statusCode(200)
+             .body(is("hello quarkus!")); // Modified line
+    }
+
+}
+----
+
+== Package and run the application
+
+Run the application with:
+
+include::{includes}/devtools/dev.adoc[]
+
+Open your browser to http://localhost:8080/greeting.
+
+Changing the configuration file is immediately reflected.
+You can add the `greeting.suffix`, remove the other properties, change the values, etc.
+
+As usual, the application can be packaged using:
+
+include::{includes}/devtools/build.adoc[]
+
+and executed using `java -jar target/quarkus-app/quarkus-run.jar`.
+
+You can also generate the native executable with:
+
+include::{includes}/devtools/build-native.adoc[]
+
+== Programmatically access the configuration
+
+The `org.eclipse.microprofile.config.ConfigProvider.getConfig()` API allows to access the Config API programmatically.
+This API is mostly useful in situations where CDI injection is not available.
+
+[source,java]
+----
+String databaseName = ConfigProvider.getConfig().getValue("database.name", String.class);
+Optional<String> maybeDatabaseName = ConfigProvider.getConfig().getOptionalValue("database.name", String.class);
+----
+
+== Configuring Quarkus
+
+{product-name} itself is configured via the same mechanism as your application. {product-name} reserves the `quarkus.` namespace
+for its own configuration. For example to configure the HTTP server port you can set `quarkus.http.port` in
+`application.properties`. All the {product-name} configuration properties are xref:all-config.adoc[documented and searchable].
+
+[IMPORTANT]
+====
+As mentioned above, properties prefixed with `quarkus.` are effectively reserved for configuring {product-name} itself and its
+extensions. Therefore, the `quarkus.` prefix should **never** be used for application specific properties.
+====
+
+=== Build Time configuration
+
+Some {product-name} configurations only take effect during build time, meaning is not possible to change them at runtime. These
+configurations are still available at runtime but as read-only and have no effect in {product-name} behaviour. A change to any
+of these configurations requires a rebuild of the application itself to reflect changes of such properties.
+
+TIP: The properties fixed at build time are marked with a lock icon (icon:lock[]) in the xref:all-config.adoc[list of all configuration options].
+
+However, some extensions do define properties _overridable at runtime_. A simple example is the database URL, username
+and password which is only known specifically in your target environment, so they can be set and influence the
+application behaviour at runtime.
+
+[[additional-information]]
+== Additional Information
+
+* xref:config-reference.adoc[Configuration Reference Guide]
+* xref:config-yaml.adoc[YAML ConfigSource Extension]
+* xref:vault.adoc[HashiCorp Vault ConfigSource Extension]
+* xref:consul-config.adoc[Consul ConfigSource Extension]
+* xref:spring-cloud-config-client.adoc[Spring Cloud ConfigSource Extension]
+* xref:config-mappings.adoc[Mapping configuration to objects]
+* xref:config-extending-support.adoc[Extending configuration support]
+
+{product-name} relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Config] and inherits its features:
+
+* Additional ``ConfigSource``s
+* Additional ``Converter``s
+* Indexed properties
+* Parent profile
+* Interceptors for configuration value resolution
+* Relocate configuration properties
+* Fallback configuration properties
+* Logging
+* Hide secrets
+
+For more information, please check the
+link:https://smallrye.io/smallrye-config/Main/[SmallRye Config documentation].

@@ -1,0 +1,691 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Tips for writing native applications
+include::_attributes.adoc[]
+:categories: core, writing-extensions, native
+:summary: This guide is a collection of tips to help you solve the problems you encounter when compiling applications to native executable.
+
+This guide contains various tips and tricks for getting around problems that might arise when attempting to run Java applications as native executables.
+
+Note that we differentiate two contexts where the solution applied might be different:
+
+ * in the context of an application, you will rely on configuring the `native-image` configuration by tweaking your `pom.xml`;
+ * in the context of an extension, {product-name-first} offers a lot of infrastructure to simplify all of this.
+
+Please refer to the appropriate section depending on your context.
+
+== Supporting native in your application
+
+GraalVM imposes a number of constraints and making your application a native executable might require a few tweaks.
+
+=== Including resources
+
+By default, when building a native executable, GraalVM will not include any of the resources that are on the classpath into the native executable it creates.
+Resources that are meant to be part of the native executable need to be configured explicitly.
+
+{product-name} automatically includes the resources present in `META-INF/resources` (the web resources) but, outside this directory, you are on your own.
+
+[WARNING]
+====
+Note that you need to be extremely careful here as anything in `META-INF/resources` will be exposed as static web resources.
+So this directory is not a shortcut for "let's automatically include these resources in the native executable" and should only be used for static web resources.
+
+Other resources should be declared explicitly.
+====
+
+To include more resources in the native executable, the easiest way is to use the `quarkus.native.resources.includes` configuration property,
+and its counterpart to exclude resources `quarkus.native.resources.excludes`.
+
+Both configuration properties support glob patterns.
+
+For instance, having the following properties in your `application.properties`:
+
+[source,properties]
+----
+quarkus.native.resources.includes=foo/**,bar/**/*.txt
+quarkus.native.resources.excludes=foo/private/**
+----
+
+will include:
+
+* all files in the `foo/` directory and its subdirectories except for files in `foo/private/` and its subdirectories,
+* all text files in the `bar/` directory and its subdirectories.
+
+If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
+you can also create a `resources-config.json` (the most common location is within `src/main/resources`) JSON file defining which resources should be included:
+
+[source,json]
+----
+{
+  "resources": [
+    {
+      "pattern": ".*\\.xml$"
+    },
+    {
+      "pattern": ".*\\.json$"
+    }
+  ]
+}
+----
+
+The patterns are valid Java regexps.
+Here we include all the XML files and JSON files into the native executable.
+
+[NOTE]
+====
+You can find more information about this topic in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Resources/[the GraalVM documentation].
+====
+
+The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =-H:ResourceConfigurationFiles=resources-config.json
+----
+
+In the previous snippet we were able to simply use `resources-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
+If the file had been added to another directory, the proper file path would have had to be specified manually.
+
+[TIP]
+====
+Multiple options may be separated by a comma. For example, one could use:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =\
+    -H:ResourceConfigurationFiles=resources-config.json,\
+    -H:ReflectionConfigurationFiles=reflection-config.json
+----
+
+in order to ensure that various resources are included and additional reflection is registered.
+
+====
+If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
+
+When using Maven, we could use the following configuration:
+
+[source,xml]
+----
+<profiles>
+    <profile>
+        <id>native</id>
+        <properties>
+            <quarkus.package.type>native</quarkus.package.type>
+            <quarkus.native.additional-build-args>-H:ResourceConfigurationFiles=resources-config.json</quarkus.native.additional-build-args>
+        </properties>
+    </profile>
+</profiles>
+----
+
+=== Registering for reflection
+
+When building a native executable, GraalVM operates with a closed world assumption.
+It analyzes the call tree and removes all the classes/methods/fields that are not used directly.
+
+The elements used via reflection are not part of the call tree so they are dead code eliminated (if not called directly in other cases).
+To include these elements in your native executable, you need to register them for reflection explicitly.
+
+This is a very common case as JSON libraries typically use reflection to serialize the objects to JSON:
+
+[source,java]
+----
+    public class Person {
+        private String first;
+        private String last;
+
+        public String getFirst() {
+            return first;
+        }
+
+        public void setFirst(String first) {
+            this.first = first;
+        }
+
+        public String getLast() {
+            return last;
+        }
+
+        public void setValue(String last) {
+            this.last = last;
+        }
+    }
+
+    @Path("/person")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public class PersonResource {
+
+        private final Jsonb jsonb;
+
+        public PersonResource() {
+            jsonb = JsonbBuilder.create(new JsonbConfig());
+        }
+
+        @GET
+        public Response list() {
+            return Response.ok(jsonb.fromJson("{\"first\":  \"foo\", \"last\":  \"bar\"}", Person.class)).build();
+        }
+    }
+----
+
+If we were to use the code above, we would get an exception like the following when using the native executable:
+
+[source]
+----
+Exception handling request to /person: org.jboss.resteasy.spi.UnhandledException: jakarta.json.bind.JsonbException: Can't create instance of a class: class org.acme.jsonb.Person, No default constructor found
+----
+
+or if you are using Jackson:
+
+[source]
+----
+com.fasterxml.jackson.databind.exc.InvalidDefinitionException: No serializer found for class org.acme.jsonb.Person and no properties discovered to create BeanSerializer (to avoid exception, disable SerializationFeature.FAIL_ON_EMPTY_BEANS)
+----
+
+An even nastier possible outcome could be for no exception to be thrown, but instead the JSON result would be completely empty.
+
+There are two different ways to fix this type of issues.
+
+[#registerForReflection]
+==== Using the @RegisterForReflection annotation
+
+The easiest way to register a class for reflection is to use the `@RegisterForReflection` annotation:
+
+[source,java]
+----
+@RegisterForReflection
+public class MyClass {
+}
+----
+
+If your class is in a third-party jar, you can do it by using an empty class that will host the `@RegisterForReflection` for it.
+
+[source,java]
+----
+@RegisterForReflection(targets={ MyClassRequiringReflection.class, MySecondClassRequiringReflection.class})
+public class MyReflectionConfiguration {
+}
+----
+
+Note that `MyClassRequiringReflection` and  `MySecondClassRequiringReflection` will be registered for reflection but not `MyReflectionConfiguration`.
+
+This feature is handy when using third-party libraries using object mapping features (such as Jackson or GSON):
+
+[source, java]
+----
+@RegisterForReflection(targets = {User.class, UserImpl.class})
+public class MyReflectionConfiguration {
+
+}
+----
+
+==== Using a configuration file
+
+You can use a configuration file to register classes for reflection.
+
+As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflection-config.json` (the most common location is within `src/main/resources`)
+
+[source,json]
+----
+[
+  {
+    "name" : "com.acme.MyClass",
+    "allDeclaredConstructors" : true,
+    "allPublicConstructors" : true,
+    "allDeclaredMethods" : true,
+    "allPublicMethods" : true,
+    "allDeclaredFields" : true,
+    "allPublicFields" : true
+  }
+]
+----
+
+[NOTE]
+====
+For more details on the format of this file, please refer to https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Reflection/[the GraalVM documentation].
+====
+
+The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =-H:ReflectionConfigurationFiles=reflection-config.json
+----
+
+In the previous snippet we were able to simply use `reflection-config.json` instead of specifying the entire path of the file simply because it was added to `src/main/resources`.
+If the file had been added to another directory, the proper file path would have had to be specified manually.
+
+[TIP]
+====
+Multiple options may be separated by a comma. For example, one could use:
+
+[source,properties]
+----
+quarkus.native.additional-build-args =\
+    -H:ResourceConfigurationFiles=resources-config.json,\
+    -H:ReflectionConfigurationFiles=reflection-config.json
+----
+
+in order to ensure that various resources are included and additional reflection is registered.
+
+====
+If for some reason adding the aforementioned configuration to `application.properties` is not desirable, it is possible to configure the build tool to effectively perform the same operation.
+
+When using Maven, we could use the following configuration:
+
+[source,xml]
+----
+<profiles>
+    <profile>
+        <id>native</id>
+        <properties>
+            <quarkus.package.type>native</quarkus.package.type>
+            <quarkus.native.additional-build-args>-H:ReflectionConfigurationFiles=reflection-config.json</quarkus.native.additional-build-args>
+        </properties>
+    </profile>
+</profiles>
+----
+
+[[delay-class-init-in-your-app]]
+=== Delaying class initialization
+
+By default, {product-name} initializes all classes at build time.
+
+There are cases where the initialization of certain classes is done in a static block needs to be postponed to runtime.
+Typically, omitting such configuration would result in a runtime exception like the following:
+
+[source]
+----
+Error: No instances are allowed in the image heap for a class that is initialized or reinitialized at image runtime: sun.security.provider.NativePRNG
+Trace: object java.security.SecureRandom
+method com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode)
+Call path from entry point to com.amazonaws.services.s3.model.CryptoConfiguration.<init>(CryptoMode):
+----
+
+Another common source of errors is when the image heap taken by GraalVM contains a `Random`/`SplittableRandom` instance:
+
+[source]
+----
+Error: com.oracle.graal.pointsto.constraints.UnsupportedFeatureException: Detected an instance of Random/SplittableRandom class in the image heap. Instances created during image generation have cached seed values and don't behave as expected.
+----
+
+Which is more often than not caused by {product-name} initializing at build time a class with a static `Random`/`SplittableRandom` field,
+causing this particular instance to be tentatively included in the image heap.
+
+[TIP]
+====
+You can find detailed information about this `Random`/`SplittableRandom` issue in https://foivos.zakkak.net/tutorials/working-with-randoms-native-images/[this blog post].
+====
+
+In these cases, delaying the infringing class initialization at runtime might be the solution and, to achieve that,
+you can use the `--initialize-at-run-time=<package or class>` configuration knob.
+
+It should be added to the `native-image` configuration using the `quarkus.native.additional-build-args` configuration property as shown in the examples above.
+
+[NOTE]
+====
+You can find more information about all this in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[the GraalVM documentation].
+====
+
+[NOTE]
+====
+When multiple classes or packages need to be specified via the `quarkus.native.additional-build-args` configuration property, the `,` symbol needs to be escaped.
+An example of this is the following:
+
+[source,properties]
+----
+quarkus.native.additional-build-args=--initialize-at-run-time=com.example.SomeClass\\,org.acme.SomeOtherClass
+----
+
+and in the case of using the Maven configuration instead of `application.properties`:
+
+[source,xml]
+----
+<quarkus.native.additional-build-args>--initialize-at-run-time=com.example.SomeClass\,org.acme.SomeOtherClass</quarkus.native.additional-build-args>
+----
+====
+
+=== Managing Proxy Classes
+
+While writing native application you'll need to define proxy classes at image build time by specifying the list of interfaces that they implement.
+
+In such a situation, the error you might encounter is:
+
+[source]
+----
+com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
+----
+
+Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
+You can find all the information about the format of this file in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[the GraalVM documentation].
+
+[[modularity-benefits]]
+=== Modularity Benefits
+
+During native executable build time GraalVM analyses the application's call tree and generates a code-set that includes all the code it needs.
+Having a modular codebase is key to avoiding problems with unused or optional parts of your application,
+while at the same time reducing both native executable build times and size.
+In this section you will learn about the details behind the benefits of modularity for native applications.
+
+When code is not modular enough, generated native executables can end up with more code than what the user needs.
+If a feature is not used and the code gets compiled into the native executable,
+this is a waste of native compilation time and memory usage, as well as native executable disk space and starting heap size.
+Even more problems arise when third party libraries or specialized API subsystems are used which cause native compilation or runtime errors,
+and their use is not modularised enough.
+A recent problem can be found in the JAXB library,
+which is capable of deserializing XML files containing images using Java’s AWT APIs.
+The vast majority of {product-name} XML users don’t need to deserialize images,
+so there shouldn’t be a need for users applications to include Java AWT code,
+unless they specifically configure {product-name} to add the JAXB AWT code to the native executable.
+However, because JAXB code that uses AWT is in the same jar as the rest of the XML parsing code,
+achieving this separation was rather complex and required the use of Java bytecode substitutions to get around it.
+These substitutions are hard to maintain and can easily break, hence they should be one's last resort.
+
+A modular codebase is the best way to avoid these kind of issues.
+Taking the JAXB/AWT problem above,
+if the JAXB code that dealt with images was in a separate module or jar (e.g. `jaxb-images`),
+then {product-name} could choose not to include that module unless the user specifically requested the need to serialize/deserialize XML files containing images at build time.
+
+Another benefit of modular applications is that they can reduce the code-set that will need to get into the native executable.
+The smaller the code-set, the faster the native executable builds will be and the smaller the native executable produced.
+
+[TIP]
+====
+The key takeaway point here is the following:
+Keeping optional features, particularly those that depend on third party libraries or API subsystems with a big footprint,
+in separate modules is the best solution.
+====
+
+How do I know if my application suffers from similar problems?
+Aside from a deep study of the application,
+finding usages of
+https://maven.apache.org/guides/introduction/introduction-to-optional-and-excludes-dependencies.html[Maven optional dependencies]
+is a clear indicator that your application might suffer from similar problems.
+These type of dependencies should be avoided,
+and instead code that interacts with optional dependencies should be moved into separate modules.
+
+[[enforcing-singletons]]
+=== Enforcing Singletons
+
+As already explained in the <<delay-class-init-in-your-app,delay class initialization>> section,
+{product-name} marks all code to be initialized at build time by default.
+This means that, unless marked otherwise,
+static variables will be assigned at build time,
+and static blocks will be executed at build time too.
+
+This can cause values in Java programs that would normally vary from one run to another,
+to always return a constant value.
+E.g. a static field that is assigned the value of `System.currentTimeMillis()`
+will always return the same value when executed as a {product-name} native executable.
+
+Singletons that rely on static variable initialization will suffer similar problems.
+For example, imagine you have a singleton based around static initialization along with a REST endpoint to query it:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/static")
+    public long withStatic() {
+        return StaticSingleton.startTime();
+    }
+}
+
+class StaticSingleton {
+    static final long START_TIME = System.currentTimeMillis();
+
+    static long startTime() {
+        return START_TIME;
+    }
+}
+----
+
+When the `singletons/static` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/static
+1656509254532%
+----
+
+Singletons that rely on `enum` classes are also affected by the same issue:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @GET
+    @Path("/enum")
+    public long withEnum() {
+        return EnumSingleton.INSTANCE.startTime();
+    }
+}
+
+enum EnumSingleton {
+    INSTANCE(System.currentTimeMillis());
+
+    private final long startTime;
+
+    private EnumSingleton(long startTime) {
+        this.startTime = startTime;
+    }
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+When the `singletons/enum` endpoint is queried,
+it will always return the same value,
+even after the application is restarted:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/enum
+1656509254601%
+----
+
+One way to fix it is to build singletons using CDI's `@Singleton` annotation:
+
+[source,java]
+----
+@Path("/singletons")
+public class Singletons {
+
+    @Inject
+    CdiSingleton cdiSingleton;
+
+    @GET
+    @Path("/cdi")
+    public long withCdi() {
+        return cdiSingleton.startTime();
+    }
+}
+
+@Singleton
+class CdiSingleton {
+    // Note that the field is not static
+    final long startTime = System.currentTimeMillis();
+
+    long startTime() {
+        return startTime;
+    }
+}
+----
+
+After each restart,
+querying `singletons/cdi` will return a different value,
+just like it would in JVM mode:
+
+[source,bash]
+----
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+$ curl http://localhost:8080/singletons/cdi
+1656510218554%
+
+### Restart the native application ###
+
+$ curl http://localhost:8080/singletons/cdi
+1656510714689%
+----
+
+An alternative way to enforce a singleton while relying static fields, or enums,
+is to <<delay-class-init-in-your-app,delay its class initialization until run time>>.
+The nice advantage of CDI-based singletons is that your class initialization is not constrained,
+so you can freely decide whether it should be build-time or run-time initialized,
+depending on your use case.
+
+=== Beware of common Java API overrides
+
+Certain commonly used Java methods are overriden by user classes,
+e.g. `toString`, `equals`, `hashCode`...etc.
+The majority of overrides do not cause problems,
+but if they use third party libraries (e.g. for additional formatting),
+or use dynamic language features (e.g. reflection or proxies),
+they can cause native image build to fail.
+Some of those failures might be solvable via configuration,
+but others can be more tricky to handle.
+
+From a GraalVM points-to analysis perspective,
+what happens in these method overrides matters,
+even if the application does not explicitly call them.
+This is because these methods are used throughout the JDK,
+and all it takes is for one of those calls to be done on an unconstrained type,
+e.g. `java.lang.Object`,
+for the analysis to have to pull all implementations of that particular method.
+
+[[native-in-extension]]
+== Supporting native in a Quarkus extension
+
+Supporting native in a {product-name} extension is even easier as {product-name} provides a lot of tools to simplify all this.
+
+[WARNING]
+====
+Everything described here will only work in the context of {product-name} extensions, it won't work in an application.
+====
+
+=== Register reflection
+
+{product-name} makes registration of reflection in an extension a breeze by using `ReflectiveClassBuildItem`, thus eliminating the need for a JSON configuration file.
+
+To register a class for reflection, one would need to create a {product-name} processor class and add a build step that registers reflection:
+
+[source,java]
+----
+public class SaxParserProcessor {
+
+    @BuildStep
+    ReflectiveClassBuildItem reflection() {
+        // since we only need reflection to the constructor of the class, we can specify `false` for both the methods and the fields arguments.
+        return new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xerces.internal.parsers.SAXParser");
+    }
+
+}
+----
+
+[NOTE]
+====
+More information about reflection in GraalVM can be found https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Reflection/[here].
+====
+
+=== Including resources
+
+In the context of an extension, {product-name} eliminates the need for a JSON configuration file by allowing extension authors to specify a `NativeImageResourceBuildItem`:
+
+[source,java]
+----
+public class ResourcesProcessor {
+
+    @BuildStep
+    NativeImageResourceBuildItem nativeImageResourceBuildItem() {
+        return new NativeImageResourceBuildItem("META-INF/extra.properties");
+    }
+
+}
+----
+
+[NOTE]
+====
+For more information about GraalVM resource handling in native executables please refer to https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Resources/[the GraalVM documentation].
+====
+
+
+== Delay class initialization
+
+{product-name} simplifies things by allowing extensions authors to simply register a `RuntimeInitializedClassBuildItem`. A simple example of doing so could be:
+
+[source,java]
+----
+public class S3Processor {
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem cryptoConfiguration() {
+        return new RuntimeInitializedClassBuildItem(CryptoConfiguration.class.getCanonicalName());
+    }
+
+}
+----
+
+Using such a construct means that a `--initialize-at-run-time` option will automatically be added to the `native-image` command line.
+
+[NOTE]
+====
+For more information about `--initialize-at-run-time`, please read https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[the GraalVM documentation].
+====
+
+=== Managing Proxy Classes
+
+Very similarly, {product-name} allows extensions authors to register a `NativeImageProxyDefinitionBuildItem`. An example of doing so is:
+
+[source,java]
+----
+public class S3Processor {
+
+    @BuildStep
+    NativeImageProxyDefinitionBuildItem httpProxies() {
+        return new NativeImageProxyDefinitionBuildItem("org.apache.http.conn.HttpClientConnectionManager",
+                "org.apache.http.pool.ConnPoolControl", "com.amazonaws.http.conn.Wrapped");
+    }
+
+}
+----
+
+Using such a construct means that a `-H:DynamicProxyConfigurationResources` option will automatically be added to the `native-image` command line.
+
+[NOTE]
+====
+For more information about Proxy Classes you can read https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[the GraalVM documentation].
+====
+
+=== Logging with Native Image
+
+If you are using dependencies that require logging components such as Apache Commons Logging or Log4j and are experiencing a `ClassNotFoundException` when building the native executable, you can resolve this by excluding the logging library and adding the corresponding JBoss Logging adapter.
+
+For more details please refer to the xref:logging.adoc#logging-adapters[Logging guide].

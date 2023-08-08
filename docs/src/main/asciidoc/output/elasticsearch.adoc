@@ -1,0 +1,480 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+= Connecting to an Elasticsearch cluster
+include::_attributes.adoc[]
+:categories: data
+:summary: This guide covers how to interact with an Elasticsearch cluster using the low level REST client or the Elasticsearch Java client.
+
+Elasticsearch is a well known full text search engine and NoSQL datastore.
+
+In this guide, we will see how you can get your REST services to interact with an Elasticsearch cluster.
+
+{product-name-first} provides two ways of accessing Elasticsearch:
+
+* The lower level REST Client
+* The Elasticsearch Java client
+
+[WARNING]
+====
+A third {product-name} extension for the "high level REST Client" used to exist,
+but was removed as this client has been deprecated by Elastic and has some licensing issues.
+====
+
+== Prerequisites
+
+include::{includes}/prerequisites.adoc[]
+* Elasticsearch installed or Docker installed
+
+== Architecture
+
+The application built in this guide is quite simple: the user can add elements in a list using a form and the list is updated.
+
+All the information between the browser and the server is formatted as JSON.
+
+The elements are stored in Elasticsearch.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+:create-app-artifact-id: elasticsearch-quickstart
+:create-app-extensions: resteasy-reactive-jackson,elasticsearch-rest-client
+include::{includes}/devtools/create-app.adoc[]
+
+This command generates a Maven structure importing the RESTEasy Reactive, Jackson, and Elasticsearch low level REST client extensions.
+
+The Elasticsearch low level REST client comes with the `quarkus-elasticsearch-rest-client` extension
+that has been added to your build file.
+
+If you want to use the Elasticsearch Java client instead, replace the `quarkus-elasticsearch-rest-client` extension by the `quarkus-elasticsearch-java-client` extension.
+
+[NOTE]
+====
+We use the `resteasy-reactive-jackson` extension here and not the JSON-B variant because we will use the Vert.x `JsonObject` helper
+to serialize/deserialize our objects to/from Elasticsearch and it uses Jackson under the hood.
+====
+
+To add the extensions to an existing project, follow the instructions below.
+
+For the Elasticsearch low level REST client, add the following dependency to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elasticsearch-rest-client</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-elasticsearch-rest-client")
+----
+
+For the Elasticsearch Java client, add the following dependency to your build file:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-elasticsearch-java-client</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-elasticsearch-java-client")
+----
+
+== Creating your first JSON REST service
+
+In this example, we will create an application to manage a list of fruits.
+
+First, let's create the `Fruit` bean as follows:
+
+[source,java]
+----
+package org.acme.elasticsearch;
+
+public class Fruit {
+    public String id;
+    public String name;
+    public String color;
+}
+----
+
+Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
+
+Now create a `org.acme.elasticsearch.FruitService` that will be the business layer of our application
+and will store/load the fruits from the Elasticsearch instance.
+Here we use the low level REST client, if you want to use the Java API client instead,
+follow the instructions in the <<using-the-elasticsearch-java-client,Using the Elasticsearch Java Client>> paragraph instead.
+
+[source,java]
+----
+package org.acme.elasticsearch;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
+@ApplicationScoped
+public class FruitService {
+    @Inject
+    RestClient restClient; //<1>
+
+    public void index(Fruit fruit) throws IOException {
+        Request request = new Request(
+                "PUT",
+                "/fruits/_doc/" + fruit.id); //<2>
+        request.setJsonEntity(JsonObject.mapFrom(fruit).toString()); //<3>
+        restClient.performRequest(request); //<4>
+    }
+
+    public Fruit get(String id) throws IOException {
+        Request request = new Request(
+                "GET",
+                "/fruits/_doc/" + id);
+        Response response = restClient.performRequest(request);
+        String responseBody = EntityUtils.toString(response.getEntity());
+        JsonObject json = new JsonObject(responseBody); //<5>
+        return json.getJsonObject("_source").mapTo(Fruit.class);
+    }
+
+    public List<Fruit> searchByColor(String color) throws IOException {
+        return search("color", color);
+    }
+
+    public List<Fruit> searchByName(String name) throws IOException {
+        return search("name", name);
+    }
+
+    private List<Fruit> search(String term, String match) throws IOException {
+        Request request = new Request(
+                "GET",
+                "/fruits/_search");
+        //construct a JSON query like {"query": {"match": {"<term>": "<match"}}
+        JsonObject termJson = new JsonObject().put(term, match);
+        JsonObject matchJson = new JsonObject().put("match", termJson);
+        JsonObject queryJson = new JsonObject().put("query", matchJson);
+        request.setJsonEntity(queryJson.encode());
+        Response response = restClient.performRequest(request);
+        String responseBody = EntityUtils.toString(response.getEntity());
+
+        JsonObject json = new JsonObject(responseBody);
+        JsonArray hits = json.getJsonObject("hits").getJsonArray("hits");
+        List<Fruit> results = new ArrayList<>(hits.size());
+        for (int i = 0; i < hits.size(); i++) {
+            JsonObject hit = hits.getJsonObject(i);
+            Fruit fruit = hit.getJsonObject("_source").mapTo(Fruit.class);
+            results.add(fruit);
+        }
+        return results;
+    }
+}
+----
+<1> We inject an Elasticsearch low level `RestClient` into our service.
+<2> We create an Elasticsearch request.
+<3> We use Vert.x `JsonObject` to serialize the object before sending it to Elasticsearch, you can use whatever you want to serialize your objects to JSON.
+<4> We send the request (indexing request here) to Elasticsearch.
+<5> In order to deserialize the object from Elasticsearch, we again use Vert.x `JsonObject`.
+
+Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
+
+[source,java]
+----
+package org.acme.elasticsearch;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+
+import org.jboss.resteasy.reactive.RestQuery;
+
+@Path("/fruits")
+public class FruitResource {
+
+    @Inject
+    FruitService fruitService;
+
+    @POST
+    public Response index(Fruit fruit) throws IOException {
+        if (fruit.id == null) {
+            fruit.id = UUID.randomUUID().toString();
+        }
+        fruitService.index(fruit);
+        return Response.created(URI.create("/fruits/" + fruit.id)).build();
+    }
+
+    @GET
+    @Path("/{id}")
+    public Fruit get(String id) throws IOException {
+        return fruitService.get(id);
+    }
+
+    @GET
+    @Path("/search")
+    public List<Fruit> search(@RestQuery String name, @RestQuery String color) throws IOException {
+        if (name != null) {
+            return fruitService.searchByName(name);
+        } else if (color != null) {
+            return fruitService.searchByColor(color);
+        } else {
+            throw new BadRequestException("Should provide name or color query parameter");
+        }
+    }
+}
+----
+
+The implementation is pretty straightforward and you just need to define your endpoints using the Jakarta REST annotations and use the `FruitService` to list/add new fruits.
+
+== Configuring Elasticsearch
+The main property to configure is the URL to connect to the Elasticsearch cluster.
+
+For a typical clustered Elasticsearch service, a sample configuration would look like the following:
+
+[source,properties]
+----
+# configure the Elasticsearch client for a cluster of two nodes
+quarkus.elasticsearch.hosts = elasticsearch1:9200,elasticsearch2:9200
+----
+
+In our case, we are using a single instance running on localhost:
+
+[source,properties]
+----
+# configure the Elasticsearch client for a single instance on localhost
+quarkus.elasticsearch.hosts = localhost:9200
+----
+
+If you need a more advanced configuration, you can find the comprehensive list of supported configuration properties at the end of this guide.
+
+[[dev-services]]
+=== Dev Services
+
+{product-name} supports a feature called Dev Services that allows you to start various containers without any config.
+In the case of Elasticsearch, this support extends to the default Elasticsearch connection.
+What that means practically is that, if you have not configured `quarkus.elasticsearch.hosts`, {product-name} will automatically
+start an Elasticsearch container when running tests or dev mode, and automatically configure the connection.
+
+When running the production version of the application, the Elasticsearch connection needs to be configured as usual,
+so if you want to include a production database config in your `application.properties` and continue to use Dev Services
+we recommend that you use the `%prod.` profile to define your Elasticsearch settings.
+
+For more information you can read the xref:elasticsearch-dev-services.adoc[Dev Services for Elasticsearch guide].
+
+=== Programmatically Configuring Elasticsearch
+
+On top of the parametric configuration, you can also programmatically apply additional configuration to the client by implementing a `RestClientBuilder.HttpClientConfigCallback` and annotating it with `ElasticsearchClientConfig`. You may provide multiple implementations and configuration provided by each implementation will be applied in a randomly ordered cascading manner.
+
+For example, when accessing an Elasticsearch cluster that is set up for TLS on the HTTP layer, the client needs to trust the certificate that Elasticsearch is using. The following is an example of setting up the client to trust the CA that has signed the certificate that Elasticsearch is using, when that CA certificate is available in a PKCS#12 keystore.
+
+[source,java]
+----
+import io.quarkus.elasticsearch.restclient.lowlevel.ElasticsearchClientConfig;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
+import org.elasticsearch.client.RestClientBuilder;
+
+import jakarta.enterprise.context.Dependent;
+import javax.net.ssl.SSLContext;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.KeyStore;
+
+@ElasticsearchClientConfig
+public class SSLContextConfigurator implements RestClientBuilder.HttpClientConfigCallback {
+    @Override
+    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
+        try {
+            String keyStorePass = "password-for-keystore";
+            Path trustStorePath = Paths.get("/path/to/truststore.p12");
+            KeyStore truststore = KeyStore.getInstance("pkcs12");
+            try (InputStream is = Files.newInputStream(trustStorePath)) {
+                truststore.load(is, keyStorePass.toCharArray());
+            }
+            SSLContextBuilder sslBuilder = SSLContexts.custom()
+                    .loadTrustMaterial(truststore, null);
+            SSLContext sslContext = sslBuilder.build();
+            httpClientBuilder.setSSLContext(sslContext);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        return httpClientBuilder;
+    }
+}
+----
+
+See https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/_encrypted_communication.html[Elasticsearch documentation] for more details on this particular example.
+
+[NOTE]
+====
+Classes marked with `@ElasticsearchClientConfig` are made application scoped CDI beans by default.
+You can override the scope at the class level if you prefer a different scope.
+====
+
+== Running an Elasticsearch cluster
+
+As by default, the Elasticsearch client is configured to access a local Elasticsearch cluster on port 9200 (the default Elasticsearch port),
+if you have a local running instance on this port, there is nothing more to do before being able to test it!
+
+If you want to use Docker to run an Elasticsearch instance, you can use the following command to launch one:
+
+[source,bash,subs=attributes+]
+----
+docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m"\
+       -e "cluster.routing.allocation.disk.threshold_enabled=false"
+       --rm -p 9200:9200 {elasticsearch-image}
+----
+
+== Running the application
+
+Let's start our application in dev mode:
+
+include::{includes}/devtools/dev.adoc[]
+
+You can add new fruits to the list via the following curl command:
+
+[source,bash,subs=attributes+]
+----
+curl localhost:8080/fruits -d '{"name": "bananas", "color": "yellow"}' -H "Content-Type: application/json"
+----
+
+And search for fruits by name or color via the following curl command:
+
+[source,bash,subs=attributes+]
+----
+curl localhost:8080/fruits/search?color=yellow
+----
+
+== Using the Elasticsearch Java Client
+
+Here is a version of the `FruitService` using the Elasticsearch Java Client instead of the low level one:
+
+[source,java]
+----
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.*;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.acme.elasticsearch.Fruit;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@ApplicationScoped
+public class FruitService {
+    @Inject
+    ElasticsearchClient client; // <1>
+
+    public void index(Fruit fruit) throws IOException {
+        IndexRequest<Fruit> request = IndexRequest.of(  // <2>
+            b -> b.index("fruits")
+                .id(fruit.id)
+                .document(fruit)); // <3>
+        client.index(request);  // <4>
+    }
+
+    public Fruit get(String id) throws IOException {
+        GetRequest getRequest = GetRequest.of(
+            b -> b.index("fruits")
+                .id(id));
+        GetResponse<Fruit> getResponse = client.get(getRequest, Fruit.class);
+        if (getResponse.found()) {
+            return getResponse.source();
+        }
+        return null;
+    }
+
+    public List<Fruit> searchByColor(String color) throws IOException {
+        return search("color", color);
+    }
+
+    public List<Fruit> searchByName(String name) throws IOException {
+        return search("name", name);
+    }
+
+    private List<Fruit> search(String term, String match) throws IOException {
+        SearchRequest searchRequest = SearchRequest.of(
+            b -> b.index("fruits")
+                .query(QueryBuilders.match().field(term).query(FieldValue.of(match)).build()._toQuery()));
+
+        SearchResponse<Fruit> searchResponse = client.search(searchRequest, Fruit.class);
+        HitsMetadata<Fruit> hits = searchResponse.hits();
+        return hits.hits().stream().map(hit -> hit.source()).collect(Collectors.toList());
+    }
+}
+----
+<1> We inject an `ElasticsearchClient` inside the service.
+<2> We create an Elasticsearch index request using a builder.
+<3> We directly pass the object to the request as the Java API client has a serialization layer.
+<4> We send the request to Elasticsearch.
+
+== Hibernate Search Elasticsearch
+
+{product-name} supports Hibernate Search with Elasticsearch via the `quarkus-hibernate-search-orm-elasticsearch` extension.
+
+Hibernate Search Elasticsearch allows to synchronize your Jakarta Persistence entities to an Elasticsearch cluster and offers a way to query your Elasticsearch cluster using the Hibernate Search API.
+
+If you are interested in it, please consult the xref:hibernate-search-orm-elasticsearch.adoc[Hibernate Search with Elasticsearch guide].
+
+== Cluster Health Check
+
+If you are using the `quarkus-smallrye-health` extension, both extensions will automatically add a readiness health check
+to validate the health of the cluster.
+
+So when you access the `/q/health/ready` endpoint of your application, you will have information about the cluster status.
+It uses the cluster health endpoint, the check will be down if the status of the cluster is **red**, or the cluster is not available.
+
+This behavior can be disabled by setting the `quarkus.elasticsearch.health.enabled` property to `false` in your `application.properties`.
+
+== Building a native executable
+
+You can use both clients in a native executable.
+
+You can build a native executable with the usual command:
+
+include::{includes}/devtools/build-native.adoc[]
+
+Running it is as simple as executing `./target/elasticsearch-low-level-client-quickstart-1.0.0-SNAPSHOT-runner`.
+
+You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
+
+== Conclusion
+
+Accessing an Elasticsearch cluster from the low level REST client or the Elasticsearch Java client is easy with {product-name} as it provides easy configuration, CDI integration and native support for it.
+
+== Configuration Reference
+
+include::{generated-dir}/config/quarkus-elasticsearch-restclient-lowlevel.adoc[opts=optional, leveloffset=+1]

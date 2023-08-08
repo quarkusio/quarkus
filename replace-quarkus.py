@@ -3,22 +3,34 @@ import re
 
 def replace_instances(directory):
     for filename in os.listdir(directory):
-        # Skip filenames containing "attributes.adoc"
+        # Skip filenames that contain the substring "attributes.adoc"
         if 'attributes.adoc' in filename:
             continue
 
         if filename.endswith(".adoc"):
             new_content = []
             found_first_instance = False
+            inside_comment_block = False
 
             with open(os.path.join(directory, filename), 'r') as file:
                 for line in file:
+                    # Check if the line starts or ends a comment block
+                    if line.strip() == '////':
+                        inside_comment_block = not inside_comment_block
+                        new_content.append(line)
+                        continue
+
+                    # Skip lines inside a comment block
+                    if inside_comment_block:
+                        new_content.append(line)
+                        continue
+
                     # Check if the line is a heading (starting with one or more '=' followed by a space)
                     if re.match(r'^=+\s', line):
                         new_content.append(line)
                         continue
 
-                    # Perform replacements on lines that are not headings
+                    # Perform replacements on lines that are not headings or inside comment blocks
                     occurrences = [match.start() for match in re.finditer(r'\bQuarkus\b', line)]
                     if occurrences:
                         if not found_first_instance:

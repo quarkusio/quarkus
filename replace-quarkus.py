@@ -44,14 +44,14 @@ def replace_instances(directory, exclusions):
                     occurrences = [match.start() for match in re.finditer(r'\bQuarkus\b', line)]
                     if occurrences:
                         if not found_first_instance:
-                            # Replace the first occurrence with ":firstinstance:"
-                            line = line[:occurrences[0]] + ':firstinstance:' + line[occurrences[0] + len('Quarkus'):]
+                            # Replace the first occurrence with "{product-name-first}"
+                            line = line[:occurrences[0]] + '{product-name-first}' + line[occurrences[0] + len('Quarkus'):]
                             found_first_instance = True
                             occurrences.pop(0) # Remove first occurrence from the list
 
-                        # Replace the rest of the occurrences with ":otherinstance:" starting from the last occurrence
+                        # Replace the rest of the occurrences with "{product-name}" starting from the last occurrence
                         for occurrence in reversed(occurrences):
-                            line = line[:occurrence] + ':otherinstance:' + line[occurrence + len('Quarkus'):]
+                            line = line[:occurrence] + '{product-name}' + line[occurrence + len('Quarkus'):]
 
                     new_content.append(line)
 

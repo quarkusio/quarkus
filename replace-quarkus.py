@@ -13,8 +13,8 @@ def replace_instances(directory):
 
             with open(os.path.join(directory, filename), 'r') as file:
                 for line in file:
-                    # Check if the line is a heading
-                    if line.startswith('= '):
+                    # Check if the line is a heading (starting with one or more '=' followed by a space)
+                    if re.match(r'^=+\s', line):
                         new_content.append(line)
                         continue
 

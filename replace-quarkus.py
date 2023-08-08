@@ -3,6 +3,10 @@ import re
 
 def replace_instances(directory):
     for filename in os.listdir(directory):
+        # Skip filenames containing "attributes.adoc"
+        if 'attributes.adoc' in filename:
+            continue
+
         if filename.endswith(".adoc"):
             new_content = []
             found_first_instance = False

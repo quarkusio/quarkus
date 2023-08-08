@@ -23,10 +23,12 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.runtime.configuration.ProfileManager;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 @DisableForNative
 class BuildIT extends MojoTestBase {
+
+    private DevModeClient devModeClient = new DevModeClient();
 
     private RunningInvoker running;
     private File testDir;
@@ -206,7 +208,7 @@ class BuildIT extends MojoTestBase {
                         List.of())
                 .start();
         try {
-            Assertions.assertEquals(expectedMessage, DevModeTestUtils.getHttpResponse(path));
+            Assertions.assertEquals(expectedMessage, devModeClient.getHttpResponse(path));
         } finally {
             process.destroy();
         }

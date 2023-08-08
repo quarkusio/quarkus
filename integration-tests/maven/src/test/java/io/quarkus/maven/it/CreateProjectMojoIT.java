@@ -41,13 +41,15 @@ import com.google.common.io.Files;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.maven.utilities.MojoUtils;
 import io.quarkus.platform.tools.ToolsConstants;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
 @DisableForNative
 public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
+
+    private DevModeClient devModeClient = new DevModeClient();
 
     private Invoker invoker;
     private RunningInvoker running;
@@ -588,13 +590,13 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         mvnRunProps.setProperty("debug", "false");
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap(), mvnRunProps);
 
-        String resp = DevModeTestUtils.getHttpResponse();
+        String resp = devModeClient.getHttpResponse();
 
         assertThat(resp).containsIgnoringCase("Congratulations!").containsIgnoringCase("application")
                 .containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0.0-SNAPSHOT");
 
-        String greeting = DevModeTestUtils.getHttpResponse("/hello");
+        String greeting = devModeClient.getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");
     }
 

@@ -78,6 +78,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-test-maven</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -87,6 +92,15 @@
         <filtering>true</filtering>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources-filtered</directory>
+        <filtering>true</filtering>
+        <excludes>
+          <exclude>**/target/**</exclude> <!-- Target folders sometimes creep in when manually executing locally-->
+        </excludes>
+      </testResource>
+    </testResources>
     <pluginManagement>
       <plugins>
         <plugin>

@@ -25,7 +25,7 @@ public class ModuleTestRunner {
 
     public ModuleTestRunner(TestSupport testSupport, CuratedApplication testApplication,
             DevModeContext.ModuleInfo moduleInfo) {
-        System.out.println("HOLLY making module test runner");
+        System.out.println("HOLLY making module test runner with " + testApplication);
         this.testSupport = testSupport;
         this.testApplication = testApplication;
         this.moduleInfo = moduleInfo;
@@ -41,8 +41,10 @@ public class ModuleTestRunner {
     Runnable prepare(ClassScanResult classScanResult, boolean reRunFailures, long runId, TestRunListener listener) {
 
         var old = Thread.currentThread().getContextClassLoader();
-        System.out.println("43 HOLLY module test runner setting TCCL to augment classloader");
+        System.out.println(
+                "43 HOLLY module test runner setting TCCL to augment classloader" + testApplication.getAugmentClassLoader());
         Thread.currentThread().setContextClassLoader(testApplication.getAugmentClassLoader());
+
         try {
             synchronized (this) {
                 if (runner != null) {

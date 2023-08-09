@@ -42,7 +42,17 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         System.out.println("HOLLY interceipt doing" + invocation);
         System.out.println("HOLLY interceipt support is " + TestSupport.instance().isPresent());
         System.out.println("HOLLY interceipt holder is " + StartupActionHolder.getStored());
-        // System.out.println("HOLLY classpaht is " + System.getProperty("java.class.path"));
+
+        // This class sets a Thead Context Classloader, which JUnit uses to load classes.
+        // However, in continuous testing mode, setting a TCCL here isn't sufficient for the tests to come in with our desired classloader;
+        // downstream code sets the classloader to the deployment classloader, so we then need
+        // to come in *after* that code.
+
+        // TODO sometimes this is called in dev mode and sometimes it isn't? Ah, it's only not called if we die early, before we get to this
+
+        // In continuous testing mode, the runner code will have executed before this interceptor, so
+        // this interceptor doesn't need to do anything.
+        // TODO what if we removed the changes in the runner code?
 
         // Bypass all this in continuous testing mode; the startup action holder is our best way of detecting it
         if (StartupActionHolder.getStored() == null) {
@@ -131,6 +141,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                             .bootstrap();
 
                     QuarkusClassLoader tcl = curatedApplication.createDeploymentClassLoader();
+                    System.out.println("HOLLY interceptor just made a " + tcl);
 
                     // TODO should we set the context classloader to the deployment classloader?
                     // If not, how will anyone retrieve it?

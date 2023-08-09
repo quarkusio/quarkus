@@ -30,7 +30,7 @@ import io.quarkus.builder.item.BuildItem;
  */
 public final class BuildChainBuilder {
 
-    private static final String GRAPH_OUTPUT = System.getProperty("jboss.builder.graph-output");
+    private static final String GRAPH_OUTPUT = System.getProperty("quarkus.builder.graph-output");
     static final boolean LOG_CONFLICT_CAUSING = Boolean.getBoolean("quarkus.builder.log-conflict-cause");
 
     private final BuildStepBuilder finalStep;

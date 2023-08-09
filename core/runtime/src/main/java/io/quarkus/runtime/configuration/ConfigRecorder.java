@@ -97,4 +97,8 @@ public class ConfigRecorder {
             }
         }
     }
+
+    public void unknownConfigFiles() throws Exception {
+        ConfigDiagnostic.unknownConfigFiles(ConfigDiagnostic.configFilesFromLocations());
+    }
 }

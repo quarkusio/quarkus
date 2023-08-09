@@ -40,6 +40,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
@@ -69,6 +70,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.quarkus.runtime.configuration.ConfigBuilder;
@@ -267,8 +269,11 @@ public class ConfigGenerationBuildStep {
             List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders)
             throws IOException {
 
-        reportUnknownBuildProperties(launchModeBuildItem.getLaunchMode(),
-                configItem.getReadResult().getUnknownBuildProperties());
+        // So it only reports during the build, because it is very likely that the property is available in runtime
+        // and, it will be caught by the RuntimeConfig and log double warnings
+        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+            ConfigDiagnostic.unknownProperties(configItem.getReadResult().getUnknownBuildProperties());
+        }
 
         if (liveReloadBuildItem.isLiveReload()) {
             return;
@@ -318,14 +323,6 @@ public class ConfigGenerationBuildStep {
                 .setRuntimeConfigBuilders(runtimeConfigBuilderClassNames)
                 .build()
                 .run();
-    }
-
-    private static void reportUnknownBuildProperties(LaunchMode launchMode, Set<String> unknownBuildProperties) {
-        // So it only reports during the build, because it is very likely that the property is available in runtime
-        // and, it will be caught by the RuntimeConfig and log double warnings
-        if (!launchMode.isDevOrTest()) {
-            ConfigDiagnostic.unknownProperties(unknownBuildProperties);
-        }
     }
 
     @BuildStep
@@ -438,6 +435,31 @@ public class ConfigGenerationBuildStep {
 
         for (String configWatchedFile : configWatchedFiles) {
             watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(configWatchedFile));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void unknownConfigFiles(
+            ApplicationArchivesBuildItem applicationArchives,
+            LaunchModeBuildItem launchModeBuildItem,
+            ConfigRecorder configRecorder) throws Exception {
+
+        PathCollection rootDirectories = applicationArchives.getRootArchive().getRootDirectories();
+        if (!rootDirectories.isSinglePath()) {
+            return;
+        }
+
+        Set<String> buildTimeFiles = new HashSet<>();
+        buildTimeFiles.addAll(ConfigDiagnostic.configFiles(rootDirectories.getSinglePath()));
+        buildTimeFiles.addAll(ConfigDiagnostic.configFilesFromLocations());
+
+        // Report always at build time since config folder and locations may differ from build to runtime
+        ConfigDiagnostic.unknownConfigFiles(buildTimeFiles);
+
+        // No need to include the application files, because they don't change
+        if (!launchModeBuildItem.getLaunchMode().isDevOrTest()) {
+            configRecorder.unknownConfigFiles();
         }
     }
 

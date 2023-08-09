@@ -239,7 +239,7 @@ class AgroalProcessor {
                 .setDefaultScope(DotNames.SINGLETON).build());
         // add the @DataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DataSource.class).build());
-        // make source datasources are initialized at startup
+        // make sure datasources are initialized at startup
         additionalBeans.produce(new AdditionalBeanBuildItem(AgroalDataSourcesInitializer.class));
 
         // make AgroalPoolInterceptor beans unremovable, users still have to make them beans

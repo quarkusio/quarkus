@@ -125,7 +125,7 @@
         <httpasync.version>4.1.5</httpasync.version>
         <cronutils.version>9.2.1</cronutils.version>
         <quartz.version>2.3.2</quartz.version>
-        <h2.version>2.1.214</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
+        <h2.version>2.2.220</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.6.0</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.1.4</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>

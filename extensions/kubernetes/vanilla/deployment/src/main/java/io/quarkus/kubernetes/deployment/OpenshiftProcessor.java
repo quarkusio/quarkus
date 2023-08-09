@@ -5,6 +5,7 @@ import static io.quarkus.kubernetes.deployment.Constants.DEFAULT_S2I_IMAGE_NAME;
 import static io.quarkus.kubernetes.deployment.Constants.LIVENESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT;
 import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_APP_RUNTIME;
+import static io.quarkus.kubernetes.deployment.Constants.OPENSHIFT_INTERNAL_REGISTRY_PROJECT;
 import static io.quarkus.kubernetes.deployment.Constants.QUARKUS;
 import static io.quarkus.kubernetes.deployment.Constants.READINESS_PROBE;
 import static io.quarkus.kubernetes.deployment.Constants.ROUTE;
@@ -43,6 +44,7 @@ import io.quarkus.container.spi.BaseImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.container.spi.FallbackContainerImageRegistryBuildItem;
+import io.quarkus.container.spi.ImageReference;
 import io.quarkus.container.spi.SingleSegmentContainerImageRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -300,14 +302,26 @@ public class OpenshiftProcessor {
         // Handle custom s2i builder images
         baseImage.map(BaseImageInfoBuildItem::getImage).ifPresent(builderImage -> {
             String builderImageName = ImageUtil.getName(builderImage);
-            S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
             if (!DEFAULT_S2I_IMAGE_NAME.equals(builderImageName)) {
                 result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveBuilderImageResourceDecorator(DEFAULT_S2I_IMAGE_NAME)));
             }
 
             if (containerImageConfig.builder.isEmpty() || config.isOpenshiftBuildEnabled(containerImageConfig, capabilities)) {
-                result.add(new DecoratorBuildItem(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig)));
                 result.add(new DecoratorBuildItem(OPENSHIFT, new ApplyBuilderImageDecorator(name, builderImage)));
+                ImageReference imageRef = ImageReference.parse(builderImage);
+                boolean usesInternalRegistry = imageRef.getRegistry()
+                        .filter(registry -> registry.contains(OPENSHIFT_INTERNAL_REGISTRY_PROJECT)).isPresent();
+                if (usesInternalRegistry) {
+                    // When the internal registry is specified for the image, we assume the stream already exists
+                    // It's better if we refer to it directly as (as an ImageStreamTag).
+                    // In this case we need to remove the ImageStream (created by dekorate).
+                    String repository = imageRef.getRepository();
+                    String imageStreamName = repository.substring(repository.lastIndexOf("/"));
+                    result.add(new DecoratorBuildItem(OPENSHIFT, new RemoveBuilderImageResourceDecorator(imageStreamName)));
+                } else {
+                    S2iBuildConfig s2iBuildConfig = new S2iBuildConfigBuilder().withBuilderImage(builderImage).build();
+                    result.add(new DecoratorBuildItem(OPENSHIFT, new AddBuilderImageStreamResourceDecorator(s2iBuildConfig)));
+                }
             }
         });
 

@@ -45,7 +45,9 @@ public class ContainerImageOpenshiftConfig {
 
     /**
      * The base image to be used when a container image is being produced for the jar build.
-     *
+     * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
+     * When it references images already available in the internal Openshift registry, the corresponding streams are used
+     * instead.
      * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17:1.16}
      * is used as the default.
      * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11:1.16} is used as the default.
@@ -54,7 +56,10 @@ public class ContainerImageOpenshiftConfig {
     public Optional<String> baseJvmImage;
 
     /**
-     * The base image to be used when a container image is being produced for the native binary build
+     * The base image to be used when a container image is being produced for the native binary build.
+     * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
+     * When it references images already available in the internal Openshift registry, the corresponding streams are used
+     * instead.
      */
     @ConfigItem(defaultValue = DEFAULT_BASE_NATIVE_IMAGE)
     public String baseNativeImage;

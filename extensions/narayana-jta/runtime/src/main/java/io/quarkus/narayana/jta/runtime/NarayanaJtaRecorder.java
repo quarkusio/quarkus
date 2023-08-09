@@ -155,7 +155,7 @@ public class NarayanaJtaRecorder {
     }
 
     public void handleShutdown(ShutdownContext context, TransactionManagerConfiguration transactions) {
-        context.addLastShutdownTask(() -> {
+        context.addShutdownTask(() -> {
             if (transactions.enableRecovery) {
                 try {
                     QuarkusRecoveryService.getInstance().stop();
@@ -166,6 +166,8 @@ public class NarayanaJtaRecorder {
                     QuarkusRecoveryService.getInstance().destroy();
                 }
             }
+        });
+        context.addLastShutdownTask(() -> {
             TransactionReaper.terminate(false);
         });
     }

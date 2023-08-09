@@ -60,7 +60,7 @@ public class GACT implements ArtifactKey, Serializable {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.classifier = classifier == null ? ArtifactCoords.DEFAULT_CLASSIFIER : classifier;
-        this.type = type;
+        this.type = type == null ? ArtifactCoords.TYPE_JAR : type;
     }
 
     public static String[] split(String str, String[] parts, int fromIndex) {

@@ -39,11 +39,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.bootstrap.model.CapabilityErrors;
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
-import io.restassured.RestAssured;
 
 /**
  * Tests tests in the quarkus:dev mojo.
@@ -363,13 +363,13 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
-    public void testThatInstrumentationBasedReloadWorks() throws MavenInvocationException, IOException {
+    public void testThatInstrumentationBasedReloadWorks() throws MavenInvocationException, IOException, Exception {
+        DevUIJsonRPCTest devUIJsonRPCTest = new DevUIJsonRPCTest("devui-continuous-testing", "http://localhost:8080");
         testDir = initProject("projects/classic-inst", "projects/project-instrumentation-reload");
         runAndCheck();
 
         // Enable instrumentation based reload to begin with
-        RestAssured.post("/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
-
+        devUIJsonRPCTest.executeJsonRPCMethod("toggleInstrumentation");
         //if there is an instrumentation based reload this will stay the same
         String firstUuid = devModeClient.getHttpResponse("/app/uuid");
 
@@ -401,7 +401,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //now disable instrumentation based restart, and try again
         //change it back to hello
-        RestAssured.post("/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
+        devUIJsonRPCTest.executeJsonRPCMethod("toggleInstrumentation");
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
 
@@ -416,7 +416,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //now re-enable
         //and repeat
-        RestAssured.post("/q/dev-v1/io.quarkus.quarkus-vertx-http/tests/toggle-instrumentation").then().statusCode(200);
+        devUIJsonRPCTest.executeJsonRPCMethod("toggleInstrumentation");
         source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
         filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
 

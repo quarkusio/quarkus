@@ -66,10 +66,17 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
                 tenantIdentifier);
 
         ConnectionProvider provider = providerMap.get(tenantIdentifier);
-        if (provider == null) {
-            final ConnectionProvider connectionProvider = resolveConnectionProvider(persistenceUnitName, tenantIdentifier);
-            providerMap.put(tenantIdentifier, connectionProvider);
-            return connectionProvider;
+        try {
+            if (provider == null || provider.getConnection() == null || provider.getConnection().isClosed()) {
+                final ConnectionProvider connectionProvider = resolveConnectionProvider(persistenceUnitName, tenantIdentifier);
+                providerMap.put(tenantIdentifier, connectionProvider);
+                return connectionProvider;
+            }
+        } catch (SQLException e) {
+            providerMap.remove(tenantIdentifier);
+
+            throw new IllegalStateException("Method 'TenantConnectionResolver."
+                    + "selectConnectionProvider(String)' failed to select a tenant.");
         }
         return provider;
 

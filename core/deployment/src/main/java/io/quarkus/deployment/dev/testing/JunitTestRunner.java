@@ -139,7 +139,7 @@ public class JunitTestRunner {
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
                     TestSupport.instance().get()::isDisplayTestOutput);
             Thread.currentThread().setContextClassLoader(tcl);
-            System.out.println("139 HOLLY junit runner set classloader to deployment" + tcl);
+            System.out.println("139 HOLLY junit runner  set classloader to deployment" + tcl);
             Consumer currentTestAppConsumer = (Consumer) tcl.loadClass(CurrentTestApplication.class.getName())
                     .getDeclaredConstructor().newInstance();
             currentTestAppConsumer.accept(testApplication);
@@ -653,7 +653,7 @@ public class JunitTestRunner {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 if (rcl == null) {
-                    System.out.println("HOLLY Making a java start");
+                    System.out.println("HOLLY Making a java start with " + testApplication);
                     // Although it looks like we need to start once per class, the class is just indicative of where classes for this module live
                     rcl = new CoreQuarkusTestExtension()
                             .doJavaStart(Thread.currentThread().getContextClassLoader().loadClass(i), testApplication);

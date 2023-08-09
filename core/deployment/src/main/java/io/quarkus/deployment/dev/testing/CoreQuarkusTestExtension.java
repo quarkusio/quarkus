@@ -3,6 +3,7 @@ package io.quarkus.deployment.dev.testing;
 import static io.quarkus.deployment.dev.testing.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.deployment.dev.testing.PathTestHelper.getTestClassesLocation;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +39,10 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
+import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -99,7 +103,14 @@ public class CoreQuarkusTestExtension {
         return createAugmentor(testClassLocation, profile, shutdownTasks);
     }
 
-    // Re-used from AbstractJvmQuarkusTestExtension
+    // TODO Re-used from AbstractJvmQuarkusTestExtension
+    protected ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
+        return System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null
+                ? BuildToolHelper.enableGradleAppModelForTest(projectRoot)
+                : null;
+    }
+
+    // TODO Re-used from AbstractJvmQuarkusTestExtension
     protected PrepareResult createAugmentor(Path testClassLocation, Class<? extends QuarkusTestProfile> profile,
             Collection<Runnable> shutdownTasks) throws Exception {
 
@@ -120,53 +131,53 @@ public class CoreQuarkusTestExtension {
 
         //        final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
         // If gradle project running directly with IDE
-        //        if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
-        //            final WorkspaceModule module = gradleAppModel.getApplicationModule();
-        //            final String testClassFileName = requiredTestClass.getName().replace('.',
-        //            '/') + ".class";
-        //            Path testClassesDir = null;
-        //            for (String classifier : module.getSourceClassifiers()) {
-        //                final ArtifactSources sources = module.getSources(classifier);
-        //                if (sources.isOutputAvailable() && sources.getOutputTree().contains
-        //                (testClassFileName)) {
-        //                    for (SourceDir src : sources.getSourceDirs()) {
-        //                        addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                        if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
-        //                            testClassesDir = src.getOutputDir();
+        //                if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
+        //                    final WorkspaceModule module = gradleAppModel.getApplicationModule();
+        //                    final String testClassFileName = requiredTestClass.getName().replace('.',
+        //                    '/') + ".class";
+        //                    Path testClassesDir = null;
+        //                    for (String classifier : module.getSourceClassifiers()) {
+        //                        final ArtifactSources sources = module.getSources(classifier);
+        //                        if (sources.isOutputAvailable() && sources.getOutputTree().contains
+        //                        (testClassFileName)) {
+        //                            for (SourceDir src : sources.getSourceDirs()) {
+        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
+        //                                if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
+        //                                    testClassesDir = src.getOutputDir();
+        //                                }
+        //                            }
+        //                            for (SourceDir src : sources.getResourceDirs()) {
+        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
+        //                            }
+        //                            for (SourceDir src : module.getMainSources().getSourceDirs()) {
+        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
+        //                            }
+        //                            for (SourceDir src : module.getMainSources().getResourceDirs()) {
+        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
+        //                            }
+        //                            break;
         //                        }
         //                    }
-        //                    for (SourceDir src : sources.getResourceDirs()) {
-        //                        addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                    }
-        //                    for (SourceDir src : module.getMainSources().getSourceDirs()) {
-        //                        addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                    }
-        //                    for (SourceDir src : module.getMainSources().getResourceDirs()) {
-        //                        addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                    }
-        //                    break;
-        //                }
-        //            }
-        //            if (testClassesDir == null) {
-        //                final StringBuilder sb = new StringBuilder();
-        //                sb.append("Failed to locate ").append(requiredTestClass.getName())
-        //                .append(" in ");
-        //                for (String classifier : module.getSourceClassifiers()) {
-        //                    final ArtifactSources sources = module.getSources(classifier);
-        //                    if (sources.isOutputAvailable()) {
-        //                        for (SourceDir d : sources.getSourceDirs()) {
-        //                            if (Files.exists(d.getOutputDir())) {
-        //                                sb.append(System.lineSeparator()).append(d.getOutputDir
-        //                                ());
+        //                    if (testClassesDir == null) {
+        //                        final StringBuilder sb = new StringBuilder();
+        //                        sb.append("Failed to locate ").append(requiredTestClass.getName())
+        //                        .append(" in ");
+        //                        for (String classifier : module.getSourceClassifiers()) {
+        //                            final ArtifactSources sources = module.getSources(classifier);
+        //                            if (sources.isOutputAvailable()) {
+        //                                for (SourceDir d : sources.getSourceDirs()) {
+        //                                    if (Files.exists(d.getOutputDir())) {
+        //                                        sb.append(System.lineSeparator()).append(d.getOutputDir
+        //                                        ());
+        //                                    }
+        //                                }
         //                            }
         //                        }
+        //                        throw new RuntimeException(sb.toString());
         //                    }
-        //                }
-        //                throw new RuntimeException(sb.toString());
-        //            }
-        //            testClassLocation = testClassesDir;
+        //                    testClassLocation = testClassesDir;
         //
-        //        } else {
+        //                } else {
         if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
             final String[] sourceDirectories = System.getProperty(
                     BootstrapConstants.OUTPUT_SOURCES_DIR)

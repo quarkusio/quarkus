@@ -24,6 +24,7 @@ import org.jboss.logging.Logger;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.quarkus.agroal.DataSource;
+import io.quarkus.agroal.runtime.AgroalDataSourcesInitializer;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSourceSupport;
@@ -233,11 +234,13 @@ class AgroalProcessor {
             return;
         }
 
-        // make a DataSourceProducer bean
+        // make a DataSources bean
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(DataSources.class).setUnremovable()
                 .setDefaultScope(DotNames.SINGLETON).build());
         // add the @DataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DataSource.class).build());
+        // make source datasources are initialized at startup
+        additionalBeans.produce(new AdditionalBeanBuildItem(AgroalDataSourcesInitializer.class));
 
         // make AgroalPoolInterceptor beans unremovable, users still have to make them beans
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AgroalPoolInterceptor.class));

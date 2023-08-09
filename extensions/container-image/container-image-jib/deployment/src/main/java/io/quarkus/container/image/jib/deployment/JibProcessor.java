@@ -6,7 +6,6 @@ import static com.google.cloud.tools.jib.api.buildplan.FilePermissions.DEFAULT_F
 import static io.quarkus.container.image.deployment.util.EnablementUtil.buildContainerImageNeeded;
 import static io.quarkus.container.image.deployment.util.EnablementUtil.pushContainerImageNeeded;
 import static io.quarkus.container.util.PathsUtil.findMainSourcesRoot;
-import static io.quarkus.deployment.pkg.PackageConfig.MUTABLE_JAR;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import com.google.cloud.tools.jib.api.CacheDirectoryCreationException;
 import com.google.cloud.tools.jib.api.Containerizer;
 import com.google.cloud.tools.jib.api.DockerDaemonImage;
 import com.google.cloud.tools.jib.api.ImageReference;
@@ -42,6 +43,7 @@ import com.google.cloud.tools.jib.api.Jib;
 import com.google.cloud.tools.jib.api.JibContainer;
 import com.google.cloud.tools.jib.api.JibContainerBuilder;
 import com.google.cloud.tools.jib.api.LogEvent;
+import com.google.cloud.tools.jib.api.RegistryException;
 import com.google.cloud.tools.jib.api.RegistryImage;
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
 import com.google.cloud.tools.jib.api.buildplan.FileEntriesLayer;
@@ -249,7 +251,7 @@ public class JibProcessor {
             previousContextStorageSysProp = System.setProperty(OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP,
                     "default");
 
-            JibContainer container = jibContainerBuilder.containerize(containerizer);
+            JibContainer container = containerizeUnderLock(jibContainerBuilder, containerizer);
             log.infof("%s container image %s (%s)\n",
                     containerImageConfig.isPushExplicitlyEnabled() ? "Pushed" : "Created",
                     container.getTargetImage(),
@@ -300,7 +302,7 @@ public class JibProcessor {
         }
         containerizer.setToolName("Quarkus");
         containerizer.setToolVersion(Version.getVersion());
-        containerizer.addEventHandler(LogEvent.class, (e) -> {
+        containerizer.addEventHandler(LogEvent.class, e -> {
             if (!e.getMessage().isEmpty()) {
                 log.log(toJBossLoggingLevel(e.getLevel()), e.getMessage());
             }
@@ -309,6 +311,29 @@ public class JibProcessor {
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage);
         containerizer.setOfflineMode(jibConfig.offlineMode);
         return containerizer;
+    }
+
+    /**
+     * Wraps the containerize invocation in a synchronized block to avoid OverlappingFileLockException when running parallel jib
+     * builds (e.g. mvn -T2 ...).
+     * Each build thread uses its own augmentation CL (which is why the OverlappingFileLockException prevention in jib doesn't
+     * work here), so the lock object
+     * has to be loaded via the parent classloader so that all build threads lock the same object.
+     * QuarkusAugmentor was chosen semi-randomly (note: quarkus-core-deployment is visible to that parent CL, this jib extension
+     * is not!).
+     */
+    private JibContainer containerizeUnderLock(JibContainerBuilder jibContainerBuilder, Containerizer containerizer)
+            throws InterruptedException, RegistryException, IOException, CacheDirectoryCreationException, ExecutionException {
+        Class<?> lockObj = getClass();
+        ClassLoader parentCL = getClass().getClassLoader().getParent();
+        try {
+            lockObj = parentCL.loadClass("io.quarkus.deployment.QuarkusAugmentor");
+        } catch (ClassNotFoundException e) {
+            log.warnf("Could not load io.quarkus.deployment.QuarkusAugmentor with parent classloader: %s", parentCL);
+        }
+        synchronized (lockObj) {
+            return jibContainerBuilder.containerize(containerizer);
+        }
     }
 
     private void writeOutputFiles(JibContainer jibContainer, ContainerImageJibConfig jibConfig,

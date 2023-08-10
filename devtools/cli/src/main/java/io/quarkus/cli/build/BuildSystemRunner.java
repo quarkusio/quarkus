@@ -111,6 +111,8 @@ public interface BuildSystemRunner {
 
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
+    BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter);
+
     List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions, List<String> params);
 

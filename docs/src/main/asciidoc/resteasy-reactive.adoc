@@ -144,7 +144,7 @@ don't want to use an annotation.
 Each endpoint method must be annotated with one of the following annotations, which defines which HTTP
 method will be mapped to the method:
 
-.Table HTTP method annotations
+.HTTP method annotations
 |===
 |Annotation|Usage
 
@@ -234,7 +234,7 @@ or `<parameters>` or `<maven.compiler.parameters>` (https://maven.apache.org/plu
 
 The following HTTP request elements may be obtained by your endpoint method:
 
-.Table HTTP request parameter annotations
+.HTTP request parameter annotations
 |===
 |HTTP element|Annotation|Usage
 
@@ -365,26 +365,26 @@ public class Endpoint {
     public static class Parameters {
         @RestPath
         String type;
-        
+
         @RestMatrix
         String variant;
-        
+
         @RestQuery
         String age;
-        
+
         @RestCookie
         String level;
-        
+
         @RestHeader("X-Cheese-Secret-Handshake")
         String secretHandshake;
-        
+
         @RestForm
         String smell;
     }
 
     @POST
     public String allParams(@BeanParam Parameters parameters) { <1>
-        return parameters.type + "/" + parameters.variant + "/" + parameters.age 
+        return parameters.type + "/" + parameters.variant + "/" + parameters.age
             + "/" + parameters.level + "/" + parameters.secretHandshake
             + "/" + parameters.smell;
     }
@@ -434,7 +434,7 @@ The following parameter types will be supported out of the box:
 
 [[resource-types]]
 
-.Table Request body parameter type
+.Request body parameter types
 |===
 |Type|Usage
 
@@ -484,7 +484,7 @@ link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@
 that allow you to access the parts as files or as entities.
 Let us look at an example of its use.
 
-Assuming an HTTP request containing a file upload, a JSON entity and a form value containing a string description, we could write 
+Assuming an HTTP request containing a file upload, a JSON entity and a form value containing a string description, we could write
 the following endpoint:
 
 [source,java]
@@ -503,7 +503,7 @@ public class MultipartResource {
         public String firstName;
         public String lastName;
     }
-    
+
     @POST
     public void multipart(@RestForm String description,
             @RestForm("image") FileUpload file,
@@ -670,7 +670,7 @@ public class Endpoint {
 }
 ----
 
-This last approach allows you adding extra headers to the output part. 
+This last approach allows you adding extra headers to the output part.
 
 WARNING: For the time being, returning Multipart data is limited to be blocking endpoints.
 
@@ -685,7 +685,7 @@ and any other type will be mapped <<json,from that type to JSON>>.
 
 In addition, the following return types are also supported:
 
-.Table Additional response body parameter type
+.Additional response body parameter types
 |===
 |Type|Usage
 
@@ -1075,7 +1075,7 @@ public class Endpoint {
     @Inject
     @Channel("book-out")
     Multi<Book> books;
-    
+
     @Inject
     Sse sse; <1>
 
@@ -1121,7 +1121,7 @@ NOTE: More information on the `Cache-Control` header and be found in link:https:
 There are a number of contextual objects that the framework will give you, if your endpoint
 method takes parameters of the following type:
 
-.Table Context object
+.Contextual objects
 |===
 |Type|Usage
 
@@ -1258,7 +1258,6 @@ public class Endpoint {
 
 Instead of importing `io.quarkus:quarkus-resteasy-reactive`, you can import either of the following modules to get support for JSON:
 
-.Table Context object
 |===
 |GAV|Usage
 
@@ -1489,7 +1488,6 @@ public static class SupportUnquotedFields implements BiFunction<ObjectMapper, Ty
 
 To enable XML support, add the `quarkus-resteasy-reactive-jaxb` extension to your project.
 
-.Table Context object
 |===
 |GAV|Usage
 
@@ -1502,9 +1500,9 @@ Importing this module will allow HTTP message bodies to be read from XML
 and serialised to XML, for <<resource-types,all the types not already registered with a more specific
 serialisation>>.
 
-The JAXB Resteasy Reactive extension will automatically detect the classes that are used in the resources and require JAXB serialization. Then, it will register these classes into the default `JAXBContext` which is internally used by the JAXB message reader and writer. 
+The JAXB Resteasy Reactive extension will automatically detect the classes that are used in the resources and require JAXB serialization. Then, it will register these classes into the default `JAXBContext` which is internally used by the JAXB message reader and writer.
 
-However, in some situations, these classes cause the `JAXBContext` to fail: for example, when you're using the same class name in different java packages. In these cases, the application will fail at build time and print the JAXB exception that caused the issue, so you can properly fix it. Alternatively, you can also exclude the classes that cause the issue by using the property `quarkus.jaxb.exclude-classes`. When excluding classes that are required by any resource, the JAXB resteasy reactive extension will create and cache a custom `JAXBContext` that will include the excluded class, causing a minimal performance degradance. 
+However, in some situations, these classes cause the `JAXBContext` to fail: for example, when you're using the same class name in different java packages. In these cases, the application will fail at build time and print the JAXB exception that caused the issue, so you can properly fix it. Alternatively, you can also exclude the classes that cause the issue by using the property `quarkus.jaxb.exclude-classes`. When excluding classes that are required by any resource, the JAXB resteasy reactive extension will create and cache a custom `JAXBContext` that will include the excluded class, causing a minimal performance degradance.
 
 [NOTE]
 ====
@@ -1611,7 +1609,6 @@ Note that if you provide your custom JAXB context instance, you will need to reg
 
 To enable Web Links support, add the `quarkus-resteasy-reactive-links` extension to your project.
 
-.Table Context object
 |===
 |GAV|Usage
 
@@ -1727,7 +1724,6 @@ The https://tools.ietf.org/id/draft-kelly-json-hal-01.html[HAL] standard is a si
 
 To enable the HAL support, add the `quarkus-hal` extension to your project. Also, as HAL needs JSON support, you need to add either the `quarkus-resteasy-reactive-jsonb` or the `quarkus-resteasy-reactive-jackson` extension.
 
-.Table Context object
 |===
 |GAV|Usage
 
@@ -2107,7 +2103,7 @@ You can also declare link:{jaxrsspec}#exceptionmapper[exception mappers in the J
 
 Your exception mapper may declare any of the following parameter types:
 
-.Table Exception mapper parameters
+.Exception mapper parameters
 |===
 |Type|Usage
 
@@ -2124,7 +2120,7 @@ Your exception mapper may declare any of the following parameter types:
 
 It may declare any of the following return types:
 
-.Table Exception mapper return types
+.Exception mapper return types
 |===
 |Type|Usage
 
@@ -2224,7 +2220,7 @@ class Filters {
 
 Your filters may declare any of the following parameter types:
 
-.Table Filter parameters
+.Filter parameters
 |===
 |Type|Usage
 
@@ -2244,7 +2240,7 @@ Your filters may declare any of the following parameter types:
 
 It may declare any of the following return types:
 
-.Table Filter return types
+.Filter return types
 |===
 |Type|Usage
 

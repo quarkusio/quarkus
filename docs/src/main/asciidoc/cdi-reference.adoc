@@ -82,7 +82,7 @@ plugins {
     id 'org.kordamp.gradle.jandex' version '{jandex-gradle-plugin-version}'
 }
 ----
-
+You can find the latest plugin version in the https://plugins.gradle.org/plugin/org.kordamp.gradle.jandex[Gradle Plugin Portal]
 ****
 
 [role="secondary asciidoc-tabs-sync-gradle-kotlin"]
@@ -95,6 +95,8 @@ plugins {
     id("org.kordamp.gradle.jandex") version '{jandex-gradle-plugin-version}'
 }
 ----
+You can find the latest plugin version in the https://plugins.gradle.org/plugin/org.kordamp.gradle.jandex[Gradle Plugin Portal]
+
 ****
 
 

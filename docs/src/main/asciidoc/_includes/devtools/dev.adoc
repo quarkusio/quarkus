@@ -1,4 +1,4 @@
-[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
+[source,bash,subs=attributes+, role="primary asciidoc-tabs-sync-cli"]
 .CLI
 ----
 ifdef::dev-additional-parameters[]
@@ -10,7 +10,7 @@ endif::[]
 ----
 ifdef::devtools-wrapped[+]
 ifndef::devtools-no-maven[]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
+[source,bash,subs=attributes+, role="secondary asciidoc-tabs-sync-maven"]
 .Maven
 ----
 ifdef::dev-additional-parameters[]
@@ -23,7 +23,7 @@ endif::[]
 endif::[]
 ifdef::devtools-wrapped[+]
 ifndef::devtools-no-gradle[]
-[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+[source,bash,subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
 .Gradle
 ----
 ifdef::dev-additional-parameters[]

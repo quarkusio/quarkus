@@ -20,6 +20,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -59,6 +61,32 @@ public class downstreamdoc implements Runnable {
     private static final String SOURCE_BLOCK_DELIMITER = "--";
 
     private static final String QUARKUS_IO_GUIDES_ATTRIBUTE = "{quarkusio-guides}";
+
+    private static final Map<Pattern, String> TABS_REPLACEMENTS = Map.of(
+            Pattern.compile(
+                    "((\\*) [^\n]+\n\\+)?\n\\[source,\\s?xml,\\s?role=\"primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven\"\\]\n\\.pom.xml\n----\n((([^-]+\\-?)+\n)+?)----\n(\\+?)\n\\[source,\\s?gradle,\\s?role=\"secondary asciidoc-tabs-target-sync-gradle\"\\]\n\\.build.gradle\n----\n((([^-]+\\-?)+\n)+?)----",
+                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE),
+            "$1\n$2* Using Maven:\n+\n--\n[source,xml]\n----\n$3----\n--\n+\n$2* Using Gradle:\n+\n--\n[source,gradle]\n----\n$7----\n--",
+            Pattern.compile(
+                    "\\[source,\\s?bash,\\s?subs=attributes\\+,\\s?role=\"primary asciidoc-tabs-sync-cli\"\\]\n\\.CLI\n(----)\n((([^-]+\\-?\\-?)+\n)+?)(----)",
+                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE),
+            "* Using the Quarkus CLI:\n+\n--\n[source, bash, subs=attributes+]\n----\n$2----\n--",
+            Pattern.compile(
+                    "\\[source,\\s?bash,\\s?subs=attributes\\+,\\s?role=\"secondary asciidoc-tabs-sync-maven\"\\]\n\\.Maven\n(----)\n((([^-]+\\-?\\-?)+\n)+?)(----)",
+                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE),
+            "* Using Maven:\n+\n--\n[source, bash, subs=attributes+]\n----\n$2----\n--",
+            Pattern.compile(
+                    "\\[source,\\s?bash,\\s?subs=attributes\\+,\\s?role=\"secondary asciidoc-tabs-sync-gradle\"\\]\n\\.Gradle\n(----)\n((([^-]+\\-?\\-?)+\n)+?)(----)",
+                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE),
+            "* Using Gradle:\n+\n--\n[source, bash, subs=attributes+]\n----\n$2----\n--",
+            Pattern.compile(
+                    "\\[role=\"primary\\s?asciidoc-tabs-sync-cli\"\\]\n\\.CLI\n\\*\\*\\*\\*\n\\[source,\\s?bash,\\s?subs=attributes\\+\\]\n----\n((([^-]+\\-?\\-?)+\n)+?)----\n((([^*]+\\*?\\*?)+\n)+?)\\*\\*\\*\\*",
+                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE),
+            "* Using the Quarkus CLI:\n+\n--\n[source, bash, subs=attributes+]\n----\n$1----\n$4--",
+            Pattern.compile(
+                    "\\[role=\"secondary\\s?asciidoc-tabs-sync-maven\"\\]\n\\.Maven\n\\*\\*\\*\\*\n\\[source,\\s?bash,\\s?subs=attributes\\+\\]\n----\n((([^-]+\\-?\\-?)+\n)+?)----\n((([^*]+\\*?\\*?)+\n)+?)\\*\\*\\*\\*",
+                    Pattern.CASE_INSENSITIVE | Pattern.MULTILINE),
+            "* Using Maven:\n+\n--\n[source, bash, subs=attributes+]\n----\n$1----\n$4--");
 
     @Override
     public void run() {
@@ -305,7 +333,13 @@ public class downstreamdoc implements Runnable {
                     .append(rewriteLinks(currentBuffer.toString(), downstreamGuides));
         }
 
-        Files.writeString(targetFile, rewrittenGuide);
+        String rewrittenGuideWithoutTabs = rewrittenGuide.toString();
+
+        for (Entry<Pattern, String> tabReplacement : TABS_REPLACEMENTS.entrySet()) {
+            rewrittenGuideWithoutTabs = tabReplacement.getKey().matcher(rewrittenGuideWithoutTabs).replaceAll(tabReplacement.getValue());
+        }
+
+        Files.writeString(targetFile, rewrittenGuideWithoutTabs);
     }
 
     private String rewriteLinks(String content, Set<String> downstreamGuides) {

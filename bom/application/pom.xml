@@ -138,7 +138,7 @@
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.9.3</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.11.Final</infinispan.version>
+        <infinispan.version>14.0.13.Final</infinispan.version>
         <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.94.Final</netty.version>

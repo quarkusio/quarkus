@@ -333,13 +333,13 @@ public class downstreamdoc implements Runnable {
                     .append(rewriteLinks(currentBuffer.toString(), downstreamGuides));
         }
 
-        String rewrittenGuideWithoutTabs = rewrittenGuide.toString();
+        String rewrittenGuideWithoutTabs = rewrittenGuide.toString().trim();
 
         for (Entry<Pattern, String> tabReplacement : TABS_REPLACEMENTS.entrySet()) {
             rewrittenGuideWithoutTabs = tabReplacement.getKey().matcher(rewrittenGuideWithoutTabs).replaceAll(tabReplacement.getValue());
         }
 
-        Files.writeString(targetFile, rewrittenGuideWithoutTabs);
+        Files.writeString(targetFile, rewrittenGuideWithoutTabs.trim());
     }
 
     private String rewriteLinks(String content, Set<String> downstreamGuides) {

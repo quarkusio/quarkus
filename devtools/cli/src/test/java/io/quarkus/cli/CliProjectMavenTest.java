@@ -279,6 +279,14 @@ public class CliProjectMavenTest {
                 "--clean", "--debug", "--suspend", "--debug-mode=listen", "--offline");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("Run current project in continuous test mode"), result.toString());
+
+        // 5 TEST MODE - run once: test --once --offline
+        result = CliDriver.execute(project, "test", "-e", "--dry-run",
+                "--once", "--offline");
+        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
+                "Expected OK return code. Result:\n" + result);
+        Assertions.assertTrue(result.stdout.contains("Run current project in test mode"), result.toString());
     }
 
     @Test

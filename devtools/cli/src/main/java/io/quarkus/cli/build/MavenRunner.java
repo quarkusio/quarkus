@@ -224,6 +224,11 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+        return prepareAction("test", buildOptions, runMode, params);
+    }
+
+    @Override
     public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();

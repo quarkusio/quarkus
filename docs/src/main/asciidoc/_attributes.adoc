@@ -19,7 +19,7 @@
 :kibana-image: ${kibana.image}
 :keycloak-docker-image: ${keycloak.docker.image}
 :jandex-version: ${jandex.version}
-:jandex-gradle-plugin.version: ${jandex-gradle-plugin.version}
+:jandex-gradle-plugin-version: ${jandex-gradle-plugin.version}
 :kotlin-version: ${kotlin.version}
 :grpc-version: ${grpc.version}
 :protoc-version: ${protoc.version}

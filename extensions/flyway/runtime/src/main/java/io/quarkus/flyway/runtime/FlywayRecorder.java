@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import javax.sql.DataSource;
 
@@ -17,7 +17,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -53,23 +53,20 @@ public class FlywayRecorder {
         FLYWAY_CONTAINERS.clear();
     }
 
-    public Supplier<Flyway> flywaySupplier(String dataSourceName, boolean hasMigrations, boolean createPossible) {
-        DataSource dataSource = DataSources.fromName(dataSourceName);
-        if (dataSource instanceof UnconfiguredDataSource) {
-            return new Supplier<Flyway>() {
-                @Override
-                public Flyway get() {
+    public Function<SyntheticCreationalContext<Flyway>, Flyway> flywayFunction(String dataSourceName, boolean hasMigrations,
+            boolean createPossible) {
+        return new Function<>() {
+            @Override
+            public Flyway apply(SyntheticCreationalContext<Flyway> context) {
+                DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                if (dataSource instanceof UnconfiguredDataSource) {
                     throw new UnsatisfiedResolutionException("No datasource present");
                 }
-            };
-        }
-        FlywayContainerProducer flywayProducer = Arc.container().instance(FlywayContainerProducer.class).get();
-        FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
-                createPossible);
-        FLYWAY_CONTAINERS.add(flywayContainer);
-        return new Supplier<Flyway>() {
-            @Override
-            public Flyway get() {
+
+                FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
+                FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
+                        createPossible);
+                FLYWAY_CONTAINERS.add(flywayContainer);
                 return flywayContainer.getFlyway();
             }
         };

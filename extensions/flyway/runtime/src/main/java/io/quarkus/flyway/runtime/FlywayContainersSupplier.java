@@ -7,12 +7,20 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 
+import org.flywaydb.core.Flyway;
+
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 
 public class FlywayContainersSupplier implements Supplier<Collection<FlywayContainer>> {
 
     @Override
     public Collection<FlywayContainer> get() {
+        InjectableInstance<Flyway> instances = Arc.container().select(Flyway.class);
+        for (Flyway instance : instances) { // force the creation of flyway
+
+        }
         if (FlywayRecorder.FLYWAY_CONTAINERS.isEmpty()) {
             return Collections.emptySet();
         }

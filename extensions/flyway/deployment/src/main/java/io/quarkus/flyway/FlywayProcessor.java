@@ -27,9 +27,11 @@ import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.extensibility.Plugin;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
+import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.agroal.spi.JdbcInitialSQLGeneratorBuildItem;
@@ -187,7 +189,9 @@ class FlywayProcessor {
                     .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
                     .setRuntimeInit()
                     .unremovable()
-                    .supplier(recorder.flywaySupplier(dataSourceName,
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainerProducer.class)))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
+                    .createWith(recorder.flywayFunction(dataSourceName,
                             hasMigrations, createPossible));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {

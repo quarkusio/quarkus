@@ -224,7 +224,10 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params) {
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+        if (filter != null) {
+            params.add("-Dtest=" + filter);
+        }
         return prepareAction("test", buildOptions, runMode, params);
     }
 

@@ -30,6 +30,11 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
     @CommandLine.Option(names = "--once", description = "Run the test suite with continuous mode disabled.")
     boolean runOnce = false;
 
+    @CommandLine.Option(names = "--filter", description = { "Run a subset of the test suite that matches the given filter.",
+            "If continuous testing is enabled then the value is a regular expression that is matched against the test class name.",
+            "If continuous testing is disabled then the value is passed as-is to the underlying build tool." })
+    String filter;
+
     @Parameters(description = "Parameters passed to the application.")
     List<String> params = new ArrayList<>();
 
@@ -46,7 +51,7 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
                 buildOptions.clean = testOptions.clean;
                 buildOptions.offline = testOptions.offline;
                 buildOptions.skipTests = !testOptions.runTests;
-                BuildCommandArgs commandArgs = runner.prepareTest(buildOptions, new RunModeOption(), params);
+                BuildCommandArgs commandArgs = runner.prepareTest(buildOptions, new RunModeOption(), params, filter);
                 if (testOptions.isDryRun()) {
                     dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs, false);
                     return CommandLine.ExitCode.OK;
@@ -54,6 +59,9 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
                 return runner.run(commandArgs);
             }
 
+            if (filter != null) {
+                params.add("-Dquarkus.test.include-pattern=" + filter);
+            }
             List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(
                     false, testOptions, debugOptions, params);
 

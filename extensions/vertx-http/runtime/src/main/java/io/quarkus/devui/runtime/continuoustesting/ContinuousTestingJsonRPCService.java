@@ -84,8 +84,18 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
         return invokeAction("toggleBrokenOnly");
     }
 
+    @NonBlocking
+    public boolean toggleInstrumentation() {
+        return invokeAction("toggleInstrumentation");
+    }
+
     public String getResults() {
         return invokeAction("getResults");
+    }
+
+    public Map<String, Long> getStatus() {
+        Map<String, Long> map = invokeAction("getStatus");
+        return map;
     }
 
     private <T> T invokeAction(String action) {

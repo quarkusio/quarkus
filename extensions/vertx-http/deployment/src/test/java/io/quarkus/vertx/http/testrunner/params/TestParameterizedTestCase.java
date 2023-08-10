@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.restassured.RestAssured;
 
-public class TestParameterizedTestCase {
+public class TestParameterizedTestCase extends DevUIJsonRPCTest {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
@@ -34,8 +34,12 @@ public class TestParameterizedTestCase {
                 }
             });
 
+    public TestParameterizedTestCase() {
+        super("devui-continuous-testing");
+    }
+
     @Test
-    public void testParameterizedTests() throws InterruptedException {
+    public void testParameterizedTests() throws InterruptedException, Exception {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         TestStatus ts = utils.waitForNextCompletion();
 
@@ -43,7 +47,7 @@ public class TestParameterizedTestCase {
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        RestAssured.post("q/dev-v1/io.quarkus.quarkus-vertx-http/tests/runfailed");
+        super.executeJsonRPCMethod("runFailed");
 
         ts = utils.waitForNextCompletion();
 

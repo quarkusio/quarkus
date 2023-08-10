@@ -1508,7 +1508,14 @@ However, in some situations, these classes cause the `JAXBContext` to fail: for 
 
 [NOTE]
 ====
-The property `quarkus.jaxb.exclude-classes` accepts a comma separated list of fully qualified class names, for example: `quarkus.jaxb.exclude-classes=org.acme.one.Model,org.acme.two.Model`. 
+The property `quarkus.jaxb.exclude-classes` accepts a comma separated list of either fully qualified class names
+or package names. Package names must be suffixed by `.*` and all classes in the specified package and its subpackages will be excluded.
+
+For instance, when setting `quarkus.jaxb.exclude-classes=org.acme.one.Model,org.acme.two.Model,org.acme.somemodel.*`, the following elements are excluded:
+
+- The class `org.acme.one.Model`
+- The class `org.acme.two.Model`
+- All the classes in the `org.acme.somemodel` package and its subpackages
 ====
 
 ==== Advanced JAXB-specific features

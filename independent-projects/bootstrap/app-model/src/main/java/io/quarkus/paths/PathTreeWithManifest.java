@@ -34,7 +34,7 @@ public abstract class PathTreeWithManifest implements PathTree {
         } catch (Exception e) {
             //version 8
             throw new IllegalStateException(
-                    "Failed to obtain the Java vesion from java.lang.Runtime, possibly it's Java 8 which is not supported anymore",
+                    "Failed to obtain the Java version from java.lang.Runtime, possibly it's Java 8 which is not supported anymore",
                     e);
         }
     }

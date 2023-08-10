@@ -6,7 +6,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -18,10 +18,61 @@ import io.quarkus.fs.util.ZipUtils;
 
 public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
-    private final Path archive;
+    private static final String DISABLE_JAR_CACHE_PROPERTY = "quarkus.bootstrap.disable-jar-cache";
+    private static final boolean ENABLE_SHARING = !Boolean.getBoolean(DISABLE_JAR_CACHE_PROPERTY);
+
+    /**
+     * Returns an instance of {@link ArchivePathTree} for the {@code path} either from a cache
+     * if sharing is enabled or a new instance.
+     *
+     * @param path path to an archive
+     * @return instance of {@link ArchivePathTree}, never null
+     */
+    static ArchivePathTree forPath(Path path) {
+        return forPath(path, null, true);
+    }
+
+    /**
+     * Caching of archive path trees with {@link PathFilter}'s isn't currently supported.
+     * If {@code filter} argument is not null, the method will return a non-cacheable implementation
+     * of {@link ArchivePathTree}.
+     * <p>
+     * Otherwise, the method returns an instance of {@link ArchivePathTree} for the {@code path} either from a cache
+     * if sharing is enabled or a new instance.
+     *
+     * @param path path to an archive
+     * @param filter filter to apply
+     * @return instance of {@link ArchivePathTree}, never null
+     */
+    static ArchivePathTree forPath(Path path, PathFilter filter) {
+        return forPath(path, filter, true);
+    }
+
+    /**
+     * Caching of archive path trees with {@link PathFilter}'s isn't currently supported.
+     * If {@code filter} argument is not null, the method will return a non-cacheable implementation
+     * of {@link ArchivePathTree}.
+     * <p>
+     * Otherwise, the method returns an instance of {@link ArchivePathTree} for the {@code path} either from a cache
+     * if sharing is enabled or a new instance.
+     *
+     * @param path path to an archive
+     * @param filter filter to apply
+     * @param manifestEnabled if reading the manifest is enabled, always true if sharing is enabled
+     * @return instance of {@link ArchivePathTree}, never null
+     */
+    static ArchivePathTree forPath(Path path, PathFilter filter, boolean manifestEnabled) {
+        if (filter != null || !ENABLE_SHARING) {
+            return new ArchivePathTree(path, filter, manifestEnabled);
+        }
+
+        return SharedArchivePathTree.forPath(path);
+    }
+
+    protected final Path archive;
     private final PathFilter pathFilter;
 
-    public ArchivePathTree(Path archive) {
+    ArchivePathTree(Path archive) {
         this(archive, null);
     }
 
@@ -37,7 +88,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
 
     @Override
     public Collection<Path> getRoots() {
-        return Collections.singletonList(archive);
+        return List.of(archive);
     }
 
     @Override
@@ -124,7 +175,7 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
         return false;
     }
 
-    private FileSystem openFs() throws IOException {
+    protected FileSystem openFs() throws IOException {
         return ZipUtils.newFileSystem(archive);
     }
 
@@ -155,14 +206,22 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
                 && manifestEnabled == other.manifestEnabled;
     }
 
-    private class OpenArchivePathTree extends DirectoryPathTree {
+    protected class OpenArchivePathTree extends DirectoryPathTree {
 
         private final FileSystem fs;
         private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-        private OpenArchivePathTree(FileSystem fs) {
+        protected OpenArchivePathTree(FileSystem fs) {
             super(fs.getPath("/"), pathFilter, ArchivePathTree.this);
             this.fs = fs;
+        }
+
+        protected ReentrantReadWriteLock.ReadLock readLock() {
+            return lock.readLock();
+        }
+
+        protected ReentrantReadWriteLock.WriteLock writeLock() {
+            return lock.writeLock();
         }
 
         @Override
@@ -275,8 +334,9 @@ public class ArchivePathTree extends PathTreeWithManifest implements PathTree {
                         e.addSuppressed(t);
                     }
                     throw e;
+                } finally {
+                    lock.writeLock().unlock();
                 }
-                lock.writeLock().unlock();
             }
         }
 

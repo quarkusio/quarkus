@@ -200,6 +200,10 @@ class FlywayProcessor {
             if (DataSourceUtil.isDefault(dataSourceName)) {
                 flywayContainerConfigurator.addQualifier(Default.class);
 
+                // Flyway containers used to be ordered with the default database coming first.
+                // Some multitenant tests are relying on this order.
+                flywayContainerConfigurator.priority(10);
+
                 flywayContainerQualifier = AnnotationInstance.builder(Default.class).build();
             } else {
                 String beanName = FLYWAY_CONTAINER_BEAN_NAME_PREFIX + dataSourceName;
@@ -208,6 +212,7 @@ class FlywayProcessor {
                 flywayContainerConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
                 flywayContainerConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName)
                         .done();
+                flywayContainerConfigurator.priority(5);
 
                 flywayContainerQualifier = AnnotationInstance.builder(FlywayDataSource.class).add("value", dataSourceName)
                         .build();
@@ -225,9 +230,11 @@ class FlywayProcessor {
 
             if (DataSourceUtil.isDefault(dataSourceName)) {
                 flywayConfigurator.addQualifier(Default.class);
+                flywayConfigurator.priority(10);
             } else {
                 String beanName = FLYWAY_BEAN_NAME_PREFIX + dataSourceName;
                 flywayConfigurator.name(beanName);
+                flywayConfigurator.priority(5);
 
                 flywayConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
                 flywayConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();

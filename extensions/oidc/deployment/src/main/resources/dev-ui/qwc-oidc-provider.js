@@ -366,7 +366,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     _webAppLoginCard() {
         const servicePathForm = this._servicePathForm();
         return html`
-            <vaadin-vertical-layout theme="spacing padding" class="height-4xl container">
+            <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
+                                    ?hidden="${propertiesState.hideImplLoggedOut}">
                 ${servicePathForm}
                 <vaadin-vertical-layout class="margin-left-auto frm-field">
                     <vaadin-button theme="primary success" class="full-width"
@@ -375,6 +376,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     </vaadin-button>
                 </vaadin-vertical-layout>
             </vaadin-vertical-layout>
+            ${this._displayTokenCard()}
         `;
     }
 
@@ -640,8 +642,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     _implicitOrCodeGrantTypeCard() {
         const keycloakRealms = this._keycloakRealmsForm();
-        const servicePathForm = this._servicePathForm();
-        const testServiceResultsHtml = QwcOidcProvider._testServiceResultsHtml();
 
         return html`
             <vaadin-vertical-layout theme="spacing padding" class="height-4xl container" 
@@ -670,6 +670,14 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     </vaadin-icon>
                 </vaadin-button>
             </vaadin-horizontal-layout>
+            ${this._displayTokenCard()}
+        `;
+    }
+
+    _displayTokenCard() {
+        const servicePathForm = this._servicePathForm();
+        const testServiceResultsHtml = QwcOidcProvider._testServiceResultsHtml();
+        return html`
             <vaadin-vertical-layout class="full-width" ?hidden="${propertiesState.hideImplicitLoggedIn}">
                 <vaadin-vertical-layout class="height-4xl container">
                     <vaadin-horizontal-layout class="black-5pct vertical-center" theme="padding">
@@ -1010,22 +1018,29 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             const state = QwcOidcProvider._getQueryParameter('state');
             QwcOidcProvider._exchangeCodeForTokens(code, state, jsonRpc, onUpdateDone);
         } else {
-            // logged out
-
-            propertiesState.hideImplicitLoggedIn = true;
-            propertiesState.userName = null;
-
-            if (QwcOidcProvider._isErrorInUrl()) {
+            QwcOidcProvider._checkSessionCookie(jsonRpc, () => {
+                // logged in
                 propertiesState.hideImplLoggedOut = true;
-                propertiesState.hideLogInErr = false;
-            } else {
                 propertiesState.hideLogInErr = true;
-                propertiesState.hideImplLoggedOut = false;
-            }
-
-            propertiesState.accessToken = null;
-            propertiesState.idToken = null;
-            onUpdateDone();
+                propertiesState.hideImplicitLoggedIn = false;
+                onUpdateDone();
+            }, () => {
+                // logged out
+                propertiesState.hideImplicitLoggedIn = true;
+                propertiesState.userName = null;
+                
+                if (QwcOidcProvider._isErrorInUrl()) {
+                    propertiesState.hideImplLoggedOut = true;
+                    propertiesState.hideLogInErr = false;
+                } else {
+                    propertiesState.hideLogInErr = true;
+                    propertiesState.hideImplLoggedOut = false;
+                }
+                
+                propertiesState.accessToken = null;
+                propertiesState.idToken = null;
+                onUpdateDone();
+            });
         }
     }
 
@@ -1100,6 +1115,38 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             propertiesState.idToken = null;
             onUpdateDone();
         }
+    }
+
+    static _checkSessionCookie(jsonRpc, onLoggedIn, onLoggedOut) {
+        // FIXME: port, path?
+        fetch("http://localhost:8080/q/io.quarkus.quarkus-oidc/readSessionCookie")
+           .then(response => response.json())
+                .then(result => {
+                    if ("id_token" in result || "access_token" in result) {
+                        const tokens = result;
+                        const hasIdToken = "id_token" in tokens;
+                        propertiesState.userName = QwcOidcProvider._parseUserName(tokens.access_token,
+                            hasIdToken ? tokens.id_token : null);
+
+                        propertiesState.accessToken = tokens.access_token;
+
+                        if (hasIdToken) {
+                            propertiesState.idToken = tokens.id_token;
+                        } else {
+                            propertiesState.idToken = null;
+                        }
+                        propertiesState.logoutUrl = "http://localhost:8080/q/io.quarkus.quarkus-oidc/logout";
+                        propertiesState.postLogoutUriParam = "redirect_uri";
+                        onLoggedIn();
+                    } else {
+                        onLoggedOut();
+                    }
+                })
+                .catch(response => {
+                    notifier.showErrorMessage('Failed to exchange code for tokens. Error message: '
+                        + response?.error?.message, 'top-end');
+                    onLoggedOut();
+                });
     }
 
     static _getTokenForNavigation() {

@@ -28,4 +28,13 @@ public class GraalVMFeatures {
                 .build();
     }
 
+    // Workaround for https://hibernate.atlassian.net/browse/HHH-16809
+    // See https://github.com/hibernate/hibernate-orm/pull/6815#issuecomment-1662197545
+    @BuildStep
+    ReflectiveClassBuildItem registerJdbcArrayTypesForReflection() {
+        return ReflectiveClassBuildItem
+                .builder(HibernateOrmTypes.JDBC_JAVA_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
+                .build();
+    }
+
 }

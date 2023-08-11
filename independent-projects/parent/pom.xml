@@ -430,6 +430,7 @@
                                 <systemProperties>
                                     <ignoredKeys>
                                         <ignore>maven.repo.local</ignore>
+                                        <ignore>maven.settings</ignore>
                                     </ignoredKeys>
                                 </systemProperties>
                             </normalization>

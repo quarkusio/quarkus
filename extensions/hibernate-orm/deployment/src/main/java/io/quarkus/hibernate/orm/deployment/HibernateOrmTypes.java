@@ -4,9 +4,9 @@ import java.util.List;
 
 import org.jboss.jandex.DotName;
 
-public final class HibernateOrmAnnotations {
+public final class HibernateOrmTypes {
 
-    private HibernateOrmAnnotations() {
+    private HibernateOrmTypes() {
     }
 
     public static final List<DotName> PACKAGE_ANNOTATIONS = List.of(
@@ -316,4 +316,41 @@ public final class HibernateOrmAnnotations {
             DotName.createSimple("jakarta.persistence.PreRemove"),
             DotName.createSimple("jakarta.persistence.PreUpdate"));
 
+    public static final List<DotName> JDBC_JAVA_TYPES = List.of(
+            DotName.createSimple("java.lang.Boolean"),
+            DotName.createSimple("java.lang.Byte"),
+            DotName.createSimple("java.lang.Character"),
+            DotName.createSimple("java.lang.Class"),
+            DotName.createSimple("java.lang.Double"),
+            DotName.createSimple("java.lang.Float"),
+            DotName.createSimple("java.lang.Integer"),
+            DotName.createSimple("java.lang.Long"),
+            DotName.createSimple("java.lang.Object"),
+            DotName.createSimple("java.lang.Short"),
+            DotName.createSimple("java.lang.String"),
+            DotName.createSimple("java.math.BigDecimal"),
+            DotName.createSimple("java.math.BigInteger"),
+            DotName.createSimple("java.net.InetAddress"),
+            DotName.createSimple("java.net.URL"),
+            DotName.createSimple("java.sql.Blob"),
+            DotName.createSimple("java.sql.Clob"),
+            DotName.createSimple("java.sql.NClob"),
+            DotName.createSimple("java.time.Duration"),
+            DotName.createSimple("java.time.Instant"),
+            DotName.createSimple("java.time.LocalDate"),
+            DotName.createSimple("java.time.LocalDateTime"),
+            DotName.createSimple("java.time.LocalTime"),
+            DotName.createSimple("java.time.OffsetDateTime"),
+            DotName.createSimple("java.time.OffsetTime"),
+            DotName.createSimple("java.time.Year"),
+            DotName.createSimple("java.time.ZoneId"),
+            DotName.createSimple("java.time.ZoneOffset"),
+            DotName.createSimple("java.time.ZonedDateTime"),
+            DotName.createSimple("java.util.Calendar"),
+            DotName.createSimple("java.util.Currency"),
+            DotName.createSimple("java.util.Date"),
+            DotName.createSimple("java.util.Locale"),
+            DotName.createSimple("java.util.Map$Entry"),
+            DotName.createSimple("java.util.TimeZone"),
+            DotName.createSimple("java.util.UUID"));
 }

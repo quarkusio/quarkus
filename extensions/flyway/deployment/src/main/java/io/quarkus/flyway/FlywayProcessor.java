@@ -18,14 +18,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Default;
+import jakarta.inject.Singleton;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
 import org.flywaydb.core.extensibility.Plugin;
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -64,6 +65,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
+import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
@@ -73,6 +75,7 @@ class FlywayProcessor {
 
     private static final String CLASSPATH_APPLICATION_MIGRATIONS_PROTOCOL = "classpath";
 
+    private static final String FLYWAY_CONTAINER_BEAN_NAME_PREFIX = "flyway_container_";
     private static final String FLYWAY_BEAN_NAME_PREFIX = "flyway_";
 
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
@@ -174,8 +177,6 @@ class FlywayProcessor {
         // add the @FlywayDataSource class otherwise it won't be registered as a qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(FlywayDataSource.class).build());
 
-        recorder.resetFlywayContainers();
-
         Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
 
         for (String dataSourceName : dataSourceNames) {
@@ -184,27 +185,55 @@ class FlywayProcessor {
             if (!hasMigrations) {
                 createPossible = sqlGeneratorBuildItems.stream().anyMatch(s -> s.getDatabaseName().equals(dataSourceName));
             }
-            SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                    .configure(Flyway.class)
-                    .scope(Dependent.class) // this is what the existing code does, but it doesn't seem reasonable
+
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayContainerConfigurator = SyntheticBeanBuildItem
+                    .configure(FlywayContainer.class)
+                    .scope(Singleton.class)
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainerProducer.class)))
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
-                    .createWith(recorder.flywayFunction(dataSourceName,
-                            hasMigrations, createPossible));
+                    .createWith(recorder.flywayContainerFunction(dataSourceName, hasMigrations, createPossible));
+
+            AnnotationInstance flywayContainerQualifier;
 
             if (DataSourceUtil.isDefault(dataSourceName)) {
-                configurator.addQualifier(Default.class);
-            } else {
-                String beanName = FLYWAY_BEAN_NAME_PREFIX + dataSourceName;
-                configurator.name(beanName);
+                flywayContainerConfigurator.addQualifier(Default.class);
 
-                configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
-                configurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();
+                flywayContainerQualifier = AnnotationInstance.builder(Default.class).build();
+            } else {
+                String beanName = FLYWAY_CONTAINER_BEAN_NAME_PREFIX + dataSourceName;
+                flywayContainerConfigurator.name(beanName);
+
+                flywayContainerConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
+                flywayContainerConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName)
+                        .done();
+
+                flywayContainerQualifier = AnnotationInstance.builder(FlywayDataSource.class).add("value", dataSourceName)
+                        .build();
             }
 
-            syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+            syntheticBeanBuildItemBuildProducer.produce(flywayContainerConfigurator.done());
+
+            SyntheticBeanBuildItem.ExtendedBeanConfigurator flywayConfigurator = SyntheticBeanBuildItem
+                    .configure(Flyway.class)
+                    .scope(Singleton.class)
+                    .setRuntimeInit()
+                    .unremovable()
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(FlywayContainer.class)), flywayContainerQualifier)
+                    .createWith(recorder.flywayFunction(dataSourceName));
+
+            if (DataSourceUtil.isDefault(dataSourceName)) {
+                flywayConfigurator.addQualifier(Default.class);
+            } else {
+                String beanName = FLYWAY_BEAN_NAME_PREFIX + dataSourceName;
+                flywayConfigurator.name(beanName);
+
+                flywayConfigurator.addQualifier().annotation(DotNames.NAMED).addValue("value", beanName).done();
+                flywayConfigurator.addQualifier().annotation(FlywayDataSource.class).addValue("value", dataSourceName).done();
+            }
+
+            syntheticBeanBuildItemBuildProducer.produce(flywayConfigurator.done());
         }
     }
 

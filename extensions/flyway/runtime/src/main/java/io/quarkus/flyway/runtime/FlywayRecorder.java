@@ -1,13 +1,13 @@
 package io.quarkus.flyway.runtime;
 
-import java.util.ArrayList;
+import java.lang.annotation.Annotation;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import javax.sql.DataSource;
 
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import org.flywaydb.core.Flyway;
@@ -17,7 +17,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.runtime.UnconfiguredDataSource;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.flyway.FlywayDataSource.FlywayDataSourceLiteral;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -25,8 +29,6 @@ import io.quarkus.runtime.annotations.Recorder;
 public class FlywayRecorder {
 
     private static final Logger log = Logger.getLogger(FlywayRecorder.class);
-
-    static final List<FlywayContainer> FLYWAY_CONTAINERS = new ArrayList<>(2);
 
     private final RuntimeValue<FlywayRuntimeConfig> config;
 
@@ -49,15 +51,12 @@ public class FlywayRecorder {
         QuarkusPathLocationScanner.setApplicationCallbackClasses(callbackClasses);
     }
 
-    public void resetFlywayContainers() {
-        FLYWAY_CONTAINERS.clear();
-    }
-
-    public Function<SyntheticCreationalContext<Flyway>, Flyway> flywayFunction(String dataSourceName, boolean hasMigrations,
+    public Function<SyntheticCreationalContext<FlywayContainer>, FlywayContainer> flywayContainerFunction(String dataSourceName,
+            boolean hasMigrations,
             boolean createPossible) {
         return new Function<>() {
             @Override
-            public Flyway apply(SyntheticCreationalContext<Flyway> context) {
+            public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
                 DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
                 if (dataSource instanceof UnconfiguredDataSource) {
                     throw new UnsatisfiedResolutionException("No datasource present");
@@ -66,7 +65,23 @@ public class FlywayRecorder {
                 FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
                 FlywayContainer flywayContainer = flywayProducer.createFlyway(dataSource, dataSourceName, hasMigrations,
                         createPossible);
-                FLYWAY_CONTAINERS.add(flywayContainer);
+                return flywayContainer;
+            }
+        };
+    }
+
+    public Function<SyntheticCreationalContext<Flyway>, Flyway> flywayFunction(String dataSourceName) {
+        return new Function<>() {
+            @Override
+            public Flyway apply(SyntheticCreationalContext<Flyway> context) {
+                Annotation flywayContainerQualifier;
+                if (DataSourceUtil.isDefault(dataSourceName)) {
+                    flywayContainerQualifier = Default.Literal.INSTANCE;
+                } else {
+                    flywayContainerQualifier = FlywayDataSourceLiteral.of(dataSourceName);
+                }
+
+                FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class, flywayContainerQualifier);
                 return flywayContainer.getFlyway();
             }
         };
@@ -76,7 +91,10 @@ public class FlywayRecorder {
         if (!config.getValue().enabled) {
             return;
         }
-        for (FlywayContainer flywayContainer : FLYWAY_CONTAINERS) {
+
+        for (InstanceHandle<FlywayContainer> flywayContainerHandle : Arc.container().listAll(FlywayContainer.class)) {
+            FlywayContainer flywayContainer = flywayContainerHandle.get();
+
             if (flywayContainer.isCleanAtStart()) {
                 flywayContainer.getFlyway().clean();
             }

@@ -40,16 +40,24 @@ public class LogstreamTest extends DevUIJsonRPCTest {
     @Test
     public void testUpdateLoggers() throws Exception {
         // Get the level before
-        JsonNode getLoggerResponse = super.executeJsonRPCMethod("getLogger", Map.of("loggerName", "io.quarkus"));
+        JsonNode getLoggerResponse = super.executeJsonRPCMethod("getLogger",
+                Map.of("loggerName", "io.quarkus.devui.runtime.DevUIWebSocket"));
         Assertions.assertNotNull(getLoggerResponse);
         Assertions.assertEquals("INFO", getLoggerResponse.get("effectiveLevel").asText());
 
         // Update the level
         JsonNode updateLogLevelResponse = super.executeJsonRPCMethod("updateLogLevel",
-                Map.of("loggerName", "io.quarkus",
+                Map.of("loggerName", "io.quarkus.devui.runtime.DevUIWebSocket",
                         "levelValue", "DEBUG"));
         Assertions.assertNotNull(updateLogLevelResponse);
         Assertions.assertEquals("DEBUG", updateLogLevelResponse.get("effectiveLevel").asText());
+
+        // Restore the level
+        JsonNode restoreLogLevelResponse = super.executeJsonRPCMethod("updateLogLevel",
+                Map.of("loggerName", "io.quarkus.devui.runtime.DevUIWebSocket",
+                        "levelValue", "INFO"));
+        Assertions.assertNotNull(restoreLogLevelResponse);
+        Assertions.assertEquals("INFO", restoreLogLevelResponse.get("effectiveLevel").asText());
     }
 
     private boolean hasStartedLine(Iterator<JsonNode> elements) {

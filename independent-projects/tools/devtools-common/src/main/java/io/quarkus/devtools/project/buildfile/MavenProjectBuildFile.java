@@ -31,6 +31,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -122,8 +123,22 @@ public class MavenProjectBuildFile extends BuildFile {
                 projectModel, deps, managedDeps, projectProps, projectPom == null ? null : artifactResolver);
         final List<ResourceLoader> codestartResourceLoaders = codestartLoadersBuilder().catalog(extensionCatalog)
                 .artifactResolver(artifactResolver).build();
+        final JavaVersion javaVersion = resolveJavaVersion(projectProps);
         return QuarkusProject.of(projectDir, extensionCatalog,
-                codestartResourceLoaders, log, extensionManager);
+                codestartResourceLoaders, log, extensionManager, javaVersion);
+    }
+
+    private static JavaVersion resolveJavaVersion(Properties projectProps) {
+        if (projectProps.containsKey("maven.compiler.release")) {
+            return new JavaVersion(projectProps.getProperty("maven.compiler.release"));
+        }
+        if (projectProps.containsKey("maven.compiler.target")) {
+            return new JavaVersion(projectProps.getProperty("maven.compiler.target"));
+        }
+        if (projectProps.containsKey("maven.compiler.source")) {
+            return new JavaVersion(projectProps.getProperty("maven.compiler.source"));
+        }
+        return JavaVersion.NA;
     }
 
     private static MavenArtifactResolver getMavenResolver(Path projectDir) {

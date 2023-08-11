@@ -1,6 +1,6 @@
 package io.quarkus.cli.create;
 
-import static io.quarkus.devtools.commands.CreateProjectHelper.computeJavaVersion;
+import static io.quarkus.devtools.project.JavaVersion.computeJavaVersion;
 
 import java.nio.file.Path;
 import java.util.Collection;
@@ -17,10 +17,10 @@ import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
 import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.commands.CreateProjectHelper;
-import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProject;
+import io.quarkus.devtools.project.SourceType;
 import io.quarkus.registry.RegistryResolutionException;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;

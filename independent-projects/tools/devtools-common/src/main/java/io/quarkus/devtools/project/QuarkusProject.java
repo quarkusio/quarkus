@@ -18,27 +18,30 @@ public final class QuarkusProject {
     private final ExtensionManager extensionManager;
     private final MessageWriter log;
 
+    private final JavaVersion javaVersion;
+
     private QuarkusProject(Path projectDirPath, ExtensionCatalog catalog, List<ResourceLoader> codestartResourceLoaders,
             MessageWriter log,
-            ExtensionManager extensionManager) {
+            ExtensionManager extensionManager, JavaVersion javaVersion) {
         this.projectDirPath = requireNonNull(projectDirPath, "projectDirPath is required");
         this.catalog = requireNonNull(catalog, "catalog is required");
         this.codestartResourceLoaders = requireNonNull(codestartResourceLoaders, "codestartResourceLoaders is required");
         this.extensionManager = requireNonNull(extensionManager, "extensionManager is required");
         this.log = (log == null ? MessageWriter.info() : log);
+        this.javaVersion = javaVersion;
     }
 
     public static QuarkusProject of(final Path projectDirPath, final ExtensionCatalog catalog,
             final List<ResourceLoader> codestartResourceLoaders, final MessageWriter log,
-            final ExtensionManager extensionManager) {
-        return new QuarkusProject(projectDirPath, catalog, codestartResourceLoaders, log, extensionManager);
+            final ExtensionManager extensionManager, JavaVersion javaVersion) {
+        return new QuarkusProject(projectDirPath, catalog, codestartResourceLoaders, log, extensionManager, javaVersion);
     }
 
     public static QuarkusProject of(final Path projectDirPath, ExtensionCatalog catalog,
             final List<ResourceLoader> codestartsResourceLoader,
-            final MessageWriter log, final BuildTool buildTool) {
+            final MessageWriter log, final BuildTool buildTool, JavaVersion javaVersion) {
         return new QuarkusProject(projectDirPath, catalog, codestartsResourceLoader, log,
-                buildTool.createExtensionManager(projectDirPath, catalog));
+                buildTool.createExtensionManager(projectDirPath, catalog), javaVersion);
     }
 
     public Path getProjectDirPath() {
@@ -47,6 +50,10 @@ public final class QuarkusProject {
 
     public BuildTool getBuildTool() {
         return extensionManager.getBuildTool();
+    }
+
+    public JavaVersion getJavaVersion() {
+        return javaVersion;
     }
 
     public ExtensionManager getExtensionManager() {

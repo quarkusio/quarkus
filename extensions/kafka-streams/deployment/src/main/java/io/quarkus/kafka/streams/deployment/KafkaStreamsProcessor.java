@@ -43,17 +43,18 @@ class KafkaStreamsProcessor {
 
     public static final String DEFAULT_PARTITION_GROUPER = "org.apache.kafka.streams.processor.DefaultPartitionGrouper";
 
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(Feature.KAFKA_STREAMS);
+    }
+
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+    void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<JniRuntimeAccessBuildItem> jniRuntimeAccessibleClasses,
             BuildProducer<RuntimeReinitializedClassBuildItem> reinitialized,
             BuildProducer<NativeImageResourceBuildItem> nativeLibs,
             LaunchModeBuildItem launchMode,
             NativeImageRunnerBuildItem nativeImageRunner) throws IOException {
-
-        feature.produce(new FeatureBuildItem(Feature.KAFKA_STREAMS));
-
         registerClassesThatAreLoadedThroughReflection(reflectiveClasses, launchMode);
         registerClassesThatAreAccessedViaJni(jniRuntimeAccessibleClasses);
         addSupportForRocksDbLib(nativeLibs, nativeImageRunner);

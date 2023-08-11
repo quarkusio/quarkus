@@ -17,7 +17,7 @@ Quarkus security offers a Jakarta Persistence integration to collect usernames, 
 The following Jakarta Persistence entity specification demonstrates how users' information needs to be stored in a Jakarta Persistence entity and properly mapped so that Quarkus can retrieve this information from a database.
 
 
-* The `@UserDefinition` annotation must be present on a Jakarta Persistence entity, regardless of whether link:https://quarkus.io/guides/hibernate-orm-panache[simplified Hibernate ORM with Panache] is used or not.
+* The `@UserDefinition` annotation must be present on a Jakarta Persistence entity, regardless of whether xref:hibernate-orm-panache.adoc[simplified Hibernate ORM with Panache] is used or not.
 
 * The `@Username` and `@Password` field types are always `String`.
 

@@ -9,9 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -21,7 +19,6 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 import org.eclipse.aether.repository.RemoteRepository;
 
@@ -37,10 +34,6 @@ import io.quarkus.maven.dependency.ArtifactCoords;
  */
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class BuildMojo extends QuarkusBootstrapMojo {
-
-    static final String PACKAGE_TYPE_PROP = "quarkus.package.type";
-    static final String NATIVE_PROFILE_NAME = "native";
-    static final String NATIVE_PACKAGE_TYPE = "native";
 
     @Component
     MavenProjectHelper projectHelper;
@@ -125,14 +118,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             // Essentially what this does is to enable the native package type even if a different package type is set
             // in application properties. This is done to preserve what users expect to happen when
             // they execute "mvn package -Dnative" even if quarkus.package.type has been set in application.properties
-            if (!System.getProperties().containsKey(PACKAGE_TYPE_PROP)
-                    && isNativeProfileEnabled(mavenProject())) {
-                Object packageTypeProp = mavenProject().getProperties().get(PACKAGE_TYPE_PROP);
-                String packageType = NATIVE_PACKAGE_TYPE;
-                if (packageTypeProp != null) {
-                    packageType = packageTypeProp.toString();
-                }
-                System.setProperty(PACKAGE_TYPE_PROP, packageType);
+            if (!setPackageTypeSystemPropertyIfNativeProfileEnabled()) {
                 propertiesToClear.add(PACKAGE_TYPE_PROP);
             }
 
@@ -191,17 +177,6 @@ public class BuildMojo extends QuarkusBootstrapMojo {
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to build quarkus application", e);
         }
-    }
-
-    boolean isNativeProfileEnabled(MavenProject mavenProject) {
-        // gotcha: mavenProject.getActiveProfiles() does not always contain all active profiles (sic!),
-        //         but getInjectedProfileIds() does (which has to be "flattened" first)
-        Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream().flatMap(List<String>::stream);
-        if (activeProfileIds.anyMatch(NATIVE_PROFILE_NAME::equalsIgnoreCase)) {
-            return true;
-        }
-        // recurse into parent (if available)
-        return Optional.ofNullable(mavenProject.getParent()).map(this::isNativeProfileEnabled).orElse(false);
     }
 
     @Override

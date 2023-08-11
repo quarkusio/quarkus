@@ -116,7 +116,7 @@ public class JibProcessor {
     // in order to make the AppCDS usable by the runtime JVM
     @BuildStep(onlyIf = JibBuild.class)
     public void appCDS(ContainerImageConfig containerImageConfig, CompiledJavaVersionBuildItem compiledJavaVersion,
-            JibConfig jibConfig,
+            ContainerImageJibConfig jibConfig,
             BuildProducer<AppCDSContainerImageBuildItem> producer) {
 
         if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
@@ -126,7 +126,7 @@ public class JibProcessor {
         producer.produce(new AppCDSContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion)));
     }
 
-    private String determineBaseJvmImage(JibConfig jibConfig, CompiledJavaVersionBuildItem compiledJavaVersion) {
+    private String determineBaseJvmImage(ContainerImageJibConfig jibConfig, CompiledJavaVersionBuildItem compiledJavaVersion) {
         if (jibConfig.baseJvmImage.isPresent()) {
             return jibConfig.baseJvmImage.get();
         }
@@ -139,7 +139,7 @@ public class JibProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
-    public void buildFromJar(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+    public void buildFromJar(ContainerImageConfig containerImageConfig, ContainerImageJibConfig jibConfig,
             PackageConfig packageConfig,
             ContainerImageInfoBuildItem containerImage,
             JarBuildItem sourceJar,
@@ -192,7 +192,7 @@ public class JibProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class, NativeBuild.class })
-    public void buildFromNative(ContainerImageConfig containerImageConfig, JibConfig jibConfig,
+    public void buildFromNative(ContainerImageConfig containerImageConfig, ContainerImageJibConfig jibConfig,
             ContainerImageInfoBuildItem containerImage,
             NativeImageBuildItem nativeImage,
             OutputTargetBuildItem outputTarget,
@@ -232,7 +232,8 @@ public class JibProcessor {
     }
 
     private JibContainer containerize(ContainerImageConfig containerImageConfig,
-            JibConfig jibConfig, ContainerImageInfoBuildItem containerImage, JibContainerBuilder jibContainerBuilder,
+            ContainerImageJibConfig jibConfig, ContainerImageInfoBuildItem containerImage,
+            JibContainerBuilder jibContainerBuilder,
             boolean pushRequested) {
 
         Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, containerImage, pushRequested);
@@ -266,7 +267,7 @@ public class JibProcessor {
     }
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
-            JibConfig jibConfig, ContainerImageInfoBuildItem containerImageInfo,
+            ContainerImageJibConfig jibConfig, ContainerImageInfoBuildItem containerImageInfo,
             boolean pushRequested) {
         Containerizer containerizer;
         ImageReference imageReference = ImageReference.of(containerImageInfo.getRegistry().orElse(null),
@@ -310,7 +311,8 @@ public class JibProcessor {
         return containerizer;
     }
 
-    private void writeOutputFiles(JibContainer jibContainer, JibConfig jibConfig, OutputTargetBuildItem outputTarget) {
+    private void writeOutputFiles(JibContainer jibContainer, ContainerImageJibConfig jibConfig,
+            OutputTargetBuildItem outputTarget) {
         doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageDigestFile), jibContainer.getDigest().toString());
         doWriteOutputFile(outputTarget, Paths.get(jibConfig.imageIdFile), jibContainer.getImageId().toString());
     }
@@ -374,7 +376,7 @@ public class JibProcessor {
      * <li>app</li>
      * </ul>
      */
-    private JibContainerBuilder createContainerBuilderFromFastJar(String baseJvmImage, JibConfig jibConfig,
+    private JibContainerBuilder createContainerBuilderFromFastJar(String baseJvmImage, ContainerImageJibConfig jibConfig,
             ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             CurateOutcomeBuildItem curateOutcome, List<ContainerImageLabelBuildItem> containerImageLabels,
@@ -534,7 +536,7 @@ public class JibProcessor {
                     workDirInContainer, "fast-jar-quarkus-app", isMutableJar, modificationTime);
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
                     workDirInContainer, "fast-jar-quarkus", isMutableJar, modificationTime);
-            if (JibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory)) {
+            if (ContainerImageJibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory)) {
                 // this layer ensures that the working directory is writeable
                 // see https://github.com/GoogleContainerTools/jib/issues/1270
                 // TODO: is this needed for all working directories?
@@ -615,7 +617,8 @@ public class JibProcessor {
         }
     }
 
-    private List<String> determineEffectiveJvmArguments(JibConfig jibConfig, Optional<AppCDSResultBuildItem> appCDSResult) {
+    private List<String> determineEffectiveJvmArguments(ContainerImageJibConfig jibConfig,
+            Optional<AppCDSResultBuildItem> appCDSResult) {
         List<String> effectiveJvmArguments = new ArrayList<>(jibConfig.jvmArguments);
         jibConfig.jvmAdditionalArguments.ifPresent(effectiveJvmArguments::addAll);
         if (appCDSResult.isPresent()) {
@@ -633,15 +636,15 @@ public class JibProcessor {
         return effectiveJvmArguments;
     }
 
-    private void setUser(JibConfig jibConfig, JibContainerBuilder jibContainerBuilder) {
+    private void setUser(ContainerImageJibConfig jibConfig, JibContainerBuilder jibContainerBuilder) {
         jibConfig.user.ifPresent(jibContainerBuilder::setUser);
     }
 
-    private void setPlatforms(JibConfig jibConfig, JibContainerBuilder jibContainerBuilder) {
+    private void setPlatforms(ContainerImageJibConfig jibConfig, JibContainerBuilder jibContainerBuilder) {
         jibConfig.platforms.map(PlatformHelper::parse).ifPresent(jibContainerBuilder::setPlatforms);
     }
 
-    private JibContainerBuilder createContainerBuilderFromLegacyJar(String baseJvmImage, JibConfig jibConfig,
+    private JibContainerBuilder createContainerBuilderFromLegacyJar(String baseJvmImage, ContainerImageJibConfig jibConfig,
             ContainerImageConfig containerImageConfig,
             JarBuildItem sourceJarBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
@@ -696,7 +699,8 @@ public class JibProcessor {
         }
     }
 
-    private JibContainerBuilder createContainerBuilderFromNative(JibConfig jibConfig, ContainerImageConfig containerImageConfig,
+    private JibContainerBuilder createContainerBuilderFromNative(ContainerImageJibConfig jibConfig,
+            ContainerImageConfig containerImageConfig,
             NativeImageBuildItem nativeImageBuildItem, List<ContainerImageLabelBuildItem> containerImageLabels) {
 
         List<String> entrypoint;
@@ -737,7 +741,7 @@ public class JibProcessor {
         }
     }
 
-    private Map<String, String> getEnvironmentVariables(JibConfig jibConfig) {
+    private Map<String, String> getEnvironmentVariables(ContainerImageJibConfig jibConfig) {
         Map<String, String> original = jibConfig.environmentVariables;
         if (original.isEmpty()) {
             return original;
@@ -788,7 +792,7 @@ public class JibProcessor {
         }
     }
 
-    private Map<String, String> allLabels(JibConfig jibConfig, ContainerImageConfig containerImageConfig,
+    private Map<String, String> allLabels(ContainerImageJibConfig jibConfig, ContainerImageConfig containerImageConfig,
             List<ContainerImageLabelBuildItem> containerImageLabels) {
         if (containerImageLabels.isEmpty() && containerImageConfig.labels.isEmpty()) {
             return Collections.emptyMap();

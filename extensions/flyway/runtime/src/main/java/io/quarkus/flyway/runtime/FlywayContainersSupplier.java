@@ -1,32 +1,30 @@
 package io.quarkus.flyway.runtime;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 
-import org.flywaydb.core.Flyway;
-
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.InjectableInstance;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 
 public class FlywayContainersSupplier implements Supplier<Collection<FlywayContainer>> {
 
     @Override
     public Collection<FlywayContainer> get() {
-        InjectableInstance<Flyway> instances = Arc.container().select(Flyway.class);
-        for (Flyway instance : instances) { // force the creation of flyway
+        List<InstanceHandle<FlywayContainer>> flywayContainerHandles = Arc.container().listAll(FlywayContainer.class);
 
-        }
-        if (FlywayRecorder.FLYWAY_CONTAINERS.isEmpty()) {
-            return Collections.emptySet();
+        if (flywayContainerHandles.isEmpty()) {
+            return Set.of();
         }
 
         Set<FlywayContainer> containers = new TreeSet<>(FlywayContainerComparator.INSTANCE);
-        containers.addAll(FlywayRecorder.FLYWAY_CONTAINERS);
+        for (InstanceHandle<FlywayContainer> flywayContainerHandle : flywayContainerHandles) {
+            containers.add(flywayContainerHandle.get());
+        }
         return containers;
     }
 

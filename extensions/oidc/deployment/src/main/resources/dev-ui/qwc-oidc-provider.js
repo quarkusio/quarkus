@@ -1,5 +1,6 @@
 import { QwcHotReloadElement, html, css} from 'qwc-hot-reload-element';
 import {classMap} from 'lit/directives/class-map.js';
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {JsonRpc} from 'jsonrpc';
 import { LitState } from 'lit-element-state';
 import '@vaadin/button';
@@ -230,6 +231,10 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         }
         .half-width {
           width: 50%;
+        }
+        .jwt-tooltip {
+          cursor: help;
+          background: rgba(0, 0, 0, .1);
         }
     `;
 
@@ -1241,6 +1246,52 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return new TextDecoder().decode(base64ToBytes(encoded));
     }
 
+    static _formatJson(jwt) {
+        const tooltips = {
+            "iss": "Issuer",
+            "sub": "Subject",
+            "aud": "Audience",
+            "nbf": "Not Before",
+            "iat": "Issued At",
+            "exp": "Expiration Time",
+            "jti": "JWT ID"
+        };
+        const spaces = 4;
+        var ret = "{";
+        var once = false;
+        for(let k in jwt){
+            if (Object.prototype.hasOwnProperty.call(jwt, k)) {
+                const val = jwt[k];
+                if(once){
+                    ret += ",";
+                }
+                ret += "\n" + " ".repeat(spaces);
+                // decorate key
+                var tooltip = tooltips[k];
+                if(tooltip) {
+                    ret += "<span class='jwt-tooltip' title='"+tooltip+"'>\"" + k + "\"</span>";
+                } else {
+                    ret += "\"" + k + "\"";
+                }
+                // on to values
+                ret += ": ";
+                // decorate values
+                if(k == 'iat' || k == 'nbf' || k == 'exp'){
+                    ret += "<span class='jwt-tooltip' title='" + new Date(val * 1000).toString() + "'>" + val + "</span>";
+                } else {
+                    ret += JSON.stringify(val);
+                }
+                
+            }
+            once = true;
+        }
+        if(once){
+            ret += "\n";
+        }
+        ret += "}";
+        return ret;
+    }
+    
     static _decodeToken(token) {
         if (token) {
             const parts = token.split(".");
@@ -1249,10 +1300,11 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const payload = QwcOidcProvider._decodeBase64(parts[1]);
                 const signature = parts[2];
                 const jsonPayload = JSON.parse(payload);
+                const json = QwcOidcProvider._formatJson(jsonPayload);
                 return html`
                 <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
-                <pre class='token-payload' title='Claims'>${JSON.stringify(jsonPayload,null,4)?.trim()}</pre>
--                <span class='token-signature' title='Signature'>${signature?.trim()}</span>
+                <pre class='token-payload' title='Claims'>${unsafeHTML(json?.trim())}</pre>
+                <span class='token-signature' title='Signature'>${signature?.trim()}</span>
                 `;
             } else if (parts.length === 5) {
                 const headers = window.atob(parts[0]?.trim());

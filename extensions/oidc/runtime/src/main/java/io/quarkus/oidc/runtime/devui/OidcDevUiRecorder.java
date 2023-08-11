@@ -8,6 +8,8 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.HttpConfiguration;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OidcDevUiRecorder {
@@ -29,5 +31,13 @@ public class OidcDevUiRecorder {
                         webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                         introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
                         graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload));
+    }
+
+    public Handler<RoutingContext> readSessionCookieHandler() {
+        return new OidcDevSessionCookieReaderHandler();
+    }
+
+    public Handler<RoutingContext> logoutHandler() {
+        return new OidcDevSessionLogoutHandler();
     }
 }

@@ -194,7 +194,6 @@ exceptions:
   - Qt
   - Quarkiverse
   - Quarkus
-  - Quiltflower
   - Qute
   - RESTEasy
   - Red Hat
@@ -233,6 +232,7 @@ exceptions:
   - Valgrind
   - Velero
   - Vert.x
+  - Vineflower
   - WebAuthn
   - WebSocket
   - Webview

@@ -379,7 +379,6 @@ filters:
   - QLogic
   - Quarkiverse
   - Quarkus
-  - Quiltflower
   - Qute
   - Realtime
   - Redis
@@ -425,6 +424,7 @@ filters:
   - Velero
   - Vert.x
   - vHost
+  - Vineflower
   - VMs
   - VMware
   - vsix

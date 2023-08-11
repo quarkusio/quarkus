@@ -10,7 +10,7 @@
 == Proof Key for Code Exchange
 == Kogito updates
 == IBM Cloud is a valid product name
-== Spotify, GraphQL, and Quiltflower are proper nouns so uppercase in headings is OK.
+== Spotify, GraphQL, and Vineflower are proper nouns so uppercase in headings is OK.
 == Use xDS gRPC
 == Use JBoss Logging for application logging
 == JBoss Logging API

@@ -57,6 +57,8 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
         deleteAllPerson(entityManagerFactory);
 
+        // Try an entity using a UUID
+        verifyUUIDEntity(entityManagerFactory);
     }
 
     private static void verifyJPANamedQuery(final EntityManagerFactory emf) {
@@ -142,6 +144,27 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
     private static String randomName() {
         return UUID.randomUUID().toString();
+    }
+
+    private static void verifyUUIDEntity(final EntityManagerFactory emf) {
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction transaction = em.getTransaction();
+        transaction.begin();
+        MyUUIDEntity myEntity = new MyUUIDEntity();
+        myEntity.setName("George");
+        em.persist(myEntity);
+        transaction.commit();
+        em.close();
+
+        em = emf.createEntityManager();
+        transaction = em.getTransaction();
+        transaction.begin();
+        myEntity = em.find(MyUUIDEntity.class, myEntity.getId());
+        if (myEntity == null || !"George".equals(myEntity.getName())) {
+            throw new RuntimeException("Incorrect loaded MyUUIDEntity " + myEntity);
+        }
+        transaction.commit();
+        em.close();
     }
 
     private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {

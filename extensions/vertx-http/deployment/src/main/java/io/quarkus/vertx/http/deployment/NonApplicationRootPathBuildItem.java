@@ -177,7 +177,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Specified path can not be empty");
         }
-        if (managementInterfaceBuildTimeConfig.enabled && extensionOverride) {
+        if (managementInterfaceBuildTimeConfig.enabled() && extensionOverride) {
             // Best effort
             String prefix = getManagementUrlPrefix(mode);
             if (managementRootPath != null) {

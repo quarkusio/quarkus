@@ -386,8 +386,8 @@ public class UndertowDeploymentRecorder {
         undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters);
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
-        Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression
-                ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get())
+        Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
+                ? Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get())
                 : Collections.emptySet();
 
         return new Handler<RoutingContext>() {
@@ -418,11 +418,11 @@ public class UndertowDeploymentRecorder {
                     });
                 }
 
-                Optional<MemorySize> maxBodySize = httpConfiguration.getValue().limits.maxBodySize;
+                Optional<MemorySize> maxBodySize = httpConfiguration.getValue().limits().maxBodySize();
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
-                Duration readTimeout = httpConfiguration.getValue().readTimeout;
+                Duration readTimeout = httpConfiguration.getValue().readTimeout();
                 exchange.setReadTimeout(readTimeout.toMillis());
 
                 exchange.setUndertowOptions(undertowOptionMap);

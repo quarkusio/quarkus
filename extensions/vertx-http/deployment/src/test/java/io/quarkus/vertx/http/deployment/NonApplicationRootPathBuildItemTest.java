@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.deployment;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Optional;
 
 import org.junit.jupiter.api.Assertions;
@@ -108,15 +111,15 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPath() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "management";
+        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = mock(ManagementInterfaceBuildTimeConfig.class);
+        when(managementInterfaceBuildTimeConfig.enabled()).thenReturn(true);
+        when(managementInterfaceBuildTimeConfig.rootPath()).thenReturn("management");
 
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementInterfaceBuildTimeConfig.rootPath());
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
         Assertions.assertEquals("http://0.0.0.0:9000/management/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -134,15 +137,15 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPathInTestMode() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "management";
+        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = mock(ManagementInterfaceBuildTimeConfig.class);
+        when(managementInterfaceBuildTimeConfig.enabled()).thenReturn(true);
+        when(managementInterfaceBuildTimeConfig.rootPath()).thenReturn("management");
 
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), true);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementInterfaceBuildTimeConfig.rootPath());
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
         Assertions.assertEquals("http://0.0.0.0:9001/management/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -160,9 +163,9 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPathAndWithManagementDisabled() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = false;
-        managementInterfaceBuildTimeConfig.rootPath = "management";
+        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = mock(ManagementInterfaceBuildTimeConfig.class);
+        when(managementInterfaceBuildTimeConfig.enabled()).thenReturn(false);
+        when(managementInterfaceBuildTimeConfig.rootPath()).thenReturn("management");
 
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
@@ -186,15 +189,15 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithAbsoluteRootPath() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "/management";
+        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = mock(ManagementInterfaceBuildTimeConfig.class);
+        when(managementInterfaceBuildTimeConfig.enabled()).thenReturn(true);
+        when(managementInterfaceBuildTimeConfig.rootPath()).thenReturn("/management");
 
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementInterfaceBuildTimeConfig.rootPath());
         Assertions.assertEquals("/management/", buildItem.getManagementRootPath());
         Assertions.assertEquals("http://0.0.0.0:9000/management/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -212,15 +215,15 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithEmptyRootPath() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "";
+        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = mock(ManagementInterfaceBuildTimeConfig.class);
+        when(managementInterfaceBuildTimeConfig.enabled()).thenReturn(true);
+        when(managementInterfaceBuildTimeConfig.rootPath()).thenReturn("");
 
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementInterfaceBuildTimeConfig.rootPath());
         Assertions.assertEquals("/", buildItem.getManagementRootPath());
         Assertions.assertEquals("http://0.0.0.0:9000/foo",
                 buildItem.resolveManagementPath("foo", managementInterfaceBuildTimeConfig, launchModeBuildItem));
@@ -238,15 +241,15 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithWithWildcards() {
-        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = new ManagementInterfaceBuildTimeConfig();
-        managementInterfaceBuildTimeConfig.enabled = true;
-        managementInterfaceBuildTimeConfig.rootPath = "/management";
+        ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig = mock(ManagementInterfaceBuildTimeConfig.class);
+        when(managementInterfaceBuildTimeConfig.enabled()).thenReturn(true);
+        when(managementInterfaceBuildTimeConfig.rootPath()).thenReturn("/management");
 
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
         NonApplicationRootPathBuildItem buildItem = new NonApplicationRootPathBuildItem("/", "/q",
-                managementInterfaceBuildTimeConfig.rootPath);
+                managementInterfaceBuildTimeConfig.rootPath());
         Assertions.assertEquals("http://0.0.0.0:9000/management/foo/*",
                 buildItem.resolveManagementPath("foo/*", managementInterfaceBuildTimeConfig, launchModeBuildItem));
         Assertions.assertEquals("http://0.0.0.0:9000/foo/*",

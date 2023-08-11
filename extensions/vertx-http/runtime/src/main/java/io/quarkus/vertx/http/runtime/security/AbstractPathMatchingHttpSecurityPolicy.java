@@ -89,25 +89,25 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
         Map<String, List<HttpMatcher>> tempMap = new HashMap<>();
         for (Map.Entry<String, PolicyMappingConfig> entry : permissions.entrySet()) {
-            HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy);
+            HttpSecurityPolicy checker = permissionCheckers.get(entry.getValue().policy());
             if (checker == null) {
-                throw new RuntimeException("Unable to find HTTP security policy " + entry.getValue().policy);
+                throw new RuntimeException("Unable to find HTTP security policy " + entry.getValue().policy());
             }
 
-            if (entry.getValue().enabled.orElse(Boolean.TRUE)) {
-                for (String path : entry.getValue().paths.orElse(Collections.emptyList())) {
+            if (entry.getValue().enabled().orElse(Boolean.TRUE)) {
+                for (String path : entry.getValue().paths().orElse(Collections.emptyList())) {
                     path = path.trim();
                     if (!path.startsWith("/")) {
                         path = rootPath + path;
                     }
                     if (tempMap.containsKey(path)) {
-                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
-                                new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
+                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism().orElse(null),
+                                new HashSet<>(entry.getValue().methods().orElse(Collections.emptyList())),
                                 checker);
                         tempMap.get(path).add(m);
                     } else {
-                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism.orElse(null),
-                                new HashSet<>(entry.getValue().methods.orElse(Collections.emptyList())),
+                        HttpMatcher m = new HttpMatcher(entry.getValue().authMechanism().orElse(null),
+                                new HashSet<>(entry.getValue().methods().orElse(Collections.emptyList())),
                                 checker);
                         List<HttpMatcher> perms = new ArrayList<>();
                         tempMap.put(path, perms);

@@ -1233,12 +1233,20 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         return html``;
     }
 
+    static _decodeBase64(encoded){
+        function base64ToBytes(base64) {
+            const binString = window.atob(base64);
+            return Uint8Array.from(binString, (m) => m.codePointAt(0));
+        }
+        return new TextDecoder().decode(base64ToBytes(encoded));
+    }
+
     static _decodeToken(token) {
         if (token) {
             const parts = token.split(".");
             if (parts.length === 3) {
-                const headers = window.atob(parts[0]);
-                const payload = window.atob(parts[1]);
+                const headers = QwcOidcProvider._decodeBase64(parts[0]);
+                const payload = QwcOidcProvider._decodeBase64(parts[1]);
                 const signature = parts[2];
                 const jsonPayload = JSON.parse(payload);
                 return html`
@@ -1272,7 +1280,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
             if (token) {
                 const parts = token.split(".");
                 if (parts.length === 3) {
-                    const payload = window.atob(parts[1]);
+                    const payload = QwcOidcProvider._decodeBase64(parts[1]);
                     const jsonPayload = JSON.parse(payload);
                     if (jsonPayload?.upn) {
                         return jsonPayload.upn;

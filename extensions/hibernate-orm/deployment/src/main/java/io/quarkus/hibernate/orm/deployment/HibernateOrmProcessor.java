@@ -461,10 +461,10 @@ public final class HibernateOrmProcessor {
             // but there are plans to make deep changes to XML mapping in ORM (to rely on Jandex directly),
             // so let's not waste our time on optimizations that won't be relevant in a few months.
             List<String> annotationClassNames = new ArrayList<>();
-            for (DotName name : HibernateOrmAnnotations.JPA_MAPPING_ANNOTATIONS) {
+            for (DotName name : HibernateOrmTypes.JPA_MAPPING_ANNOTATIONS) {
                 annotationClassNames.add(name.toString());
             }
-            for (DotName name : HibernateOrmAnnotations.HIBERNATE_MAPPING_ANNOTATIONS) {
+            for (DotName name : HibernateOrmTypes.HIBERNATE_MAPPING_ANNOTATIONS) {
                 annotationClassNames.add(name.toString());
             }
             reflective.produce(ReflectiveClassBuildItem.builder(annotationClassNames.toArray(new String[0]))
@@ -766,7 +766,7 @@ public final class HibernateOrmProcessor {
         Set<String> classes = new HashSet<>();
 
         // Built-in service classes; can't rely on Jandex as Hibernate ORM is not indexed by default.
-        HibernateOrmAnnotations.ANNOTATED_WITH_INJECT_SERVICE.stream()
+        HibernateOrmTypes.ANNOTATED_WITH_INJECT_SERVICE.stream()
                 .map(DotName::toString)
                 .forEach(classes::add);
 

@@ -54,6 +54,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
@@ -76,6 +77,16 @@ public class ResteasyReactiveCommonProcessor {
     private static final int LEGACY_WRITER_PRIORITY = Priorities.USER / 2; // writers are compared by increased priority
 
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
+
+    /**
+     * ResourceCleaner contains java.lang.ref.Cleaner references which need to get
+     * runtime initialized.
+     */
+    @BuildStep
+    public RuntimeInitializedClassBuildItem runtimeInitResourceCleaner() {
+        return new RuntimeInitializedClassBuildItem(
+                "org.jboss.resteasy.spi.ResourceCleaner");
+    }
 
     @BuildStep
     void searchForProviders(Capabilities capabilities,

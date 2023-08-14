@@ -163,6 +163,8 @@ public class KubernetesClientTest {
 
     @KubernetesTestServer
     KubernetesServer mockServer;
+    @Inject
+    KubernetesClient client;
 
     @BeforeEach
     public void before() {
@@ -170,8 +172,8 @@ public class KubernetesClientTest {
         final Pod pod2 = new PodBuilder().withNewMetadata().withName("pod2").withNamespace("test").and().build();
 
         // Set up Kubernetes so that our "pretend" pods are created
-        mockServer.getClient().pods().create(pod1);
-        mockServer.getClient().pods().create(pod2);
+        client.pods().resource(pod1).create();
+        client.pods().resource(pod2).create();
     }
 
     @Test

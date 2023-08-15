@@ -33,6 +33,9 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
+            if (buildOptions.generateReport) {
+                params.add("-Dquarkus.debug.dump-build-metrics=true");
+            }
             BuildSystemRunner.BuildCommandArgs commandArgs = runner.prepareBuild(buildOptions, runMode, params);
 
             if (runMode.isDryRun()) {
@@ -40,7 +43,14 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
                 return CommandLine.ExitCode.OK;
             }
 
-            return runner.run(commandArgs);
+            int exitCode = runner.run(commandArgs);
+            if (exitCode == CommandLine.ExitCode.OK && buildOptions.generateReport) {
+                output.printText(new String[] {
+                        "\nBuild report available: " + new BuildReport(runner).generate().toPath().toAbsolutePath().toString()
+                                + "\n"
+                });
+            }
+            return exitCode;
         } catch (Exception e) {
             return output.handleCommandException(e,
                     "Unable to build project: " + e.getMessage());

@@ -118,7 +118,7 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             // Essentially what this does is to enable the native package type even if a different package type is set
             // in application properties. This is done to preserve what users expect to happen when
             // they execute "mvn package -Dnative" even if quarkus.package.type has been set in application.properties
-            if (!setPackageTypeSystemPropertyIfNativeProfileEnabled()) {
+            if (setPackageTypeSystemPropertyIfNativeProfileEnabled()) {
                 propertiesToClear.add(PACKAGE_TYPE_PROP);
             }
 

@@ -132,7 +132,9 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
         } catch (Exception any) {
             throw new MojoExecutionException("Failed to bootstrap Quarkus application", any);
         } finally {
-            System.clearProperty(PACKAGE_TYPE_PROP);
+            if (clearPackageTypeSystemProperty) {
+                System.clearProperty(PACKAGE_TYPE_PROP);
+            }
             Thread.currentThread().setContextClassLoader(originalCl);
             if (deploymentClassLoader != null) {
                 deploymentClassLoader.close();

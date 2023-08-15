@@ -29,21 +29,16 @@ public class LiquibaseRecorder {
     }
 
     public Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory> liquibaseFunction(String dataSourceName) {
-        DataSource dataSource = DataSources.fromName(dataSourceName);
-        if (dataSource instanceof UnconfiguredDataSource) {
-            return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
-                @Override
-                public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
-                    throw new UnsatisfiedResolutionException("No datasource has been configured");
-                }
-            };
-        }
         return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
             @Override
             public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
+                DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
+                if (dataSource instanceof UnconfiguredDataSource) {
+                    throw new UnsatisfiedResolutionException("No datasource has been configured");
+                }
+
                 LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);
-                LiquibaseFactory liquibaseFactory = liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
-                return liquibaseFactory;
+                return liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
             }
         };
     }

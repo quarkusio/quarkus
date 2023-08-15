@@ -113,7 +113,10 @@ public class DataSources {
      * (which makes sense because {@code DataSource} is a {@code Singleton} bean).
      * <p>
      * This method is thread-safe
+     *
+     * @deprecated This method should not be used as it can very easily lead to timing issues during bean creation
      */
+    @Deprecated
     public static AgroalDataSource fromName(String dataSourceName) {
         return Arc.container().instance(DataSources.class).get()
                 .getDataSource(dataSourceName);

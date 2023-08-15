@@ -2,6 +2,7 @@ package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,12 +28,49 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.runtime.util.HashUtil;
 
 @DisableForNative
 public class PackageIT extends MojoTestBase {
 
     private RunningInvoker running;
     private File testDir;
+
+    @Test
+    public void testConfigTracking() throws Exception {
+        testDir = initProject("projects/config-tracking");
+        running = new RunningInvoker(testDir, false);
+        var configDump = new File(new File(testDir, ".quarkus"), "quarkus-prod-config-dump");
+        var configCheck = new File(new File(testDir, "target"), "quarkus-prod-config-check");
+
+        // initial build that generates .quarkus/quarkus-prod-config-dump
+        var result = running.execute(List.of("clean package -DskipTests"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(configDump).exists();
+        assertThat(configCheck).doesNotExist();
+
+        // rebuild and compare the files
+        result = running.execute(List.of("package -DskipTests"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(configDump).exists();
+        assertThat(configCheck).exists();
+        assertThat(configDump).hasSameTextualContentAs(configCheck);
+
+        var props = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(configDump.toPath())) {
+            props.load(reader);
+        }
+        assertThat(props).containsEntry("quarkus.application.name", HashUtil.sha512("code-with-quarkus"));
+
+        assertThat(props).doesNotContainKey("quarkus.platform.group-id");
+        for (var name : props.stringPropertyNames()) {
+            assertThat(name).doesNotStartWith("quarkus.test.");
+        }
+
+        result = running.execute(List.of("package -DskipTests -Dquarkus.package.type=uber-jar"), Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+        assertThat(running.log()).contains("Option quarkus.package.type has changed since the last build from jar to uber-jar");
+    }
 
     @Test
     public void testPluginClasspathConfig() throws Exception {

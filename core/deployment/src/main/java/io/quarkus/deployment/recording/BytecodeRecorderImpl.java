@@ -51,7 +51,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.wildfly.common.Assert;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
@@ -71,7 +70,6 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.IgnoreProperty;
-import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.RelaxedValidation;
 
 /**
@@ -114,7 +112,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final boolean staticInit;
     private final ClassLoader classLoader;
 
-    private static final Map<Class<?>, ProxyFactory<?>> recordingProxyFactories = new ConcurrentHashMap<>();
     private final Map<Class<?>, ProxyFactory<?>> returnValueProxy = new ConcurrentHashMap<>();
 
     private final Map<Class<?>, Object> existingProxyClasses = new ConcurrentHashMap<>();
@@ -364,9 +361,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
         };
 
         try {
-            if (recordingProxyFactories.containsKey(theClass)) {
-                return (T) recordingProxyFactories.get(theClass).newInstance(invocationHandler);
+            ProxyFactory<T> factory = RecordingProxyFactories.get(theClass);
+
+            if (factory != null) {
+                return factory.newInstance(invocationHandler);
             }
+
             String proxyNameSuffix = "$$RecordingProxyProxy" + COUNT.incrementAndGet();
 
             ProxyConfiguration<T> proxyConfiguration = new ProxyConfiguration<T>()
@@ -374,19 +374,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     .setClassLoader(classLoader)
                     .setAnchorClass(getClass())
                     .setProxyNameSuffix(proxyNameSuffix);
-            ProxyFactory<T> factory = new ProxyFactory<T>(proxyConfiguration);
+            factory = new ProxyFactory<T>(proxyConfiguration);
             T recordingProxy = factory.newInstance(invocationHandler);
             existingProxyClasses.put(theClass, recordingProxy);
-            recordingProxyFactories.put(theClass, factory);
-
-            if (theClass.getClassLoader() instanceof QuarkusClassLoader) {
-                ((QuarkusClassLoader) theClass.getClassLoader()).addCloseTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        recordingProxyFactories.remove(theClass);
-                    }
-                });
-            }
+            RecordingProxyFactories.put(theClass, factory);
             return recordingProxy;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);

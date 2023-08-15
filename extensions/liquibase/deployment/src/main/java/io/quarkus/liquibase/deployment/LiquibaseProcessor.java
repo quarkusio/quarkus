@@ -28,6 +28,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
+import io.quarkus.agroal.runtime.DataSources;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -285,6 +286,7 @@ class LiquibaseProcessor {
                     .setRuntimeInit()
                     .unremovable()
                     .addInjectionPoint(ClassType.create(DotName.createSimple(LiquibaseFactoryProducer.class)))
+                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
                     .createWith(recorder.liquibaseFunction(dataSourceName));
 
             if (DataSourceUtil.isDefault(dataSourceName)) {

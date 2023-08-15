@@ -24,6 +24,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
+import io.quarkus.deployment.configuration.tracker.ConfigTrackingValueTransformer;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -183,6 +184,43 @@ public class CodeGenerator {
                             new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config,
                                     test));
         });
+    }
+
+    /**
+     * Initializes an application build time configuration and returns current values of properties
+     * passed in as {@code originalProperties}.
+     *
+     * @param appModel application model
+     * @param launchMode launch mode
+     * @param buildSystemProps build system (or project) properties
+     * @param deploymentClassLoader build classloader
+     * @param originalProperties properties to read from the initialized configuration
+     * @return current values of the passed in original properties
+     */
+    public static Properties readCurrentConfigValues(ApplicationModel appModel, String launchMode,
+            Properties buildSystemProps,
+            QuarkusClassLoader deploymentClassLoader, Properties originalProperties) {
+        Config config = null;
+        try {
+            config = getConfig(appModel, LaunchMode.valueOf(launchMode), buildSystemProps, deploymentClassLoader);
+        } catch (CodeGenException e) {
+            throw new RuntimeException("Failed to load application configuration", e);
+        }
+        var valueTransformer = ConfigTrackingValueTransformer.newInstance(config);
+        final Properties currentValues = new Properties(originalProperties.size());
+        for (var originalProp : originalProperties.entrySet()) {
+            var name = originalProp.getKey().toString();
+            var currentValue = config.getConfigValue(name);
+            final String current = valueTransformer.transform(name, currentValue);
+            if (!originalProp.getValue().equals(current)) {
+                log.info("Option " + name + " has changed since the last build from "
+                        + originalProp.getValue() + " to " + current);
+            }
+            if (current != null) {
+                currentValues.put(name, current);
+            }
+        }
+        return currentValues;
     }
 
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,

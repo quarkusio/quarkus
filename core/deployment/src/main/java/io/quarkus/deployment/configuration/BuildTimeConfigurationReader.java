@@ -47,6 +47,7 @@ import io.quarkus.deployment.configuration.matching.Container;
 import io.quarkus.deployment.configuration.matching.FieldContainer;
 import io.quarkus.deployment.configuration.matching.MapContainer;
 import io.quarkus.deployment.configuration.matching.PatternMapBuilder;
+import io.quarkus.deployment.configuration.tracker.ConfigTrackingInterceptor;
 import io.quarkus.deployment.configuration.type.ArrayOf;
 import io.quarkus.deployment.configuration.type.CollectionOf;
 import io.quarkus.deployment.configuration.type.ConverterType;
@@ -121,6 +122,8 @@ public final class BuildTimeConfigurationReader {
 
     final Set<String> deprecatedProperties;
     final Set<String> deprecatedRuntimeProperties;
+
+    final ConfigTrackingInterceptor buildConfigTracker;
 
     /**
      * Initializes a new instance with located configuration root classes on the classpath
@@ -233,6 +236,8 @@ public final class BuildTimeConfigurationReader {
 
         deprecatedProperties = getDeprecatedProperties(allRoots);
         deprecatedRuntimeProperties = getDeprecatedProperties(runTimeRoots);
+
+        buildConfigTracker = new ConfigTrackingInterceptor();
     }
 
     private static void processClass(ClassDefinition.Builder builder, Class<?> clazz,
@@ -399,11 +404,15 @@ public final class BuildTimeConfigurationReader {
         for (ConfigClassWithPrefix mapping : getBuildTimeVisibleMappings()) {
             builder.withMapping(mapping.getKlass(), mapping.getPrefix());
         }
-        return builder.build();
+
+        builder.withInterceptors(buildConfigTracker);
+        var config = builder.build();
+        buildConfigTracker.configure(config);
+        return config;
     }
 
     public ReadResult readConfiguration(final SmallRyeConfig config) {
-        return SecretKeys.doUnlocked(() -> new ReadOperation(config).run());
+        return SecretKeys.doUnlocked(() -> new ReadOperation(config, buildConfigTracker).run());
     }
 
     private Set<String> getDeprecatedProperties(Iterable<RootDefinition> rootDefinitions) {
@@ -459,6 +468,7 @@ public final class BuildTimeConfigurationReader {
 
     final class ReadOperation {
         final SmallRyeConfig config;
+        final ConfigTrackingInterceptor buildConfigTracker;
         final Set<String> processedNames = new HashSet<>();
 
         final Map<Class<?>, Object> objectsByClass = new HashMap<>();
@@ -468,8 +478,9 @@ public final class BuildTimeConfigurationReader {
 
         final Map<ConverterType, Converter<?>> convByType = new HashMap<>();
 
-        ReadOperation(final SmallRyeConfig config) {
+        ReadOperation(final SmallRyeConfig config, ConfigTrackingInterceptor buildConfigTracker) {
             this.config = config;
+            this.buildConfigTracker = buildConfigTracker;
         }
 
         ReadResult run() {
@@ -662,6 +673,7 @@ public final class BuildTimeConfigurationReader {
                     .setRunTimeMappings(runTimeMappings)
                     .setUnknownBuildProperties(unknownBuildProperties)
                     .setDeprecatedRuntimeProperties(deprecatedRuntimeProperties)
+                    .setBuildConfigTracker(buildConfigTracker)
                     .createReadResult();
         }
 
@@ -1129,6 +1141,7 @@ public final class BuildTimeConfigurationReader {
 
         final Set<String> unknownBuildProperties;
         final Set<String> deprecatedRuntimeProperties;
+        final ConfigTrackingInterceptor.ReadOptionsProvider readOptionsProvider;
 
         public ReadResult(final Builder builder) {
             this.objectsByClass = builder.getObjectsByClass();
@@ -1151,6 +1164,8 @@ public final class BuildTimeConfigurationReader {
 
             this.unknownBuildProperties = builder.getUnknownBuildProperties();
             this.deprecatedRuntimeProperties = builder.deprecatedRuntimeProperties;
+            this.readOptionsProvider = builder.buildConfigTracker == null ? null
+                    : builder.buildConfigTracker.getReadOptionsProvider();
         }
 
         private static Map<Class<?>, RootDefinition> rootsToMap(Builder builder) {
@@ -1243,6 +1258,10 @@ public final class BuildTimeConfigurationReader {
             return obj;
         }
 
+        public ConfigTrackingInterceptor.ReadOptionsProvider getReadOptionsProvider() {
+            return readOptionsProvider;
+        }
+
         static class Builder {
             private Map<Class<?>, Object> objectsByClass;
             private Map<String, String> allBuildTimeValues;
@@ -1257,6 +1276,7 @@ public final class BuildTimeConfigurationReader {
             private List<ConfigClassWithPrefix> runTimeMappings;
             private Set<String> unknownBuildProperties;
             private Set<String> deprecatedRuntimeProperties;
+            private ConfigTrackingInterceptor buildConfigTracker;
 
             Map<Class<?>, Object> getObjectsByClass() {
                 return objectsByClass;
@@ -1368,6 +1388,11 @@ public final class BuildTimeConfigurationReader {
 
             Builder setDeprecatedRuntimeProperties(Set<String> deprecatedRuntimeProperties) {
                 this.deprecatedRuntimeProperties = deprecatedRuntimeProperties;
+                return this;
+            }
+
+            Builder setBuildConfigTracker(ConfigTrackingInterceptor buildConfigTracker) {
+                this.buildConfigTracker = buildConfigTracker;
                 return this;
             }
 

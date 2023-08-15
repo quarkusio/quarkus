@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.devconsole;
+package io.quarkus.arc.deployment.devui;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,15 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.ArcConfig;
-import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.CompletedApplicationClassPredicateBuildItem;
-import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.arc.deployment.devconsole.DependencyGraph.Link;
-import io.quarkus.arc.deployment.devui.ArcBeanInfoBuildItem;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BeanInfo;
@@ -28,53 +21,16 @@ import io.quarkus.arc.processor.DecoratorInfo;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InterceptorInfo;
 import io.quarkus.arc.processor.ObserverInfo;
-import io.quarkus.arc.runtime.ArcContainerSupplier;
-import io.quarkus.arc.runtime.ArcRecorder;
-import io.quarkus.arc.runtime.BeanLookupSupplier;
-import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
-import io.quarkus.arc.runtime.devmode.EventsMonitor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleRuntimeTemplateInfoBuildItem;
-import io.quarkus.devconsole.spi.DevConsoleTemplateInfoBuildItem;
-import io.vertx.core.Handler;
-import io.vertx.ext.web.RoutingContext;
 
-public class ArcDevConsoleProcessor {
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    @Record(ExecutionTime.STATIC_INIT)
-    public DevConsoleRuntimeTemplateInfoBuildItem exposeArcContainer(ArcRecorder recorder,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        return new DevConsoleRuntimeTemplateInfoBuildItem("arcContainer",
-                new ArcContainerSupplier(), this.getClass(), curateOutcomeBuildItem);
-    }
-
-    @BuildStep(onlyIf = IsDevelopment.class)
-    void monitor(ArcConfig config, BuildProducer<DevConsoleRuntimeTemplateInfoBuildItem> runtimeInfos,
-            BuildProducer<AdditionalBeanBuildItem> beans, BuildProducer<AnnotationsTransformerBuildItem> annotationTransformers,
-            CustomScopeAnnotationsBuildItem customScopes,
-            List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations, CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        if (!config.devMode.monitoringEnabled) {
-            return;
-        }
-        runtimeInfos.produce(
-                new DevConsoleRuntimeTemplateInfoBuildItem("eventsMonitor",
-                        new BeanLookupSupplier(EventsMonitor.class), this.getClass(), curateOutcomeBuildItem));
-        runtimeInfos.produce(new DevConsoleRuntimeTemplateInfoBuildItem("invocationsMonitor",
-                new BeanLookupSupplier(InvocationsMonitor.class), this.getClass(), curateOutcomeBuildItem));
-    }
+public class ArcDevModeApiProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public void collectBeanInfo(ValidationPhaseBuildItem validationPhaseBuildItem,
-            CompletedApplicationClassPredicateBuildItem predicate, BuildProducer<DevConsoleTemplateInfoBuildItem> templates,
-            BuildProducer<DevConsoleRouteBuildItem> routes,
+            CompletedApplicationClassPredicateBuildItem predicate,
             BuildProducer<ArcBeanInfoBuildItem> arcBeanInfoProducer) {
         BeanDeploymentValidator.ValidationContext validationContext = validationPhaseBuildItem.getContext();
         DevBeanInfos beanInfos = new DevBeanInfos();
@@ -137,59 +93,12 @@ public class ArcDevConsoleProcessor {
                             .collect(Collectors.toList()));
         }
         // Set the global that could be used at runtime when generating the json payload for /q/arc/beans
-        DevConsoleManager.setGlobal(BEAN_DEPENDENCIES, beanDependenciesMap);
+        DevConsoleManager.setGlobal(DevBeanInfos.BEAN_DEPENDENCIES, beanDependenciesMap);
 
         beanInfos.sort();
-        templates.produce(new DevConsoleTemplateInfoBuildItem("devBeanInfos", beanInfos));
 
         arcBeanInfoProducer.produce(new ArcBeanInfoBuildItem(beanInfos));
-
-        routes.produce(new DevConsoleRouteBuildItem("toggleBeanDescription", "POST", new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext context) {
-                Object val = DevConsoleManager.getGlobal(BEAN_DESCRIPTION);
-                if (val != null && val.equals("simple")) {
-                    val = "full";
-                } else {
-                    val = "simple";
-                }
-                DevConsoleManager.setGlobal(BEAN_DESCRIPTION, val);
-                context.response()
-                        .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
-                        .setStatusCode(302).end();
-            }
-        }));
-
-        routes.produce(new DevConsoleRouteBuildItem("setMaxDependencyLevel", "POST", new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext context) {
-                context.request().setExpectMultipart(true);
-                context.request().endHandler(new Handler<Void>() {
-                    @Override
-                    public void handle(Void ignore) {
-                        Integer val = null;
-                        try {
-                            val = Integer.parseInt(context.request().getFormAttribute("maxDepLevel"));
-                        } catch (NumberFormatException ignored) {
-                        }
-                        if (val != null) {
-                            DevConsoleManager.setGlobal(MAX_DEPENDENCY_LEVEL, val);
-                        }
-                        context.response()
-                                .putHeader("location", "beanDependencyGraph?beanId=" + context.request().getParam("beanId"))
-                                .setStatusCode(302).end();
-                    }
-                });
-
-            }
-        }));
     }
-
-    static final String BEAN_DESCRIPTION = "io.quarkus.arc.beanDescription";
-    static final String MAX_DEPENDENCY_LEVEL = "io.quarkus.arc.maxDependencyLevel";
-    public static final String BEAN_DEPENDENCIES = "io.quarkus.arc.beanDependencies";
-
-    static final int DEFAULT_MAX_DEPENDENCY_LEVEL = 10;
 
     DependencyGraph buildDependencyGraph(BeanInfo bean, ValidationContext validationContext, BeanResolver resolver,
             DevBeanInfos devBeanInfos, List<InjectionPointInfo> allInjectionPoints,
@@ -203,7 +112,7 @@ public class ArcDevConsoleProcessor {
         return new DependencyGraph(nodes, links);
     }
 
-    void addNodesDependencies(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
+    private void addNodesDependencies(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
             DevBeanInfos devBeanInfos) {
         if (nodes.add(devBeanInfos.getBean(bean.getIdentifier()))) {
             if (bean.isProducerField() || bean.isProducerMethod()) {
@@ -221,7 +130,7 @@ public class ArcDevConsoleProcessor {
         }
     }
 
-    void addNodesDependents(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
+    private void addNodesDependents(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
             List<InjectionPointInfo> injectionPoints, Map<BeanInfo, List<BeanInfo>> declaringToProducers, BeanResolver resolver,
             DevBeanInfos devBeanInfos, Map<BeanInfo, List<InjectionPointInfo>> directDependents) {
         List<InjectionPointInfo> direct = directDependents.get(bean);

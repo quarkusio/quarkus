@@ -3,10 +3,6 @@ package io.quarkus.arc.deployment.devui;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.arc.deployment.devconsole.DevBeanInfo;
-import io.quarkus.arc.deployment.devconsole.DevBeanInfos;
-import io.quarkus.arc.deployment.devconsole.DevInterceptorInfo;
-
 public class DevBeanWithInterceptorInfo extends DevBeanInfo {
 
     private final List<DevInterceptorInfo> interceptorInfos = new ArrayList<>();

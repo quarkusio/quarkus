@@ -165,11 +165,13 @@ public class ClasspathResources {
     private String assertUniqueDirectories() {
         final String testType = "unique-directories";
         try {
-            Enumeration<URL> resources = this.getClass().getClassLoader().getResources("META-INF/kie.conf");
+            Enumeration<URL> resources = this.getClass().getClassLoader().getResources("META-INF/quarkus-extension.yaml");
             List<URL> resourcesList = Collections.list(resources);
-            // 'META-INF/kie.conf' should be present in 'kie-internal', 'drools-core', 'drools-compiler' and 'drools-model-compiler'
-            if (resourcesList.size() != 4) {
-                return errorResult(testType, "wrong number of directory urls");
+            // 'META-INF/quarkus-extension.yaml' should be present in all extensions
+            int expected = 12;
+            if (resourcesList.size() != expected) {
+                return errorResult(testType,
+                        "wrong number of directory urls, expected " + expected + " but got " + resourcesList.size());
             }
             return SUCCESS;
         } catch (Exception e) {

@@ -91,6 +91,7 @@
                 <version>${maven-invoker-plugin.version}</version>
                 <!-- https://maven.apache.org/plugins/maven-invoker-plugin/usage.html -->
                 <configuration>
+                    <skipInvocation>${skipTests}</skipInvocation>
                     <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                     <settingsFile>src/it/settings.xml</settingsFile>
                     <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>

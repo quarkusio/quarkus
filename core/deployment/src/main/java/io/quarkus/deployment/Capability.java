@@ -39,6 +39,8 @@ public interface Capability {
 
     String HAL = QUARKUS_PREFIX + ".hal";
 
+    String REACTIVE_ROUTES = QUARKUS_PREFIX + ".reactive-routes";
+
     String REST = QUARKUS_PREFIX + ".rest";
     String REST_CLIENT = REST + ".client";
     String REST_CLIENT_REACTIVE = REST_CLIENT + ".reactive";

@@ -1,4 +1,4 @@
-package io.quarkus.runtime.naming;
+package io.quarkus.bootstrap.naming;
 
 import java.util.Hashtable;
 
@@ -22,8 +22,8 @@ import javax.naming.ldap.LdapContext;
 
 /**
  * Initial context that won't allow you to actually do anything.
- *
- * As most Quarkus applications don't let you
+ * <p>
+ * Used by Quarkus to disable JNDI.
  */
 public class DisabledInitialContext extends InitialLdapContext {
 

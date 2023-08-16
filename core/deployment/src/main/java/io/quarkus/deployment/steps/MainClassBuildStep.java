@@ -28,6 +28,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
+import io.quarkus.bootstrap.naming.DisabledInitialContextManager;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
@@ -83,7 +84,6 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 import io.quarkus.runtime.appcds.AppCDSUtil;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.ProfileManager;
-import io.quarkus.runtime.naming.DisabledInitialContextManager;
 import io.quarkus.runtime.util.StepTiming;
 
 public class MainClassBuildStep {

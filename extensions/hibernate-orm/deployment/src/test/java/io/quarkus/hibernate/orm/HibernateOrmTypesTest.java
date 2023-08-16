@@ -8,6 +8,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -24,17 +25,22 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.deployment.index.IndexWrapper;
 import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.index.PersistentClassIndex;
+import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.ClassNames;
-import io.quarkus.hibernate.orm.deployment.HibernateOrmAnnotations;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmTypes;
 
 /**
- * Test that hardcoded lists of Hibernate ORM annotations stay up-to-date.
+ * Test that hardcoded lists of Hibernate ORM types stay up-to-date.
  */
-public class HibernateOrmAnnotationsTest {
+public class HibernateOrmTypesTest {
 
     private static final DotName RETENTION = DotName.createSimple(Retention.class.getName());
     private static final DotName TARGET = DotName.createSimple(Target.class.getName());
@@ -53,7 +59,7 @@ public class HibernateOrmAnnotationsTest {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
         jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("jakarta.persistence.metamodel."));
 
-        assertThat(HibernateOrmAnnotations.JPA_MAPPING_ANNOTATIONS)
+        assertThat(HibernateOrmTypes.JPA_MAPPING_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 
@@ -65,7 +71,7 @@ public class HibernateOrmAnnotationsTest {
                 .filter(name -> listenerAnnotationNamePattern.matcher(name.toString()).matches())
                 .collect(Collectors.toSet());
 
-        assertThat(HibernateOrmAnnotations.JPA_LISTENER_ANNOTATIONS)
+        assertThat(HibernateOrmTypes.JPA_LISTENER_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 
@@ -76,7 +82,7 @@ public class HibernateOrmAnnotationsTest {
         hibernateMappingAnnotations.removeIf(name -> name.toString().contains(".spi."));
         ignoreInternalAnnotations(hibernateMappingAnnotations);
 
-        assertThat(HibernateOrmAnnotations.HIBERNATE_MAPPING_ANNOTATIONS)
+        assertThat(HibernateOrmTypes.HIBERNATE_MAPPING_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(hibernateMappingAnnotations);
     }
 
@@ -93,7 +99,7 @@ public class HibernateOrmAnnotationsTest {
         packageLevelHibernateAnnotations.removeIf(name -> name.toString().contains(".internal."));
         ignoreInternalAnnotations(packageLevelHibernateAnnotations);
 
-        assertThat(HibernateOrmAnnotations.PACKAGE_ANNOTATIONS)
+        assertThat(HibernateOrmTypes.PACKAGE_ANNOTATIONS)
                 .containsExactlyInAnyOrderElementsOf(packageLevelHibernateAnnotations);
     }
 
@@ -102,8 +108,31 @@ public class HibernateOrmAnnotationsTest {
         Set<DotName> injectServiceAnnotatedClasses = findClassesWithMethodsAnnotatedWith(hibernateIndex,
                 ClassNames.INJECT_SERVICE);
 
-        assertThat(HibernateOrmAnnotations.ANNOTATED_WITH_INJECT_SERVICE)
+        assertThat(HibernateOrmTypes.ANNOTATED_WITH_INJECT_SERVICE)
                 .containsExactlyInAnyOrderElementsOf(injectServiceAnnotatedClasses);
+    }
+
+    @Test
+    public void testNoMissingJdbcJavaTypeClass() {
+        Set<DotName> jdbcJavaTypeNames = new TreeSet<>();
+        DotName basicJavaTypeName = DotName.createSimple("org.hibernate.type.descriptor.java.BasicJavaType");
+        IndexView hibernateAndJdkIndex = new IndexWrapper(hibernateIndex, Thread.currentThread().getContextClassLoader(),
+                new PersistentClassIndex());
+
+        for (ClassInfo basicJavaTypeImplInfo : hibernateIndex.getAllKnownImplementors(basicJavaTypeName)) {
+            if (Modifier.isAbstract(basicJavaTypeImplInfo.flags())) {
+                continue;
+            }
+            List<Type> typeParams = JandexUtil.resolveTypeParameters(basicJavaTypeImplInfo.name(), basicJavaTypeName,
+                    hibernateAndJdkIndex);
+            Type jdbcJavaType = typeParams.get(0);
+            if (jdbcJavaType.kind() == Type.Kind.CLASS) {
+                jdbcJavaTypeNames.add(jdbcJavaType.name());
+            }
+        }
+
+        assertThat(HibernateOrmTypes.JDBC_JAVA_TYPES)
+                .containsExactlyInAnyOrderElementsOf(jdbcJavaTypeNames);
     }
 
     private Set<DotName> findRuntimeAnnotations(Index index) {

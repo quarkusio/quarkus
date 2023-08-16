@@ -9,7 +9,9 @@ import java.util.UUID;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
+import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,9 +33,11 @@ public class AutoScopeBuildItemTest {
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(AutoAddScopeBuildItem.builder().match((clazz, annotations, index) -> {
-                            return clazz.name().toString().equals(SimpleBean.class.getName());
-                        }).defaultScope(BuiltinScope.DEPENDENT)
+                        context.produce(AutoAddScopeBuildItem.builder()
+                                .match((clazz, annotations, index) -> {
+                                    return clazz.name().toString().equals(SimpleBean.class.getName());
+                                })
+                                .defaultScope(BuiltinScope.DEPENDENT)
                                 .scopeAlreadyAdded((scope, reason) -> {
                                     // We can't pass the state directly to AutoScopeBuildItemTest because it's loaded by a different classloader
                                     Logger.getLogger("AutoScopeBuildItemTest").info(scope + ":" + reason);
@@ -43,17 +47,30 @@ public class AutoScopeBuildItemTest {
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(AutoAddScopeBuildItem.builder().match((clazz, annotations, index) -> {
-                            return clazz.name().toString().equals(SimpleBean.class.getName());
-                        }).defaultScope(BuiltinScope.SINGLETON).priority(10).reason("Foo!").build());
+                        context.produce(AutoAddScopeBuildItem.builder()
+                                .match((clazz, annotations, index) -> {
+                                    return clazz.name().toString().equals(SimpleBean.class.getName());
+                                })
+                                .anyMethodMatches(m -> m.hasAnnotation(PostConstruct.class))
+                                .isAnnotatedWith(DotName.createSimple(Named.class))
+                                .defaultScope(BuiltinScope.SINGLETON)
+                                .priority(10)
+                                .reason("Foo!")
+                                .build());
                     }
                 }).produces(AutoAddScopeBuildItem.class).build();
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(AutoAddScopeBuildItem.builder().match((clazz, annotations, index) -> {
-                            return clazz.name().toString().equals(NotABean.class.getName());
-                        }).defaultScope(BuiltinScope.SINGLETON).unremovable().build());
+                        context.produce(AutoAddScopeBuildItem.builder()
+                                .match((clazz, annotations, index) -> {
+                                    return clazz.name().toString().equals(NotABean.class.getName());
+                                })
+                                .containsAnnotations(DotName.createSimple(PostConstruct.class))
+                                .and((clazz, annotations, index) -> annotations.isEmpty())
+                                .defaultScope(BuiltinScope.SINGLETON)
+                                .unremovable()
+                                .build());
                     }
                 }).produces(AutoAddScopeBuildItem.class).build();
             }).setLogRecordPredicate(log -> "AutoScopeBuildItemTest".equals(log.getLoggerName()))
@@ -76,6 +93,7 @@ public class AutoScopeBuildItemTest {
         assertEquals(notABean1.ping(), Arc.container().instance(NotABean.class).get().ping());
     }
 
+    @Named
     static class SimpleBean {
 
         private String id;

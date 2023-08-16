@@ -426,11 +426,6 @@ public class GrpcServerRecorder {
             definitions.add(service.definition);
         }
 
-        ServerServiceDefinition reflectionService = new ReflectionServiceV1(definitions).bindService();
-
-        for (ServerMethodDefinition<?, ?> method : reflectionService.getMethods()) {
-            methods.put(method.getMethodDescriptor().getFullMethodName(), method);
-        }
         List<ServerServiceDefinition> servicesWithInterceptors = new ArrayList<>();
         CompressionInterceptor compressionInterceptor = prepareCompressionInterceptor(configuration);
         for (GrpcServiceDefinition service : services) {
@@ -438,6 +433,10 @@ public class GrpcServerRecorder {
                     serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService,
                             compressionInterceptor, service, true));
         }
+
+        // add after actual services, so we don't inspect them for interceptors, etc
+        servicesWithInterceptors.add(new ReflectionServiceV1(definitions).bindService());
+        servicesWithInterceptors.add(new ReflectionServiceV1alpha(definitions).bindService());
 
         for (ServerServiceDefinition serviceWithInterceptors : servicesWithInterceptors) {
             for (ServerMethodDefinition<?, ?> method : serviceWithInterceptors.getMethods()) {

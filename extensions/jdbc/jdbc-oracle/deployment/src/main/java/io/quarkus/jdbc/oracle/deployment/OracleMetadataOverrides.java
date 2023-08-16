@@ -4,6 +4,7 @@ import java.util.Collections;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
@@ -11,6 +12,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 /**
@@ -34,6 +36,7 @@ import io.quarkus.maven.dependency.ArtifactKey;
  * require it, so this would facilitate the option to revert to the older version in
  * case of problems.
  */
+@BuildSteps(onlyIf = NativeOrNativeSourcesBuild.class)
 public final class OracleMetadataOverrides {
 
     static final String DRIVER_JAR_MATCH_REGEX = "com\\.oracle\\.database\\.jdbc";
@@ -145,12 +148,6 @@ public final class OracleMetadataOverrides {
     @BuildStep
     NativeImageAllowIncompleteClasspathBuildItem naughtyDriver() {
         return new NativeImageAllowIncompleteClasspathBuildItem("quarkus-jdbc-oracle");
-    }
-
-    @BuildStep
-    RemovedResourceBuildItem overrideSubstitutions() {
-        return new RemovedResourceBuildItem(ArtifactKey.fromString("com.oracle.database.jdbc:ojdbc11"),
-                Collections.singleton("oracle/nativeimage/Target_java_io_ObjectStreamClass.class"));
     }
 
     @BuildStep

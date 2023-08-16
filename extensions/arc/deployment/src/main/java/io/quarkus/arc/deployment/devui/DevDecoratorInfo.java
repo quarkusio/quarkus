@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.devconsole;
+package io.quarkus.arc.deployment.devui;
 
 import java.util.HashSet;
 import java.util.Set;

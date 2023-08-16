@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.devconsole;
+package io.quarkus.arc.deployment.devui;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,12 +63,12 @@ public class DevBeanInfos {
     }
 
     public String getBeanDescription() {
-        return DevConsoleManager.getGlobal(ArcDevConsoleProcessor.BEAN_DESCRIPTION);
+        return DevConsoleManager.getGlobal(BEAN_DESCRIPTION);
     }
 
     public int getMaxDependencyLevel() {
-        Integer val = DevConsoleManager.getGlobal(ArcDevConsoleProcessor.MAX_DEPENDENCY_LEVEL);
-        return val != null ? val : ArcDevConsoleProcessor.DEFAULT_MAX_DEPENDENCY_LEVEL;
+        Integer val = DevConsoleManager.getGlobal(MAX_DEPENDENCY_LEVEL);
+        return val != null ? val : DEFAULT_MAX_DEPENDENCY_LEVEL;
     }
 
     public DevBeanInfo getBean(String id) {
@@ -90,9 +90,9 @@ public class DevBeanInfos {
     }
 
     public DependencyGraph getDependencyGraph(String beanId) {
-        Integer maxLevel = DevConsoleManager.getGlobal(ArcDevConsoleProcessor.MAX_DEPENDENCY_LEVEL);
+        Integer maxLevel = DevConsoleManager.getGlobal(MAX_DEPENDENCY_LEVEL);
         if (maxLevel == null) {
-            maxLevel = ArcDevConsoleProcessor.DEFAULT_MAX_DEPENDENCY_LEVEL;
+            maxLevel = DEFAULT_MAX_DEPENDENCY_LEVEL;
         }
         DependencyGraph graph = dependencyGraphs.get(beanId);
         return graph.maxLevel <= maxLevel ? graph : graph.forLevel(maxLevel);
@@ -143,4 +143,9 @@ public class DevBeanInfos {
         Collections.sort(removedDecorators);
         Collections.sort(removedInterceptors);
     }
+
+    static final String BEAN_DESCRIPTION = "io.quarkus.arc.beanDescription";
+    static final String MAX_DEPENDENCY_LEVEL = "io.quarkus.arc.maxDependencyLevel";
+    public static final String BEAN_DEPENDENCIES = "io.quarkus.arc.beanDependencies";
+    static final int DEFAULT_MAX_DEPENDENCY_LEVEL = 10;
 }

@@ -1,4 +1,4 @@
-package io.quarkus.arc.deployment.devconsole;
+package io.quarkus.arc.deployment.devui;
 
 public enum DevBeanKind {
     METHOD,

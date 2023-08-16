@@ -1,6 +1,5 @@
 package io.quarkus.arc.deployment.devui;
 
-import io.quarkus.arc.deployment.devconsole.DevBeanInfos;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 public final class ArcBeanInfoBuildItem extends SimpleBuildItem {

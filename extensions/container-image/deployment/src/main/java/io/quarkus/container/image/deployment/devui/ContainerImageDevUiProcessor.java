@@ -1,5 +1,6 @@
 package io.quarkus.container.image.deployment.devui;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -18,15 +19,14 @@ import io.quarkus.dev.console.TempSystemProperties;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.vertx.core.json.JsonArray;
 
 public class ContainerImageDevUiProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     CardPageBuildItem create(List<AvailableContainerImageExtensionBuildItem> extensions) {
         // Get the list of builders
-        JsonArray array = extensions.stream().map(AvailableContainerImageExtensionBuildItem::getName).sorted()
-                .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
+        List<String> array = extensions.stream().map(AvailableContainerImageExtensionBuildItem::getName).sorted()
+                .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
 
         CardPageBuildItem card = new CardPageBuildItem();
         card.addBuildTimeData("builderTypes", array);

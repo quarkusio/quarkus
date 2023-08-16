@@ -12,7 +12,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.arc.deployment.devconsole.Name;
+import io.quarkus.arc.deployment.devui.Name;
 
 public class NameTest {
 

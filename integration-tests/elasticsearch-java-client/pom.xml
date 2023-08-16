@@ -198,7 +198,7 @@
                                                 <method>GET</method>
                                                 <status>200</status>
                                             </http>
-                                            <time>20000</time>
+                                            <time>30000</time>
                                         </wait>
                                     </run>
                                 </image>

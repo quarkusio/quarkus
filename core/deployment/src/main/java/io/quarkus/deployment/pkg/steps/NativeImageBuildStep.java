@@ -792,7 +792,8 @@ public class NativeImageBuildStep {
                         nativeImageArgs.add("-H:ImageBuildStatisticsFile=" + nativeImageName + "-timing-stats.json");
                     }
                     // For getting the build output stats as a JSON file
-                    nativeImageArgs.add("-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
+                    addExperimentalVMOption(nativeImageArgs,
+                            "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }
 
                 /*
@@ -802,7 +803,7 @@ public class NativeImageBuildStep {
                  */
                 handleAdditionalProperties(nativeImageArgs);
 
-                nativeImageArgs.add("-H:+AllowFoldMethods");
+                addExperimentalVMOption(nativeImageArgs, "-H:+AllowFoldMethods");
 
                 if (nativeConfig.headless()) {
                     nativeImageArgs.add("-J-Djava.awt.headless=true");
@@ -824,7 +825,7 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--report-unsupported-elements-at-runtime");
                 }
                 if (nativeConfig.reportExceptionStackTraces()) {
-                    nativeImageArgs.add("-H:+ReportExceptionStackTraces");
+                    addExperimentalVMOption(nativeImageArgs, "-H:+ReportExceptionStackTraces");
                 }
                 if (nativeConfig.debug().enabled()) {
                     nativeImageArgs.add("-g");
@@ -897,11 +898,11 @@ public class NativeImageBuildStep {
                     }
                 }
                 if (nativeConfig.autoServiceLoaderRegistration()) {
-                    nativeImageArgs.add("-H:+UseServiceLoaderFeature");
+                    addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");
                     //When enabling, at least print what exactly is being added:
                     nativeImageArgs.add("-H:+TraceServiceLoaderFeature");
                 } else {
-                    nativeImageArgs.add("-H:-UseServiceLoaderFeature");
+                    addExperimentalVMOption(nativeImageArgs, "-H:-UseServiceLoaderFeature");
                 }
                 // This option has no effect on GraalVM 23.1+
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) < 0) {
@@ -1010,6 +1011,16 @@ public class NativeImageBuildStep {
                             command.add(trimmedBuildArg);
                         }
                     }
+                }
+            }
+
+            private void addExperimentalVMOption(List<String> nativeImageArgs, String option) {
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
+                    nativeImageArgs.add("-H:+UnlockExperimentalVMOptions");
+                }
+                nativeImageArgs.add(option);
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
+                    nativeImageArgs.add("-H:-UnlockExperimentalVMOptions");
                 }
             }
         }

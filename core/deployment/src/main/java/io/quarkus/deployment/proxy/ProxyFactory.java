@@ -79,6 +79,10 @@ public class ProxyFactory<T> {
         }
     }
 
+    public ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
     private boolean findConstructor(Class<?> clazz, boolean allowPackagePrivate, boolean allowInject) {
         Constructor<?>[] ctors = clazz.getDeclaredConstructors();
         if (allowInject) {

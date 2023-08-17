@@ -321,6 +321,8 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         RuntimeUpdatesProcessor.INSTANCE.close();
                     } catch (IOException e) {
                         log.error("Failed to close compiler", e);
+                    } finally {
+                        RuntimeUpdatesProcessor.INSTANCE = null;
                     }
                 }
                 for (HotReplacementSetup i : hotReplacementSetups) {

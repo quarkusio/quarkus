@@ -229,7 +229,7 @@ public class VertxHttpRecorder {
         }
         rootHandler = null;
         hotReplacementHandler = null;
-
+        hotReplacementContext = null;
     }
 
     public static void startServerAfterFailedStart() {

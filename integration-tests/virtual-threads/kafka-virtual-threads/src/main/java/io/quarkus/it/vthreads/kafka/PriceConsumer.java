@@ -1,6 +1,5 @@
 package io.quarkus.it.vthreads.kafka;
 
-import static io.quarkus.it.vthreads.kafka.AssertHelper.assertThatItDoesNotRunOnVirtualThread;
 import static io.quarkus.it.vthreads.kafka.AssertHelper.assertThatItRunsOnADuplicatedContext;
 import static io.quarkus.it.vthreads.kafka.AssertHelper.assertThatItRunsOnVirtualThread;
 
@@ -34,7 +33,8 @@ public class PriceConsumer {
         }
         return msg.ack().thenAccept(x -> {
             assertThatItRunsOnADuplicatedContext();
-            assertThatItDoesNotRunOnVirtualThread();
+            // While the ack always runs on event loop thread
+            // the post-ack may run on the processing virtual-thread which executed the method.
         });
     }
 

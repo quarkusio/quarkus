@@ -21,15 +21,13 @@ In this guide, we are going to develop two applications communicating with Pulsa
 The first application sends a _quote request_ to Pulsar and consumes Pulsar messages from the _quote_ topic.
 The second application receives the _quote request_ and sends a _quote_ back.
 
-// TODO pulsar
-image::kafka-qs-architecture.png[alt=Architecture, align=center]
+image::pulsar-qs-architecture.png[alt=Architecture, align=center]
 
 The first application, the _producer_, will let the user request some quotes over an HTTP endpoint.
 For each quote request a random identifier is generated and returned to the user, to mark the quote request as _pending_.
 At the same time, the generated request id is sent over a Pulsar topic `quote-requests`.
 
-// TODO pulsar
-image::kafka-qs-app-screenshot.png[alt=Producer App UI, align=center]
+image::pulsar-qs-app-screenshot.png[alt=Producer App UI, align=center]
 
 The second application, the _processor_, will read from the `quote-requests` topic, put a random price to the quote, and send it to a Pulsar topic named `quotes`.
 
@@ -314,7 +312,6 @@ It will also generate a deserializer for the `Quote` class.
 In this example we used JSON Schema with Pulsar messages.
 For more options on Pulsar Schemas, see xref:pulsar.adoc#pulsar-schema[Pulsar Reference Guide - Schema].
 
-// TODO write about schema
 ====
 
 == The HTML page
@@ -398,7 +395,6 @@ Open `http://localhost:8080/quotes.html` in your browser and request some quotes
 == Running in JVM or Native mode
 
 When not running in dev or test mode, you will need to start your Pulsar broker.
-// TODO
 You can follow the instructions from the https://pulsar.apache.org/docs/3.0.x/getting-started-docker/[Run a standalone Pulsar cluster in Docker] or create a `docker-compose.yaml` file with the following content:
 
 [source, yaml]

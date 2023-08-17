@@ -17,7 +17,9 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -322,6 +324,8 @@ public class TestSupport implements TestController {
         for (var runner : moduleRunners) {
             runner.abort();
         }
+        TestWatchedFiles.setWatchedFilesListener(
+                (BiConsumer<Map<String, Boolean>, List<Map.Entry<Predicate<String>, Boolean>>>) null);
     }
 
     public void runTests() {

@@ -334,6 +334,10 @@ The following table shows how Spring DI annotations can be converted to CDI and 
 |Doesn't have a one-to-one mapping to a CDI annotation.
 |===
 
+== Spring DI Configuration Reference
+
+include::{generated-dir}/config/quarkus-spring-di.adoc[leveloffset=+1, opts=optional]
+
 == More Spring guides
 
 Quarkus has more Spring compatibility features. See the following guides for more details:

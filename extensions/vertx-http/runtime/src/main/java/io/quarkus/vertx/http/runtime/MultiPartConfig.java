@@ -19,6 +19,5 @@ public interface MultiPartConfig {
      *
      * For now, this setting only works when using RESTEasy Reactive.
      */
-    @WithConverter(TrimmedStringConverter.class)
-    Optional<List<String>> fileContentTypes();
+    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> fileContentTypes();
 }

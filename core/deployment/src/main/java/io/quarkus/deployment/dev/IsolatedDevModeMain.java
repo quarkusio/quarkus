@@ -43,6 +43,7 @@ import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.appstate.ApplicationStartException;
+import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DeploymentFailedStartHandler;
 import io.quarkus.dev.spi.DevModeType;
@@ -79,7 +80,6 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
 
             //ok, we have resolved all the deps
             try {
-                StartupAction start = augmentAction.createInitialRuntimeApplication();
                 //this is a bit yuck, but we need replace the default
                 //exit handler in the runtime class loader
                 //TODO: look at implementing a common core classloader, that removes the need for this sort of crappy hack
@@ -110,23 +110,13 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                             }
                         });
 
+                StartupAction start = augmentAction.createInitialRuntimeApplication();
+
                 runner = start.runMainClass(context.getArgs());
                 RuntimeUpdatesProcessor.INSTANCE.setConfiguredInstrumentationEnabled(
                         runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false));
                 firstStartCompleted = true;
-
-                for (DevModeListener listener : ServiceLoader.load(DevModeListener.class)) {
-                    listeners.add(listener);
-                }
-                listeners.sort(Comparator.comparingInt(DevModeListener::order));
-
-                for (DevModeListener listener : listeners) {
-                    try {
-                        listener.afterFirstStart(runner);
-                    } catch (Exception e) {
-                        log.warn("Unable to invoke 'afterFirstStart' of " + listener.getClass(), e);
-                    }
-                }
+                notifyListenersAfterStart();
 
             } catch (Throwable t) {
                 Throwable rootCause = t;
@@ -140,6 +130,11 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         //this is so the config is still valid, and we can read HTTP config from application.properties
                         log.info(
                                 "Attempting to start live reload endpoint to recover from previous Quarkus startup failure");
+
+                        // Make sure to change the application state so that QuarkusDevModeTest does not hang when
+                        // allowFailedStart=true and the build fails when the dev mode starts initially
+                        ApplicationStateNotification.notifyStartupFailed(t);
+
                         if (RuntimeUpdatesProcessor.INSTANCE != null) {
                             Thread.currentThread().setContextClassLoader(curatedApplication.getBaseRuntimeClassLoader());
                             try {
@@ -196,7 +191,10 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources,
                         classChangeInformation);
                 runner = start.runMainClass(context.getArgs());
-                firstStartCompleted = true;
+                if (!firstStartCompleted) {
+                    notifyListenersAfterStart();
+                    firstStartCompleted = true;
+                }
             } catch (Throwable t) {
                 deploymentProblem = t;
                 Throwable rootCause = t;
@@ -212,6 +210,21 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         } finally {
             restarting = false;
             Thread.currentThread().setContextClassLoader(old);
+        }
+    }
+
+    private void notifyListenersAfterStart() {
+        for (DevModeListener listener : ServiceLoader.load(DevModeListener.class)) {
+            listeners.add(listener);
+        }
+        listeners.sort(Comparator.comparingInt(DevModeListener::order));
+
+        for (DevModeListener listener : listeners) {
+            try {
+                listener.afterFirstStart(runner);
+            } catch (Exception e) {
+                log.warn("Unable to invoke 'afterFirstStart' of " + listener.getClass(), e);
+            }
         }
     }
 

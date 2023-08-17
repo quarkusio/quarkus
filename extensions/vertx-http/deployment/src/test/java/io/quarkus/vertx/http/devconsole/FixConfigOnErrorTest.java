@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.devconsole;
 
 import static org.hamcrest.Matchers.containsString;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
@@ -14,6 +15,7 @@ public class FixConfigOnErrorTest {
             .setAllowFailedStart(true)
             .withApplicationRoot((jar) -> jar.addClass(ConfigBean.class));
 
+    @Test
     public void testFailedStartup() {
         RestAssured.with()
                 .get("/msg")

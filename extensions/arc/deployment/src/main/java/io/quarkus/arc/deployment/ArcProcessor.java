@@ -501,7 +501,8 @@ public class ArcProcessor {
         BeanProcessor beanProcessor = validationPhase.getBeanProcessor();
         beanProcessor.processValidationErrors(validationPhase.getContext());
         ExistingClasses existingClasses = liveReloadBuildItem.getContextObject(ExistingClasses.class);
-        if (existingClasses == null) {
+        if (existingClasses == null || !liveReloadBuildItem.isLiveReload()) {
+            // Reset the data if there is no context object or if the first start was unsuccessful
             existingClasses = new ExistingClasses();
             liveReloadBuildItem.setContextObject(ExistingClasses.class, existingClasses);
         }

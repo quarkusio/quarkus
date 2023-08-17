@@ -24,6 +24,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -95,7 +96,8 @@ public class ConfigurationProcessor {
     void registerJsonRpcService(
             BuildProducer<JsonRPCProvidersBuildItem> jsonRPCProvidersProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            ConfigDevUIRecorder recorder) {
+            ConfigDevUIRecorder recorder,
+            CuratedApplicationShutdownBuildItem shutdown) {
 
         DevConsoleManager.register("config-update-property", map -> {
             Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
@@ -116,6 +118,13 @@ public class ConfigurationProcessor {
                         .done());
 
         CurrentConfig.EDITOR = ConfigurationProcessor::updateConfig;
+        shutdown.addCloseTask(new Runnable() {
+            @Override
+            public void run() {
+                CurrentConfig.EDITOR = null;
+                CurrentConfig.CURRENT = Collections.emptyList();
+            }
+        }, true);
 
         jsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem("devui-configuration", ConfigJsonRPCService.class));
     }

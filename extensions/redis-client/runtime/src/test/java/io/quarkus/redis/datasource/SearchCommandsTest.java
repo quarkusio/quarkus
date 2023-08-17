@@ -41,7 +41,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
     @BeforeEach
     void initialize() {
-        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(1));
+        ds = new BlockingRedisDataSourceImpl(vertx, redis, api, Duration.ofSeconds(10));
         search = ds.search();
         hash = ds.hash(String.class);
     }
@@ -540,7 +540,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
      * Reproduce <a href="https://developer.redis.com/howtos/moviesdatabase">the Movie Database example</a>
      */
     @Test
-    void testMovies() throws InterruptedException {
+    void testMovies() {
         setupMovies();
 
         // FT.SEARCH idx:movie "war"
@@ -769,7 +769,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         search.ftDictDel("my-dict", "bonjour");
         res = search.ftSpellCheck("my-index", "bonjour magyc hocky", new SpellCheckArgs().includes("my-dict").distance(3));
-        assertThat(res.misspelledWords()).containsExactly("bonjour", "magyc", "hocky");
+        assertThat(res.misspelledWords()).containsExactlyInAnyOrder("bonjour", "magyc", "hocky");
         assertThat(res.suggestions("bonjour")).isEmpty();
         assertThat(res.suggestions("magyc")).hasSize(1).allSatisfy(su -> {
             assertThat(su.word()).isEqualTo("magic");

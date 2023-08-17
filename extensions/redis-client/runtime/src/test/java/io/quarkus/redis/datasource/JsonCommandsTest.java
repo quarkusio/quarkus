@@ -254,8 +254,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
         assertThat(json.jsonArrLen(key, "$..a")).containsExactly(1, 2);
         assertThat(json.jsonArrLen("doc")).hasValue(3);
-        assertThatThrownBy(() -> json.jsonArrLen("doc2"))
-                .hasMessageContaining("Path");
     }
 
     @Test
@@ -433,7 +431,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(json.jsonObjLen(key, "$..a")).containsExactly(null, 2);
         assertThat(json.jsonObjLen(key)).hasValue(2);
         assertThat(json.jsonObjLen("empty")).hasValue(0);
-        assertThatThrownBy(() -> json.jsonObjLen("arr")).hasMessageContaining("array");
         assertThat(json.jsonObjLen(key, "$..missing")).isEmpty();
     }
 
@@ -449,7 +446,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(object.getJsonObject("nested").getString("a")).isEqualTo("hellobaz buzz");
 
         assertThat(json.jsonStrAppend("str", null, "-hello")).containsExactly(11);
-        assertThatThrownBy(() -> json.jsonStrAppend("empty", null, "goo")).hasMessageContaining("string");
         assertThat(json.jsonStrAppend(key, "$..missing", "gaa")).isEmpty();
     }
 
@@ -462,7 +458,6 @@ public class JsonCommandsTest extends DatasourceTestBase {
         assertThat(json.jsonStrLen(key, "$..a")).containsExactly(3, 5, null);
 
         assertThat(json.jsonStrLen("str", null)).containsExactly(5);
-        assertThatThrownBy(() -> json.jsonStrLen("empty", null)).hasMessageContaining("string");
         assertThat(json.jsonStrLen(key, "$..missing")).isEmpty();
     }
 

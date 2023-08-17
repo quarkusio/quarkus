@@ -113,7 +113,7 @@
                 </property>
             </activation>
             <properties>
-                <redis.base.image>redis/redis-stack:7.0.2-RC2</redis.base.image>
+                <redis.base.image>redis/redis-stack:7.2.0-v0</redis.base.image>
             </properties>
             <build>
                 <plugins>
@@ -147,6 +147,13 @@
             <id>redis-6</id>
             <properties>
                 <redis.base.image>redis:6</redis.base.image>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>redis-7.0</id>
+            <properties>
+                <redis.base.image>redis/redis-stack:7.0.6-RC9</redis.base.image>
             </properties>
         </profile>
     </profiles>

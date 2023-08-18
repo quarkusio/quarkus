@@ -62,7 +62,7 @@ public class TestWatchedFiles {
     public synchronized static void setWatchedFilesListener(
             BiConsumer<Map<String, Boolean>, List<Entry<Predicate<String>, Boolean>>> watchedFilesListener) {
         TestWatchedFiles.watchedFilesListener = watchedFilesListener;
-        if (watchedFilePaths != null) {
+        if (watchedFilesListener != null && watchedFilePaths != null) {
             watchedFilesListener.accept(watchedFilePaths, watchedFilePredicates);
         }
     }

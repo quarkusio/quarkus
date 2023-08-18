@@ -40,6 +40,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
@@ -71,13 +72,19 @@ public class ClassTransformingBuildStep {
         return lastTransformers.apply(className, classData);
     }
 
+    private static void reset() {
+        lastTransformers = null;
+        transformedClassesCache.clear();
+    }
+
     @BuildStep
     TransformedClassesBuildItem handleClassTransformation(List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems,
             ApplicationArchivesBuildItem appArchives, LiveReloadBuildItem liveReloadBuildItem,
             LaunchModeBuildItem launchModeBuildItem, ClassLoadingConfig classLoadingConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem, List<RemovedResourceBuildItem> removedResourceBuildItems,
             ArchiveRootBuildItem archiveRoot, LaunchModeBuildItem launchMode, PackageConfig packageConfig,
-            ExecutorService buildExecutor)
+            ExecutorService buildExecutor,
+            CuratedApplicationShutdownBuildItem shutdown)
             throws ExecutionException, InterruptedException {
         if (bytecodeTransformerBuildItems.isEmpty() && classLoadingConfig.removedResources.isEmpty()
                 && removedResourceBuildItems.isEmpty()) {
@@ -117,6 +124,7 @@ public class ClassTransformingBuildStep {
         final ConcurrentLinkedDeque<Future<TransformedClassesBuildItem.TransformedClass>> transformed = new ConcurrentLinkedDeque<>();
         final Map<Path, Set<TransformedClassesBuildItem.TransformedClass>> transformedClassesByJar = new HashMap<>();
         ClassLoader transformCl = Thread.currentThread().getContextClassLoader();
+        shutdown.addCloseTask(ClassTransformingBuildStep::reset, true);
         lastTransformers = new BiFunction<String, byte[], byte[]>() {
             @Override
             public byte[] apply(String className, byte[] originalBytes) {

@@ -37,7 +37,9 @@ public interface TemplateInstance {
      * @param data
      * @return
      */
-    TemplateInstance data(Object data);
+    default TemplateInstance data(Object data) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Put the data in a map. The map will be used as the root context object during rendering. Invocation of this
@@ -47,7 +49,9 @@ public interface TemplateInstance {
      * @param data
      * @return self
      */
-    TemplateInstance data(String key, Object data);
+    default TemplateInstance data(String key, Object data) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      *
@@ -55,28 +59,36 @@ public interface TemplateInstance {
      * @param value
      * @return self
      */
-    TemplateInstance setAttribute(String key, Object value);
+    default TemplateInstance setAttribute(String key, Object value) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      *
      * @param key
      * @return the attribute or null
      */
-    Object getAttribute(String key);
+    default Object getAttribute(String key) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Triggers rendering. Note that this method blocks the current thread!
      *
      * @return the rendered template as string
      */
-    String render();
+    default String render() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Triggers rendering.
      *
      * @return a completion stage that is completed once the rendering finished
      */
-    CompletionStage<String> renderAsync();
+    default CompletionStage<String> renderAsync() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Create a new {@link Multi} that can be used to consume chunks of the rendered template. In particular, each item
@@ -87,7 +99,9 @@ public interface TemplateInstance {
      * @return a new Multi
      * @see Multi#subscribe()
      */
-    Multi<String> createMulti();
+    default Multi<String> createMulti() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Create a new {@link Uni} that can be used to consume the rendered template.
@@ -97,7 +111,9 @@ public interface TemplateInstance {
      * @return a new Uni
      * @see Uni#subscribe()
      */
-    Uni<String> createUni();
+    default Uni<String> createUni() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Triggers rendering.
@@ -105,20 +121,26 @@ public interface TemplateInstance {
      * @param consumer To consume chunks of the rendered template
      * @return a completion stage that is completed once the rendering finished
      */
-    CompletionStage<Void> consume(Consumer<String> consumer);
+    default CompletionStage<Void> consume(Consumer<String> consumer) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      *
      * @return the timeout
      * @see TemplateInstance#TIMEOUT
      */
-    long getTimeout();
+    default long getTimeout() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      *
      * @return the original template
      */
-    Template getTemplate();
+    default Template getTemplate() {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      *
@@ -136,7 +158,9 @@ public interface TemplateInstance {
      * @param action
      * @return self
      */
-    TemplateInstance onRendered(Runnable action);
+    default TemplateInstance onRendered(Runnable action) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This component can be used to initialize a template instance, i.e. the data and attributes.

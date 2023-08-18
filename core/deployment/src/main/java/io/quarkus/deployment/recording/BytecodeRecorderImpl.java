@@ -406,36 +406,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
 
         String key = PROXY_KEY + COUNT.incrementAndGet();
-        Object proxyInstance = proxyFactory.newInstance(new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (method.getName().equals("__returned$proxy$key")) {
-                    return key;
-                }
-                if (method.getName().equals("__static$$init")) {
-                    return staticInit;
-                }
-                if (method.getName().equals("toString")
-                        && method.getParameterCount() == 0
-                        && method.getReturnType().equals(String.class)) {
-                    return "Runtime proxy of " + returnType + " with id " + key;
-                }
-                if (method.getName().equals("hashCode")
-                        && method.getParameterCount() == 0
-                        && method.getReturnType().equals(int.class)) {
-                    return System.identityHashCode(proxy);
-                }
-                if (method.getName().equals("equals")
-                        && method.getParameterCount() == 1
-                        && method.getParameterTypes()[0] == Object.class
-                        && method.getReturnType().equals(boolean.class)) {
-                    return proxy == args[0];
-                }
-                throw new RuntimeException(
-                        "You cannot invoke " + method.getName()
-                                + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
-            }
-        });
+        Object proxyInstance = proxyFactory.newInstance(new ReturnValueProxyInvocationHandler(key, returnType, staticInit));
         return new ProxyInstance(proxyInstance, key);
     }
 
@@ -1600,6 +1571,47 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }
         return holder;
+    }
+
+    private static final class ReturnValueProxyInvocationHandler implements InvocationHandler {
+        private final Class<?> returnType;
+        private final String key;
+        private final boolean staticInit;
+
+        private ReturnValueProxyInvocationHandler(String key, Class<?> returnType, boolean staticInit) {
+            this.returnType = returnType;
+            this.key = key;
+            this.staticInit = staticInit;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (method.getName().equals("__returned$proxy$key")) {
+                return key;
+            }
+            if (method.getName().equals("__static$$init")) {
+                return staticInit;
+            }
+            if (method.getName().equals("toString")
+                    && method.getParameterCount() == 0
+                    && method.getReturnType().equals(String.class)) {
+                return "Runtime proxy of " + returnType + " with id " + key;
+            }
+            if (method.getName().equals("hashCode")
+                    && method.getParameterCount() == 0
+                    && method.getReturnType().equals(int.class)) {
+                return System.identityHashCode(proxy);
+            }
+            if (method.getName().equals("equals")
+                    && method.getParameterCount() == 1
+                    && method.getParameterTypes()[0] == Object.class
+                    && method.getReturnType().equals(boolean.class)) {
+                return proxy == args[0];
+            }
+            throw new RuntimeException(
+                    "You cannot invoke " + method.getName()
+                            + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
+        }
     }
 
     interface BytecodeInstruction {

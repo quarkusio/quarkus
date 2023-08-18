@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.devmode.console;
+package io.quarkus.vertx.http.deployment.devmode;
 
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.runtime.TemplateHtmlBuilder;

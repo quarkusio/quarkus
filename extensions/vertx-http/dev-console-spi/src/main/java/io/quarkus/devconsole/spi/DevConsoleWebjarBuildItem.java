@@ -3,6 +3,10 @@ package io.quarkus.devconsole.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.maven.dependency.GACT;
 
+/**
+ * @deprecated as part of the removal of the old Dev UI
+ */
+@Deprecated
 public final class DevConsoleWebjarBuildItem extends MultiBuildItem {
     /**
      * ArtifactKey pointing to the web jar. Has to be one of the applications dependencies.

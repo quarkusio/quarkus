@@ -9,8 +9,8 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.BasicRoute;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.vertx.core.Handler;

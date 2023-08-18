@@ -170,7 +170,13 @@ quarkus.lambda.mock-event-server.test-port=8083
 
 A port value of zero will result in a randomly assigned port.
 
-== Simulate Amazon Lambda Deployment with SAM CLI
+== Simulate AWS Lambda Deployment with SAM CLI
+
+To turn off the mock event server:
+[source, subs=attributes+]
+----
+quarkus.lambda.mock-event-server.enabled=false
+----
 
 The AWS SAM CLI allows you to run your lambda's locally on your laptop in a simulated Lambda environment.  This requires Docker to be installed.
 After you have built your Maven project, execute this command:

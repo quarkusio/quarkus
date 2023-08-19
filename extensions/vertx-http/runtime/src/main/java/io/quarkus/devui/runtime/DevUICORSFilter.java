@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.runtime.devmode;
+package io.quarkus.devui.runtime;
 
 import java.time.Duration;
 import java.util.List;
@@ -15,8 +15,8 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
-public class DevConsoleCORSFilter implements Handler<RoutingContext> {
-    private static final Logger LOG = Logger.getLogger(DevConsoleCORSFilter.class);
+public class DevUICORSFilter implements Handler<RoutingContext> {
+    private static final Logger LOG = Logger.getLogger(DevUICORSFilter.class);
 
     private static final String HTTP_PORT_CONFIG_PROP = "quarkus.http.port";
     private static final String HTTPS_PORT_CONFIG_PROP = "quarkus.http.ssl-port";
@@ -27,7 +27,7 @@ public class DevConsoleCORSFilter implements Handler<RoutingContext> {
     private static final String HTTP_LOCAL_HOST_IP = "http://" + LOCAL_HOST_IP;
     private static final String HTTPS_LOCAL_HOST_IP = "https://" + LOCAL_HOST_IP;
 
-    public DevConsoleCORSFilter() {
+    public DevUICORSFilter() {
     }
 
     private static CORSFilter corsFilter() {

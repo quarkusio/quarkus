@@ -243,18 +243,6 @@
             </properties>
         </profile>
         <profile>
-            <!-- On GitHub Actions, put target directories in tmpfs -->
-            <id>github-actions-use-shm</id>
-            <activation>
-                <property>
-                    <name>env.GITHUB_ACTIONS</name>
-                </property>
-            </activation>
-            <build>
-                <directory>/dev/shm/quarkus/build/${project.artifactId}/target</directory>
-            </build>
-        </profile>
-        <profile>
             <id>relocations</id>
             <modules>
                 <module>relocations</module>

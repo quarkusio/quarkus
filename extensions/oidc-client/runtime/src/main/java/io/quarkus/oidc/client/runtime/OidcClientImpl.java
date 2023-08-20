@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -71,18 +70,18 @@ public class OidcClientImpl implements OidcClient {
     }
 
     @Override
-    public Uni<Tokens> refreshTokens(String refreshToken) {
+    public Uni<Tokens> refreshTokens(String refreshToken, Map<String, String> additionalGrantParameters) {
         checkClosed();
         if (refreshToken == null) {
             throw new OidcClientException("Refresh token is null");
         }
         MultiMap refreshGrantParams = copyMultiMap(commonRefreshGrantParams);
         refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
-        return getJsonResponse(refreshGrantParams, Collections.emptyMap(), true);
+        return getJsonResponse(refreshGrantParams, additionalGrantParameters, true);
     }
 
     @Override
-    public Uni<Boolean> revokeAccessToken(String accessToken) {
+    public Uni<Boolean> revokeAccessToken(String accessToken, Map<String, String> additionalParameters) {
         checkClosed();
         if (accessToken == null) {
             throw new OidcClientException("Access token is null");
@@ -90,7 +89,7 @@ public class OidcClientImpl implements OidcClient {
         if (tokenRevokeUri != null) {
             MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
-            return postRequest(client.postAbs(tokenRevokeUri), tokenRevokeParams, Map.of(), false)
+            return postRequest(client.postAbs(tokenRevokeUri), tokenRevokeParams, additionalParameters, false)
                     .transform(resp -> toRevokeResponse(resp));
         } else {
             LOG.debugf("%s OidcClient can not revoke the access token because the revocation endpoint URL is not set");

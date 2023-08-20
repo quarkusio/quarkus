@@ -12,20 +12,15 @@ import java.util.Map.Entry;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableObserverMethod;
 import io.quarkus.arc.RemovedBean;
 import io.quarkus.arc.impl.ArcContainerImpl;
-import io.quarkus.arc.runtime.devconsole.InvocationsMonitor;
-import io.quarkus.arc.runtime.devmode.EventsMonitor;
 import io.quarkus.dev.console.DevConsoleManager;
-import io.quarkus.devconsole.runtime.spi.DevConsolePostHandler;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.Json.JsonArrayBuilder;
 import io.quarkus.vertx.http.runtime.devmode.Json.JsonObjectBuilder;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -230,37 +225,4 @@ public class ArcDevRecorder {
             }
         };
     }
-
-    // NOTE: we can't add this recorder to the ArC extension as it would cause a cyclic dependency
-    public Handler<RoutingContext> events() {
-        return new DevConsolePostHandler() {
-            @Override
-            protected void handlePost(RoutingContext event, MultiMap form)
-                    throws Exception {
-                String action = form.get("action");
-                if ("skipContext".equals(action)) {
-                    Arc.container().instance(EventsMonitor.class).get().toggleSkipContextEvents();
-                } else {
-                    Arc.container().instance(EventsMonitor.class).get().clear();
-                }
-            }
-        };
-    }
-
-    // NOTE: we can't add this recorder to the ArC extension as it would cause a cyclic dependency
-    public Handler<RoutingContext> invocations() {
-        return new DevConsolePostHandler() {
-            @Override
-            protected void handlePost(RoutingContext event, MultiMap form)
-                    throws Exception {
-                String action = form.get("action");
-                if ("filterOutQuarkusBeans".equals(action)) {
-                    Arc.container().instance(InvocationsMonitor.class).get().toggleFilterOutQuarkusBeans();
-                } else {
-                    Arc.container().instance(InvocationsMonitor.class).get().clear();
-                }
-            }
-        };
-    }
-
 }

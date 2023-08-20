@@ -20,7 +20,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.devconsole.spi.DevConsoleRouteBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ArcDevRecorder;
@@ -98,21 +97,4 @@ public class ArcDevProcessor {
         props.put("quarkus.arc.exclude-types", "" + arcConfig.excludeTypes.map(Object::toString).orElse(""));
         return props;
     }
-
-    // NOTE: we can't add this build step to the ArC extension as it would cause a cyclic dependency
-    @BuildStep
-    @Record(value = ExecutionTime.STATIC_INIT, optional = true)
-    DevConsoleRouteBuildItem eventsEndpoint(ArcDevRecorder recorder) {
-        return DevConsoleRouteBuildItem.builder().ga("io.quarkus", "quarkus-arc").path("events").method("POST")
-                .handler(recorder.events()).build();
-    }
-
-    // NOTE: we can't add this build step to the ArC extension as it would cause a cyclic dependency
-    @BuildStep
-    @Record(value = ExecutionTime.STATIC_INIT, optional = true)
-    DevConsoleRouteBuildItem invocationsEndpoint(ArcDevRecorder recorder) {
-        return DevConsoleRouteBuildItem.builder().ga("io.quarkus", "quarkus-arc").path("invocations").method("POST")
-                .handler(recorder.invocations()).build();
-    }
-
 }

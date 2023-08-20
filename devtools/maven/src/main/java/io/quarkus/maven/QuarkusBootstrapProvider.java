@@ -185,7 +185,9 @@ public class QuarkusBootstrapProvider implements Closeable {
                                     .setUserSettings(mojo.mavenSession().getRequest().getUserSettingsFile())
                                     .setCurrentProject(mojo.mavenProject().getFile().toString())
                                     .setPreferPomsFromWorkspace(true)
-                                    .setProjectModelProvider(getProjectMap(mojo.mavenSession())::get));
+                                    .setProjectModelProvider(getProjectMap(mojo.mavenSession())::get)
+                                    // pass the repositories since Maven extensions could manipulate repository configs
+                                    .setRemoteRepositories(mojo.remoteRepositories()));
                 }
                 // PROD packaging mode with workspace discovery disabled
                 return MavenArtifactResolver.builder()

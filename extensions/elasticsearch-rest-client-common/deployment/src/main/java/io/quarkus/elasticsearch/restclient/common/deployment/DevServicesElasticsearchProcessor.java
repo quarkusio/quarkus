@@ -254,7 +254,7 @@ public class DevServicesElasticsearchProcessor {
         // Disable disk-based shard allocation thresholds:
         // in a single-node setup they just don't make sense,
         // and lead to problems on large disks with little space left.
-        // See https://www.elastic.co/guide/en/elasticsearch/reference/8.8/modules-cluster.html#disk-based-shard-allocation
+        // See https://www.elastic.co/guide/en/elasticsearch/reference/8.9/modules-cluster.html#disk-based-shard-allocation
         container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
         container.addEnv("ES_JAVA_OPTS", config.javaOpts);
         return container;

@@ -217,6 +217,7 @@ jobs:
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
       run_maven: ${{ steps.calc-run-flags.outputs.run_maven }}
+      run_kubernetes: ${{ steps.calc-run-flags.outputs.run_kubernetes }}
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
@@ -244,25 +245,27 @@ jobs:
       - name: Calculate run flags
         id: calc-run-flags
         run: |
-          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_quickstarts=true; run_tcks=true
+          run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_kubernetes=true; run_quickstarts=true; run_tcks=true
           if [ -z "${GIB_IMPACTED_MODULES}" ]
           then
-            run_jvm=false; run_devtools=false; run_gradle=false; run_maven=false; run_quickstarts=false; run_tcks=false
+            run_jvm=false; run_devtools=false; run_gradle=false; run_maven=false; run_kubernetes=false; run_quickstarts=false; run_tcks=false
           elif [ "${GIB_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
-            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven)|tcks/.*'; then run_jvm=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven|devmode|kubernetes/.*)|tcks/.*'; then run_jvm=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/devtools'; then run_devtools=false; fi
-            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; run_devtools=true; fi
-            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/maven'; then run_maven=false; run_devtools=true; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'integration-tests/gradle'; then run_gradle=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qP 'integration-tests/(maven|devmode)'; then run_maven=false; fi
+            if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qP 'integration-tests/kubernetes/.*'; then run_kubernetes=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv '(docs|integration-tests|tcks)/.*'; then run_quickstarts=false; fi
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -q 'tcks/.*'; then run_tcks=false; fi
           fi
-          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
+          echo "run_jvm=${run_jvm}, run_devtools=${run_devtools}, run_gradle=${run_gradle}, run_maven=${run_maven}, run_kubernetes=${run_kubernetes}, run_quickstarts=${run_quickstarts}, run_tcks=${run_tcks}"
           echo "run_jvm=${run_jvm}" >> $GITHUB_OUTPUT
           echo "run_devtools=${run_devtools}" >> $GITHUB_OUTPUT
           echo "run_gradle=${run_gradle}" >> $GITHUB_OUTPUT
           echo "run_maven=${run_maven}" >> $GITHUB_OUTPUT
+          echo "run_kubernetes=${run_kubernetes}" >> $GITHUB_OUTPUT
           echo "run_quickstarts=${run_quickstarts}" >> $GITHUB_OUTPUT
           echo "run_tcks=${run_tcks}" >> $GITHUB_OUTPUT
 
@@ -297,7 +300,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Add quarkusio remote
+      - name: Add quarkusio remote for GIB
         shell: bash
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
@@ -334,7 +337,7 @@ jobs:
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devtools -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
+        run: ./mvnw $COMMON_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Clean Gradle temp directory
         if: always()
         shell: bash
@@ -386,7 +389,7 @@ jobs:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 100
+    timeout-minutes: 130
     strategy:
       fail-fast: false
       matrix:
@@ -411,6 +414,9 @@ jobs:
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
+      - name: Add quarkusio remote for GIB
+        shell: bash
+        run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
         with:
@@ -432,7 +438,8 @@ jobs:
           java-version: ${{ matrix.java.java-version }}
       - name: Build
         # Important: keep -pl ... in sync with "Calculate run flags"!
-        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven'
+        # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         shell: bash
@@ -618,6 +625,81 @@ jobs:
             **/target/*-reports/TEST-*.xml
             target/build-report.json
             target/gradle-build-scan-url.txt
+            LICENSE.txt
+          retention-days: 2
+
+  kubernetes-tests:
+    name: Kubernetes Tests - JDK ${{matrix.java.name}}
+    runs-on: ${{matrix.java.os-name}}
+    needs: [build-jdk11, calculate-test-jobs]
+    # Skip main in forks
+    if: "needs.calculate-test-jobs.outputs.run_kubernetes == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        java:
+          - {
+            name: "11",
+            java-version: 11,
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "17",
+            java-version: 17,
+            os-name: "ubuntu-latest"
+          }
+          - {
+            name: "11 Windows",
+            java-version: 11,
+            os-name: "windows-latest"
+          }
+    steps:
+      - name: Support longpaths on Windows
+        if: "startsWith(matrix.java.os-name, 'windows')"
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v3
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
+        uses: actions/download-artifact@v3
+        with:
+          name: m2-io-quarkus
+          path: .
+      - name: Extract .m2/repository/io/quarkus
+        shell: bash
+        run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java.java-version }}
+      - name: Build
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: test-reports-kubernetes-java${{matrix.java.name}}
+          path: 'test-reports.tgz'
+          retention-days: 5
+      - name: Upload build reports (if build failed)
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() || cancelled() }}
+        with:
+          name: "build-reports-Kubernetes Tests - JDK ${{matrix.java.name}}"
+          path: |
+            **/target/*-reports/TEST-*.xml
+            target/build-report.json
             LICENSE.txt
           retention-days: 2
 
@@ -907,7 +989,7 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests,virtual-thread-native-tests]
+    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,tcks-test,native-tests,virtual-thread-native-tests]
     if: always()
     steps:
       - uses: actions/download-artifact@v3

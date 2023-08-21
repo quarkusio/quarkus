@@ -553,7 +553,7 @@ It generates the UUID at startup time.
 So, the value changes between startups, including reloads in dev mode.
 
 You can access the generated value using the `quarkus.uuid` property.
-Use <<property-expressions, expressions>> to access it: `${quarkus.uuid}`.
+Use <<property-expressions,expressions>> to access it: `${quarkus.uuid}`.
 For example, it can be useful to configure a Kafka client with a unique consumer group:
 
 [source, properties]
@@ -621,7 +621,7 @@ extensions. Therefore, the `quarkus.` prefix should **never** be used for applic
 
 === Build Time configuration
 
-Some Quarkus configurations only take effect during build time, meaning is not possible to change them at runtime. These
+Some Quarkus configurations only take effect during build time, meaning it is not possible to change them at runtime. These
 configurations are still available at runtime but as read-only and have no effect in Quarkus behaviour. A change to any
 of these configurations requires a rebuild of the application itself to reflect changes of such properties.
 
@@ -634,6 +634,63 @@ application behaviour at runtime.
 == Change build time properties after your application has been published
 
 If you are in the rare situation that you need to change the build time configuration after your application is built, then check out how xref:reaugmentation.adoc[re-augmentation] can be used to rebuild the augmentation output for a different build time configuration.
+
+== Tracking effective build time configuration used at build time
+
+Given that configuration sources usually provide more options than actually used during the build, it might be useful to know which configuration options have actually been used during a Quarkus build process.
+
+=== Dumping build time configuration options read during the build
+
+Setting `quarkus.config-tracking.enabled` to `true` will enable a configuration interceptor that will record every configuration option that was read during the build process along with their values. The resulting report will be stored in `${project.basedir}/.quarkus/quarkus-prod-config-dump` by default. The target file could be configured using the following options:
+
+* `quarkus.config-tracking.directory` - directory in which the configuration dump should be stored, the default is `${project.basedir}/.quarkus`
+* `quarkus.config-tracking.file-prefix` - file name prefix, the default value is `quarkus`
+* `quarkus.config-tracking.file-suffix` - file name suffix, the default value is `-config-dump`
+* `quarkus.config-tracking.file` - path to a file in which the configuration dump should be stored. This option supersedes the `file-prefix` and `file-suffix` options. Also supersedes the value of `quarkus.config-tracking.directory`, unless the value is a relative path.
+
+The `prod` part of the `quarkus-prod-config-dump` file name refers to the Quarkus build mode, indicating that the dump was taken for the production build.
+
+The reason `${project.basedir}/.quarkus` directory was chosen as the default location was to make it easy to track build time configuration changes between builds and use that as an indicator to build output caching tools (such as https://maven.apache.org/extensions/maven-build-cache-extension/[Apache Maven Build Cache] and https://gradle.com/gradle-enterprise-solutions/build-cache/[Gradle Enterprise Build Cache]) whether the application binary has to be re-built.
+
+==== Filtering configuration options
+
+Configuration tracker could be instructed to exclude some of the options from the report by configuring `quarkus.config-tracking.exclude` with a comma-separated list of configuration option names that should be filtered out.
+
+==== Path values
+
+Configuration options with *absolute* path values that begin with a user home directory are, by default, transformed with Unix home directory alias '~' replacing the user home directory part and using `/` as a path element separator.
+
+This transformation can be disabled by setting `quarkus.config-tracking.use-user-home-alias-in-paths` to `false`.
+
+==== Hashing recorded configuration values
+
+Configuration values can be hashed using `SHA-512` algorithm before they are written to a file. Configuration option names whose values should be hashed can be configured in `quarkus.config-tracking.hash-options` as a comma separated list.
+
+=== Tracking build time configuration changes between builds
+
+While `quarkus.config-tracking.enabled` enables effective build time configuration report generation, there is also a way to check whether the values stored in that report have changed before the next build of the project is launched.
+
+Maven projects could add the following goal to their `quarkus-maven-plugin` configuration:
+[source,xml]
+----
+      <plugin>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>quarkus-maven-plugin</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <id>track-prod-config-changes</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>track-config-changes</goal>
+            </goals>
+          </execution>
+          <!-- other executions would follow below -->
+----
+
+The `track-config-changes` goal looks for `${project.basedir}/.quarkus/quarkus-prod-config-dump` (file name and directory are configurable) and, if the file already exists, checks whether the values stored in the config dump have changed.
+It will log the changed options and save the current values of each of the options present in `${project.basedir}/.quarkus/quarkus-prod-config-dump` in `${project.basedir}/target/quarkus-prod-config.check` (the target file name and location can be configured). If the build time configuration has not changed since the last build both `${project.basedir}/.quarkus/quarkus-prod-config-dump` and `${project.basedir}/.quarkus/quarkus-prod-config-dump` will be identical.
 
 [[additional-information]]
 == Additional Information

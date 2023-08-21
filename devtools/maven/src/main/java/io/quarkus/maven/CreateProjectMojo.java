@@ -37,6 +37,7 @@ import io.quarkus.devtools.commands.CreateProject;
 import io.quarkus.devtools.commands.CreateProjectHelper;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.maven.components.MavenVersionEnforcer;
@@ -297,7 +298,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .artifactResolver(mvn)
                     .build();
             QuarkusProject newProject = QuarkusProject.of(projectDirPath, catalog,
-                    codestartsResourceLoader, log, buildToolEnum);
+                    codestartsResourceLoader, log, buildToolEnum, new JavaVersion(javaVersion));
             final CreateProject createProject = new CreateProject(newProject)
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)

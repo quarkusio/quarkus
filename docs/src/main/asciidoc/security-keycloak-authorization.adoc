@@ -192,13 +192,13 @@ quarkus.keycloak.policy-enforcer.enable=true
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in a dev mode. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
+NOTE: Adding a `%prod.` profile prefix to `quarkus.oidc.auth-server-url` ensures that `Dev Services for Keycloak` will launch a container for you when the application is run in a dev mode. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information.
 
 NOTE: By default, applications using the `quarkus-oidc` extension are marked as a `service` type application (see `quarkus.oidc.application-type`). This extension also supports only  `web-app` type applications but only if the access token returned as part of the authorization code grant response is marked as a source of roles: `quarkus.oidc.roles.source=accesstoken` (`web-app` type applications check ID token roles by default).
 
 == Starting and Configuring the Keycloak Server
 
-NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode, Running the Application in Dev mode>> section below for more information.
+NOTE: Do not start the Keycloak server when you run the application in a dev mode - `Dev Services for Keycloak` will launch a container. See <<keycloak-dev-mode,Running the Application in Dev mode>> section below for more information.
 
 To start a Keycloak Server you can use Docker and just run the following command:
 
@@ -277,7 +277,7 @@ After getting a cup of coffee, you'll be able to run this binary directly:
 
 == Testing the Application
 
-See <<keycloak-dev-mode, Running the Application in Dev mode>> section above about testing your application in a dev mode.
+See <<keycloak-dev-mode,Running the Application in Dev mode>> section above about testing your application in a dev mode.
 
 You can test the application launched in JVM or Native modes with `curl`.
 

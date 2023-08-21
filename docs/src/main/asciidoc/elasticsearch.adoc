@@ -19,10 +19,8 @@ Quarkus provides two ways of accessing Elasticsearch:
 
 [WARNING]
 ====
-A third Quarkus extension for the "high level REST Client" exists, but is deprecated and will be removed in a future version,
-as this client has been deprecated by Elastic and has some licensing issues.
-
-It is highly recommended to upgrade to the new Elasticsearch Java client extension.
+A third Quarkus extension for the "high level REST Client" used to exist,
+but was removed as this client has been deprecated by Elastic and has some licensing issues.
 ====
 
 == Prerequisites
@@ -352,6 +350,7 @@ If you want to use Docker to run an Elasticsearch instance, you can use the foll
 [source,bash,subs=attributes+]
 ----
 docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m"\
+       -e "cluster.routing.allocation.disk.threshold_enabled=false"
        --rm -p 9200:9200 {elasticsearch-image}
 ----
 

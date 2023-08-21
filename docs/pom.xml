@@ -489,19 +489,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-elasticsearch-rest-high-level-client-deployment</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-elytron-security-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -2855,6 +2842,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-virtual-threads-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-webjars-locator-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
@@ -3176,6 +3176,28 @@
                 </executions>
             </plugin>
         </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.gradle</groupId>
+                    <artifactId>gradle-enterprise-maven-extension</artifactId>
+                    <configuration>
+                        <gradleEnterprise>
+                            <normalization>
+                                <systemProperties>
+                                    <ignoredKeys combine.children="append">
+                                        <ignore>vale.dir</ignore>
+                                        <ignore>git.dir</ignore>
+                                    </ignoredKeys>
+                                </systemProperties>
+                            </normalization>
+                        </gradleEnterprise>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
     </build>
 
     <profiles>
@@ -3204,7 +3226,7 @@
                                 <phase>process-resources</phase>
                                 <goals>
                                     <goal>process-asciidoc</goal>
-                                </goals> 
+                                </goals>
                                 <configuration>
                                     <skip>${skipDocs}</skip>
                                     <backend>pdf</backend>

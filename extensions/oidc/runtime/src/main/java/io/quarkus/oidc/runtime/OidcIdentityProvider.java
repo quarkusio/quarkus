@@ -9,7 +9,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -24,6 +23,7 @@ import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -31,6 +31,7 @@ import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
@@ -47,12 +48,17 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private static final Uni<TokenVerificationResult> NULL_CODE_ACCESS_TOKEN_UNI = Uni.createFrom().nullItem();
     private static final String CODE_ACCESS_TOKEN_RESULT = "code_flow_access_token_result";
 
-    @Inject
-    DefaultTenantConfigResolver tenantResolver;
+    private final DefaultTenantConfigResolver tenantResolver;
+    private final BlockingTaskRunner<Void> uniVoidOidcContext;
+    private final BlockingTaskRunner<TokenIntrospection> getIntrospectionRequestContext;
+    private final BlockingTaskRunner<UserInfo> getUserInfoRequestContext;
 
-    private BlockingTaskRunner<Void> uniVoidOidcContext = new BlockingTaskRunner<Void>();
-    private BlockingTaskRunner<TokenIntrospection> getIntrospectionRequestContext = new BlockingTaskRunner<TokenIntrospection>();
-    private BlockingTaskRunner<UserInfo> getUserInfoRequestContext = new BlockingTaskRunner<UserInfo>();
+    public OidcIdentityProvider(DefaultTenantConfigResolver tenantResolver, BlockingSecurityExecutor blockingExecutor) {
+        this.tenantResolver = tenantResolver;
+        this.uniVoidOidcContext = new BlockingTaskRunner<>(blockingExecutor);
+        this.getIntrospectionRequestContext = new BlockingTaskRunner<>(blockingExecutor);
+        this.getUserInfoRequestContext = new BlockingTaskRunner<>(blockingExecutor);
+    }
 
     @Override
     public Class<TokenAuthenticationRequest> getRequestType() {
@@ -132,7 +138,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     primaryTokenUni = verifySelfSignedTokenUni(resolvedContext, request.getToken().getToken());
                 }
             } else {
-                primaryTokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken(), isIdToken(request), null);
+                primaryTokenUni = verifyTokenUni(vertxContext, resolvedContext, request.getToken().getToken(),
+                        isIdToken(request), null);
             }
 
             // Verify Code Flow access token first if it is available and has to be verified.
@@ -180,7 +187,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             vertxContext.put(CODE_ACCESS_TOKEN_RESULT, codeAccessToken);
                         }
 
-                        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(resolvedContext, request.getToken().getToken(),
+                        Uni<TokenVerificationResult> tokenUni = verifyTokenUni(vertxContext, resolvedContext,
+                                request.getToken().getToken(),
                                 false, userInfo);
 
                         return tokenUni.onItemOrFailure()
@@ -264,6 +272,13 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         if (tokenJson != null) {
             try {
                 OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig.token, tokenJson);
+                if (userInfo != null && resolvedContext.oidcConfig.token.isSubjectRequired()
+                        && !tokenJson.getString(Claims.sub.name()).equals(userInfo.getString(Claims.sub.name()))) {
+                    String errorMessage = String
+                            .format("Token and UserInfo do not have matching `sub` claims");
+                    return Uni.createFrom().failure(new AuthenticationCompletionException(errorMessage));
+                }
+
                 JsonObject rolesJson = getRolesJson(vertxContext, resolvedContext, tokenCred, tokenJson,
                         userInfo);
                 SecurityIdentity securityIdentity = validateAndCreateIdentity(vertxContext, tokenCred,
@@ -399,13 +414,13 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 && (resolvedContext.oidcConfig.authentication.verifyAccessToken
                         || resolvedContext.oidcConfig.roles.source.orElse(null) == Source.accesstoken)) {
             final String codeAccessToken = (String) vertxContext.get(OidcConstants.ACCESS_TOKEN_VALUE);
-            return verifyTokenUni(resolvedContext, codeAccessToken, false, userInfo);
+            return verifyTokenUni(vertxContext, resolvedContext, codeAccessToken, false, userInfo);
         } else {
             return NULL_CODE_ACCESS_TOKEN_UNI;
         }
     }
 
-    private Uni<TokenVerificationResult> verifyTokenUni(TenantConfigContext resolvedContext,
+    private Uni<TokenVerificationResult> verifyTokenUni(RoutingContext vertxContext, TenantConfigContext resolvedContext,
             String token, boolean enforceAudienceVerification, UserInfo userInfo) {
         if (OidcUtils.isOpaqueToken(token)) {
             if (!resolvedContext.oidcConfig.token.allowOpaqueTokenIntrospection) {
@@ -432,13 +447,17 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             return introspectTokenUni(resolvedContext, token, false);
         } else {
             // Verify JWT token with the local JWK keys with a possible remote introspection fallback
+            final String nonce = vertxContext.get(OidcConstants.NONCE);
             try {
                 LOG.debug("Verifying the JWT token with the local JWK keys");
-                return Uni.createFrom().item(resolvedContext.provider.verifyJwtToken(token, enforceAudienceVerification));
+                return Uni.createFrom()
+                        .item(resolvedContext.provider.verifyJwtToken(token, enforceAudienceVerification,
+                                resolvedContext.oidcConfig.token.isSubjectRequired(), nonce));
             } catch (Throwable t) {
                 if (t.getCause() instanceof UnresolvableKeyException) {
                     LOG.debug("No matching JWK key is found, refreshing and repeating the verification");
-                    return refreshJwksAndVerifyTokenUni(resolvedContext, token, enforceAudienceVerification);
+                    return refreshJwksAndVerifyTokenUni(resolvedContext, token, enforceAudienceVerification,
+                            resolvedContext.oidcConfig.token.isSubjectRequired(), nonce);
                 } else {
                     LOG.debugf("Token verification has failed: %s", t.getMessage());
                     return Uni.createFrom().failure(t);
@@ -456,8 +475,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     }
 
     private Uni<TokenVerificationResult> refreshJwksAndVerifyTokenUni(TenantConfigContext resolvedContext, String token,
-            boolean enforceAudienceVerification) {
-        return resolvedContext.provider.refreshJwksAndVerifyJwtToken(token, enforceAudienceVerification)
+            boolean enforceAudienceVerification, boolean subjectRequired, String nonce) {
+        return resolvedContext.provider.refreshJwksAndVerifyJwtToken(token, enforceAudienceVerification, subjectRequired, nonce)
                 .onFailure(f -> fallbackToIntrospectionIfNoMatchingKey(f, resolvedContext))
                 .recoverWithUni(f -> introspectTokenUni(resolvedContext, token, true));
     }
@@ -517,7 +536,8 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
             TenantConfigContext resolvedContext) {
 
         try {
-            TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken(), false);
+            TokenVerificationResult result = resolvedContext.provider.verifyJwtToken(request.getToken().getToken(), false,
+                    false, null);
             return Uni.createFrom()
                     .item(validateAndCreateIdentity(null, request.getToken(), resolvedContext,
                             result.localVerificationResult, result.localVerificationResult, null, null));

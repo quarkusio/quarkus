@@ -7,6 +7,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
+ * <p>
+ * <strong>IMPORTANT: This annotation only works in a fully integrated environment; such as a Quarkus application.</strong>
+ * </p>
+ *
  * Enables registration of additional components to the preconfigured {@link Engine}.
  * <p>
  * A top-level or static nested class that implements one of the <b>supported component interface</b> and is annotated with this

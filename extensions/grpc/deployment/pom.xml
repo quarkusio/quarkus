@@ -51,19 +51,17 @@
             <artifactId>quarkus-smallrye-health-deployment</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-virtual-threads-deployment</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-codegen</artifactId>
         </dependency>
 
-        <!-- for dev mode -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-spi</artifactId>
-        </dependency>
-
-       <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
             <scope>test</scope>

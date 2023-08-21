@@ -70,7 +70,7 @@ public final class HibernateSearchBeanUtil {
         return Optional.of(references);
     }
 
-    public static <T> InjectableInstance<T> extensionInstanceFor(Class<T> beanType, String persistenceUnitName,
+    private static <T> InjectableInstance<T> extensionInstanceFor(Class<T> beanType, String persistenceUnitName,
             String backendName, String indexName) {
         return Arc.container().select(beanType,
                 new SearchExtension.Literal(persistenceUnitName, backendName == null ? "" : backendName,

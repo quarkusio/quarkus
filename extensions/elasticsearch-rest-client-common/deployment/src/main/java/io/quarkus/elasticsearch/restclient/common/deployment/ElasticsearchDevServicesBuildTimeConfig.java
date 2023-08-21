@@ -28,11 +28,26 @@ public class ElasticsearchDevServicesBuildTimeConfig {
     public Optional<Integer> port;
 
     /**
-     * The Elasticsearch container image to use.
-     * Defaults to the elasticsearch image provided by Elastic.
+     * Defaults to a distribution inferred from the explicitly configured `image-name` (if any),
+     * or by default to the distribution configured in depending extensions (e.g. Hibernate Search),
+     * or by default to `elastic`.
+     *
+     * @asciidoclet
      */
-    @ConfigItem(defaultValue = "docker.elastic.co/elasticsearch/elasticsearch:7.17.0")
-    public String imageName;
+    @ConfigItem
+    public Optional<Distribution> distribution;
+
+    /**
+     * The Elasticsearch container image to use.
+     * Defaults depend on the configured `distribution`:
+     *
+     * * For the `elastic` distribution: {elasticsearch-image}
+     * * For the `opensearch` distribution: {opensearch-image}
+     *
+     * @asciidoclet
+     */
+    @ConfigItem
+    public Optional<String> imageName;
 
     /**
      * The value for the ES_JAVA_OPTS env variable.
@@ -84,6 +99,7 @@ public class ElasticsearchDevServicesBuildTimeConfig {
         return Objects.equals(shared, that.shared)
                 && Objects.equals(enabled, that.enabled)
                 && Objects.equals(port, that.port)
+                && Objects.equals(distribution, that.distribution)
                 && Objects.equals(imageName, that.imageName)
                 && Objects.equals(javaOpts, that.javaOpts)
                 && Objects.equals(serviceName, that.serviceName)
@@ -92,6 +108,11 @@ public class ElasticsearchDevServicesBuildTimeConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabled, port, imageName, javaOpts, shared, serviceName, containerEnv);
+        return Objects.hash(enabled, port, distribution, imageName, javaOpts, shared, serviceName, containerEnv);
+    }
+
+    public enum Distribution {
+        ELASTIC,
+        OPENSEARCH
     }
 }

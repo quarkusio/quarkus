@@ -5,12 +5,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
+import org.opensearch.testcontainers.OpensearchContainer;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -31,6 +34,7 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
@@ -49,6 +53,9 @@ public class DevServicesElasticsearchProcessor {
 
     private static final ContainerLocator elasticsearchContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
             ELASTICSEARCH_PORT);
+    private static final Distribution DEFAULT_DISTRIBUTION = Distribution.ELASTIC;
+    private static final String DEV_SERVICE_ELASTICSEARCH = "elasticsearch";
+    private static final String DEV_SERVICE_OPENSEARCH = "opensearch";
 
     static volatile DevServicesResultBuildItem.RunningDevService devService;
     static volatile ElasticsearchDevServicesBuildTimeConfig cfg;
@@ -171,22 +178,30 @@ public class DevServicesElasticsearchProcessor {
             return null;
         }
 
-        // We only support ELASTIC container for now
-        if (buildItemConfig.distribution == DevservicesElasticsearchBuildItem.Distribution.OPENSEARCH) {
-            throw new BuildException("Dev Services for Elasticsearch doesn't support OpenSearch", Collections.emptyList());
-        }
-
+        Distribution resolvedDistribution = resolveDistribution(config, buildItemConfig);
+        DockerImageName resolvedImageName = resolveImageName(config, resolvedDistribution);
         // Hibernate Search Elasticsearch have a version configuration property, we need to check that it is coherent
         // with the image we are about to launch
         if (buildItemConfig.version != null) {
-            String containerTag = config.imageName.substring(config.imageName.indexOf(':') + 1);
+            String containerTag = resolvedImageName.getVersionPart();
             if (!containerTag.startsWith(buildItemConfig.version)) {
                 throw new BuildException(
-                        "Dev Services for Elasticsearch detected a version mismatch, container image is " + config.imageName
-                                + " but the configured version is " + buildItemConfig.version +
-                                ". Either configure a different image or disable Dev Services for Elasticsearch.",
+                        "Dev Services for Elasticsearch detected a version mismatch."
+                                + " Consuming extensions are configured to use version " + config.imageName
+                                + " but Dev Services are configured to use version " + buildItemConfig.version +
+                                ". Either configure the same version or disable Dev Services for Elasticsearch.",
                         Collections.emptyList());
             }
+        }
+
+        if (buildItemConfig.distribution != null
+                && !buildItemConfig.distribution.equals(resolvedDistribution)) {
+            throw new BuildException(
+                    "Dev Services for Elasticsearch detected a distribution mismatch."
+                            + " Consuming extensions are configured to use distribution " + config.distribution
+                            + " but Dev Services are configured to use distribution " + buildItemConfig.distribution +
+                            ". Either configure the same distribution or disable Dev Services for Elasticsearch.",
+                    Collections.emptyList());
         }
 
         final Optional<ContainerAddress> maybeContainerAddress = elasticsearchContainerLocator.locateContainer(
@@ -196,10 +211,11 @@ public class DevServicesElasticsearchProcessor {
 
         // Starting the server
         final Supplier<DevServicesResultBuildItem.RunningDevService> defaultElasticsearchSupplier = () -> {
-            ElasticsearchContainer container = new ElasticsearchContainer(
-                    DockerImageName.parse(config.imageName)
-                            .asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"));
-            ConfigureUtil.configureSharedNetwork(container, "elasticsearch");
+
+            GenericContainer<?> container = resolvedDistribution.equals(Distribution.ELASTIC)
+                    ? createElasticsearchContainer(config, resolvedImageName)
+                    : createOpensearchContainer(config, resolvedImageName);
+
             if (config.serviceName != null) {
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
             }
@@ -209,15 +225,13 @@ public class DevServicesElasticsearchProcessor {
             timeout.ifPresent(container::withStartupTimeout);
 
             container.withEnv(config.containerEnv);
-            container.addEnv("ES_JAVA_OPTS", config.javaOpts);
-            // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
-            container.addEnv("xpack.security.enabled", "false");
 
             container.start();
             return new DevServicesResultBuildItem.RunningDevService(Feature.ELASTICSEARCH_REST_CLIENT_COMMON.getName(),
                     container.getContainerId(),
                     container::close,
-                    buildPropertiesMap(buildItemConfig, container.getHttpHostAddress()));
+                    buildPropertiesMap(buildItemConfig,
+                            container.getHost() + ":" + container.getMappedPort(ELASTICSEARCH_PORT)));
         };
 
         return maybeContainerAddress
@@ -227,6 +241,77 @@ public class DevServicesElasticsearchProcessor {
                         null,
                         buildPropertiesMap(buildItemConfig, containerAddress.getUrl())))
                 .orElseGet(defaultElasticsearchSupplier);
+    }
+
+    private GenericContainer<?> createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
+            DockerImageName resolvedImageName) {
+        ElasticsearchContainer container = new ElasticsearchContainer(
+                resolvedImageName.asCompatibleSubstituteFor("docker.elastic.co/elasticsearch/elasticsearch"));
+        ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_ELASTICSEARCH);
+
+        // Disable security as else we would need to configure it correctly to avoid tons of WARNING in the log
+        container.addEnv("xpack.security.enabled", "false");
+        // Disable disk-based shard allocation thresholds:
+        // in a single-node setup they just don't make sense,
+        // and lead to problems on large disks with little space left.
+        // See https://www.elastic.co/guide/en/elasticsearch/reference/8.8/modules-cluster.html#disk-based-shard-allocation
+        container.addEnv("cluster.routing.allocation.disk.threshold_enabled", "false");
+        container.addEnv("ES_JAVA_OPTS", config.javaOpts);
+        return container;
+    }
+
+    private GenericContainer<?> createOpensearchContainer(ElasticsearchDevServicesBuildTimeConfig config,
+            DockerImageName resolvedImageName) {
+        OpensearchContainer container = new OpensearchContainer(
+                resolvedImageName.asCompatibleSubstituteFor("opensearchproject/opensearch"));
+        ConfigureUtil.configureSharedNetwork(container, DEV_SERVICE_OPENSEARCH);
+
+        container.addEnv("bootstrap.memory_lock", "true");
+        container.addEnv("plugins.index_state_management.enabled", "false");
+
+        container.addEnv("OPENSEARCH_JAVA_OPTS", config.javaOpts);
+        return container;
+    }
+
+    private DockerImageName resolveImageName(ElasticsearchDevServicesBuildTimeConfig config,
+            Distribution resolvedDistribution) {
+        return DockerImageName.parse(config.imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor(
+                Distribution.ELASTIC.equals(resolvedDistribution)
+                        ? DEV_SERVICE_ELASTICSEARCH
+                        : DEV_SERVICE_OPENSEARCH)));
+    }
+
+    private Distribution resolveDistribution(ElasticsearchDevServicesBuildTimeConfig config,
+            DevservicesElasticsearchBuildItemsConfiguration buildItemConfig) throws BuildException {
+        // First, let's see if it was explicitly configured:
+        if (config.distribution.isPresent()) {
+            return config.distribution.get();
+        }
+        // Now let's see if we can guess it from the image:
+        if (config.imageName.isPresent()) {
+            String imageNameRepository = DockerImageName.parse(config.imageName.get()).getRepository()
+                    .toLowerCase(Locale.ROOT);
+            if (imageNameRepository.contains(DEV_SERVICE_OPENSEARCH)) {
+                return Distribution.OPENSEARCH;
+            }
+            if (imageNameRepository.contains(DEV_SERVICE_ELASTICSEARCH)) {
+                return Distribution.ELASTIC;
+            }
+            // no luck guessing so let's ask user to be more explicit:
+            throw new BuildException(
+                    "Wasn't able to determine the distribution of the search service based on the provided image name ["
+                            + config.imageName.get()
+                            + "]. Please specify the distribution explicitly.",
+                    Collections.emptyList());
+        }
+        // Otherwise, let's see if the build item has a value available:
+        if (buildItemConfig.distribution != null) {
+            return buildItemConfig.distribution;
+        }
+        // If we didn't get an explicit distribution
+        // and no image name was provided
+        // then elastic is a default distribution:
+        return DEFAULT_DISTRIBUTION;
     }
 
     private Map<String, String> buildPropertiesMap(DevservicesElasticsearchBuildItemsConfiguration buildItemConfig,
@@ -245,7 +330,7 @@ public class DevServicesElasticsearchProcessor {
     private static class DevservicesElasticsearchBuildItemsConfiguration {
         private Set<String> hostsConfigProperties;
         private String version;
-        private DevservicesElasticsearchBuildItem.Distribution distribution;
+        private Distribution distribution;
 
         private DevservicesElasticsearchBuildItemsConfiguration(List<DevservicesElasticsearchBuildItem> buildItems)
                 throws BuildException {

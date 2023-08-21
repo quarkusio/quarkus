@@ -21,6 +21,17 @@ public class FrontendResource {
     @Path("token-propagation")
     @RolesAllowed("admin")
     public String userNameTokenPropagation() {
+        return getResponseWithExchangedUsername();
+    }
+
+    @GET
+    @Path("token-propagation-with-augmentor")
+    @RolesAllowed("tester") // tester role is granted by SecurityIdentityAugmentor
+    public String userNameTokenPropagationWithSecIdentityAugmentor() {
+        return getResponseWithExchangedUsername();
+    }
+
+    private String getResponseWithExchangedUsername() {
         if ("alice".equals(jwt.getName())) {
             return "Token issued to " + jwt.getName() + " has been exchanged, new user name: "
                     + accessTokenPropagationService.getUserName();

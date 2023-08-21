@@ -2,10 +2,12 @@ package io.quarkus.narayana.jta.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import jakarta.annotation.Priority;
 import jakarta.interceptor.Interceptor;
@@ -44,6 +46,7 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -155,10 +158,16 @@ class NarayanaJtaProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     public void startRecoveryService(NarayanaJtaRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems, TransactionManagerConfiguration transactions) {
-        Map<Boolean, String> namedDataSources = new HashMap<>();
+        Map<String, String> configuredDataSourcesConfigKeys = jdbcDataSourceBuildItems.stream()
+                .map(j -> j.getName())
+                .collect(Collectors.toMap(Function.identity(),
+                        n -> DataSourceUtil.dataSourcePropertyKey(n, "jdbc.transactions")));
+        Set<String> dataSourcesWithTransactionIntegration = jdbcDataSourceBuildItems.stream()
+                .filter(j -> j.isTransactionIntegrationEnabled())
+                .map(j -> j.getName())
+                .collect(Collectors.toSet());
 
-        jdbcDataSourceBuildItems.forEach(i -> namedDataSources.put(i.isDefault(), i.getName()));
-        recorder.startRecoveryService(transactions, namedDataSources);
+        recorder.startRecoveryService(transactions, configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration);
     }
 
     @BuildStep(onlyIf = IsTest.class)

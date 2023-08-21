@@ -37,6 +37,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.Produces;
@@ -145,7 +146,6 @@ import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -1272,7 +1272,7 @@ public class ResteasyReactiveProcessor {
             final boolean noCustomAuthCompletionExMapper;
             final boolean noCustomAuthFailureExMapper;
             final boolean noCustomAuthRedirectExMapper;
-            if (vertxConfig.auth.proactive) {
+            if (vertxConfig.auth().proactive()) {
                 noCustomAuthCompletionExMapper = notFoundCustomExMapper(AuthenticationCompletionException.class.getName(),
                         AuthenticationCompletionExceptionMapper.class.getName(), exceptionMapping);
                 noCustomAuthFailureExMapper = notFoundCustomExMapper(AuthenticationFailedException.class.getName(),
@@ -1287,7 +1287,7 @@ public class ResteasyReactiveProcessor {
             }
 
             Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler, noCustomAuthCompletionExMapper,
-                    noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth.proactive);
+                    noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth().proactive());
 
             // we add failure handler right before QuarkusErrorHandler
             // so that user can define failure handlers that precede exception mappers
@@ -1356,7 +1356,7 @@ public class ResteasyReactiveProcessor {
                 .collect(Collectors.joining());
         if (message.length() > 0) {
             if (config.failOnDuplicate()) {
-                throw new ConfigurationError(message);
+                throw new DeploymentException(message);
             }
             log.warn(message);
         }
@@ -1506,10 +1506,10 @@ public class ResteasyReactiveProcessor {
                 List<HandlerChainCustomizer> securityHandlerList = consumeStandardSecurityAnnotations(method,
                         actualEndpointClass, index,
                         (c) -> Collections.singletonList(
-                                EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive)));
+                                EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth().proactive())));
                 if (securityHandlerList == null && (denyJaxRs || hasDefaultJaxRsRolesAllowed)) {
                     securityHandlerList = Collections
-                            .singletonList(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
+                            .singletonList(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth().proactive()));
                 }
                 if (applySecurityInterceptors && eagerSecurityInterceptors.get().applyInterceptorOn(method)) {
                     List<HandlerChainCustomizer> nextSecurityHandlerList = new ArrayList<>();

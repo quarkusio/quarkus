@@ -105,7 +105,7 @@ The Redis Dev Service will be enabled when the `quarkus-redis-client` extension 
 the server address has not been explicitly configured. More information can be found in the
 xref:redis-dev-services.adoc[Redis Dev Services Guide].
 
-include::{generated-dir}/config/quarkus-redis-client-config-group-dev-services-config.adoc[opts=optional, leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis-config-group-client-dev-services-config.adoc[opts=optional, leveloffset=+1]
 
 == Vault
 

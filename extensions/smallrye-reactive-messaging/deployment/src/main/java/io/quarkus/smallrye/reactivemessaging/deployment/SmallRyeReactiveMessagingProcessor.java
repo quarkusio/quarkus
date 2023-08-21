@@ -52,7 +52,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassCreator;
@@ -112,12 +111,6 @@ public class SmallRyeReactiveMessagingProcessor {
         return new AdditionalBeanBuildItem(SmallRyeReactiveMessagingLifecycle.class, Connector.class,
                 Channel.class, io.smallrye.reactive.messaging.annotations.Channel.class,
                 QuarkusWorkerPoolRegistry.class);
-    }
-
-    @BuildStep
-    void nativeRuntimeInitClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitClasses) {
-        runtimeInitClasses.produce(new RuntimeInitializedClassBuildItem(
-                "io.quarkus.smallrye.reactivemessaging.runtime.QuarkusWorkerPoolRegistry$VirtualExecutorSupplier"));
     }
 
     @BuildStep

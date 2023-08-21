@@ -1,12 +1,12 @@
 package io.quarkus.smallrye.health.runtime;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
@@ -56,22 +56,4 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
         }
     }
 
-    private static class BufferOutputStream extends OutputStream {
-
-        private final Buffer buffer;
-
-        private BufferOutputStream(Buffer buffer) {
-            this.buffer = buffer;
-        }
-
-        @Override
-        public void write(byte[] b, int off, int len) throws IOException {
-            buffer.appendBytes(b, off, len);
-        }
-
-        @Override
-        public void write(int b) throws IOException {
-            buffer.appendInt(b);
-        }
-    }
 }

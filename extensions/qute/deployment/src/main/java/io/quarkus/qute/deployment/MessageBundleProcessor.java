@@ -599,9 +599,8 @@ public class MessageBundleProcessor {
                                 } else if (checkedTemplate != null && checkedTemplate.requireTypeSafeExpressions) {
                                     incorrectExpressions.produce(new IncorrectExpressionBuildItem(expression.toOriginalString(),
                                             "Only type-safe expressions are allowed in the checked template defined via: "
-                                                    + checkedTemplate.method.declaringClass().name() + "."
-                                                    + checkedTemplate.method.name()
-                                                    + "(); an expression must be based on a checked template parameter "
+                                                    + checkedTemplate.getDescription()
+                                                    + "; an expression must be based on a checked template parameter "
                                                     + checkedTemplate.bindings.keySet()
                                                     + ", or bound via a param declaration, or the requirement must be relaxed via @CheckedTemplate(requireTypeSafeExpressions = false)",
                                             expression.getOrigin()));

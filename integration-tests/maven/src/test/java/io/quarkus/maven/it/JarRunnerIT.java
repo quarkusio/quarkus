@@ -44,11 +44,12 @@ import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 import io.quarkus.utilities.JavaBinFinder;
 
 @DisableForNative
 public class JarRunnerIT extends MojoTestBase {
+    private DevModeClient devModeClient = new DevModeClient();
 
     /**
      * Tests that a Quarkus project builds fine if the project is hosted in a directory
@@ -78,7 +79,7 @@ public class JarRunnerIT extends MojoTestBase {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
                 await().pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
         } finally {
@@ -107,7 +108,7 @@ public class JarRunnerIT extends MojoTestBase {
             // Wait until server up
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                    .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -141,7 +142,7 @@ public class JarRunnerIT extends MojoTestBase {
         Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 List.of()).start();
         try {
-            Assertions.assertEquals("builder-image is customized", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals("builder-image is customized", devModeClient.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }
@@ -166,7 +167,7 @@ public class JarRunnerIT extends MojoTestBase {
         Process process = doLaunch(new File(testDir, "app/target/quarkus-app"), Paths.get("quarkus-run.jar"), output,
                 List.of()).start();
         try {
-            Assertions.assertEquals("builder-image is commandline", DevModeTestUtils.getHttpResponse("/hello"));
+            Assertions.assertEquals("builder-image is commandline", devModeClient.getHttpResponse("/hello"));
         } finally {
             process.destroy();
         }
@@ -237,7 +238,7 @@ public class JarRunnerIT extends MojoTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
@@ -281,7 +282,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry", false);
+                        String ret = devModeClient.getHttpResponse("/cp/resourceCount/entry", false);
                         response.set(ret);
                         return true;
                     });
@@ -309,7 +310,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry", false);
+                        String ret = devModeClient.getHttpResponse("/cp/resourceCount/entry", false);
                         response.set(ret);
                         return true;
                     });
@@ -334,7 +335,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/cp/resourceCount/entry", false);
+                        String ret = devModeClient.getHttpResponse("/cp/resourceCount/entry", false);
                         response.set(ret);
                         return true;
                     });
@@ -374,7 +375,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/words/runtime", false);
+                        String ret = devModeClient.getHttpResponse("/words/runtime", false);
                         response.set(ret);
                         return true;
                     });
@@ -383,7 +384,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/words/buildtime", false);
+                        String ret = devModeClient.getHttpResponse("/words/buildtime", false);
                         response.set(ret);
                         return true;
                     });
@@ -409,7 +410,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/words/runtime", false);
+                        String ret = devModeClient.getHttpResponse("/words/runtime", false);
                         response.set(ret);
                         return true;
                     });
@@ -418,7 +419,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/words/buildtime", false);
+                        String ret = devModeClient.getHttpResponse("/words/buildtime", false);
                         response.set(ret);
                         return true;
                     });
@@ -441,7 +442,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/words/runtime", false);
+                        String ret = devModeClient.getHttpResponse("/words/runtime", false);
                         response.set(ret);
                         return true;
                     });
@@ -450,7 +451,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/words/buildtime", false);
+                        String ret = devModeClient.getHttpResponse("/words/buildtime", false);
                         response.set(ret);
                         return true;
                     });
@@ -494,7 +495,7 @@ public class JarRunnerIT extends MojoTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
             performRequest("/app/added", 404);
@@ -531,7 +532,7 @@ public class JarRunnerIT extends MojoTestBase {
             // Wait until server up
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/moved/app/hello/package", 200));
+                    .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/moved/app/hello/package", 200));
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -570,7 +571,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES)
-                    .until(() -> DevModeTestUtils.getHttpResponse("/anothermove/app/hello/package", 200));
+                    .until(() -> devModeClient.getHttpResponse("/anothermove/app/hello/package", 200));
 
             String logs = FileUtils.readFileToString(output, "UTF-8");
 
@@ -617,7 +618,7 @@ public class JarRunnerIT extends MojoTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 
@@ -656,7 +657,7 @@ public class JarRunnerIT extends MojoTestBase {
             await()
                     .pollDelay(1, TimeUnit.SECONDS)
                     .atMost(1, TimeUnit.MINUTES).until(() -> {
-                        String ret = DevModeTestUtils.getHttpResponse("/hello", true);
+                        String ret = devModeClient.getHttpResponse("/hello", true);
                         response.set(ret);
                         return ret.contains("hello:");
                     });
@@ -826,7 +827,7 @@ public class JarRunnerIT extends MojoTestBase {
             dumpFileContentOnFailure(() -> {
                 await()
                         .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello/package", 200));
+                        .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello/package", 200));
                 return null;
             }, output, ConditionTimeoutException.class);
 

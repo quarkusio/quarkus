@@ -9,6 +9,7 @@
 [![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?style=for-the-badge&logo=gitpod&logoColor=white)](https://gitpod.io/#https://github.com/quarkusio/quarkus/-/tree/main/)
 [![Supported JVM Versions](https://img.shields.io/badge/JVM-11--17--19-brightgreen.svg?style=for-the-badge&logo=openjdk)](https://github.com/quarkusio/quarkus/actions/runs/113853915/)
 [![Gradle Enterprise](https://img.shields.io/badge/Revved%20up%20by-Gradle%20Enterprise-06A0CE?style=for-the-badge&logo=gradle)](https://ge.quarkus.io/scans)
+[![GitHub Repo stars](https://img.shields.io/github/stars/quarkusio/quarkus?style=for-the-badge)](https://github.com/quarkusio/quarkus/stargazers)
 
 # Quarkus - Supersonic Subatomic Java
 
@@ -45,5 +46,3 @@ Interested in when the next release is coming? Check our [release planning](http
 ## How to build Quarkus
 
 The build instructions are available in the [contribution guide](CONTRIBUTING.md).
-
-

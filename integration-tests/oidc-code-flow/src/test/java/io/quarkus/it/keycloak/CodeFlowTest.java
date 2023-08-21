@@ -196,7 +196,7 @@ public class CodeFlowTest {
 
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
             assertNull(stateCookie.getSameSite());
-            verifyCodeVerifier(stateCookie, keycloakUrl);
+            verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             assertTrue(endpointLocation.startsWith("https"));
             endpointLocation = "http" + endpointLocation.substring(5);
@@ -259,7 +259,7 @@ public class CodeFlowTest {
             // State cookie is present
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
             assertNull(stateCookie.getSameSite());
-            verifyCodeVerifier(stateCookie, keycloakUrl);
+            verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             // Make a call without an extra state query param, status is 401
             webResponse = webClient.loadWebResponse(new WebRequest(URI.create(endpointLocation + "&state=123").toURL()));
@@ -313,7 +313,7 @@ public class CodeFlowTest {
             assertNotNull(endpointLocationUri.getRawQuery());
 
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
-            verifyCodeVerifier(stateCookie, keycloakUrl);
+            verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
             assertNull(getStateCookie(webClient, "tenant-https_test"));
@@ -351,6 +351,97 @@ public class CodeFlowTest {
     }
 
     @Test
+    public void testCodeFlowNonce() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-nonce").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-nonce", "tenant-nonce", false);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+
+            Cookie stateCookie = getStateCookie(webClient, "tenant-nonce");
+            verifyNonce(stateCookie, keycloakUrl);
+
+            URI endpointLocationUri = URI.create(endpointLocation);
+
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            assertNull(getStateCookie(webClient, "tenant-nonce"));
+
+            String endpointLocationWithoutQuery = webResponse.getResponseHeaderValue("location");
+            URI endpointLocationWithoutQueryUri = URI.create(endpointLocationWithoutQuery);
+
+            page = webClient.getPage(endpointLocationWithoutQueryUri.toURL());
+            assertEquals("tenant-nonce:reauthenticated", page.getBody().asNormalizedText());
+            Cookie sessionCookie = getSessionCookie(webClient, "tenant-nonce");
+            assertNotNull(sessionCookie);
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowMissingNonce() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant-nonce").toURL()));
+            String keycloakUrl = webResponse.getResponseHeaderValue("location");
+            verifyLocationHeader(webClient, keycloakUrl, "tenant-nonce", "tenant-nonce", false);
+
+            HtmlPage page = webClient.getPage(keycloakUrl);
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+
+            Cookie stateCookie = getStateCookie(webClient, "tenant-nonce");
+            verifyNonce(stateCookie, keycloakUrl);
+
+            URI endpointLocationUri = URI.create(endpointLocation);
+
+            String cookieValueWithoutNonce = stateCookie.getValue().split("\\|")[0];
+            Cookie stateCookieWithoutNonce = new Cookie(stateCookie.getDomain(), stateCookie.getName(),
+                    cookieValueWithoutNonce);
+            webClient.getCookieManager().clearCookies();
+            webClient.getCookieManager().addCookie(stateCookieWithoutNonce);
+            Cookie stateCookie2 = getStateCookie(webClient, "tenant-nonce");
+            assertEquals(cookieValueWithoutNonce, stateCookie2.getValue());
+
+            webResponse = webClient.loadWebResponse(new WebRequest(endpointLocationUri.toURL()));
+            assertEquals(401, webResponse.getStatusCode());
+            assertNull(getStateCookie(webClient, "tenant-nonce"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
     public void testCodeFlowForceHttpsRedirectUriAndPkceMissingCodeVerifier() throws Exception {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(false);
@@ -379,7 +470,7 @@ public class CodeFlowTest {
             String endpointLocation = webResponse.getResponseHeaderValue("location");
 
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
-            verifyCodeVerifier(stateCookie, keycloakUrl);
+            verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             assertTrue(endpointLocation.startsWith("https"));
             endpointLocation = "http" + endpointLocation.substring(5);
@@ -405,16 +496,29 @@ public class CodeFlowTest {
         }
     }
 
-    private void verifyCodeVerifier(Cookie stateCookie, String keycloakUrl) throws Exception {
+    private void verifyCodeVerifierAndNonce(Cookie stateCookie, String keycloakUrl) throws Exception {
         String encodedState = stateCookie.getValue().split("\\|")[1];
 
         byte[] secretBytes = "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU".getBytes(StandardCharsets.UTF_8);
         SecretKey key = new SecretKeySpec(OidcUtils.getSha256Digest(secretBytes), "AES");
-        String codeVerifier = OidcUtils.decryptJson(encodedState, key).getString("code_verifier");
+        JsonObject json = OidcUtils.decryptJson(encodedState, key);
+        String codeVerifier = json.getString("code_verifier");
         String codeChallenge = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(OidcUtils.getSha256Digest(codeVerifier.getBytes(StandardCharsets.US_ASCII)));
-
         assertTrue(keycloakUrl.contains("code_challenge=" + codeChallenge));
+        String nonce = json.getString("nonce");
+        assertTrue(keycloakUrl.contains("nonce=" + nonce));
+    }
+
+    private void verifyNonce(Cookie stateCookie, String keycloakUrl) throws Exception {
+        String encodedState = stateCookie.getValue().split("\\|")[1];
+
+        byte[] secretBytes = "eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU".getBytes(StandardCharsets.UTF_8);
+        SecretKey key = new SecretKeySpec(OidcUtils.getSha256Digest(secretBytes), "AES");
+        JsonObject json = OidcUtils.decryptJson(encodedState, key);
+        assertFalse(keycloakUrl.contains("code_challenge="));
+        String nonce = json.getString("nonce");
+        assertTrue(keycloakUrl.contains("nonce=" + nonce));
     }
 
     private void verifyLocationHeader(WebClient webClient, String loc, String tenant, String path, boolean httpsScheme) {

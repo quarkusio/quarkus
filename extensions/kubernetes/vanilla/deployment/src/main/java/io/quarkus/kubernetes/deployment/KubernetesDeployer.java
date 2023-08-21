@@ -55,6 +55,7 @@ import io.quarkus.kubernetes.spi.DeployStrategy;
 import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentClusterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
+import io.quarkus.kubernetes.spi.KubernetesOutputDirectoryBuildItem;
 
 public class KubernetesDeployer {
 
@@ -110,7 +111,7 @@ public class KubernetesDeployer {
             List<KubernetesDeploymentClusterBuildItem> deploymentClusters,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             OutputTargetBuildItem outputTarget,
-            KubernetesConfig kubernetesConfig,
+            KubernetesOutputDirectoryBuildItem outputDirectoryBuildItem,
             OpenshiftConfig openshiftConfig,
             ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo,
@@ -139,7 +140,7 @@ public class KubernetesDeployer {
         try (final KubernetesClient client = kubernetesClientBuilder.buildClient()) {
             deploymentResult
                     .produce(deploy(selectedDeploymentTarget.get().getEntry(), client,
-                            kubernetesConfig.getEffectiveOutputDirectory(outputTarget.getOutputDirectory()),
+                            outputDirectoryBuildItem.getOutputDirectory(),
                             openshiftConfig, applicationInfo, optionalResourceDefinitions));
         }
     }

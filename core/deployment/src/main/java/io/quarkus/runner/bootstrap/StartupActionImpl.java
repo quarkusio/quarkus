@@ -9,9 +9,9 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -45,27 +45,36 @@ public class StartupActionImpl implements StartupAction {
     private static final Logger log = Logger.getLogger(StartupActionImpl.class);
 
     private final CuratedApplication curatedApplication;
-    private final BuildResult buildResult;
     private final QuarkusClassLoader runtimeClassLoader;
+
+    private final String mainClassName;
+    private final String applicationClassName;
+    private final Map<String, String> devServicesProperties;
+    private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
-        this.buildResult = buildResult;
+
+        this.mainClassName = buildResult.consume(MainClassBuildItem.class).getClassName();
+        this.applicationClassName = buildResult.consume(ApplicationClassNameBuildItem.class).getClassName();
+        this.devServicesProperties = extractDevServicesProperties(buildResult);
+        this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
+
         Set<String> eagerClasses = new HashSet<>();
-        Map<String, byte[]> transformedClasses = extractTransformers(eagerClasses);
+        Map<String, byte[]> transformedClasses = extractTransformers(buildResult, eagerClasses);
         QuarkusClassLoader baseClassLoader = curatedApplication.getBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
         //so we have some differences between dev and test mode here.
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
-        Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(true));
+        Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(buildResult, true));
         if (curatedApplication.isFlatClassPath()) {
-            resources.putAll(extractGeneratedResources(false));
+            resources.putAll(extractGeneratedResources(buildResult, false));
             baseClassLoader.reset(resources, transformedClasses);
             runtimeClassLoader = baseClassLoader;
         } else {
-            baseClassLoader.reset(extractGeneratedResources(false),
+            baseClassLoader.reset(extractGeneratedResources(buildResult, false),
                     transformedClasses);
             runtimeClassLoader = curatedApplication.createRuntimeClassLoader(
                     resources, transformedClasses);
@@ -91,7 +100,7 @@ public class StartupActionImpl implements StartupAction {
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-        final String className = buildResult.consume(MainClassBuildItem.class).getClassName();
+        final String className = mainClassName;
         try {
             // force init here
             Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
@@ -109,7 +118,7 @@ public class StartupActionImpl implements StartupAction {
                             ApplicationStateNotification.notifyStartupFailed(e);
                         }
                     } finally {
-                        for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+                        for (var i : runtimeApplicationShutdownBuildItems) {
                             try {
                                 i.getCloseTask().run();
                             } catch (Throwable t) {
@@ -148,7 +157,7 @@ public class StartupActionImpl implements StartupAction {
             try {
                 final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
                         runtimeClassLoader);
-                configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG.getName())
+                configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
                         .invoke(null);
             } catch (Throwable t2) {
                 t.addSuppressed(t2);
@@ -180,7 +189,7 @@ public class StartupActionImpl implements StartupAction {
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-        final String className = buildResult.consume(MainClassBuildItem.class).getClassName();
+        final String className = mainClassName;
         try {
             AtomicInteger result = new AtomicInteger();
             Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
@@ -224,7 +233,7 @@ public class StartupActionImpl implements StartupAction {
         } finally {
             runtimeClassLoader.close();
             Thread.currentThread().setContextClassLoader(old);
-            for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+            for (var i : runtimeApplicationShutdownBuildItems) {
                 try {
                     i.getCloseTask().run();
                 } catch (Throwable t) {
@@ -250,7 +259,7 @@ public class StartupActionImpl implements StartupAction {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
-            final String className = buildResult.consume(ApplicationClassNameBuildItem.class).getClassName();
+            final String className = applicationClassName;
             Class<?> appClass;
             try {
                 // force init here
@@ -260,7 +269,7 @@ public class StartupActionImpl implements StartupAction {
                 try {
                     final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
                             runtimeClassLoader);
-                    configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_BOOTSTRAP_CONFIG.getName())
+                    configClass.getDeclaredMethod(RunTimeConfigurationGenerator.C_CREATE_RUN_TIME_CONFIG.getName())
                             .invoke(null);
                 } catch (Throwable t2) {
                     t.addSuppressed(t2);
@@ -289,7 +298,7 @@ public class StartupActionImpl implements StartupAction {
                     } finally {
                         ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
 
-                        for (var i : buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class)) {
+                        for (var i : runtimeApplicationShutdownBuildItems) {
                             try {
                                 i.getCloseTask().run();
                             } catch (Throwable t) {
@@ -323,15 +332,19 @@ public class StartupActionImpl implements StartupAction {
 
     @Override
     public Map<String, String> getDevServicesProperties() {
+        return devServicesProperties;
+    }
+
+    private static Map<String, String> extractDevServicesProperties(BuildResult buildResult) {
         DevServicesLauncherConfigResultBuildItem result = buildResult
                 .consumeOptional(DevServicesLauncherConfigResultBuildItem.class);
         if (result == null) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         return new HashMap<>(result.getConfig());
     }
 
-    private Map<String, byte[]> extractTransformers(Set<String> eagerClasses) {
+    private static Map<String, byte[]> extractTransformers(BuildResult buildResult, Set<String> eagerClasses) {
         Map<String, byte[]> ret = new HashMap<>();
         TransformedClassesBuildItem transformers = buildResult.consume(TransformedClassesBuildItem.class);
         for (Set<TransformedClassesBuildItem.TransformedClass> i : transformers.getTransformedClassesByJar().values()) {
@@ -347,7 +360,7 @@ public class StartupActionImpl implements StartupAction {
         return ret;
     }
 
-    private Map<String, byte[]> extractGeneratedResources(boolean applicationClasses) {
+    private static Map<String, byte[]> extractGeneratedResources(BuildResult buildResult, boolean applicationClasses) {
         Map<String, byte[]> data = new HashMap<>();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {

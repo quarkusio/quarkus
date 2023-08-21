@@ -219,7 +219,7 @@ public class VertxCoreRecorder {
                 return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode, nonDevModeTccl);
             }
         };
-        if (conf != null && conf.cluster != null && conf.cluster.clustered) {
+        if (conf != null && conf.cluster() != null && conf.cluster().clustered()) {
             CompletableFuture<Vertx> latch = new CompletableFuture<>();
             new VertxBuilder(options)
                     .threadFactory(vertxThreadFactory)
@@ -296,7 +296,7 @@ public class VertxCoreRecorder {
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options, boolean allowClustering,
             ShutdownContext shutdown) {
 
-        if (!conf.useAsyncDNS) {
+        if (!conf.useAsyncDNS()) {
             System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
         }
 
@@ -309,13 +309,13 @@ public class VertxCoreRecorder {
         }
 
         FileSystemOptions fileSystemOptions = new FileSystemOptions()
-                .setFileCachingEnabled(conf.caching)
-                .setClassPathResolvingEnabled(conf.classpathResolving);
+                .setFileCachingEnabled(conf.caching())
+                .setClassPathResolvingEnabled(conf.classpathResolving());
 
         String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
         if (fileCacheDir == null) {
             File tmp = new File(System.getProperty("java.io.tmpdir", ".") + File.separator + VERTX_CACHE);
-            boolean cacheDirRequired = conf.caching || conf.classpathResolving;
+            boolean cacheDirRequired = conf.caching() || conf.classpathResolving();
             if (!tmp.isDirectory() && cacheDirRequired) {
                 if (!tmp.mkdirs()) {
                     LOGGER.warnf("Unable to create Vert.x cache directory : %s", tmp.getAbsolutePath());
@@ -349,26 +349,26 @@ public class VertxCoreRecorder {
         }
 
         options.setFileSystemOptions(fileSystemOptions);
-        options.setWorkerPoolSize(conf.workerPoolSize);
-        options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize);
-        blockingThreadPoolSize = conf.internalBlockingPoolSize;
+        options.setWorkerPoolSize(conf.workerPoolSize());
+        options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize());
+        blockingThreadPoolSize = conf.internalBlockingPoolSize();
 
-        options.setBlockedThreadCheckInterval(conf.warningExceptionTime.toMillis());
-        if (conf.eventLoopsPoolSize.isPresent()) {
-            options.setEventLoopPoolSize(conf.eventLoopsPoolSize.getAsInt());
+        options.setBlockedThreadCheckInterval(conf.warningExceptionTime().toMillis());
+        if (conf.eventLoopsPoolSize().isPresent()) {
+            options.setEventLoopPoolSize(conf.eventLoopsPoolSize().getAsInt());
         } else {
             options.setEventLoopPoolSize(calculateDefaultIOThreads());
         }
 
-        options.setMaxEventLoopExecuteTime(conf.maxEventLoopExecuteTime.toMillis());
+        options.setMaxEventLoopExecuteTime(conf.maxEventLoopExecuteTime().toMillis());
         options.setMaxEventLoopExecuteTimeUnit(TimeUnit.MILLISECONDS);
 
-        options.setMaxWorkerExecuteTime(conf.maxWorkerExecuteTime.toMillis());
+        options.setMaxWorkerExecuteTime(conf.maxWorkerExecuteTime().toMillis());
         options.setMaxWorkerExecuteTimeUnit(TimeUnit.MILLISECONDS);
 
-        options.setWarningExceptionTime(conf.warningExceptionTime.toNanos());
+        options.setWarningExceptionTime(conf.warningExceptionTime().toNanos());
 
-        options.setPreferNativeTransport(conf.preferNativeTransport);
+        options.setPreferNativeTransport(conf.preferNativeTransport());
 
         return options;
     }
@@ -423,70 +423,72 @@ public class VertxCoreRecorder {
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException("Exception when closing Vert.x instance", e);
             }
+            LateBoundMDCProvider.setMDCProviderDelegate(null);
             vertx = null;
         }
     }
 
     private static void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
-        ClusterConfiguration cluster = conf.cluster;
-        options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
-        options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval.toMillis());
-        if (cluster.host != null) {
-            options.getEventBusOptions().setHost(cluster.host);
+        ClusterConfiguration cluster = conf.cluster();
+        options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval().toMillis());
+        options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval().toMillis());
+        if (cluster.host() != null) {
+            options.getEventBusOptions().setHost(cluster.host());
         }
-        if (cluster.port.isPresent()) {
-            options.getEventBusOptions().setPort(cluster.port.getAsInt());
+        if (cluster.port().isPresent()) {
+            options.getEventBusOptions().setPort(cluster.port().getAsInt());
         }
-        if (cluster.publicHost.isPresent()) {
-            options.getEventBusOptions().setClusterPublicHost(cluster.publicHost.get());
+        if (cluster.publicHost().isPresent()) {
+            options.getEventBusOptions().setClusterPublicHost(cluster.publicHost().get());
         }
-        if (cluster.publicPort.isPresent()) {
-            options.getEventBusOptions().setPort(cluster.publicPort.getAsInt());
+        if (cluster.publicPort().isPresent()) {
+            options.getEventBusOptions().setPort(cluster.publicPort().getAsInt());
         }
     }
 
     private static void setEventBusOptions(VertxConfiguration conf, VertxOptions options) {
-        EventBusConfiguration eb = conf.eventbus;
+        EventBusConfiguration eb = conf.eventbus();
         EventBusOptions opts = new EventBusOptions();
-        opts.setAcceptBacklog(eb.acceptBacklog.orElse(-1));
-        opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth.toUpperCase()));
-        opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout.toMillis())));
+        opts.setAcceptBacklog(eb.acceptBacklog().orElse(-1));
+        opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth().toUpperCase()));
+        opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout().toMillis())));
         opts.setIdleTimeout(
-                eb.idleTimeout.isPresent() ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout.get().getSeconds()))
+                eb.idleTimeout().isPresent()
+                        ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout().get().getSeconds()))
                         : 0);
-        opts.setSendBufferSize(eb.sendBufferSize.orElse(-1));
-        opts.setSoLinger(eb.soLinger.orElse(-1));
-        opts.setSsl(eb.ssl);
-        opts.setReceiveBufferSize(eb.receiveBufferSize.orElse(-1));
-        opts.setReconnectAttempts(eb.reconnectAttempts);
-        opts.setReconnectInterval(eb.reconnectInterval.toMillis());
-        opts.setReuseAddress(eb.reuseAddress);
-        opts.setReusePort(eb.reusePort);
-        opts.setTrafficClass(eb.trafficClass.orElse(-1));
-        opts.setTcpKeepAlive(eb.tcpKeepAlive);
-        opts.setTcpNoDelay(eb.tcpNoDelay);
-        opts.setTrustAll(eb.trustAll);
+        opts.setSendBufferSize(eb.sendBufferSize().orElse(-1));
+        opts.setSoLinger(eb.soLinger().orElse(-1));
+        opts.setSsl(eb.ssl());
+        opts.setReceiveBufferSize(eb.receiveBufferSize().orElse(-1));
+        opts.setReconnectAttempts(eb.reconnectAttempts());
+        opts.setReconnectInterval(eb.reconnectInterval().toMillis());
+        opts.setReuseAddress(eb.reuseAddress());
+        opts.setReusePort(eb.reusePort());
+        opts.setTrafficClass(eb.trafficClass().orElse(-1));
+        opts.setTcpKeepAlive(eb.tcpKeepAlive());
+        opts.setTcpNoDelay(eb.tcpNoDelay());
+        opts.setTrustAll(eb.trustAll());
 
         // Certificates and trust.
-        configurePemKeyCertOptions(opts, eb.keyCertificatePem);
-        configureJksKeyCertOptions(opts, eb.keyCertificateJks);
-        configurePfxKeyCertOptions(opts, eb.keyCertificatePfx);
+        configurePemKeyCertOptions(opts, eb.keyCertificatePem());
+        configureJksKeyCertOptions(opts, eb.keyCertificateJks());
+        configurePfxKeyCertOptions(opts, eb.keyCertificatePfx());
 
-        configurePemTrustOptions(opts, eb.trustCertificatePem);
-        configureJksKeyCertOptions(opts, eb.trustCertificateJks);
-        configurePfxTrustOptions(opts, eb.trustCertificatePfx);
+        configurePemTrustOptions(opts, eb.trustCertificatePem());
+        configureJksKeyCertOptions(opts, eb.trustCertificateJks());
+        configurePfxTrustOptions(opts, eb.trustCertificatePfx());
 
         options.setEventBusOptions(opts);
     }
 
     private static void setAddressResolverOptions(VertxConfiguration conf, VertxOptions options) {
-        AddressResolverConfiguration ar = conf.resolver;
+        AddressResolverConfiguration ar = conf.resolver();
         AddressResolverOptions opts = new AddressResolverOptions();
-        opts.setCacheMaxTimeToLive(ar.cacheMaxTimeToLive);
-        opts.setCacheMinTimeToLive(ar.cacheMinTimeToLive);
-        opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive);
-        opts.setMaxQueries(ar.maxQueries);
-        opts.setQueryTimeout(ar.queryTimeout.toMillis());
+        opts.setCacheMaxTimeToLive(ar.cacheMaxTimeToLive());
+        opts.setCacheMinTimeToLive(ar.cacheMinTimeToLive());
+        opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive());
+        opts.setMaxQueries(ar.maxQueries());
+        opts.setQueryTimeout(ar.queryTimeout().toMillis());
 
         options.setAddressResolverOptions(opts);
     }
@@ -512,8 +514,8 @@ public class VertxCoreRecorder {
 
     public Supplier<Integer> calculateEventLoopThreads(VertxConfiguration conf) {
         int threads;
-        if (conf.eventLoopsPoolSize.isPresent()) {
-            threads = conf.eventLoopsPoolSize.getAsInt();
+        if (conf.eventLoopsPoolSize().isPresent()) {
+            threads = conf.eventLoopsPoolSize().getAsInt();
         } else {
             threads = calculateDefaultIOThreads();
         }

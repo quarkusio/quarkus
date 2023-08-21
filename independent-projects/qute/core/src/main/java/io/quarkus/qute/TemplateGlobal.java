@@ -7,6 +7,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
+ * <p>
+ * <strong>IMPORTANT: This annotation only works in a fully integrated environment; such as a Quarkus application.</strong>
+ * </p>
+ *
  * Denotes static fields and methods that supply global variables which are accessible in every template.
  * <p>
  * If a class is annotated with {@link TemplateGlobal} then every non-void non-private static method that declares no parameters

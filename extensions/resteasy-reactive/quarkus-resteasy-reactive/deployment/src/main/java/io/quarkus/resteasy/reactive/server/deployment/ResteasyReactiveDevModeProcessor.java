@@ -29,6 +29,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.console.QuarkusCommand;
+import io.quarkus.devui.deployment.ide.IdeProcessor;
 import io.quarkus.resteasy.reactive.server.runtime.ExceptionMapperRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.NotFoundExceptionMapper;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
@@ -36,7 +37,6 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.RouteDescriptionBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.DevConsoleProcessor;
 import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
 
@@ -150,7 +150,7 @@ public class ResteasyReactiveDevModeProcessor {
 
         @Override
         public CommandResult doExecute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            DevConsoleProcessor.openBrowser(rp, np, url.startsWith("/") ? url : "/" + url, host, port);
+            IdeProcessor.openBrowser(rp, np, url.startsWith("/") ? url : "/" + url, host, port);
             return CommandResult.SUCCESS;
         }
     }

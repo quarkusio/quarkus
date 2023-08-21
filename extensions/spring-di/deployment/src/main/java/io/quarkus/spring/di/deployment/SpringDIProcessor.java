@@ -37,6 +37,7 @@ import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 
 /**
@@ -44,6 +45,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
  * Arc's handling of annotation mapping (by creating an extra abstraction layer on top of the Jandex index)
  * suits this sort of handling perfectly.
  */
+@BuildSteps(onlyIf = SpringDiEnabled.class)
 public class SpringDIProcessor {
 
     private static final DotName SPRING_SCOPE_ANNOTATION = DotName.createSimple("org.springframework.context.annotation.Scope");

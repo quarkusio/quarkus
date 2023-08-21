@@ -13,10 +13,14 @@ PRG_PATH=$( cd "$(dirname "$0")" ; pwd -P )
 
 JSON=$(cat ${PRG_PATH}/virtual-threads-tests.json)
 
-# Step 0: print unfiltered json and exit in case the parameter is empty (assumption: full build)
-if [ -z "$1" ]
+# Step 0: print unfiltered json and exit in case the parameter is '_all_' (full build) or print nothing if empty (no changes)
+if [ "$1" == '_all_' ]
 then
   echo "${JSON}"
+  exit 0
+elif [ -z "$1" ]
+then
+  echo ''
   exit 0
 fi
 
@@ -26,7 +30,7 @@ EXPR='((?:(?<=^)|(?<=,)|(?<=, ))('
 while read -r impacted
 do
   EXPR+="${impacted}|"
-done < <(echo -n "$1" | ggrep -Po '(?<=integration-tests/virtual-threads/).+')
+done < <(echo -n "$1" | grep -Po '(?<=integration-tests/virtual-threads/).+')
 EXPR+=')(,|$))+'
 
 # Step 2: apply the filter expression via grep to each "test-modules" list and replace each original list with the filtered one
@@ -35,7 +39,7 @@ do
   # Notes:
   # - trailing "|" (after EXPR) avoids grep return code > 0 if nothing matches (which is a valid case)
   # - "paste" joins all matches to get a single line
-  FILTERED=$(echo -n "${modules}" | ggrep -Po "${EXPR}|" | paste -sd " " -)
+  FILTERED=$(echo -n "${modules}" | grep -Po "${EXPR}|" | paste -sd " " -)
   JSON=$(echo -n "${JSON}" | sed "s|${modules}|${FILTERED}|")
 done < <(echo -n "${JSON}" | jq -r '.include[] | ."test-modules"')
 

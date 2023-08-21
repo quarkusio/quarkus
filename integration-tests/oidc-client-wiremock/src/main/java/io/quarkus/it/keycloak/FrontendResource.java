@@ -63,7 +63,7 @@ public class FrontendResource {
     @Path("echoRefreshTokenOnly")
     @Produces("text/plain")
     public Uni<String> echoRefreshTokenOnly(@QueryParam("refreshToken") String refreshToken) {
-        return clients.getClient("refresh").refreshTokens(refreshToken)
+        return clients.getClient("refresh").refreshTokens(refreshToken, Map.of("extra_param", "extra_param_value"))
                 .onItem().transform(t -> t.getAccessToken());
     }
 

@@ -39,8 +39,8 @@ That thread is dedicated to this specific processing until the processing comple
 Thus, you can use _Thread Locals_ to propagate data along the processing, and no other processing unit will use that thread until the completion of the current one.
 
 With the reactive model, the code runs on event loop threads.
-These event loops execute multiple concurrent processing units. F
-or example, the same event loop can handle multiple concurrent HTTP requests.
+These event loops execute multiple concurrent processing units. For example,
+the same event loop can handle multiple concurrent HTTP requests.
 The following picture illustrates this reactive execution model:
 
 image::reactive-continuation.png[alt=Continuation in the reactive execution model, width=80%, align=center]
@@ -181,8 +181,20 @@ Other extensions should follow a similar pattern when they are setting up a new 
 In other cases, it might be helpful to mark the current context as not safe instead explicitly; for example, if an existing context needs to be shared across multiple workers to process some operations in parallel: by marking and un-marking appropriately the same
 context can have spans in which it's safe, followed by spans in which it's not safe.
 
+To mark a context as safe, you can:
+
+1. Use the `io.quarkus.vertx.SafeVertxContext` annotation
+2. Use the `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle` class
+
 By using the `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle` class, the current context can be explicitly marked as `safe`, or it can be explicitly marked as `unsafe`; there's a third state which is the default of any new context: `unmarked`.
 The default is to consider any unmarked context to be `unsafe`, unless the system property `io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.UNRESTRICTED_BY_DEFAULT` is set to `true`;
+
+The `SafeVertxContext` annotation marks the current duplicated context as safe and invokes the annotated method if the context is `unmarked` or already marked as `safe`.
+If the context is marked as `unsafe`, you can force it to be `safe` using the `force=true` parameter.
+However, this possibility must be used carefully.
+
+IMPORTANT: The `@SafeVertxContext` annotation is a CDI interceptor binding annotation.
+Therefore, it only works for CDI beans and on non-private methods.
 
 == Extensions supporting duplicated contexts
 

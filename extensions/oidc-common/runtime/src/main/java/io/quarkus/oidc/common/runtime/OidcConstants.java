@@ -73,4 +73,5 @@ public final class OidcConstants {
     public static final String ID_TOKEN_SID_CLAIM = "sid";
 
     public static final String OPENID_SCOPE = "openid";
+    public static final String NONCE = "nonce";
 }

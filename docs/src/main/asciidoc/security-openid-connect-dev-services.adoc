@@ -105,7 +105,7 @@ You can use an `eraser` symbol in the right bottom corner to clear the test resu
 
 Sometimes ID tokens are forwarded to the application frontends as bearer tokens as well for the endpoints be aware about the user who is currently logged into SPA or to perform an out-of-band token verification. Choose `Test with ID Token` option in such cases.
 
-Manually entering the service paths is not ideal, so please see the <<test-with-swagger-graphql, Test with Swagger UI or GraphQL UI>> section about enabling Swagger or GraphQL UI for testing the service with the access token already acquired by OIDC Dev UI.
+Manually entering the service paths is not ideal, so please see the <<test-with-swagger-graphql,Test with Swagger UI or GraphQL UI>> section about enabling Swagger or GraphQL UI for testing the service with the access token already acquired by OIDC Dev UI.
 
 Finally, you can select a `Log Out` image::dev-ui-keycloak-logout.png option if you'd like to log out and authenticate to Keycloak as a different user.
 
@@ -198,7 +198,7 @@ To make Dev UI more useful for supporting the development of OIDC `web-app` appl
 %dev.quarkus.oidc.application-type=service
 ----
 
-It will ensure that all Dev UI options described in <<develop-service-applications, Developing OpenID Connect Service Applications>> will be available when your `web-app` application is run in dev mode. The limitation of this approach is that both access and ID tokens returned with the code flow and acquired with Dev UI will be sent to the endpoint as HTTP `Bearer` tokens - which will not work well if your endpoint requires the injection of `IdToken`.
+It will ensure that all Dev UI options described in <<develop-service-applications,Developing OpenID Connect Service Applications>> will be available when your `web-app` application is run in dev mode. The limitation of this approach is that both access and ID tokens returned with the code flow and acquired with Dev UI will be sent to the endpoint as HTTP `Bearer` tokens - which will not work well if your endpoint requires the injection of `IdToken`.
 However, it will work as expected if your `web-app` application only uses the access token, for example, as a source of roles or to get `UserInfo`, even if it is assumed to be a `service` application in dev mode.
 
 Even a better option is to use a `hybrid` application type in devmode:

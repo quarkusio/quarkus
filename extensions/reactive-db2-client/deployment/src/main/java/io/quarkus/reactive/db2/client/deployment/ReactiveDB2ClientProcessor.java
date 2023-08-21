@@ -19,7 +19,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
-import io.quarkus.arc.deployment.devconsole.Name;
+import io.quarkus.arc.deployment.devui.Name;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -80,12 +80,7 @@ class ReactiveDB2ClientProcessor {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_DB2_CLIENT));
 
-        createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, db2Pool, vertxPool, syntheticBeans,
-                DataSourceUtil.DEFAULT_DATASOURCE_NAME, dataSourcesBuildTimeConfig,
-                dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactiveDB2Config, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem);
-
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
             createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, db2Pool, vertxPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveDB2Config, defaultDataSourceDbKindBuildItems,
@@ -165,7 +160,7 @@ class ReactiveDB2ClientProcessor {
 
         healthChecks.produce(
                 new HealthBuildItem("io.quarkus.reactive.db2.client.runtime.health.ReactiveDB2DataSourcesHealthCheck",
-                        dataSourcesBuildTimeConfig.healthEnabled));
+                        dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
     private void createPoolIfDefined(DB2PoolRecorder recorder,
@@ -229,14 +224,14 @@ class ReactiveDB2ClientProcessor {
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .getDataSourceRuntimeConfig(dataSourceName);
+                .dataSources().get(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .getDataSourceReactiveBuildTimeConfig(dataSourceName);
 
-        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind,
+        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
-                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices.enabled
-                        .orElse(dataSourcesBuildTimeConfig.namedDataSources.isEmpty()),
+                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
+                        .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
 
         if (!dbKind.isPresent()) {
@@ -244,7 +239,7 @@ class ReactiveDB2ClientProcessor {
         }
 
         if (!DatabaseKind.isDB2(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled) {
+                || !dataSourceReactiveBuildTimeConfig.enabled()) {
             return false;
         }
 
@@ -260,7 +255,7 @@ class ReactiveDB2ClientProcessor {
             return true;
         }
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.namedDataSources.keySet()) {
+        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
             if (isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 return true;

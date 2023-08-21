@@ -9,11 +9,12 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.gradle.BuildResult;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
+import io.quarkus.test.devmode.util.DevModeClient;
 
 public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
 
     public static final String NATIVE_IMAGE_NAME = "foo-1.0.0-SNAPSHOT-runner";
+    private DevModeClient devModeClient = new DevModeClient();
 
     @Test
     public void shouldBuildNativeImage() throws Exception {
@@ -33,7 +34,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            final String response = devModeClient.getHttpResponse("/hello");
             assertThat(response)
                     .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
                     .contains("hello");
@@ -63,7 +64,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            final String response = devModeClient.getHttpResponse("/hello");
             assertThat(response)
                     .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
                     .contains("hello");
@@ -93,7 +94,7 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
         try {
-            final String response = DevModeTestUtils.getHttpResponse("/hello");
+            final String response = devModeClient.getHttpResponse("/hello");
             assertThat(response)
                     .withFailMessage("Response %s for /hello was expected to contain the hello, but didn't", response)
                     .contains("hello");

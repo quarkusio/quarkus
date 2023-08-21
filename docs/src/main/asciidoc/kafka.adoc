@@ -714,7 +714,7 @@ The `checkpoint` commit strategy is an experimental feature and can change in th
 
 Smallrye Reactive Messaging `checkpoint` commit strategy allows consumer applications to process messages in a stateful manner, while also respecting Kafka consumer scalability.
 An incoming channel with `checkpoint` commit strategy persists consumer offsets on an external 
-<<state-stores, state store>>, such as a relational database or a key-value store.
+<<state-stores,state store>>, such as a relational database or a key-value store.
 As a result of processing consumed records, the consumer application can accumulate an internal state for each topic-partition assigned to the Kafka consumer. 
 This local state will be periodically persisted to the state store and will be associated with the offset of the record that produced it.
 
@@ -788,7 +788,7 @@ Quarkus provides following state store implementations:
 
 - `quarkus-redis`: Uses the xref:redis-reference.adoc[`quarkus-redis-client`] extension to persist processing states. 
 Jackson is used to serialize processing state in Json. For complex objects it is required to configure the `checkpoint.state-type` property with the class name of the object.
-By default, the state store uses the default redis client, but if a link:https://quarkus.io/guides/redis-reference#default-and-named-clients[named client] is to be used, the client name can be specified using the `mp.messaging.incoming.[channel-name].checkpoint.quarkus-redis.client-name` property.
+By default, the state store uses the default redis client, but if a xref:redis-reference.adoc#default-and-named-clients[named client] is to be used, the client name can be specified using the `mp.messaging.incoming.[channel-name].checkpoint.quarkus-redis.client-name` property.
 Processing states will be stored in Redis using the key naming scheme `[consumer-group-id]:[topic]:[partition]`.
 
 For example the configuration of the previous code would be the following:
@@ -1300,7 +1300,7 @@ While a transaction is in progress, subsequent calls to the `withTransaction`, i
 
 Note that in Reactive Messaging, the execution of processing methods, is already serialized, unless `@Blocking(ordered = false)` is used.
 If `withTransaction` can be called concurrently, for example from a REST endpoint, it is recommended to limit the concurrency of the execution.
-This can be done using the `@Bulkhead` annotation from link:https://quarkus.io/guides/smallrye-fault-tolerance[_Microprofile Fault Tolerance_].
+This can be done using the `@Bulkhead` annotation from xref:smallrye-fault-tolerance.adoc[_Microprofile Fault Tolerance_].
 
 An example usage can be found in <<chaining-kafka-transactions-with-hibernate-reactive-transactions>>.
 ====
@@ -1589,7 +1589,7 @@ NOTE: With JSON serialization correctly configured, you can also use `Publisher<
 === Serializing via Jackson
 
 Quarkus has built-in support for JSON serialization and deserialization based on Jackson.
-It will also <<serialization-generation, generate>> the serializer and deserializer for you, so you do not have to configure anything.
+It will also <<serialization-generation,generate>> the serializer and deserializer for you, so you do not have to configure anything.
 When generation is disabled, you can use the provided `ObjectMapperSerializer` and `ObjectMapperDeserializer` as explained below.
 
 There is an existing `ObjectMapperSerializer` that can be used to serialize all data objects via Jackson.

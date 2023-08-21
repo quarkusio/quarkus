@@ -58,6 +58,7 @@ final public class Constants {
     public static final String ANNOTATION_DEFAULT_CONVERTER = "io.quarkus.runtime.annotations.DefaultConverter";
     public static final String ANNOTATION_CONVERT_WITH = "io.quarkus.runtime.annotations.ConvertWith";
     public static final String ANNOTATION_CONFIG_GROUP = "io.quarkus.runtime.annotations.ConfigGroup";
+    public static final String ANNOTATION_CONFIG_DOC_IGNORE = "io.quarkus.runtime.annotations.ConfigDocIgnore";
     public static final String ANNOTATION_CONFIG_DOC_MAP_KEY = "io.quarkus.runtime.annotations.ConfigDocMapKey";
     public static final String ANNOTATION_CONFIG_DOC_SECTION = "io.quarkus.runtime.annotations.ConfigDocSection";
     public static final String ANNOTATION_CONFIG_DOC_ENUM_VALUE = "io.quarkus.runtime.annotations.ConfigDocEnumValue";

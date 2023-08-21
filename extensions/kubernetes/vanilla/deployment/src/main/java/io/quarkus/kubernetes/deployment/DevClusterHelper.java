@@ -92,7 +92,7 @@ public class DevClusterHelper {
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
         result.addAll(KubernetesCommonHelper.createDecorators(project, clusterKind, name, config,
                 metricsConfiguration, kubernetesClientConfiguration,
-                annotations, labels, command,
+                annotations, labels, image, command,
                 port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings));
 
         image.ifPresent(i -> {

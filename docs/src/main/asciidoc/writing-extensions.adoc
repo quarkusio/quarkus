@@ -1373,7 +1373,7 @@ If the guide includes an `application.properties` example, a tip must be include
 [source, asciidoc]
 ----
 [TIP]
-For more information about the extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+For more information about the extension configuration please refer to the <<configuration-reference,Configuration Reference>>.
 ----
 
 And at the end of the guide, the extensive configuration documentation:
@@ -1388,7 +1388,7 @@ And at the end of the guide, the extensive configuration documentation:
 
 [WARNING]
 ====
-All documentation should be generated and validated before being commited.
+All documentation should be generated and validated before being committed.
 ====
 
 === Conditional Step Inclusion
@@ -1549,6 +1549,11 @@ method, and at runtime will be substituted with the class whose name was passed 
 However, this method should not be needed in most use cases because directly loading deployment/application classes at processing time in build steps is safe.
 Therefore, this method is deprecated.
 Nonetheless, there are some use cases where this method comes in handy, such as referring to classes that were generated in previous build steps using `GeneratedClassBuildItem`.
+
+==== Runtime Classpath check
+
+Extensions often need a way to determine whether a given class is part of the application's runtime classpath.
+The proper way for an extension to perform this check is to use `io.quarkus.bootstrap.classloading.QuarkusClassLoader.isClassPresentAtRuntime`.
 
 ==== Printing step execution time
 
@@ -3029,7 +3034,7 @@ Before publishing your extension to the xref:tooling.adoc[Quarkus tooling], make
 
 * Your extension is published in Maven Central
 
-* Your extension repository is configured to use the <<ecosystem-ci, Ecosystem CI>>.
+* Your extension repository is configured to use the <<ecosystem-ci,Ecosystem CI>>.
 
 Then you must create a pull request adding a `your-extension.yaml` file in the `extensions/` directory in the link:https://github.com/quarkusio/quarkus-extension-catalog[Quarkus Extension Catalog]. The YAML must have the following structure:
 

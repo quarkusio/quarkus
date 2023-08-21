@@ -51,7 +51,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.wildfly.common.Assert;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.proxy.ProxyConfiguration;
 import io.quarkus.deployment.proxy.ProxyFactory;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
@@ -71,7 +70,6 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
 import io.quarkus.runtime.annotations.IgnoreProperty;
-import io.quarkus.runtime.annotations.RecordableConstructor;
 import io.quarkus.runtime.annotations.RelaxedValidation;
 
 /**
@@ -114,7 +112,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final boolean staticInit;
     private final ClassLoader classLoader;
 
-    private static final Map<Class<?>, ProxyFactory<?>> recordingProxyFactories = new ConcurrentHashMap<>();
     private final Map<Class<?>, ProxyFactory<?>> returnValueProxy = new ConcurrentHashMap<>();
 
     private final Map<Class<?>, Object> existingProxyClasses = new ConcurrentHashMap<>();
@@ -364,9 +361,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
         };
 
         try {
-            if (recordingProxyFactories.containsKey(theClass)) {
-                return (T) recordingProxyFactories.get(theClass).newInstance(invocationHandler);
+            ProxyFactory<T> factory = RecordingProxyFactories.get(theClass);
+
+            if (factory != null) {
+                return factory.newInstance(invocationHandler);
             }
+
             String proxyNameSuffix = "$$RecordingProxyProxy" + COUNT.incrementAndGet();
 
             ProxyConfiguration<T> proxyConfiguration = new ProxyConfiguration<T>()
@@ -374,19 +374,10 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     .setClassLoader(classLoader)
                     .setAnchorClass(getClass())
                     .setProxyNameSuffix(proxyNameSuffix);
-            ProxyFactory<T> factory = new ProxyFactory<T>(proxyConfiguration);
+            factory = new ProxyFactory<T>(proxyConfiguration);
             T recordingProxy = factory.newInstance(invocationHandler);
             existingProxyClasses.put(theClass, recordingProxy);
-            recordingProxyFactories.put(theClass, factory);
-
-            if (theClass.getClassLoader() instanceof QuarkusClassLoader) {
-                ((QuarkusClassLoader) theClass.getClassLoader()).addCloseTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        recordingProxyFactories.remove(theClass);
-                    }
-                });
-            }
+            RecordingProxyFactories.put(theClass, factory);
             return recordingProxy;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException(e);
@@ -415,36 +406,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
 
         String key = PROXY_KEY + COUNT.incrementAndGet();
-        Object proxyInstance = proxyFactory.newInstance(new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (method.getName().equals("__returned$proxy$key")) {
-                    return key;
-                }
-                if (method.getName().equals("__static$$init")) {
-                    return staticInit;
-                }
-                if (method.getName().equals("toString")
-                        && method.getParameterCount() == 0
-                        && method.getReturnType().equals(String.class)) {
-                    return "Runtime proxy of " + returnType + " with id " + key;
-                }
-                if (method.getName().equals("hashCode")
-                        && method.getParameterCount() == 0
-                        && method.getReturnType().equals(int.class)) {
-                    return System.identityHashCode(proxy);
-                }
-                if (method.getName().equals("equals")
-                        && method.getParameterCount() == 1
-                        && method.getParameterTypes()[0] == Object.class
-                        && method.getReturnType().equals(boolean.class)) {
-                    return proxy == args[0];
-                }
-                throw new RuntimeException(
-                        "You cannot invoke " + method.getName()
-                                + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
-            }
-        });
+        Object proxyInstance = proxyFactory.newInstance(new ReturnValueProxyInvocationHandler(key, returnType, staticInit));
         return new ProxyInstance(proxyInstance, key);
     }
 
@@ -1609,6 +1571,47 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }
         return holder;
+    }
+
+    private static final class ReturnValueProxyInvocationHandler implements InvocationHandler {
+        private final Class<?> returnType;
+        private final String key;
+        private final boolean staticInit;
+
+        private ReturnValueProxyInvocationHandler(String key, Class<?> returnType, boolean staticInit) {
+            this.returnType = returnType;
+            this.key = key;
+            this.staticInit = staticInit;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (method.getName().equals("__returned$proxy$key")) {
+                return key;
+            }
+            if (method.getName().equals("__static$$init")) {
+                return staticInit;
+            }
+            if (method.getName().equals("toString")
+                    && method.getParameterCount() == 0
+                    && method.getReturnType().equals(String.class)) {
+                return "Runtime proxy of " + returnType + " with id " + key;
+            }
+            if (method.getName().equals("hashCode")
+                    && method.getParameterCount() == 0
+                    && method.getReturnType().equals(int.class)) {
+                return System.identityHashCode(proxy);
+            }
+            if (method.getName().equals("equals")
+                    && method.getParameterCount() == 1
+                    && method.getParameterTypes()[0] == Object.class
+                    && method.getReturnType().equals(boolean.class)) {
+                return proxy == args[0];
+            }
+            throw new RuntimeException(
+                    "You cannot invoke " + method.getName()
+                            + "() directly on an object returned from the bytecode recorder, you can only pass it back into the recorder as a parameter");
+        }
     }
 
     interface BytecodeInstruction {

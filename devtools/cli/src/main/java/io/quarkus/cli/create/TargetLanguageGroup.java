@@ -5,9 +5,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
-import io.quarkus.devtools.commands.CreateProjectHelper;
-import io.quarkus.devtools.commands.SourceType;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.JavaVersion;
+import io.quarkus.devtools.project.SourceType;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.ParameterException;
@@ -17,13 +17,13 @@ public class TargetLanguageGroup {
 
     static class VersionCandidates extends ArrayList<String> {
         VersionCandidates() {
-            super(CreateProjectHelper.JAVA_VERSIONS_LTS.stream().map(String::valueOf).collect(Collectors.toList()));
+            super(JavaVersion.JAVA_VERSIONS_LTS.stream().map(String::valueOf).collect(Collectors.toList()));
         }
     }
 
     @CommandLine.Option(names = {
-            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = CreateProjectHelper.DETECT_JAVA_RUNTIME_VERSION)
-    String javaVersion = CreateProjectHelper.DETECT_JAVA_RUNTIME_VERSION;
+            "--java" }, description = "Target Java version.\n  Valid values: ${COMPLETION-CANDIDATES}", completionCandidates = VersionCandidates.class, defaultValue = JavaVersion.DETECT_JAVA_RUNTIME_VERSION)
+    String javaVersion = JavaVersion.DETECT_JAVA_RUNTIME_VERSION;
 
     @CommandLine.Option(names = { "--kotlin" }, description = "Use Kotlin")
     boolean kotlin = false;

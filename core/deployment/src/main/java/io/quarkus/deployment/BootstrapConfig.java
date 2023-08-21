@@ -25,6 +25,16 @@ public class BootstrapConfig {
     Boolean workspaceDiscovery;
 
     /**
+     * By default, the bootstrap mechanism will create a shared cache of open JARs for
+     * Quarkus classloaders to reduce the total number of opened ZIP FileSystems in dev and test modes.
+     * Setting system property {@code quarkus.bootstrap.disable-jar-cache} to {@code true} will make
+     * Quarkus classloaders create a new ZIP FileSystem for each JAR classpath element every time it is added
+     * to a Quarkus classloader.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean disableJarCache;
+
+    /**
      * Whether to throw an error, warn or silently ignore misaligned platform BOM imports
      */
     @ConfigItem(defaultValue = "error")

@@ -88,29 +88,36 @@
                 </plugin>
 
                 <plugin>
-                <!-- config to avoid unbind-executions confuses gradle enterprise caching-->
-                <groupId>com.gradle</groupId>
-                <artifactId>gradle-enterprise-maven-extension</artifactId>
-                <configuration>
-                    <gradleEnterprise>
-                    <plugins>
-                        <plugin>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <inputs>
-                            <fileSets>
-                            <fileSet>
-                                <name>specs</name>
-                                <paths>
-                                <path>${project.basedir}/disable-unbind-executions</path>
-                                </paths>
-                                <normalization>RELATIVE_PATH</normalization>
-                            </fileSet>
-                            </fileSets>
-                        </inputs>
-                        </plugin>
-                    </plugins>
-                    </gradleEnterprise>
-                </configuration>
+                    <groupId>com.gradle</groupId>
+                    <artifactId>gradle-enterprise-maven-extension</artifactId>
+                    <configuration>
+                        <gradleEnterprise>
+                            <normalization>
+                                <systemProperties>
+                                    <ignoredKeys combine.children="append">
+                                        <ignore>native.image.path</ignore>
+                                    </ignoredKeys>
+                                </systemProperties>
+                            </normalization>
+                            <!-- config to avoid unbind-executions confuses gradle enterprise caching-->
+                            <plugins>
+                                <plugin>
+                                    <artifactId>maven-compiler-plugin</artifactId>
+                                    <inputs>
+                                        <fileSets combine.children="append">
+                                            <fileSet>
+                                                <name>specs</name>
+                                                <paths>
+                                                    <path>${project.basedir}/disable-unbind-executions</path>
+                                                </paths>
+                                                <normalization>RELATIVE_PATH</normalization>
+                                            </fileSet>
+                                        </fileSets>
+                                    </inputs>
+                                </plugin>
+                            </plugins>
+                        </gradleEnterprise>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -316,7 +323,6 @@
                 <module>logging-gelf</module>
                 <module>cache</module>
                 <module>qute</module>
-                <module>bootstrap-config</module>
                 <module>injectmock</module>
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
@@ -341,7 +347,6 @@
                 <module>devmode</module>
                 <module>ide-launcher</module>
                 <module>elasticsearch-rest-client</module>
-                <module>elasticsearch-rest-high-level-client</module>
                 <module>elasticsearch-java-client</module>
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
@@ -351,7 +356,7 @@
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>
-                <module>opentelemetry-vertx-grpc-exporter</module>
+                <module>opentelemetry-vertx-exporter</module>
                 <module>opentelemetry-reactive-messaging</module>
                 <module>logging-json</module>
                 <module>jaxb</module>

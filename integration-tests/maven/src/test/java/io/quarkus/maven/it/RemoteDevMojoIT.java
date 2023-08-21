@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.test.devmode.util.DevModeTestUtils;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -41,7 +40,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains(uuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -53,11 +52,11 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "carambar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
 
         //also verify that the dev ui console is disabled
-        DevModeTestUtils.getHttpResponse("/q/dev-v1", 404, 10, TimeUnit.SECONDS);
-        DevModeTestUtils.getHttpResponse("/q/dev-ui", 404, 10, TimeUnit.SECONDS);
+        devModeClient.getHttpResponse("/q/dev-v1", 404, 10, TimeUnit.SECONDS);
+        devModeClient.getHttpResponse("/q/dev-ui", 404, 10, TimeUnit.SECONDS);
     }
 
     @Test
@@ -88,7 +87,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "bar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/foo").contains("bar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/foo").contains("bar"));
     }
 
     @Test
@@ -98,14 +97,14 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         assertThat(testDir).isDirectory();
         runAndCheck();
 
-        String resp = DevModeTestUtils.getHttpResponse();
+        String resp = devModeClient.getHttpResponse();
         runningAgent = new RunningInvoker(agentDir, false);
         runningAgent.execute(Arrays.asList("compile", "quarkus:remote-dev"), Collections.emptyMap());
 
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = DevModeTestUtils.getHttpResponse("/app/hello/greeting");
+        String greeting = devModeClient.getHttpResponse("/app/hello/greeting");
         assertThat(greeting).containsIgnoringCase("bonjour");
 
         File source = new File(agentDir, "src/main/resources/application.properties");
@@ -121,7 +120,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/app/hello/greeting").contains(uuid));
+                .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
     }
 
     @Test
@@ -139,7 +138,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
+                .until(() -> devModeClient.getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
 
         // Update the resource
         String uuid = UUID.randomUUID().toString();
@@ -147,7 +146,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> DevModeTestUtils.getHttpResponse("/lorem.txt").contains(uuid));
+                .until(() -> devModeClient.getHttpResponse("/lorem.txt").contains(uuid));
 
         // Delete the resource
         //TODO: not supported yet in remote dev
@@ -174,7 +173,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
-                    String content = DevModeTestUtils.getHttpResponse("/app/hello", true);
+                    String content = devModeClient.getHttpResponse("/app/hello", true);
                     last.set(content);
                     return content.contains(uuid);
                 });
@@ -192,7 +191,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
     }
 
     @Test
@@ -225,7 +224,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("message"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("message"));
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
@@ -236,7 +235,7 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> DevModeTestUtils.getHttpResponse("/app/hello").contains("foobarbaz"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/app/hello").contains("foobarbaz"));
     }
 
 }

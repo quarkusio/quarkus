@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import static io.quarkus.it.keycloak.RolesSecurityIdentityAugmentor.USE_SEC_IDENTITY_AUGMENTOR;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,16 @@ public class OidcTokenPropagationTest {
     public void testGetUserNameWithJwtTokenPropagation() {
         RestAssured.given().auth().oauth2(KeycloakRealmResourceManager.getAccessToken("alice"))
                 .when().get("/frontend/jwt-token-propagation")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+    }
+
+    @Test
+    public void testGetUserNameWithJwtTokenPropagationAndAugmentedIdentity() {
+        RestAssured.given().auth().oauth2(KeycloakRealmResourceManager.getAccessToken("alice"))
+                .header(USE_SEC_IDENTITY_AUGMENTOR, Boolean.TRUE)
+                .when().get("/frontend/jwt-token-propagation-with-augmentation")
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice"));

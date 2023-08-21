@@ -8,6 +8,7 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.spi.runtime.AuthorizationController;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 
 /**
  * Class that is responsible for running the HTTP based permission checks
@@ -16,8 +17,9 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 public class HttpAuthorizer extends AbstractHttpAuthorizer {
 
     HttpAuthorizer(HttpAuthenticator httpAuthenticator, IdentityProviderManager identityProviderManager,
-            AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies) {
-        super(httpAuthenticator, identityProviderManager, controller, toList(installedPolicies));
+            AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies,
+            BlockingSecurityExecutor blockingExecutor) {
+        super(httpAuthenticator, identityProviderManager, controller, toList(installedPolicies), blockingExecutor);
     }
 
     private static List<HttpSecurityPolicy> toList(Instance<HttpSecurityPolicy> installedPolicies) {

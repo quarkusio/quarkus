@@ -6,57 +6,43 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefaults;
+import io.smallrye.config.WithParentName;
+import io.smallrye.config.WithUnnamedKey;
 
-@ConfigRoot(name = "datasource", phase = ConfigPhase.RUN_TIME)
-public class DataSourcesReactiveDB2Config {
+@ConfigMapping(prefix = "quarkus.datasource")
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public interface DataSourcesReactiveDB2Config {
 
     /**
-     * The default datasource.
-     */
-    @ConfigItem(name = "reactive.db2")
-    public DataSourceReactiveDB2Config defaultDataSource;
-
-    /**
-     * Additional named datasources.
+     * Datasources.
      */
     @ConfigDocSection
     @ConfigDocMapKey("datasource-name")
-    @ConfigItem(name = ConfigItem.PARENT)
-    public Map<String, DataSourceReactiveDB2OuterNamedConfig> namedDataSources;
-
-    public DataSourceReactiveDB2Config getDataSourceReactiveRuntimeConfig(String dataSourceName) {
-        if (DataSourceUtil.isDefault(dataSourceName)) {
-            return defaultDataSource;
-        }
-
-        DataSourceReactiveDB2OuterNamedConfig dataSourceReactiveDB2OuterNamedConfig = namedDataSources
-                .get(dataSourceName);
-        if (dataSourceReactiveDB2OuterNamedConfig == null) {
-            return new DataSourceReactiveDB2Config();
-        }
-
-        return dataSourceReactiveDB2OuterNamedConfig.reactive.db2;
-    }
+    @WithParentName
+    @WithDefaults
+    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    Map<String, DataSourceReactiveDB2OuterNamedConfig> dataSources();
 
     @ConfigGroup
-    public static class DataSourceReactiveDB2OuterNamedConfig {
+    public interface DataSourceReactiveDB2OuterNamedConfig {
 
         /**
          * The DB2-specific configuration.
          */
-        public DataSourceReactiveDB2OuterNestedNamedConfig reactive;
+        DataSourceReactiveDB2OuterNestedNamedConfig reactive();
     }
 
     @ConfigGroup
-    public static class DataSourceReactiveDB2OuterNestedNamedConfig {
+    public interface DataSourceReactiveDB2OuterNestedNamedConfig {
 
         /**
          * The DB2-specific configuration.
          */
-        public DataSourceReactiveDB2Config db2;
+        DataSourceReactiveDB2Config db2();
     }
 
 }

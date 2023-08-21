@@ -4,11 +4,13 @@ import static io.opentelemetry.instrumentation.api.instrumenter.http.HttpRouteSo
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.HTTP_CLIENT_IP;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import jakarta.annotation.Nullable;
+import javax.annotation.Nullable;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.opentelemetry.api.OpenTelemetry;
@@ -170,39 +172,32 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
     private static class ServerAttributesExtractor implements HttpServerAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        public String getFlavor(final HttpRequest request) {
-            if (request instanceof HttpServerRequest) {
-                HttpVersion version = ((HttpServerRequest) request).version();
-                if (version != null) {
-                    switch (version) {
-                        case HTTP_1_0:
-                            return "1.0";
-                        case HTTP_1_1:
-                            return "1.1";
-                        case HTTP_2:
-                            return "2.0";
-                        default:
-                            // Will be executed once Vert.x supports other versions
-                            // At that point version transformation will be needed for OTel semantics
-                            return version.alpnName();
-                    }
-                }
+        public String getUrlPath(final HttpRequest request) {
+            try {
+                URI uri = new URI(request.uri());
+                return uri.getPath();
+            } catch (URISyntaxException e) {
+                return null;
             }
+        }
+
+        @Override
+        public String getUrlQuery(HttpRequest request) {
+            try {
+                URI uri = new URI(request.uri());
+                return uri.getQuery();
+            } catch (URISyntaxException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public String getHttpRoute(final HttpRequest request) {
             return null;
         }
 
         @Override
-        public String getTarget(final HttpRequest request) {
-            return request.uri();
-        }
-
-        @Override
-        public String getRoute(final HttpRequest request) {
-            return null;
-        }
-
-        @Override
-        public String getScheme(final HttpRequest request) {
+        public String getUrlScheme(final HttpRequest request) {
             if (request instanceof HttpServerRequest) {
                 return ((HttpServerRequest) request).scheme();
             }
@@ -210,22 +205,22 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
 
         @Override
-        public String getMethod(final HttpRequest request) {
+        public String getHttpRequestMethod(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        public List<String> getRequestHeader(final HttpRequest request, final String name) {
+        public List<String> getHttpRequestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        public Integer getStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+        public Integer getHttpResponseStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
             return httpResponse != null ? httpResponse.statusCode() : null;
         }
 
         @Override
-        public List<String> getResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> getHttpResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response != null ? response.headers().getAll(name) : Collections.emptyList();
         }
 
@@ -269,25 +264,22 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         }
     }
 
-    private static class HttpServerNetAttributesGetter implements NetServerAttributesGetter<HttpRequest> {
-        @Nullable
+    private static class HttpServerNetAttributesGetter implements NetServerAttributesGetter<HttpRequest, HttpResponse> {
         @Override
         public String getTransport(HttpRequest httpRequest) {
             return null;
         }
 
-        @Nullable
         @Override
-        public String getHostName(HttpRequest httpRequest) {
+        public String getServerAddress(HttpRequest httpRequest) {
             if (httpRequest instanceof HttpServerRequest) {
                 return VertxUtil.extractRemoteHostname((HttpServerRequest) httpRequest);
             }
             return null;
         }
 
-        @Nullable
         @Override
-        public Integer getHostPort(HttpRequest httpRequest) {
+        public Integer getServerPort(HttpRequest httpRequest) {
             if (httpRequest instanceof HttpServerRequest) {
                 Long remoteHostPort = VertxUtil.extractRemoteHostPort((HttpServerRequest) httpRequest);
                 if (remoteHostPort == null) {
@@ -296,6 +288,16 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
                 return remoteHostPort.intValue();
             }
             return null;
+        }
+
+        @Override
+        public String getNetworkProtocolName(HttpRequest request, HttpResponse response) {
+            return "http";
+        }
+
+        @Override
+        public String getNetworkProtocolVersion(HttpRequest request, HttpResponse response) {
+            return getHttpVersion(request);
         }
     }
 
@@ -307,14 +309,24 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
         @javax.annotation.Nullable
         @Override
-        public String getPeerName(HttpRequest httpRequest) {
+        public String getServerAddress(HttpRequest httpRequest) {
             return httpRequest.remoteAddress().hostName();
         }
 
         @javax.annotation.Nullable
         @Override
-        public Integer getPeerPort(HttpRequest httpRequest) {
+        public Integer getServerPort(HttpRequest httpRequest) {
             return httpRequest.remoteAddress().port();
+        }
+
+        @Override
+        public String getNetworkProtocolName(final HttpRequest request, final HttpResponse response) {
+            return "http";
+        }
+
+        @Override
+        public String getNetworkProtocolVersion(final HttpRequest request, final HttpResponse response) {
+            return getHttpVersion(request);
         }
     }
 
@@ -336,32 +348,27 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
 
     private static class ClientAttributesExtractor implements HttpClientAttributesGetter<HttpRequest, HttpResponse> {
         @Override
-        public String getUrl(final HttpRequest request) {
+        public String getUrlFull(final HttpRequest request) {
             return request.absoluteURI();
         }
 
         @Override
-        public String getFlavor(final HttpRequest request, final HttpResponse response) {
-            return null;
-        }
-
-        @Override
-        public String getMethod(final HttpRequest request) {
+        public String getHttpRequestMethod(final HttpRequest request) {
             return request.method().name();
         }
 
         @Override
-        public List<String> getRequestHeader(final HttpRequest request, final String name) {
+        public List<String> getHttpRequestHeader(final HttpRequest request, final String name) {
             return request.headers().getAll(name);
         }
 
         @Override
-        public Integer getStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
+        public Integer getHttpResponseStatusCode(HttpRequest httpRequest, HttpResponse httpResponse, Throwable error) {
             return httpResponse.statusCode();
         }
 
         @Override
-        public List<String> getResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
+        public List<String> getHttpResponseHeader(final HttpRequest request, final HttpResponse response, final String name) {
             return response.headers().getAll(name);
         }
     }
@@ -527,5 +534,26 @@ public class HttpInstrumenterVertxTracer implements InstrumenterVertxTracer<Http
         static WriteHeadersHttpRequest request(HttpRequest httpRequest, BiConsumer<String, String> headers) {
             return new WriteHeadersHttpRequest(httpRequest, headers);
         }
+    }
+
+    private static String getHttpVersion(HttpRequest request) {
+        if (request instanceof HttpServerRequest) {
+            HttpVersion version = ((HttpServerRequest) request).version();
+            if (version != null) {
+                switch (version) {
+                    case HTTP_1_0:
+                        return "1.0";
+                    case HTTP_1_1:
+                        return "1.1";
+                    case HTTP_2:
+                        return "2.0";
+                    default:
+                        // Will be executed once Vert.x supports other versions
+                        // At that point version transformation will be needed for OTel semantics
+                        return version.alpnName();
+                }
+            }
+        }
+        return null;
     }
 }

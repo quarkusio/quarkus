@@ -2,6 +2,8 @@ package io.quarkus.devui.deployment.menu;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,8 +73,9 @@ public class ContinuousTestingProcessor {
         registerRunAllMethod(launchModeBuildItem);
         registerRunFailedMethod(launchModeBuildItem);
         registerToggleBrokenOnlyMethod(launchModeBuildItem);
+        registerToggleInstrumentationMethod(launchModeBuildItem);
         registerGetResultsMethod(launchModeBuildItem);
-
+        registerGetStatusMethod(launchModeBuildItem);
         return new JsonRPCProvidersBuildItem(NAMESPACE, ContinuousTestingJsonRPCService.class);
     }
 
@@ -168,6 +171,60 @@ public class ContinuousTestingProcessor {
                 }
                 TestSupport testSupport = ts.get();
                 return testSupport.toggleBrokenOnlyMode();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void registerToggleInstrumentationMethod(LaunchModeBuildItem launchModeBuildItem) {
+        DevConsoleManager.register(NAMESPACE + DASH + "toggleInstrumentation", ignored -> {
+
+            try {
+                Optional<TestSupport> ts = TestSupport.instance();
+                if (testsDisabled(launchModeBuildItem, ts)) {
+                    return false;
+                }
+                TestSupport testSupport = ts.get();
+                return testSupport.toggleInstrumentation();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void registerGetStatusMethod(LaunchModeBuildItem launchModeBuildItem) {
+        DevConsoleManager.register(NAMESPACE + DASH + "getStatus", ignored -> {
+            try {
+                Optional<TestSupport> ts = TestSupport.instance();
+                if (testsDisabled(launchModeBuildItem, ts)) {
+                    return null;
+                }
+                TestSupport testSupport = ts.get();
+                TestSupport.RunStatus status = testSupport.getStatus();
+
+                if (status == null) {
+                    return null;
+                }
+
+                Map<String, Long> testStatus = new HashMap<>();
+
+                long lastRun = status.getLastRun();
+                testStatus.put("lastRun", lastRun);
+                if (lastRun > 0) {
+                    TestRunResults result = testSupport.getResults();
+                    testStatus.put("testsFailed", result.getCurrentFailedCount());
+                    testStatus.put("testsPassed", result.getCurrentPassedCount());
+                    testStatus.put("testsSkipped", result.getCurrentSkippedCount());
+                    testStatus.put("testsRun", result.getFailedCount() + result.getPassedCount());
+                    testStatus.put("totalTestsFailed", result.getFailedCount());
+                    testStatus.put("totalTestsPassed", result.getPassedCount());
+                    testStatus.put("totalTestsSkipped", result.getSkippedCount());
+                }
+                //get running last, as otherwise if the test completes in the meantime you could see
+                //both running and last run being the same number
+                testStatus.put("running", status.getRunning());
+                return testStatus;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

@@ -162,7 +162,7 @@ public class VanillaKubernetesProcessor {
                 packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, config,
-                metricsConfiguration, kubernetesClientConfiguration, annotations, labels, command, port,
+                metricsConfiguration, kubernetesClientConfiguration, annotations, labels, image, command, port,
                 livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings));
 
@@ -314,11 +314,13 @@ public class VanillaKubernetesProcessor {
             BuildProducer<KubernetesEnvBuildItem> env,
             BuildProducer<KubernetesRoleBuildItem> roles,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
+
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         if (config.externalizeInit) {
             InitTaskProcessor.process(KUBERNETES, name, image, initTasks, config.initTasks,
-                    jobs, initContainers, env, roles, roleBindings, decorators);
+                    jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
         }
     }
 }

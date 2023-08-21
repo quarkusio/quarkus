@@ -4,15 +4,12 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building Quarkus apps with Quarkus Command Line Interface (CLI)
-:extension-status: preview
 include::_attributes.adoc[]
 :categories: tooling
 :summary: Use the Quarkus CLI to create, build, run, and manage extensions for Quarkus projects.
 
 The `quarkus` command lets you create projects, manage extensions and
 do essential build and development tasks using the underlying project build tool.
-
-include::{includes}/extension-status.adoc[]
 
 == Installing the CLI
 
@@ -398,7 +395,7 @@ Both `quarkus create` and `quarkus extension list` allow you to explicitly speci
 
 1. Specify a specific Platform Release BOM
 +
-A https://quarkus.io/guides/platform#quarkus-platform-bom[Quarkus Platform release BOM] is identified by `groupId:artifactId:version` (GAV) coordinates. When specifying a platform release BOM, you may use empty segments to fall back to default values (shown with `quarkus create app --help`). If you specify only one segment (no `:`), it is assumed to be a version.
+A xref:platform.adoc#quarkus-platform-bom[Quarkus Platform release BOM] is identified by `groupId:artifactId:version` (GAV) coordinates. When specifying a platform release BOM, you may use empty segments to fall back to default values (shown with `quarkus create app --help`). If you specify only one segment (no `:`), it is assumed to be a version.
 +
 `{quarkus-platform-groupid}` is the default `groupId`. Specifying `-P :quarkus-bom:` is equivalent to `-P {quarkus-platform-groupid}:quarkus-bom:{quarkus-version}`. Note that you need to specify the `groupId` to work with a snapshot, e.g. `-P io.quarkus::999-SNAPSHOT` is equivalent to `-P io.quarkus:quarkus-bom:999-SNAPSHOT`.
 +

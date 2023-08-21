@@ -45,8 +45,9 @@ class ResourceImplementor {
      * Implements {@link io.quarkus.rest.data.panache.RestDataResource} interfaces defined in a user application.
      * Instances of this class are registered as beans and are later used in the generated JAX-RS controllers.
      */
-    String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, String resourceType,
+    String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, ClassInfo resourceInterface,
             String entityType, List<ClassInfo> resourceMethodListeners) {
+        String resourceType = resourceInterface.name().toString();
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
         ClassCreator classCreator = ClassCreator.builder()

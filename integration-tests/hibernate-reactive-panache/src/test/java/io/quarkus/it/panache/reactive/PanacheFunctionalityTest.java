@@ -298,4 +298,9 @@ public class PanacheFunctionalityTest {
     public void testPersistenceException(UniAsserter asserter) {
         asserter.assertFailedWith(() -> Panache.withTransaction(() -> new Person().delete()), PersistenceException.class);
     }
+
+    @Test
+    public void testBeerRepository() {
+        RestAssured.when().get("/test-repo/beers").then().body(is("OK"));
+    }
 }

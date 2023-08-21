@@ -23,6 +23,7 @@ import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -64,11 +65,15 @@ public class DefaultTenantConfigResolver {
     @ConfigProperty(name = "quarkus.http.proxy.enable-forwarded-prefix")
     boolean enableHttpForwardedPrefix;
 
-    private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>();
+    private final BlockingTaskRunner<OidcTenantConfig> blockingRequestContext;
 
     private volatile boolean securityEventObserved;
 
     private ConcurrentHashMap<String, BackChannelLogoutTokenCache> backChannelLogoutTokens = new ConcurrentHashMap<>();
+
+    public DefaultTenantConfigResolver(BlockingSecurityExecutor blockingExecutor) {
+        this.blockingRequestContext = new BlockingTaskRunner<OidcTenantConfig>(blockingExecutor);
+    }
 
     @PostConstruct
     public void verifyResolvers() {

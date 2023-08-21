@@ -6,19 +6,23 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.Base64;
+import java.util.List;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
 import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.html.DomElement;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.http.Header;
 
 @QuarkusTest
 public class CsrfReactiveTest {
@@ -186,6 +190,81 @@ public class CsrfReactiveTest {
                     .post("/service/csrfTokenForm")
                     .then().statusCode(400);
 
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCsrfTokenHeaderValue() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
+            assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
+            List<DomElement> inputs = htmlPage.getElementsByIdAndOrName("X-CSRF-TOKEN");
+            String csrfToken = inputs.get(0).asNormalizedText();
+
+            Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
+            assertNotNull(csrfCookie);
+
+            RestAssured.given()
+                    .header("Authorization", basicAuth("alice", "alice"))
+                    .header(new Header("X-CSRF-TOKEN", csrfToken))
+                    .cookie(csrfCookie.getName(), csrfCookie.getValue())
+                    .urlEncodingEnabled(true)
+                    .param("csrf-header", "X-CSRF-TOKEN")
+                    .post("/service/csrfTokenWithHeader")
+                    .then()
+                    .body(Matchers.equalTo("verified:true"));
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCsrfTokenHeaderValueJson() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
+            assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
+            List<DomElement> inputs = htmlPage.getElementsByIdAndOrName("X-CSRF-TOKEN");
+            String csrfToken = inputs.get(0).asNormalizedText();
+
+            Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
+            assertNotNull(csrfCookie);
+
+            RestAssured.given()
+                    .header("Authorization", basicAuth("alice", "alice"))
+                    .header(new Header("X-CSRF-TOKEN", csrfToken))
+                    .cookie(csrfCookie.getName(), csrfCookie.getValue())
+                    .header(new Header("Content-Type", "application/json"))
+                    .body("{}")
+                    .post("/service/csrfTokenWithHeader")
+                    .then()
+                    .body(Matchers.equalTo("verified:true"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testWrongCsrfTokenHeaderValue() throws Exception {
+        try (final WebClient webClient = createWebClient()) {
+
+            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
+            assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
+
+            Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
+            assertNotNull(csrfCookie);
+
+            RestAssured.given()
+                    .header("Authorization", basicAuth("alice", "alice"))
+                    // CSRF cookie is signed, so passing it as a header value will fail
+                    .header(new Header("X-CSRF-TOKEN", csrfCookie.getValue()))
+                    .cookie(csrfCookie.getName(), csrfCookie.getValue())
+                    .urlEncodingEnabled(true)
+                    .param("csrf-header", "X-CSRF-TOKEN")
+                    .post("/service/csrfTokenWithHeader")
+                    .then()
+                    .statusCode(400);
             webClient.getCookieManager().clearCookies();
         }
     }

@@ -15,7 +15,7 @@ import org.apache.kafka.common.acl.AclBinding;
 import org.apache.kafka.common.acl.AclBindingFilter;
 import org.apache.kafka.common.resource.ResourcePatternFilter;
 
-import io.quarkus.kafka.client.runtime.ui.model.request.KafkaCreateTopicRequest;
+import io.quarkus.kafka.client.runtime.devui.model.request.KafkaCreateTopicRequest;
 import io.smallrye.common.annotation.Identifier;
 
 @ApplicationScoped

@@ -100,6 +100,7 @@ jobs:
     outputs:
       gib_args: ${{ steps.get-gib-args.outputs.gib_args }}
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
+      m2-cache-key: ${{ steps.m2-cache-key.outputs.key }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -114,21 +115,21 @@ jobs:
         with:
           distribution: temurin
           java-version: 11
-      - name: Get Date
-        id: get-date
+      - name: Generate .m2 cache key
+        id: m2-cache-key
         run: |
-          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
+          echo "key=m2-cache-$(/bin/date -u "+%Y-%U")" >> $GITHUB_OUTPUT
         shell: bash
       - name: Cache Maven Repository
         id: cache-maven
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
-          # refresh cache every month to avoid unlimited growth
-          key: q2maven-${{ steps.get-date.outputs.date }}
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ steps.m2-cache-key.outputs.key }}
       - name: Build
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
+          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
         shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
@@ -160,11 +161,11 @@ jobs:
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
           ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
-          if [ -s gib-impacted.log ]
+          if [ -f gib-impacted.log ]
           then
             GIB_IMPACTED=$(cat gib-impacted.log)
           else
-            GIB_IMPACTED=''
+            GIB_IMPACTED='_all_'
           fi
           echo "GIB_IMPACTED: ${GIB_IMPACTED}"
           # three steps to retain linefeeds in output for other jobs
@@ -172,18 +173,18 @@ jobs:
           echo 'impacted_modules<<EOF' >> $GITHUB_OUTPUT
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
-      - name: Tar Maven Repo
+      - name: Tar .m2/repository/io/quarkus
         shell: bash
-        run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
-      - name: Persist Maven Repo
+        run: tar -I 'pigz -9' -cf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
+      - name: Upload .m2/repository/io/quarkus
         uses: actions/upload-artifact@v3
         with:
-          name: maven-repo
-          path: maven-repo.tgz
+          name: m2-io-quarkus
+          path: m2-io-quarkus.tgz
           retention-days: 7
-      - name: Delete Local Artifacts From Cache
+      - name: Delete snapshots artifacts from cache
         shell: bash
-        run: rm -r ~/.m2/repository/io/quarkus
+        run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -205,7 +206,7 @@ jobs:
     outputs:
       native_matrix: ${{ steps.calc-native-matrix.outputs.matrix }}
       jvm_matrix: ${{ steps.calc-jvm-matrix.outputs.matrix }}
-      virtual_threads_matrix: ${{ steps.calc-virtual_threads-matrix.outputs.matrix }}
+      virtual_threads_matrix: ${{ steps.calc-virtual-threads-matrix.outputs.matrix }}
       run_jvm: ${{ steps.calc-run-flags.outputs.run_jvm }}
       run_devtools: ${{ steps.calc-run-flags.outputs.run_devtools }}
       run_gradle: ${{ steps.calc-run-flags.outputs.run_gradle }}
@@ -228,7 +229,7 @@ jobs:
           echo "${json}"
           echo "matrix=${json}" >> $GITHUB_OUTPUT
       - name: Calculate matrix from virtual-threads-tests.json
-        id: calc-virtual_threads-matrix
+        id: calc-virtual-threads-matrix
         run: |
           echo "GIB_IMPACTED_MODULES: ${GIB_IMPACTED_MODULES}"
           json=$(.github/filter-virtual-threads-tests-json.sh "${GIB_IMPACTED_MODULES}" | tr -d '\n')
@@ -238,7 +239,10 @@ jobs:
         id: calc-run-flags
         run: |
           run_jvm=true; run_devtools=true; run_gradle=true; run_maven=true; run_quickstarts=true; run_tcks=true
-          if [ -n "${GIB_IMPACTED_MODULES}" ]
+          if [ -z "${GIB_IMPACTED_MODULES}" ]
+          then
+            run_jvm=false; run_devtools=false; run_gradle=false; run_maven=false; run_quickstarts=false; run_tcks=false
+          elif [ "${GIB_IMPACTED_MODULES}" != '_all_' ]
           then
             # Important: keep -pl ... in actual jobs in sync with the following grep commands!
             if ! echo -n "${GIB_IMPACTED_MODULES}" | grep -qPv 'integration-tests/(devtools|gradle|maven)|tcks/.*'; then run_jvm=false; fi
@@ -262,7 +266,7 @@ jobs:
     needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_jvm == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 360
+    timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
     strategy:
@@ -303,14 +307,20 @@ jobs:
           java-version: ${{ matrix.java.java-version }}
           architecture: ${{ matrix.java.architecture || 'x64' }}
 
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Build
         shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
@@ -360,12 +370,12 @@ jobs:
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
     runs-on: ${{ matrix.java.os-name }}
-    needs: calculate-test-jobs
+    needs: [build-jdk11, calculate-test-jobs]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_maven == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
-    timeout-minutes: 80
+    timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
@@ -385,14 +395,20 @@ jobs:
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
         with:
@@ -434,7 +450,7 @@ jobs:
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
     runs-on: ${{matrix.java.os-name}}
-    needs: calculate-test-jobs
+    needs: [build-jdk11, calculate-test-jobs]
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
       MAVEN_OPTS: -Xmx1g
@@ -460,14 +476,20 @@ jobs:
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
         with:
@@ -498,7 +520,7 @@ jobs:
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
     runs-on: ${{matrix.java.os-name}}
-    needs: calculate-test-jobs
+    needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
     if: "needs.calculate-test-jobs.outputs.run_devtools == 'true' && (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main'))"
     timeout-minutes: 60
@@ -526,14 +548,20 @@ jobs:
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
         with:
@@ -582,14 +610,20 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v3
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
         with:
@@ -623,14 +657,20 @@ jobs:
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
       - uses: actions/checkout@v3
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK 20
         uses: actions/setup-java@v3
         with:
@@ -679,14 +719,20 @@ jobs:
         with:
           distribution: temurin
           java-version: 11
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Verify
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_tcks flag, GIB has to be re-run here to figure out the exact tcks submodules to build.
@@ -719,7 +765,7 @@ jobs:
 
   native-tests:
     name: Native Tests - ${{matrix.category}}
-    needs: calculate-test-jobs
+    needs: [build-jdk11, calculate-test-jobs]
     runs-on: ${{matrix.os-name}}
     env:
       # leave more space for the actual native compilation and execution
@@ -763,14 +809,20 @@ jobs:
         shell: bash
         run: |
           cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
-      - name: Download Maven Repo
+      - name: Restore Maven Repository
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          # refresh cache every week to avoid unlimited growth
+          key: ${{ needs.build-jdk11.outputs.m2-cache-key }}
+      - name: Download .m2/repository/io/quarkus
         uses: actions/download-artifact@v3
         with:
-          name: maven-repo
+          name: m2-io-quarkus
           path: .
-      - name: Extract Maven Repo
+      - name: Extract .m2/repository/io/quarkus
         shell: bash
-        run: tar -xzf maven-repo.tgz -C ~
+        run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Build
         shell: bash
         env:

@@ -75,7 +75,6 @@ import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.auth.DefaultAuthExceptionHandlerProvider;
 import io.quarkus.grpc.auth.GrpcSecurityInterceptor;
 import io.quarkus.grpc.auth.GrpcSecurityRecorder;
-import io.quarkus.grpc.deployment.devmode.FieldDefinalizingVisitor;
 import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
@@ -175,7 +174,9 @@ public class GrpcServerProcessor {
                 Set<String> blockingMethods = gatherBlockingOrVirtualMethodNames(userDefinedBean, index.getIndex(), false);
                 Set<String> virtualMethods = gatherBlockingOrVirtualMethodNames(userDefinedBean, index.getIndex(), true);
                 generatedBeans.put(generatedBean.name(), blockingMethods);
-                virtuals.put(generatedBean.name(), virtualMethods);
+                if (!virtualMethods.isEmpty()) {
+                    virtuals.put(generatedBean.name(), virtualMethods);
+                }
             }
         }
 
@@ -451,7 +452,7 @@ public class GrpcServerProcessor {
                     implBaseMethod.parameterTypes().toArray(new Type[0]));
             if (virtual && blocking == BlockingMode.VIRTUAL_THREAD) {
                 result.add(methodName);
-            } else if (blocking.blocking) {
+            } else if (!virtual && blocking.blocking) {
                 result.add(methodName);
             }
         }

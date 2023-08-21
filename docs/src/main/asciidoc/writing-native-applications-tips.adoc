@@ -410,7 +410,7 @@ and instead code that interacts with optional dependencies should be moved into 
 [[enforcing-singletons]]
 === Enforcing Singletons
 
-As already explained in the <<delay-class-init-in-your-app, delay class initialization>> section,
+As already explained in the <<delay-class-init-in-your-app,delay class initialization>> section,
 Quarkus marks all code to be initialized at build time by default.
 This means that, unless marked otherwise,
 static variables will be assigned at build time,

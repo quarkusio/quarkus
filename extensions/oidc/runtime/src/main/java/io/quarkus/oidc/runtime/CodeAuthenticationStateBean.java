@@ -6,6 +6,8 @@ public class CodeAuthenticationStateBean {
 
     private String codeVerifier;
 
+    private String nonce;
+
     public String getRestorePath() {
         return restorePath;
     }
@@ -22,8 +24,16 @@ public class CodeAuthenticationStateBean {
         this.codeVerifier = codeVerifier;
     }
 
+    public String getNonce() {
+        return nonce;
+    }
+
+    public void setNonce(String nonce) {
+        this.nonce = nonce;
+    }
+
     public boolean isEmpty() {
-        return this.restorePath == null && this.codeVerifier == null;
+        return this.restorePath == null && this.codeVerifier == null && nonce == null;
     }
 
 }

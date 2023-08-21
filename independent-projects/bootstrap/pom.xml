@@ -46,7 +46,7 @@
         <!-- Dependency versions -->
         <assertj.version>3.24.2</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jboss-logging.version>3.5.1.Final</jboss-logging.version>
+        <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <junit.jupiter.version>5.9.3</junit.jupiter.version>
         <maven-core.version>3.9.3</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.3.5</sisu.version><!-- Keep in sync with maven-core.version -->
@@ -71,7 +71,7 @@
         <jboss-logmanager-embedded.version>1.0.11</jboss-logmanager-embedded.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
         <slf4j-api.version>1.7.36</slf4j-api.version>
-        <graal-sdk.version>23.1.2</graal-sdk.version>
+        <graal-sdk.version>23.0.1</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <plexus-cipher.version>1.7</plexus-cipher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>

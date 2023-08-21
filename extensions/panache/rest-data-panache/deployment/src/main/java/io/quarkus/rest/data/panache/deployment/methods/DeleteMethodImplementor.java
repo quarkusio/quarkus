@@ -91,7 +91,7 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
         addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), "{id}"));
         addDeleteAnnotation(methodCreator);
         addPathParamAnnotation(methodCreator.getParameterAnnotations(0), "id");
-        addLinksAnnotation(methodCreator, resourceMetadata.getEntityType(), REL);
+        addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), REL);
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, Response.Status.NO_CONTENT);
         addSecurityAnnotations(methodCreator, resourceProperties);

@@ -267,7 +267,7 @@ quarkus.oidc.tls.trust-store-password=${trust-store-password}
 ==== Introspection endpoint authentication
 
 Some OIDC providers require authenticating to its introspection endpoint by using Basic authentication and with credentials that are different to the `client_id` and `client_secret`.
-If you have previously configured security authentication to support either the`client_secret_basic` or `client_secret_post` client authentication methods as described in the <<oidc-provider-client-authentication, OIDC provider client authentication>>  section, you might need to apply the additional configuration, as follows.
+If you have previously configured security authentication to support either the`client_secret_basic` or `client_secret_post` client authentication methods as described in the <<oidc-provider-client-authentication,OIDC provider client authentication>>  section, you might need to apply the additional configuration, as follows.
 
 If the tokens have to be introspected and the introspection endpoint-specific authentication mechanism is required, then you can configure `quarkus-oidc`, as follows:
 
@@ -469,15 +469,15 @@ link:https://datatracker.ietf.org/doc/html/rfc7636[Proof Key for Code Exchange] 
 While PKCE is of primary importance to public OpenID Connect clients, such as SPA scripts running in a browser, it can also provide an extra level of protection to Quarkus OIDC `web-app` applications. 
 With PKCE, Quarkus OIDC `web-app` applications are confidential OpenID Connect clients capable of securely storing the client secret and using it to exchange the code for the tokens.
 
-You can enable `PKCE` for your OIDC `web-app` endpoint with a `quarkus.oidc.authentication.pkce-required` property and a 32-character secret, as shown in the following example:
+You can enable `PKCE` for your OIDC `web-app` endpoint with a `quarkus.oidc.authentication.pkce-required` property and a 32-character secret which is required to encrypt the PKCE code verifier in the state cookie, as shown in the following example:
 
 [source, properties]
 ----
 quarkus.oidc.authentication.pkce-required=true
-quarkus.oidc.authentication.pkce-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
+quarkus.oidc.authentication.state-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 
-If you already have a 32-characters client secret then you do not need to set the  `quarkus.oidc.authentication.pkce-secret` property unless you prefer to use a different secret key.
+If you already have a 32-characters client secret then you do not need to set the  `quarkus.oidc.authentication.pkce-secret` property unless you prefer to use a different secret key. This secret will be auto-generated if it is not configured and if the fallback to the client secret is not possible in case of the client secret being less than 16 characters long.
 
 The secret key is required for encrypting a randomly generated `PKCE` `code_verifier` while the user is being redirected with the `code_challenge` query parameter to an OIDC provider to authenticate.
 The `code_verifier` is decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret, and other parameters to complete the code exchange. 
@@ -677,7 +677,7 @@ quarkus.http.auth.permission.public.policy=permit
 ----
 
 You may also need to set `quarkus.oidc.authentication.cookie-path` to a path value common to all the application resources which is `/` in this example.
-For more information, see the <<oidc-cookies, Cookies>> section.
+For more information, see the <<oidc-cookies,Cookies>> section.
 
 [NOTE]
 ====
@@ -791,7 +791,7 @@ public class ServiceResource {
 [[oidc-session]]
 ====== Using `OidcSession` for local logout
 
-`io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`, which can help to perform a <<local-logout, Local logout>>, retrieve the current session's tenant identifier, and check when the session will expire. 
+`io.quarkus.oidc.OidcSession` is a wrapper around the current `IdToken`, which can help to perform a <<local-logout,Local logout>>, retrieve the current session's tenant identifier, and check when the session will expire.
 More useful methods will be added to it over time.
 [[session-management]]
 
@@ -1327,7 +1327,7 @@ If a custom realm file has to be imported into Keycloak before running the tests
 quarkus.keycloak.devservices.realm-path=quarkus-realm.json
 ----
 
-Finally, write a test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section.
+Finally, write a test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
 The only difference is that `@QuarkusTestResource` is no longer needed:
 
 [source, java]
@@ -1384,7 +1384,7 @@ And configure the Maven Surefire plugin as follows:
 
 (and similarly the Maven Failsafe plugin when testing in native image).
 
-And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock, Wiremock>> section.
+And now set the configuration and write the test code the same way as it is described in the <<integration-testing-wiremock,Wiremock>> section.
 The only difference is the name of `QuarkusTestResource`:
 
 [source, java]

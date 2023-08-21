@@ -133,7 +133,7 @@ import io.smallrye.jwt.build.Jwt;
 String jwt = Jwt.upn("Alice").sign();
 ----
 
-Note the `sign` step can be combined with the <<encrypt-claims, encrypt>> step to produce `inner-signed and encrypted` tokens, see <<innersign-encrypt-claims, Sign the claims and encrypt the nested JWT token>> section.
+Note the `sign` step can be combined with the <<encrypt-claims,encrypt>> step to produce `inner-signed and encrypted` tokens, see <<innersign-encrypt-claims,Sign the claims and encrypt the nested JWT token>> section.
 
 [[encrypt-claims]]
 == Encrypt the claims
@@ -201,7 +201,7 @@ String jwt = Jwt.subject("Bob").encrypt();
 Note that when the token is directly encrypted by the public RSA or EC key it is not possible to verify which party sent the token.
 Therefore, the secret keys should be preferred for directly encrypting the tokens, for example, when using JWT as cookies where a secret key is managed by the Quarkus endpoint with only this endpoint being both a producer and a consumer of the encrypted token.
 
-If you would like to use RSA or EC public keys to encrypt the token then it is recommended to sign the token first if the signing key is available, see the next <<innersign-encrypt-claims, Sign the claims and encrypt the nested JWT token>> section.
+If you would like to use RSA or EC public keys to encrypt the token then it is recommended to sign the token first if the signing key is available, see the next <<innersign-encrypt-claims,Sign the claims and encrypt the nested JWT token>> section.
 
 [[innersign-encrypt-claims]]
 == Sign the claims and encrypt the nested JWT token

@@ -184,6 +184,13 @@ public class OpenshiftConfig implements PlatformConfiguration {
     Optional<List<String>> imagePullSecrets;
 
     /**
+     * Enable generation of image pull secret, when the container image username and
+     * password are provided.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean generateImagePullSecret;
+
+    /**
      * The liveness probe
      */
     @ConfigItem
@@ -410,6 +417,10 @@ public class OpenshiftConfig implements PlatformConfiguration {
 
     public Optional<List<String>> getImagePullSecrets() {
         return imagePullSecrets;
+    }
+
+    public boolean isGenerateImagePullSecret() {
+        return generateImagePullSecret;
     }
 
     public ProbeConfig getLivenessProbe() {

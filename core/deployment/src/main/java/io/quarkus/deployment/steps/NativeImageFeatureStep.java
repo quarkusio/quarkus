@@ -18,6 +18,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
+import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
@@ -48,7 +49,11 @@ public class NativeImageFeatureStep {
     @BuildStep
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> features) {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport
-        features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl"));
+        // prior to 23.1 the class was provided by org.graalvm.sdk module and with 23.1 onwards, it's provided by org.graalvm.nativimage instead
+        features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl", null,
+                GraalVM.Version.VERSION_23_1_0));
+        features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage", "org.graalvm.nativeimage.impl",
+                GraalVM.Version.VERSION_23_0_0));
     }
 
     @BuildStep

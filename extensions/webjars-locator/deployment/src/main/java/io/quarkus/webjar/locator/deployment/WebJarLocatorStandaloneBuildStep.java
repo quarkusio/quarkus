@@ -87,7 +87,7 @@ public class WebJarLocatorStandaloneBuildStep {
 
         if (!webjarNameToVersionMap.isEmpty()) {
             // The context path + the resources path
-            String rootPath = httpConfig.rootPath;
+            String rootPath = httpConfig.rootPath();
             String webjarRootPath = (rootPath.endsWith("/")) ? rootPath + "webjars/" : rootPath + "/webjars/";
             feature.produce(new FeatureBuildItem(Feature.WEBJARS_LOCATOR));
             routes.produce(

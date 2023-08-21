@@ -65,7 +65,7 @@ public class DevServicesDatasourceProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             List<DefaultDataSourceDbKindBuildItem> installedDrivers,
             List<DevServicesDatasourceProviderBuildItem> devDBProviders,
-            DataSourcesBuildTimeConfig dataSourceBuildTimeConfig,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             LaunchModeBuildItem launchMode,
             List<DevServicesDatasourceConfigurationHandlerBuildItem> configurationHandlerBuildItems,
             BuildProducer<DevServicesResultBuildItem> devServicesResultBuildItemBuildProducer,
@@ -113,8 +113,8 @@ public class DevServicesDatasourceProcessor {
             databases = null;
             cachedProperties = null;
         }
-        DevServicesDatasourceResultBuildItem.DbResult defaultResult;
-        Map<String, DevServicesDatasourceResultBuildItem.DbResult> namedResults = new HashMap<>();
+
+        Map<String, DevServicesDatasourceResultBuildItem.DbResult> results = new HashMap<>();
         //now we need to figure out if we need to launch some databases
         //note that because we run in dev and test mode only we know the runtime
         //config at build time, as they both execute in the same JVM
@@ -137,26 +137,16 @@ public class DevServicesDatasourceProcessor {
         Map<String, DevServicesDatasourceProvider> devDBProviderMap = devDBProviders.stream()
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
-        RunningDevService defaultDevService = startDevDb(null, capabilities, curateOutcomeBuildItem, installedDrivers,
-                !dataSourceBuildTimeConfig.namedDataSources.isEmpty(),
-                devDBProviderMap,
-                dataSourceBuildTimeConfig.defaultDataSource,
-                configHandlersByDbType, propertiesMap,
-                dockerStatusBuildItem, launchMode.getLaunchMode(), consoleInstalledBuildItem,
-                loggingSetupBuildItem, globalDevServicesConfig);
-        if (defaultDevService != null) {
-            runningDevServices.add(defaultDevService);
-        }
-        defaultResult = toDbResult(defaultDevService);
-        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourceBuildTimeConfig.namedDataSources.entrySet()) {
-            RunningDevService namedDevService = startDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
-                    installedDrivers, true,
+
+        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
+            RunningDevService devService = startDevDb(entry.getKey(), capabilities, curateOutcomeBuildItem,
+                    installedDrivers, dataSourcesBuildTimeConfig.hasNamedDataSources(),
                     devDBProviderMap, entry.getValue(), configHandlersByDbType, propertiesMap,
                     dockerStatusBuildItem,
                     launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem, globalDevServicesConfig);
-            if (namedDevService != null) {
-                runningDevServices.add(namedDevService);
-                namedResults.put(entry.getKey(), toDbResult(namedDevService));
+            if (devService != null) {
+                runningDevServices.add(devService);
+                results.put(entry.getKey(), toDbResult(devService));
             }
         }
 
@@ -186,7 +176,7 @@ public class DevServicesDatasourceProcessor {
         for (RunningDevService database : databases) {
             devServicesResultBuildItemBuildProducer.produce(database.toBuildItem());
         }
-        return new DevServicesDatasourceResultBuildItem(defaultResult, namedResults);
+        return new DevServicesDatasourceResultBuildItem(results);
     }
 
     private String trim(String optional) {
@@ -208,52 +198,53 @@ public class DevServicesDatasourceProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             LaunchMode launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem, GlobalDevServicesConfig globalDevServicesConfig) {
-        boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices.enabled.orElse(true));
+        boolean explicitlyDisabled = !(dataSourceBuildTimeConfig.devservices().enabled().orElse(true));
+        String dataSourcePrettyName = DataSourceUtil.isDefault(dbName) ? "default datasource" : "datasource" + dbName;
+
         if (explicitlyDisabled) {
             //explicitly disabled
-            log.debug("Not starting Dev Services for " + (dbName == null ? "default datasource" : dbName)
+            log.debug("Not starting Dev Services for " + dataSourcePrettyName
                     + " as it has been disabled in the configuration");
             return null;
         }
 
-        Boolean enabled = dataSourceBuildTimeConfig.devservices.enabled.orElse(!hasNamedDatasources);
+        Boolean enabled = dataSourceBuildTimeConfig.devservices().enabled().orElse(!hasNamedDatasources);
 
         Optional<String> defaultDbKind = DefaultDataSourceDbKindBuildItem.resolve(
-                dataSourceBuildTimeConfig.dbKind,
+                dataSourceBuildTimeConfig.dbKind(),
                 installedDrivers,
-                dbName != null || enabled,
+                (!DataSourceUtil.isDefault(dbName)) || enabled,
                 curateOutcomeBuildItem);
 
         if (!defaultDbKind.isPresent()) {
             //nothing we can do
-            log.warn("Unable to determine a database type for " + (dbName == null ? "default datasource" : dbName));
+            log.warn("Unable to determine a database type for " + dataSourcePrettyName);
             return null;
         }
         DevServicesDatasourceProvider devDbProvider = devDBProviders.get(defaultDbKind.get());
         List<DevServicesDatasourceConfigurationHandlerBuildItem> configHandlers = configurationHandlerBuildItems
                 .get(defaultDbKind.get());
         if (devDbProvider == null || configHandlers == null) {
-            log.warn("Unable to start Dev Services for " + (dbName == null ? "default datasource" : dbName)
+            log.warn("Unable to start Dev Services for " + dataSourcePrettyName
                     + " as this datasource type (" + defaultDbKind.get() + ") does not support Dev Services");
             return null;
         }
 
-        if (dataSourceBuildTimeConfig.devservices.enabled.isEmpty()) {
+        if (dataSourceBuildTimeConfig.devservices().enabled().isEmpty()) {
             for (DevServicesDatasourceConfigurationHandlerBuildItem i : configHandlers) {
                 if (i.getCheckConfiguredFunction().test(dbName)) {
                     //this database has explicit configuration
                     //we don't start the devservices
-                    log.debug("Not starting Dev Services for " + (dbName == null ? "default datasource" : dbName)
+                    log.debug("Not starting Dev Services for " + dataSourcePrettyName
                             + " as it has explicit configuration");
                     return null;
                 }
             }
         }
 
-        String prettyName = dbName == null ? "the default datasource" : " datasource '" + dbName + "'";
         if (devDbProvider.isDockerRequired() && !dockerStatusBuildItem.isDockerAvailable()) {
             String message = "Please configure the datasource URL for "
-                    + prettyName
+                    + dataSourcePrettyName
                     + " or ensure the Docker daemon is up and running.";
             if (launchMode == LaunchMode.TEST) {
                 throw new IllegalStateException(message);
@@ -268,24 +259,24 @@ public class DevServicesDatasourceProcessor {
         //ok, so we know we need to start one
 
         StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode == LaunchMode.TEST ? "(test) " : "") + "Database for " + prettyName
+                (launchMode == LaunchMode.TEST ? "(test) " : "") + "Database for " + dataSourcePrettyName
                         + " (" + defaultDbKind.get() + ") starting:",
                 consoleInstalledBuildItem,
                 loggingSetupBuildItem);
 
         try {
             DevServicesDatasourceContainerConfig containerConfig = new DevServicesDatasourceContainerConfig(
-                    dataSourceBuildTimeConfig.devservices.imageName,
-                    dataSourceBuildTimeConfig.devservices.containerEnv,
-                    dataSourceBuildTimeConfig.devservices.containerProperties,
-                    dataSourceBuildTimeConfig.devservices.properties,
-                    dataSourceBuildTimeConfig.devservices.port,
-                    dataSourceBuildTimeConfig.devservices.command,
-                    dataSourceBuildTimeConfig.devservices.dbName,
-                    dataSourceBuildTimeConfig.devservices.username,
-                    dataSourceBuildTimeConfig.devservices.password,
-                    dataSourceBuildTimeConfig.devservices.initScriptPath,
-                    dataSourceBuildTimeConfig.devservices.volumes);
+                    dataSourceBuildTimeConfig.devservices().imageName(),
+                    dataSourceBuildTimeConfig.devservices().containerEnv(),
+                    dataSourceBuildTimeConfig.devservices().containerProperties(),
+                    dataSourceBuildTimeConfig.devservices().properties(),
+                    dataSourceBuildTimeConfig.devservices().port(),
+                    dataSourceBuildTimeConfig.devservices().command(),
+                    dataSourceBuildTimeConfig.devservices().dbName(),
+                    dataSourceBuildTimeConfig.devservices().username(),
+                    dataSourceBuildTimeConfig.devservices().password(),
+                    dataSourceBuildTimeConfig.devservices().initScriptPath(),
+                    dataSourceBuildTimeConfig.devservices().volumes());
 
             DevServicesDatasourceProvider.RunningDevServicesDatasource datasource = devDbProvider
                     .startDatabase(
@@ -293,27 +284,27 @@ public class DevServicesDatasourceProcessor {
                                     String.class),
                             ConfigUtils.getFirstOptionalValue(DataSourceUtil.dataSourcePropertyKeys(dbName, "password"),
                                     String.class),
-                            Optional.ofNullable(dbName), containerConfig,
+                            dbName, containerConfig,
                             launchMode, globalDevServicesConfig.timeout);
 
             for (String key : DataSourceUtil.dataSourcePropertyKeys(dbName, "db-kind")) {
-                propertiesMap.put(key, dataSourceBuildTimeConfig.dbKind.orElse(null));
+                propertiesMap.put(key, dataSourceBuildTimeConfig.dbKind().orElse(null));
             }
             String devServicesPrefix = "devservices.";
-            if (dataSourceBuildTimeConfig.devservices.command.isPresent()) {
+            if (dataSourceBuildTimeConfig.devservices().command().isPresent()) {
                 setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "command",
-                        dataSourceBuildTimeConfig.devservices.command.get());
+                        dataSourceBuildTimeConfig.devservices().command().get());
             }
-            if (dataSourceBuildTimeConfig.devservices.imageName.isPresent()) {
+            if (dataSourceBuildTimeConfig.devservices().imageName().isPresent()) {
                 setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "image-name",
-                        dataSourceBuildTimeConfig.devservices.imageName.get());
+                        dataSourceBuildTimeConfig.devservices().imageName().get());
             }
-            if (dataSourceBuildTimeConfig.devservices.port.isPresent()) {
+            if (dataSourceBuildTimeConfig.devservices().port().isPresent()) {
                 setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "port",
-                        Integer.toString(dataSourceBuildTimeConfig.devservices.port.getAsInt()));
+                        Integer.toString(dataSourceBuildTimeConfig.devservices().port().getAsInt()));
             }
-            if (!dataSourceBuildTimeConfig.devservices.properties.isEmpty()) {
-                for (var e : dataSourceBuildTimeConfig.devservices.properties.entrySet()) {
+            if (!dataSourceBuildTimeConfig.devservices().properties().isEmpty()) {
+                for (var e : dataSourceBuildTimeConfig.devservices().properties().entrySet()) {
                     setDataSourceProperties(propertiesMap, dbName, devServicesPrefix + "properties." + e.getKey(),
                             e.getValue());
                 }
@@ -342,9 +333,9 @@ public class DevServicesDatasourceProcessor {
             }
             compressor.close();
             if (datasource.getId() == null) {
-                log.infof("Dev Services for %s (%s) started", prettyName, defaultDbKind.get());
+                log.infof("Dev Services for %s (%s) started", dataSourcePrettyName, defaultDbKind.get());
             } else {
-                log.infof("Dev Services for %s (%s) started - container ID is %s", prettyName, defaultDbKind.get(),
+                log.infof("Dev Services for %s (%s) started - container ID is %s", dataSourcePrettyName, defaultDbKind.get(),
                         datasource.getId().length() > DOCKER_PS_ID_LENGTH ? datasource.getId().substring(0,
                                 DOCKER_PS_ID_LENGTH) : datasource.getId());
             }

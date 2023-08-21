@@ -2,9 +2,7 @@ package io.quarkus.arc.impl;
 
 import static jakarta.interceptor.Interceptor.Priority.PLATFORM_BEFORE;
 
-import java.lang.annotation.Annotation;
-import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import jakarta.annotation.Priority;
@@ -21,10 +19,13 @@ import io.quarkus.arc.LockException;
 @Priority(PLATFORM_BEFORE)
 public class LockInterceptor {
 
-    private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+
+    // This lock is used exclusively to synchronize the block where we release all read locks and aquire the write lock
+    private final ReentrantLock rl = new ReentrantLock();
 
     @AroundInvoke
-    Object lock(InvocationContext ctx) throws Exception {
+    Object lock(ArcInvocationContext ctx) throws Exception {
         Lock lock = getLock(ctx);
         switch (lock.value()) {
             case WRITE:
@@ -33,27 +34,51 @@ public class LockInterceptor {
                 return readLock(lock, ctx);
             case NONE:
                 return ctx.proceed();
+            default:
+                throw new LockException("Unsupported @Lock type found on business method " + ctx.getMethod());
         }
-        throw new LockException("Unsupported @Lock type found on business method " + ctx.getMethod());
     }
 
     private Object writeLock(Lock lock, InvocationContext ctx) throws Exception {
-        boolean locked = false;
         long time = lock.time();
+        int readHoldCount = rwl.getReadHoldCount();
+        boolean locked = false;
+
         try {
-            if (time > 0) {
-                locked = readWriteLock.writeLock().tryLock(time, lock.unit());
-                if (!locked) {
-                    throw new LockException("Write lock not acquired in " + lock.unit().toMillis(time) + " ms");
+            if (readHoldCount > 0) {
+                rl.lock();
+            }
+            try {
+                if (readHoldCount > 0) {
+                    // Release all read locks hold by the current thread before acquiring the write lock
+                    for (int i = 0; i < readHoldCount; i++) {
+                        rwl.readLock().unlock();
+                    }
                 }
-            } else {
-                readWriteLock.writeLock().lock();
-                locked = true;
+                if (time > 0) {
+                    locked = rwl.writeLock().tryLock(time, lock.unit());
+                    if (!locked) {
+                        throw new LockException("Write lock not acquired in " + lock.unit().toMillis(time) + " ms");
+                    }
+                } else {
+                    rwl.writeLock().lock();
+                    locked = true;
+                }
+            } finally {
+                if (readHoldCount > 0) {
+                    rl.unlock();
+                }
             }
             return ctx.proceed();
         } finally {
             if (locked) {
-                readWriteLock.writeLock().unlock();
+                if (readHoldCount > 0) {
+                    // Re-aqcquire the read locks
+                    for (int i = 0; i < readHoldCount; i++) {
+                        rwl.readLock().lock();
+                    }
+                }
+                rwl.writeLock().unlock();
             }
         }
     }
@@ -63,32 +88,29 @@ public class LockInterceptor {
         long time = lock.time();
         try {
             if (time > 0) {
-                locked = readWriteLock.readLock().tryLock(time, lock.unit());
+                locked = rwl.readLock().tryLock(time, lock.unit());
                 if (!locked) {
                     throw new LockException("Read lock not acquired in " + lock.unit().toMillis(time) + " ms");
                 }
             } else {
-                readWriteLock.readLock().lock();
+                rwl.readLock().lock();
                 locked = true;
             }
             return ctx.proceed();
         } finally {
             if (locked) {
-                readWriteLock.readLock().unlock();
+                rwl.readLock().unlock();
             }
         }
     }
 
-    @SuppressWarnings("unchecked")
-    Lock getLock(InvocationContext ctx) {
-        Set<Annotation> bindings = (Set<Annotation>) ctx.getContextData().get(ArcInvocationContext.KEY_INTERCEPTOR_BINDINGS);
-        for (Annotation annotation : bindings) {
-            if (annotation.annotationType().equals(Lock.class)) {
-                return (Lock) annotation;
-            }
+    Lock getLock(ArcInvocationContext ctx) {
+        Lock lock = ctx.findIterceptorBinding(Lock.class);
+        if (lock == null) {
+            // This should never happen
+            throw new LockException("@Lock binding not found on business method " + ctx.getMethod());
         }
-        // This should never happen
-        throw new LockException("@Lock binding not found on business method " + ctx.getMethod());
+        return lock;
     }
 
 }

@@ -119,6 +119,7 @@ public class QuarkusUnitTest
     private Runnable afterAllCustomizer;
     private CuratedApplication curatedApplication;
     private RunningQuarkusApplication runningQuarkusApplication;
+    private QuarkusClassLoader quarkusUnitTestClassLoader;
     private ClassLoader originalClassLoader;
     private List<Dependency> forcedDependencies = Collections.emptyList();
 
@@ -633,12 +634,11 @@ public class QuarkusUnitTest
                     builder.setDisableClasspathCache(true);
                 }
                 if (!allowTestClassOutsideDeployment) {
-                    builder
-                            .setBaseClassLoader(
-                                    QuarkusClassLoader
-                                            .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
-                                            .addClassLoaderEventListeners(this.classLoadListeners)
-                                            .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build());
+                    quarkusUnitTestClassLoader = QuarkusClassLoader
+                            .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
+                            .addClassLoaderEventListeners(this.classLoadListeners)
+                            .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();
+                    builder.setBaseClassLoader(quarkusUnitTestClassLoader);
                 }
                 builder.addClassLoaderEventListeners(this.classLoadListeners);
 
@@ -748,6 +748,10 @@ public class QuarkusUnitTest
             System.clearProperty("test.url");
             Thread.currentThread().setContextClassLoader(originalClassLoader);
             originalClassLoader = null;
+            if (quarkusUnitTestClassLoader != null) {
+                quarkusUnitTestClassLoader.close();
+                quarkusUnitTestClassLoader = null;
+            }
             timeoutTask.cancel();
             timeoutTask = null;
             timeoutTimer.cancel();

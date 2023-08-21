@@ -742,7 +742,7 @@ public class SecuredResource {
 }
 ----
 
-Please also see the <<add-smallrye-jwt, How to Add SmallRye JWT directly>> section about using `JWTParser` without the `HTTP` support provided by `quarkus-smallrye-jwt`.
+Please also see the <<add-smallrye-jwt,How to Add SmallRye JWT directly>> section about using `JWTParser` without the `HTTP` support provided by `quarkus-smallrye-jwt`.
 
 === Token Decryption
 

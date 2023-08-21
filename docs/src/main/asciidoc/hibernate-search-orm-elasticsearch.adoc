@@ -378,6 +378,69 @@ The nice thing with `@IndexedEmbedded` is that it is able to automatically reind
 `@IndexedEmbedded` also supports nested documents (using the `storage = NESTED` attribute), but we don't need it here.
 You can also specify the fields you want to include in your parent index using the `includePaths` attribute if you don't want them all.
 
+[programmatic-mapping]
+=== Programmatic mapping
+
+If, for some reason, adding Hibernate Search annotations to entities is not possible,
+mapping can be applied programmatically instead.
+Programmatic mapping is configured through the `ProgrammaticMappingConfigurationContext`
+that is exposed via a mapping configurer (`HibernateOrmSearchMappingConfigurer`).
+
+[NOTE]
+====
+A mapping configurer (`HibernateOrmSearchMappingConfigurer`) allows much more than just programmatic mapping capabilities.
+It also allows link:{hibernate-search-docs-url}#mapper-orm-mapping-configurer[configuring annotation mapping, bridges, and more].
+====
+
+Below is an example of a mapping configurer that applies programmatic mapping:
+
+[source,java]
+----
+package org.acme.hibernate.search.elasticsearch.config;
+
+import org.hibernate.search.mapper.orm.mapping.HibernateOrmMappingConfigurationContext;
+import org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigurer;
+import org.hibernate.search.mapper.pojo.mapping.definition.programmatic.TypeMappingStep;
+
+import io.quarkus.hibernate.search.orm.elasticsearch.SearchExtension;
+
+@SearchExtension // <1>
+public class CustomMappingConfigurer implements HibernateOrmSearchMappingConfigurer {
+
+	@Override
+    public void configure(HibernateOrmMappingConfigurationContext context) {
+        TypeMappingStep type = context.programmaticMapping()    // <2>
+            .type(SomeIndexedEntity.class);                     // <3>
+        type.indexed()                                          // <4>
+            .index(SomeIndexedEntity.INDEX_NAME);               // <5>
+        type.property("id").documentId();                       // <6>
+        type.property("text").fullTextField();                  // <7>
+    }
+}
+----
+<1> Annotate the configurer implementation with the `@SearchExtension` qualifier
+to tell Quarkus it should be used by Hibernate Search in the default persistence unit.
++
+The annotation can also target a specific persistence unit (`@SearchExtension(persistenceUnit = "nameOfYourPU")`).
+<2> Access the programmatic mapping context.
+<3> Create mapping step for the `SomeIndexedEntity` entity.
+<4> Define the `SomeIndexedEntity` entity as indexed.
+<5> Provide an index name to be used for the `SomeIndexedEntity` entity.
+<6> Define the document id property.
+<7> Define a full-text search field for the `text` property.
+
+[TIP]
+====
+Alternatively, if for some reason you can't or don't want to annotate your mapping configurer with `@SearchExtension`,
+you can simply annotate it with `@Dependent @Named("myMappingConfigurer")`
+and then reference it from configuration properties:
+
+[source,properties]
+----
+quarkus.hibernate-search-orm.mapping.configurer=bean:myMappingConfigurer
+----
+====
+
 == Analyzers and normalizers
 
 === Introduction
@@ -438,8 +501,7 @@ package org.acme.hibernate.search.elasticsearch.config;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurationContext;
 import org.hibernate.search.backend.elasticsearch.analysis.ElasticsearchAnalysisConfigurer;
 
-import jakarta.enterprise.context.Dependent;
-import jakarta.inject.Named;
+import io.quarkus.hibernate.search.orm.elasticsearch.SearchExtension;
 
 @SearchExtension // <1>
 public class AnalysisConfigurer implements ElasticsearchAnalysisConfigurer {
@@ -564,7 +626,7 @@ quarkus.datasource.db-kind=postgresql <2>
 
 quarkus.hibernate-orm.sql-load-script=import.sql <3>
 
-quarkus.hibernate-search-orm.elasticsearch.version=7 <4>
+quarkus.hibernate-search-orm.elasticsearch.version=8 <4>
 quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync <5>
 
 %prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost/quarkus_test <6>
@@ -612,7 +674,7 @@ See also link:#quarkus-hibernate-search-orm-elasticsearch_quarkus.hibernate-sear
 
 
 [TIP]
-For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference, Configuration Reference>>.
+For more information about the Hibernate Search extension configuration please refer to the <<configuration-reference,Configuration Reference>>.
 
 [[dev-services]]
 === Dev Services (Configuration Free Databases)
@@ -724,7 +786,7 @@ quarkus.datasource.db-kind=h2
 quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
 
 quarkus.hibernate-search-orm.elasticsearch.hosts=es1.mycompany.com:9200
-quarkus.hibernate-search-orm.elasticsearch.version=7
+quarkus.hibernate-search-orm.elasticsearch.version=8
 ----
 
 Using a map based approach, it is also possible to configure named persistence units:
@@ -744,10 +806,10 @@ quarkus.hibernate-orm."inventory".datasource=inventory <4>
 quarkus.hibernate-orm."inventory".packages=org.acme.model.inventory
 
 quarkus.hibernate-search-orm."users".elasticsearch.hosts=es1.mycompany.com:9200 <5>
-quarkus.hibernate-search-orm."users".elasticsearch.version=7
+quarkus.hibernate-search-orm."users".elasticsearch.version=8
 
 quarkus.hibernate-search-orm."inventory".elasticsearch.hosts=es2.mycompany.com:9200 <6>
-quarkus.hibernate-search-orm."inventory".elasticsearch.version=7
+quarkus.hibernate-search-orm."inventory".elasticsearch.version=8
 ----
 <1> Define a datasource named `users`.
 <2> Define a datasource named `inventory`.

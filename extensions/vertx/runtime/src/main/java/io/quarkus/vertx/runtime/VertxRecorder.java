@@ -77,6 +77,7 @@ public class VertxRecorder {
 
     void destroy() {
         messageConsumers = null;
+        vertx = null;
     }
 
     void registerMessageConsumers(Map<String, ConsumeEvent> messageConsumerConfigurations) {

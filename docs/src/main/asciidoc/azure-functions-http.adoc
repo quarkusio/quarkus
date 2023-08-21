@@ -160,7 +160,7 @@ The `quarkus-azure-functions-http` extension handles all the work to deploy to A
 Quarkus will use the Azure CLI in the background to authenticate and deploy to Azure.  If you have
 multiple subscriptions associated with your account, you must set the `quarkus.azure-functions.subscription-id`
 property in your `application.properties` file to the subscription you want to use.
-For other authentication mechanisms and deployment options see our config properties https://quarkus.io/guides/all-config[here].
+For other authentication mechanisms and deployment options see our config properties xref:all-config.adoc[here].
 
 To run the deploy, after you build your project execute:
 

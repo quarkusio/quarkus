@@ -9,7 +9,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Instructs a fully integrated environment to generate a {@link ValueResolver} for a method annotated with this annotation.
+ * <p>
+ * <strong>IMPORTANT: This annotation only works in a fully integrated environment; such as a Quarkus application.</strong>
+ * </p>
+ *
+ * Instructs to generate a {@link ValueResolver} for a method annotated with this annotation.
  * <p>
  * If declared on a class a value resolver is generated for every non-private static method declared on the class. Method-level
  * annotations override the behavior defined on the class. Methods that do not meet the following requirements are ignored.

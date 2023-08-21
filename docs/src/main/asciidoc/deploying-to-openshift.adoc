@@ -91,7 +91,7 @@ include::{includes}/devtools/build.adoc[]
 TIP: If you want to test your application immediately then set the `quarkus.openshift.route.expose` config property to `true` to <<exposing_routes,expose the service automatically>>, e.g. add `-Dquarkus.openshift.route.expose=true` to the command above.
 
 [#re-deploy-with-service-binding]
-NOTE: When using `DeploymentConfig` and https://quarkus.io/guides/deploying-to-kubernetes#service_binding[Service Binding], re-deploying might remove the configuration added by OpenShift to allow service discovery. A new container image build will trigger a refresh of the Quarkus app in OpenShift: `-Dquarkus.container-image.build=true` which might be enough in most situations. If you need to update the OpenShift resources, you need to delete the binding first to create it again after new deployment.
+NOTE: When using `DeploymentConfig` and xref:deploying-to-kubernetes.adoc#service_binding[Service Binding], re-deploying might remove the configuration added by OpenShift to allow service discovery. A new container image build will trigger a refresh of the Quarkus app in OpenShift: `-Dquarkus.container-image.build=true` which might be enough in most situations. If you need to update the OpenShift resources, you need to delete the binding first to create it again after new deployment.
 
 This command will build your application locally, then trigger a container image build and finally apply the generated OpenShift resources automatically.
 The generated resources use OpenShift's `DeploymentConfig` that is configured to automatically trigger a redeployment when a change in the `ImageStream` is noticed.
@@ -137,6 +137,12 @@ To trigger a container image build:
 
 The build that will be performed is a _s2i binary_ build.
 The input of the build is the jar that has been built locally and the output of the build is an `ImageStream` that is configured to automatically trigger a deployment.
+The base/builder image is specified using `base-jvm-image` and `base-native-image` for jvm and native mode respectively. An ImageStream for the image is automatically generated, unless these properties are used to reference an existing ImageStreamTag in the internal openshift registry. For example:
+
+[source,properties]
+----
+quarkus.openshift.base-jvm-image=image-registry.openshift-image-registry.svc:5000/some-project/openjdk-11:17.1.16.
+----
 
 [NOTE]
 ====
@@ -147,7 +153,7 @@ During the build you may find the `Caused by: javax.net.ssl.SSLHandshakeExceptio
 quarkus.kubernetes-client.trust-certs=true
 ----
 
-For more information, see link:https://quarkus.io/guides/deploying-to-kubernetes#client-connection-configuration[deploying to Kubernetes].
+For more information, see xref:deploying-to-kubernetes.adoc#client-connection-configuration[deploying to Kubernetes].
 ====
 
 Once the build is done we can create a new application from the relevant `ImageStream`.
@@ -415,7 +421,7 @@ You can provide the arguments that will be used by the Kubernetes Job via the pr
 
 Finally, the Kubernetes job will be launched every time that is installed in OpenShift. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[link].
 
-You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.openshift.job.xxx` (see https://quarkus.io/guides/deploying-to-openshift#quarkus-openshift-openshift-config_quarkus.openshift.job.parallelism[link]).
+You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.openshift.job.xxx` (see xref:deploying-to-openshift#quarkus-openshift-openshift-config_quarkus.openshift.job.parallelism[link]).
 
 ===== Generating CronJob resources
 
@@ -430,7 +436,7 @@ quarkus.openshift.cron-job.schedule=0 * * * *
 
 IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.openshift.cron-job.schedule`. If not provide, the build will fail.
 
-You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.openshift.cron-job.xxx` (see https://quarkus.io/guides/deploying-to-openshift#quarkus-openshift-openshift-config_quarkus.openshift.cron-job.parallelism[link]).
+You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.openshift.cron-job.xxx` (see xref:deploying-to-openshift.adoc#quarkus-openshift-openshift-config_quarkus.openshift.cron-job.parallelism[link]).
 
 ==== Validation
 

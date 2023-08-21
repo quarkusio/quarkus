@@ -10,6 +10,10 @@ import java.lang.annotation.Target;
 import io.quarkus.qute.TemplateData.Container;
 
 /**
+ * <p>
+ * <strong>IMPORTANT: This annotation only works in a fully integrated environment; such as a Quarkus application.</strong>
+ * </p>
+ *
  * This annotation is used to mark a target type for which a value resolver should be automatically generated. Note that
  * non-public members, constructors, static initializers, static, synthetic and void methods are always ignored.
  * <p>

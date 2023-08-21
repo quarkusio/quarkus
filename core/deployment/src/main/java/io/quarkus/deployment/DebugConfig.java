@@ -39,4 +39,10 @@ public class DebugConfig {
      */
     @ConfigItem
     Optional<String> generatedSourcesDir;
+
+    /**
+     * If set to true then dump the build metrics to a JSON file in the build directory.
+     */
+    @ConfigItem(defaultValue = "false")
+    boolean dumpBuildMetrics;
 }

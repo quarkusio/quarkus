@@ -338,7 +338,7 @@ public class SmallRyeOpenApiProcessor {
         String managementRoot = nonApplicationRootPathBuildItem.resolveManagementPath("/",
                 managementInterfaceBuildTimeConfig, launch, openApiConfig.managementEnabled);
 
-        return managementRoot.split(managementInterfaceBuildTimeConfig.rootPath)[0];
+        return managementRoot.split(managementInterfaceBuildTimeConfig.rootPath())[0];
 
     }
 
@@ -435,7 +435,7 @@ public class SmallRyeOpenApiProcessor {
     private boolean isManagement(ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
             LaunchModeBuildItem launchModeBuildItem) {
-        return managementInterfaceBuildTimeConfig.enabled && smallRyeOpenApiConfig.managementEnabled
+        return managementInterfaceBuildTimeConfig.enabled() && smallRyeOpenApiConfig.managementEnabled
                 && launchModeBuildItem.getLaunchMode().equals(LaunchMode.DEVELOPMENT);
     }
 
@@ -797,7 +797,7 @@ public class SmallRyeOpenApiProcessor {
         } else {
             annotationModel = new OpenAPIImpl();
         }
-        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel, openAPIBuildItems);
+        OpenApiDocument finalDocument = loadDocument(staticModel, annotationModel, openAPIBuildItems, index);
 
         for (Format format : Format.values()) {
             String name = OpenApiConstants.BASE_NAME + format;
@@ -806,7 +806,7 @@ public class SmallRyeOpenApiProcessor {
             nativeImageResources.produce(new NativeImageResourceBuildItem(name));
         }
 
-        OpenApiDocument finalStoredOpenApiDocument = storeDocument(out, smallRyeOpenApiConfig, finalDocument.get());
+        OpenApiDocument finalStoredOpenApiDocument = storeDocument(out, smallRyeOpenApiConfig, index, finalDocument.get());
         openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(finalStoredOpenApiDocument));
     }
 
@@ -1067,8 +1067,8 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private OpenApiDocument loadDocument(OpenAPI staticModel, OpenAPI annotationModel,
-            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
-        OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems);
+            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems, IndexView index) {
+        OpenApiDocument document = prepareOpenApiDocument(staticModel, annotationModel, openAPIBuildItems, index);
 
         Config c = ConfigProvider.getConfig();
         String title = c.getOptionalValue("quarkus.application.name", String.class).orElse("Generated");
@@ -1083,22 +1083,24 @@ public class SmallRyeOpenApiProcessor {
 
     private OpenApiDocument storeDocument(OutputTargetBuildItem out,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
+            IndexView index,
             OpenAPI loadedModel) throws IOException {
-        return storeDocument(out, smallRyeOpenApiConfig, loadedModel, true);
+        return storeDocument(out, smallRyeOpenApiConfig, index, loadedModel, true);
     }
 
     private OpenApiDocument storeDocument(OutputTargetBuildItem out,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
+            IndexView index,
             OpenAPI loadedModel,
             boolean includeRuntimeFilters) throws IOException {
 
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
-        OpenApiDocument document = prepareOpenApiDocument(loadedModel, null, Collections.emptyList());
+        OpenApiDocument document = prepareOpenApiDocument(loadedModel, null, Collections.emptyList(), index);
 
         if (includeRuntimeFilters) {
-            document.filter(filter(openApiConfig)); // This usually happens at runtime, so when storing we want to filter here too.
+            document.filter(filter(openApiConfig, index)); // This usually happens at runtime, so when storing we want to filter here too.
         }
 
         // By default, also add the auto generated server
@@ -1112,7 +1114,7 @@ public class SmallRyeOpenApiProcessor {
         } catch (RuntimeException re) {
             if (includeRuntimeFilters) {
                 // This is a Runtime filter, so it might not work at build time. In that case we ignore the filter.
-                return storeDocument(out, smallRyeOpenApiConfig, loadedModel, false);
+                return storeDocument(out, smallRyeOpenApiConfig, index, loadedModel, false);
             } else {
                 throw re;
             }
@@ -1131,12 +1133,13 @@ public class SmallRyeOpenApiProcessor {
 
     private OpenApiDocument prepareOpenApiDocument(OpenAPI staticModel,
             OpenAPI annotationModel,
-            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems) {
+            List<AddToOpenAPIDefinitionBuildItem> openAPIBuildItems,
+            IndexView index) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
         OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig,
-                Thread.currentThread().getContextClassLoader());
+                Thread.currentThread().getContextClassLoader(), index);
 
         OpenApiDocument document = createDocument(openApiConfig);
         if (annotationModel != null) {
@@ -1158,8 +1161,8 @@ public class SmallRyeOpenApiProcessor {
         return document;
     }
 
-    private OASFilter filter(OpenApiConfig openApiConfig) {
+    private OASFilter filter(OpenApiConfig openApiConfig, IndexView index) {
         return OpenApiProcessor.getFilter(openApiConfig,
-                Thread.currentThread().getContextClassLoader());
+                Thread.currentThread().getContextClassLoader(), index);
     }
 }

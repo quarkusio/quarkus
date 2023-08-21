@@ -954,4 +954,4 @@ quarkus.micrometer.binder.redis.enabled=false
 [[redis-configuration-reference]]
 == Configuration reference
 
-include::{generated-dir}/config/quarkus-redis-client.adoc[opts=optional,leveloffset=+1]
+include::{generated-dir}/config/quarkus-redis.adoc[opts=optional, leveloffset=+1]

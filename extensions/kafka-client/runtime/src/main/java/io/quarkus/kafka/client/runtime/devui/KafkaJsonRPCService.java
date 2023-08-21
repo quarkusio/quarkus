@@ -8,16 +8,15 @@ import java.util.concurrent.ExecutionException;
 import jakarta.inject.Inject;
 
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
-import io.quarkus.kafka.client.runtime.ui.KafkaUiUtils;
-import io.quarkus.kafka.client.runtime.ui.model.Order;
-import io.quarkus.kafka.client.runtime.ui.model.request.KafkaCreateTopicRequest;
-import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessageCreateRequest;
-import io.quarkus.kafka.client.runtime.ui.model.request.KafkaMessagesRequest;
-import io.quarkus.kafka.client.runtime.ui.model.request.KafkaOffsetRequest;
-import io.quarkus.kafka.client.runtime.ui.model.response.KafkaAclInfo;
-import io.quarkus.kafka.client.runtime.ui.model.response.KafkaInfo;
-import io.quarkus.kafka.client.runtime.ui.model.response.KafkaMessagePage;
-import io.quarkus.kafka.client.runtime.ui.model.response.KafkaTopic;
+import io.quarkus.kafka.client.runtime.devui.model.Order;
+import io.quarkus.kafka.client.runtime.devui.model.request.KafkaCreateTopicRequest;
+import io.quarkus.kafka.client.runtime.devui.model.request.KafkaMessageCreateRequest;
+import io.quarkus.kafka.client.runtime.devui.model.request.KafkaMessagesRequest;
+import io.quarkus.kafka.client.runtime.devui.model.request.KafkaOffsetRequest;
+import io.quarkus.kafka.client.runtime.devui.model.response.KafkaAclInfo;
+import io.quarkus.kafka.client.runtime.devui.model.response.KafkaInfo;
+import io.quarkus.kafka.client.runtime.devui.model.response.KafkaMessagePage;
+import io.quarkus.kafka.client.runtime.devui.model.response.KafkaTopic;
 
 public class KafkaJsonRPCService {
 

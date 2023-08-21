@@ -903,7 +903,7 @@ From an application developer perspective, a Quarkus platform is represented as 
 
 link:https://github.com/quarkiverse[Quarkiverse Hub] is the GitHub organization that provides repository hosting (including build, CI and release publishing setup) for Quarkus extension projects contributed by the community.
 
-In case you are wondering about creating a new Quarkus extension and adding it to the Quarkus ecosystem so that the Quarkus community can discover it using the Quarkus dev tools (including the https://quarkus.io/guides/cli-tooling[Quarkus CLI] and https://code.quarkus.io[code.quarkus.io]), the https://github.com/quarkiverse[Quarkiverse Hub] GitHub organization will be a good home for it.
+In case you are wondering about creating a new Quarkus extension and adding it to the Quarkus ecosystem so that the Quarkus community can discover it using the Quarkus dev tools (including the xref:cli-tooling.adoc[Quarkus CLI] and https://code.quarkus.io[code.quarkus.io]), the https://github.com/quarkiverse[Quarkiverse Hub] GitHub organization will be a good home for it.
 
 You can get started by creating an link:https://github.com/quarkusio/quarkus/issues/new/choose[Extension Request] issue (check first if one wasn't already submitted link:https://github.com/quarkusio/quarkus/labels/kind%2Fextension-proposal[here]) and asking to lead it.
 

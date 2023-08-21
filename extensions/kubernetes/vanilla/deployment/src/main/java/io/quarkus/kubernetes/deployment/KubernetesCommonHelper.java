@@ -39,6 +39,7 @@ import io.dekorate.kubernetes.decorator.AddAwsElasticBlockStoreVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureDiskVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddAzureFileVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddConfigMapVolumeDecorator;
+import io.dekorate.kubernetes.decorator.AddDockerConfigJsonSecretDecorator;
 import io.dekorate.kubernetes.decorator.AddEmptyDirVolumeDecorator;
 import io.dekorate.kubernetes.decorator.AddEnvVarDecorator;
 import io.dekorate.kubernetes.decorator.AddHostAliasesDecorator;
@@ -78,6 +79,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.PodSpecBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRuleBuilder;
+import io.quarkus.container.spi.ContainerImageInfoBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -228,6 +230,7 @@ public class KubernetesCommonHelper {
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
             List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels,
+            Optional<ContainerImageInfoBuildItem> image,
             Optional<KubernetesCommandBuildItem> command,
             Optional<Port> port,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessProbePath,
@@ -248,6 +251,20 @@ public class KubernetesCommonHelper {
 
         result.addAll(createCommandDecorator(project, target, name, config, command));
         result.addAll(createArgsDecorator(project, target, name, config, command));
+
+        // Handle Pull Secrets
+        if (config.isGenerateImagePullSecret()) {
+            image.ifPresent(i -> {
+                i.getRegistry().ifPresent(registry -> {
+                    if (i.getUsername().isPresent() && i.getPassword().isPresent()) {
+                        String imagePullSecret = name + "-pull-secret";
+                        result.add(new DecoratorBuildItem(target, new AddImagePullSecretDecorator(name, imagePullSecret)));
+                        result.add(new DecoratorBuildItem(target, new AddDockerConfigJsonSecretDecorator(imagePullSecret,
+                                registry, i.username.get(), i.password.get())));
+                    }
+                });
+            });
+        }
 
         // Handle Probes
         if (!port.isEmpty()) {
@@ -675,7 +692,23 @@ public class KubernetesCommonHelper {
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
+        List<AddImagePullSecretDecorator> imagePullSecretDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(AddImagePullSecretDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
         items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
+
+            for (final AddImagePullSecretDecorator delegate : imagePullSecretDecorators) {
+                result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
+                    @Override
+                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
+                        delegate.andThenVisit(builder, meta);
+                    }
+                }));
+            }
 
             result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<ContainerBuilder>("Job", item.getName()) {
                 @Override

@@ -10,8 +10,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
+import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.console.ConfiguredPathInfo;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.Handler;
@@ -177,7 +177,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         if (path == null || path.trim().isEmpty()) {
             throw new IllegalArgumentException("Specified path can not be empty");
         }
-        if (managementInterfaceBuildTimeConfig.enabled && extensionOverride) {
+        if (managementInterfaceBuildTimeConfig.enabled() && extensionOverride) {
             // Best effort
             String prefix = getManagementUrlPrefix(mode);
             if (managementRootPath != null) {

@@ -488,7 +488,9 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 }
 
                 case METHOD: {
-                    processMethodConfigMapping((ExecutableElement) e, javadocProps, className);
+                    if (!isConfigMappingMethodIgnored(e)) {
+                        processMethodConfigMapping((ExecutableElement) e, javadocProps, className);
+                    }
                     break;
                 }
                 default:
@@ -867,6 +869,17 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             }
         }
         return hasAnnotation;
+    }
+
+    private static boolean isConfigMappingMethodIgnored(Element element) {
+        for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {
+            String annotationName = ((TypeElement) annotationMirror.getAnnotationType().asElement())
+                    .getQualifiedName().toString();
+            if (Constants.ANNOTATION_CONFIG_DOC_IGNORE.equals(annotationName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Object getAnnotationAttribute(AnnotationMirror annotationMirror, String attributeName) {

@@ -30,7 +30,7 @@ The data can be fetched from a browser using a fetch button from a Jakarta REST 
 
 The guide can be used either via the Apache Qpid JMS AMQP client as detailed immediately below, or
 alternatively with the Apache ActiveMQ Artemis JMS client given some different configuration
-as <<artemis-jms, detailed later>>.
+as <<artemis-jms,detailed later>>.
 
 [#qpid-jms-amqp]
 == Qpid JMS - AMQP
@@ -330,7 +330,7 @@ Open `http://localhost:8080/prices.html` in your browser.
 
 The above steps detailed using the Qpid JMS AMQP client, however the guide can also be used
 with the Artemis JMS client. Many of the individual steps are exactly as previously
-<<qpid-jms-amqp, detailed above for Qpid JMS>>. The individual component code is the same.
+<<qpid-jms-amqp,detailed above for Qpid JMS>>. The individual component code is the same.
 The only differences are in the dependency for the initial project creation, and the
 configuration properties used. These changes are detailed below and should be substituted
 for the equivalent step during the sequence above.

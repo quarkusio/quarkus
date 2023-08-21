@@ -39,7 +39,7 @@
         {
             "category": "Data6",
             "timeout": 95,
-            "test-modules": "elasticsearch-rest-client, elasticsearch-rest-high-level-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling",
+            "test-modules": "elasticsearch-rest-client, elasticsearch-java-client, hibernate-search-orm-elasticsearch, hibernate-search-orm-elasticsearch-tenancy, hibernate-search-orm-opensearch, hibernate-search-orm-elasticsearch-coordination-outbox-polling",
             "os-name": "ubuntu-latest"
         },
         {
@@ -68,7 +68,7 @@
         },
         {
             "category": "Security1",
-            "timeout": 55,
+            "timeout": 65,
             "test-modules": "elytron-security-oauth2, elytron-security, elytron-security-jdbc, elytron-undertow, elytron-security-ldap, bouncycastle, bouncycastle-jsse, bouncycastle-fips",
             "os-name": "ubuntu-latest"
         },
@@ -92,7 +92,7 @@
         },
         {
             "category": "HTTP",
-            "timeout": 100,
+            "timeout": 110,
             "test-modules": "elytron-resteasy, resteasy-jackson, elytron-resteasy-reactive, resteasy-mutiny, resteasy-reactive-kotlin/standard, vertx, vertx-http, vertx-web, vertx-web-jackson, vertx-graphql, virtual-http, rest-client, rest-client-reactive, rest-client-reactive-stork, rest-client-reactive-multipart, websockets, management-interface, management-interface-auth",
             "os-name": "ubuntu-latest"
         },
@@ -105,7 +105,7 @@
         {
             "category": "Misc2",
             "timeout": 70,
-            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, bootstrap-config/application, mailer, native-config-profile, locales",
+            "test-modules": "hibernate-validator, test-extension/tests, logging-gelf, mailer, native-config-profile, locales",
             "os-name": "ubuntu-latest"
         },
         {
@@ -146,7 +146,7 @@
         },
         {
             "category": "AWT, ImageIO and Java2D",
-            "timeout": 25,
+            "timeout": 30,
             "test-modules": "awt, no-awt",
             "os-name": "ubuntu-latest"
         }

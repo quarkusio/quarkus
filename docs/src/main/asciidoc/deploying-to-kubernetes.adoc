@@ -236,7 +236,7 @@ You can provide the arguments that will be used by the Kubernetes Job via the pr
 
 Finally, the Kubernetes job will be launched every time it is installed in Kubernetes. You can know more about how to run Kubernetes jobs in this https://kubernetes.io/docs/concepts/workloads/controllers/job/#running-an-example-job[link].
 
-You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.kubernetes.job.xxx` (see https://quarkus.io/guides/deploying-to-kubernetes#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.job.parallelism-parallelism[link]).
+You can configure the rest of the Kubernetes Job configuration using the properties under `quarkus.kubernetes.job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.job.parallelism[link]).
 
 ==== Generating CronJob resources
 
@@ -251,7 +251,7 @@ quarkus.kubernetes.cron-job.schedule=0 * * * *
 
 IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provide, the build will fail.
 
-You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see https://quarkus.io/guides/deploying-to-kubernetes#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.cron-job.parallelism-parallelism[link]).
+You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes-kubernetes-config_quarkus.kubernetes.cron-job.parallelism[link]).
 
 === Namespace
 
@@ -280,6 +280,41 @@ quarkus.container-image.registry=my.docker-registry.net
 
 By adding this property along with the rest of the container image properties of the previous section, the generated manifests will use the image `my.docker-registry.net/quarkus/demo-app:1.0`.
 The image is not the only thing that can be customized in the generated manifests, as will become evident in the following sections.
+
+
+==== Automatic generation of pull secrets
+
+When docker registries are used, users often provide credentials, so that an image is built and pushed to the specified registry during the build.
+[source,properties]
+----
+quarkus.container-image.username=myusername
+quarkus.container-image.password=mypassword
+----
+
+Kubernetes will also need these credentials when it comes to pull the image from the registry. This is where image pull secrets are used. An image pull secret is a special kind
+of secret that contains the required credentials. Quarkus can automatically generate and configure when:
+
+[source,properties]
+----
+quarkus.kubernetes.generate-image-pull-secret=true
+----
+
+More specifically a `Secret`like the one bellow is genrated:
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-quarkus-app-pull-secret
+data:
+  ".dockerconfigjson": ewogCSJhdXRocyI6IHsKCQkibXkucmVnaXN0eS5vcmciOiB7CiAJCQkiYXV0aCI6ImJYbDFjMlZ5Ym1GdFpUcHRlWEJoYzNOM2IzSmsiCgkJfQoJfQp9
+type: kubernetes.io/dockerconfigjson
+
+----
+
+And also `test-quarkus-app-pull-secret is added to the `imagePullSecrets` list.
+
 
 === Labels and Annotations
 

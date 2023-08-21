@@ -90,6 +90,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setAuthServerUrl(authServerUri);
                     config.setDiscoveryEnabled(false);
                     config.authentication.setUserInfoRequired(true);
+                    config.token.setSubjectRequired(true);
                     config.setIntrospectionPath("introspect");
                     config.setUserInfoPath("userinfo");
                     config.setClientId("client-introspection-only");

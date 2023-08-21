@@ -90,6 +90,8 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                 RuntimeUpdatesProcessor.INSTANCE.close();
             } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                RuntimeUpdatesProcessor.INSTANCE = null;
             }
             for (HotReplacementSetup i : hotReplacementSetups) {
                 i.close();

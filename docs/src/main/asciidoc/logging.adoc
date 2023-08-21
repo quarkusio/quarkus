@@ -6,7 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="logging"]
 = Logging configuration
 include::_attributes.adoc[]
-:categories: core,getting-started
+:categories: core,getting-started,observability
 :diataxis-type: reference
 
 Read about the use of logging API in Quarkus, configuring logging output, and using logging adapters to unify the output from other logging APIs.
@@ -25,7 +25,7 @@ You can use any of the <<logging-apis,following APIs>>:
 [[jboss-logging]]
 == Use JBoss Logging for application logging
 
-No additional dependencies are needed when using the JBoss Logging API; it is automatically provided.
+When using the JBoss Logging API, your application requires no additional dependencies, as Quarkus automatically provides it.
 
 .An example of using the JBoss Logging API to log a message:
 [source,java]
@@ -58,11 +58,11 @@ In such cases, you need to use a <<logging-apis,logging adapter>> to ensure that
 
 In Quarkus, the most common ways to obtain an application logger are by:
 
-* <<declaring-a-loger-field,Declaring a logger field>>
-* <<simplified-logging,Simplified logging>>
-* <<injection-of-a-configured-logger,Injecting a configured logger>>
+* <<declaring-a-logger-field>>
+* <<simplified-logging>>
+* <<injection-of-a-configured-logger>>
 
-[[declaring-a-loger-field]]
+[[declaring-a-logger-field]]
 === Declaring a logger field
 
 With this classic approach, you use a specific API to obtain a logger instance, store it in a static field of a class, and call logging operations upon this instance.
@@ -120,8 +120,7 @@ WARNING: Only use the `Log` API in application classes, not in external dependen
 [[injection-of-a-configured-logger]]
 === Injecting a configured logger
 
-The last alternative is to inject a configured `org.jboss.logging.Logger` logger instance by using the `@Inject` annotation.
-This approach is applicable only for CDI beans.
+The injection of a configured `org.jboss.logging.Logger` logger instance with the `@Inject` annotation is another alternative to adding an application logger, but is applicable only to CDI beans.
 
 You can use `@Inject Logger log`, where the logger gets named after the class you inject it to, or `@Inject @LoggerName("...") Logger log`, where the logger will receive the specified name.
 Once injected, you can use the `log` object to invoke logging methods.
@@ -153,6 +152,8 @@ NOTE: The logger instances are cached internally. Therefore, when a logger is in
 
 
 == Use log levels
+
+Quarkus provides different log levels, which helps developers control the amount of information logged based on the severity of the events.
 
 .Log levels used by Quarkus
 
@@ -199,11 +200,11 @@ FINEST:: Increased debug output compared to `TRACE`, which might have a higher f
 |===
 
 
-== Configure the log level, category and format
+== Configure the log level, category, and format
 
-Runtime logging is configured in the `application.properties` file.
+JBoss Logging is built into Quarkus and provides link:https://quarkus.io/developer-joy/[unified configuration] for all <<logging-apis,supported logging APIs>>.
 
-Because JBoss Logging is built in to Quarkus, link:https://quarkus.io/developer-joy/[unified configuration] is provided for all <<logging-apis,supported logging APIs>>.
+Configure the runtime logging in the `application.properties` file.
 
 .An example of how you can set the default log level to `INFO` logging and include Hibernate `DEBUG` logs:
 [source, properties]
@@ -292,9 +293,8 @@ Although the root logger's handlers are usually configured directly via `quarkus
 
 == Logging format
 
-Quarkus uses a pattern-based logging formatter that generates human-readable text logs by default.
+Quarkus uses a pattern-based logging formatter that generates human-readable text logs by default, but you can also configure the format for each log handler by using a dedicated property.
 
-You can configure the format for each log handler by using a dedicated property.
 For the console handler, the property is `quarkus.log.console.format`.
 
 The logging format string supports the following symbols:
@@ -324,8 +324,8 @@ The logging format string supports the following symbols:
 |%t|Thread name|Render the thread name.
 |%t{id}|Thread ID|Render the thread ID.
 |%z{<zone name>}|Time zone|Set the time zone of the output to `<zone name>`.
-|%X{<MDC property name>}|Mapped Diagnostics Context Value|Renders the value from Mapped Diagnostics Context
-|%X|Mapped Diagnostics Context Values|Renders all the values from Mapped Diagnostics Context in format {property.key=property.value}
+|%X{<MDC property name>}|Mapped Diagnostic Context Value|Renders the value from Mapped Diagnostic Context
+|%X|Mapped Diagnostic Context Values|Renders all the values from Mapped Diagnostic Context in format {property.key=property.value}
 |%x|Nested Diagnostics context values|Renders all the values from Nested Diagnostics Context in format {value1.value2}
 |===
 
@@ -333,7 +333,7 @@ The logging format string supports the following symbols:
 [id="alt-console-format"]
 === Alternative console logging formats
 
-The flexibility to change console log format is a useful feature you can use, for example, when the output of the Quarkus application is captured by a service that process and store the log information for later analysis.
+Changing the console log format is useful, for example, when the console output of the Quarkus application is captured by a service that processes and stores the log information for later analysis.
 
 
 [id="json-logging"]
@@ -416,8 +416,12 @@ For details about its configuration, see the xref:#quarkus-log-logging-log-confi
 
 === File log handler
 
-By default, the file log handler in Quarkus is disabled.
-Once enabled, it enables the logging of all events to a file on the application's host, while also supporting log file rotation.
+To log events to a file on the application's host, use the Quarkus file log handler.
+The file log handler is disabled by default, so you must first enable it.
+
+The Quarkus file log handler supports log file rotation. 
+Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while also keeping the primary log file up-to-date and manageable.
+
 Log file rotation ensures effective log file management over time by maintaining a specified number of backup log files, while keeping the primary log file up-to-date and manageable.
 
 * A global configuration example:
@@ -524,9 +528,9 @@ quarkus.log.console.filter=my-filter
 ----
 
 
-== Logging configurations examples
+== Examples of logging configurations
 
-This chapter provides examples of frequently used logging configurations.
+The following examples show some of the ways in which you can configure logging in Quarkus:
 
 .Console DEBUG logging except for Quarkus logs (INFO), no color, shortened time, shortened category prefixes
 [source, properties]
@@ -589,14 +593,18 @@ quarkus.log.handlers=CONSOLE_MIRROR
 
 == Centralized log management
 
+Use a centralized location to efficiently collect, store, and analyze log data from various components and instances of the application.
+
 To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see the Quarkus xref:centralized-log-management.adoc[Centralized log management] guide.
+
 
 == Configure logging for `@QuarkusTest`
 
-To configure logging for your `@QuarkusTest`, ensure that you configure the `maven-surefire-plugin` accordingly.
-Specifically, set the appropriate `LogManager` by using the `java.util.logging.manager` system property.
+Enable proper logging for `@QuarkusTest` by setting the `java.util.logging.manager` system property to `org.jboss.logmanager.LogManager`.
 
-.Example Configuration
+The system property must be set early on to be effective, so it is recommended to configure it in the build system.
+
+.Setting the `java.util.logging.manager` system property in the Maven Surefire plugin configuration
 [source, xml]
 ----
 <build>
@@ -733,14 +741,14 @@ implementation("org.jboss.slf4j:slf4j-jboss-logmanager")
 
 === Use MDC to add contextual log information
 
-Quarkus overrides log MDC (Mapped Diagnostic Context) to improve the compatibility with its reactive core.
+Quarkus overrides the logging Mapped Diagnostic Context (MDC) to improve the compatibility with its reactive core.
 
-==== Adding and reading MDC data
+==== Add and read MDC data
 
-To add data to the MDC and extract it in your log output, you need to:
+To add data to the MDC and extract it in your log output:
 
-1. Use the `MDC` class to set the data
-2. Customize the log format to use `%X\{mdc-key\}`
+. Use the `MDC` class to set the data.
+. Customize the log format to use `%X\{mdc-key\}`.
 
 Let's consider the following code:
 
@@ -789,23 +797,22 @@ You get messages containing the MDC data:
 Depending on the API you use, the MDC class is slightly different.
 However, the APIs are very similar:
 
-* log4j 1 - `org.apache.log4j.MDC.put(key, value)`
-* log4j 2 - `org.apache.logging.log4j.ThreadContext.put(key, value)`
-* slf4j - `org.slf4j.MDC.put(key, value)`
+* Log4j 1 - `org.apache.log4j.MDC.put(key, value)`
+* Log4j 2 - `org.apache.logging.log4j.ThreadContext.put(key, value)`
+* SLF4J - `org.slf4j.MDC.put(key, value)`
 
 [[mdc-propagation]]
 ==== MDC propagation
 
-Under the hood, Quarkus provides a specific implementation of the MDC provider handling the reactive context.
-Thus, the MDC data is propagated even when using reactive and asynchronous processing.
+In Quarkus, the MDC provider has a specific implementation for handling the reactive context, ensuring that MDC data is propagated during reactive and asynchronous processing.
 
-Consequently, the MDC data is still available:
+As a result, you can still access the MDC data in various scenarios:
 
-- after async calls (like a REST client returning a Uni)
-- in the code submitted to the `ManagedExecutor` (`@Inject org.eclipse.microprofile.context.ManagedExecutor executor`)
-- in the code executed using `vertx.executeBlocking()`
+* After asynchronous calls, for example, when a REST client returns a Uni.
+* In code submitted to `org.eclipse.microprofile.context.ManagedExecutor`.
+* In code executed with `vertx.executeBlocking()`.
 
-NOTE: When available, the MDC data is stored on a _duplicated context_ which is an isolated context for your processing.
+NOTE: If applicable, MDC data is stored in a _duplicated context_, which is an isolated context for processing a single task (request).
 
 
 [[loggingConfigurationReference]]

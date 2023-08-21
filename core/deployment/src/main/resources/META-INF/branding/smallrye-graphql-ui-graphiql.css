@@ -1,68 +1,51 @@
 body {
-    height: 100%;
-    margin: 0 !important;
-    width: 100%;
-    overflow: hidden;
-    box-sizing: border-box;    
+    margin: 0;
+}
+
+.graphiql-container, .CodeMirror-info, .CodeMirror-lint-tooltip, reach-portal {
+    --color-primary: 211, 80%, 60% !important;
+}
+
+@media (prefers-color-scheme: dark) {
+    body:not(.graphiql-light) .graphiql-container,body:not(.graphiql-light) .CodeMirror-info,body:not(.graphiql-light) .CodeMirror-lint-tooltip,body:not(.graphiql-light) reach-portal {
+    	--color-base: 210, 10%, 23% !important;
+    }
+}
+
+body.graphiql-dark .graphiql-container,
+body.graphiql-dark .CodeMirror-info,
+body.graphiql-dark .CodeMirror-lint-tooltip,
+body.graphiql-dark reach-portal {
+	--color-base: 210, 10%, 23% !important;
 }
 
 #graphiql {
     height: 100vh;
 }
 
-#graphiql .topBar{
-    background:#343a40;
-}
-
-#graphiql .execute-button {
-    box-shadow:unset;
-    background: #4695eb;
-}
-
-#graphiql .toolbar-button {
-    padding-top: 12px !important;
-    box-shadow:unset;
-    background: transparent;
-    color: #9a9da0;
-}
-
-#graphiql .docExplorerShow {
-    background: #4695eb;
-    color: white;
-}
-
-#graphiql .docExplorerWrap {
-    color: black;
-}
-#graphiql .docExplorerHide{
-    color: black;
-}
-
-#graphiql .topBar {
-    padding-bottom: 12px !important;
-    padding-top: 12px !important;   
-}
-
-#graphQLUiTitleLink::after {
-  content: "GraphQL UI";
-}
-
-#graphQLUiTitleLink {
+#graphQLUiLogoLink {
     display: flex;
-    align-items:center;
-    color: white;
-    text-decoration: unset;
-    font-size: 1.25rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    justify-content: center;
+    position: relative;
+}
+
+/* CODE BELLOW IS FOR MAKING THE EDGES IN THE QUARKUS LOGO NON-TRANSPARENT*/
+#graphQLUiLogoLink::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  padding: 8px;
+  background-color: hsl(210, 10%, 23%);
+  z-index: 0;
 }
 
 #graphQLUiLogoLink img {
-    border-right: 1px solid darkgrey;
-    padding-right: 10px;
-    margin-right: 10px;
-    height: 30px;
-}
-
-.graphiql-container .title {
-    display: flex;
+  display: block;
+  position: relative;
+  z-index: 1; /* Set z-index to 1 to position it in front of the ::before pseudo-element */
+  margin: 0 auto;
 }

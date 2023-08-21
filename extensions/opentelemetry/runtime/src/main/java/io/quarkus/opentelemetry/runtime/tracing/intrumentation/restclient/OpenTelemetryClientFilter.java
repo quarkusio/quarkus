@@ -147,7 +147,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
             implements HttpClientAttributesGetter<ClientRequestContext, ClientResponseContext> {
 
         @Override
-        public String getUrl(final ClientRequestContext request) {
+        public String getUrlFull(final ClientRequestContext request) {
             URI uri = request.getUri();
             if (uri.getUserInfo() != null) {
                 return UriBuilder.fromUri(uri).userInfo(null).build().toString();
@@ -156,28 +156,23 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
 
         @Override
-        public String getFlavor(final ClientRequestContext request, final ClientResponseContext response) {
-            return null;
-        }
-
-        @Override
-        public String getMethod(final ClientRequestContext request) {
+        public String getHttpRequestMethod(final ClientRequestContext request) {
             return request.getMethod();
         }
 
         @Override
-        public List<String> getRequestHeader(final ClientRequestContext request, final String name) {
+        public List<String> getHttpRequestHeader(final ClientRequestContext request, final String name) {
             return request.getStringHeaders().getOrDefault(name, emptyList());
         }
 
         @Override
-        public Integer getStatusCode(ClientRequestContext clientRequestContext,
+        public Integer getHttpResponseStatusCode(ClientRequestContext clientRequestContext,
                 ClientResponseContext clientResponseContext, Throwable error) {
             return clientResponseContext.getStatus();
         }
 
         @Override
-        public List<String> getResponseHeader(final ClientRequestContext request, final ClientResponseContext response,
+        public List<String> getHttpResponseHeader(final ClientRequestContext request, final ClientResponseContext response,
                 final String name) {
             return response.getHeaders().getOrDefault(name, emptyList());
         }
@@ -192,13 +187,25 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
 
         @Override
-        public String getPeerName(ClientRequestContext clientRequestContext) {
+        public String getServerAddress(ClientRequestContext clientRequestContext) {
             return clientRequestContext.getUri().getHost();
         }
 
         @Override
-        public Integer getPeerPort(ClientRequestContext clientRequestContext) {
+        public Integer getServerPort(ClientRequestContext clientRequestContext) {
             return clientRequestContext.getUri().getPort();
+        }
+
+        @Override
+        public String getNetworkProtocolName(ClientRequestContext clientRequestContext,
+                ClientResponseContext clientResponseContext) {
+            return "http";
+        }
+
+        @Override
+        public String getNetworkProtocolVersion(ClientRequestContext clientRequestContext,
+                ClientResponseContext clientResponseContext) {
+            return null;
         }
     }
 }

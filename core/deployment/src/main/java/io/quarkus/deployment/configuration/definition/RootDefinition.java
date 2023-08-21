@@ -46,16 +46,6 @@ public final class RootDefinition extends ClassDefinition {
                                     "Run", "Time", "Config"),
                             "Configuration"),
                     "Config");
-        } else if (configPhase == ConfigPhase.BOOTSTRAP) {
-            trimmedSegments = withoutSuffix(
-                    withoutSuffix(
-                            withoutSuffix(
-                                    withoutSuffix(
-                                            segments,
-                                            "Bootstrap", "Configuration"),
-                                    "Bootstrap", "Config"),
-                            "Configuration"),
-                    "Config");
         } else {
             trimmedSegments = withoutSuffix(
                     withoutSuffix(

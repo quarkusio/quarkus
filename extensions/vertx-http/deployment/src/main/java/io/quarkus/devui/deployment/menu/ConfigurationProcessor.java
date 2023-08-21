@@ -1,12 +1,14 @@
 package io.quarkus.devui.deployment.menu;
 
-import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor.cleanUpAsciiDocIfNecessary;
-import static io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor.isSetByDevServices;
-
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -22,16 +24,17 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConfigDescriptionBuildItem;
+import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.quarkus.devui.runtime.config.ConfigDescriptionBean;
-import io.quarkus.devui.runtime.config.ConfigDevUiRecorder;
+import io.quarkus.devui.runtime.config.ConfigDevUIRecorder;
 import io.quarkus.devui.runtime.config.ConfigJsonRPCService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.vertx.http.deployment.devmode.console.ConfigEditorProcessor;
-import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 
 /**
  * This creates Extensions Page
@@ -66,7 +69,7 @@ public class ConfigurationProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void registerConfigs(List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
-            ConfigDevUiRecorder recorder) {
+            ConfigDevUIRecorder recorder) {
 
         List<ConfigDescription> configDescriptions = new ArrayList<>();
         for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
@@ -93,16 +96,17 @@ public class ConfigurationProcessor {
     void registerJsonRpcService(
             BuildProducer<JsonRPCProvidersBuildItem> jsonRPCProvidersProducer,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            ConfigDevUiRecorder recorder) {
+            ConfigDevUIRecorder recorder,
+            CuratedApplicationShutdownBuildItem shutdown) {
 
         DevConsoleManager.register("config-update-property", map -> {
             Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
-            ConfigEditorProcessor.updateConfig(values, false);
+            updateConfig(values);
             return null;
         });
         DevConsoleManager.register("config-set-properties", value -> {
             String content = value.get("content");
-            ConfigEditorProcessor.setConfig(content, false);
+            setConfig(content);
             return null;
         });
 
@@ -112,6 +116,15 @@ public class ConfigurationProcessor {
                         .scope(Singleton.class)
                         .setRuntimeInit()
                         .done());
+
+        CurrentConfig.EDITOR = ConfigurationProcessor::updateConfig;
+        shutdown.addCloseTask(new Runnable() {
+            @Override
+            public void run() {
+                CurrentConfig.EDITOR = null;
+                CurrentConfig.CURRENT = Collections.emptyList();
+            }
+        }, true);
 
         jsonRPCProvidersProducer.produce(new JsonRPCProvidersBuildItem("devui-configuration", ConfigJsonRPCService.class));
     }
@@ -130,5 +143,99 @@ public class ConfigurationProcessor {
         val = val.lines().filter(s -> !s.startsWith("@see")).collect(Collectors.joining("\n"));
         val = val.replace("@deprecated", "<br><strong>Deprecated</strong>");
         return val;
+    }
+
+    private static String cleanUpAsciiDocIfNecessary(String docs) {
+        if (docs == null || !docs.toLowerCase(Locale.ROOT).contains("@asciidoclet")) {
+            return docs;
+        }
+        // TODO #26199 Ideally we'd use a proper AsciiDoc renderer, but for now we'll just clean it up a bit.
+        return docs.replace("@asciidoclet", "")
+                // Avoid problems with links.
+                .replace("<<", "&lt;&lt;")
+                .replace(">>", "&gt;&gt;")
+                // Try to render line breaks... kind of.
+                .replace("\n\n", "<p>")
+                .replace("\n", "<br>");
+    }
+
+    private static boolean isSetByDevServices(Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
+            String propertyName) {
+        if (devServicesLauncherConfig.isPresent()) {
+            return devServicesLauncherConfig.get().getConfig().containsKey(propertyName);
+        }
+        return false;
+    }
+
+    public static void updateConfig(Map<String, String> values) {
+        if (values != null && !values.isEmpty()) {
+            try {
+                Path configPath = getConfigPath();
+                List<String> lines = Files.readAllLines(configPath);
+                for (Map.Entry<String, String> entry : values.entrySet()) {
+                    String name = entry.getKey();
+                    String value = entry.getValue();
+                    int nameLine = -1;
+                    for (int i = 0, linesSize = lines.size(); i < linesSize; i++) {
+                        String line = lines.get(i);
+                        if (line.startsWith(name + "=")) {
+                            nameLine = i;
+                            break;
+                        }
+                    }
+                    if (nameLine != -1) {
+                        if (value.isEmpty()) {
+                            lines.remove(nameLine);
+                        } else {
+                            lines.set(nameLine, name + "=" + value);
+                        }
+                    } else {
+                        if (!value.isEmpty()) {
+                            lines.add(name + "=" + value);
+                        }
+                    }
+                }
+
+                try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
+                    for (String i : lines) {
+                        writer.write(i);
+                        writer.newLine();
+                    }
+                }
+            } catch (Throwable t) {
+                throw new RuntimeException(t);
+            }
+        }
+    }
+
+    private static void setConfig(String value) {
+        try {
+            Path configPath = getConfigPath();
+            try (BufferedWriter writer = Files.newBufferedWriter(configPath)) {
+                if (value == null || value.isEmpty()) {
+                    writer.newLine();
+                } else {
+                    writer.write(value);
+                }
+            }
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    private static Path getConfigPath() throws IOException {
+        List<Path> resourcesDir = DevConsoleManager.getHotReplacementContext().getResourcesDir();
+        if (resourcesDir.isEmpty()) {
+            throw new IllegalStateException("Unable to manage configurations - no resource directory found");
+        }
+
+        // In the current project only
+        Path path = resourcesDir.get(0);
+        Path configPath = path.resolve("application.properties");
+        if (!Files.exists(configPath)) {
+            Files.createDirectories(configPath.getParent());
+            configPath = Files.createFile(path.resolve("application.properties"));
+        }
+        return configPath;
     }
 }

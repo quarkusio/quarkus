@@ -2,10 +2,10 @@ package io.quarkus.reactive.oracle.client.runtime;
 
 import static io.quarkus.credentials.CredentialsProvider.PASSWORD_PROPERTY_NAME;
 import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
+import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
@@ -51,9 +51,9 @@ public class OraclePoolRecorder {
         OraclePool oraclePool = initialize((VertxInternal) vertx.getValue(),
                 eventLoopCount.get(),
                 dataSourceName,
-                dataSourcesRuntimeConfig.getDataSourceRuntimeConfig(dataSourceName),
+                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                 dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactiveOracleConfig.getDataSourceReactiveRuntimeConfig(dataSourceName));
+                dataSourcesReactiveOracleConfig.dataSources().get(dataSourceName).reactive().oracle());
 
         shutdown.addShutdownTask(oraclePool::close);
         return new RuntimeValue<>(oraclePool);
@@ -82,10 +82,10 @@ public class OraclePoolRecorder {
             List<OracleConnectOptions> oracleConnectOptions,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<OracleConnectOptions>> supplier;
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             supplier = new ConnectOptionsSupplier<>(vertx, credentialsProvider, name, oracleConnectOptions,
                     OracleConnectOptions::new);
         } else {
@@ -101,22 +101,27 @@ public class OraclePoolRecorder {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
-        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize);
+        poolOptions.setMaxSize(dataSourceReactiveRuntimeConfig.maxSize());
 
-        if (dataSourceReactiveRuntimeConfig.idleTimeout.isPresent()) {
-            int idleTimeout = Math.toIntExact(dataSourceReactiveRuntimeConfig.idleTimeout.get().toMillis());
-            poolOptions.setIdleTimeout(idleTimeout).setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+        if (dataSourceReactiveRuntimeConfig.idleTimeout().isPresent()) {
+            var idleTimeout = unitised(dataSourceReactiveRuntimeConfig.idleTimeout().get());
+            poolOptions.setIdleTimeout(idleTimeout.value).setIdleTimeoutUnit(idleTimeout.unit);
         }
 
-        if (dataSourceReactiveRuntimeConfig.shared) {
+        if (dataSourceReactiveRuntimeConfig.maxLifetime().isPresent()) {
+            var maxLifetime = unitised(dataSourceReactiveRuntimeConfig.maxLifetime().get());
+            poolOptions.setMaxLifetime(maxLifetime.value).setMaxLifetimeUnit(maxLifetime.unit);
+        }
+
+        if (dataSourceReactiveRuntimeConfig.shared()) {
             poolOptions.setShared(true);
-            if (dataSourceReactiveRuntimeConfig.name.isPresent()) {
-                poolOptions.setName(dataSourceReactiveRuntimeConfig.name.get());
+            if (dataSourceReactiveRuntimeConfig.name().isPresent()) {
+                poolOptions.setName(dataSourceReactiveRuntimeConfig.name().get());
             }
         }
 
-        if (dataSourceReactiveRuntimeConfig.eventLoopSize.isPresent()) {
-            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize.getAsInt()));
+        if (dataSourceReactiveRuntimeConfig.eventLoopSize().isPresent()) {
+            poolOptions.setEventLoopSize(Math.max(0, dataSourceReactiveRuntimeConfig.eventLoopSize().getAsInt()));
         } else if (eventLoopCount != null) {
             poolOptions.setEventLoopSize(Math.max(0, eventLoopCount));
         }
@@ -128,8 +133,8 @@ public class OraclePoolRecorder {
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
         OracleConnectOptions oracleConnectOptions;
-        if (dataSourceReactiveRuntimeConfig.url.isPresent()) {
-            List<String> urls = dataSourceReactiveRuntimeConfig.url.get();
+        if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
+            List<String> urls = dataSourceReactiveRuntimeConfig.url().get();
             if (urls.size() > 1) {
                 log.warn("The Reactive Oracle client does not support multiple URLs. The first one will be used, and " +
                         "others will be ignored.");
@@ -144,19 +149,19 @@ public class OraclePoolRecorder {
             oracleConnectOptions = new OracleConnectOptions();
         }
 
-        if (dataSourceRuntimeConfig.username.isPresent()) {
-            oracleConnectOptions.setUser(dataSourceRuntimeConfig.username.get());
+        if (dataSourceRuntimeConfig.username().isPresent()) {
+            oracleConnectOptions.setUser(dataSourceRuntimeConfig.username().get());
         }
 
-        if (dataSourceRuntimeConfig.password.isPresent()) {
-            oracleConnectOptions.setPassword(dataSourceRuntimeConfig.password.get());
+        if (dataSourceRuntimeConfig.password().isPresent()) {
+            oracleConnectOptions.setPassword(dataSourceRuntimeConfig.password().get());
         }
 
         // credentials provider
-        if (dataSourceRuntimeConfig.credentialsProvider.isPresent()) {
-            String beanName = dataSourceRuntimeConfig.credentialsProviderName.orElse(null);
+        if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
+            String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
             CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(beanName);
-            String name = dataSourceRuntimeConfig.credentialsProvider.get();
+            String name = dataSourceRuntimeConfig.credentialsProvider().get();
             Map<String, String> credentials = credentialsProvider.getCredentials(name);
             String user = credentials.get(USER_PROPERTY_NAME);
             String password = credentials.get(PASSWORD_PROPERTY_NAME);
@@ -168,7 +173,7 @@ public class OraclePoolRecorder {
             }
         }
 
-        dataSourceReactiveRuntimeConfig.additionalProperties.forEach(oracleConnectOptions::addProperty);
+        dataSourceReactiveRuntimeConfig.additionalProperties().forEach(oracleConnectOptions::addProperty);
 
         // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with oracle.
         // and the client_name as tag.

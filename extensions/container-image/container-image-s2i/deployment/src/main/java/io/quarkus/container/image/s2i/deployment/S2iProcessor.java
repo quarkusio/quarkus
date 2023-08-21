@@ -82,7 +82,7 @@ public class S2iProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
-    public void s2iRequirementsJvm(S2iConfig s2iConfig,
+    public void s2iRequirementsJvm(ContainerImageS2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
@@ -104,7 +104,8 @@ public class S2iProcessor {
         String jarFileName = s2iConfig.jarFileName.orElse(outputJarFileName);
         String jarDirectory = s2iConfig.jarDirectory;
         String pathToJar = concatUnixPaths(jarDirectory, jarFileName);
-        String baseJvmImage = s2iConfig.baseJvmImage.orElse(S2iConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
+        String baseJvmImage = s2iConfig.baseJvmImage
+                .orElse(ContainerImageS2iConfig.getDefaultJvmImage(compiledJavaVersion.getJavaVersion()));
 
         builderImageProducer.produce(new BaseImageInfoBuildItem(baseJvmImage));
         Optional<S2iBaseJavaImage> baseImage = S2iBaseJavaImage.findMatching(baseJvmImage);
@@ -128,7 +129,7 @@ public class S2iProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
-    public void s2iRequirementsNative(S2iConfig s2iConfig,
+    public void s2iRequirementsNative(ContainerImageS2iConfig s2iConfig,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             OutputTargetBuildItem out,
             PackageConfig packageConfig,
@@ -137,7 +138,7 @@ public class S2iProcessor {
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
-        boolean usingDefaultBuilder = ImageUtil.getRepository(S2iConfig.DEFAULT_BASE_NATIVE_IMAGE)
+        boolean usingDefaultBuilder = ImageUtil.getRepository(ContainerImageS2iConfig.DEFAULT_BASE_NATIVE_IMAGE)
                 .equals(ImageUtil.getRepository(s2iConfig.baseNativeImage));
         String outputNativeBinaryFileName = nativeImage.getPath().getFileName().toString();
 
@@ -146,7 +147,7 @@ public class S2iProcessor {
         //The default s2i builder for native builds, renames the native binary.
         //To make things easier for the user, we need to handle it.
         if (usingDefaultBuilder && !s2iConfig.nativeBinaryFileName.isPresent()) {
-            nativeBinaryFileName = S2iConfig.DEFAULT_NATIVE_TARGET_FILENAME;
+            nativeBinaryFileName = ContainerImageS2iConfig.DEFAULT_NATIVE_TARGET_FILENAME;
         } else {
             nativeBinaryFileName = s2iConfig.nativeBinaryFileName.orElse(outputNativeBinaryFileName);
         }
@@ -170,7 +171,7 @@ public class S2iProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class }, onlyIfNot = NativeBuild.class)
-    public void s2iBuildFromJar(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
+    public void s2iBuildFromJar(ContainerImageS2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
@@ -214,7 +215,7 @@ public class S2iProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, S2iBuild.class, NativeBuild.class })
-    public void s2iBuildFromNative(S2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
+    public void s2iBuildFromNative(ContainerImageS2iConfig s2iConfig, ContainerImageConfig containerImageConfig,
             KubernetesClientBuildItem kubernetesClientBuilder,
             ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
@@ -259,7 +260,7 @@ public class S2iProcessor {
 
     public static void createContainerImage(KubernetesClient kubernetesClient,
             GeneratedFileSystemResourceBuildItem openshiftManifests,
-            S2iConfig s2iConfig,
+            ContainerImageS2iConfig s2iConfig,
             Path output,
             Path... additional) {
 
@@ -331,7 +332,7 @@ public class S2iProcessor {
     }
 
     private static void s2iBuild(OpenShiftClient client, List<HasMetadata> buildResources, File binaryFile,
-            S2iConfig s2iConfig) {
+            ContainerImageS2iConfig s2iConfig) {
         distinct(buildResources).stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
                 .forEach(bc -> s2iBuild(client, bc, binaryFile, s2iConfig));
     }
@@ -345,7 +346,8 @@ public class S2iProcessor {
      * @param binaryFile The binary file
      * @param s2iConfig The s2i configuration
      */
-    private static void s2iBuild(OpenShiftClient client, BuildConfig buildConfig, File binaryFile, S2iConfig s2iConfig) {
+    private static void s2iBuild(OpenShiftClient client, BuildConfig buildConfig, File binaryFile,
+            ContainerImageS2iConfig s2iConfig) {
         Build build;
         try {
             build = client.buildConfigs().withName(buildConfig.getMetadata().getName())
@@ -375,7 +377,8 @@ public class S2iProcessor {
         }
     }
 
-    private static void waitForBuildComplete(OpenShiftClient client, S2iConfig s2iConfig, String buildName, Closeable watch) {
+    private static void waitForBuildComplete(OpenShiftClient client, ContainerImageS2iConfig s2iConfig, String buildName,
+            Closeable watch) {
         CountDownLatch latch = new CountDownLatch(1);
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {

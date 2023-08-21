@@ -31,7 +31,7 @@ In keeping with the mantra of providing developer joy, Quarkus provides a host o
 
 === Live reload
 
-This mightily important feature needs no introduction and has already been mentioned in the <<architectural-differences, architectural differences>> section.
+This mightily important feature needs no introduction and has already been mentioned in the <<architectural-differences,architectural differences>> section.
 
 === Dev UI
 

@@ -1303,6 +1303,12 @@ More information can be found in the link:building-native-image#testing-the-nati
 When the application is tested using `@QuarkusIntegrationTest` it is launched using the `prod` configuration profile, but this can be changed using the `quarkus.test.integration-test-profile` property.
 ====
 
+[IMPORTANT]
+====
+While adding test-specific configuration properties using `src/test/resources/application.properties` (note there's `test`, not `main`)
+is possible for unit tests, it's not possible for integration tests.
+====
+
 === Launching containers
 
 When `@QuarkusIntegrationTest` results in launching a container (because the application was built with `quarkus.container-image.build` set to `true`), the container is launched on a predictable container network. This facilitates writing integration tests that need to launch services to support the application.

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,9 +48,12 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         this.blockingMethods = new HashSet<>();
         this.virtualMethods = new HashSet<>();
         this.devMode = devMode;
-        for (String method : blockingMethods) {
-            this.blockingMethods.add(method.toLowerCase());
+        if (blockingMethods != null) {
+            for (String method : blockingMethods) {
+                this.blockingMethods.add(method.toLowerCase());
+            }
         }
+
         if (virtualMethods != null) {
             for (String method : virtualMethods) {
                 this.virtualMethods.add(method.toLowerCase());
@@ -92,7 +96,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
-            ReplayListener<ReqT> replay = new ReplayListener<>(state, true);
+            VirtualReplayListener<ReqT> replay = new VirtualReplayListener<>(state);
             virtualThreadExecutor.execute(() -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
@@ -110,7 +114,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // it is initialized by io.quarkus.grpc.runtime.supports.context.GrpcRequestContextGrpcInterceptor
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
-            ReplayListener<ReqT> replay = new ReplayListener<>(state, false);
+            ReplayListener<ReqT> replay = new ReplayListener<>(state);
             vertx.executeBlocking(f -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
@@ -138,16 +142,14 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
      */
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private final InjectableContext.ContextState requestContextState;
-        private final boolean virtual;
 
         // exclusive to event loop context
         private ServerCall.Listener<ReqT> delegate;
         private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
         private boolean isConsumingFromIncomingEvents = false;
 
-        private ReplayListener(InjectableContext.ContextState requestContextState, boolean virtual) {
+        private ReplayListener(InjectableContext.ContextState requestContextState) {
             this.requestContextState = requestContextState;
-            this.virtual = virtual;
         }
 
         /**
@@ -161,22 +163,14 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             if (!this.isConsumingFromIncomingEvents) {
                 Consumer<ServerCall.Listener<ReqT>> consumer = incomingEvents.poll();
                 if (consumer != null) {
-                    if (virtual) {
-                        executeVirtualWithRequestContext(consumer);
-                    } else {
-                        executeBlockingWithRequestContext(consumer);
-                    }
+                    executeBlockingWithRequestContext(consumer);
                 }
             }
         }
 
         private void scheduleOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
             if (this.delegate != null && !this.isConsumingFromIncomingEvents) {
-                if (virtual) {
-                    executeVirtualWithRequestContext(consumer);
-                } else {
-                    executeBlockingWithRequestContext(consumer);
-                }
+                executeBlockingWithRequestContext(consumer);
             } else {
                 incomingEvents.add(consumer);
             }
@@ -198,7 +192,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                         blockingHandler);
             }
             this.isConsumingFromIncomingEvents = true;
-            vertx.executeBlocking(blockingHandler, false, p -> {
+            vertx.executeBlocking(blockingHandler, true, p -> {
                 Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
                 if (next != null) {
                     executeBlockingWithRequestContext(next);
@@ -206,6 +200,77 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                     this.isConsumingFromIncomingEvents = false;
                 }
             });
+        }
+
+        @Override
+        public void onMessage(ReqT message) {
+            scheduleOrEnqueue(t -> t.onMessage(message));
+        }
+
+        @Override
+        public void onHalfClose() {
+            scheduleOrEnqueue(ServerCall.Listener::onHalfClose);
+        }
+
+        @Override
+        public void onCancel() {
+            scheduleOrEnqueue(ServerCall.Listener::onCancel);
+        }
+
+        @Override
+        public void onComplete() {
+            scheduleOrEnqueue(ServerCall.Listener::onComplete);
+        }
+
+        @Override
+        public void onReady() {
+            scheduleOrEnqueue(ServerCall.Listener::onReady);
+        }
+    }
+
+    /**
+     * Stores the incoming events until the listener is injected.
+     * When injected, replay the events.
+     * <p>
+     * Note that event must be executed in order, explaining why incomingEvents
+     * are executed sequentially
+     * <p>
+     * This replay listener is only used for virtual threads.
+     */
+    private class VirtualReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
+        private final InjectableContext.ContextState requestContextState;
+
+        // exclusive to event loop context
+        private ServerCall.Listener<ReqT> delegate;
+        private final Queue<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new ConcurrentLinkedQueue<>();
+        private volatile boolean isConsumingFromIncomingEvents = false;
+
+        private VirtualReplayListener(InjectableContext.ContextState requestContextState) {
+            this.requestContextState = requestContextState;
+        }
+
+        /**
+         * Must be called from within the event loop context
+         * If there are deferred events will start executing them in the shared worker context
+         *
+         * @param delegate the original
+         */
+        void setDelegate(ServerCall.Listener<ReqT> delegate) {
+            this.delegate = delegate;
+            if (!this.isConsumingFromIncomingEvents) {
+                Consumer<ServerCall.Listener<ReqT>> consumer = incomingEvents.poll();
+                if (consumer != null) {
+                    executeVirtualWithRequestContext(consumer);
+                }
+            }
+        }
+
+        private void scheduleOrEnqueue(Consumer<ServerCall.Listener<ReqT>> consumer) {
+            if (this.delegate != null && !this.isConsumingFromIncomingEvents) {
+                executeVirtualWithRequestContext(consumer);
+            } else {
+                incomingEvents.add(consumer);
+            }
         }
 
         private void executeVirtualWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {

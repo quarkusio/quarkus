@@ -35,8 +35,11 @@ public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
                                     Status.class, MultipartResourceWithAllUploads.class)
                             .addAsResource(new StringAsset(
                                     // keep the files around so we can assert the outcome
-                                    "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
-                                            + uploadDir.toString() + "\n"),
+                                    "quarkus.http.body.delete-uploaded-files-on-end=false\n"
+                                            + "quarkus.http.body.uploads-directory=" + uploadDir.toString() + "\n"
+                    // to reproduce https://github.com/quarkusio/quarkus/issues/35344:
+                                            + "quarkus.http.body.multipart.file-content-types=text/xml,custom/content-type"
+                                            + "\n"),
                                     "application.properties");
                 }
 

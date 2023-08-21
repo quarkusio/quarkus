@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -142,6 +143,13 @@ public class QuarkusComponentTestExtension
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor,
         TestInstancePreDestroyCallback, ConfigSource {
 
+    /**
+     * By default, test config properties take precedence over system properties (400), ENV variables (300) and
+     * application.properties (250)
+     *
+     */
+    public static final int DEFAULT_CONFIG_SOURCE_ORDINAL = 500;
+
     private static final Logger LOG = Logger.getLogger(QuarkusComponentTestExtension.class);
 
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace
@@ -155,13 +163,14 @@ public class QuarkusComponentTestExtension
     private static final String KEY_TEST_INSTANCE = "testInstance";
     private static final String KEY_CONFIG = "config";
 
-    private static final String TARGET_TEST_CLASSES = "target/test-classes";
+    private static final String QUARKUS_TEST_COMPONENT_OUTPUT_DIRECTORY = "quarkus.test.component.output-directory";
 
     private final Map<String, String> configProperties;
     private final List<Class<?>> additionalComponentClasses;
     private final List<MockBeanConfiguratorImpl<?>> mockConfigurators;
     private final AtomicBoolean useDefaultConfigProperties = new AtomicBoolean();
     private final AtomicBoolean addNestedClassesAsComponents = new AtomicBoolean(true);
+    private final AtomicInteger configSourceOrdinal = new AtomicInteger(DEFAULT_CONFIG_SOURCE_ORDINAL);
 
     // Used for declarative registration
     public QuarkusComponentTestExtension() {
@@ -233,6 +242,18 @@ public class QuarkusComponentTestExtension
         return this;
     }
 
+    /**
+     * Set the ordinal of the config source used for all test config properties. By default,
+     * {@value #DEFAULT_CONFIG_SOURCE_ORDINAL} is used.
+     *
+     * @param val
+     * @return the extension
+     */
+    public QuarkusComponentTestExtension setConfigSourceOrdinal(int val) {
+        this.configSourceOrdinal.set(val);
+        return this;
+    }
+
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
         long start = System.nanoTime();
@@ -273,6 +294,7 @@ public class QuarkusComponentTestExtension
                 this.useDefaultConfigProperties.set(true);
             }
             this.addNestedClassesAsComponents.set(testAnnotation.addNestedClassesAsComponents());
+            this.configSourceOrdinal.set(testAnnotation.configSourceOrdinal());
         }
         // All fields annotated with @Inject represent component classes
         Class<?> current = testClass;
@@ -398,8 +420,7 @@ public class QuarkusComponentTestExtension
 
     @Override
     public int getOrdinal() {
-        // System properties (400) and ENV variables (300) take precedence but application.properties has lower priority (250)
-        return 275;
+        return configSourceOrdinal.get();
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {
@@ -484,6 +505,9 @@ public class QuarkusComponentTestExtension
             throw new IllegalStateException("Failed to create index", e);
         }
 
+        ClassLoader testClassClassLoader = testClass.getClassLoader();
+        // The test class is loaded by the QuarkusClassLoader in continuous testing environment
+        boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
         ClassLoader oldTccl = Thread.currentThread().getContextClassLoader();
 
         IndexView computingIndex = BeanArchives.buildComputingBeanArchiveIndex(oldTccl,
@@ -520,13 +544,13 @@ public class QuarkusComponentTestExtension
 
             // We need collect all generated resources so that we can remove them after the test
             // NOTE: previously we kept the generated framework classes (to speedup subsequent test runs) but that breaks the existing @QuarkusTests
-            Set<Path> generatedResources = new HashSet<>();
+            Set<Path> generatedResources;
 
-            File generatedSourcesDirectory = new File("target/generated-arc-sources");
-            File componentsProviderFile = new File(generatedSourcesDirectory + "/" + nameToPath(testClass.getPackage()
-                    .getName()), ComponentsProvider.class.getSimpleName());
-            if (testClass.getClassLoader() instanceof QuarkusClassLoader) {
-                //continuous testing environment
+            // E.g. target/generated-arc-sources/org/acme/ComponentsProvider
+            File componentsProviderFile = getComponentsProviderFile(testClass);
+
+            if (isContinuousTesting) {
+                generatedResources = Set.of();
                 Map<String, byte[]> classes = new HashMap<>();
                 builder.setOutput(new ResourceOutput() {
                     @Override
@@ -547,20 +571,13 @@ public class QuarkusComponentTestExtension
                                 }
                                 break;
                             default:
-                                throw new IllegalArgumentException();
+                                throw new IllegalArgumentException("Unsupported resource type: " + resource.getType());
                         }
                     }
                 });
             } else {
-                String testPath = testClass.getClassLoader().getResource(testClass.getName().replace(".", "/") + ".class")
-                        .getFile();
-                int targetClassesIndex = testPath.indexOf(TARGET_TEST_CLASSES);
-                if (targetClassesIndex == -1) {
-                    throw new IllegalStateException("Invalid test path: " + testPath);
-                }
-                String testClassesRootPath = testPath.substring(0, targetClassesIndex);
-                File testOutputDirectory = new File(testClassesRootPath + TARGET_TEST_CLASSES);
-
+                generatedResources = new HashSet<>();
+                File testOutputDirectory = getTestOutputDirectory(testClass);
                 builder.setOutput(new ResourceOutput() {
                     @Override
                     public void writeResource(Resource resource) throws IOException {
@@ -579,7 +596,7 @@ public class QuarkusComponentTestExtension
                                 }
                                 break;
                             default:
-                                throw new IllegalArgumentException();
+                                throw new IllegalArgumentException("Unsupported resource type: " + resource.getType());
                         }
                     }
                 });
@@ -737,7 +754,9 @@ public class QuarkusComponentTestExtension
             }
 
             // Use a custom ClassLoader to load the generated ComponentsProvider file
-            QuarkusComponentTestClassLoader testClassLoader = new QuarkusComponentTestClassLoader(oldTccl,
+            // In continuous testing the CL that loaded the test class must be used as the parent CL
+            QuarkusComponentTestClassLoader testClassLoader = new QuarkusComponentTestClassLoader(
+                    isContinuousTesting ? testClassClassLoader : oldTccl,
                     componentsProviderFile,
                     null);
             Thread.currentThread().setContextClassLoader(testClassLoader);
@@ -877,8 +896,8 @@ public class QuarkusComponentTestExtension
         return false;
     }
 
-    private String nameToPath(String packName) {
-        return packName.replace('.', '/');
+    private String nameToPath(String name) {
+        return name.replace('.', File.separatorChar);
     }
 
     @SuppressWarnings("unchecked")
@@ -1039,6 +1058,45 @@ public class QuarkusComponentTestExtension
 
     private boolean resolvesToBuiltinBean(Class<?> rawType) {
         return Instance.class.isAssignableFrom(rawType) || Event.class.equals(rawType) || BeanManager.class.equals(rawType);
+    }
+
+    private File getTestOutputDirectory(Class<?> testClass) {
+        String outputDirectory = System.getProperty(QUARKUS_TEST_COMPONENT_OUTPUT_DIRECTORY);
+        File testOutputDirectory;
+        if (outputDirectory != null) {
+            testOutputDirectory = new File(outputDirectory);
+        } else {
+            // org.acme.Foo -> org/acme/Foo.class
+            String testClassResourceName = testClass.getName().replace('.', '/') + ".class";
+            // org/acme/Foo.class -> /some/path/to/project/target/test-classes/org/acme/Foo.class
+            String testPath = testClass.getClassLoader().getResource(testClassResourceName).getFile();
+            // /some/path/to/project/target/test-classes/org/acme/Foo.class -> /some/path/to/project/target/test-classes
+            String testClassesRootPath = testPath.substring(0, testPath.length() - testClassResourceName.length());
+            testOutputDirectory = new File(testClassesRootPath);
+        }
+        if (!testOutputDirectory.canWrite()) {
+            throw new IllegalStateException("Invalid test output directory: " + testOutputDirectory);
+        }
+        return testOutputDirectory;
+    }
+
+    private File getComponentsProviderFile(Class<?> testClass) {
+        File generatedSourcesDirectory;
+        File targetDir = new File("target");
+        if (targetDir.canWrite()) {
+            // maven build
+            generatedSourcesDirectory = new File(targetDir, "generated-arc-sources");
+        } else {
+            File buildDir = new File("build");
+            if (buildDir.canWrite()) {
+                // gradle build
+                generatedSourcesDirectory = new File(buildDir, "generated-arc-sources");
+            } else {
+                generatedSourcesDirectory = new File("quarkus-component-test/generated-arc-sources");
+            }
+        }
+        return new File(new File(generatedSourcesDirectory, nameToPath(testClass.getPackage().getName())),
+                ComponentsProvider.class.getSimpleName());
     }
 
 }

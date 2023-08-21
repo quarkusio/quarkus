@@ -24,7 +24,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
     private final JBangSupport jbang;
 
     public JBangCatalogService(MessageWriter output) {
-        this(output, "quarkus", "quarkusio");
+        this(output, "quarkus-", "quarkusio");
     }
 
     public JBangCatalogService(MessageWriter output, String pluginPrefix, String fallbackCatalog, String... remoteCatalogs) {

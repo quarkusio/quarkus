@@ -20,6 +20,12 @@ public class CsrfReactiveConfig {
     public String formFieldName;
 
     /**
+     * Token header which will provide a CSRF token.
+     */
+    @ConfigItem
+    public String tokenHeaderName;
+
+    /**
      * CSRF cookie name.
      */
     @ConfigItem(defaultValue = "csrf-token")
@@ -52,6 +58,11 @@ public class CsrfReactiveConfig {
     public boolean cookieForceSecure;
 
     /**
+     * Set the HttpOnly attribute to prevent access to the cookie via JavaScript.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean cookieHttpOnly = true;
+    /**
      * Create CSRF token only if the HTTP GET relative request path matches one of the paths configured with this property.
      * Use a comma to separate multiple path values.
      *
@@ -73,7 +84,6 @@ public class CsrfReactiveConfig {
 
     /**
      * Verify CSRF token in the CSRF filter.
-     * If this property is enabled then the input stream will be read and cached by the CSRF filter to verify the token.
      *
      * If you prefer then you can disable this property and compare
      * CSRF form and cookie parameters in the application code using JAX-RS jakarta.ws.rs.FormParam which refers to the
@@ -92,7 +102,8 @@ public class CsrfReactiveConfig {
      * Require that only 'application/x-www-form-urlencoded' or 'multipart/form-data' body is accepted for the token
      * verification to proceed.
      * Disable this property for the CSRF filter to avoid verifying the token for POST requests with other content types.
-     * This property is only effective if {@link #verifyToken} property is enabled.
+     * This property is only effective if {@link #verifyToken} property is enabled and {@link #tokenHeaderName} is not
+     * configured.
      */
     @ConfigItem(defaultValue = "true")
     public boolean requireFormUrlEncoded;

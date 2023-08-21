@@ -29,6 +29,9 @@ public class TestResource {
     Template csrfTokenForm;
 
     @Inject
+    Template csrfTokenHeader;
+
+    @Inject
     Template csrfTokenWithFormRead;
 
     @Inject
@@ -52,6 +55,13 @@ public class TestResource {
         return csrfTokenWithFormRead.instance();
     }
 
+    @GET
+    @Path("/csrfTokenWithHeader")
+    @Produces(MediaType.TEXT_HTML)
+    public TemplateInstance getCsrfTokenWithHeader() {
+        return csrfTokenHeader.instance();
+    }
+
     @POST
     @Path("/csrfTokenForm")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
@@ -65,6 +75,14 @@ public class TestResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
     public String postCsrfTokenWithFormRead() {
+        return "verified:" + routingContext.get("csrf_token_verified", false);
+    }
+
+    @POST
+    @Path("/csrfTokenWithHeader")
+    @Consumes({ MediaType.APPLICATION_FORM_URLENCODED, MediaType.APPLICATION_JSON })
+    @Produces(MediaType.TEXT_PLAIN)
+    public String postCsrfTokenWithHeader() {
         return "verified:" + routingContext.get("csrf_token_verified", false);
     }
 

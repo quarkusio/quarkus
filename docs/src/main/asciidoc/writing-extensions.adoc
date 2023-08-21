@@ -1388,7 +1388,7 @@ And at the end of the guide, the extensive configuration documentation:
 
 [WARNING]
 ====
-All documentation should be generated and validated before being commited.
+All documentation should be generated and validated before being committed.
 ====
 
 === Conditional Step Inclusion

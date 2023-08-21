@@ -102,6 +102,11 @@ jobs:
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
       m2-cache-key: ${{ steps.m2-cache-key.outputs.key }}
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=initial-build,linux,jdk-11" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 11 Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -274,8 +279,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
 
-
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jvm-tests,${{ matrix.java.os-name }},jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=JVM Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Stop mysql
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         shell: bash
@@ -393,6 +402,11 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=maven-tests,${{ matrix.java.os-name }},jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Maven Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
@@ -475,6 +489,11 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=gradle-tests,${{ matrix.java.os-name }},jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Gradle Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
@@ -548,6 +567,11 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=devtools-tests,${{ matrix.java.os-name }},jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Devtools Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
@@ -614,6 +638,11 @@ jobs:
             os-name: "ubuntu-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=quickstarts-tests,${{ matrix.java.os-name }},jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts Compilation - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
@@ -661,6 +690,11 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=virtual-threads-tests,${{ matrix.java.os-name }},jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Virtual Thread Support Tests Native - ${{matrix.category}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
@@ -712,6 +746,11 @@ jobs:
     timeout-minutes: 150
 
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=tcks-tests,linux,jdk-11" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -786,6 +825,11 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=native-tests,${{ matrix.java.os-name }},jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - ${{matrix.category}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.os-name, 'windows')"
         run: git config --global core.longpaths true

@@ -26,19 +26,41 @@ if (System.env.MAVEN_CMD_LINE_ARGS) {
 
 //Add github action information
 if (System.env.GITHUB_ACTIONS) {
-    def jobName = System.env.GITHUB_JOB
+    def jobId = System.env.GITHUB_JOB
 
-    buildScan.value('gh-job-name', jobName)
+    buildScan.value('gh-job-id', jobId)
     buildScan.value('gh-event-name', System.env.GITHUB_EVENT_NAME)
     buildScan.value('gh-ref-name', System.env.GITHUB_REF_NAME)
     buildScan.value('gh-actor', System.env.GITHUB_ACTOR)
     buildScan.value('gh-workflow', System.env.GITHUB_WORKFLOW)
+    String jobCustomValues = System.env.GE_CUSTOM_VALUES
+    if (jobCustomValues != null && !jobCustomValues.isBlank()) {
+        for (String jobCustomValue : jobCustomValues.split(",")) {
+            int index = jobCustomValue.indexOf('=')
+            if (index <= 0) {
+                continue
+            }
+            buildScan.value(jobCustomValue.substring(0, index).trim(), jobCustomValue.substring(index + 1).trim())
+        }
+    }
 
+    buildScan.tag(jobId)
+    buildScan.tag(System.env.GITHUB_EVENT_NAME)
+    String jobTags = System.env.GE_TAGS
+    if (jobTags != null && !jobTags.isBlank()) {
+        for (String tag : jobTags.split(",")) {
+            buildScan.tag(tag.trim())
+        }
+    }
 
-    def prnumber = System.env.PULL_REQUEST_NUMBER
-    if (prnumber != null) {
-        buildScan.value('gh-pr', prnumber)
-        buildScan.tag('pr-' + prnumber)
+    buildScan.link('Workflow run', System.env.GITHUB_SERVER_URL + '/' + System.env.GITHUB_REPOSITORY + '/actions/runs/' + System.env.GITHUB_RUN_ID)
+
+    def prNumber = System.env.PULL_REQUEST_NUMBER
+    if (prNumber != null) {
+        buildScan.value('gh-pr', prNumber)
+        buildScan.tag('pr-' + prNumber)
+
+        buildScan.link('Pull request', System.env.GITHUB_SERVER_URL + '/' + System.env.GITHUB_REPOSITORY + '/pull/' + prNumber )
     }
 
     buildScan.buildScanPublished {  publishedBuildScan -> {

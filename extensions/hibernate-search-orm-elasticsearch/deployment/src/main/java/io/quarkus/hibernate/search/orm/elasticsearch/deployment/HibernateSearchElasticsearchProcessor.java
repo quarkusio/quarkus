@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.deployment;
 
+import static io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.INDEXED;
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.PROJECTION_CONSTRUCTOR;
 import static io.quarkus.hibernate.search.orm.elasticsearch.deployment.ClassNames.ROOT_MAPPING;
@@ -402,7 +403,7 @@ class HibernateSearchElasticsearchProcessor {
                 "hosts");
         return new DevservicesElasticsearchBuildItem(hostsPropertyKey,
                 version.versionString(),
-                DevservicesElasticsearchBuildItem.Distribution.valueOf(version.distribution().toString().toUpperCase()));
+                Distribution.valueOf(version.distribution().toString().toUpperCase()));
     }
 
     @BuildStep(onlyIfNot = IsNormal.class)

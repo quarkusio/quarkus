@@ -529,7 +529,7 @@ public class ServerSerialisers extends Serialisers {
                         vertxResponse.addResponseHeader(header, (CharSequence) HeaderUtil.headerToString(o));
                     }
                 }
-                if (header.equals("Transfer-Encoding")) { // using both headers together is not allowed
+                if (header.equalsIgnoreCase("Transfer-Encoding")) { // using both headers together is not allowed
                     vertxResponse.removeResponseHeader("Content-Length");
                 }
             } else {

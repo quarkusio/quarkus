@@ -3,9 +3,14 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id="security-openid-connect-providers"]
 = Configuring Well-Known OpenID Connect Providers
-
 include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: security,web
+:toclevels: 3
+
+This document explains how to configure well-known social OIDC and OAuth2 providers.
 
 == Introduction
 
@@ -389,6 +394,18 @@ generate a secure random secret key for encrypting it.
 You can provide your own secret key for encrypting the PKCE code verifier if you prefer with the `quarkus.oidc.authentication.state-secret` property but
 note that this secret should be 32 characters long, and an error will be reported if it is less than 16 characters long.
 ====
+
+[NOTE]
+====
+`X` is a new name for `Twitter`, see <<x>>. You can continue using `quarkus.oidc.provider=twitter` but it might need to be changed to `quarkus.oidc.provider=x` in the future.
+====
+
+[[x]]
+=== X
+
+`X` is a new name for `Twitter`. You can currently use either `quarkus.oidc.provider=x` or `quarkus.oidc.provider=twitter` but only `quarkus.oidc.provider=x` may end up supported in the future.
+
+Please see <<twitter>> for more information about registering your Quarkus application in `X` (`Twitter`).
 
 [[spotify]]
 === Spotify

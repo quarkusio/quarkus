@@ -10,24 +10,27 @@ import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 public class KnownOidcProviders {
 
     public static OidcTenantConfig provider(OidcTenantConfig.Provider provider) {
-        if (OidcTenantConfig.Provider.GITHUB == provider) {
-            return github();
-        } else if (OidcTenantConfig.Provider.GOOGLE == provider) {
-            return google();
-        } else if (OidcTenantConfig.Provider.APPLE == provider) {
-            return apple();
-        } else if (OidcTenantConfig.Provider.MICROSOFT == provider) {
-            return microsoft();
-        } else if (OidcTenantConfig.Provider.FACEBOOK == provider) {
-            return facebook();
-        } else if (OidcTenantConfig.Provider.SPOTIFY == provider) {
-            return spotify();
-        } else if (OidcTenantConfig.Provider.TWITTER == provider) {
-            return twitter();
-        } else if (OidcTenantConfig.Provider.TWITCH == provider) {
-            return twitch();
+        switch (provider) {
+            case APPLE:
+                return apple();
+            case FACEBOOK:
+                return facebook();
+            case GITHUB:
+                return github();
+            case GOOGLE:
+                return google();
+            case MICROSOFT:
+                return microsoft();
+            case SPOTIFY:
+                return spotify();
+            case TWITCH:
+                return twitch();
+            case TWITTER:
+            case X:
+                return twitter();
+            default:
+                return null;
         }
-        return null;
     }
 
     private static OidcTenantConfig github() {

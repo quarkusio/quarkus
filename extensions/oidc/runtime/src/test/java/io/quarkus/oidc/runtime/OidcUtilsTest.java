@@ -146,6 +146,62 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testAcceptXProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.X));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertFalse(config.isDiscoveryEnabled().get());
+        assertEquals("https://api.twitter.com/2/oauth2", config.getAuthServerUrl().get());
+        assertEquals("https://twitter.com/i/oauth2/authorize", config.getAuthorizationPath().get());
+        assertEquals("token", config.getTokenPath().get());
+        assertEquals("https://api.twitter.com/2/users/me", config.getUserInfoPath().get());
+
+        assertFalse(config.authentication.idTokenRequired.get());
+        assertTrue(config.authentication.userInfoRequired.get());
+        assertFalse(config.authentication.addOpenidScope.get());
+        assertEquals(List.of("offline.access", "tweet.read", "users.read"), config.authentication.scopes.get());
+        assertTrue(config.authentication.pkceRequired.get());
+    }
+
+    @Test
+    public void testOverrideXProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setDiscoveryEnabled(true);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.setAuthorizationPath("authorization");
+        tenant.setTokenPath("tokens");
+        tenant.setUserInfoPath("userinfo");
+
+        tenant.authentication.setIdTokenRequired(true);
+        tenant.authentication.setUserInfoRequired(false);
+        tenant.authentication.setAddOpenidScope(true);
+        tenant.authentication.setPkceRequired(false);
+        tenant.authentication.setScopes(List.of("write"));
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.X));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertTrue(config.isDiscoveryEnabled().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals("authorization", config.getAuthorizationPath().get());
+        assertEquals("tokens", config.getTokenPath().get());
+        assertEquals("userinfo", config.getUserInfoPath().get());
+
+        assertTrue(config.authentication.idTokenRequired.get());
+        assertFalse(config.authentication.userInfoRequired.get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+        assertTrue(config.authentication.addOpenidScope.get());
+        assertFalse(config.authentication.pkceRequired.get());
+    }
+
+    @Test
     public void testAcceptFacebookProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);

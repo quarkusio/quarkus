@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.nio.charset.StandardCharsets;
@@ -9,6 +10,7 @@ import java.util.Base64;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jwt.consumer.InvalidJwtException;
@@ -34,7 +36,7 @@ public class OidcProviderTest {
 
         OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null);
         try {
-            provider.verifyJwtToken(newToken, false);
+            provider.verifyJwtToken(newToken, false, false, null);
             fail("InvalidJwtException expected");
         } catch (InvalidJwtException ex) {
             // continue
@@ -48,7 +50,7 @@ public class OidcProviderTest {
             }
 
         }, null);
-        TokenVerificationResult result = provider.verifyJwtToken(newToken, false);
+        TokenVerificationResult result = provider.verifyJwtToken(newToken, false, false, null);
         assertEquals("http://keycloak/ream", result.localVerificationResult.getString("iss"));
     }
 
@@ -62,4 +64,59 @@ public class OidcProviderTest {
         return newHeaders + token.substring(dotIndex);
     }
 
+    @Test
+    public void testSubject() throws Exception {
+
+        RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
+        rsaJsonWebKey.setKeyId("k1");
+        JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
+
+        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        oidcConfig.token.subjectRequired = true;
+
+        final String tokenWithSub = Jwt.subject("subject").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
+
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+            TokenVerificationResult result = provider.verifyJwtToken(tokenWithSub, false, true, null);
+            assertEquals("subject", result.localVerificationResult.getString(Claims.sub.name()));
+        }
+
+        final String tokenWithoutSub = Jwt.claims().jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+            try {
+                provider.verifyJwtToken(tokenWithoutSub, false, true, null);
+                fail("InvalidJwtException expected");
+            } catch (InvalidJwtException ex) {
+                assertTrue(ex.getMessage().contains("No Subject (sub) claim is present"));
+            }
+        }
+    }
+
+    @Test
+    public void testNonce() throws Exception {
+
+        RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
+        rsaJsonWebKey.setKeyId("k1");
+        JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
+
+        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        oidcConfig.authentication.nonceRequired = true;
+
+        final String tokenWithNonce = Jwt.claim("nonce", "123456").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
+
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+            TokenVerificationResult result = provider.verifyJwtToken(tokenWithNonce, false, false, "123456");
+            assertEquals("123456", result.localVerificationResult.getString(Claims.nonce.name()));
+        }
+
+        final String tokenWithoutNonce = Jwt.claims().jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, null)) {
+            try {
+                provider.verifyJwtToken(tokenWithoutNonce, false, false, "123456");
+                fail("InvalidJwtException expected");
+            } catch (InvalidJwtException ex) {
+                assertTrue(ex.getMessage().contains("claim nonce is missing"));
+            }
+        }
+    }
 }

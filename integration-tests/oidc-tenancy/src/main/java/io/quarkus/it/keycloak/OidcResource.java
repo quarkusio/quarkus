@@ -192,6 +192,7 @@ public class OidcResource {
         userInfoEndpointCallCount++;
 
         return "{" +
+                "   \"sub\": \"123456789\"," +
                 "   \"preferred_username\": \"alice\"" +
                 "  }";
     }
@@ -201,8 +202,8 @@ public class OidcResource {
     @Produces("application/json")
     public String token(@FormParam("grant_type") String grantType, @FormParam("client_id") String clientId) {
         if ("authorization_code".equals(grantType)) {
-            return "{\"id_token\": \"" + jwt(clientId, "1") + "\"," +
-                    "\"access_token\": \"" + jwt(clientId, "1") + "\"," +
+            return "{\"id_token\": \"" + jwt(clientId, null, "1") + "\"," +
+                    "\"access_token\": \"" + jwt(clientId, null, "1") + "\"," +
                     "   \"token_type\": \"Bearer\"," +
                     "   \"refresh_token\": \"123456789\"," +
                     "   \"expires_in\": 300 }";
@@ -212,7 +213,7 @@ public class OidcResource {
 
             if (refreshEndpointCallCount++ == 0) {
                 // first refresh token request, check the original ID token is used
-                return "{\"access_token\": \"" + jwt(clientId, "1") + "\"," +
+                return "{\"access_token\": \"" + jwt(clientId, null, "1") + "\"," +
                         "   \"token_type\": \"Bearer\"," +
                         "   \"expires_in\": 300 }";
             } else {
@@ -229,8 +230,8 @@ public class OidcResource {
     @POST
     @Path("accesstoken")
     @Produces("application/json")
-    public String testAccessToken(@QueryParam("kid") String kid) {
-        return "{\"access_token\": \"" + jwt(null, kid) + "\"," +
+    public String testAccessToken(@QueryParam("kid") String kid, @QueryParam("sub") String subject) {
+        return "{\"access_token\": \"" + jwt(null, subject, kid) + "\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
                 "   \"expires_in\": 300 }";
@@ -288,15 +289,17 @@ public class OidcResource {
         return rotate;
     }
 
-    private String jwt(String audience, String kid) {
-        JwtClaimsBuilder builder = Jwt.claims()
-                .claim("typ", "Bearer")
+    private String jwt(String audience, String subject, String kid) {
+        JwtClaimsBuilder builder = Jwt.claim("typ", "Bearer")
                 .upn("alice")
                 .preferredUserName("alice")
                 .groups("user")
                 .expiresIn(Duration.ofSeconds(4));
         if (audience != null) {
             builder.audience(audience);
+        }
+        if (subject != null) {
+            builder.subject(subject);
         }
 
         return builder.jws().keyId(kid)

@@ -1,5 +1,6 @@
 package io.quarkus.opentelemetry.runtime.config.runtime;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -43,4 +44,16 @@ public interface SpanConfig {
     @WithName("link.count.limit")
     @WithDefault("128")
     Integer linkCountLimit();
+
+    /**
+     * Controls which tracers Quarkus will use by default
+     */
+    @WithDefault("http,eventbus,sql")
+    List<Tracers> enabledTracers();
+
+    enum Tracers {
+        HTTP,
+        EVENTBUS,
+        SQL
+    }
 }

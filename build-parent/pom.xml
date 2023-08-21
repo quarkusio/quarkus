@@ -234,6 +234,20 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+                <type>test-jar</type>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-war-launcher-runner</artifactId>
                 <version>${project.version}</version>
             </dependency>

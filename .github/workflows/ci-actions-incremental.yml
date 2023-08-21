@@ -645,7 +645,7 @@ jobs:
             quarkus-quickstarts/LICENSE
           retention-days: 2
   virtual-thread-native-tests:
-    name: Virtual Thread Support Tests Native - ${{matrix.category}}
+    name: Native Tests - Virtual Thread - ${{matrix.category}}
     runs-on: ${{matrix.os-name}}
     needs: [build-jdk11, calculate-test-jobs]
     # Skip main in forks
@@ -855,7 +855,7 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests]
+    needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests,virtual-thread-native-tests]
     if: always() && github.repository != 'quarkusio/quarkus'
     steps:
       - uses: actions/download-artifact@v3

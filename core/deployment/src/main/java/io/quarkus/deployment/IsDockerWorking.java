@@ -4,6 +4,7 @@ package io.quarkus.deployment;
 import static io.quarkus.runtime.util.ContainerRuntimeUtil.ContainerRuntime.UNAVAILABLE;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -91,6 +93,14 @@ public class IsDockerWorking implements BooleanSupplier {
                 // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important
                 updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", "true");
 
+                // ensure that Testcontainers doesn't take previous failures into account
+                Class<?> dockerClientProviderStrategyClass = Thread.currentThread().getContextClassLoader()
+                        .loadClass("org.testcontainers.dockerclient.DockerClientProviderStrategy");
+                Field failFastAlwaysField = dockerClientProviderStrategyClass.getDeclaredField("FAIL_FAST_ALWAYS");
+                failFastAlwaysField.setAccessible(true);
+                AtomicBoolean failFastAlways = (AtomicBoolean) failFastAlwaysField.get(null);
+                failFastAlways.set(false);
+
                 boolean isAvailable = (boolean) dockerClientFactoryClass.getMethod("isDockerAvailable")
                         .invoke(dockerClientFactoryInstance);
                 if (!isAvailable) {
@@ -100,7 +110,8 @@ public class IsDockerWorking implements BooleanSupplier {
                 // restore the previous value
                 updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", oldReusePropertyValue);
                 return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
-            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException
+                    | NoSuchFieldException e) {
                 if (!silent) {
                     compressor.closeAndDumpCaptured();
                     LOGGER.debug("Unable to use Testcontainers to determine if Docker is working", e);

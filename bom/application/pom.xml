@@ -225,7 +225,7 @@
         <pulsar-client.version>3.0.0</pulsar-client.version>
         <async-http-client.version>2.12.3</async-http-client.version>
         <!-- Dev UI -->
-        <importmap.version>1.0.8</importmap.version>
+        <importmap.version>1.0.9</importmap.version>
         <vaadin.version>24.1.4</vaadin.version>
         <lit.version>2.8.0</lit.version>
         <lit-element.version>3.3.3</lit-element.version>
@@ -3284,7 +3284,7 @@
             <!-- Dev UI -->
             <!-- To create the import map -->
             <dependency>
-                <groupId>org.mvnpm</groupId>
+                <groupId>io.mvnpm</groupId>
                 <artifactId>importmap</artifactId>
                 <version>${importmap.version}</version>
             </dependency>
@@ -3302,6 +3302,12 @@
                 <scope>runtime</scope>
             </dependency>
             <!-- Vaadin Web components -->
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>a11y-base</artifactId>
+                <version>${vaadin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
             <dependency>
                 <groupId>org.mvnpm.at.vaadin</groupId>
                 <artifactId>app-layout</artifactId>

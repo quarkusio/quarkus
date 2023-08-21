@@ -40,11 +40,11 @@ import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.mvnpm.importmap.Aggregator;
-import org.mvnpm.importmap.Location;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import io.mvnpm.importmap.Aggregator;
+import io.mvnpm.importmap.Location;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;

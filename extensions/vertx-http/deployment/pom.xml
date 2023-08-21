@@ -44,7 +44,7 @@
             <artifactId>quarkus-vertx-http-dev-ui-resources</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.mvnpm</groupId>
+            <groupId>io.mvnpm</groupId>
             <artifactId>importmap</artifactId>
         </dependency>
         <!-- Used for the dev ui. Note that there is no corresponding runtime dependency -->

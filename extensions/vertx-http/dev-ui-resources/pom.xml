@@ -25,6 +25,11 @@
         <!-- Vaadin Web components -->
         <dependency>
             <groupId>org.mvnpm.at.vaadin</groupId>
+            <artifactId>a11y-base</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm.at.vaadin</groupId>
             <artifactId>app-layout</artifactId>
             <scope>runtime</scope>
         </dependency>

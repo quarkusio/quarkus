@@ -33,7 +33,7 @@ public class HibernateSearchElasticsearchDevServicesDisabledImplicitlyTest {
                     "quarkus.hibernate-search-orm.schema-management.strategy", "none",
                     // This version does not matter as long as it's supported by Hibernate Search:
                     // it won't be checked in this test anyway.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "7.6",
+                    "quarkus.hibernate-search-orm.elasticsearch.version", "8.9",
                     "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false");
         }
 

@@ -275,6 +275,8 @@ public class HttpServerOptionsUtils {
             }
             httpServerOptions.setInitialSettings(settings);
         }
+
+        httpServerOptions.setUseProxyProtocol(httpConfiguration.proxy().useProxyProtocol());
     }
 
     public static void applyCommonOptionsForManagementInterface(HttpServerOptions options,
@@ -299,6 +301,8 @@ public class HttpServerOptionsUtils {
         }
         options.setDecompressionSupported(buildTimeConfig.enableDecompression());
         options.setHandle100ContinueAutomatically(httpConfiguration.handle100ContinueAutomatically());
+
+        options.setUseProxyProtocol(httpConfiguration.proxy().useProxyProtocol());
     }
 
     private static KeyStoreOptions createKeyStoreOptions(Path path, String password, Optional<String> fileType,

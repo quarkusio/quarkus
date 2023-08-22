@@ -4,7 +4,7 @@ name: Podman Test Build (Linux)
 on:
   workflow_dispatch:
   schedule: ## Do a run daily, to check our compatibility
-    - cron: '0 3 * * *'
+    - cron: '0 1 * * *'
 
 env:
   # Workaround testsuite locale issue

@@ -305,15 +305,15 @@ and disable _Use '--release' option for cross compilation (java 9 and later)_.
 ##### Formatting
 
 Open the _Preferences_ window (or _Settings_ depending on your edition), navigate to _Plugins_ and install
-the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the
+the [Adapter for Eclipse Code Formatter](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter) from the
 Marketplace.
 
-Restart your IDE, open the *Preferences* (or *Settings*) window again and navigate to _Other Settings_ -> _Eclipse Code
-Formatter_.
+Restart your IDE, open the *Preferences* (or *Settings*) window again and navigate to _Adapter for Eclipse Code
+Formatter_ section on the left pane.
 
-Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter Config File_ to point to the
-`eclipse-format.xml` file in the `independent-projects/ide-config` directory. Make sure the _Optimize Imports_ box is
-ticked, and select the `eclipse.importorder` file as the import order config file.
+Select _Use Eclipse's Code Formatter_, then change the _Eclipse workspace/project folder or config file_ to point to the
+`eclipse-format.xml` file in the `independent-projects/ide-config/src/main/resources` directory. Make sure the _Optimize Imports_ box is
+ticked. Then, select _Import Order from file_ and make it point to the `eclipse.importorder` file in the `independent-projects/ide-config/src/main/resources` directory.
 
 Next, disable wildcard imports:
 navigate to _Editor_ -> _Code Style_ -> _Java_ -> _Imports_

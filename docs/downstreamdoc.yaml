@@ -1,6 +1,5 @@
 guides:
   - src/main/asciidoc/datasource.adoc
-  - src/main/asciidoc/deploying-to-openshift.adoc
   - src/main/asciidoc/logging.adoc
   - src/main/asciidoc/security-architecture.adoc
   - src/main/asciidoc/security-authentication-mechanisms.adoc

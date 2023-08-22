@@ -3,25 +3,27 @@ package io.quarkus.test.component;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -36,13 +39,14 @@ import java.util.stream.Collectors;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.annotation.Priority;
-import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.spi.BeanContainer;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.inject.spi.InterceptionType;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.inject.Singleton;
 import jakarta.interceptor.AroundConstruct;
 import jakarta.interceptor.AroundInvoke;
@@ -51,7 +55,6 @@ import jakarta.interceptor.InvocationContext;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
@@ -61,19 +64,24 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.DynamicTestInvocationContext;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestInstancePostProcessor;
-import org.junit.jupiter.api.extension.TestInstancePreDestroyCallback;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
 
-import io.quarkus.arc.All;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ComponentsProvider;
-import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.processor.Annotations;
 import io.quarkus.arc.processor.AnnotationsTransformer;
@@ -99,6 +107,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.test.InjectMock;
 import io.smallrye.common.annotation.Experimental;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -140,8 +149,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  */
 @Experimental("This feature is experimental and the API may change in the future")
 public class QuarkusComponentTestExtension
-        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor,
-        TestInstancePreDestroyCallback, ConfigSource {
+        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, InvocationInterceptor {
 
     /**
      * By default, test config properties take precedence over system properties (400), ENV variables (300) and
@@ -157,11 +165,7 @@ public class QuarkusComponentTestExtension
 
     // Strings used as keys in ExtensionContext.Store
     private static final String KEY_OLD_TCCL = "oldTccl";
-    private static final String KEY_OLD_CONFIG_PROVIDER_RESOLVER = "oldConfigProviderResolver";
-    private static final String KEY_GENERATED_RESOURCES = "generatedResources";
-    private static final String KEY_INJECTED_FIELDS = "injectedFields";
-    private static final String KEY_TEST_INSTANCE = "testInstance";
-    private static final String KEY_CONFIG = "config";
+    private static final String KEY_TEST_INSTANCES = "testInstanceStack";
 
     private static final String QUARKUS_TEST_COMPONENT_OUTPUT_DIRECTORY = "quarkus.test.component.output-directory";
 
@@ -255,33 +259,14 @@ public class QuarkusComponentTestExtension
     }
 
     @Override
-    public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
-        long start = System.nanoTime();
-
-        // Inject test class fields
-        context.getRoot().getStore(NAMESPACE).put(KEY_INJECTED_FIELDS,
-                injectFields(context.getRequiredTestClass(), testInstance));
-        context.getRoot().getStore(NAMESPACE).put(KEY_TEST_INSTANCE, testInstance);
-
-        LOG.debugf("postProcessTestInstance: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void preDestroyTestInstance(ExtensionContext context) throws Exception {
-        long start = System.nanoTime();
-
-        for (FieldInjector fieldInjector : (List<FieldInjector>) context.getRoot().getStore(NAMESPACE)
-                .get(KEY_INJECTED_FIELDS, List.class)) {
-            fieldInjector.unset(context.getRequiredTestInstance());
-        }
-
-        LOG.debugf("preDestroyTestInstance: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-    }
-
-    @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
+
+        if (context.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+            return;
+        }
+
+        initTestInstanceStack(context);
 
         Class<?> testClass = context.getRequiredTestClass();
 
@@ -320,27 +305,24 @@ public class QuarkusComponentTestExtension
             this.configProperties.put(testConfigProperty.key(), testConfigProperty.value());
         }
 
-        ClassLoader oldTccl = initArcContainer(context, componentClasses);
+        ClassLoader oldTccl = Thread.currentThread().getContextClassLoader();
         context.getRoot().getStore(NAMESPACE).put(KEY_OLD_TCCL, oldTccl);
 
-        ConfigProviderResolver oldConfigProviderResolver = ConfigProviderResolver.instance();
-        context.getRoot().getStore(NAMESPACE).put(KEY_OLD_CONFIG_PROVIDER_RESOLVER, oldConfigProviderResolver);
+        QuarkusComponentTestClassLoader cl = initArcContainer(context, componentClasses);
+        Thread.currentThread().setContextClassLoader(cl);
 
-        SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = new SmallRyeConfigProviderResolver();
-        ConfigProviderResolver.setInstance(smallRyeConfigProviderResolver);
-
-        // TCCL is now the QuarkusComponentTestClassLoader set during initialization
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        SmallRyeConfig config = new SmallRyeConfigBuilder().forClassLoader(tccl)
-                .addDefaultInterceptors()
-                .addDefaultSources()
-                .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
-                .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
-                .withSources(this)
-                .build();
-        smallRyeConfigProviderResolver.registerConfig(config, tccl);
-        context.getRoot().getStore(NAMESPACE).put(KEY_CONFIG, config);
-        ConfigBeanCreator.setClassLoader(tccl);
+        // Now we are ready to initialize Arc
+        try {
+            Class<?> clazz = cl.loadClass(QuarkusComponentTestExtension.class.getName());
+            Method method = clazz.getDeclaredMethod("tcclBeforeAll", String.class, Map.class, int.class, Map.class,
+                    Deque.class);
+            method.setAccessible(true);
+            method.invoke(null, testClass.getName(), configProperties, configSourceOrdinal.get(),
+                    InterceptorMethodCreator.preregistered(),
+                    context.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCES, Deque.class));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
 
         LOG.debugf("beforeAll: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
@@ -349,34 +331,42 @@ public class QuarkusComponentTestExtension
     public void afterAll(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
 
-        ClassLoader oldTccl = context.getRoot().getStore(NAMESPACE).get(KEY_OLD_TCCL, ClassLoader.class);
-        Thread.currentThread().setContextClassLoader(oldTccl);
+        QuarkusComponentTestClassLoader cl = QuarkusComponentTestClassLoader.inTCCL();
+
+        // Unset injected test class fields
+        try {
+            Class<?> tfiClass = cl.loadClass(TestFieldInjector.class.getName());
+            Method method = tfiClass.getDeclaredMethod("unset", Object.class, List.class);
+            method.setAccessible(true);
+            TestInstance testInstance = topTestInstanceOnStack(context);
+            method.invoke(null, testInstance.testInstance, testInstance.injectedFields);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+
+        popTestInstance(context);
+
+        if (context.getRequiredTestClass().isAnnotationPresent(Nested.class)) {
+            return;
+        }
+
+        destroyTestInstanceStack(context);
 
         try {
-            Arc.shutdown();
-        } catch (Exception e) {
-            LOG.error("An error occured during ArC shutdown: " + e);
+            Class<?> clazz = cl.loadClass(QuarkusComponentTestExtension.class.getName());
+            Method method = clazz.getDeclaredMethod("tcclAfterAll");
+            method.setAccessible(true);
+            method.invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
         }
+
+        ClassLoader oldTccl = context.getRoot().getStore(NAMESPACE).remove(KEY_OLD_TCCL, ClassLoader.class);
+        Thread.currentThread().setContextClassLoader(oldTccl);
+
         MockBeanCreator.clear();
         ConfigBeanCreator.clear();
         InterceptorMethodCreator.clear();
-
-        SmallRyeConfig config = context.getRoot().getStore(NAMESPACE).get(KEY_CONFIG, SmallRyeConfig.class);
-        ConfigProviderResolver.instance().releaseConfig(config);
-        ConfigProviderResolver
-                .setInstance(context.getRoot().getStore(NAMESPACE).get(KEY_OLD_CONFIG_PROVIDER_RESOLVER,
-                        ConfigProviderResolver.class));
-
-        @SuppressWarnings("unchecked")
-        Set<Path> generatedResources = context.getRoot().getStore(NAMESPACE).get(KEY_GENERATED_RESOURCES, Set.class);
-        for (Path path : generatedResources) {
-            try {
-                LOG.debugf("Delete generated %s", path);
-                Files.deleteIfExists(path);
-            } catch (IOException e) {
-                LOG.errorf("Unable to delete the generated resource %s: ", path, e.getMessage());
-            }
-        }
 
         LOG.debugf("afterAll: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
@@ -385,9 +375,20 @@ public class QuarkusComponentTestExtension
     public void beforeEach(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
 
-        // Activate the request context
-        ArcContainer container = Arc.container();
-        container.requestContext().activate();
+        // prevent non-`static` declaration of `@RegisterExtension QuarkusComponentTestExtension`
+        if (!(Thread.currentThread().getContextClassLoader() instanceof QuarkusComponentTestClassLoader)) {
+            throw new IllegalStateException("The `@RegisterExtension` field of type `QuarkusComponentTestExtension`"
+                    + " must be `static` in " + context.getRequiredTestClass());
+        }
+
+        try {
+            Class<?> clazz = QuarkusComponentTestClassLoader.inTCCL().loadClass(QuarkusComponentTestExtension.class.getName());
+            Method method = clazz.getDeclaredMethod("tcclBeforeEach");
+            method.setAccessible(true);
+            method.invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
 
         LOG.debugf("beforeEach: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
@@ -396,35 +397,283 @@ public class QuarkusComponentTestExtension
     public void afterEach(ExtensionContext context) throws Exception {
         long start = System.nanoTime();
 
-        // Terminate the request context
-        ArcContainer container = Arc.container();
-        container.requestContext().terminate();
+        try {
+            Class<?> clazz = QuarkusComponentTestClassLoader.inTCCL().loadClass(QuarkusComponentTestExtension.class.getName());
+            Method method = clazz.getDeclaredMethod("tcclAfterEach");
+            method.setAccessible(true);
+            method.invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
 
         LOG.debugf("afterEach: %s ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
     }
 
-    @Override
-    public Set<String> getPropertyNames() {
-        return configProperties.keySet();
+    private static void tcclBeforeAll(String testClass, Map<String, String> configProperties, int configOrdinal,
+            Map<String, String[]> interceptorMethods, Deque<?> testInstanceStack) throws ReflectiveOperationException {
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+
+        Class<?> tcclTestClass = tccl.loadClass(testClass);
+        for (Field field : tcclTestClass.getDeclaredFields()) {
+            if (QuarkusComponentTestExtension.class.equals(field.getType())
+                    && field.isAnnotationPresent(RegisterExtension.class)
+                    && Modifier.isStatic(field.getModifiers())) {
+                QuarkusComponentTestExtension instance = (QuarkusComponentTestExtension) field.get(null);
+                instance.triggerAllMockRegistrations();
+            }
+        }
+
+        InterceptorMethodCreator.register(interceptorMethods, testInstanceStack);
+
+        Arc.initialize();
+
+        SmallRyeConfigProviderResolver smallRyeConfigProviderResolver = new SmallRyeConfigProviderResolver();
+        ConfigProviderResolver.setInstance(smallRyeConfigProviderResolver);
+
+        // TCCL is the `QuarkusComponentTestClassLoader` created during initialization
+        SmallRyeConfig config = new SmallRyeConfigBuilder().forClassLoader(tccl)
+                .addDefaultInterceptors()
+                .addDefaultSources()
+                .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
+                .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
+                .withSources(new PropertiesConfigSource(configProperties,
+                        QuarkusComponentTestExtension.class.getName(), configOrdinal))
+                .build();
+        smallRyeConfigProviderResolver.registerConfig(config, tccl);
+        ConfigBeanCreator.setClassLoader(tccl);
+    }
+
+    private static void tcclAfterAll() {
+        try {
+            Arc.shutdown();
+        } catch (Exception e) {
+            LOG.error("An error occured during ArC shutdown: " + e);
+        }
+
+        MockBeanCreator.clear();
+        ConfigBeanCreator.clear();
+        InterceptorMethodCreator.clear();
+
+        ConfigProviderResolver resolver = ConfigProviderResolver.instance();
+        resolver.releaseConfig(resolver.getConfig());
+    }
+
+    private static void tcclBeforeEach() {
+        // Activate the request context
+        ArcContainer container = Arc.container();
+        container.requestContext().activate();
+    }
+
+    private static void tcclAfterEach() {
+        // Terminate the request context
+        ArcContainer container = Arc.container();
+        container.requestContext().terminate();
     }
 
     @Override
-    public String getValue(String propertyName) {
-        return configProperties.get(propertyName);
+    public void interceptBeforeAllMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+
+        if (invocationContext.getExecutable().getParameterCount() != 0) {
+            throw new UnsupportedOperationException("@BeforeAll method must have no parameter");
+        }
+
+        QuarkusComponentTestClassLoader cl = QuarkusComponentTestClassLoader.inTCCL();
+        Class<?> clazz = cl.loadClass(invocationContext.getTargetClass().getName());
+        Method method = findZeroParamMethod(clazz, invocationContext.getExecutable().getName());
+        method.setAccessible(true);
+        method.invoke(null);
+        invocation.skip();
     }
 
     @Override
-    public String getName() {
-        return QuarkusComponentTestExtension.class.getName();
+    public <T> T interceptTestClassConstructor(Invocation<T> invocation,
+            ReflectiveInvocationContext<Constructor<T>> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+
+        QuarkusComponentTestClassLoader cl = QuarkusComponentTestClassLoader.inTCCL();
+
+        Class<?>[] parameterTypes = invocationContext.getExecutable().getParameterTypes();
+        Class<?>[] translatedParameterTypes = new Class<?>[parameterTypes.length];
+        for (int i = 0; i < parameterTypes.length; i++) {
+            translatedParameterTypes[i] = cl.loadClass(parameterTypes[i].getName());
+        }
+
+        Object[] arguments = new Object[translatedParameterTypes.length];
+        for (int i = 0; i < translatedParameterTypes.length; i++) {
+            arguments[i] = findTestInstanceOnStack(extensionContext, translatedParameterTypes[i]);
+        }
+
+        Class<?> clazz = cl.loadClass(invocationContext.getTargetClass().getName());
+        Constructor<?> ctor = clazz.getDeclaredConstructor(translatedParameterTypes);
+        ctor.setAccessible(true);
+        Object testInstance = ctor.newInstance(arguments);
+        TestInstance testInstanceData = new TestInstance(testInstance);
+        pushTestInstance(extensionContext, testInstanceData);
+
+        // Inject test class fields
+        try {
+            Class<?> tfiClass = cl.loadClass(TestFieldInjector.class.getName());
+            Method method = tfiClass.getDeclaredMethod("inject", Class.class, Object.class);
+            method.setAccessible(true);
+            testInstanceData.injectedFields = (List<?>) method.invoke(null, clazz, testInstance);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+
+        return invocation.proceed();
     }
 
     @Override
-    public int getOrdinal() {
-        return configSourceOrdinal.get();
+    public void interceptBeforeEachMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+
+        if (invocationContext.getExecutable().getParameterCount() != 0) {
+            throw new UnsupportedOperationException("@BeforeEach method must have no parameter");
+        }
+
+        Object testInstance = topTestInstanceOnStack(extensionContext).testInstance;
+        Class<?> clazz = testInstance.getClass();
+        Method method = findZeroParamMethod(clazz, invocationContext.getExecutable().getName());
+        method.setAccessible(true);
+        method.invoke(testInstance);
+        invocation.skip();
+    }
+
+    @Override
+    public void interceptTestMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+
+        if (invocationContext.getExecutable().getParameterCount() != 0) {
+            throw new UnsupportedOperationException("@Test method must have no parameter");
+        }
+
+        Object testInstance = topTestInstanceOnStack(extensionContext).testInstance;
+        Class<?> clazz = testInstance.getClass();
+        Method method = findZeroParamMethod(clazz, invocationContext.getExecutable().getName());
+        method.setAccessible(true);
+        try {
+            method.invoke(testInstance);
+        } catch (ReflectiveOperationException e) {
+            throw e.getCause();
+        }
+        invocation.skip();
+    }
+
+    @Override
+    public <T> T interceptTestFactoryMethod(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void interceptTestTemplateMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void interceptDynamicTest(Invocation<Void> invocation, DynamicTestInvocationContext invocationContext,
+            ExtensionContext extensionContext) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void interceptAfterEachMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+
+        if (invocationContext.getExecutable().getParameterCount() != 0) {
+            throw new UnsupportedOperationException("@AfterEach method must have no parameter");
+        }
+
+        Object testInstance = topTestInstanceOnStack(extensionContext).testInstance;
+        Class<?> clazz = testInstance.getClass();
+        Method method = findZeroParamMethod(clazz, invocationContext.getExecutable().getName());
+        method.setAccessible(true);
+        method.invoke(testInstance);
+        invocation.skip();
+    }
+
+    @Override
+    public void interceptAfterAllMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+
+        if (invocationContext.getExecutable().getParameterCount() != 0) {
+            throw new UnsupportedOperationException("@AfterAll method must have no parameter");
+        }
+
+        QuarkusComponentTestClassLoader cl = QuarkusComponentTestClassLoader.inTCCL();
+        Class<?> clazz = cl.loadClass(invocationContext.getTargetClass().getName());
+        Method method = findZeroParamMethod(clazz, invocationContext.getExecutable().getName());
+        method.setAccessible(true);
+        method.invoke(null);
+        invocation.skip();
+    }
+
+    private static Method findZeroParamMethod(Class<?> clazz, String name) throws NoSuchMethodException {
+        if (clazz == null) {
+            throw new NoSuchMethodException(name);
+        }
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (name.equals(method.getName()) && method.getParameterCount() == 0) {
+                return method;
+            }
+        }
+        return findZeroParamMethod(clazz.getSuperclass(), name);
+    }
+
+    private static void initTestInstanceStack(ExtensionContext context) {
+        context.getRoot().getStore(NAMESPACE).put(KEY_TEST_INSTANCES, new ArrayDeque<>());
+    }
+
+    private static void pushTestInstance(ExtensionContext context, TestInstance testInstance) {
+        Deque<TestInstance> stack = context.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCES, Deque.class);
+        stack.push(testInstance);
+    }
+
+    private static void popTestInstance(ExtensionContext context) {
+        Deque<TestInstance> stack = context.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCES, Deque.class);
+        stack.pop();
+    }
+
+    private static TestInstance topTestInstanceOnStack(ExtensionContext context) {
+        Deque<TestInstance> stack = context.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCES, Deque.class);
+        return stack.peek();
+    }
+
+    private static Object findTestInstanceOnStack(ExtensionContext context, Class<?> clazz) {
+        Deque<TestInstance> stack = context.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCES, Deque.class);
+        for (TestInstance obj : stack) {
+            if (clazz.equals(obj.testInstance.getClass())) {
+                return obj;
+            }
+        }
+        return null;
+    }
+
+    private static void destroyTestInstanceStack(ExtensionContext context) {
+        context.getRoot().getStore(NAMESPACE).remove(KEY_TEST_INSTANCES);
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {
         this.mockConfigurators.add(mock);
+    }
+
+    // called from the extra CL
+    // relies on:
+    // 1. deterministic iteration order of `mockConfigurators`
+    // 2. deterministic generation of keys by `MockBeanCreator.registerCreate()`
+    // 3. the test class in the extra CL being instantiated, in turn instantiating
+    //    a "mirror" of the extension instance
+    void triggerAllMockRegistrations() {
+        for (MockBeanConfiguratorImpl<?> mockConfigurator : mockConfigurators) {
+            MockBeanCreator.registerCreate(cast(mockConfigurator.create));
+        }
     }
 
     private BeanRegistrar registrarForMock(MockBeanConfiguratorImpl<?> mock) {
@@ -446,22 +695,10 @@ public class QuarkusComponentTestExtension
                 if (mock.defaultBean) {
                     configurator.defaultBean();
                 }
-                String key = UUID.randomUUID().toString();
-                MockBeanCreator.registerCreate(key, cast(mock.create));
+                String key = MockBeanCreator.registerCreate(cast(mock.create));
                 configurator.creator(MockBeanCreator.class).param(MockBeanCreator.CREATE_KEY, key).done();
             }
         };
-    }
-
-    private static Annotation[] getQualifiers(Field field, BeanManager beanManager) {
-        List<Annotation> ret = new ArrayList<>();
-        Annotation[] annotations = field.getDeclaredAnnotations();
-        for (Annotation fieldAnnotation : annotations) {
-            if (beanManager.isQualifier(fieldAnnotation.annotationType())) {
-                ret.add(fieldAnnotation);
-            }
-        }
-        return ret.toArray(new Annotation[0]);
     }
 
     private static Set<AnnotationInstance> getQualifiers(Field field, Collection<DotName> qualifiers) {
@@ -475,20 +712,15 @@ public class QuarkusComponentTestExtension
         return ret;
     }
 
-    private ClassLoader initArcContainer(ExtensionContext extensionContext, Collection<Class<?>> componentClasses) {
+    private QuarkusComponentTestClassLoader initArcContainer(ExtensionContext extensionContext,
+            Collection<Class<?>> componentClasses) {
         Class<?> testClass = extensionContext.getRequiredTestClass();
+
         // Collect all test class injection points to define a bean removal exclusion
-        List<Field> testClassInjectionPoints = findInjectFields(testClass);
+        List<Field> testClassInjectionPoints = TestFieldInjector.findInjectFields(testClass);
 
         if (componentClasses.isEmpty()) {
             throw new IllegalStateException("No component classes to test");
-        }
-
-        // Make sure Arc is down
-        try {
-            Arc.shutdown();
-        } catch (Exception e) {
-            throw new IllegalStateException("An error occured during ArC shutdown: " + e);
         }
 
         // Build index
@@ -514,14 +746,14 @@ public class QuarkusComponentTestExtension
                 new ConcurrentHashMap<>(), index);
 
         try {
-
             // These are populated after BeanProcessor.registerCustomContexts() is called
             List<DotName> qualifiers = new ArrayList<>();
             Set<String> interceptorBindings = new HashSet<>();
             AtomicReference<BeanResolver> beanResolver = new AtomicReference<>();
 
+            String beanProcessorName = testClass.getName().replace('.', '_');
             BeanProcessor.Builder builder = BeanProcessor.builder()
-                    .setName(testClass.getName().replace('.', '_'))
+                    .setName(beanProcessorName)
                     .addRemovalExclusion(b -> {
                         // Do not remove beans:
                         // 1. Injected in the test class
@@ -540,69 +772,51 @@ public class QuarkusComponentTestExtension
                     })
                     .setImmutableBeanArchiveIndex(index)
                     .setComputingBeanArchiveIndex(computingIndex)
-                    .setRemoveUnusedBeans(true);
-
-            // We need collect all generated resources so that we can remove them after the test
-            // NOTE: previously we kept the generated framework classes (to speedup subsequent test runs) but that breaks the existing @QuarkusTests
-            Set<Path> generatedResources;
+                    .setRemoveUnusedBeans(true)
+                    .setTransformUnproxyableClasses(true);
 
             // E.g. target/generated-arc-sources/org/acme/ComponentsProvider
             File componentsProviderFile = getComponentsProviderFile(testClass);
 
-            if (isContinuousTesting) {
-                generatedResources = Set.of();
-                Map<String, byte[]> classes = new HashMap<>();
-                builder.setOutput(new ResourceOutput() {
-                    @Override
-                    public void writeResource(Resource resource) throws IOException {
-                        switch (resource.getType()) {
-                            case JAVA_CLASS:
-                                classes.put(resource.getName() + ".class", resource.getData());
-                                ((QuarkusClassLoader) testClass.getClassLoader()).reset(classes, Map.of());
-                                break;
-                            case SERVICE_PROVIDER:
-                                if (resource.getName()
-                                        .endsWith(ComponentsProvider.class.getName())) {
-                                    componentsProviderFile.getParentFile()
-                                            .mkdirs();
-                                    try (FileOutputStream out = new FileOutputStream(componentsProviderFile)) {
-                                        out.write(resource.getData());
-                                    }
-                                }
-                                break;
-                            default:
-                                throw new IllegalArgumentException("Unsupported resource type: " + resource.getType());
-                        }
-                    }
-                });
-            } else {
-                generatedResources = new HashSet<>();
+            Map<String, byte[]> generatedClasses = new HashMap<>();
+            Path generatedClassesDirectory;
+            if (!isContinuousTesting) {
                 File testOutputDirectory = getTestOutputDirectory(testClass);
-                builder.setOutput(new ResourceOutput() {
-                    @Override
-                    public void writeResource(Resource resource) throws IOException {
-                        switch (resource.getType()) {
-                            case JAVA_CLASS:
-                                generatedResources.add(resource.writeTo(testOutputDirectory).toPath());
-                                break;
-                            case SERVICE_PROVIDER:
-                                if (resource.getName()
-                                        .endsWith(ComponentsProvider.class.getName())) {
-                                    componentsProviderFile.getParentFile()
-                                            .mkdirs();
-                                    try (FileOutputStream out = new FileOutputStream(componentsProviderFile)) {
-                                        out.write(resource.getData());
-                                    }
-                                }
-                                break;
-                            default:
-                                throw new IllegalArgumentException("Unsupported resource type: " + resource.getType());
-                        }
-                    }
-                });
+                generatedClassesDirectory = testOutputDirectory.getParentFile().toPath()
+                        .resolve("generated-classes").resolve(beanProcessorName);
+                Files.createDirectories(generatedClassesDirectory);
+            } else {
+                generatedClassesDirectory = null;
             }
+            builder.setOutput(new ResourceOutput() {
+                @Override
+                public void writeResource(Resource resource) throws IOException {
+                    switch (resource.getType()) {
+                        case JAVA_CLASS:
+                            generatedClasses.put(resource.getFullyQualifiedName(), resource.getData());
+                            if (generatedClassesDirectory != null) {
+                                // these files are not used, we only create them for debugging purposes
+                                // the `.` and `$` chars in the class name are replaced with `_` so that
+                                // IntelliJ doesn't treat the files as duplicates of classes it already knows
+                                Path classFile = generatedClassesDirectory.resolve(resource.getFullyQualifiedName()
+                                        .replace('.', '_').replace('$', '_') + ".class");
+                                Files.write(classFile, resource.getData());
+                            }
 
-            extensionContext.getRoot().getStore(NAMESPACE).put(KEY_GENERATED_RESOURCES, generatedResources);
+                            break;
+                        case SERVICE_PROVIDER:
+                            if (resource.getName().endsWith(ComponentsProvider.class.getName())) {
+                                componentsProviderFile.getParentFile().mkdirs();
+                                try (FileOutputStream out = new FileOutputStream(componentsProviderFile)) {
+                                    out.write(resource.getData());
+                                }
+                            }
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Unsupported resource type: " + resource.getType());
+                    }
+                }
+            });
 
             builder.addAnnotationTransformer(AnnotationsTransformer.appliedToField().whenContainsAny(qualifiers)
                     .whenContainsNone(DotName.createSimple(Inject.class)).thenTransform(t -> t.add(Inject.class)));
@@ -665,7 +879,7 @@ public class QuarkusComponentTestExtension
 
                     // Make sure that all @InjectMock fields are also considered unsatisfied dependencies
                     // This means that a mock is created even if no component declares this dependency
-                    for (Field field : findFields(testClass, List.of(InjectMock.class))) {
+                    for (Field field : TestFieldInjector.findFields(testClass, List.of(InjectMock.class))) {
                         Set<AnnotationInstance> requiredQualifiers = getQualifiers(field, qualifiers);
                         if (requiredQualifiers.isEmpty()) {
                             requiredQualifiers = Set.of(AnnotationInstance.builder(DotNames.DEFAULT).build());
@@ -722,15 +936,12 @@ public class QuarkusComponentTestExtension
                 builder.addBeanRegistrar(registrarForMock(mockConfigurator));
             }
 
+            List<BytecodeTransformer> bytecodeTransformers = new ArrayList<>();
+
             // Process the deployment
             BeanProcessor beanProcessor = builder.build();
             try {
-                Consumer<BytecodeTransformer> unsupportedBytecodeTransformer = new Consumer<BytecodeTransformer>() {
-                    @Override
-                    public void accept(BytecodeTransformer transformer) {
-                        throw new UnsupportedOperationException();
-                    }
-                };
+                Consumer<BytecodeTransformer> bytecodeTransformerConsumer = bytecodeTransformers::add;
                 // Populate the list of qualifiers used to simulate quarkus auto injection
                 ContextRegistrar.RegistrationContext registrationContext = beanProcessor.registerCustomContexts();
                 qualifiers.addAll(registrationContext.get(Key.QUALIFIERS).keySet());
@@ -742,28 +953,71 @@ public class QuarkusComponentTestExtension
                 beanProcessor.registerBeans();
                 beanProcessor.getBeanDeployment().initBeanByTypeMap();
                 beanProcessor.registerSyntheticObservers();
-                beanProcessor.initialize(unsupportedBytecodeTransformer, Collections.emptyList());
-                ValidationContext validationContext = beanProcessor.validate(unsupportedBytecodeTransformer);
+                beanProcessor.initialize(bytecodeTransformerConsumer, Collections.emptyList());
+                ValidationContext validationContext = beanProcessor.validate(bytecodeTransformerConsumer);
                 beanProcessor.processValidationErrors(validationContext);
                 // Generate resources in parallel
                 ExecutorService executor = Executors.newCachedThreadPool();
-                beanProcessor.generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, true, executor);
+                beanProcessor.generateResources(null, new HashSet<>(), bytecodeTransformerConsumer, true, executor);
                 executor.shutdown();
             } catch (IOException e) {
                 throw new IllegalStateException("Error generating resources", e);
             }
 
-            // Use a custom ClassLoader to load the generated ComponentsProvider file
             // In continuous testing the CL that loaded the test class must be used as the parent CL
-            QuarkusComponentTestClassLoader testClassLoader = new QuarkusComponentTestClassLoader(
-                    isContinuousTesting ? testClassClassLoader : oldTccl,
-                    componentsProviderFile,
-                    null);
-            Thread.currentThread().setContextClassLoader(testClassLoader);
+            ClassLoader parent = isContinuousTesting ? testClassClassLoader : oldTccl;
 
-            // Now we are ready to initialize Arc
-            Arc.initialize();
+            Map<String, byte[]> transformedClasses = new HashMap<>();
+            Path transformedClassesDirectory = null;
+            if (!isContinuousTesting) {
+                File testOutputDirectory = getTestOutputDirectory(testClass);
+                transformedClassesDirectory = testOutputDirectory.getParentFile().toPath()
+                        .resolve("transformed-classes").resolve(beanProcessorName);
+                Files.createDirectories(transformedClassesDirectory);
+            }
+            if (!bytecodeTransformers.isEmpty()) {
+                Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> map = bytecodeTransformers.stream()
+                        .collect(Collectors.groupingBy(BytecodeTransformer::getClassToTransform,
+                                Collectors.mapping(BytecodeTransformer::getVisitorFunction, Collectors.toList())));
 
+                for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : map.entrySet()) {
+                    String className = entry.getKey();
+                    List<BiFunction<String, ClassVisitor, ClassVisitor>> transformations = entry.getValue();
+
+                    String classFileName = className.replace('.', '/') + ".class";
+                    byte[] bytecode;
+                    try (InputStream in = parent.getResourceAsStream(classFileName)) {
+                        if (in == null) {
+                            throw new IOException("Resource not found: " + classFileName);
+                        }
+                        bytecode = in.readAllBytes();
+                    }
+                    ClassReader reader = new ClassReader(bytecode);
+                    ClassWriter writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                    ClassVisitor visitor = writer;
+                    for (BiFunction<String, ClassVisitor, ClassVisitor> transformation : transformations) {
+                        visitor = transformation.apply(className, visitor);
+                    }
+                    reader.accept(visitor, 0);
+                    bytecode = writer.toByteArray();
+                    transformedClasses.put(className, bytecode);
+
+                    if (transformedClassesDirectory != null) {
+                        // these files are not used, we only create them for debugging purposes
+                        // the `/` and `$` chars in the path/name are replaced with `_` so that
+                        // IntelliJ doesn't treat the files as duplicates of classes it already knows
+                        Path classFile = transformedClassesDirectory.resolve(
+                                classFileName.replace('/', '_').replace('$', '_'));
+                        Files.write(classFile, bytecode);
+                    }
+                }
+            }
+
+            Map<String, byte[]> allClasses = new HashMap<>();
+            allClasses.putAll(generatedClasses);
+            allClasses.putAll(transformedClasses);
+
+            return new QuarkusComponentTestClassLoader(parent, allClasses, componentsProviderFile);
         } catch (Throwable e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -771,7 +1025,6 @@ public class QuarkusComponentTestExtension
                 throw new RuntimeException(e);
             }
         }
-        return oldTccl;
     }
 
     private void processTestInterceptorMethods(Class<?> testClass, ExtensionContext extensionContext,
@@ -783,25 +1036,7 @@ public class QuarkusComponentTestExtension
                 throw new IllegalStateException("No bindings declared on a test interceptor method: " + method);
             }
             validateTestInterceptorMethod(method);
-            String key = UUID.randomUUID().toString();
-            InterceptorMethodCreator.registerCreate(key, ctx -> {
-                return ic -> {
-                    Object instance = null;
-                    if (!Modifier.isStatic(method.getModifiers())) {
-                        // ExtentionContext.getTestInstance() does not work
-                        Object testInstance = extensionContext.getRoot().getStore(NAMESPACE).get(KEY_TEST_INSTANCE,
-                                Object.class);
-                        if (testInstance == null) {
-                            throw new IllegalStateException("Test instance not available");
-                        }
-                        instance = testInstance;
-                        if (!method.canAccess(instance)) {
-                            method.setAccessible(true);
-                        }
-                    }
-                    return method.invoke(instance, ic);
-                };
-            });
+            String key = InterceptorMethodCreator.preregister(testClass, method);
             InterceptionType interceptionType;
             if (method.isAnnotationPresent(AroundInvoke.class)) {
                 interceptionType = InterceptionType.AROUND_INVOKE;
@@ -905,42 +1140,6 @@ public class QuarkusComponentTestExtension
         return (T) obj;
     }
 
-    private List<FieldInjector> injectFields(Class<?> testClass, Object testInstance) throws Exception {
-        List<FieldInjector> injectedFields = new ArrayList<>();
-        for (Field field : findInjectFields(testClass)) {
-            injectedFields.add(new FieldInjector(field, testInstance));
-        }
-        return injectedFields;
-    }
-
-    private List<Field> findInjectFields(Class<?> testClass) {
-        List<Class<? extends Annotation>> injectAnnotations;
-        Class<? extends Annotation> deprecatedInjectMock = loadDeprecatedInjectMock();
-        if (deprecatedInjectMock != null) {
-            injectAnnotations = List.of(Inject.class, InjectMock.class, deprecatedInjectMock);
-        } else {
-            injectAnnotations = List.of(Inject.class, InjectMock.class);
-        }
-        return findFields(testClass, injectAnnotations);
-    }
-
-    private List<Field> findFields(Class<?> testClass, List<Class<? extends Annotation>> annotations) {
-        List<Field> fields = new ArrayList<>();
-        Class<?> current = testClass;
-        while (current.getSuperclass() != null) {
-            for (Field field : current.getDeclaredFields()) {
-                for (Class<? extends Annotation> annotation : annotations) {
-                    if (field.isAnnotationPresent(annotation)) {
-                        fields.add(field);
-                        break;
-                    }
-                }
-            }
-            current = current.getSuperclass();
-        }
-        return fields;
-    }
-
     private List<Method> findMethods(Class<?> testClass, List<Class<? extends Annotation>> annotations) {
         List<Method> methods = new ArrayList<>();
         Class<?> current = testClass;
@@ -958,106 +1157,13 @@ public class QuarkusComponentTestExtension
         return methods;
     }
 
-    static class FieldInjector {
-
-        private final Field field;
-        private final List<InstanceHandle<?>> unsetHandles;
-
-        public FieldInjector(Field field, Object testInstance) throws Exception {
-            this.field = field;
-
-            ArcContainer container = Arc.container();
-            BeanManager beanManager = container.beanManager();
-            java.lang.reflect.Type requiredType = field.getGenericType();
-            Annotation[] qualifiers = getQualifiers(field, beanManager);
-
-            Object injectedInstance;
-
-            if (qualifiers.length > 0 && Arrays.stream(qualifiers).anyMatch(All.Literal.INSTANCE::equals)) {
-                // Special handling for @Injec @All List
-                if (isListRequiredType(requiredType)) {
-                    List<InstanceHandle<Object>> handles = container.listAll(requiredType, qualifiers);
-                    if (isTypeArgumentInstanceHandle(requiredType)) {
-                        injectedInstance = handles;
-                    } else {
-                        injectedInstance = handles.stream().map(InstanceHandle::get).collect(Collectors.toUnmodifiableList());
-                    }
-                    unsetHandles = cast(handles);
-                } else {
-                    throw new IllegalStateException("Invalid injection point type: " + field);
-                }
-            } else {
-                InstanceHandle<?> handle = container.instance(requiredType, qualifiers);
-                if (field.isAnnotationPresent(Inject.class)) {
-                    if (handle.getBean().getKind() == io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
-                        throw new IllegalStateException(String
-                                .format("The injected field %s expects a real component; but obtained: %s", field,
-                                        handle.getBean()));
-                    }
-                } else {
-                    if (!handle.isAvailable()) {
-                        throw new IllegalStateException(String
-                                .format("The injected field %s expects a mocked bean; but obtained null", field));
-                    } else if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
-                        throw new IllegalStateException(String
-                                .format("The injected field %s expects a mocked bean; but obtained: %s", field,
-                                        handle.getBean()));
-                    }
-                }
-                injectedInstance = handle.get();
-                unsetHandles = List.of(handle);
-            }
-
-            if (!field.canAccess(testInstance)) {
-                field.setAccessible(true);
-            }
-
-            field.set(testInstance, injectedInstance);
-        }
-
-        void unset(Object testInstance) throws Exception {
-            for (InstanceHandle<?> handle : unsetHandles) {
-                if (handle.getBean() != null && handle.getBean().getScope().equals(Dependent.class)) {
-                    try {
-                        handle.destroy();
-                    } catch (Exception e) {
-                        LOG.errorf(e, "Unable to destroy the injected %s", handle.getBean());
-                    }
-                }
-            }
-            field.set(testInstance, null);
-        }
-
-    }
-
-    @SuppressWarnings("unchecked")
-    private Class<? extends Annotation> loadDeprecatedInjectMock() {
-        try {
-            return (Class<? extends Annotation>) Class.forName("io.quarkus.test.junit.mockito.InjectMock");
-        } catch (Throwable e) {
-            return null;
-        }
-    }
-
-    private static boolean isListRequiredType(java.lang.reflect.Type type) {
-        if (type instanceof ParameterizedType) {
-            final ParameterizedType parameterizedType = (ParameterizedType) type;
-            return List.class.equals(parameterizedType.getRawType());
-        }
-        return false;
-    }
-
-    private static boolean isTypeArgumentInstanceHandle(java.lang.reflect.Type type) {
-        // List<String> -> String
-        java.lang.reflect.Type typeArgument = ((ParameterizedType) type).getActualTypeArguments()[0];
-        if (typeArgument instanceof ParameterizedType) {
-            return ((ParameterizedType) typeArgument).getRawType().equals(InstanceHandle.class);
-        }
-        return false;
-    }
-
     private boolean resolvesToBuiltinBean(Class<?> rawType) {
-        return Instance.class.isAssignableFrom(rawType) || Event.class.equals(rawType) || BeanManager.class.equals(rawType);
+        return Provider.class.equals(rawType)
+                || Instance.class.equals(rawType)
+                || InjectableInstance.class.equals(rawType)
+                || Event.class.equals(rawType)
+                || BeanContainer.class.equals(rawType)
+                || BeanManager.class.equals(rawType);
     }
 
     private File getTestOutputDirectory(Class<?> testClass) {
@@ -1097,6 +1203,15 @@ public class QuarkusComponentTestExtension
         }
         return new File(new File(generatedSourcesDirectory, nameToPath(testClass.getPackage().getName())),
                 ComponentsProvider.class.getSimpleName());
+    }
+
+    static class TestInstance {
+        final Object testInstance; // test instance in the extra CL
+        List<?> injectedFields; // List<TestFieldInjector>, where the elements are in the extra CL
+
+        TestInstance(Object testInstance) {
+            this.testInstance = testInstance;
+        }
     }
 
 }

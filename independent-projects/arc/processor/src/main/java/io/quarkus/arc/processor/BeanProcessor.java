@@ -126,6 +126,10 @@ public class BeanProcessor {
         this.injectionPointAnnotationsPredicate = Predicate.not(DotNames.DEPRECATED::equals);
     }
 
+    public String getName() {
+        return name;
+    }
+
     public ContextRegistrar.RegistrationContext registerCustomContexts() {
         return beanDeployment.registerCustomContexts(contextRegistrars);
     }

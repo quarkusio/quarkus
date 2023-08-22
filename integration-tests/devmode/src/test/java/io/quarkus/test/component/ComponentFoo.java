@@ -1,16 +1,24 @@
 package io.quarkus.test.component;
 
-import jakarta.inject.Singleton;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-@Singleton
-public class ComponentFoo {
+// using normal scope so that client proxy is required, so the class must:
+// - not be `final`
+// - not have non-`private` `final` methods
+// - not have a `private` constructor
+// all these rules are deliberately broken to trigger ArC bytecode transformation
+@ApplicationScoped
+public final class ComponentFoo {
 
     @ConfigProperty(name = "bar", defaultValue = "baz")
     String bar;
 
-    String ping() {
+    private ComponentFoo() {
+    }
+
+    final String ping() {
         return bar;
     }
 

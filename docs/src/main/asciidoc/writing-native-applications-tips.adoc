@@ -76,7 +76,7 @@ Here we include all the XML files and JSON files into the native executable.
 
 [NOTE]
 ====
-You can find more information about this topic in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Resources/[the GraalVM documentation].
+For more information about this topic, see the link:https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
@@ -245,7 +245,7 @@ As an example, in order to register all methods of class `com.acme.MyClass` for 
 
 [NOTE]
 ====
-For more details on the format of this file, please refer to https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Reflection/[the GraalVM documentation].
+For more information about the format of this file, see the link:https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
 ====
 
 The final order of business is to make the configuration file known to the `native-image` executable by adding the proper configuration to `application.properties`:
@@ -327,7 +327,7 @@ It should be added to the `native-image` configuration using the `quarkus.native
 
 [NOTE]
 ====
-You can find more information about all this in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[the GraalVM documentation].
+For more information, see the link:https://www.graalvm.org/latest/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[GraalVM Class Initialization in Native Image] guide.
 ====
 
 [NOTE]
@@ -360,7 +360,8 @@ com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfac
 ----
 
 Solving this issue requires adding the `-H:DynamicProxyConfigurationResources=<comma-separated-config-resources>` option and to provide a dynamic proxy configuration file.
-You can find all the information about the format of this file in https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[the GraalVM documentation].
+
+For more information about the format of this file, see the link:https://www.graalvm.org/latest/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually] guide.
 
 [[modularity-benefits]]
 === Modularity Benefits
@@ -612,7 +613,7 @@ public class SaxParserProcessor {
 
 [NOTE]
 ====
-More information about reflection in GraalVM can be found https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Reflection/[here].
+For more information about reflection in GraalVM, see the link:https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
 ====
 
 === Including resources
@@ -633,7 +634,7 @@ public class ResourcesProcessor {
 
 [NOTE]
 ====
-For more information about GraalVM resource handling in native executables please refer to https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/dynamic-features/Resources/[the GraalVM documentation].
+For more information about GraalVM resource handling in native executables, see the link:https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/Resources/[GraalVM Accessing Resources in Native Image] guide.
 ====
 
 
@@ -657,7 +658,7 @@ Using such a construct means that a `--initialize-at-run-time` option will autom
 
 [NOTE]
 ====
-For more information about `--initialize-at-run-time`, please read https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[the GraalVM documentation].
+For more information about the `--initialize-at-run-time` option, see the link:https://www.graalvm.org/latest/reference-manual/native-image/optimizations-and-performance/ClassInitialization/[GraalVM Class Initialization in Native Image] guide.
 ====
 
 === Managing Proxy Classes
@@ -681,7 +682,7 @@ Using such a construct means that a `-H:DynamicProxyConfigurationResources` opti
 
 [NOTE]
 ====
-For more information about Proxy Classes you can read https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/configure-dynamic-proxies/[the GraalVM documentation].
+For more information about Proxy Classes, see the link:https://www.graalvm.org/latest/reference-manual/native-image/guides/configure-dynamic-proxies/[GraalVM Configure Dynamic Proxies Manually] guide.
 ====
 
 === Logging with Native Image

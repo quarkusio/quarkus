@@ -46,6 +46,7 @@ if (System.env.GITHUB_ACTIONS) {
 
     buildScan.tag(jobId)
     buildScan.tag(System.env.GITHUB_EVENT_NAME)
+    buildScan.tag(System.env.GITHUB_WORKFLOW)
     String jobTags = System.env.GE_TAGS
     if (jobTags != null && !jobTags.isBlank()) {
         for (String tag : jobTags.split(",")) {

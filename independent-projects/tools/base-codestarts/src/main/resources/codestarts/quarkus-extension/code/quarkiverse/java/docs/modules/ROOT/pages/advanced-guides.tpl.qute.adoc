@@ -1,0 +1,7 @@
+= {extension.full-name} - Advanced Guides
+
+include::./includes/attributes.adoc[]
+
+TIP: Add any advanced guide(s) for your extension here.
+
+TIP: Check this page for inspiration: https://docs.quarkiverse.io/quarkus-web-bundler/dev/advanced-guides.html[Quarkus Web Bundler - Advanced Guides, window="_blank"]

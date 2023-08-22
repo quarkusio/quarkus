@@ -1,1 +1,5 @@
 * xref:index.adoc[{extension.full-name}]
+* xref:main-concepts.adoc[Main Concepts]
+* xref:advanced-guides.adoc[Advanced Guides]
+* xref:examples.adoc[Examples]
+* xref:config-reference.adoc[Config Reference]

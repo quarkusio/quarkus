@@ -1,0 +1,7 @@
+= {extension.full-name} - Configuration Reference
+
+include::./includes/attributes.adoc[]
+
+TIP: Add link to your extension's configuration reference (if available)
+
+TIP: Check this page for inspiration: https://docs.quarkiverse.io/quarkus-web-bundler/dev/config-reference.html[Quarkus Web Bundler - Configuration Reference, window="_blank"]

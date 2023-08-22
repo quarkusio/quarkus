@@ -94,7 +94,8 @@ public class MicrometerRecorder {
                 Class<?> registryClass = registry.getClass();
                 applyMeterFilters(registry, classMeterFilters.get(registryClass));
 
-                var classSpecificCustomizers = classMeterRegistryCustomizers.get(registryClass);
+                var classSpecificCustomizers = classMeterRegistryCustomizers.getOrDefault(registryClass,
+                        Collections.emptyList());
                 var newList = new ArrayList<MeterRegistryCustomizer>(
                         globalMeterRegistryCustomizers.size() + classSpecificCustomizers.size());
                 newList.addAll(globalMeterRegistryCustomizers);

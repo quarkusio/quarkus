@@ -32,10 +32,13 @@ public class HibernateSearchElasticsearchDevServicesDisabledExplicitlyTest {
             // we won't have an Elasticsearch instance to talk to.
             config.putAll(Map.of(
                     "quarkus.hibernate-search-orm.schema-management.strategy", "none",
-                    // This version does not matter as long as it's supported by Hibernate Search:
-                    // it won't be checked in this test anyway.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "8.9",
-                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false"));
+                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false",
+                    // When disabling the version check we need to set a more precise version
+                    // than what we have in application.properties.
+                    // But here it doesn't matter as we won't send a request to Elasticsearch anyway,
+                    // so we're free to put anything.
+                    // Just make sure to set something consistent with what we have in application.properties.
+                    "quarkus.hibernate-search-orm.elasticsearch.version", "8.9"));
             return config;
         }
 

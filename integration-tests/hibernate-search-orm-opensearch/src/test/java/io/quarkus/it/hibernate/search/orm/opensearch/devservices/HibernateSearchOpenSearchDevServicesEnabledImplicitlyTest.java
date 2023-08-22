@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -18,19 +17,9 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-@TestProfile(HibernateSearchElasticsearchDevServicesConfiguredExplicitlyTest.Profile.class)
-public class HibernateSearchElasticsearchDevServicesConfiguredExplicitlyTest {
+@TestProfile(HibernateSearchOpenSearchDevServicesEnabledImplicitlyTest.Profile.class)
+public class HibernateSearchOpenSearchDevServicesEnabledImplicitlyTest {
     public static class Profile implements QuarkusTestProfile {
-        @Override
-        public Map<String, String> getConfigOverrides() {
-            return Map.of(
-                    "quarkus.elasticsearch.devservices.enabled", "true",
-                    // This needs to be different from the default image, or the test makes no sense.
-                    "quarkus.elasticsearch.devservices.image-name", "docker.io/opensearchproject/opensearch:2.6.0",
-                    // This needs to match the version used just above,
-                    // so that Hibernate Search itself will assert that we're using a custom version.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "opensearch:2.6");
-        }
 
         @Override
         public String getConfigProfile() {

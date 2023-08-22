@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-virtual-threads-integration-tests-parent</artifactId>
-    <name>Quarkus - Virtual Threads Integration Tests</name>
+    <name>Quarkus - Integration Tests - Virtual Threads</name>
 
     <packaging>pom</packaging>
 

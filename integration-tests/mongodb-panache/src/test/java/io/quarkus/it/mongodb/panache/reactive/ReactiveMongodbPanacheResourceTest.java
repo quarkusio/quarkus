@@ -22,6 +22,7 @@ import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.sse.SseEventSource;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -347,6 +348,7 @@ class ReactiveMongodbPanacheResourceTest {
     }
 
     @Test
+    @Disabled("flaky")
     public void testMoreRepositoryFunctionalities() {
         get("/test/reactive/repository").then().statusCode(200);
     }

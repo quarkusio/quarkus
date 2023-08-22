@@ -534,6 +534,7 @@
                                             <ignore>nowarn</ignore>
                                             <ignore>mojoExecution</ignore>
                                             <ignore>project</ignore>
+                                            <ignore>session</ignore>
                                         </ignoredProperties>
                                     </inputs>
                                     <outputs>

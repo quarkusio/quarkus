@@ -49,12 +49,6 @@ public class IsDockerWorking implements BooleanSupplier {
         return false;
     }
 
-    public static class IsDockerRunningSilent extends IsDockerWorking {
-        public IsDockerRunningSilent() {
-            super(true);
-        }
-    }
-
     private interface Strategy extends Supplier<Result> {
 
     }

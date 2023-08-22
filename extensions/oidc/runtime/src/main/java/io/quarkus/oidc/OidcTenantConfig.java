@@ -1661,7 +1661,9 @@ public class OidcTenantConfig extends OidcCommonConfig {
         MICROSOFT,
         SPOTIFY,
         TWITCH,
-        TWITTER
+        TWITTER,
+        // New name for Twitter
+        X
     }
 
     public Optional<Provider> getProvider() {

@@ -175,7 +175,7 @@ jobs:
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar .m2/repository/io/quarkus
         shell: bash
-        run: tar -I 'pigz -9' -cf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
+        run: tar -gz -cf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
         uses: actions/upload-artifact@v3
         with:

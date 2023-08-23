@@ -283,10 +283,22 @@ know what is being done.
 
 Here's a list of things to pay attention when using Hibernate Reactive in Quarkus:
 
-* it's not possible to configure multiple persistence units at the moment
-* it's not configurable via a `persistence.xml` file
-* integration with the Envers extension is not supported
-* transaction demarcation cannot be done using `jakarta.transaction.Transactional`
+* Hibernate Reactive is not configurable via a `persistence.xml` file.
+* This extension only considers the default persistence unit at the moment:
+it's not possible to configure multiple persistence units,
+or even a single named persistence unit.
+* This extension cannot be used at the same time as Hibernate ORM.
+See https://github.com/quarkusio/quarkus/issues/13425.
+* This extension cannot be used at the same time as JDBC/Agroal.
+See https://github.com/quarkusio/quarkus/issues/33380.
++
+This also means this extension cannot be used at the same time as extensions that rely on JDBC,
+such as the Flyway extension.
+See https://github.com/quarkusio/quarkus/issues/10716.
+* Integration with the Envers extension is not supported.
+* Transaction demarcation cannot be done using `jakarta.transaction.Transactional` or `QuarkusTransaction`;
+if you use xref:hibernate-reactive-panache.adoc[Hibernate Reactive with Panache],
+consider xref:hibernate-reactive-panache.adoc#transactions[using `@WithTransaction` or `Panache.withTransaction()`] instead.
 
 == Simplifying Hibernate Reactive with Panache
 

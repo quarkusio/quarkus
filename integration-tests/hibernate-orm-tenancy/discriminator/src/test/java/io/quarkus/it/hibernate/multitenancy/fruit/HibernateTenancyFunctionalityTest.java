@@ -4,9 +4,12 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayWithSize;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+
+import java.util.Arrays;
 
 import jakarta.ws.rs.core.Response.Status;
 
@@ -144,6 +147,18 @@ public class HibernateTenancyFunctionalityTest {
 
         assertThat(findByName("/mycompany", mycompanyFruitName), is(not(nullValue())));
         assertThat(findByName("", mycompanyFruitName), is(nullValue()));
+
+    }
+
+    @Test
+    public void testGetFruitsTenantRoot() throws Exception {
+
+        // Get all tenant fruits
+        Fruit[] fruits = given().when().get("/global/fruits").then().assertThat()
+                .statusCode(is(Status.OK.getStatusCode())).extract()
+                .as(Fruit[].class);
+        assertThat(fruits, arrayWithSize(6));
+        assertThat(Arrays.asList(fruits), hasItems(new Fruit(4, "Avocado"), new Fruit(1, "Cherry")));
 
     }
 

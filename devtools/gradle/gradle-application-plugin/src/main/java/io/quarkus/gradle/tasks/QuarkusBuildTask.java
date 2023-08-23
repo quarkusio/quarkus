@@ -15,6 +15,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileCopyDetails;
 import org.gradle.api.file.FileSystemOperations;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.StopExecutionException;
@@ -57,7 +58,8 @@ abstract class QuarkusBuildTask extends QuarkusTask {
 
     @Input
     public Map<String, String> getCachingRelevantInput() {
-        return extension().baseConfig().quarkusProperties();
+        ListProperty<String> vars = extension().getCachingRelevantProperties();
+        return extension().baseConfig().cachingRelevantProperties(vars.get());
     }
 
     PackageConfig.BuiltInType packageType() {

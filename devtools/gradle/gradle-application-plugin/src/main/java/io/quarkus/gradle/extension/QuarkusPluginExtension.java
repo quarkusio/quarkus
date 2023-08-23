@@ -17,6 +17,7 @@ import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
@@ -252,6 +253,10 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     @SuppressWarnings("unused")
     public MapProperty<String, String> getQuarkusBuildProperties() {
         return quarkusBuildProperties;
+    }
+
+    public ListProperty<String> getCachingRelevantProperties() {
+        return cachingRelevantProperties;
     }
 
     public void set(String name, @Nullable String value) {

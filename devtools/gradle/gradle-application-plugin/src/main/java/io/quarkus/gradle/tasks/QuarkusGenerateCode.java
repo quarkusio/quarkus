@@ -13,6 +13,7 @@ import javax.inject.Inject;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
@@ -65,7 +66,17 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
 
     @Input
     public Map<String, String> getCachingRelevantInput() {
-        return extension().baseConfig().quarkusProperties();
+        ListProperty<String> vars = extension().getCachingRelevantProperties();
+        return extension().baseConfig().cachingRelevantProperties(vars.get());
+    }
+
+    @Input
+    Map<String, String> getInternalTaskConfig() {
+        // Necessary to distinguish the different `quarkusGenerateCode*` tasks, because the task path is _not_
+        // an input to the cache key. We need to declare these properties as inputs, because those influence the
+        // execution.
+        // Documented here: https://docs.gradle.org/current/userguide/build_cache.html#sec:task_output_caching_inputs
+        return Map.of("launchMode", launchMode.name(), "inputSourceSetName", inputSourceSetName);
     }
 
     @InputFiles

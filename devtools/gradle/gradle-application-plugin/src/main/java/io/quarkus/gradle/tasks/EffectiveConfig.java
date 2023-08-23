@@ -117,6 +117,9 @@ final class EffectiveConfig {
     static SmallRyeConfig buildConfig(String profile, List<ConfigSource> configSources) {
         return ConfigUtils.emptyConfigBuilder()
                 .setAddDiscoveredSecretKeysHandlers(false)
+                // We add our own sources for environment, system-properties and microprofile-config.properties,
+                // no need to include those twice.
+                .setAddDefaultSources(false)
                 .withSources(configSources)
                 .withProfile(profile)
                 .build();

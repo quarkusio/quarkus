@@ -678,6 +678,36 @@ The prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/pro
 
 Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
 
+[[quarkus-extensions-using-micrometer]]
+== Quarkus core extensions instrumented with Micrometer
+
+* https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
+* https://quarkus.io/guides/cache[`quarkus-cache`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-caffeine[`quarkus-caffeine`]
+* https://quarkus.io/guides/smallrye-fault-tolerance[`quarkus-smallrye-fault-tolerance`]
+* https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
+* https://quarkus.io/guides/hibernate-orm[`quarkus-hibernate-orm`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
+* https://quarkus.io/guides/deploying-to-kubernetes[`quarkus-kubernetes`]
+* https://quarkus.io/guides/logging[`jboss-logging`] (logging API in Quarkus)
+* https://quarkus.io/guides/mongodb[`quarkus-mongodb-client`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-netty[`quarkus-netty`]
+* https://quarkus.io/guides/redis[`quarkus-redis-client`]
+* https://quarkus.io/guides/rest-client[`quarkus-rest-client`]
+* https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
+* https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
+* https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]
+** AMQP 1.0
+** RabbitMQ
+** Kafka
+** Pulsar
+** JMS
+** MQTT
+** Camel Messaging
+* https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-micrometer.adoc[opts=optional, leveloffset=+1]

@@ -7,6 +7,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
 
 import org.jboss.logging.Logger;
 import org.jboss.threads.ContextHandler;
@@ -151,10 +152,9 @@ public class ExecutorRecorder {
                 .setRegisterMBean(false)
                 .setHandoffExecutor(JBossExecutors.rejectingExecutor())
                 .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
-        final int cpus = ProcessorInfo.availableProcessors();
         // run time config variables
         builder.setCorePoolSize(threadPoolConfig.coreThreads);
-        builder.setMaximumPoolSize(threadPoolConfig.maxThreads.orElse(Math.max(8 * cpus, 200)));
+        builder.setMaximumPoolSize(getMaxSize(threadPoolConfig));
         if (threadPoolConfig.queueSize.isPresent()) {
             if (threadPoolConfig.queueSize.getAsInt() < 0) {
                 builder.setMaximumQueueSize(Integer.MAX_VALUE);
@@ -170,6 +170,35 @@ public class ExecutorRecorder {
         }
 
         return builder.build();
+    }
+
+    public static int getMaxSize(ThreadPoolConfig threadPoolConfig) {
+        return threadPoolConfig.maxThreads.orElseGet(MaxThreadsCalculator.INSTANCE);
+    }
+
+    public static int calculateMaxThreads() {
+        return MaxThreadsCalculator.INSTANCE.getAsInt();
+    }
+
+    /**
+     * NOTE: This is not folded at native image build time, so it works as expected
+     */
+    private static final class MaxThreadsCalculator implements IntSupplier {
+
+        private static final MaxThreadsCalculator INSTANCE = new MaxThreadsCalculator();
+
+        private MaxThreadsCalculator() {
+        }
+
+        @Override
+        public int getAsInt() {
+            return Holder.CALCULATION;
+        }
+
+        private static class Holder {
+            private static final int DEFAULT_MAX_THREADS = 200;
+            private static final int CALCULATION = Math.max(8 * ProcessorInfo.availableProcessors(), DEFAULT_MAX_THREADS);
+        }
     }
 
     public static Executor getCurrent() {

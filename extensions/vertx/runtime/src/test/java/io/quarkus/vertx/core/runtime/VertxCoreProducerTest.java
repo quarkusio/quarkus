@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
@@ -98,7 +99,8 @@ public class VertxCoreProducerTest {
         };
 
         try {
-            VertxCoreRecorder.initialize(configuration, null, null, LaunchMode.TEST);
+
+            VertxCoreRecorder.initialize(configuration, null, ThreadPoolConfig.empty(), null, LaunchMode.TEST);
             Assertions.fail("It should not have a cluster manager on the classpath, and so fail the creation");
         } catch (IllegalStateException e) {
             Assertions.assertTrue(e.getMessage().contains("No ClusterManagerFactory"),
@@ -155,7 +157,7 @@ public class VertxCoreProducerTest {
                     }
                 }));
 
-        VertxCoreRecorder.initialize(configuration, customizers, null, LaunchMode.TEST);
+        VertxCoreRecorder.initialize(configuration, customizers, ThreadPoolConfig.empty(), null, LaunchMode.TEST);
     }
 
     @Test
@@ -168,7 +170,9 @@ public class VertxCoreProducerTest {
                         called.set(true);
                     }
                 }));
-        Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, null, LaunchMode.TEST);
+        Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, ThreadPoolConfig.empty(),
+                null,
+                LaunchMode.TEST);
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
     }
 

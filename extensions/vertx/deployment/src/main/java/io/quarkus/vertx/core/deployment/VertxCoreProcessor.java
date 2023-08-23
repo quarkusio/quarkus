@@ -52,6 +52,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
@@ -215,6 +216,7 @@ class VertxCoreProcessor {
     CoreVertxBuildItem build(VertxCoreRecorder recorder,
             LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
+            ThreadPoolConfig threadPoolConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
             ExecutorBuildItem executorBuildItem) {
@@ -225,7 +227,7 @@ class VertxCoreProcessor {
             consumers.add(x.getConsumer());
         }
 
-        Supplier<Vertx> vertx = recorder.configureVertx(config,
+        Supplier<Vertx> vertx = recorder.configureVertx(config, threadPoolConfig,
                 launchMode.getLaunchMode(), shutdown, consumers, executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)

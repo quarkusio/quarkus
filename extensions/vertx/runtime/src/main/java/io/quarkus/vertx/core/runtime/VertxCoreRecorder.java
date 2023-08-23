@@ -35,9 +35,11 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.IOThreadDetector;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
 import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
@@ -95,12 +97,12 @@ public class VertxCoreRecorder {
      */
     private static volatile ClassLoader currentDevModeNewThreadCreationClassLoader;
 
-    public Supplier<Vertx> configureVertx(VertxConfiguration config,
+    public Supplier<Vertx> configureVertx(VertxConfiguration config, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers,
             ExecutorService executorProxy) {
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            vertx = new VertxSupplier(launchMode, config, customizers, shutdown);
+            vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
             shutdown.addLastShutdownTask(new Runnable() {
@@ -113,7 +115,7 @@ public class VertxCoreRecorder {
             });
         } else {
             if (vertx == null) {
-                vertx = new VertxSupplier(launchMode, config, customizers, shutdown);
+                vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
             } else if (vertx.v != null) {
                 tryCleanTccl();
             }
@@ -195,13 +197,14 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer, ShutdownContext shutdown,
+    public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer,
+            ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown,
             LaunchMode launchMode) {
 
         VertxOptions options = new VertxOptions();
 
         if (conf != null) {
-            convertToVertxOptions(conf, options, true, shutdown);
+            convertToVertxOptions(conf, options, threadPoolConfig, true, shutdown);
         }
 
         // Allow extension customizers to do their thing
@@ -293,7 +296,8 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options, boolean allowClustering,
+    private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
+            ThreadPoolConfig threadPoolConfig, boolean allowClustering,
             ShutdownContext shutdown) {
 
         if (!conf.useAsyncDNS()) {
@@ -349,7 +353,7 @@ public class VertxCoreRecorder {
         }
 
         options.setFileSystemOptions(fileSystemOptions);
-        options.setWorkerPoolSize(conf.workerPoolSize());
+        options.setWorkerPoolSize(ExecutorRecorder.getMaxSize(threadPoolConfig));
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize());
         blockingThreadPoolSize = conf.internalBlockingPoolSize();
 
@@ -586,8 +590,8 @@ public class VertxCoreRecorder {
         };
     }
 
-    public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config) {
-        return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), null);
+    public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config, ThreadPoolConfig threadPoolConfig) {
+        return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), threadPoolConfig, null);
 
     }
 
@@ -595,21 +599,24 @@ public class VertxCoreRecorder {
         final LaunchMode launchMode;
         final VertxConfiguration config;
         final VertxOptionsCustomizer customizer;
+        final ThreadPoolConfig threadPoolConfig;
         final ShutdownContext shutdown;
         Vertx v;
 
         VertxSupplier(LaunchMode launchMode, VertxConfiguration config, List<Consumer<VertxOptions>> customizers,
+                ThreadPoolConfig threadPoolConfig,
                 ShutdownContext shutdown) {
             this.launchMode = launchMode;
             this.config = config;
             this.customizer = new VertxOptionsCustomizer(customizers);
+            this.threadPoolConfig = threadPoolConfig;
             this.shutdown = shutdown;
         }
 
         @Override
         public synchronized Vertx get() {
             if (v == null) {
-                v = initialize(config, customizer, shutdown, launchMode);
+                v = initialize(config, customizer, threadPoolConfig, shutdown, launchMode);
             }
             return v;
         }

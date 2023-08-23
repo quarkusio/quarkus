@@ -1894,13 +1894,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-reactive-datasource-deployment</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-                <type>test-jar</type>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-reactive-db2-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -2375,13 +2368,6 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
                 <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-reactive-deployment</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-                <type>test-jar</type>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -6759,6 +6745,7 @@
                             <goal>flatten-platform-bom</goal>
                         </goals>
                         <configuration>
+                            <excludeScopes>test</excludeScopes>
                             <excludeArtifactKeys>
                                 <key>junit:junit</key> <!-- comes from the jackson-bom -->
                             </excludeArtifactKeys>

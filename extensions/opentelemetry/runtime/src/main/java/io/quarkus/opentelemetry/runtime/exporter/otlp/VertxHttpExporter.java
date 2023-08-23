@@ -56,6 +56,7 @@ final class VertxHttpExporter implements SpanExporter {
     static final class VertxHttpSender implements HttpSender {
 
         private static final String TRACES_PATH = "/v1/traces";
+        private final String basePath;
         private final boolean compressionEnabled;
         private final Map<String, String> headers;
         private final String contentType;
@@ -69,6 +70,7 @@ final class VertxHttpExporter implements SpanExporter {
                 String contentType,
                 Consumer<HttpClientOptions> clientOptionsCustomizer,
                 Vertx vertx) {
+            this.basePath = determineBasePath(baseUri);
             this.compressionEnabled = compressionEnabled;
             this.headers = headersMap;
             this.contentType = contentType;
@@ -81,13 +83,27 @@ final class VertxHttpExporter implements SpanExporter {
             this.client = vertx.createHttpClient(httpClientOptions);
         }
 
+        private static String determineBasePath(URI baseUri) {
+            String path = baseUri.getPath();
+            if (path.isEmpty() || path.equals("/")) {
+                return "";
+            }
+            if (path.endsWith("/")) { // strip ending slash
+                path = path.substring(0, path.length() - 1);
+            }
+            if (!path.startsWith("/")) { // prepend leading slash
+                path = "/" + path;
+            }
+            return path;
+        }
+
         @Override
         public void send(Consumer<OutputStream> marshaler,
                 int contentLength,
                 Consumer<Response> onResponse,
                 Consumer<Throwable> onError) {
 
-            client.request(HttpMethod.POST, TRACES_PATH)
+            client.request(HttpMethod.POST, basePath + TRACES_PATH)
                     .onSuccess(new Handler<>() {
                         @Override
                         public void handle(HttpClientRequest request) {

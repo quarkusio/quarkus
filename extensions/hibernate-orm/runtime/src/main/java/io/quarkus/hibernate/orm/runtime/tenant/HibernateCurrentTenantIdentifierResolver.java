@@ -50,6 +50,19 @@ public final class HibernateCurrentTenantIdentifierResolver implements CurrentTe
         return false;
     }
 
+    @Override
+    public boolean isRoot(String tenantId) {
+        // Make sure that we're in a request
+        if (!Arc.container().requestContext().isActive()) {
+            return false;
+        }
+        TenantResolver resolver = tenantResolver(persistenceUnitName);
+        if (resolver == null) {
+            return false;
+        }
+        return resolver.isRoot(tenantId);
+    }
+
     private static TenantResolver tenantResolver(String persistenceUnitName) {
         InjectableInstance<TenantResolver> instance = PersistenceUnitUtil.legacySingleExtensionInstanceForPersistenceUnit(
                 TenantResolver.class, persistenceUnitName);

@@ -14,7 +14,9 @@ import static io.quarkus.test.junit.IntegrationTestUtil.handleDevServices;
 import static io.quarkus.test.junit.IntegrationTestUtil.readQuarkusArtifactProperties;
 import static io.quarkus.test.junit.IntegrationTestUtil.startLauncher;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -40,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
+import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
@@ -290,7 +293,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             activateLogging();
             startLauncher(launcher, additionalProperties, () -> ssl = true);
 
-            IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, launcher,
+            Closeable resource = new IntegrationTestExtensionStateResource(launcher,
+                    devServicesLaunchResult.getCuratedApplication());
+            IntegrationTestExtensionState state = new IntegrationTestExtensionState(testResourceManager, resource,
                     sysPropRestore);
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
@@ -438,6 +443,34 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         @Override
         public Optional<String> containerNetworkId() {
             return containerNetworkId;
+        }
+    }
+
+    private static final class IntegrationTestExtensionStateResource implements Closeable {
+
+        private final ArtifactLauncher<?> launcher;
+        private final CuratedApplication curatedApplication;
+
+        public IntegrationTestExtensionStateResource(ArtifactLauncher<?> launcher,
+                CuratedApplication curatedApplication) {
+            this.launcher = launcher;
+            this.curatedApplication = curatedApplication;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (launcher != null) {
+                try {
+                    launcher.close();
+                } catch (Exception e) {
+                    System.err.println("Unable to close ArtifactLauncher: " + e.getMessage());
+                }
+            }
+            try {
+                curatedApplication.close();
+            } catch (Exception e) {
+                System.err.println("Unable to close CuratedApplication: " + e.getMessage());
+            }
         }
     }
 }

@@ -18,8 +18,8 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-@TestProfile(HibernateSearchElasticsearchDevServicesDisabledImplicitlyTest.Profile.class)
-public class HibernateSearchElasticsearchDevServicesDisabledImplicitlyTest {
+@TestProfile(HibernateSearchOpenSearchDevServicesDisabledImplicitlyTest.Profile.class)
+public class HibernateSearchOpenSearchDevServicesDisabledImplicitlyTest {
     private static final String EXPLICIT_HOSTS = "mycompany.com:4242";
 
     public static class Profile implements QuarkusTestProfile {
@@ -31,10 +31,13 @@ public class HibernateSearchElasticsearchDevServicesDisabledImplicitlyTest {
                     "quarkus.hibernate-search-orm.elasticsearch.hosts", EXPLICIT_HOSTS,
                     // Ensure we can work offline, because the host we set just above does not actually exist.
                     "quarkus.hibernate-search-orm.schema-management.strategy", "none",
-                    // This version does not matter as long as it's supported by Hibernate Search:
-                    // it won't be checked in this test anyway.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "opensearch:2.9.0",
-                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false");
+                    "quarkus.hibernate-search-orm.elasticsearch.version-check.enabled", "false",
+                    // When disabling the version check we need to set a more precise version
+                    // than what we have in application.properties.
+                    // But here it doesn't matter as we won't send a request to OpenSearch anyway,
+                    // so we're free to put anything.
+                    // Just make sure to set something consistent with what we have in application.properties.
+                    "quarkus.hibernate-search-orm.elasticsearch.version", "opensearch:2.9");
         }
 
         @Override

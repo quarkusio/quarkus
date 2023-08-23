@@ -17,8 +17,8 @@ import io.restassured.RestAssured;
 
 @QuarkusTest
 @DisabledOnOs(OS.WINDOWS)
-@TestProfile(HibernateSearchElasticsearchDevServicesEnabledImplicitlyTest.Profile.class)
-public class HibernateSearchElasticsearchDevServicesEnabledImplicitlyTest {
+@TestProfile(HibernateSearchOpenSearchDevServicesEnabledImplicitlyTest.Profile.class)
+public class HibernateSearchOpenSearchDevServicesEnabledImplicitlyTest {
     public static class Profile implements QuarkusTestProfile {
 
         @Override

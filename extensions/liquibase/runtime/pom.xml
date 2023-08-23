@@ -60,12 +60,7 @@
             <artifactId>quarkus-vertx-http</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
-            <optional>true</optional>
-        </dependency>
-
+        
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

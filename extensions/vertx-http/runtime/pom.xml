@@ -34,10 +34,6 @@
             <artifactId>smallrye-common-vertx-context</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus.security</groupId>
             <artifactId>quarkus-security</artifactId>
             <exclusions>

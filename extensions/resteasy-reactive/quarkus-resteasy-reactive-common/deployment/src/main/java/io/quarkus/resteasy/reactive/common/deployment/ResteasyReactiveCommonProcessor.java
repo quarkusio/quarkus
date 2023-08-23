@@ -15,8 +15,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.inject.spi.DeploymentException;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.ext.Providers;
 import jakarta.ws.rs.ext.RuntimeDelegate;
@@ -28,6 +30,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.jaxrs.RuntimeDelegateImpl;
 import org.jboss.resteasy.reactive.common.model.InterceptorContainer;
 import org.jboss.resteasy.reactive.common.model.PreMatchInterceptorContainer;
@@ -51,10 +54,14 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.resteasy.reactive.common.runtime.JaxRsSecurityConfig;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
@@ -72,10 +79,36 @@ import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 
 public class ResteasyReactiveCommonProcessor {
 
+    private static final Logger LOG = Logger.getLogger(ResteasyReactiveCommonProcessor.class);
+
     private static final int LEGACY_READER_PRIORITY = Priorities.USER * 2; // readers are compared by decreased priority
     private static final int LEGACY_WRITER_PRIORITY = Priorities.USER / 2; // writers are compared by increased priority
 
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
+    private static final Predicate<ResolvedDependency> IS_RESTEASY_CLASSIC_CLIENT_DEP = d -> d.getArtifactId()
+            .contains("resteasy-client");
+
+    @Produce(ServiceStartBuildItem.class)
+    @BuildStep
+    void checkMixingStacks(Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
+        List<ResolvedDependency> resteasyClassicDeps = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
+                .filter(d -> d.getGroupId().equals("org.jboss.resteasy")).collect(Collectors.toList());
+        boolean hasResteasyCoreDep = resteasyClassicDeps.stream().anyMatch(d -> d.getArtifactId().equals("resteasy-core"));
+        if (!hasResteasyCoreDep) {
+            return;
+        }
+        boolean hasResteasyClassicClient = resteasyClassicDeps.stream().anyMatch(IS_RESTEASY_CLASSIC_CLIENT_DEP);
+        if (!hasResteasyClassicClient) { // there is no bulletproof way of knowing whether a server specific dependency has been included, so we deduce it by the absence of client dependency
+            throw new DeploymentException("Mixing RESTEasy Reactive and RESTEasy Classic server parts is not supported");
+        }
+        if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
+            throw new DeploymentException(
+                    "Mixing RESTEasy Reactive and RESTEasy Classic client parts is not supported");
+        } else {
+            LOG.warn(
+                    "Mixing RESTEasy Reactive server and RESTEasy Classic client parts might lead to unexpected results. Consider using 'quarkus-rest-client-reactive' instead.");
+        }
+    }
 
     @BuildStep
     void searchForProviders(Capabilities capabilities,

@@ -174,7 +174,7 @@ jobs:
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar Maven Repo
         shell: bash
-        run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
+        run: tar -czf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
         uses: actions/upload-artifact@v3
         with:

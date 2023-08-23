@@ -555,7 +555,6 @@ public class VertxHttpRecorder {
             }
 
             HttpServerCommonHandlers.applyHeaders(managementConfiguration.getValue().header(), mr);
-            HttpServerCommonHandlers.enforceMaxBodySize(managementConfiguration.getValue().limits(), mr);
             applyCompression(managementBuildTimeConfig.enableCompression(), mr);
 
             Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr);

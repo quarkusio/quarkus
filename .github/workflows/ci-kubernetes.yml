@@ -183,6 +183,8 @@ jobs:
           export QUARKUS_CONTAINER_IMAGE_GROUP=quarkustesting
           export QUARKUS_CONTAINER_IMAGE_TAG=${{ github.sha }}
           export QUARKUS_CONTAINER_IMAGE_REGISTRY=quay.io
+          export QUARKUS_CONTAINER_IMAGE_USERNAME=${{ secrets.QUAY_QUARKUSCI_USERNAME }}
+          export QUARKUS_CONTAINER_IMAGE_PASSWORD=${{ secrets.QUAY_QUARKUSCI_PASSWORD }}
           ./mvnw ${MAVEN_ARGS} clean install -pl :quarkus-integration-test-kubernetes-invoker -De2e-tests -Dopenshift-e2e-tests
       - name: Report status
         if: "always() && github.repository == 'quarkusio/quarkus'"

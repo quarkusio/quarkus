@@ -36,7 +36,7 @@ public class ConfigTrackingWriter {
 
     /**
      * Configuration writer that will persist collected configuration options and their values
-     * to a file.
+     * to a file derived from the config.
      */
     public static void write(Map<String, String> readOptions, ConfigTrackingConfig config,
             BuildTimeConfigurationReader.ReadResult configReadResult,
@@ -64,6 +64,15 @@ public class ConfigTrackingWriter {
             }
         }
 
+        write(readOptions, config, configReadResult, file);
+    }
+
+    /**
+     * Configuration writer that will persist collected configuration options and their values
+     * to a file.
+     */
+    public static void write(Map<String, String> readOptions, ConfigTrackingConfig config,
+            BuildTimeConfigurationReader.ReadResult configReadResult, Path file) {
         final List<Pattern> excludePatterns = config.getExcludePatterns();
         final ConfigTrackingValueTransformer valueTransformer = ConfigTrackingValueTransformer.newInstance(config);
 

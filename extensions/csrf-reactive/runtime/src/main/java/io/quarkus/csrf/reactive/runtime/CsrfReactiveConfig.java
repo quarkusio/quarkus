@@ -20,9 +20,9 @@ public class CsrfReactiveConfig {
     public String formFieldName;
 
     /**
-     * Token header which will provide a CSRF token.
+     * Token header which can provide a CSRF token.
      */
-    @ConfigItem
+    @ConfigItem(defaultValue = "X-CSRF-TOKEN")
     public String tokenHeaderName;
 
     /**

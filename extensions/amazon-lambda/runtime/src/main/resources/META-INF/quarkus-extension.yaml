@@ -7,7 +7,7 @@ metadata:
     - "amazon"
   categories:
     - "cloud"
-  guide: "https://quarkus.io/guides/amazon-lambda"
+  guide: "https://quarkus.io/guides/aws-lambda"
   status: "stable"
   codestart:
     name: "amazon-lambda"

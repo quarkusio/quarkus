@@ -91,7 +91,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                         projectQuarkusPlatformBom.getVersion(),
                         targetPlatformVersion,
                         kotlinVersion,
-                        updateJavaVersion);
+                        updateJavaVersion,
+                        extensionsUpdateInfo);
                 Path recipe = null;
                 try {
                     recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");

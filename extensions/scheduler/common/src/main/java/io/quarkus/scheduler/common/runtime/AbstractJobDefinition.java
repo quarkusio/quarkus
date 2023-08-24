@@ -23,6 +23,7 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     protected Function<ScheduledExecution, Uni<Void>> asyncTask;
     protected boolean scheduled = false;
     protected String timeZone = Scheduled.DEFAULT_TIMEZONE;
+    protected boolean runOnVirtualThread;
 
     public AbstractJobDefinition(String identity) {
         this.identity = identity;
@@ -78,12 +79,13 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
-    public JobDefinition setTask(Consumer<ScheduledExecution> task) {
+    public JobDefinition setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread) {
         checkScheduled();
         if (asyncTask != null) {
             throw new IllegalStateException("Async task was already set");
         }
         this.task = task;
+        this.runOnVirtualThread = runOnVirtualThread;
         return this;
     }
 

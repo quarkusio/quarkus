@@ -16,6 +16,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devtools.project.update.rewrite.QuarkusUpdateExitErrorException;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.RegistryResolutionException;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -129,10 +130,12 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
             final QuarkusCommandOutcome result = invoker.execute();
             if (!result.isSuccess()) {
                 throw new MojoExecutionException(
-                        "The command did not succeed.");
+                        "Failed to apply the updates.");
             }
+        } catch (QuarkusUpdateExitErrorException e) {
+            throw new MojoExecutionException(e.getMessage());
         } catch (QuarkusCommandException e) {
-            throw new MojoExecutionException("Failed to resolve the available updates", e);
+            throw new MojoExecutionException("Failed to apply the updates", e);
         }
     }
 

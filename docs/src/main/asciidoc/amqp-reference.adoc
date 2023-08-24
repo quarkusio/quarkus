@@ -817,3 +817,18 @@ Type: _string_ | false |
 Type: _string_ | false |
 
 |===
+
+=== Conditionally configure channels
+
+You can configure the channels using a specific profile.
+Thus, the channels are only configured (and added to the application) when the specified profile is enabled.
+
+To achieve this, you need:
+
+1. Prefix the `mp.messaging.[incoming|outgoing].$channel` entries with `%my-profile` such as `%my-profile.mp.messaging.[incoming|outgoing].$channel.key=value`
+2. Use the `@IfBuildProfile("my-profile")` on the CDI beans containing `@Incoming(channel)` and `@Outgoing(channel)` annotations that need only to be enabled when the profile is enabled.
+
+Note that reactive messaging verifies that the graph is complete.
+So, when using such a conditional configuration, ensure the application works with and without the profile enabled.
+
+Note that this approach can also be used to change the channel configuration based on a profile.

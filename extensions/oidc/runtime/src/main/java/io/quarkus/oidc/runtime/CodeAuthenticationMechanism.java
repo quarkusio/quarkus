@@ -304,6 +304,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         context.put(TenantConfigContext.class.getName(), configContext);
         return resolver.getTokenStateManager().getTokens(context, configContext.oidcConfig,
                 sessionCookie.getValue(), getTokenStateRequestContext)
+                .onFailure(AuthenticationCompletionException.class)
+                .recoverWithUni(
+                        new Function<Throwable, Uni<? extends AuthorizationCodeTokens>>() {
+                            @Override
+                            public Uni<AuthorizationCodeTokens> apply(Throwable t) {
+                                return removeSessionCookie(context, configContext.oidcConfig)
+                                        .replaceWith(Uni.createFrom().failure(t));
+                            }
+                        })
                 .chain(new Function<AuthorizationCodeTokens, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<? extends SecurityIdentity> apply(AuthorizationCodeTokens session) {
@@ -846,7 +855,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
     }
 
-    private static Object errorMessage(Throwable t) {
+    private static String errorMessage(Throwable t) {
         return t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
     }
 

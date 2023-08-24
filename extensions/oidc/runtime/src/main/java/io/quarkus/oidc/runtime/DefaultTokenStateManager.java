@@ -6,6 +6,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
+import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.Cookie;
@@ -77,33 +78,38 @@ public class DefaultTokenStateManager implements TokenStateManager {
         tokenState = decryptAll ? decryptToken(tokenState, routingContext, oidcConfig) : tokenState;
 
         String[] tokens = CodeAuthenticationMechanism.COOKIE_PATTERN.split(tokenState);
+
         String idToken = decryptAll ? tokens[0] : decryptToken(tokens[0], routingContext, oidcConfig);
 
         String accessToken = null;
         String refreshToken = null;
-        if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
-            if (!oidcConfig.tokenStateManager.splitTokens) {
-                accessToken = decryptAll ? tokens[1] : decryptToken(tokens[1], routingContext, oidcConfig);
-                refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
-            } else {
-                Cookie atCookie = getAccessTokenCookie(routingContext, oidcConfig);
-                if (atCookie != null) {
-                    accessToken = decryptToken(atCookie.getValue(), routingContext, oidcConfig);
+        try {
+            if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.KEEP_ALL_TOKENS) {
+                if (!oidcConfig.tokenStateManager.splitTokens) {
+                    accessToken = decryptAll ? tokens[1] : decryptToken(tokens[1], routingContext, oidcConfig);
+                    refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
+                } else {
+                    Cookie atCookie = getAccessTokenCookie(routingContext, oidcConfig);
+                    if (atCookie != null) {
+                        accessToken = decryptToken(atCookie.getValue(), routingContext, oidcConfig);
+                    }
+                    Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
+                    if (rtCookie != null) {
+                        refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
+                    }
                 }
-                Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
-                if (rtCookie != null) {
-                    refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
+            } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
+                if (!oidcConfig.tokenStateManager.splitTokens) {
+                    refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
+                } else {
+                    Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
+                    if (rtCookie != null) {
+                        refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
+                    }
                 }
             }
-        } else if (oidcConfig.tokenStateManager.strategy == OidcTenantConfig.TokenStateManager.Strategy.ID_REFRESH_TOKENS) {
-            if (!oidcConfig.tokenStateManager.splitTokens) {
-                refreshToken = decryptAll ? tokens[2] : decryptToken(tokens[2], routingContext, oidcConfig);
-            } else {
-                Cookie rtCookie = getRefreshTokenCookie(routingContext, oidcConfig);
-                if (rtCookie != null) {
-                    refreshToken = decryptToken(rtCookie.getValue(), routingContext, oidcConfig);
-                }
-            }
+        } catch (ArrayIndexOutOfBoundsException ex) {
+            return Uni.createFrom().failure(new AuthenticationCompletionException("Session cookie is malformed"));
         }
 
         return Uni.createFrom().item(new AuthorizationCodeTokens(idToken, accessToken, refreshToken));

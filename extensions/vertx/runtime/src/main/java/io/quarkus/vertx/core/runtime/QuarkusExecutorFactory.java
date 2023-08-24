@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.logging.Logger;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
-import org.wildfly.common.cpu.ProcessorInfo;
 
+import io.quarkus.runtime.ExecutorRecorder;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.vertx.core.spi.ExecutorServiceFactory;
@@ -47,10 +47,9 @@ public class QuarkusExecutorFactory implements ExecutorServiceFactory {
                 .setRegisterMBean(false)
                 .setHandoffExecutor(JBossExecutors.rejectingExecutor())
                 .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
-        final int cpus = ProcessorInfo.availableProcessors();
         // run time config variables
         builder.setCorePoolSize(concurrency);
-        builder.setMaximumPoolSize(maxConcurrency != null ? maxConcurrency : Math.max(8 * cpus, 200));
+        builder.setMaximumPoolSize(maxConcurrency != null ? maxConcurrency : ExecutorRecorder.calculateMaxThreads());
 
         if (conf != null) {
             if (conf.queueSize().isPresent()) {

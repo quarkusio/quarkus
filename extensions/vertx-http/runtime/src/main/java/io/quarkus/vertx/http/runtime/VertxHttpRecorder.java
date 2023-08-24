@@ -49,6 +49,7 @@ import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.QuarkusBindException;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigInstantiator;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -250,7 +251,11 @@ public class VertxHttpRecorder {
                     .addDiscoveredSources()
                     .withMapping(VertxConfiguration.class)
                     .build().getConfigMapping(VertxConfiguration.class);
-            vertx = VertxCoreRecorder.recoverFailedStart(vertxConfiguration).get();
+
+            ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
+            ConfigInstantiator.handleObject(threadPoolConfig);
+
+            vertx = VertxCoreRecorder.recoverFailedStart(vertxConfiguration, threadPoolConfig).get();
         } else {
             vertx = supplier.get();
         }

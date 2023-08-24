@@ -12,7 +12,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -39,7 +41,7 @@ public class QuarkusUpdateCommand {
     }
 
     public static void handle(MessageWriter log, BuildTool buildTool, Path baseDir,
-            String rewritePluginVersion, String recipesGAV, Path recipe, boolean dryRun) throws QuarkusUpdateException {
+            String rewritePluginVersion, String recipesGAV, Path recipe, boolean dryRun) {
         switch (buildTool) {
             case MAVEN:
                 runMavenUpdate(log, baseDir, rewritePluginVersion, recipesGAV, recipe, dryRun);
@@ -53,7 +55,7 @@ public class QuarkusUpdateCommand {
     }
 
     private static void runGradleUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
-            Path recipe, boolean dryRun) throws QuarkusUpdateException {
+            Path recipe, boolean dryRun) {
         Path tempInit = null;
         try {
             tempInit = Files.createTempFile("openrewrite-init", "gradle");
@@ -77,8 +79,11 @@ public class QuarkusUpdateCommand {
                     "--init-script",
                     tempInit.toAbsolutePath().toString(), dryRun ? "rewriteDryRun" : "rewriteRun" };
             executeCommand(baseDir, command, log);
+        } catch (QuarkusUpdateException e) {
+            throw e;
         } catch (Exception e) {
-            throw new QuarkusUpdateException("Error while running Gradle rewrite command", e);
+            throw new QuarkusUpdateException(
+                    "Error while running Gradle rewrite command, see the execution logs above for more details", e);
         } finally {
             if (tempInit != null) {
                 try {
@@ -93,7 +98,7 @@ public class QuarkusUpdateCommand {
 
     private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
             Path recipe,
-            boolean dryRun) throws QuarkusUpdateException {
+            boolean dryRun) {
         final String mvnBinary = findMvnBinary(baseDir);
         executeCommand(baseDir, getMavenUpdateCommand(mvnBinary, rewritePluginVersion, recipesGAV, recipe, dryRun), log);
 
@@ -118,7 +123,7 @@ public class QuarkusUpdateCommand {
                 "-Drewrite.pomCacheEnabled=false" };
     }
 
-    private static void executeCommand(Path baseDir, String[] command, MessageWriter log) throws QuarkusUpdateException {
+    private static void executeCommand(Path baseDir, String[] command, MessageWriter log) {
         ProcessBuilder processBuilder = new ProcessBuilder();
         log.info("");
         log.info("");
@@ -136,8 +141,28 @@ public class QuarkusUpdateCommand {
             BufferedReader errorReader = new BufferedReader(new java.io.InputStreamReader(process.getErrorStream()));
 
             String line;
+            LogLevel currentLogLevel = LogLevel.UNKNOWN;
+
             while ((line = inputReader.readLine()) != null) {
-                log.info(line);
+                Optional<LogLevel> detectedLogLevel = LogLevel.of(line);
+                if (detectedLogLevel.isPresent()) {
+                    currentLogLevel = detectedLogLevel.get();
+                }
+                switch (currentLogLevel) {
+                    case ERROR:
+                        log.error(currentLogLevel.clean(line));
+                        break;
+                    case WARNING:
+                        log.warn(currentLogLevel.clean(line));
+                        break;
+                    case INFO:
+                        log.info(currentLogLevel.clean(line));
+                        break;
+                    case UNKNOWN:
+                    default:
+                        log.info(line);
+                        break;
+                }
             }
             while ((line = errorReader.readLine()) != null) {
                 log.error(line);
@@ -149,14 +174,19 @@ public class QuarkusUpdateCommand {
 
             int exitCode = process.waitFor();
             if (exitCode != 0) {
-                throw new QuarkusUpdateException("The command to update the project exited with an error: " + exitCode);
+                throw new QuarkusUpdateExitErrorException(
+                        "The command to update the project exited with an error, see the execution logs above for more details");
             }
+        } catch (QuarkusUpdateException e) {
+            throw e;
         } catch (Exception e) {
-            throw new QuarkusUpdateException("Error while executing command to udpate the project", e);
+            throw new QuarkusUpdateException(
+                    "Error while executing the command to update the project, see the execution logs above for more details",
+                    e);
         }
     }
 
-    static String findMvnBinary(Path baseDir) throws QuarkusUpdateException {
+    static String findMvnBinary(Path baseDir) {
         Path mavenCmd = findWrapperOrBinary(baseDir, "mvnw", "mvn");
         if (mavenCmd == null) {
             throw new QuarkusUpdateException("Cannot locate mvnw or mvn"
@@ -165,7 +195,7 @@ public class QuarkusUpdateCommand {
         return mavenCmd.toString();
     }
 
-    static String findGradleBinary(Path baseDir) throws QuarkusUpdateException {
+    static String findGradleBinary(Path baseDir) {
         Path gradleCmd = findWrapperOrBinary(baseDir, "gradlew", "gradle");
         if (gradleCmd == null) {
             throw new QuarkusUpdateException("Cannot gradlew mvnw or gradle"
@@ -247,4 +277,49 @@ public class QuarkusUpdateCommand {
         return Files.exists(dir.resolve("pom.xml"));
     }
 
+    private enum LogLevel {
+
+        ERROR,
+        WARNING,
+        INFO,
+        UNKNOWN;
+
+        private static final Pattern LEVEL_PATTERN = Pattern.compile("^\\[[A-Z]+\\].*");
+
+        private static Optional<LogLevel> of(String line) {
+            if (line == null || line.isBlank()) {
+                return Optional.empty();
+            }
+
+            for (LogLevel level : LogLevel.values()) {
+                if (level.matches(line)) {
+                    return Optional.of(level);
+                }
+            }
+
+            if (LEVEL_PATTERN.matcher(line).matches()) {
+                return Optional.of(UNKNOWN);
+            }
+
+            return Optional.empty();
+        }
+
+        private String clean(String line) {
+            if (line == null || line.isBlank()) {
+                return line;
+            }
+
+            String pattern = "[" + name() + "]";
+
+            if (line.length() < pattern.length()) {
+                return line;
+            }
+
+            return line.substring(pattern.length()).trim();
+        }
+
+        private boolean matches(String line) {
+            return line != null && line.startsWith("[" + name() + "]");
+        }
+    }
 }

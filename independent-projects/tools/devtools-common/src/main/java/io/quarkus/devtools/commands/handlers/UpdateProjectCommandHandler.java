@@ -30,7 +30,6 @@ import io.quarkus.devtools.project.update.ProjectExtensionsUpdateInfo;
 import io.quarkus.devtools.project.update.ProjectPlatformUpdateInfo;
 import io.quarkus.devtools.project.update.ProjectUpdateInfos;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdateCommand;
-import io.quarkus.devtools.project.update.rewrite.QuarkusUpdateException;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdates;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -117,8 +116,6 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                             rewriteDryRun);
                 } catch (IOException e) {
                     throw new QuarkusCommandException("Error while generating the project update script", e);
-                } catch (QuarkusUpdateException e) {
-                    throw new QuarkusCommandException("Error while running the project update script", e);
                 }
             }
         }

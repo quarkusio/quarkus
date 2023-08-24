@@ -1,14 +1,19 @@
 package io.quarkus.oidc.runtime;
 
 import java.security.Key;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jwk.PublicJsonWebKey;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.JoseException;
 
+import io.quarkus.logging.Log;
 import io.quarkus.oidc.OIDCException;
 
 public class JsonWebKeySet {
@@ -23,7 +28,7 @@ public class JsonWebKeySet {
 
     private Map<String, Key> keysWithKeyId = new HashMap<>();
     private Map<String, Key> keysWithThumbprints = new HashMap<>();
-    private Key keyWithoutKeyIdAndThumbprint;
+    private Map<String, List<Key>> keysWithoutKeyIdAndThumbprint = new HashMap<>();
 
     public JsonWebKeySet(String json) {
         initKeys(json);
@@ -43,11 +48,15 @@ public class JsonWebKeySet {
                     if (x5t != null && jwkKey.getKey() != null) {
                         keysWithThumbprints.put(x5t, jwkKey.getKey());
                     }
+                    if (jwkKey.getKeyId() == null && x5t == null && jwkKey.getKeyType() != null) {
+                        List<Key> keys = keysWithoutKeyIdAndThumbprint.get(jwkKey.getKeyType());
+                        if (keys == null) {
+                            keys = new ArrayList<>();
+                            keysWithoutKeyIdAndThumbprint.put(jwkKey.getKeyType(), keys);
+                        }
+                        keys.add(jwkKey.getKey());
+                    }
                 }
-            }
-            if (keysWithKeyId.isEmpty() && keysWithThumbprints.isEmpty() && jwkSet.getJsonWebKeys().size() == 1
-                    && isSupportedJwkKey(jwkSet.getJsonWebKeys().get(0))) {
-                keyWithoutKeyIdAndThumbprint = jwkSet.getJsonWebKeys().get(0).getKey();
             }
         } catch (JoseException ex) {
             throw new OIDCException(ex);
@@ -67,7 +76,13 @@ public class JsonWebKeySet {
         return keysWithThumbprints.get(x5t);
     }
 
-    public Key getKeyWithoutKeyIdAndThumbprint() {
-        return keyWithoutKeyIdAndThumbprint;
+    public Key getKeyWithoutKeyIdAndThumbprint(JsonWebSignature jws) {
+        try {
+            List<Key> keys = keysWithoutKeyIdAndThumbprint.get(jws.getKeyType());
+            return keys == null || keys.size() != 1 ? null : keys.get(0);
+        } catch (InvalidAlgorithmException ex) {
+            Log.debug("Token 'alg'(algorithm) header value is invalid", ex);
+            return null;
+        }
     }
 }

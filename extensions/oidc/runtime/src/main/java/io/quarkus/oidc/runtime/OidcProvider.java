@@ -401,7 +401,7 @@ public class OidcProvider implements Closeable {
             }
 
             if (key == null && kid == null && thumbprint == null) {
-                key = jwks.getKeyWithoutKeyIdAndThumbprint();
+                key = jwks.getKeyWithoutKeyIdAndThumbprint(jws);
             }
 
             if (key == null) {

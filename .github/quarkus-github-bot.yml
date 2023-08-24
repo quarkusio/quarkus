@@ -62,7 +62,7 @@ triage:
         - extensions/funqy/
     - id: devmode
       labels: [area/devmode]
-      title: "dev mode"
+      title: "dev.?mode"
     - id: devui
       labels: [area/dev-ui]
       title: "dev.?ui"
@@ -285,7 +285,10 @@ triage:
         - extensions/resteasy-classic/resteasy-qute/
     - id: reactive-messaging
       labels: [area/reactive-messaging, area/smallrye]
-      title: "reactive.messaging"
+      expression: |
+        matches("reactive.messaging", title)
+        || matches("mqtt", title)
+        || matches("rabbitmq", title)
       notify: [cescoffier, ozangunalp]
       directories:
         - extensions/smallrye-reactive-messaging
@@ -407,6 +410,10 @@ triage:
       labels: [area/mandrel]
       titleBody: "mandrel"
       notify: [galderz, zakkak, Karm]
+    - id: native-image
+      labels: [area/native-image]
+      title: "\\bnative\\b"
+      notify: []
     - id: awt
       labels: [area/graphics]
       expression: |
@@ -631,11 +638,14 @@ triage:
         - integration-tests/vault
     - id: vertx
       labels: [area/vertx]
+      title: "vert.?x"
       directories:
         - extensions/vertx
         - integration-tests/vertx
     - id: testing
-      title: "quarkusintegrationtest"
+      expression: |
+        matches("quarkusintegrationtest", title)
+        || matches("mockito", title)
       labels: [area/testing]
       notify: [geoand]
       directories:
@@ -684,7 +694,9 @@ triage:
       notify: [gastaldi, gsmet, aloubyansky, maxandersen]
     - id: mailer
       labels: [area/mailer]
-      title: "\\bmail\\b"
+      expression: |
+        match("\\bmail\\b", title)
+        || match("mailer", title)
       notify: [cescoffier]
       directories:
         - extensions/mailer/
@@ -701,7 +713,7 @@ triage:
       notify: [stuartwdouglas]
     - id: devservices
       labels: [area/devservices]
-      title: "dev.?services"
+      title: "dev.?services?"
       notify: [stuartwdouglas, geoand]
     - id: reactive-sql-clients
       labels: [area/reactive-sql-clients]

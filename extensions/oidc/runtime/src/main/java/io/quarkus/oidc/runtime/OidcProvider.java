@@ -286,9 +286,9 @@ public class OidcProvider implements Closeable {
                             throw new AuthenticationFailedException(t);
                         }
                         if (!introspectionResult.isActive()) {
-                            LOG.debugf("Token issued to client %s is not active", oidcConfig.clientId.get());
                             verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
-                            throw new AuthenticationFailedException();
+                            throw new AuthenticationFailedException(
+                                    String.format("Token issued to client %s is not active", oidcConfig.clientId.get()));
                         }
                         verifyTokenExpiry(introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP));
                         try {

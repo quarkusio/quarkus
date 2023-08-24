@@ -628,11 +628,28 @@ public class CodeFlowTest {
 
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);
+            // Replace the session cookie with the correctly formatted cookie but with invalid token values
             webClient.getCookieManager().clearCookies();
             webClient.getCookieManager().addCookie(new Cookie(sessionCookie.getDomain(), sessionCookie.getName(),
                     "1|2|3"));
             sessionCookie = getSessionCookie(webClient, null);
             assertEquals("1|2|3", sessionCookie.getValue());
+
+            try {
+                webClient.getPage("http://localhost:8081/web-app");
+                fail("401 status error is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                assertNull(getSessionCookie(webClient, null));
+            }
+            webClient.getCookieManager().clearCookies();
+
+            // Replace the session cookie with malformed cookie
+            webClient.getCookieManager().clearCookies();
+            webClient.getCookieManager().addCookie(new Cookie(sessionCookie.getDomain(), sessionCookie.getName(),
+                    "1"));
+            sessionCookie = getSessionCookie(webClient, null);
+            assertEquals("1", sessionCookie.getValue());
 
             try {
                 webClient.getPage("http://localhost:8081/web-app");

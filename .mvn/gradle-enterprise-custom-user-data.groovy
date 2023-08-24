@@ -2,7 +2,12 @@
 // Configure build scan publication
 boolean publish = true
 if(session?.getRequest()?.getBaseDirectory() != null) {
-    def testBuildPaths = [ '/target/codestart-test/', '/target/it/', '/target/test-classes/', '/target/test-project/']
+    def testBuildPaths = [
+        File.separator + 'target' + File.separator + 'codestart-test' + File.separator,
+        File.separator + 'target' + File.separator + 'it' + File.separator,
+        File.separator + 'target' + File.separator + 'test-classes' + File.separator,
+        File.separator + 'target' + File.separator + 'test-project' + File.separator
+    ]
     publish = testBuildPaths.every {testBuildPath -> !session.getRequest().getBaseDirectory().contains(testBuildPath) }
     if(!publish) {
         // do not publish a build scan for test builds
@@ -21,24 +26,58 @@ if (System.env.MAVEN_CMD_LINE_ARGS) {
 
 //Add github action information
 if (System.env.GITHUB_ACTIONS) {
-    def jobName = System.env.GITHUB_JOB
+    def jobId = System.env.GITHUB_JOB
 
-    buildScan.value('gh-job-name', jobName)
+    buildScan.value('gh-job-id', jobId)
     buildScan.value('gh-event-name', System.env.GITHUB_EVENT_NAME)
     buildScan.value('gh-ref-name', System.env.GITHUB_REF_NAME)
     buildScan.value('gh-actor', System.env.GITHUB_ACTOR)
     buildScan.value('gh-workflow', System.env.GITHUB_WORKFLOW)
-
-
-    def prnumber = System.env.PULL_REQUEST_NUMBER
-    if (prnumber != null) {
-        buildScan.value('gh-pr', prnumber)
-        buildScan.tag('pr-' + prnumber)
+    String jobCustomValues = System.env.GE_CUSTOM_VALUES
+    if (jobCustomValues != null && !jobCustomValues.isBlank()) {
+        for (String jobCustomValue : jobCustomValues.split(",")) {
+            int index = jobCustomValue.indexOf('=')
+            if (index <= 0) {
+                continue
+            }
+            buildScan.value(jobCustomValue.substring(0, index).trim(), jobCustomValue.substring(index + 1).trim())
+        }
     }
 
-    buildScan.buildScanPublished {  publishedBuildScan ->
-        new File(System.env.GITHUB_STEP_SUMMARY).withWriterAppend { out ->
-            out.println("\n[Build scan for '${mvnCommand}' in ${jobName}](${publishedBuildScan.buildScanUri})\n")
+    buildScan.tag(jobId)
+    buildScan.tag(System.env.GITHUB_EVENT_NAME)
+    buildScan.tag(System.env.GITHUB_WORKFLOW)
+    String jobTags = System.env.GE_TAGS
+    if (jobTags != null && !jobTags.isBlank()) {
+        for (String tag : jobTags.split(",")) {
+            buildScan.tag(tag.trim())
+        }
+    }
+
+    buildScan.link('Workflow run', System.env.GITHUB_SERVER_URL + '/' + System.env.GITHUB_REPOSITORY + '/actions/runs/' + System.env.GITHUB_RUN_ID)
+
+    def prNumber = System.env.PULL_REQUEST_NUMBER
+    if (prNumber != null) {
+        buildScan.value('gh-pr', prNumber)
+        buildScan.tag('pr-' + prNumber)
+
+        buildScan.link('Pull request', System.env.GITHUB_SERVER_URL + '/' + System.env.GITHUB_REPOSITORY + '/pull/' + prNumber )
+    }
+
+    buildScan.buildScanPublished {  publishedBuildScan -> {
+            File target = new File("target")
+            if (!target.exists()) {
+                target.mkdir()
+            }
+            File gradleBuildScanUrlFile = new File("target/gradle-build-scan-url.txt")
+            if (!gradleBuildScanUrlFile.exists()) {
+                gradleBuildScanUrlFile.withWriter { out ->
+                    out.print(publishedBuildScan.buildScanUri)
+                }
+            }
+            new File(System.env.GITHUB_STEP_SUMMARY).withWriterAppend { out ->
+                out.println("\n[Build scan](${publishedBuildScan.buildScanUri})\n<sup>`${mvnCommand}`</sup>\n\n")
+            }
         }
     }
 }

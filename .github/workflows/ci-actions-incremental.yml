@@ -102,6 +102,11 @@ jobs:
       gib_impacted: ${{ steps.get-gib-impacted.outputs.impacted_modules }}
       m2-cache-key: ${{ steps.m2-cache-key.outputs.key }}
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-11" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 11 Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -160,7 +165,7 @@ jobs:
         id: get-gib-impacted
         # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
         run: |
-          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
+          ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci ${{ steps.get-gib-args.outputs.gib_args }} -Dgib.logImpactedTo=gib-impacted.log validate
           if [ -f gib-impacted.log ]
           then
             GIB_IMPACTED=$(cat gib-impacted.log)
@@ -192,6 +197,7 @@ jobs:
           name: "build-reports-Initial JDK 11 Build"
           path: |
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -273,8 +279,12 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
 
-
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=JVM Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Stop mysql
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         shell: bash
@@ -348,6 +358,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
       - name: Upload gc.log
@@ -391,6 +402,11 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Maven Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
@@ -444,6 +460,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -472,6 +489,11 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Gradle Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
@@ -500,7 +522,7 @@ jobs:
         # runs on Windows as well but would require newline conversion, not worth it
         if: "!startsWith(matrix.java.os-name, 'windows')"
         shell: bash
-        run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS
+        run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Build
         shell: bash
         # Important: keep -pl ... in sync with "Calculate run flags"!
@@ -514,6 +536,7 @@ jobs:
             **/build/test-results/test/TEST-*.xml
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -544,6 +567,11 @@ jobs:
             os-name: "windows-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Devtools Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
@@ -589,6 +617,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -609,6 +638,11 @@ jobs:
             os-name: "ubuntu-latest"
           }
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts Compilation - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
@@ -656,6 +690,11 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Virtual Thread Support Tests Native - ${{matrix.category}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
@@ -696,6 +735,7 @@ jobs:
           path: |
             integration-tests/virtual-threads/**/target/*-reports/TEST-*.xml
             integration-tests/virtual-threads/target/build-report.json
+            integration-tests/virtual-threads/target/gradle-build-scan-url.txt
           retention-days: 2
   tcks-test:
     name: MicroProfile TCKs Tests
@@ -706,6 +746,11 @@ jobs:
     timeout-minutes: 150
 
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-11" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -760,6 +805,7 @@ jobs:
           path: |
             **/target/*-reports/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -779,6 +825,11 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
+      - name: Gradle Enterprise environment
+        shell: bash
+        run: |
+          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - ${{matrix.category}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.os-name, 'windows')"
         run: git config --global core.longpaths true
@@ -849,6 +900,7 @@ jobs:
             **/target/*-reports/TEST-*.xml
             **/build/test-results/test/TEST-*.xml
             target/build-report.json
+            target/gradle-build-scan-url.txt
             LICENSE.txt
           retention-days: 2
 
@@ -856,7 +908,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Build report
     needs: [build-jdk11,jvm-tests,maven-tests,gradle-tests,devtools-tests,quickstarts-tests,tcks-test,native-tests,virtual-thread-native-tests]
-    if: always() && github.repository != 'quarkusio/quarkus'
+    if: always()
     steps:
       - uses: actions/download-artifact@v3
         with:
@@ -871,4 +923,3 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           build-reports-artifacts-path: build-reports-artifacts
-          forks-only: true

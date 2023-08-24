@@ -1,23 +1,11 @@
-//usr/bin/env jbang "$0" "$@" ; exit $?
-
-//DEPS io.quarkus.platform:quarkus-bom:3.2.2.Final@pom
-//DEPS io.quarkus:quarkus-picocli
-//DEPS io.quarkus:quarkus-jackson
-//DEPS com.fasterxml.jackson.dataformat:jackson-dataformat-yaml
-
-//JAVAC_OPTIONS -parameters
-//JAVA_OPTIONS -Djava.util.logging.manager=org.jboss.logmanager.LogManager
-
-//Q:CONFIG quarkus.log.level=SEVERE
-//Q:CONFIG quarkus.log.category."downstreamdoc".level=INFO
-//Q:CONFIG quarkus.banner.enabled=false
+package io.quarkus.docs.generation;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +22,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
-import picocli.CommandLine.Command;
+public class AssembleDownstreamDocumentation {
 
-@Command(name = "downstreamdoc", mixinStandardHelpOptions = true)
-public class downstreamdoc implements Runnable {
-
-    private static final Logger LOG = Logger.getLogger(downstreamdoc.class);
+    private static final Logger LOG = Logger.getLogger(AssembleDownstreamDocumentation.class);
 
     private static final Path SOURCE_DOC_PATH = Path.of("src", "main", "asciidoc");
     private static final Path DOC_PATH = Path.of("target", "asciidoc", "sources");
@@ -52,8 +37,7 @@ public class downstreamdoc implements Runnable {
     private static final Path TARGET_GENERATED_DIRECTORY = TARGET_ROOT_DIRECTORY.resolve("_generated");
     private static final Path TARGET_LISTING = Path.of("target", "downstream-files.txt");
     private static final Set<Path> EXCLUDED_FILES = Set.of(
-        DOC_PATH.resolve("_attributes-local.adoc")
-    );
+            DOC_PATH.resolve("_attributes-local.adoc"));
 
     private static final String ADOC_SUFFIX = ".adoc";
     private static final Pattern XREF_PATTERN = Pattern.compile("xref:([^\\.#\\[ ]+)\\" + ADOC_SUFFIX);
@@ -88,13 +72,13 @@ public class downstreamdoc implements Runnable {
                     Pattern.CASE_INSENSITIVE | Pattern.MULTILINE),
             "* Using Maven:\n+\n--\n[source, bash, subs=attributes+]\n----\n$1----\n$4--");
 
-    @Override
-    public void run() {
+    public static void main(String[] args) throws Exception {
         if (!Files.isDirectory(DOC_PATH)) {
-            LOG.error("Transformed AsciiDoc sources directory does not exist. Have you built the documentation?");
+            throw new IllegalStateException(
+                    "Transformed AsciiDoc sources directory does not exist. Have you built the documentation?");
         }
         if (!Files.isDirectory(GENERATED_FILES_PATH)) {
-            LOG.error("Generated files directory does not exist. Have you built the documentation?");
+            throw new IllegalStateException("Generated files directory does not exist. Have you built the documentation?");
         }
 
         try {
@@ -196,13 +180,13 @@ public class downstreamdoc implements Runnable {
                 Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            Files.writeString(TARGET_LISTING, allResolvedPaths.stream().map(p -> p.toString()).collect(Collectors.joining("\n")));
+            Files.writeString(TARGET_LISTING,
+                    allResolvedPaths.stream().map(p -> p.toString()).collect(Collectors.joining("\n")));
 
             LOG.info("Downstream documentation tree is available in: " + TARGET_ROOT_DIRECTORY);
             LOG.info("Downstream documentation listing is available in: " + TARGET_LISTING);
         } catch (IOException e) {
-            LOG.error("An error occurred while generating the downstream tree", e);
-            System.exit(1);
+            throw new UncheckedIOException("An error occurred while generating the downstream tree", e);
         }
     }
 
@@ -278,7 +262,7 @@ public class downstreamdoc implements Runnable {
                 .forEach(File::delete);
     }
 
-    private void copyAsciidoc(Path sourceFile, Path targetFile, Set<String> downstreamGuides) throws IOException {
+    private static void copyAsciidoc(Path sourceFile, Path targetFile, Set<String> downstreamGuides) throws IOException {
         List<String> guideLines = Files.readAllLines(sourceFile);
 
         StringBuilder rewrittenGuide = new StringBuilder();
@@ -336,13 +320,14 @@ public class downstreamdoc implements Runnable {
         String rewrittenGuideWithoutTabs = rewrittenGuide.toString().trim();
 
         for (Entry<Pattern, String> tabReplacement : TABS_REPLACEMENTS.entrySet()) {
-            rewrittenGuideWithoutTabs = tabReplacement.getKey().matcher(rewrittenGuideWithoutTabs).replaceAll(tabReplacement.getValue());
+            rewrittenGuideWithoutTabs = tabReplacement.getKey().matcher(rewrittenGuideWithoutTabs)
+                    .replaceAll(tabReplacement.getValue());
         }
 
         Files.writeString(targetFile, rewrittenGuideWithoutTabs.trim());
     }
 
-    private String rewriteLinks(String content, Set<String> downstreamGuides) {
+    private static String rewriteLinks(String content, Set<String> downstreamGuides) {
         content = XREF_PATTERN.matcher(content).replaceAll(mr -> {
             if (downstreamGuides.contains(mr.group(1) + ADOC_SUFFIX)) {
                 return mr.group(0);

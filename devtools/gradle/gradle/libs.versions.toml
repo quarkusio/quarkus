@@ -1,5 +1,5 @@
 [versions]
-plugin-publish = "1.2.0"
+plugin-publish = "1.2.1"
 
 # updating Kotlin here makes QuarkusPluginTest > shouldNotFailOnProjectDependenciesWithoutMain(Path) fail
 kotlin = "1.8.10"

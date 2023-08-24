@@ -3041,6 +3041,25 @@
                             </environmentVariables>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>assemble-downstream-doc</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <!-- using the exec goal here so that we can set the workingDirectory properly
+                                as this script has initially be developed to be a standalone JBang script
+                                running at the root of the docs module -->
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.quarkus.docs.generation.AssembleDownstreamDocumentation</argument>
+                            </arguments>
+                            <workingDirectory>${project.basedir}</workingDirectory>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

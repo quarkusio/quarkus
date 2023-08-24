@@ -2,6 +2,7 @@ package io.quarkus.kubernetes.client.runtime;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 
 import io.fabric8.kubernetes.client.Config;
@@ -15,6 +16,7 @@ public class KubernetesClientProducer {
 
     private KubernetesClient client;
 
+    @Named("kubernetes-client")
     @DefaultBean
     @Singleton
     @Produces

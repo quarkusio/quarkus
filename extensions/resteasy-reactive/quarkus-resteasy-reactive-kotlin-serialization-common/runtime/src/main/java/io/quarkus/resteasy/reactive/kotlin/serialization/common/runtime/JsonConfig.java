@@ -123,6 +123,12 @@ public class JsonConfig {
     @ConfigItem(name = "naming-strategy")
     public Optional<String> namingStrategy;
 
+    /**
+     * Specifies if the enum values should be decoded case insensitively.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean decodeEnumsCaseInsensitive = false;
+
     @Override
     public String toString() {
         return new StringJoiner(", ", JsonConfig.class.getSimpleName() + "[", "]")
@@ -137,6 +143,7 @@ public class JsonConfig {
                 .add("classDiscriminator='" + classDiscriminator + "'")
                 .add("allowSpecialFloatingPointValues=" + allowSpecialFloatingPointValues)
                 .add("useAlternativeNames=" + useAlternativeNames)
+                .add("decodeEnumsCaseInsensitive=" + decodeEnumsCaseInsensitive)
                 .toString();
     }
 }

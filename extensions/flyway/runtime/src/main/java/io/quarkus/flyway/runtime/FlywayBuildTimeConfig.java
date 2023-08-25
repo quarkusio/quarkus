@@ -22,6 +22,16 @@ public final class FlywayBuildTimeConfig {
     }
 
     /**
+     * Whether Flyway is enabled *during the build*.
+     *
+     * If Flyway is disabled, the Flyway beans won't be created and Flyway won't be usable.
+     *
+     * @asciidoclet
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
+
+    /**
      * Flyway configuration for the default datasource.
      */
     @ConfigItem(name = ConfigItem.PARENT)

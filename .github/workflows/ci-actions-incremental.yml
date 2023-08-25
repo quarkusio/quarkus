@@ -414,6 +414,8 @@ jobs:
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Add quarkusio remote for GIB
         shell: bash
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git

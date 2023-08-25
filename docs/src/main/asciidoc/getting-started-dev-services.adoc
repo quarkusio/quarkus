@@ -3,18 +3,21 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-
 [id="getting-started-dev-services-tutorial"]
 = Your second Quarkus application
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: getting-started, data, core
-
+:summary: Discover some of the features that make developing with Quarkus a joyful experience.
 
 This tutorial shows you how to create an application which writes to and reads from a database.
 You will use Dev Services, so you will not actually download, configure, or even start the database yourself.
 You will also use Panache, a layer on top of Hibernate ORM, to make reading and writing data easier.
 
+This guide helps you:
+
+ *  Read and write objects to a database
+ *  Develop and test against services with zero configuration
 
 == Prerequisites
 

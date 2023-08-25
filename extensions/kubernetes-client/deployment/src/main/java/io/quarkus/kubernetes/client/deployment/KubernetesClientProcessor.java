@@ -35,6 +35,8 @@ import io.fabric8.kubernetes.client.http.HttpClient;
 import io.fabric8.kubernetes.client.impl.KubernetesClientImpl;
 import io.fabric8.kubernetes.internal.KubernetesDeserializer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -75,14 +77,18 @@ public class KubernetesClientProcessor {
     private static final String[] EMPTY_STRINGS_ARRAY = new String[0];
 
     @BuildStep
-    public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem) {
+    public void registerBeanProducers(BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildItem,
+            Capabilities capabilities) {
         additionalBeanBuildItemBuildItem
                 .produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientObjectMapperProducer.class));
         additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesSerializationProducer.class));
         // wire up the Config bean support
         additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesConfigProducer.class));
-        // wire up the KubernetesClient bean support
-        additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
+        // do not register our client producer if the openshift client is present, because it provides it too
+        if (capabilities.isMissing(Capability.OPENSHIFT_CLIENT)) {
+            // wire up the KubernetesClient bean support
+            additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
+        }
     }
 
     @BuildStep

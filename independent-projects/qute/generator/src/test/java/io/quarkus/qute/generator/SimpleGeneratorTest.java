@@ -113,6 +113,8 @@ public class SimpleGeneratorTest {
         }
         Engine engine = builder.build();
         assertEquals(" FOO ", engine.parse("{#if isActive} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals(" FOO ", engine.parse("{#if isActiveObject} {name.toUpperCase} {/if}").render(new MyService()));
+        assertEquals("", engine.parse("{#if isActiveObjectNull} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if active} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if !hasItems} {name.toUpperCase} {/if}").render(new MyService()));
         assertEquals(" FOO ", engine.parse("{#if !items} {name.toUpperCase} {/if}").render(new MyService()));
@@ -138,6 +140,7 @@ public class SimpleGeneratorTest {
         assertEquals("5",
                 engine.parse("{#each service.getDummyVarargs(5)}{it}{/}").data("service", new MyService())
                         .render());
+        assertEquals("BAR::", engine.parse("{myEnum}::{myEnumNull}").render(new MyService()));
 
         // Namespace resolvers
         assertEquals("OK", engine.parse("{#if enum is MyEnum:BAR}OK{/if}").data("enum", MyEnum.BAR).render());

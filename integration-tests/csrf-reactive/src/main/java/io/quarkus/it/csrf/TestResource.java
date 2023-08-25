@@ -7,6 +7,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -66,24 +67,24 @@ public class TestResource {
     @Path("/csrfTokenForm")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public String postCsrfTokenForm(@FormParam("name") String name) {
-        return name + ":" + routingContext.get("csrf_token_verified", false);
+    public String postCsrfTokenForm(@FormParam("name") String name, @HeaderParam("X-CSRF-TOKEN") String csrfHeader) {
+        return name + ":" + routingContext.get("csrf_token_verified", false) + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }
 
     @POST
     @Path("/csrfTokenWithFormRead")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
-    public String postCsrfTokenWithFormRead() {
-        return "verified:" + routingContext.get("csrf_token_verified", false);
+    public String postCsrfTokenWithFormRead(@HeaderParam("X-CSRF-TOKEN") String csrfHeader) {
+        return "verified:" + routingContext.get("csrf_token_verified", false) + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }
 
     @POST
     @Path("/csrfTokenWithHeader")
     @Consumes({ MediaType.APPLICATION_FORM_URLENCODED, MediaType.APPLICATION_JSON })
     @Produces(MediaType.TEXT_PLAIN)
-    public String postCsrfTokenWithHeader() {
-        return "verified:" + routingContext.get("csrf_token_verified", false);
+    public String postCsrfTokenWithHeader(@HeaderParam("X-CSRF-TOKEN") String csrfHeader) {
+        return "verified:" + routingContext.get("csrf_token_verified", false) + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }
 
     @GET
@@ -100,13 +101,15 @@ public class TestResource {
     public String postCsrfTokenMultipart(@FormParam("name") String name,
             @FormParam("csrf-token") String csrfTokenParam,
             MultiPart multiPart,
-            @CookieParam("csrftoken") Cookie csrfTokenCookie) throws Exception {
+            @CookieParam("csrftoken") Cookie csrfTokenCookie,
+            @HeaderParam("X-CSRF-TOKEN") String csrfHeader) throws Exception {
         return name + ":" + routingContext.get("csrf_token_verified", false) + ":"
                 + isResteasyReactiveUpload(multiPart.file) + ":"
                 + csrfTokenCookie.getValue().equals(
                         CsrfTokenUtils.signCsrfToken(csrfTokenParam,
                                 ConfigProvider.getConfig().getValue("quarkus.csrf-reactive.token-signature-key",
-                                        String.class)));
+                                        String.class)))
+                + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }
 
     private boolean isResteasyReactiveUpload(File file) throws Exception {

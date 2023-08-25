@@ -43,7 +43,7 @@ public class CsrfReactiveTest {
 
             TextPage textPage = loginForm.getInputByName("submit").click();
 
-            assertEquals("alice:true", textPage.getContent());
+            assertEquals("alice:true:tokenHeaderIsSet=false", textPage.getContent());
 
             textPage = webClient.getPage("http://localhost:8081/service/hello");
             assertEquals("hello", textPage.getContent());
@@ -68,7 +68,7 @@ public class CsrfReactiveTest {
 
             TextPage textPage = loginForm.getInputByName("submit").click();
 
-            assertEquals("verified:true", textPage.getContent());
+            assertEquals("verified:true:tokenHeaderIsSet=false", textPage.getContent());
 
             textPage = webClient.getPage("http://localhost:8081/service/hello");
             assertEquals("hello", textPage.getContent());
@@ -136,7 +136,7 @@ public class CsrfReactiveTest {
 
             TextPage textPage = loginForm.getInputByName("submit").click();
 
-            assertEquals("alice:true:true:true", textPage.getContent());
+            assertEquals("alice:true:true:true:tokenHeaderIsSet=false", textPage.getContent());
 
             textPage = webClient.getPage("http://localhost:8081/service/hello");
             assertEquals("hello", textPage.getContent());
@@ -214,7 +214,7 @@ public class CsrfReactiveTest {
                     .param("csrf-header", "X-CSRF-TOKEN")
                     .post("/service/csrfTokenWithHeader")
                     .then()
-                    .body(Matchers.equalTo("verified:true"));
+                    .body(Matchers.equalTo("verified:true:tokenHeaderIsSet=true"));
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -239,7 +239,7 @@ public class CsrfReactiveTest {
                     .body("{}")
                     .post("/service/csrfTokenWithHeader")
                     .then()
-                    .body(Matchers.equalTo("verified:true"));
+                    .body(Matchers.equalTo("verified:true:tokenHeaderIsSet=true"));
 
             webClient.getCookieManager().clearCookies();
         }

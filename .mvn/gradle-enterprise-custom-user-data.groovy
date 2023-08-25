@@ -57,7 +57,7 @@ if (System.env.GITHUB_ACTIONS) {
     buildScan.link('Workflow run', System.env.GITHUB_SERVER_URL + '/' + System.env.GITHUB_REPOSITORY + '/actions/runs/' + System.env.GITHUB_RUN_ID)
 
     def prNumber = System.env.PULL_REQUEST_NUMBER
-    if (prNumber != null) {
+    if (prNumber != null && !prNumber.isBlank()) {
         buildScan.value('gh-pr', prNumber)
         buildScan.tag('pr-' + prNumber)
 

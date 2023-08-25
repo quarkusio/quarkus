@@ -96,12 +96,12 @@ public class FlywayRecorder {
     }
 
     public void doStartActions() {
-        if (!config.getValue().enabled) {
-            return;
-        }
-
         for (InstanceHandle<FlywayContainer> flywayContainerHandle : Arc.container().listAll(FlywayContainer.class)) {
             FlywayContainer flywayContainer = flywayContainerHandle.get();
+
+            if (!config.getValue().getConfigForDataSourceName(flywayContainer.getDataSourceName()).active) {
+                return;
+            }
 
             if (flywayContainer.isCleanAtStart()) {
                 flywayContainer.getFlyway().clean();

@@ -981,7 +981,13 @@ public class CustomTenantResolver implements TenantResolver {
 
         return parts[1];
     }
-    
+
+    @Override
+    public boolean isRoot(String tenantId) {
+        // "global" tenant will have access to all partitions
+        return "global".equals(tenantId);
+    }
+
 }
 ----
 <1> Annotate the TenantResolver implementation with the `@PersistenceUnitExtension` qualifier

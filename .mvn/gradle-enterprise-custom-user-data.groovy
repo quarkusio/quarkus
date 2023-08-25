@@ -44,13 +44,22 @@ if (System.env.GITHUB_ACTIONS) {
         }
     }
 
+    List<String> similarBuildsTags = new ArrayList<>()
+
     buildScan.tag(jobId)
+    similarBuildsTags.add(jobId)
+
     buildScan.tag(System.env.GITHUB_EVENT_NAME)
+    similarBuildsTags.add(System.env.GITHUB_EVENT_NAME)
+
     buildScan.tag(System.env.GITHUB_WORKFLOW)
+    similarBuildsTags.add(System.env.GITHUB_WORKFLOW)
+
     String jobTags = System.env.GE_TAGS
     if (jobTags != null && !jobTags.isBlank()) {
         for (String tag : jobTags.split(",")) {
             buildScan.tag(tag.trim())
+            similarBuildsTags.add(tag.trim())
         }
     }
 
@@ -60,9 +69,14 @@ if (System.env.GITHUB_ACTIONS) {
     if (prNumber != null) {
         buildScan.value('gh-pr', prNumber)
         buildScan.tag('pr-' + prNumber)
+        similarBuildsTags.add('pr-' + prNumber)
 
         buildScan.link('Pull request', System.env.GITHUB_SERVER_URL + '/' + System.env.GITHUB_REPOSITORY + '/pull/' + prNumber )
     }
+
+    similarBuildsTags.add(System.env.RUNNER_OS)
+
+    buildScan.link('Similar builds', 'https://ge.quarkus.io/scans?search.tags=' + String.join(",", similarBuildsTags))
 
     buildScan.buildScanPublished {  publishedBuildScan -> {
             File target = new File("target")

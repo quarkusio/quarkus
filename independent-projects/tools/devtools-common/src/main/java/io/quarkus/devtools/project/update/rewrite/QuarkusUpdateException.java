@@ -1,6 +1,6 @@
 package io.quarkus.devtools.project.update.rewrite;
 
-public class QuarkusUpdateException extends Exception {
+public class QuarkusUpdateException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 

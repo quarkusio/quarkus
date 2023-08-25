@@ -25,6 +25,7 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     private final LongAdder current = new LongAdder();
     private final LongAdder queue = new LongAdder();
     private final Counter completed;
+    private final Counter rejected;
     private final Timer queueDelay;
 
     VertxPoolMetrics(MeterRegistry registry, String poolType, String poolName, int maxPoolSize) {
@@ -89,6 +90,11 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
                 .tags(tags)
                 .register(registry);
 
+        rejected = Counter.builder(name("rejected"))
+                .description("Number of times submissions to the pool have been rejected")
+                .tags(tags)
+                .register(registry);
+
     }
 
     private String name(String suffix) {
@@ -104,6 +110,7 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     @Override
     public void rejected(EventTiming submitted) {
         queue.decrement();
+        rejected.increment();
         submitted.end();
     }
 

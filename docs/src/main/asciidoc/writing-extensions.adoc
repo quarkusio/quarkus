@@ -2525,7 +2525,7 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
             TestBuildAndRunTimeConfig buildTimeConfig,
             TestRunTimeConfig runTimeConfig) {
         log.info("Begin BeanContainerListener callback\n");
-        IConfigConsumer instance = beanContainer.instance(beanClass); <4>
+        IConfigConsumer instance = beanContainer.beanInstance(beanClass); <4>
         instance.loadConfig(buildTimeConfig, runTimeConfig); <5>
         log.infof("configureBeans, instance=%s\n", instance);
     }

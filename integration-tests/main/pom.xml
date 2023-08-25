@@ -23,6 +23,9 @@
 
         <!-- do not update this dependency, it is only used for testing -->
         <webjar.jquery-ui.version>1.13.0</webjar.jquery-ui.version>
+
+        <quarkus.config-tracking.enabled>true</quarkus.config-tracking.enabled>
+        <quarkus.native.container-build>true</quarkus.native.container-build>
     </properties>
 
     <dependencies>
@@ -507,6 +510,16 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <id>track-prod-config-changes</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>track-config-changes</goal>
+                        </goals>
+                        <configuration>
+                            <dumpCurrentWhenRecordedUnavailable>true</dumpCurrentWhenRecordedUnavailable>
+                        </configuration>
+                    </execution>
                     <execution>
                         <goals>
                             <goal>build</goal>

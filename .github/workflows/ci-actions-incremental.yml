@@ -1072,6 +1072,11 @@ jobs:
           build-scan-capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"
           wrapper-init: true
+      - name: Cache Quarkus metadata
+        uses: actions/cache@v3
+        with:
+          path: '**/.quarkus/quarkus-prod-config-dump'
+          key: ${{ runner.os }}-quarkus-metadata
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}

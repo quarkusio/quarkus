@@ -415,6 +415,17 @@ public class TestSupport implements TestController {
     }
 
     void runInternal(ClassScanResult classScanResult, boolean reRunFailures) {
+        System.out.println("HOLLY Test support run internal, rerun fails is " + reRunFailures);
+        if (classScanResult != null) {
+            System.out.println(
+                    "\"HOLLY Test support run added: " + classScanResult.getAddedClasses());
+            System.out.println(
+                    "\"HOLLY Test support run changed: " + classScanResult.getChangedClasses());
+            System.out.println(
+                    "\"HOLLY Test support run changed names: " + classScanResult.getChangedClassNames());
+        } else {
+            System.out.println("HOLLY scan result is null");
+        }
         final long runId = COUNTER.incrementAndGet();
         handleApplicationPropertiesChange();
         List<Runnable> runnables = new ArrayList<>();

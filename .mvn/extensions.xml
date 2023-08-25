@@ -9,4 +9,9 @@
         <artifactId>common-custom-user-data-maven-extension</artifactId>
         <version>1.12.2</version>
     </extension>
+    <extension>
+        <groupId>com.gradle</groupId>
+        <artifactId>quarkus-build-caching-extension</artifactId>
+        <version>0.10</version>
+    </extension>
 </extensions>

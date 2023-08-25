@@ -998,6 +998,11 @@ jobs:
           path: .
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
+      - name: Cache Quarkus metadata
+        uses: actions/cache@v3
+        with:
+          path: '**/.quarkus/quarkus-prod-config-dump'
+          key: ${{ runner.os }}-quarkus-metadata
       - name: Build
         env:
           TEST_MODULES: ${{matrix.test-modules}}

@@ -692,6 +692,18 @@ Maven projects could add the following goal to their `quarkus-maven-plugin` conf
 The `track-config-changes` goal looks for `${project.basedir}/.quarkus/quarkus-prod-config-dump` (file name and directory are configurable) and, if the file already exists, checks whether the values stored in the config dump have changed.
 It will log the changed options and save the current values of each of the options present in `${project.basedir}/.quarkus/quarkus-prod-config-dump` in `${project.basedir}/target/quarkus-prod-config.check` (the target file name and location can be configured). If the build time configuration has not changed since the last build both `${project.basedir}/.quarkus/quarkus-prod-config-dump` and `${project.basedir}/.quarkus/quarkus-prod-config-dump` will be identical.
 
+==== Dump current build configuration when the recorded configuration isn't found
+
+By default, `track-config-changes` looks for the configuration recorded during previous build and does nothing if it's not found. Enabling `dumpCurrentWhenRecordedUnavailable` parameter will make it dump the current build configuration
+options taking into account `quarkus.config-tracking.*` configuration.
+
+[IMPORTANT]
+====
+Unlike the build configuration options recorded during the `quarkus:build` goal, configuration options saved by `quarkus:track-config-changes` with `dumpCurrentWhenRecordedUnavailable` enabled will include all the build configuration
+options exposed by a `org.eclipse.microprofile.config.Config` instance. Which means this report may include some build configuration options that will not be used by the Quarkus application build process but also may be missing some
+build configuration options since MicroProfile Config specification allows configuration sources not to expose all the property names they provide to users.
+====
+
 [[additional-information]]
 == Additional Information
 

@@ -590,7 +590,7 @@ jobs:
       - name: Compile Quickstarts
         run: |
           git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
-          git checkout development
+          git checkout 3.2
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3

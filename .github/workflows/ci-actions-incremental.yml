@@ -109,6 +109,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 11 Build" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
         with:
+          # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash
@@ -299,6 +300,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
         with:
+          # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote for GIB
         shell: bash
@@ -415,6 +417,7 @@ jobs:
         run: git config --global core.longpaths true
       - uses: actions/checkout@v3
         with:
+          # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote for GIB
         shell: bash
@@ -837,6 +840,7 @@ jobs:
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
         with:
+          # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote
         shell: bash

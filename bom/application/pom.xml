@@ -52,7 +52,7 @@
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.1.0</smallrye-common.version>
         <smallrye-config.version>3.3.2</smallrye-config.version>
-        <smallrye-health.version>4.0.2</smallrye-health.version>
+        <smallrye-health.version>4.0.4</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.4.0</smallrye-open-api.version>
         <smallrye-graphql.version>2.2.1</smallrye-graphql.version>
@@ -190,7 +190,7 @@
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->
         <antlr.version>4.10.1</antlr.version><!-- needs to align with same property in build-parent/pom.xml -->
         <quarkus-security.version>2.0.2.Final</quarkus-security.version>
-        <keycloak.version>21.0.2</keycloak.version>
+        <keycloak.version>22.0.1</keycloak.version>
         <logstash-gelf.version>1.15.1</logstash-gelf.version>
         <checker-qual.version>3.34.0</checker-qual.version>
         <error-prone-annotations.version>2.19.1</error-prone-annotations.version>
@@ -6329,7 +6329,7 @@
             </dependency>
             <dependency>
                 <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-admin-client-jakarta</artifactId>
+                <artifactId>keycloak-admin-client</artifactId>
                 <version>${keycloak.version}</version>
                 <exclusions>
                     <exclusion>
@@ -6346,6 +6346,11 @@
             <dependency>
                 <groupId>org.keycloak</groupId>
                 <artifactId>keycloak-authz-client</artifactId>
+                <version>${keycloak.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-policy-enforcer</artifactId>
                 <version>${keycloak.version}</version>
             </dependency>
             <dependency>

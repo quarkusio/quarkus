@@ -174,7 +174,7 @@ jobs:
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar Maven Repo
         shell: bash
-        run: tar -I 'pigz -9' -cf maven-repo.tgz -C ~ .m2/repository
+        run: tar -czf maven-repo.tgz -C ~ .m2/repository
       - name: Persist Maven Repo
         uses: actions/upload-artifact@v3
         with:
@@ -590,7 +590,7 @@ jobs:
       - name: Compile Quickstarts
         run: |
           git clone https://github.com/quarkusio/quarkus-quickstarts.git && cd quarkus-quickstarts
-          git checkout development
+          git checkout 3.2
           export LANG=en_US && ./mvnw -e -B -fae --settings .github/mvn-settings.xml clean verify -DskipTests
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3

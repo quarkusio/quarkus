@@ -105,6 +105,8 @@ public class ConfigService {
      * <p>
      * Disabled by default.
      * <p>
+     * If running on CI, false.
+     * <p>
      * If Not explicitly approved by user in dev mode, false
      * <p>
      * If analytics disabled by local property, false
@@ -116,6 +118,12 @@ public class ConfigService {
      * @return true if active
      */
     public boolean isActive() {
+        if (isCi()) {
+            if (log.isDebugEnabled()) {
+                log.debug("[Quarkus build analytics] Running on CI. Skipping analytics.");
+            }
+            return false;
+        }
         if (!isLocalConfigActive()) {
             if (log.isDebugEnabled()) {
                 log.debug("[Quarkus build analytics] Local config is not active. Skipping analytics.");
@@ -137,6 +145,10 @@ public class ConfigService {
             return false;
         }
         return true;
+    }
+
+    private boolean isCi() {
+        return "true".equalsIgnoreCase(System.getenv("CI"));
     }
 
     boolean isLocalConfigActive() {

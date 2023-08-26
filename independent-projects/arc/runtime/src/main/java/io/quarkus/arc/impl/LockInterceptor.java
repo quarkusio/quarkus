@@ -45,7 +45,9 @@ public class LockInterceptor {
         boolean locked = false;
 
         try {
-            rl.lock();
+            if (readHoldCount > 0) {
+                rl.lock();
+            }
             try {
                 if (readHoldCount > 0) {
                     // Release all read locks hold by the current thread before acquiring the write lock
@@ -63,7 +65,9 @@ public class LockInterceptor {
                     locked = true;
                 }
             } finally {
-                rl.unlock();
+                if (readHoldCount > 0) {
+                    rl.unlock();
+                }
             }
             return ctx.proceed();
         } finally {

@@ -204,9 +204,9 @@ include::{includes}/devtools/build-native.adoc[]
 [NOTE]
 .Issues with packaging on Windows
 ====
-The Microsoft Native Tools for Visual Studio must first be initialized before packaging. You can do this by starting
-the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools. At 
-`x64 Native Tools Command Prompt` you can navigate to your project folder and run `./mvnw package -Dnative`.
+The Microsoft Native Tools for Visual Studio must first be initialized before packaging.
+You can do this by starting the `x64 Native Tools Command Prompt` that was installed with the Visual Studio Build Tools.
+At the `x64 Native Tools Command Prompt`, you can navigate to your project folder and run `./mvnw package -Dnative`.
 
 Another solution is to write a script to do this for you:
 
@@ -233,7 +233,7 @@ You can do so by prepending the flag with `-J` and passing it as additional nati
 IMPORTANT: Fully static native executables support is experimental.
 
 On Linux it's possible to package a native executable that doesn't depend on any system shared library.
-There are https://www.graalvm.org/{graalvm-version}/reference-manual/native-image/guides/build-static-executables/#prerequisites-and-preparation[some system requirements] to be fulfilled and additional build arguments to be used along with the `native-image` invocation, a minimum is `-Dquarkus.native.additional-build-args="--static","--libc=musl"`.
+There are link:https://www.graalvm.org/latest/reference-manual/native-image/guides/build-static-executables/#prerequisites-and-preparation[some system requirements] to be fulfilled and additional build arguments to be used along with the `native-image` invocation, a minimum is `-Dquarkus.native.additional-build-args="--static","--libc=musl"`.
 
 Compiling fully static binaries is done by statically linking https://musl.libc.org/[musl] instead of `glibc` and should not be used in production without rigorous testing.
 

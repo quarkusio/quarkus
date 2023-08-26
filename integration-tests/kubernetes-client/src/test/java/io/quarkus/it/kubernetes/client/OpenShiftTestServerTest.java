@@ -30,12 +30,10 @@ class OpenShiftTestServerTest {
 
     @Test
     void testInjectionDefaultsToCrud() {
-        mockServer.getOpenshiftClient().projects().createOrReplace(new ProjectBuilder()
+        client.projects().createOrReplace(new ProjectBuilder()
                 .withNewMetadata().withName("example-project").addToLabels("project", "crud-is-true").endMetadata()
                 .build());
         assertThat(client)
-                .isNotSameAs(mockServer.getOpenshiftClient())
-                .isNotSameAs(mockServer.getOpenshiftClient())
                 .returns("crud-is-true",
                         c -> c.projects().withName("example-project").get().getMetadata().getLabels().get("project"));
     }

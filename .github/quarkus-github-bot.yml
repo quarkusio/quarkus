@@ -445,7 +445,7 @@ triage:
         - integration-tests/artemis-jms/
     - id: cache
       labels: [area/cache]
-      title: "cache"
+      title: "(?<!build )cache"
       notify: [gwenneg]
       directories:
         - extensions/cache/

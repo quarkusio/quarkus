@@ -50,6 +50,11 @@ env:
   DB_NAME: hibernate_orm_test
   GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   # This is a hack to work around a GitHub API limitation:
   # when the PR is coming from another fork, the pull_requests field of the
@@ -62,7 +67,6 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Create file
-        shell: bash
         run: |
           echo -n ${{ github.event.number }} > pull-request-number
       - name: Upload pull request number
@@ -103,7 +107,6 @@ jobs:
       m2-cache-key: ${{ steps.m2-cache-key.outputs.key }}
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-11" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 11 Build" >> "$GITHUB_ENV"
@@ -112,7 +115,6 @@ jobs:
           # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote
-        shell: bash
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
@@ -125,7 +127,6 @@ jobs:
         id: m2-cache-key
         run: |
           echo "key=m2-cache-$(/bin/date -u "+%Y-%U")" >> $GITHUB_OUTPUT
-        shell: bash
       - name: Cache Maven Repository
         id: cache-maven
         uses: actions/cache@v3
@@ -137,7 +138,6 @@ jobs:
         run: |
           ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dno-format -Dtcks -Prelocations clean install
       - name: Verify extension dependencies
-        shell: bash
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Get GIB arguments
         id: get-gib-args
@@ -180,7 +180,6 @@ jobs:
           echo "${GIB_IMPACTED}" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
       - name: Tar .m2/repository/io/quarkus
-        shell: bash
         run: tar -czf m2-io-quarkus.tgz -C ~ .m2/repository/io/quarkus
       - name: Upload .m2/repository/io/quarkus
         uses: actions/upload-artifact@v3
@@ -189,7 +188,6 @@ jobs:
           path: m2-io-quarkus.tgz
           retention-days: 7
       - name: Delete snapshots artifacts from cache
-        shell: bash
         run: find ~/.m2 -name \*-SNAPSHOT -type d -exec rm -rf {} +
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
@@ -285,13 +283,11 @@ jobs:
 
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=JVM Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
       - name: Stop mysql
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
-        shell: bash
         run: |
           ss -ln
           sudo service mysql stop || true
@@ -303,12 +299,10 @@ jobs:
           # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote for GIB
-        shell: bash
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
 
       - name: apt clean
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
-        shell: bash
         run: sudo apt-get clean
 
       - name: Reclaim Disk Space
@@ -334,19 +328,15 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Build
-        shell: bash
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS clean install -Dsurefire.timeout=1200 -pl !integration-tests/gradle -pl !integration-tests/maven -pl !integration-tests/devmode -pl !integration-tests/devtools -Dno-test-kubernetes -pl !docs ${{ matrix.java.maven_args }} ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Clean Gradle temp directory
         if: always()
-        shell: bash
         run: devtools/gradle/gradlew --stop && rm -rf devtools/gradle/gradle-extension-plugin/build/tmp
       - name: Prepare failure archive (if maven failed)
         if: failure()
-        shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
         uses: actions/upload-artifact@v3
@@ -408,7 +398,6 @@ jobs:
           }
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Maven Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -420,7 +409,6 @@ jobs:
           # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote for GIB
-        shell: bash
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
@@ -434,7 +422,6 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
@@ -442,12 +429,12 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java.java-version }}
       - name: Build
+
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_jvm flag, GIB has to be re-run here to figure out the exact submodules to build.
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
-        shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
         uses: actions/upload-artifact@v3
@@ -463,7 +450,6 @@ jobs:
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?fast?jar' 'integration-tests/maven/target/test-classes/projects/qit--fast--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?legacy?jar' 'integration-tests/maven/target/test-classes/projects/qit--legacy--jar'; fi
           if [ -d 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' ]; then mv 'integration-tests/maven/target/test-classes/projects/qit?uber?jar' 'integration-tests/maven/target/test-classes/projects/qit--uber--jar'; fi
-        shell: bash
       - name: Upload build reports (if build failed)
         uses: actions/upload-artifact@v3
         if: ${{ failure() || cancelled() }}
@@ -502,7 +488,6 @@ jobs:
           }
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Gradle Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -522,7 +507,6 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
@@ -533,10 +517,8 @@ jobs:
       - name: Verify dependencies
         # runs on Windows as well but would require newline conversion, not worth it
         if: "!startsWith(matrix.java.os-name, 'windows')"
-        shell: bash
         run: ./integration-tests/gradle/update-dependencies.sh $COMMON_MAVEN_ARGS -Dscan=false
       - name: Build
-        shell: bash
         # Important: keep -pl ... in sync with "Calculate run flags"!
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl integration-tests/gradle
       - name: Upload build reports (if build failed)
@@ -580,7 +562,6 @@ jobs:
           }
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Devtools Tests - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -600,7 +581,6 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
@@ -612,7 +592,6 @@ jobs:
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/devtools'
       - name: Prepare failure archive (if maven failed)
         if: failure()
-        shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
         uses: actions/upload-artifact@v3
@@ -676,7 +655,6 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
@@ -688,7 +666,6 @@ jobs:
         run: ./mvnw $COMMON_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -f 'integration-tests/kubernetes'
       - name: Prepare failure archive (if maven failed)
         if: failure()
-        shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
         uses: actions/upload-artifact@v3
@@ -726,7 +703,6 @@ jobs:
           }
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts Compilation - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
@@ -743,7 +719,6 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK ${{ matrix.java.java-version }}
         uses: actions/setup-java@v3
@@ -778,7 +753,6 @@ jobs:
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.virtual_threads_matrix) }}
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Virtual Thread Support Tests Native - ${{matrix.category}}" >> "$GITHUB_ENV"
@@ -795,7 +769,6 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Set up JDK 20
         uses: actions/setup-java@v3
@@ -804,11 +777,9 @@ jobs:
           java-version: 20
       # We do this so we can get better analytics for the downloaded version of the build images
       - name: Update Docker Client User Agent
-        shell: bash
         run: |
           cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
       - name: Build
-        shell: bash
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
@@ -834,7 +805,6 @@ jobs:
 
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-11" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
@@ -843,7 +813,6 @@ jobs:
           # this is important for GIB to work
           fetch-depth: 0
       - name: Add quarkusio remote
-        shell: bash
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
@@ -864,7 +833,6 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Verify
         # Important: keep -pl ... in sync with "Calculate run flags"!
@@ -872,11 +840,9 @@ jobs:
         run: ./mvnw $COMMON_MAVEN_ARGS -Dtcks -pl tcks -amd clean install ${{ needs.build-jdk11.outputs.gib_args }}
       - name: Verify resteasy-reative dependencies
         # note: ideally, this would be run _before_ mvnw but that would required building tcks/resteasy-reactive in two steps
-        shell: bash
         run: ./tcks/resteasy-reactive/update-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Prepare failure archive (if maven failed)
         if: failure()
-        shell: bash
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
         uses: actions/upload-artifact@v3
@@ -914,7 +880,6 @@ jobs:
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.native_matrix) }}
     steps:
       - name: Gradle Enterprise environment
-        shell: bash
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - ${{matrix.category}}" >> "$GITHUB_ENV"
@@ -945,7 +910,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
       # We do this so we can get better analytics for the downloaded version of the build images
       - name: Update Docker Client User Agent
-        shell: bash
         run: |
           cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
       - name: Restore Maven Repository
@@ -960,17 +924,14 @@ jobs:
           name: m2-io-quarkus
           path: .
       - name: Extract .m2/repository/io/quarkus
-        shell: bash
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Build
-        shell: bash
         env:
           TEST_MODULES: ${{matrix.test-modules}}
           CONTAINER_BUILD: ${{startsWith(matrix.os-name, 'windows') && 'false' || 'true'}}
         run: ./mvnw $COMMON_MAVEN_ARGS -f integration-tests -pl "$TEST_MODULES" $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=$CONTAINER_BUILD
       - name: Prepare failure archive (if maven failed)
         if: failure()
-        shell: bash
         run: find . -type d -name '*-reports' -o -wholename '*/build/reports/tests/functionalTest' -o -name '*.log' | tar -czf test-reports.tgz -T -
       - name: Upload failure Archive (if maven failed)
         uses: actions/upload-artifact@v3

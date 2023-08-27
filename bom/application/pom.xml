@@ -158,10 +158,10 @@
         <aws-xray.version>2.14.0</aws-xray.version>
         <azure-functions-java-library.version>2.2.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
-        <kotlin.version>1.9.0</kotlin.version>
-        <kotlin.coroutine.version>1.7.2</kotlin.coroutine.version>
+        <kotlin.version>1.9.10</kotlin.version>
+        <kotlin.coroutine.version>1.7.3</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
-        <kotlin-serialization.version>1.5.1</kotlin-serialization.version>
+        <kotlin-serialization.version>1.6.0</kotlin-serialization.version>
         <dekorate.version>3.7.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>

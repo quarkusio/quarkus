@@ -37,6 +37,7 @@ class JsonProducer {
         prettyPrintIndent = configuration.json.prettyPrintIndent
         useAlternativeNames = configuration.json.useAlternativeNames
         useArrayPolymorphism = configuration.json.useArrayPolymorphism
+        decodeEnumsCaseInsensitive = configuration.json.decodeEnumsCaseInsensitive
 
         configuration.json.namingStrategy.ifPresent { strategy ->
             loadStrategy(this, strategy, this@JsonProducer)

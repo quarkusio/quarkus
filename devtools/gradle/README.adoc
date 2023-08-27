@@ -33,6 +33,7 @@ or any of the subprojects.
 
 However, see the important notes about <<testing, testing>>.
 
+The Maven build runs Gradle from "its parent pom" and not from the individual submodules to speed up the whole build.
 
 [[testing]]
 == Running Tests

@@ -17,6 +17,7 @@
 
     <properties>
         <artifactFilePrefix>gradle-application-plugin</artifactFilePrefix>
+        <gradle.project.name>:gradle-application-plugin</gradle.project.name>
     </properties>
 
     <dependencies>

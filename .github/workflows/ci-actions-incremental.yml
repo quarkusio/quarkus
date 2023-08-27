@@ -50,6 +50,7 @@ env:
   DB_NAME: hibernate_orm_test
   GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
+  CI_INCREMENTAL: true
 jobs:
   # This is a hack to work around a GitHub API limitation:
   # when the PR is coming from another fork, the pull_requests field of the

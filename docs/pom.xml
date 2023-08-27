@@ -3165,14 +3165,15 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
+                            <skipAssembly>${skipDocs}</skipAssembly>
                             <descriptors>
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
                             <recompressZippedFiles>true</recompressZippedFiles>
                             <finalName>quarkus-documentation-${project.version}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <outputDirectory>target/</outputDirectory>
-                            <workDirectory>target/assembly/work</workDirectory>
+                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <workDirectory>${project.build.directory}/assembly/work</workDirectory>
                             <tarLongFileMode>posix</tarLongFileMode>
                         </configuration>
                     </execution>
@@ -3274,14 +3275,15 @@
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
+                                    <skipAssembly>${skipDocs}</skipAssembly>
                                     <descriptors>
                                         <descriptor>assembly-pdf.xml</descriptor>
                                     </descriptors>
                                     <recompressZippedFiles>true</recompressZippedFiles>
                                     <finalName>quarkus-documentation-${project.version}</finalName>
                                     <appendAssemblyId>true</appendAssemblyId>
-                                    <outputDirectory>target/</outputDirectory>
-                                    <workDirectory>target/assembly-pdf/work</workDirectory>
+                                    <outputDirectory>${project.build.directory}/</outputDirectory>
+                                    <workDirectory>${project.build.directory}/assembly-pdf/work</workDirectory>
                                     <tarLongFileMode>posix</tarLongFileMode>
                                 </configuration>
                             </execution>

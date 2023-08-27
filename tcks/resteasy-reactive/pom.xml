@@ -17,7 +17,7 @@
     <properties>
 
         <!-- to avoid sudden surprises, checkout is pinned to a specific commit -->
-        <resteasy-reactive-testsuite.repo.ref>8937bc59acc21658d1c9acf59dc3e8960fd98869</resteasy-reactive-testsuite.repo.ref>
+        <resteasy-reactive-testsuite.repo.ref>f1d455c4e449118aebe376b059a40081c38a24e8</resteasy-reactive-testsuite.repo.ref>
 
         <exec.skip>${skipTests}</exec.skip>
         <resteasy-reactive-testsuite.clone.skip>${exec.skip}</resteasy-reactive-testsuite.clone.skip>

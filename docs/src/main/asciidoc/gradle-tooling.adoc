@@ -624,7 +624,7 @@ The Quarkus build uses the `prod` configuration profile:
 3. Configuration via the `quarkus` extensions's `quarkusBuildProperties` For example:
 
    quarkus {
-       properties {
+       quarkusBuildProperties {
            set("package.type", "uber-jar")
        }
    }
@@ -648,6 +648,31 @@ plugin.
 Use the `quarkusShowEffectiveConfig` task to show the effective configuration options used for a Quarkus build. If you
 specify the `--save-config-properties` command line option, the configuration properties are also store in the file
 `build/<final-name>.quarkus-build.properties`.
+
+
+=== Gradle caching / task inputs
+
+By default, system properties starting with `quarkus.` and environment variables, including those from `~/.env`,
+starting  with `QUARKUS_`, are considered as inputs for the Gradle tasks. This means that only changes to those system
+properties or environment variables will cause Gradle's up-to-date to trigger a rebuild. Changes to other system
+properties or environment variables do not change Quarkus' Gradle task inputs and do not trigger an unnecessary rebuild.
+
+Configuration properties specified via `quarkus.quarkusBuildProperties` or via the Quarkus `application.*`
+configuration files are all considered as Gradle task inputs, in other words: every change in these files causes
+a rebuild.
+
+If your Quarkus build references system properties that do not start with `quarkus.` (or environment variables that
+do not start with `QUARKUS_`), you must reference those via the Quarkus build extension. For example, if your
+`application.properties` file references an environment variable like this:
+
+   greeting.message=${FOO_MESSAGE:Hello!}
+
+it must be explicitly declared as "caching relevant":
+
+   quarkus {
+      cachingRelevantProperties.add("FOO_MESSAGE")
+      // Note: `cachingRelevantProperties` accepts regular expressions
+   }
 
 
 == Build workers

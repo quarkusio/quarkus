@@ -301,6 +301,28 @@ extension to be added as a dependency to your project.
 implementation("io.opentelemetry.contrib:opentelemetry-aws-xray-propagator")
 ----
 
+==== Customise Propagator
+
+To customise the propagation header you can implement the `TextMapPropagatorCustomizer` interface. This can be used, as an example, to restrict propagation of OpenTelemetry trace headers and prevent potentially sensitive data to be sent to third party systems.
+
+```java
+/**
+ * /**
+ * Meant to be implemented by a CDI bean that provides arbitrary customization for the TextMapPropagator
+ * that are to be registered with OpenTelemetry
+ */
+public interface TextMapPropagatorCustomizer {
+
+    TextMapPropagator customize(Context context);
+
+    interface Context {
+        TextMapPropagator propagator();
+
+        ConfigProperties otelConfigProperties();
+    }
+}
+```
+
 === Resource
 A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/overview.md#resources[resource] is a representation
 of the entity that is producing telemetry, it adds attributes to the exported trace to characterize who is producing the trace.
@@ -330,6 +352,10 @@ public class CustomConfiguration {
     }
 }
 ----
+
+==== User data
+
+By setting `quarkus.otel.traces.eusp.enabled=true` you can add information about the user related to each span. The user's ID and roles will be added to the span attributes, if available.
 
 === Sampler
 A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling[sampler] decides whether
@@ -528,9 +554,41 @@ which retrieves the OpenTelemetry `Context` to extract the current span for prop
 
 == Exporters
 
-Quarkus OpenTelemetry defaults to the standard OTLP exporter defined in OpenTelemetry.
+=== Default
 
+The Quarkus OpenTelemetry extension uses its own exporter built on top of Vert.x for optimal performance and maintainability.
+
+The exporter is automatically wired with CDI, that's why the `quarkus.otel.traces.exporter` property defaults to `cdi`.
+
+The `quarkus.otel.exporter.otlp.traces.protocol` default to `grpc` and `http/protobuf` can also be used.
+
+=== On Quarkiverse
 Additional exporters will be available in the Quarkiverse https://github.com/quarkiverse/quarkus-opentelemetry-exporter/blob/main/README.md[quarkus-opentelemetry-exporter] project.
+
+=== OpenTelemetry exporter
+The default OpenTelemetry exporter can be used, but it's not recommended because of the additional dependency on the OkHttp library.
+
+It can be activated by setting `quarkus.otel.traces.exporter=otlp` and include the following dependencies in your project:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-otlp-common</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.opentelemetry</groupId>
+    <artifactId>opentelemetry-exporter-otlp</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.opentelemetry:opentelemetry-exporter-otlp-common")
+implementation("io.opentelemetry:opentelemetry-exporter-otlp")
+----
 
 [[configuration-reference]]
 == OpenTelemetry Configuration Reference

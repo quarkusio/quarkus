@@ -149,6 +149,11 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         ThreadPoolConfig threadPool();
 
         /**
+         * Configuration for search queries to this backend.
+         */
+        ElasticsearchQueryConfig query();
+
+        /**
          * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
          *
          * Set to `false` if the Elasticsearch cluster may not be available on startup.
@@ -503,6 +508,26 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
          */
         // We can't set an actual default value here: see comment on this class.
         OptionalInt size();
+    }
+
+    @ConfigGroup
+    interface ElasticsearchQueryConfig {
+        /**
+         * Configuration for the behavior on shard failure.
+         */
+        ElasticsearchQueryShardFailureConfig shardFailure();
+    }
+
+    @ConfigGroup
+    interface ElasticsearchQueryShardFailureConfig {
+        /**
+         * Whether partial shard failures are ignored (`true`)
+         * or lead to Hibernate Search throwing an exception (`false`).
+         * <p>
+         * Will default to `false` in Hibernate Search 7.
+         */
+        @WithDefault("true")
+        boolean ignore();
     }
 
     // We can't set actual default values in this section,

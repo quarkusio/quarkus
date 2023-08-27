@@ -393,8 +393,12 @@ public class ValueResolverGenerator {
                                     && returnType.asPrimitiveType().primitive() == Primitive.BOOLEAN) {
                                 completeBoolean(bc, invokeRet);
                             } else if (method.returnType().name().equals(DotNames.BOOLEAN)) {
+                                BytecodeCreator isNull = bc.ifNull(invokeRet).trueBranch();
+                                isNull.returnValue(isNull.readStaticField(Descriptors.RESULTS_NULL));
                                 completeBoolean(bc, bc.invokeVirtualMethod(Descriptors.BOOLEAN_VALUE, invokeRet));
                             } else if (isEnum(returnType)) {
+                                BytecodeCreator isNull = bc.ifNull(invokeRet).trueBranch();
+                                isNull.returnValue(isNull.readStaticField(Descriptors.RESULTS_NULL));
                                 completeEnum(index.getClassByName(returnType.name()), valueResolver, invokeRet, bc);
                             } else {
                                 bc.returnValue(bc.invokeStaticMethod(Descriptors.COMPLETED_STAGE_OF, invokeRet));
@@ -536,11 +540,11 @@ public class ValueResolverGenerator {
             BytecodeCreator match;
             if (ifThenElse == null) {
                 ifThenElse = bc.ifThenElse(
-                        Gizmo.equals(bc, result, bc.readStaticField(enumConstantField)));
+                        Gizmo.equals(bc, bc.readStaticField(enumConstantField), result));
                 match = ifThenElse.then();
             } else {
                 match = ifThenElse.elseIf(
-                        b -> Gizmo.equals(b, result, b.readStaticField(enumConstantField)));
+                        b -> Gizmo.equals(b, b.readStaticField(enumConstantField), result));
             }
             match.returnValue(match.invokeVirtualMethod(
                     enumConstantMethod.getMethodDescriptor(), match.getThis()));

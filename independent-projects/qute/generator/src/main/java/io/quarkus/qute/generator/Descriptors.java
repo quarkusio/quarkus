@@ -100,5 +100,6 @@ public final class Descriptors {
             CompletionStage.class);
     public static final FieldDescriptor RESULTS_TRUE = FieldDescriptor.of(Results.class, "TRUE", CompletedStage.class);
     public static final FieldDescriptor RESULTS_FALSE = FieldDescriptor.of(Results.class, "FALSE", CompletedStage.class);
+    public static final FieldDescriptor RESULTS_NULL = FieldDescriptor.of(Results.class, "NULL", CompletedStage.class);
 
 }

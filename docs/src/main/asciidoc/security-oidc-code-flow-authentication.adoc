@@ -1184,6 +1184,49 @@ In such cases an issuer verification failure may be reported by the endpoint and
 In such cases, if you work with Keycloak then please start it with a `KEYCLOAK_FRONTEND_URL` system property set to the externally accessible base URL.
 If you work with other Openid Connect providers then please check your provider's documentation.
 
+[[oidc-saml-broker]]
+== OIDC SAML Identity broker
+
+If your identity provider does not implement OpenId Connect but only the legacy XML-based SAML2.0 SSO protocol, then Quarkus can not be used as a SAML 2.0 adapter, similarly to how `quarkus-oidc` is used as an OIDC adapter.
+
+However, many OIDC providers such as Keycloak, Okta, Auth0, Microsoft ADFS can offer OIDC to SAML 2.0 bridges. You can create an identity broker connection to SAML 2.0 provider in your OIDC provider and use `quarkus-oidc` to authenticate your users to this SAML 2.0 provider with the OIDC provider coordinating OIDC and  SAML 2.0 communications. As far as Quarkus endpoints are concerned, they can continue using the same Quarkus Security and OIDC API and annotations such as `@Authenticated`, `SecurityIdentity`, etc.
+
+For example, lets assume `Okta` is your SAML 2.0 provider and `Keycloak` is your OIDC provider. Here is a typical sequence explaining how to configure `Keycloak` to broker with the `Okta` SAML 2.0 provider.
+
+First, create a new `SAML2` integration in your `Okta` `Dashboard/Applications`:
+
+image::okta-create-saml-integration.png[alt=Okta Create SAML Integration,role="center"]
+
+For example, name it as `OktaSaml`:
+
+image::okta-saml-general-settings.png[alt=Okta SAML General Settings,role="center"]
+
+Next, configure it to point to a Keycloak SAML broker endpoint. At this point you need to know the name of the Keycloak realm, for example, `quarkus`, and, assuming that the Keycloak SAML broker alias is `saml`, enter the endpoint address as `http:localhost:8081/realms/quarkus/broker/saml/endpoint` and Service provider (SP) entity id as `http:localhost:8081/realms/quarkus`, where `http://localhost:8081` is a Keycloak base address and `saml` is a broker alias:
+
+image::okta-saml-configuration.png[alt=Okta SAML Configuration,role="center"]
+
+Next, save this SAML integration and note its Metadata URL:
+
+image::okta-saml-metadata.png[alt=Okta SAML Metadata,role="center"]
+
+Next, add SAML Provider to Keycloak:
+
+First, as usual, create a new realm or import the existing realm to `Keycloak`, in this case, the realm name has to be `quarkus`.
+
+Now, in the `quarkus` Realm properties, navigate to `Identity Providers` and add a new SAML provider:
+
+image::keycloak-add-saml-provider.png[alt=Keycloak Add SAML Provider,role="center"]
+
+Note the alias is set to `saml`, `Redirect URI` is `http:localhost:8081/realms/quarkus/broker/saml/endpoint` and `Service provider entity id` is `http:localhost:8081/realms/quarkus` - these are the same values you have entered when creating the Okta SAML integration in the previous step.
+
+Finally, set `Service entity descriptor` to point to the Okta SAML Intregration Metadata URL you noted at the end of the previous step.
+
+Next, if you would like, you can register this Keycloak SAML Provider as a Default Provider by navigating to `Authentication/browser/Identity Provider Redirector config` and setting both `Alias` and `Default Identity Provider` properties to `saml`. If you do not configure it as a Default Provider then, at the authentication time, Keycloak will offer 2 options - authenticate with the SAML provider, and authenticate directly to Keycloak with the name and password.
+
+Now configure the Quarkus OIDC `web-app` application to point to the Keycloak `quarkus` realm, `quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus` and you are ready to start authenticating your Quarkus users to the Okta SAML 2.0 provider using an OIDC to SAML bridge provided by Keycloak OIDC and Okta SAML 2.0 providers.
+
+You can configure other OIDC providers to provide a SAML bridge similarly to how it can be done for Keycloak. 
+
 [[integration-testing]]
 == Testing
 

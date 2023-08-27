@@ -1045,7 +1045,7 @@ and add them to the reflective hierarchy for `BUILD_TIME` analysis.
 
 ==== Visualizing build step dependencies
 
-It can occasionally be useful to see a visual representation of the interactions between the various build steps. For such cases, adding `-Djboss.builder.graph-output=build.dot` when building an application
+It can occasionally be useful to see a visual representation of the interactions between the various build steps. For such cases, adding `-Dquarkus.builder.graph-output=build.dot` when building an application
 will result in the creation of the `build.dot` file in the project's root directory. See link:https://graphviz.org/resources/[this] for a list of software that can open the file and show the actual visual representation.
 
 [[configuration]]
@@ -2527,7 +2527,7 @@ You can use the `io.quarkus.arc.runtime.BeanContainer` interface to interact wit
             TestBuildAndRunTimeConfig buildTimeConfig,
             TestRunTimeConfig runTimeConfig) {
         log.info("Begin BeanContainerListener callback\n");
-        IConfigConsumer instance = beanContainer.instance(beanClass); <4>
+        IConfigConsumer instance = beanContainer.beanInstance(beanClass); <4>
         instance.loadConfig(buildTimeConfig, runTimeConfig); <5>
         log.infof("configureBeans, instance=%s\n", instance);
     }

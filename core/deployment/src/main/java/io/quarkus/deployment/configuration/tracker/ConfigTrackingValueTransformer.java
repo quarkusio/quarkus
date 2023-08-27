@@ -53,7 +53,11 @@ public class ConfigTrackingValueTransformer {
      * @return non-null string value for a given {@link org.eclipse.microprofile.config.ConfigValue} instance
      */
     public static String asString(ConfigValue value) {
-        return value == null ? NOT_CONFIGURED : value.getValue();
+        if (value == null) {
+            return NOT_CONFIGURED;
+        }
+        var strValue = value.getValue();
+        return strValue == null ? NOT_CONFIGURED : strValue;
     }
 
     private final String userHomeDir;

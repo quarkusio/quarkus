@@ -197,6 +197,7 @@ For more information about OIDC authentication and authorization methods that yo
 |OIDC topic |Quarkus information resource
 |Bearer token authentication mechanism|xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 |Authorization Code Flow authentication mechanism|xref:security-oidc-code-flow-authentication.adoc[OpenID Connect (OIDC) Authorization Code Flow mechanism]
+|OIDC and SAML Identity broker|xref:security-oidc-code-flow-authentication.adoc#oidc-saml-broker[OpenID Connect (OIDC) Authorization Code Flow and SAML Identity broker]
 |Multiple tenants that can support the Bearer token authentication or Authorization Code Flow mechanisms|xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect (OIDC) multi-tenancy]
 |Securing Quarkus with commonly-used OpenID Connect providers|xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]
 |Using Keycloak to centralize authorization |xref:security-keycloak-authorization.adoc[Using OpenID Connect (OIDC) and Keycloak to centralize authorization]

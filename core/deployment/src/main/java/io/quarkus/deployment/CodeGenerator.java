@@ -1,11 +1,13 @@
 package io.quarkus.deployment;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
@@ -24,7 +27,9 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.codegen.CodeGenData;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
+import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingValueTransformer;
+import io.quarkus.deployment.configuration.tracker.ConfigTrackingWriter;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -32,6 +37,7 @@ import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * A set of methods to initialize and execute {@link CodeGenProvider}s.
@@ -187,47 +193,104 @@ public class CodeGenerator {
     }
 
     /**
-     * Initializes an application build time configuration and returns current values of properties
-     * passed in as {@code originalProperties}.
+     * Initializes an application build time configuration and dumps current values of properties
+     * passed in as {@code previouslyRecordedProperties} to a file.
      *
      * @param appModel application model
      * @param launchMode launch mode
      * @param buildSystemProps build system (or project) properties
      * @param deploymentClassLoader build classloader
-     * @param originalProperties properties to read from the initialized configuration
-     * @return current values of the passed in original properties
+     * @param previouslyRecordedProperties properties to read from the initialized configuration
+     * @param outputFile output file
      */
-    public static Properties readCurrentConfigValues(ApplicationModel appModel, String launchMode,
-            Properties buildSystemProps,
-            QuarkusClassLoader deploymentClassLoader, Properties originalProperties) {
+    public static void dumpCurrentConfigValues(ApplicationModel appModel, String launchMode, Properties buildSystemProps,
+            QuarkusClassLoader deploymentClassLoader, Properties previouslyRecordedProperties,
+            Path outputFile) {
+        final LaunchMode mode = LaunchMode.valueOf(launchMode);
+        if (previouslyRecordedProperties.isEmpty()) {
+            try {
+                readConfig(appModel, mode, buildSystemProps, deploymentClassLoader, configReader -> {
+                    var config = configReader.initConfiguration(mode, buildSystemProps, appModel.getPlatformProperties());
+                    final Map<String, String> allProps = new HashMap<>();
+                    for (String name : config.getPropertyNames()) {
+                        allProps.put(name, ConfigTrackingValueTransformer.asString(config.getConfigValue(name)));
+                    }
+                    ConfigTrackingWriter.write(allProps,
+                            config.unwrap(SmallRyeConfig.class).getConfigMapping(ConfigTrackingConfig.class),
+                            configReader.readConfiguration(config),
+                            outputFile);
+                    return null;
+                });
+            } catch (CodeGenException e) {
+                throw new RuntimeException("Failed to load application configuration", e);
+            }
+            return;
+        }
         Config config = null;
         try {
-            config = getConfig(appModel, LaunchMode.valueOf(launchMode), buildSystemProps, deploymentClassLoader);
+            config = getConfig(appModel, mode, buildSystemProps, deploymentClassLoader);
         } catch (CodeGenException e) {
             throw new RuntimeException("Failed to load application configuration", e);
         }
         var valueTransformer = ConfigTrackingValueTransformer.newInstance(config);
-        final Properties currentValues = new Properties(originalProperties.size());
-        for (var originalProp : originalProperties.entrySet()) {
-            var name = originalProp.getKey().toString();
+        final Properties currentValues = new Properties(previouslyRecordedProperties.size());
+        for (var prevProp : previouslyRecordedProperties.entrySet()) {
+            var name = prevProp.getKey().toString();
             var currentValue = config.getConfigValue(name);
             final String current = valueTransformer.transform(name, currentValue);
-            if (!originalProp.getValue().equals(current)) {
-                log.info("Option " + name + " has changed since the last build from "
-                        + originalProp.getValue() + " to " + current);
+            var originalValue = prevProp.getValue();
+            if (!originalValue.equals(current)) {
+                log.info("Option " + name + " has changed since the last build from " + originalValue + " to " + current);
             }
             if (current != null) {
                 currentValues.put(name, current);
             }
         }
-        return currentValues;
+
+        final List<String> names = new ArrayList<>(currentValues.stringPropertyNames());
+        Collections.sort(names);
+
+        final Path outputDir = outputFile.getParent();
+        if (outputDir != null && !Files.exists(outputDir)) {
+            try {
+                Files.createDirectories(outputDir);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        try (BufferedWriter writer = Files.newBufferedWriter(outputFile)) {
+            for (var name : names) {
+                ConfigTrackingWriter.write(writer, name, currentValues.getProperty(name));
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
+        return readConfig(appModel, launchMode, buildSystemProps, deploymentClassLoader,
+                configReader -> configReader.initConfiguration(launchMode, buildSystemProps, appModel.getPlatformProperties()));
+    }
+
+    public static <T> T readConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
+            QuarkusClassLoader deploymentClassLoader, Function<BuildTimeConfigurationReader, T> function)
+            throws CodeGenException {
         final Map<String, List<String>> unavailableConfigServices = getUnavailableConfigServices(appModel.getAppArtifact(),
                 deploymentClassLoader);
+        final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         if (!unavailableConfigServices.isEmpty()) {
+            var sb = new StringBuilder();
+            sb.append(
+                    "The following services are not (yet) available and will be disabled during configuration initialization at the current build phase:");
+            for (Map.Entry<String, List<String>> missingService : unavailableConfigServices.entrySet()) {
+                sb.append(System.lineSeparator());
+                for (String s : missingService.getValue()) {
+                    sb.append("- ").append(s);
+                }
+            }
+            log.warn(sb.toString());
+
             final Map<String, List<String>> allConfigServices = new HashMap<>(unavailableConfigServices.size());
             final Map<String, byte[]> allowedConfigServices = new HashMap<>(unavailableConfigServices.size());
             final Map<String, byte[]> bannedConfigServices = new HashMap<>(unavailableConfigServices.size());
@@ -266,14 +329,15 @@ public class CodeGenerator {
                 configClBuilder.addBannedElement(new MemoryClassPathElement(bannedConfigServices, true));
             }
             deploymentClassLoader = configClBuilder.build();
+            Thread.currentThread().setContextClassLoader(deploymentClassLoader);
         }
         try {
-            return new BuildTimeConfigurationReader(deploymentClassLoader).initConfiguration(launchMode, buildSystemProps,
-                    appModel.getPlatformProperties());
+            return function.apply(new BuildTimeConfigurationReader(deploymentClassLoader));
         } catch (Exception e) {
             throw new CodeGenException("Failed to initialize application configuration", e);
         } finally {
             if (!unavailableConfigServices.isEmpty()) {
+                Thread.currentThread().setContextClassLoader(originalClassLoader);
                 deploymentClassLoader.close();
             }
         }

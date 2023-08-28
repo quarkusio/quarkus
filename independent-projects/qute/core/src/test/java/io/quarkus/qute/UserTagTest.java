@@ -30,7 +30,8 @@ public class UserTagTest {
         assertEquals("nope",
                 engine.parse("{#each this}{#myTag showImage=false /}{/each}").render(Collections.singletonMap("order", order)));
         assertEquals("Herbert",
-                engine.parse("{#each this}{#myTag it showImage=true /}{/each}").render(Collections.singletonList(order)));
+                engine.parse("{#each this}{#myTag it showImage=true _isolated=false /}{/each}")
+                        .render(Collections.singletonList(order)));
     }
 
     @Test
@@ -45,7 +46,8 @@ public class UserTagTest {
         Map<String, Object> order = new HashMap<>();
         order.put("name", "Herbert");
         assertEquals("<b>Herbert</b>",
-                engine.parse("{#myTag showImage=true}{order.name}{/}").render(Collections.singletonMap("order", order)));
+                engine.parse("{#myTag showImage=true _isolated=false}{order.name}{/}")
+                        .render(Collections.singletonMap("order", order)));
         assertEquals("nope", engine.parse("{#myTag}{order.name}{/}").render(Collections.singletonMap("order", order)));
         assertEquals("nope",
                 engine.parse("{#myTag showImage=false}{order.name}{/}").render(Collections.singletonMap("order", order)));
@@ -53,7 +55,7 @@ public class UserTagTest {
                 engine.parse("{#each this}{#myTag showImage=false}{it.name}{/}{/each}")
                         .render(Collections.singletonMap("order", order)));
         assertEquals("<b>Herbert</b>",
-                engine.parse("{#each this}{#myTag showImage=true}{it.name}{/}{/each}")
+                engine.parse("{#each this}{#myTag showImage=true _isolated=false}{it.name}{/}{/each}")
                         .render(Collections.singletonList(order)));
     }
 
@@ -105,7 +107,7 @@ public class UserTagTest {
         engine.putTemplate("my-tag-id", tag);
 
         assertEquals("10 kg",
-                engine.parse("{#itemDetail itemId=1 myNestedContent=\"{item.quantity} {item.unit}\" /}")
+                engine.parse("{#itemDetail itemId=1 myNestedContent=\"{item.quantity} {item.unit}\" _isolated=false /}")
                         .data("items", Map.of(1, Map.of("quantity", 10, "unit", "kg"))).render());
     }
 
@@ -138,6 +140,21 @@ public class UserTagTest {
 
         assertEquals("Baz!::No bar!", engine.parse("{#myTag1 name='Baz'}{#foo}{name}!{/foo}{/myTag1}").render());
         assertEquals("Baz!", engine.parse("{#myTag2}Baz!{/myTag2}").render());
+    }
+
+    @Test
+    public void testIsolation() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addSectionHelper(new UserTagSectionHelper.Factory("myTag", "my-tag-id"))
+                .strictRendering(false)
+                .build();
+
+        Template tag = engine.parse("{name}");
+        engine.putTemplate("my-tag-id", tag);
+        assertEquals("NOT_FOUND", engine.parse("{#myTag /}").data("name", "Dorka").render());
+        assertEquals("Dorka", engine.parse("{#myTag _isolated=false /}").data("name", "Dorka").render());
+        assertEquals("Dorka", engine.parse("{#myTag _unisolated /}").data("name", "Dorka").render());
     }
 
 }

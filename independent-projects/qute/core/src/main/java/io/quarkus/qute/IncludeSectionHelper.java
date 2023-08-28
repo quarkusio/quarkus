@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import io.quarkus.qute.Template.Fragment;
@@ -117,6 +116,8 @@ public class IncludeSectionHelper implements SectionHelper {
                     || key.equals(ISOLATED)
                     // {#include foo _isolated /}
                     || value.equals(ISOLATED)
+                    // {#include foo _unisolated /}
+                    || value.equals(UNISOLATED)
                     // {#include foo _ignoreFragments=true /}
                     || key.equals(IGNORE_FRAGMENTS)
                     // {#include foo _ignoreFragments /}
@@ -134,8 +135,9 @@ public class IncludeSectionHelper implements SectionHelper {
 
         @Override
         protected IncludeSectionHelper newHelper(Supplier<Template> template, Map<String, Expression> params,
-                Map<String, SectionBlock> extendingBlocks, boolean isolated, SectionInitContext context) {
-            return new IncludeSectionHelper(template, extendingBlocks, params, isolated);
+                Map<String, SectionBlock> extendingBlocks, Boolean isolatedValue, SectionInitContext context) {
+            return new IncludeSectionHelper(template, extendingBlocks, params, isolatedValue != null ? isolatedValue
+                    : Boolean.parseBoolean(context.getParameterOrDefault(ISOLATED, Boolean.FALSE.toString())));
         }
 
     }
@@ -143,32 +145,24 @@ public class IncludeSectionHelper implements SectionHelper {
     static abstract class AbstractIncludeFactory<T extends SectionHelper> implements SectionHelperFactory<T> {
 
         static final String ISOLATED = "_isolated";
+        static final String UNISOLATED = "_unisolated";
         static final String IGNORE_FRAGMENTS = "_ignoreFragments";
-        static final String ISOLATED_DEFAULT_VALUE = "false";
 
         @Override
         public boolean treatUnknownSectionsAsBlocks() {
             return true;
         }
 
+        String isolatedDefaultValue() {
+            return Boolean.FALSE.toString();
+        }
+
         void addDefaultParams(ParametersInfo.Builder builder) {
             builder
-                    .addParameter(Parameter.builder(ISOLATED).defaultValue(ISOLATED_DEFAULT_VALUE).optional()
-                            .valuePredicate(new Predicate<String>() {
-
-                                @Override
-                                public boolean test(String v) {
-                                    return ISOLATED.equals(v);
-                                }
-                            }).build())
-                    .addParameter(Parameter.builder(IGNORE_FRAGMENTS).defaultValue(ISOLATED_DEFAULT_VALUE).optional()
-                            .valuePredicate(new Predicate<String>() {
-
-                                @Override
-                                public boolean test(String v) {
-                                    return IGNORE_FRAGMENTS.equals(v);
-                                }
-                            }).build())
+                    .addParameter(Parameter.builder(ISOLATED).defaultValue(isolatedDefaultValue()).optional()
+                            .valuePredicate(ISOLATED::equals).build())
+                    .addParameter(Parameter.builder(IGNORE_FRAGMENTS).defaultValue(Boolean.FALSE.toString()).optional()
+                            .valuePredicate(IGNORE_FRAGMENTS::equals).build())
                     .build();
         }
 
@@ -195,7 +189,7 @@ public class IncludeSectionHelper implements SectionHelper {
         @Override
         public T initialize(SectionInitContext context) {
             boolean isEmpty = context.getBlocks().size() == 1 && context.getBlocks().get(0).isEmpty();
-            boolean isolatedValue = false;
+            Boolean isolatedValue = null;
             boolean ignoreFragments = false;
             Map<String, SectionBlock> extendingBlocks;
 
@@ -226,6 +220,9 @@ public class IncludeSectionHelper implements SectionHelper {
                     if (value.equals(ISOLATED)) {
                         isolatedValue = true;
                         continue;
+                    } else if (value.equals(UNISOLATED)) {
+                        isolatedValue = false;
+                        continue;
                     }
                     if (value.equals(IGNORE_FRAGMENTS)) {
                         ignoreFragments = true;
@@ -242,7 +239,7 @@ public class IncludeSectionHelper implements SectionHelper {
 
             //
             if (!ignoreFragments) {
-                ignoreFragments = Boolean.parseBoolean(context.getParameterOrDefault(IGNORE_FRAGMENTS, ISOLATED_DEFAULT_VALUE));
+                ignoreFragments = Boolean.parseBoolean(context.getParameterOrDefault(IGNORE_FRAGMENTS, "false"));
             }
             final String fragmentId = ignoreFragments ? null : getFragmentId(templateId, context);
             Supplier<Template> currentTemplate;
@@ -292,9 +289,7 @@ public class IncludeSectionHelper implements SectionHelper {
                     return template;
                 }
             };
-
-            return newHelper(template, params, extendingBlocks, isolatedValue ? true
-                    : Boolean.parseBoolean(context.getParameterOrDefault(ISOLATED, ISOLATED_DEFAULT_VALUE)), context);
+            return newHelper(template, params, extendingBlocks, isolatedValue, context);
         }
 
         protected abstract String getTemplateId(SectionInitContext context);
@@ -342,7 +337,7 @@ public class IncludeSectionHelper implements SectionHelper {
         protected abstract boolean ignoreParameterInit(String key, String value);
 
         protected abstract T newHelper(Supplier<Template> template, Map<String, Expression> params,
-                Map<String, SectionBlock> extendingBlocks, boolean isolated, SectionInitContext context);
+                Map<String, SectionBlock> extendingBlocks, Boolean isolatedValue, SectionInitContext context);
     }
 
     enum Code implements ErrorCode {

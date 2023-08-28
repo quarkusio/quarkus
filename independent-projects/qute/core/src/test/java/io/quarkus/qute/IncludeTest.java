@@ -237,4 +237,18 @@ public class IncludeTest {
                 engine.parse("{#include super}{#let foo=1} {foo}").render());
     }
 
+    @Test
+    public void testIsolation() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .strictRendering(false)
+                .build();
+
+        Template foo = engine.parse("{name}");
+        engine.putTemplate("foo", foo);
+        assertEquals("Dorka", engine.parse("{#include foo /}").data("name", "Dorka").render());
+        assertEquals("Dorka", engine.parse("{#include foo _unisolated /}").data("name", "Dorka").render());
+        assertEquals("NOT_FOUND", engine.parse("{#include foo _isolated /}").data("name", "Dorka").render());
+    }
+
 }

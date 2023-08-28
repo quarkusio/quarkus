@@ -1143,10 +1143,10 @@ Then, we can call the tag like this:
 <1> `item` is resolved to an iteration element and can be referenced using the `it` key in the tag template.
 <2> Tag content injected using the `nested-content` key in the tag template.
 
-By default, the tag template can reference data from the parent context.
-For example, the tag above could use the following expression `{items.size}`.
-However, sometimes it might be useful to disable this behavior and execute the tag as an _isolated_ template, i.e. without access to the context of the template that calls the tag.
-In this case, just add `_isolated` or `_isolated=true` argument to the call site, e.g. `{#itemDetail item showImage=true _isolated /}`.
+By default, a tag template cannot reference the data from the parent context.
+Qute executes the tag as an _isolated_ template, i.e. without access to the context of the template that calls the tag.
+However, sometimes it might be useful to change the default behavior and disable the isolation.
+In this case, just add `_isolated=false` or `_unisolated` argument to the call site, for example `{#itemDetail item showImage=true _isolated=false /}` or `{#itemDetail item showImage=true _unisolated /}`.
 
 User tags can also make use of the template inheritance in the same way as regular `{#include}` sections do.
 

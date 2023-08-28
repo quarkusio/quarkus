@@ -21,9 +21,7 @@ import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
-import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
-import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
@@ -48,8 +46,6 @@ public class QuarkusServerEndpointIndexer
     private final DefaultProducesHandler defaultProducesHandler;
     private final JsonDefaultProducersHandler jsonDefaultProducersHandler;
     private final ResteasyReactiveRecorder resteasyReactiveRecorder;
-
-    private SerializerScanningResult serializerScanningResult;
 
     QuarkusServerEndpointIndexer(Builder builder) {
         super(builder);
@@ -152,7 +148,12 @@ public class QuarkusServerEndpointIndexer
     protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo,
             MethodInfo info, AnnotationStore annotationStore) {
         super.handleAdditionalMethodProcessing(method, currentClassInfo, info, annotationStore);
-        warnAboutMissingJsonProviderIfNeeded(method, info);
+
+        if (!capabilities.isCapabilityWithPrefixMissing("io.quarkus.resteasy.reactive.json")) {
+            return;
+        }
+
+        warnAboutMissingJsonProviderIfNeeded(method, info, jsonDefaultProducersHandler, currentDefaultProducesContext);
     }
 
     @Override
@@ -255,80 +256,11 @@ public class QuarkusServerEndpointIndexer
         return index.getAllKnownImplementors(SERVER_MESSAGE_BODY_WRITER).contains(classInfo);
     }
 
-    private void warnAboutMissingJsonProviderIfNeeded(ServerResourceMethod method, MethodInfo info) {
-        if (!capabilities.isCapabilityWithPrefixMissing("io.quarkus.resteasy.reactive.json")) {
-            return;
-        }
-        if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson())) {
-            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(getSerializerScanningResult().getReaders());
-            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(getSerializerScanningResult().getWriters());
-            if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {
-                LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
-                        + info.name()
-                        + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
-            }
-        }
+    @Override
+    protected void logMissingJsonWarning(MethodInfo info) {
+        LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
+                + info.name()
+                + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' (recommended) or 'quarkus-resteasy-reactive-jsonb'.");
     }
 
-    private SerializerScanningResult getSerializerScanningResult() {
-        if (serializerScanningResult == null) {
-            serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
-        }
-        return serializerScanningResult;
-    }
-
-    private boolean appProvidedJsonProviderExists(List<ScannedSerializer> providers) {
-        boolean appProvidedJsonReaderExists = false;
-        for (ScannedSerializer provider : providers) {
-            for (String mt : provider.getMediaTypeStrings()) {
-                if (isJson(mt)) {
-                    appProvidedJsonReaderExists = true;
-                    break;
-                }
-            }
-            if (appProvidedJsonReaderExists) {
-                break;
-            }
-        }
-        return appProvidedJsonReaderExists;
-    }
-
-    private boolean isDefaultJson() {
-        List<MediaType> mediaTypes = jsonDefaultProducersHandler.handle(currentDefaultProducesContext);
-        for (MediaType mediaType : mediaTypes) {
-            if (isJson(mediaType.toString())) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean hasJson(ServerResourceMethod method) {
-        return hasJson(method.getProduces()) || hasJson(method.getConsumes()) || isJson(method.getStreamElementType());
-    }
-
-    private boolean hasNoTypesDefined(ServerResourceMethod method) {
-        return (method.getProduces() == null || method.getProduces().length == 0) &&
-                (method.getConsumes() == null || method.getConsumes().length == 0) &&
-                (method.getStreamElementType() == null);
-    }
-
-    private boolean hasJson(String[] types) {
-        if (types == null) {
-            return false;
-        }
-        for (String type : types) {
-            if (isJson(type)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean isJson(String type) {
-        if (type == null) {
-            return false;
-        }
-        return type.startsWith(MediaType.APPLICATION_JSON);
-    }
 }

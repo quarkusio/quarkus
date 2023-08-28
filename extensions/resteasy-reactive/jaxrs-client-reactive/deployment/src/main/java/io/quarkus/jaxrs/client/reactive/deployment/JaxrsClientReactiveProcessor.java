@@ -295,7 +295,7 @@ public class JaxrsClientReactiveProcessor {
         AdditionalWriters additionalWriters = new AdditionalWriters();
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
-        ClientEndpointIndexer clientEndpointIndexer = new ClientEndpointIndexer.Builder()
+        ClientEndpointIndexer clientEndpointIndexer = new QuarkusClientEndpointIndexer.Builder(capabilities)
                 .setIndex(index)
                 .setApplicationIndex(applicationIndexBuildItem.getIndex())
                 .setExistingConverters(new HashMap<>())

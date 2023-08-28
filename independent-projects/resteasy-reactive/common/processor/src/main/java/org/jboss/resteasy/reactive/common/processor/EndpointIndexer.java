@@ -128,6 +128,9 @@ import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion.Status;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
+import org.jboss.resteasy.reactive.common.processor.scanning.SerializerScanningResult;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationsTransformer;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
@@ -231,6 +234,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
+    private SerializerScanningResult serializerScanningResult;
 
     protected EndpointIndexer(Builder<T, ?, METHOD> builder) {
         this.index = builder.index;
@@ -1566,6 +1570,85 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             result = separator.value().asString();
         }
         return result;
+    }
+
+    protected boolean hasJson(String[] types) {
+        if (types == null) {
+            return false;
+        }
+        for (String type : types) {
+            if (isJson(type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean isJson(String type) {
+        if (type == null) {
+            return false;
+        }
+        return type.startsWith(MediaType.APPLICATION_JSON);
+    }
+
+    protected boolean hasJson(ResourceMethod method) {
+        return hasJson(method.getProduces()) || hasJson(method.getConsumes()) || isJson(method.getStreamElementType());
+    }
+
+    protected boolean hasNoTypesDefined(ResourceMethod method) {
+        return (method.getProduces() == null || method.getProduces().length == 0) &&
+                (method.getConsumes() == null || method.getConsumes().length == 0) &&
+                (method.getStreamElementType() == null);
+    }
+
+    protected boolean isDefaultJson(DefaultProducesHandler jsonDefaultProducersHandler,
+            DefaultProducesHandler.Context context) {
+        List<MediaType> mediaTypes = jsonDefaultProducersHandler.handle(context);
+        for (MediaType mediaType : mediaTypes) {
+            if (isJson(mediaType.toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected SerializerScanningResult getSerializerScanningResult() {
+        if (serializerScanningResult == null) {
+            serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index, applicationScanningResult);
+        }
+        return serializerScanningResult;
+    }
+
+    protected void warnAboutMissingJsonProviderIfNeeded(ResourceMethod method, MethodInfo info,
+            DefaultProducesHandler jsonDefaultProducersHandler,
+            DefaultProducesHandler.Context context) {
+        if (hasJson(method) || (hasNoTypesDefined(method) && isDefaultJson(jsonDefaultProducersHandler, context))) {
+            boolean appProvidedJsonReaderExists = appProvidedJsonProviderExists(getSerializerScanningResult().getReaders());
+            boolean appProvidedJsonWriterExists = appProvidedJsonProviderExists(getSerializerScanningResult().getWriters());
+            if (!appProvidedJsonReaderExists || !appProvidedJsonWriterExists) {
+                logMissingJsonWarning(info);
+            }
+        }
+    }
+
+    private boolean appProvidedJsonProviderExists(List<ScannedSerializer> providers) {
+        boolean appProvidedJsonReaderExists = false;
+        for (ScannedSerializer provider : providers) {
+            for (String mt : provider.getMediaTypeStrings()) {
+                if (isJson(mt)) {
+                    appProvidedJsonReaderExists = true;
+                    break;
+                }
+            }
+            if (appProvidedJsonReaderExists) {
+                break;
+            }
+        }
+        return appProvidedJsonReaderExists;
+    }
+
+    protected void logMissingJsonWarning(MethodInfo info) {
+
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

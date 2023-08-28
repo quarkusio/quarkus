@@ -694,6 +694,22 @@ Uni<String> response = bus.<String>request("address", "hello, how are you?")
         .onItem().transform(Message::body);
 ----
 
+=== Process events on virtual threads
+
+Methods annotated with `@ConsumeEvent` can also be annotated with `@RunOnVirtualThread`.
+In this case, the method is invoked on a virtual thread.
+Each event is invoked on a different virtual thread.
+
+To use this feature, make sure:
+
+1. Your Java runtime supports virtual threads.
+2. Your method uses a blocking signature.
+
+The second point means only methods returning an object or `void` can use `@RunOnVirtualThread`.
+Methods returning a `Uni` or a `CompletionStage` **cannot** run on virtual threads.
+
+Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
+
 === Use codecs
 
 The https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x Event Bus] uses codecs to _serialize_ and _deserialize_ objects.

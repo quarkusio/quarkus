@@ -37,6 +37,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.MultiMap;
 import io.vertx.core.eventbus.Message;
@@ -78,6 +79,7 @@ class EventBusConsumer {
     protected static final MethodDescriptor THROWABLE_TO_STRING = MethodDescriptor
             .ofMethod(Throwable.class, "toString", String.class);
     protected static final DotName BLOCKING = DotName.createSimple(Blocking.class.getName());
+    protected static final DotName RUN_ON_VIRTUAL_THREAD = DotName.createSimple(RunOnVirtualThread.class.getName());
 
     static String generateInvoker(BeanInfo bean, MethodInfo method,
             AnnotationInstance consumeEvent,
@@ -100,9 +102,10 @@ class EventBusConsumer {
         String generatedName = targetPackage + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
 
-        boolean blocking;
+        boolean blocking, runOnVirtualThread;
         AnnotationValue blockingValue = consumeEvent.value("blocking");
         blocking = method.hasAnnotation(BLOCKING) || (blockingValue != null && blockingValue.asBoolean());
+        runOnVirtualThread = method.hasAnnotation(RUN_ON_VIRTUAL_THREAD);
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(EventConsumerInvoker.class).build();
@@ -113,9 +116,14 @@ class EventBusConsumer {
         FieldCreator containerField = invokerCreator.getFieldCreator("container", ArcContainer.class)
                 .setModifiers(ACC_PRIVATE | ACC_FINAL);
 
-        if (blocking) {
+        if (blocking || runOnVirtualThread) {
             MethodCreator isBlocking = invokerCreator.getMethodCreator("isBlocking", boolean.class);
             isBlocking.returnValue(isBlocking.load(true));
+        }
+
+        if (runOnVirtualThread) {
+            MethodCreator isRunOnVirtualThread = invokerCreator.getMethodCreator("isRunningOnVirtualThread", boolean.class);
+            isRunOnVirtualThread.returnValue(isRunOnVirtualThread.load(true));
         }
 
         AnnotationValue orderedValue = consumeEvent.value("ordered");

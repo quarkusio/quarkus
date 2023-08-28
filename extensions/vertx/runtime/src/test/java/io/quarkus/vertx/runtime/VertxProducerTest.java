@@ -13,13 +13,13 @@ import io.vertx.core.Vertx;
 
 public class VertxProducerTest {
 
-    private VertxRecorder recorder;
+    private VertxEventBusConsumerRecorder recorder;
     private VertxProducer producer;
 
     @BeforeEach
     public void setUp() {
         producer = new VertxProducer();
-        recorder = new VertxRecorder();
+        recorder = new VertxEventBusConsumerRecorder();
     }
 
     @AfterEach

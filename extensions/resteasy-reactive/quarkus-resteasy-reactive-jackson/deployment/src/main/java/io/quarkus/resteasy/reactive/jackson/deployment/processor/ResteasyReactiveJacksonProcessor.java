@@ -13,6 +13,7 @@ import java.util.Set;
 
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -201,6 +202,11 @@ public class ResteasyReactiveJacksonProcessor {
     private String getJacksonMessageBodyReader(boolean needsFullFeatureSet) {
         return needsFullFeatureSet ? FullyFeaturedServerJacksonMessageBodyReader.class.getName()
                 : ServerJacksonMessageBodyReader.class.getName();
+    }
+
+    @BuildStep
+    void reflection(BuildProducer<ReflectiveClassBuildItem> producer) {
+        producer.produce(ReflectiveClassBuildItem.builder(Cookie.class).methods().build());
     }
 
     @Record(ExecutionTime.STATIC_INIT)

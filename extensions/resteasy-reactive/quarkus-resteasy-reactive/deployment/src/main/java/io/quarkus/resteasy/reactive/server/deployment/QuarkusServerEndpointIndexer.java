@@ -260,7 +260,7 @@ public class QuarkusServerEndpointIndexer
     protected void logMissingJsonWarning(MethodInfo info) {
         LOGGER.warnf("Quarkus detected the use of JSON in JAX-RS method '" + info.declaringClass().name() + "#"
                 + info.name()
-                + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' or 'quarkus-resteasy-reactive-jsonb'.");
+                + "' but no JSON extension has been added. Consider adding 'quarkus-resteasy-reactive-jackson' (recommended) or 'quarkus-resteasy-reactive-jsonb'.");
     }
 
 }

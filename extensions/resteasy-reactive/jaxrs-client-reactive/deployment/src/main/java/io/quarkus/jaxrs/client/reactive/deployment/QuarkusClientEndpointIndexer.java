@@ -69,7 +69,7 @@ public class QuarkusClientEndpointIndexer extends ClientEndpointIndexer {
     protected void logMissingJsonWarning(MethodInfo info) {
         LOGGER.warnf("Quarkus detected the use of JSON in REST Client method '" + info.declaringClass().name() + "#"
                 + info.name()
-                + "' but no JSON extension has been added. Consider adding 'quarkus-rest-client-reactive-jackson' or 'quarkus-rest-client-reactive-jsonb'.");
+                + "' but no JSON extension has been added. Consider adding 'quarkus-rest-client-reactive-jackson' (recommended) or 'quarkus-rest-client-reactive-jsonb'.");
     }
 
     public static final class Builder extends AbstractBuilder<Builder> {

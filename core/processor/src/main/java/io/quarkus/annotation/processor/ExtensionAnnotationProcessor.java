@@ -81,6 +81,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final Pattern REMOVE_LEADING_SPACE = Pattern.compile("^ ", Pattern.MULTILINE);
 
+    private static final int SYNTHETIC = 0x1000;
+
     private final ConfigDocWriter configDocWriter = new ConfigDocWriter();
     private final ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
@@ -707,7 +709,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             }
         }
         final JClassDef classDef = sourceFile._class(JMod.PUBLIC | JMod.FINAL, className);
-        classDef.constructor(JMod.PRIVATE); // no construction
+        classDef.constructor(JMod.PRIVATE | SYNTHETIC); // no construction
         final JAssignableExpr instanceName = JExprs.name(Constants.INSTANCE_SYM);
         boolean isEnclosingClassPublic = clazz.getModifiers().contains(Modifier.PUBLIC);
         // iterate fields
@@ -741,11 +743,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             final JType publicType = fieldType instanceof PrimitiveType ? realType : JType.OBJECT;
 
             final String fieldName = field.getSimpleName().toString();
-            final JMethodDef getter = classDef.method(JMod.PUBLIC | JMod.STATIC, publicType, "get_" + fieldName);
+            final JMethodDef getter = classDef.method(JMod.PUBLIC | JMod.STATIC | SYNTHETIC, publicType, "get_" + fieldName);
             getter.annotate(SuppressWarnings.class).value("unchecked");
             getter.param(JType.OBJECT, Constants.INSTANCE_SYM);
             getter.body()._return(instanceName.cast(clazzType).field(fieldName));
-            final JMethodDef setter = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.VOID, "set_" + fieldName);
+            final JMethodDef setter = classDef.method(JMod.PUBLIC | JMod.STATIC | SYNTHETIC, JType.VOID, "set_" + fieldName);
             setter.annotate(SuppressWarnings.class).value("unchecked");
             setter.param(JType.OBJECT, Constants.INSTANCE_SYM);
             setter.param(publicType, fieldName);

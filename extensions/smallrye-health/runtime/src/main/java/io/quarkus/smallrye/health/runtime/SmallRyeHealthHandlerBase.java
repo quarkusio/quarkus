@@ -56,12 +56,12 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
             } catch (Throwable e) {
                 log.error("Unable to prepare health response message", e);
             }
-            resp.end((Handler<AsyncResult<Void>>) null);
+            resp.end();
         }, throwable -> {
             log.error("Unable to prepare health response message", throwable);
             HttpServerResponse resp = ctx.response();
             resp.setStatusCode(500);
-            resp.end((Handler<AsyncResult<Void>>) null);
+            resp.end();
         });
     }
 

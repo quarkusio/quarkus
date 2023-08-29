@@ -141,6 +141,7 @@ class PluginMangerState {
     public Map<String, Plugin> jbangPlugins() {
         boolean isUserScoped = !projectRoot.isPresent();
         Map<String, Plugin> jbangPlugins = new HashMap<>();
+        jbangCatalogService.ensureJBangIsInstalled();
         JBangCatalog jbangCatalog = jbangCatalogService.readCombinedCatalog(projectRoot, userHome);
         jbangCatalog.getAliases().forEach((location, alias) -> {
             String name = util.getName(location);

@@ -208,13 +208,16 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         .decoded-token pre {
           white-space: break-spaces;
         }
-        .token-success {
+        .token-payload {
           color: var(--lumo-success-color);
         }
-        .token-danger {
+        .token-headers {
           color: var(--lumo-error-color);
         }
-        .token-primary {
+        .token-signature {
+          color: var(--quarkus-blue);
+        }
+        .token-encryption {
           color: var(--quarkus-blue);
         }
         .margin-top-space-m {
@@ -1150,8 +1153,21 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const signature = parts[2]?.trim();
 
                 return html`
-                <span class='token-danger' title='Header'>${headers}</span>.<span class='token-success' title='Payload'
-                >${payload}</span>.<span class='token-primary' title='Signature'>${signature}</span>
+                <span class='token-headers' title='Header'>${headers}</span>.<span class='token-payload' title='Claims'
+                >${payload}</span>.<span class='token-signature' title='Signature'>${signature}</span>
+            `;
+            } else if (parts.length === 5) {
+                const headers = parts[0]?.trim();
+                const encryptedKey = parts[1]?.trim();
+                const initVector = parts[2]?.trim();
+                const ciphertext = parts[3]?.trim();
+                const authTag = parts[4]?.trim();
+
+                return html`
+                <span class='token-headers' title='Header'>${headers}</span>.<span class='token-encryption' title='Encrypted Key'
+                >${encryptedKey}.<span class='token-encryption' title='Init Vector'
+                >${initVector}</span>.<span class='token-payload' title='Ciphertext'
+                >${ciphertext}</span>.<span class='token-encryption' title='Authentication Tag'>${authTag}</span>
             `;
             } else {
                 return html`${token}`;
@@ -1169,10 +1185,24 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 const signature = parts[2];
                 const jsonPayload = JSON.parse(payload);
                 return html`
-                <pre class='token-danger' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
-                <pre class='token-success' title='Payload'>${JSON.stringify(jsonPayload,null,4)?.trim()}</pre>
-                <span class='token-primary' title='Signature'>${signature?.trim()}</span>
+                <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
+                <pre class='token-payload' title='Claims'>${JSON.stringify(jsonPayload,null,4)?.trim()}</pre>
+-                <span class='token-signature' title='Signature'>${signature?.trim()}</span>
                 `;
+            } else if (parts.length === 5) {
+                const headers = window.atob(parts[0]?.trim());
+                const encryptedKey = parts[1]?.trim();
+                const initVector = parts[2]?.trim();
+                const ciphertext = parts[3]?.trim();
+                const authTag = parts[4]?.trim();
+
+                return html`
+                <pre class='token-headers' title='Header'>${JSON.stringify(JSON.parse(headers), null, 4)?.trim()}</pre>
+                <pre class='token-encryption' title='Encrypted Key'>${encryptedKey}</pre>
+                <pre class='token-encryption' title='Init Vector'>${initVector}</pre>
+                <pre class='token-payload' title='Ciphertext'>${ciphertext}</pre>
+                <span class='token-encryption' title='Authentication Tag'>${authTag}</span>
+            `;
             } else {
                 return html`${token}`;
             }

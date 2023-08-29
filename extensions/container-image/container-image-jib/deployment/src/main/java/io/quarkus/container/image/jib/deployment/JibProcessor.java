@@ -362,6 +362,17 @@ public class JibProcessor {
         } else {
             registryImage.addCredentialRetriever(credentialRetrieverFactory.wellKnownCredentialHelpers());
             registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig());
+
+            // podman credentials: https://docs.podman.io/en/latest/markdown/podman-login.1.html
+            // podman for Windows and macOS
+            registryImage.addCredentialRetriever(credentialRetrieverFactory
+                    .dockerConfig(Paths.get(System.getProperty("user.home"), ".config", "containers", "auth.json")));
+            String xdgRuntimeDir = System.getenv("XDG_RUNTIME_DIR");
+            if ((xdgRuntimeDir != null) && !xdgRuntimeDir.isEmpty()) {
+                registryImage.addCredentialRetriever(
+                        credentialRetrieverFactory.dockerConfig(Paths.get(xdgRuntimeDir, "containers", "auth.json")));
+            }
+
             String dockerConfigEnv = System.getenv().get("DOCKER_CONFIG");
             if (dockerConfigEnv != null) {
                 Path dockerConfigPath = Path.of(dockerConfigEnv);

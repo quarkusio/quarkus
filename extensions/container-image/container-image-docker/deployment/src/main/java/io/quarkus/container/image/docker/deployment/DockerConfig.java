@@ -49,6 +49,7 @@ public class DockerConfig {
     /**
      * The networking mode for the RUN instructions during build
      */
+    @ConfigItem
     public Optional<String> network;
 
     /**

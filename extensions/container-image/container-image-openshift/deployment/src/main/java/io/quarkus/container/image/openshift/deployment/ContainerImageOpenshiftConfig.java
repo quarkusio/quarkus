@@ -132,6 +132,7 @@ public class ContainerImageOpenshiftConfig {
      * The image push secret to use for pushing to external registries.
      * (see: https://cloud.redhat.com/blog/pushing-application-images-to-an-external-registry)
      **/
+    @ConfigItem
     public Optional<String> imagePushSecret;
 
     /**

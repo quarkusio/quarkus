@@ -51,6 +51,7 @@
         <version.jandex>3.1.2</version.jandex>
         <version.jboss-logging>3.5.1.Final</version.jboss-logging>
         <version.mutiny>2.2.0</version.mutiny>
+        <version.bridger>1.6.Final</version.bridger>
         <!-- test versions -->
         <version.assertj>3.24.2</version.assertj>
         <version.junit5>5.9.3</version.junit5>

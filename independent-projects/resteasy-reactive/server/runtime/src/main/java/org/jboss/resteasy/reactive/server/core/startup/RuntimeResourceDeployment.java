@@ -218,21 +218,23 @@ public class RuntimeResourceDeployment {
             if (method.isBlocking()) {
                 if (method.isRunOnVirtualThread()) {
                     handlers.add(blockingHandlerVirtualThread);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionVirtualThread);
                 } else {
                     handlers.add(blockingHandler);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
                 }
                 blockingHandlerIndex = Optional.of(handlers.size() - 1);
-                score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionBlocking);
             } else {
                 if (method.isRunOnVirtualThread()) {
                     //should not happen
-                    log.error("a method was both non blocking and @RunOnVirtualThread, it is now considered " +
+                    log.error("a method was both non-blocking and @RunOnVirtualThread, it is now considered " +
                             "@RunOnVirtual and blocking");
                     handlers.add(blockingHandlerVirtualThread);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionVirtualThread);
                 } else {
                     handlers.add(NonBlockingHandler.INSTANCE);
+                    score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
                 }
-                score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionNonBlocking);
             }
         }
 

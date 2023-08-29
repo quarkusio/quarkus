@@ -145,6 +145,9 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     trackAnnotationUsed(Constants.ANNOTATION_RECORDER);
                     processRecorder(roundEnv, annotation);
                     break;
+                case Constants.ANNOTATION_CONFIG_MAPPING:
+                    trackAnnotationUsed(Constants.ANNOTATION_CONFIG_MAPPING);
+                    break;
             }
         }
     }
@@ -257,7 +260,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         try {
             if (generateDocs) {
                 final Set<ConfigDocGeneratedOutput> outputs = configDocItemScanner
-                        .scanExtensionsConfigurationItems(javaDocProperties);
+                        .scanExtensionsConfigurationItems(javaDocProperties, isAnnotationUsed(ANNOTATION_CONFIG_MAPPING));
                 for (ConfigDocGeneratedOutput output : outputs) {
                     DocGeneratorUtil.sort(output.getConfigDocItems()); // sort before writing
                     configDocWriter.writeAllExtensionConfigDocumentation(output);

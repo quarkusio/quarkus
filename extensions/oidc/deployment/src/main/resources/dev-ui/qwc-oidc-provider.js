@@ -1131,6 +1131,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
     _logout() {
         localStorage.removeItem('authorized');
+        const clientId = this._getClientId();
 
         let address;
         if (propertiesState.keycloakAdminUrl && this._selectedRealm) {
@@ -1141,7 +1142,8 @@ export class QwcOidcProvider extends QwcHotReloadElement {
 
         window.location.assign(address
             + '?' + (propertiesState.postLogoutUriParam ?? '') + '=' + this._getEncodedPath()
-            + '&id_token_hint=' + propertiesState.idToken);
+            + '&id_token_hint=' + propertiesState.idToken
+            + "&client_id=" + clientId);
     }
 
     static _prettyToken(token){

@@ -54,6 +54,7 @@ public final class SmallRyeOpenApiConfig {
     /**
      * Add a certain SecurityScheme with config
      */
+    @ConfigItem
     public Optional<SecurityScheme> securityScheme;
 
     /**

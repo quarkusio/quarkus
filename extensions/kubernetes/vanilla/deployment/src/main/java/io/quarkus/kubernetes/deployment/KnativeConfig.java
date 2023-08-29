@@ -484,11 +484,13 @@ public class KnativeConfig implements PlatformConfiguration {
     /**
      * The name of the revision.
      */
+    @ConfigItem
     Optional<String> revisionName;
 
     /**
      * Traffic configuration.
      */
+    @ConfigItem
     Map<String, TrafficConfig> traffic;
 
     /**

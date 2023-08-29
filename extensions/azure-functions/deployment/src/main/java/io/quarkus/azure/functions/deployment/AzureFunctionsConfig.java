@@ -70,6 +70,7 @@ public class AzureFunctionsConfig {
     /**
      * Specifies the instrumentation key of application insights which will bind to your function app
      */
+    @ConfigItem
     public Optional<String> appInsightsKey;
 
     public RuntimeConfig runtime;
@@ -85,15 +86,18 @@ public class AzureFunctionsConfig {
     /**
      *
      */
+    @ConfigItem
     public Optional<String> appServicePlanResourceGroup;
 
     /**
      * Azure subscription id. Required only if there are more than one subscription in your account
      */
+    @ConfigItem
     public Optional<String> subscriptionId;
     /**
      *
      */
+    @ConfigItem
     public Optional<String> pricingTier;
 
     /**
@@ -233,6 +237,7 @@ public class AzureFunctionsConfig {
         /**
          * Filesystem path to properties file if using <i>file</i> type
          */
+        @ConfigItem
         public Optional<String> path;
 
         /**

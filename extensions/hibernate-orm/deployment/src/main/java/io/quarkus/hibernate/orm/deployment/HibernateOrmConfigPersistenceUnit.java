@@ -28,12 +28,14 @@ public class HibernateOrmConfigPersistenceUnit {
      * <p>
      * If undefined, it will use the default datasource.
      */
+    @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
     public Optional<String> datasource;
 
     /**
      * The packages in which the entities affected to this persistence unit are located.
      */
+    @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)
     public Optional<Set<String>> packages;
 
@@ -195,6 +197,7 @@ public class HibernateOrmConfigPersistenceUnit {
     /**
      * Caching configuration
      */
+    @ConfigItem
     @ConfigDocSection
     public Map<String, HibernateOrmConfigPersistenceUnitCache> cache;
 

@@ -47,6 +47,7 @@ public class VirtualThreadsRecorder {
                 @Override
                 public void run() {
                     Executor executor = current;
+                    current = null;
                     if (executor instanceof ExecutorService) {
                         ExecutorService service = (ExecutorService) executor;
                         service.shutdown();

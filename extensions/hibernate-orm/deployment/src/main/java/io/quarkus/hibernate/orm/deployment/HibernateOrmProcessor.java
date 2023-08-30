@@ -966,15 +966,15 @@ public final class HibernateOrmProcessor {
                 persistenceUnitConfig.database.charset.name());
 
         // Quoting strategy
-        if (persistenceUnitConfig.identifierQuotingStrategy == IdentifierQuotingStrategy.ALL
-                || persistenceUnitConfig.identifierQuotingStrategy == IdentifierQuotingStrategy.ALL_EXCEPT_COLUMN_DEFINITIONS
+        if (persistenceUnitConfig.quoteIdentifiers.strategy == IdentifierQuotingStrategy.ALL
+                || persistenceUnitConfig.quoteIdentifiers.strategy == IdentifierQuotingStrategy.ALL_EXCEPT_COLUMN_DEFINITIONS
                 || persistenceUnitConfig.database.globallyQuotedIdentifiers) {
             descriptor.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
         }
-        if (persistenceUnitConfig.identifierQuotingStrategy == IdentifierQuotingStrategy.ALL_EXCEPT_COLUMN_DEFINITIONS) {
+        if (persistenceUnitConfig.quoteIdentifiers.strategy == IdentifierQuotingStrategy.ALL_EXCEPT_COLUMN_DEFINITIONS) {
             descriptor.getProperties().setProperty(
                     AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS_SKIP_COLUMN_DEFINITIONS, "true");
-        } else if (persistenceUnitConfig.identifierQuotingStrategy == IdentifierQuotingStrategy.ONLY_KEYWORDS) {
+        } else if (persistenceUnitConfig.quoteIdentifiers.strategy == IdentifierQuotingStrategy.ONLY_KEYWORDS) {
             descriptor.getProperties().setProperty(AvailableSettings.KEYWORD_AUTO_QUOTING_ENABLED, "true");
         }
 
@@ -1019,7 +1019,7 @@ public final class HibernateOrmProcessor {
                         String.valueOf(fetchSize)));
 
         // Statistics
-        if (hibernateOrmConfig.metricsEnabled
+        if (hibernateOrmConfig.metrics.enabled
                 || (hibernateOrmConfig.statistics.isPresent() && hibernateOrmConfig.statistics.get())) {
             descriptor.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
             //When statistics are enabled, the default in Hibernate ORM is to also log them after each

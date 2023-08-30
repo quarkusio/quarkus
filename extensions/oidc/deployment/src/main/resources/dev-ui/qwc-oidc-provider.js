@@ -780,7 +780,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                     <vaadin-text-field class="frm-field"
                                        value="/"
                                        @value-changed="${e => {
-            this._servicePath = (e.detail?.value || '').trim().toLowerCase();
+            this._servicePath = (e.detail?.value || '').trim();
             if (!this._servicePath.startsWith('/')) {
                 this._servicePath = '/' + this._servicePath;
             }

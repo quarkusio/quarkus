@@ -1,4 +1,4 @@
-package io.quarkus.grpc.common;
+package io.quarkus;
 
 import static java.lang.annotation.ElementType.CONSTRUCTOR;
 import static java.lang.annotation.ElementType.FIELD;

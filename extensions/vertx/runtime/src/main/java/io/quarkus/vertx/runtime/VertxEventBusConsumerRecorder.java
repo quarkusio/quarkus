@@ -21,6 +21,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
+import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -35,17 +36,17 @@ import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 
 @Recorder
-public class VertxRecorder {
+public class VertxEventBusConsumerRecorder {
 
-    private static final Logger LOGGER = Logger.getLogger(VertxRecorder.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(VertxEventBusConsumerRecorder.class.getName());
 
     static volatile Vertx vertx;
     static volatile List<MessageConsumer<?>> messageConsumers;
 
     public void configureVertx(Supplier<Vertx> vertx, Map<String, ConsumeEvent> messageConsumerConfigurations,
             LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass) {
-        VertxRecorder.vertx = vertx.get();
-        VertxRecorder.messageConsumers = new CopyOnWriteArrayList<>();
+        VertxEventBusConsumerRecorder.vertx = vertx.get();
+        VertxEventBusConsumerRecorder.messageConsumers = new CopyOnWriteArrayList<>();
 
         registerMessageConsumers(messageConsumerConfigurations);
         registerCodecs(codecByClass);
@@ -83,7 +84,7 @@ public class VertxRecorder {
     void registerMessageConsumers(Map<String, ConsumeEvent> messageConsumerConfigurations) {
         if (!messageConsumerConfigurations.isEmpty()) {
             EventBus eventBus = vertx.eventBus();
-            VertxInternal vi = (VertxInternal) VertxRecorder.vertx;
+            VertxInternal vi = (VertxInternal) VertxEventBusConsumerRecorder.vertx;
             CountDownLatch latch = new CountDownLatch(messageConsumerConfigurations.size());
             final List<Throwable> registrationFailures = new ArrayList<>();
             for (Entry<String, ConsumeEvent> entry : messageConsumerConfigurations.entrySet()) {
@@ -110,22 +111,47 @@ public class VertxRecorder {
                                     // We need to create a duplicated context from the "context"
                                     Context dup = VertxContext.getOrCreateDuplicatedContext(context);
                                     setContextSafe(dup, true);
-                                    dup.executeBlocking(new Handler<Promise<Object>>() {
-                                        @Override
-                                        public void handle(Promise<Object> event) {
-                                            try {
-                                                invoker.invoke(m);
-                                            } catch (Exception e) {
-                                                if (m.replyAddress() == null) {
-                                                    // No reply handler
-                                                    throw wrapIfNecessary(e);
-                                                } else {
-                                                    m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
-                                                }
+
+                                    if (invoker.isRunningOnVirtualThread()) {
+                                        // Switch to a Vert.x context to capture it and use it during the invocation.
+                                        dup.runOnContext(new Handler<Void>() {
+                                            @Override
+                                            public void handle(Void event) {
+                                                VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        try {
+                                                            invoker.invoke(m);
+                                                        } catch (Exception e) {
+                                                            if (m.replyAddress() == null) {
+                                                                // No reply handler
+                                                                throw wrapIfNecessary(e);
+                                                            } else {
+                                                                m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                                            }
+                                                        }
+                                                    }
+                                                });
                                             }
-                                            event.complete();
-                                        }
-                                    }, invoker.isOrdered(), null);
+                                        });
+                                    } else {
+                                        dup.executeBlocking(new Handler<Promise<Object>>() {
+                                            @Override
+                                            public void handle(Promise<Object> event) {
+                                                try {
+                                                    invoker.invoke(m);
+                                                } catch (Exception e) {
+                                                    if (m.replyAddress() == null) {
+                                                        // No reply handler
+                                                        throw wrapIfNecessary(e);
+                                                    } else {
+                                                        m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                                    }
+                                                }
+                                                event.complete();
+                                            }
+                                        }, invoker.isOrdered(), null);
+                                    }
                                 } else {
                                     // Will run on the context used for the consumer registration.
                                     // It's a duplicated context, but we need to mark it as safe.

@@ -49,8 +49,9 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.quarkus.vertx.runtime.VertxEventBusConsumerRecorder;
 import io.quarkus.vertx.runtime.VertxProducer;
-import io.quarkus.vertx.runtime.VertxRecorder;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 
 class VertxProcessor {
 
@@ -68,7 +69,7 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxBuildItem build(CoreVertxBuildItem vertx, VertxRecorder recorder,
+    VertxBuildItem build(CoreVertxBuildItem vertx, VertxEventBusConsumerRecorder recorder,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
@@ -102,7 +103,7 @@ class VertxProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void currentContextFactory(BuildProducer<CurrentContextFactoryBuildItem> currentContextFactory,
-            VertxBuildConfig buildConfig, VertxRecorder recorder) {
+            VertxBuildConfig buildConfig, VertxEventBusConsumerRecorder recorder) {
         if (buildConfig.customizeArcContext()) {
             currentContextFactory.produce(new CurrentContextFactoryBuildItem(recorder.currentContextFactory()));
         }
@@ -148,6 +149,12 @@ class VertxProcessor {
                     if (method.returnType().kind() != Kind.VOID && VertxConstants.isMessage(params.get(0).name())) {
                         throw new IllegalStateException(String.format(
                                 "An event consumer business method that accepts io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message must return void [method: %s, bean:%s]",
+                                method, bean));
+                    }
+                    if (method.hasAnnotation(RunOnVirtualThread.class) && consumeEvent.value("ordered") != null
+                            && consumeEvent.value("ordered").asBoolean()) {
+                        throw new IllegalStateException(String.format(
+                                "An event consumer business method that cannot use @RunOnVirtualThread and set the ordered attribute to true [method: %s, bean:%s]",
                                 method, bean));
                     }
                     messageConsumerBusinessMethods

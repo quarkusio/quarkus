@@ -79,10 +79,10 @@ public class HibernateOrmConfig {
     public Optional<Boolean> logSessionMetrics;
 
     /**
-     * Whether metrics are published if a metrics extension is enabled.
+     * Configuration related to metrics.
      */
-    @ConfigItem(name = "metrics.enabled")
-    public boolean metricsEnabled;
+    @ConfigItem
+    public HibernateOrmConfigMetric metrics;
 
     public boolean isAnyNonPersistenceXmlPropertySet() {
         // Do NOT include persistenceXml in here.
@@ -91,7 +91,7 @@ public class HibernateOrmConfig {
                 log.isAnyPropertySet() ||
                 statistics.isPresent() ||
                 logSessionMetrics.isPresent() ||
-                metricsEnabled;
+                metrics.isAnyPropertySet();
     }
 
     public Map<String, HibernateOrmConfigPersistenceUnit> getAllPersistenceUnitConfigsAsMap() {
@@ -168,6 +168,20 @@ public class HibernateOrmConfig {
         @ConfigItem(name = "orm-compatibility.version", defaultValue = "latest")
         @ConvertWith(DatabaseOrmCompatibilityVersion.Converter.class)
         public DatabaseOrmCompatibilityVersion ormCompatibilityVersion;
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigMetric {
+
+        /**
+         * Whether metrics are published if a metrics extension is enabled.
+         */
+        @ConfigItem
+        public boolean enabled;
+
+        public boolean isAnyPropertySet() {
+            return enabled;
+        }
     }
 
 }

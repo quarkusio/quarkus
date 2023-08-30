@@ -209,15 +209,10 @@ public class HibernateOrmConfigPersistenceUnit {
     public HibernateOrmConfigPersistenceUnitDiscriminator discriminator;
 
     /**
-     * Identifiers can be quoted using one of the available strategies.
-     * <p>
-     * Set to {@code none} by default, meaning no identifiers will be quoted. If set to {@code all}, all identifiers and column
-     * definitions will be quoted. Additionally, setting it to {@code all-except-column-definitions} will skip the column
-     * definitions, which can usually be required when they exist, or else use the option {@code only-keywords} to quote only
-     * identifiers deemed SQL keywords by the Hibernate ORM dialect.
+     * Config related to identifier quoting.
      */
-    @ConfigItem(defaultValue = "none", name = "quote-identifiers.strategy")
-    public IdentifierQuotingStrategy identifierQuotingStrategy;
+    @ConfigItem(defaultValue = "none")
+    public HibernateOrmConfigPersistenceUnitQuoteIdentifiers quoteIdentifiers;
 
     /**
      * The default in Quarkus is for 2nd level caching to be enabled,
@@ -288,7 +283,7 @@ public class HibernateOrmConfigPersistenceUnit {
                 multitenantSchemaDatasource.isPresent() ||
                 fetch.isAnyPropertySet() ||
                 discriminator.isAnyPropertySet() ||
-                identifierQuotingStrategy != IdentifierQuotingStrategy.NONE ||
+                quoteIdentifiers.isAnyPropertySet() ||
                 !unsupportedProperties.isEmpty();
     }
 
@@ -550,7 +545,7 @@ public class HibernateOrmConfigPersistenceUnit {
         /**
          * Whether Hibernate should quote all identifiers.
          *
-         * @deprecated {@link #identifierQuotingStrategy} should be used to configure quoting strategy.
+         * @deprecated {@link #quoteIdentifiers} should be used to configure quoting strategy.
          */
         @ConfigItem
         @Deprecated
@@ -650,6 +645,27 @@ public class HibernateOrmConfigPersistenceUnit {
             return batchSize.isPresent() || maxDepth.isPresent();
         }
 
+    }
+
+    @ConfigGroup
+    public static class HibernateOrmConfigPersistenceUnitQuoteIdentifiers {
+
+        /**
+         * Identifiers can be quoted using one of the available strategies.
+         * <p>
+         * Set to {@code none} by default, meaning no identifiers will be quoted. If set to {@code all}, all identifiers and
+         * column
+         * definitions will be quoted. Additionally, setting it to {@code all-except-column-definitions} will skip the column
+         * definitions, which can usually be required when they exist, or else use the option {@code only-keywords} to quote
+         * only
+         * identifiers deemed SQL keywords by the Hibernate ORM dialect.
+         */
+        @ConfigItem(defaultValue = "none")
+        public IdentifierQuotingStrategy strategy;
+
+        public boolean isAnyPropertySet() {
+            return strategy != IdentifierQuotingStrategy.NONE;
+        }
     }
 
     /**

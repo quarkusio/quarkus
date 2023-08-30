@@ -4,10 +4,11 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Hibernate Reactive
-
 include::_attributes.adoc[]
 :config-file: application.properties
 :reactive-doc-url-prefix: https://hibernate.org/reactive/documentation/1.1/reference/html_single/#getting-started
+:extension-status: preview
+
 
 link:https://hibernate.org/reactive/[Hibernate Reactive] is a reactive API for Hibernate ORM, supporting non-blocking database drivers
 and a reactive style of interaction with the database.
@@ -18,6 +19,8 @@ Hibernate Reactive works with the same annotations and most of the configuration
 xref:hibernate-orm.adoc[Hibernate ORM guide]. This guide will only focus on what's specific
 for Hibernate Reactive.
 ====
+
+include::{includes}/extension-status.adoc[]
 
 == Solution
 

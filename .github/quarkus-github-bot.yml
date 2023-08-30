@@ -275,7 +275,7 @@ triage:
     - id: rest-data-panache
       labels: [area/panache]
       title: "(panache.*resource|rest.data.panache)"
-      notify: [Sgitario]
+      notify: [geoand]
     - id: qute
       labels: [area/qute]
       title: "qute"
@@ -295,7 +295,7 @@ triage:
     - id: rest-client
       labels: [area/rest-client]
       title: "rest.client"
-      notify: [cescoffier, geoand, Sgitario]
+      notify: [cescoffier, geoand]
       directories:
         - extensions/rest-client/
     - id: smallrye
@@ -321,7 +321,7 @@ triage:
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand, iocanel, Sgitario]
+      notify: [geoand, iocanel]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -547,7 +547,7 @@ triage:
     - id: jaxb
       labels: [area/jaxb]
       title: "jaxb"
-      notify: [gsmet, Sgitario]
+      notify: [gsmet]
       directories:
         - extensions/jaxb/
     - id: logging
@@ -621,7 +621,7 @@ triage:
     - id: resteasy-reactive
       labels: [area/resteasy-reactive]
       title: resteasy.reactive
-      notify: [geoand, FroMage, stuartwdouglas, Sgitario]
+      notify: [geoand, FroMage, stuartwdouglas]
       directories:
         - extensions/resteasy-reactive/
     - id: scala
@@ -743,7 +743,7 @@ triage:
     - id: stork
       labels: [area/stork]
       title: "stork"
-      notify: [aureamunoz, cescoffier, Sgitario]
+      notify: [aureamunoz, cescoffier]
       directories:
         - extensions/smallrye-stork/
     - id: jakarta

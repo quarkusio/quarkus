@@ -18,6 +18,17 @@ import io.smallrye.config.WithName;
 public interface HttpConfiguration {
     /**
      * Enable the CORS filter.
+     *
+     * @deprecated Use {@link HttpConfiguration#corsEnabled()}. Deprecated because it requires additional syntax to
+     *             configure with the group {@link HttpConfiguration#cors()} in YAML config.
+     */
+    @WithName("cors")
+    @WithDefault("false")
+    @Deprecated
+    boolean oldCorsEnabled();
+
+    /**
+     * Enable the CORS filter.
      */
     @WithName("cors.enabled")
     @WithDefault("${quarkus.http.cors:false}")

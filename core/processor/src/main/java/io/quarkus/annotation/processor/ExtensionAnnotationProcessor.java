@@ -80,6 +80,7 @@ import io.quarkus.annotation.processor.generate_doc.DocGeneratorUtil;
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private static final Pattern REMOVE_LEADING_SPACE = Pattern.compile("^ ", Pattern.MULTILINE);
+    private static final String QUARKUS_GENERATED = "io.quarkus.Generated";
 
     private final ConfigDocWriter configDocWriter = new ConfigDocWriter();
     private final ConfigDocItemScanner configDocItemScanner = new ConfigDocItemScanner();
@@ -711,6 +712,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         }
         final JClassDef classDef = sourceFile._class(JMod.PUBLIC | JMod.FINAL, className);
         classDef.constructor(JMod.PRIVATE); // no construction
+        classDef.annotate(QUARKUS_GENERATED).value("Quarkus annotation processor");
         final JAssignableExpr instanceName = JExprs.name(Constants.INSTANCE_SYM);
         boolean isEnclosingClassPublic = clazz.getModifiers().contains(Modifier.PUBLIC);
         // iterate fields

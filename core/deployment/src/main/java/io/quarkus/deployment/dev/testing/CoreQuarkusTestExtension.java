@@ -43,6 +43,9 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
+import io.quarkus.bootstrap.workspace.ArtifactSources;
+import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
@@ -100,7 +103,8 @@ public class CoreQuarkusTestExtension {
             Collection<Runnable> shutdownTasks) throws Exception {
 
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
-        return createAugmentor(testClassLocation, profile, shutdownTasks);
+        // TODO this is probably wrong since we find the gradle path in the method but the other path elsewhere
+        return createAugmentor(testClassLocation, requiredTestClass, profile, shutdownTasks);
     }
 
     // TODO Re-used from AbstractJvmQuarkusTestExtension
@@ -111,8 +115,10 @@ public class CoreQuarkusTestExtension {
     }
 
     // TODO Re-used from AbstractJvmQuarkusTestExtension
-    protected PrepareResult createAugmentor(Path testClassLocation, Class<? extends QuarkusTestProfile> profile,
+    protected PrepareResult createAugmentor(Path testClassLocation, Class<?> requiredTestClass,
+            Class<? extends QuarkusTestProfile> profile,
             Collection<Runnable> shutdownTasks) throws Exception {
+        System.out.println("HOLLY creating augmentor with prarams" + testClassLocation + " " + requiredTestClass);
 
         // I think the required test class is just an example, since the augmentor is only
         // created once per test profile
@@ -129,62 +135,63 @@ public class CoreQuarkusTestExtension {
                 .normalize()
                 .toAbsolutePath();
 
-        //        final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
-        // If gradle project running directly with IDE
-        //                if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
-        //                    final WorkspaceModule module = gradleAppModel.getApplicationModule();
-        //                    final String testClassFileName = requiredTestClass.getName().replace('.',
-        //                    '/') + ".class";
-        //                    Path testClassesDir = null;
-        //                    for (String classifier : module.getSourceClassifiers()) {
-        //                        final ArtifactSources sources = module.getSources(classifier);
-        //                        if (sources.isOutputAvailable() && sources.getOutputTree().contains
-        //                        (testClassFileName)) {
-        //                            for (SourceDir src : sources.getSourceDirs()) {
-        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                                if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
-        //                                    testClassesDir = src.getOutputDir();
-        //                                }
-        //                            }
-        //                            for (SourceDir src : sources.getResourceDirs()) {
-        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                            }
-        //                            for (SourceDir src : module.getMainSources().getSourceDirs()) {
-        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                            }
-        //                            for (SourceDir src : module.getMainSources().getResourceDirs()) {
-        //                                addToBuilderIfConditionMet.accept(src.getOutputDir());
-        //                            }
-        //                            break;
-        //                        }
-        //                    }
-        //                    if (testClassesDir == null) {
-        //                        final StringBuilder sb = new StringBuilder();
-        //                        sb.append("Failed to locate ").append(requiredTestClass.getName())
-        //                        .append(" in ");
-        //                        for (String classifier : module.getSourceClassifiers()) {
-        //                            final ArtifactSources sources = module.getSources(classifier);
-        //                            if (sources.isOutputAvailable()) {
-        //                                for (SourceDir d : sources.getSourceDirs()) {
-        //                                    if (Files.exists(d.getOutputDir())) {
-        //                                        sb.append(System.lineSeparator()).append(d.getOutputDir
-        //                                        ());
-        //                                    }
-        //                                }
-        //                            }
-        //                        }
-        //                        throw new RuntimeException(sb.toString());
-        //                    }
-        //                    testClassLocation = testClassesDir;
-        //
-        //                } else {
-        if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
-            final String[] sourceDirectories = System.getProperty(
-                    BootstrapConstants.OUTPUT_SOURCES_DIR)
-                    .split(",");
-            for (String sourceDirectory : sourceDirectories) {
-                final Path directory = Paths.get(sourceDirectory);
-                addToBuilderIfConditionMet.accept(directory);
+        final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
+        System.out.println("HOLLY gradle app model is " + gradleAppModel);
+        //If gradle project running directly with IDE
+        if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
+            System.out.println("HOLLY going down IDE gradle path");
+            final WorkspaceModule module = gradleAppModel.getApplicationModule();
+            final String testClassFileName = requiredTestClass.getName().replace('.',
+                    '/') + ".class";
+            Path testClassesDir = null;
+            for (String classifier : module.getSourceClassifiers()) {
+                final ArtifactSources sources = module.getSources(classifier);
+                if (sources.isOutputAvailable() && sources.getOutputTree().contains(testClassFileName)) {
+                    for (SourceDir src : sources.getSourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                        if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
+                            testClassesDir = src.getOutputDir();
+                        }
+                    }
+                    for (SourceDir src : sources.getResourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                    }
+                    for (SourceDir src : module.getMainSources().getSourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                    }
+                    for (SourceDir src : module.getMainSources().getResourceDirs()) {
+                        addToBuilderIfConditionMet.accept(src.getOutputDir());
+                    }
+                    break;
+                }
+            }
+            if (testClassesDir == null) {
+                final StringBuilder sb = new StringBuilder();
+                sb.append("Failed to locate ").append(requiredTestClass.getName())
+                        .append(" in ");
+                for (String classifier : module.getSourceClassifiers()) {
+                    final ArtifactSources sources = module.getSources(classifier);
+                    if (sources.isOutputAvailable()) {
+                        for (SourceDir d : sources.getSourceDirs()) {
+                            if (Files.exists(d.getOutputDir())) {
+                                sb.append(System.lineSeparator()).append(d.getOutputDir());
+                            }
+                        }
+                    }
+                }
+                throw new RuntimeException(sb.toString());
+            }
+            testClassLocation = testClassesDir;
+
+        } else {
+            if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
+                final String[] sourceDirectories = System.getProperty(
+                        BootstrapConstants.OUTPUT_SOURCES_DIR)
+                        .split(",");
+                for (String sourceDirectory : sourceDirectories) {
+                    final Path directory = Paths.get(sourceDirectory);
+                    addToBuilderIfConditionMet.accept(directory);
+                }
             }
         }
 
@@ -281,7 +288,7 @@ public class CoreQuarkusTestExtension {
                             " working directory.");
         }
 
-        //TODO is this needed?
+        //TODO is this needed? Or could we take advantage of this more?
         //        Index testClassesIndex = TestClassIndexer.indexTestClasses(testClassLocation);
         //        // we need to write the Index to make it reusable from other parts of the testing
         //        // infrastructure that run in different ClassLoaders
@@ -330,7 +337,8 @@ public class CoreQuarkusTestExtension {
         Class<? extends QuarkusTestProfile> profile = null;
         // TODO do we want any of these?
         Collection shutdownTasks = new HashSet();
-        PrepareResult result = createAugmentor(location, profile, shutdownTasks);
+        // TODO clearly passing null is not really ideal
+        PrepareResult result = createAugmentor(location, null, profile, shutdownTasks);
         AugmentAction augmentAction = result.augmentAction;
         QuarkusTestProfile profileInstance = result.profileInstance;
 

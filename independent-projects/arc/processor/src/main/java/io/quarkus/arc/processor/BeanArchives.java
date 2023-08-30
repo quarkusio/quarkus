@@ -384,6 +384,9 @@ public final class BeanArchives {
                 indexer.index(stream);
                 result = true;
             } else {
+                System.out.println("HOLLY BeanArchives error path" + className + " in " + classLoader);
+                System.out.printf("HOLLY my go at message Failed to index %s: Class does not exist in ClassLoader %s",
+                        className, classLoader);
                 LOGGER.warnf("Failed to index %s: Class does not exist in ClassLoader %s", className, classLoader);
             }
         } catch (IOException e) {

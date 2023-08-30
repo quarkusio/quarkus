@@ -8,6 +8,7 @@ import org.mockito.AdditionalAnswers;
 import org.mockito.Mockito;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InstanceHandle;
@@ -18,16 +19,18 @@ import io.quarkus.test.junit.mockito.InjectSpy;
 
 public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCallback, QuarkusTestAfterAllCallback {
 
-    // in nested tests, there are multiple states created before destruction is triggered
+    // Set is here because in nested tests, there are multiple states created before destruction is triggered
+    // This field needs to be static because each implemented callback created a new instance of this class
     private static Set<InjectableContext.ContextState> statesToDestroy = new HashSet<>();
 
     @Override
     public void afterConstruct(Object testInstance) {
         Class<?> current = testInstance.getClass();
         // QuarkusTestAfterConstructCallback can be used in @QuarkusIntegrationTest where there is no Arc
-        boolean contextPreviouslyActive = Arc.container() != null && Arc.container().requestContext().isActive();
+        ArcContainer container = Arc.container();
+        boolean contextPreviouslyActive = container != null && container.requestContext().isActive();
         if (!contextPreviouslyActive) {
-            Arc.container().requestContext().activate();
+            statesToDestroy.add(container.requestContext().activate());
         }
         while (current.getSuperclass() != null) {
             for (Field field : current.getDeclaredFields()) {
@@ -44,8 +47,7 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
         }
         if (!contextPreviouslyActive) {
             // only deactivate; we will destroy them in QuarkusTestAfterAllCallback
-            statesToDestroy.add(Arc.container().requestContext().getState());
-            Arc.container().requestContext().deactivate();
+            container.requestContext().deactivate();
         }
     }
 

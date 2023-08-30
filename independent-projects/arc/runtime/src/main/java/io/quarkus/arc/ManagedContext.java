@@ -17,6 +17,11 @@ public interface ManagedContext extends InjectableContext {
         return activate(null);
     }
 
+    // Maintain binary compatibility with Quarkus 3.2
+    default void activate$$bridge() {
+        activate(null);
+    }
+
     /**
      * Activate the context.
      * <p>
@@ -27,6 +32,11 @@ public interface ManagedContext extends InjectableContext {
      * @return the context state
      */
     ContextState activate(ContextState initialState);
+
+    // Maintain binary compatibility with Quarkus 3.2
+    default void activate$$bridge(ContextState initialState) {
+        activate(initialState);
+    }
 
     /**
      * Deactivate the context - do not destoy existing contextual instances.

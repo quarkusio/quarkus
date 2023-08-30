@@ -150,7 +150,7 @@ X509Certificate certificate = credential.getCertificate();
 
 The information from the client certificate can be used to enhance Quarkus `SecurityIdentity`.
 For example, you can add new roles after checking a client certificate subject name, and so on.
-For more information about customizing `SecurityIdentity`, see the link:{url-quarkusio-guides}security-customization#security-identity-customization[Security identity customization] section in the Quarkus "Security tips and tricks" guide.
+For more information about customizing `SecurityIdentity`, see the xref:security-customization.adoc#security-identity-customization[Security identity customization] section in the Quarkus "Security tips and tricks" guide.
 
 [[other-supported-authentication-mechanisms]]
 == Other supported authentication mechanisms
@@ -209,7 +209,7 @@ For more information about OIDC authentication and authorization methods that yo
 To enable the Quarkus OIDC extension at runtime, set `quarkus.oidc.tenant-enabled=false` at build time.
 Then re-enable it at runtime by using a system property.
 
-For more information about managing the individual tenant configurations in multitenant OIDC deployments, see the link:{url-quarkusio-guides}security-openid-connect-multitenancy#disable-tenant[Disabling tenant configurations] section in the "Using OpenID Connect (OIDC) multi-tenancy" guide.
+For more information about managing the individual tenant configurations in multitenant OIDC deployments, see the xref:security-openid-connect-multitenancy.adoc#disable-tenant[Disabling tenant configurations] section in the "Using OpenID Connect (OIDC) multi-tenancy" guide.
 ====
 
 ==== OpenID Connect client and filters

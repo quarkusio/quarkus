@@ -111,7 +111,7 @@ class ForwardedParser {
         calculated = true;
         remoteAddress = delegate.remoteAddress();
         scheme = delegate.scheme();
-        setHostAndPort(delegate.host(), port);
+        setHostAndPort(delegate.getHeader(HttpHeaders.HOST), port);
         uri = delegate.uri();
 
         if (trustedProxyCheck.isProxyAllowed()) {

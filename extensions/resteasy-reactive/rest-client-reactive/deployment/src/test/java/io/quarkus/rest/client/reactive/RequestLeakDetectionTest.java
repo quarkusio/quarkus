@@ -269,9 +269,9 @@ public class RequestLeakDetectionTest {
 
         void run() {
             if (blocking) {
-                context.executeBlocking(p -> {
+                context.executeBlocking(() -> {
                     runnable.run();
-                    p.complete();
+                    return null;
                 });
             } else {
                 context.runOnContext(x -> runnable.run());

@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -21,7 +22,6 @@ import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.ext.web.RoutingContext;
@@ -98,29 +98,26 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.request().endHandler(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Handler<Promise<Object>>() {
+                    VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Void>() {
                         @Override
-                        public void handle(Promise<Object> promise) {
-                            try {
-                                String redirect = "/";
-                                MultiMap attrs = routingContext.request().formAttributes();
-                                Map<String, String> newVals = new HashMap<>();
-                                for (Map.Entry<String, String> i : attrs) {
-                                    if (i.getKey().startsWith("key.")) {
-                                        newVals.put(i.getKey().substring("key.".length()), i.getValue());
-                                    } else if (i.getKey().equals("redirect")) {
-                                        redirect = i.getValue();
-                                    }
+                        public Void call() {
+                            String redirect = "/";
+                            MultiMap attrs = routingContext.request().formAttributes();
+                            Map<String, String> newVals = new HashMap<>();
+                            for (Map.Entry<String, String> i : attrs) {
+                                if (i.getKey().startsWith("key.")) {
+                                    newVals.put(i.getKey().substring("key.".length()), i.getValue());
+                                } else if (i.getKey().equals("redirect")) {
+                                    redirect = i.getValue();
                                 }
-                                CurrentConfig.EDITOR.accept(newVals);
-                                routingContext.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
-                                        .set(HttpHeaderNames.LOCATION, redirect);
-                                routingContext.response().end();
-                            } catch (Throwable t) {
-                                routingContext.fail(t);
                             }
+                            CurrentConfig.EDITOR.accept(newVals);
+                            routingContext.response().setStatusCode(HttpResponseStatus.SEE_OTHER.code()).headers()
+                                    .set(HttpHeaderNames.LOCATION, redirect);
+                            routingContext.response().end();
+                            return null;
                         }
-                    });
+                    }).onFailure(routingContext::fail);
                 }
             });
             routingContext.request().resume();
@@ -136,9 +133,9 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             return;
         }
         ClassLoader current = Thread.currentThread().getContextClassLoader();
-        VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Handler<Promise<Boolean>>() {
+        VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Boolean>() {
             @Override
-            public void handle(Promise<Boolean> event) {
+            public Boolean call() throws Exception {
                 //the blocking pool may have a stale TCCL
                 Thread.currentThread().setContextClassLoader(current);
                 boolean restart = false;
@@ -151,8 +148,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                             try {
                                 restart = hotReplacementContext.doScan(true);
                             } catch (Exception e) {
-                                event.fail(new IllegalStateException("Unable to perform live reload scanning", e));
-                                return;
+                                throw new IllegalStateException("Unable to perform live reload scanning", e);
                             }
                             if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
                                 //its possible a Kafka message or some other source triggered a reload,
@@ -163,8 +159,11 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                         }
                     }
                     if (hotReplacementContext.getDeploymentProblem() != null) {
-                        event.fail(hotReplacementContext.getDeploymentProblem());
-                        return;
+                        if (hotReplacementContext.getDeploymentProblem() instanceof Exception) {
+                            throw (Exception) hotReplacementContext.getDeploymentProblem();
+                        } else {
+                            throw new IllegalStateException(hotReplacementContext.getDeploymentProblem());
+                        }
                     }
                     if (restart) {
                         //close all connections on close, except for this one
@@ -180,24 +179,25 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 } finally {
                     DevConsoleManager.setDoingHttpInitiatedReload(false);
                 }
-                event.complete(restart);
+                return restart;
             }
-        }, false, new Handler<AsyncResult<Boolean>>() {
-            @Override
-            public void handle(AsyncResult<Boolean> event) {
-                if (event.failed()) {
-                    handleDeploymentProblem(routingContext, event.cause());
-                } else {
-                    boolean restart = event.result();
-                    if (restart) {
-                        routingContext.request().headers().set(HEADER_NAME, "true");
-                        VertxHttpRecorder.getRootHandler().handle(routingContext.request());
-                    } else {
-                        routingContext.next();
+        }, false)
+                .onComplete(new Handler<AsyncResult<Boolean>>() {
+                    @Override
+                    public void handle(AsyncResult<Boolean> event) {
+                        if (event.failed()) {
+                            handleDeploymentProblem(routingContext, event.cause());
+                        } else {
+                            boolean restart = event.result();
+                            if (restart) {
+                                routingContext.request().headers().set(HEADER_NAME, "true");
+                                VertxHttpRecorder.getRootHandler().handle(routingContext.request());
+                            } else {
+                                routingContext.next();
+                            }
+                        }
                     }
-                }
-            }
-        });
+                });
 
     }
 

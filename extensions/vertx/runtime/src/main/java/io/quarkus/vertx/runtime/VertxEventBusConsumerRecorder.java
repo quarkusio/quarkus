@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
@@ -26,7 +27,6 @@ import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -135,9 +135,9 @@ public class VertxEventBusConsumerRecorder {
                                             }
                                         });
                                     } else {
-                                        dup.executeBlocking(new Handler<Promise<Object>>() {
+                                        dup.executeBlocking(new Callable<Void>() {
                                             @Override
-                                            public void handle(Promise<Object> event) {
+                                            public Void call() {
                                                 try {
                                                     invoker.invoke(m);
                                                 } catch (Exception e) {
@@ -148,9 +148,9 @@ public class VertxEventBusConsumerRecorder {
                                                         m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                                     }
                                                 }
-                                                event.complete();
+                                                return null;
                                             }
-                                        }, invoker.isOrdered(), null);
+                                        }, invoker.isOrdered());
                                     }
                                 } else {
                                     // Will run on the context used for the consumer registration.

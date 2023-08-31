@@ -3,12 +3,14 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import jakarta.ws.rs.core.HttpHeaders;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -20,6 +22,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.AbstractJsonMessageBodyReader;
 import org.jboss.resteasy.reactive.server.jackson.JacksonBasicMessageBodyReader;
+import org.jboss.resteasy.reactive.server.jaxrs.HttpHeadersImpl;
 import org.jboss.resteasy.reactive.server.spi.ContentType;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpResponse;
@@ -264,6 +267,11 @@ class MessageBodyReaderTests {
         @Override
         public ResteasyReactiveResourceInfo getResteasyReactiveResourceInfo() {
             return null;
+        }
+
+        @Override
+        public HttpHeaders getRequestHeaders() {
+            return new HttpHeadersImpl(Collections.emptyList());
         }
 
         @Override

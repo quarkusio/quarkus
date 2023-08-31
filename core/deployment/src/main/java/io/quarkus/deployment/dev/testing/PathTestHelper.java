@@ -126,6 +126,55 @@ public final class PathTestHelper {
     }
 
     /**
+     * We normally start with a test class and work out the runtime classpath
+     * from that;
+     * here we need to go in the other direction. There's probably existing logic we
+     * can re-use, because this
+     * is seriously brittle
+     * This method finds directories not in BootstrapConstants.OUTPUT_SOURCES_DIR (in the case of Gradle additional sources)
+     */
+    // TODO can be deleted now that we have changed the quarkus plugin?
+    public static Path getTestClassesLocationWithNoContext() {
+
+        // TODO can we be more elegant about this? What about multi-module?
+        // TODO should we cross-reference against the classpath?
+        Path projectRoot = Paths.get("")
+                .normalize()
+                .toAbsolutePath();
+
+        Path applicationRoot = null;
+
+        // TODO this cannot be the right pattern because we don't do it anywhere else, but
+        String[] ses = System.getProperty("java.class.path")
+                .split(File.pathSeparator);
+        for (String s : ses) {
+            Path path = Paths.get(s);
+            if (path.normalize()
+                    .toAbsolutePath()
+                    .startsWith(projectRoot)) {
+                System.out.println("CANDIDATE CLASSPATH " + s);
+                // TODO ugly; set it if we didn't set it to something on the classpath
+                // TODO fragile, we miss other modules in multi-module
+                //  things like us to take the first element on the classpath that fits
+                // TODO we take the first classpath that matches, which is rather arbitrary and brittle
+
+                // The application root needs to be a directory that holds test classes `(or TODO maybe application classes)
+                if (applicationRoot == null) {
+                    applicationRoot = path;
+                    System.out.println("made app root" + applicationRoot);
+                    // TODO we do not break so we can continue logging
+                }
+            }
+        }
+
+        if (applicationRoot == null) {
+            throw new RuntimeException("Could not find any elements of the classpath inside the project root " + projectRoot);
+        }
+
+        return applicationRoot;
+    }
+
+    /**
      * Resolves the directory or the JAR file containing the test class.
      *
      * @param testClass the test class
@@ -167,6 +216,31 @@ public final class PathTestHelper {
      */
     public static Path getAppClassLocation(Class<?> testClass) {
         return getAppClassLocationForTestLocation(getTestClassesLocation(testClass).toString());
+    }
+
+    public static Path getAppClassLocationForRootLocation(String rootLocation) {
+        if (rootLocation.endsWith(".jar")) {
+            if (rootLocation.endsWith("-tests.jar")) {
+                return Paths.get(new StringBuilder()
+                        .append(rootLocation, 0, rootLocation.length() - "-tests.jar".length())
+                        .append(".jar")
+                        .toString());
+            }
+            return Path.of(rootLocation);
+        }
+        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.entrySet()
+                .stream()
+                .map(e -> {
+                    return Path.of(
+                            rootLocation + File.separator + e.getValue());
+                })
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            System.out.println("WAHOO GOT A MAIN PATH" + mainClassesDir.get());
+            return mainClassesDir.get();
+        }
+        throw new IllegalStateException("Unable to find any application content in " + rootLocation);
     }
 
     /**

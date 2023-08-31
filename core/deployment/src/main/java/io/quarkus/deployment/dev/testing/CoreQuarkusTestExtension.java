@@ -1,6 +1,6 @@
 package io.quarkus.deployment.dev.testing;
 
-import static io.quarkus.deployment.dev.testing.PathTestHelper.getAppClassLocationForTestLocation;
+import static io.quarkus.deployment.dev.testing.PathTestHelper.getAppClassLocationForRootLocation;
 import static io.quarkus.deployment.dev.testing.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
@@ -109,6 +109,8 @@ public class CoreQuarkusTestExtension {
 
     // TODO Re-used from AbstractJvmQuarkusTestExtension
     protected ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
+        System.out.println(
+                "HOLLY checking gradleness, guard is " + System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL));
         return System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null
                 ? BuildToolHelper.enableGradleAppModelForTest(projectRoot)
                 : null;
@@ -184,7 +186,18 @@ public class CoreQuarkusTestExtension {
             testClassLocation = testClassesDir;
 
         } else {
-            if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
+            // TODO sort out duplication
+            if (System.getProperty(BootstrapConstants.ALL_OUTPUT_SOURCES_DIR) != null) {
+                System.out.println("HOLLY ALLS processing " + System.getProperty(BootstrapConstants.ALL_OUTPUT_SOURCES_DIR));
+                final String[] sourceDirectories = System.getProperty(
+                        BootstrapConstants.ALL_OUTPUT_SOURCES_DIR)
+                        .split(",");
+                for (String sourceDirectory : sourceDirectories) {
+                    final Path directory = Paths.get(sourceDirectory);
+                    addToBuilderIfConditionMet.accept(directory);
+                }
+            } else if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
+                System.out.println("HOLLY processing " + System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR));
                 final String[] sourceDirectories = System.getProperty(
                         BootstrapConstants.OUTPUT_SOURCES_DIR)
                         .split(",");
@@ -193,13 +206,17 @@ public class CoreQuarkusTestExtension {
                     addToBuilderIfConditionMet.accept(directory);
                 }
             }
+
         }
 
         // testClassLocation = getTestClassesLocation(requiredTestClass);
         System.out.println("test class location is " + testClassLocation);
-        appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
+
+        // TODO rename test class location, it's a root
+        appClassLocation = getAppClassLocationForRootLocation(testClassLocation.toString());
         System.out.println("app class location is " + appClassLocation);
         if (!appClassLocation.equals(testClassLocation)) {
+            System.out.println("Adding test class location explicitly");
             addToBuilderIfConditionMet.accept(testClassLocation);
             // if test classes is a dir, we should also check whether test resources dir exists
             // as a separate dir (gradle)
@@ -210,6 +227,7 @@ public class CoreQuarkusTestExtension {
             addToBuilderIfConditionMet.accept(testResourcesLocation);
         }
 
+        System.out.println("Adding app class location explicitly");
         addToBuilderIfConditionMet.accept(appClassLocation);
         final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(
                 appClassLocation, "main");

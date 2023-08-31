@@ -12,6 +12,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -167,6 +168,7 @@ import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandl
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.EndpointDisabled;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerFileBodyHandler;
+import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerPathBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
@@ -1023,9 +1025,13 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
-    public void builtInReaderOverrides(BuildProducer<BuiltInReaderOverrideBuildItem> producer) {
-        producer.produce(new BuiltInReaderOverrideBuildItem(ServerFileBodyHandler.class.getName(),
+    public void fileHandling(BuildProducer<BuiltInReaderOverrideBuildItem> overrideProducer,
+            BuildProducer<MessageBodyReaderBuildItem> readerProducer) {
+        overrideProducer.produce(new BuiltInReaderOverrideBuildItem(ServerFileBodyHandler.class.getName(),
                 QuarkusServerFileBodyHandler.class.getName()));
+        readerProducer.produce(
+                new MessageBodyReaderBuildItem(QuarkusServerPathBodyHandler.class.getName(), Path.class.getName(), List.of(
+                        MediaType.WILDCARD), RuntimeType.SERVER, true, Priorities.USER));
     }
 
     @BuildStep

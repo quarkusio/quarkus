@@ -1,9 +1,10 @@
 package io.quarkus.test.junit.launcher;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.platform.launcher.LauncherDiscoveryListener;
@@ -18,6 +19,7 @@ import io.quarkus.bootstrap.app.StartupActionHolder;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.dev.testing.CoreQuarkusTestExtension;
 import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.deployment.dev.testing.TestSupport;
@@ -104,53 +106,14 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 System.out.println("HOLLY interceipt original" + originalClassLoader);
                 CoreQuarkusTestExtension coreQuarkusTestExtension = new CoreQuarkusTestExtension();
 
-                // TODO we normally start with a test class and work out the runtime classpath
-                //  from that;
-                // here we need to go in the other direction. There's probably existing logic we
-                // can re-use, because this
-                // is seriously brittle
-                // TODO massi   ve assumptions, completely ignoring multi module projects
-                // Assume the test class lives in the first element on the classpath
                 Path projectRoot = Paths.get("")
                         .normalize()
                         .toAbsolutePath();
 
-                // TODO can we be more elegant about this? What about multi-module?
-                // TODO should we cross-reference against the classpath?
-
-                Path targetDir = projectRoot.resolve("target/test-classes");
-
-                // The gradle case; can we know in advance which it is?
-                Path buildDir = projectRoot.resolve("build");
-
-                System.out.println(
-                        "HOLLY whole class path is " + System.getProperty("java.class.path"));
-                Path applicationRoot;
-
-                // TODO probably pointless, to make sure it's shown as set
-                if (Files.exists(targetDir)) {
-                    applicationRoot = targetDir;
-                } else {
-                    applicationRoot = buildDir;
-                }
-
-                String[] ses = System.getProperty("java.class.path")
-                        .split(":");
-                for (String s : ses) {
-                    Path path = Paths.get(s);
-                    if (path.normalize()
-                            .toAbsolutePath()
-                            .startsWith(projectRoot)) {
-                        System.out.println("CANDIDATE CLASSPATH " + s);
-                        // TODO ugly; set it if we didn't set it to something on the classpath
-                        // TODO fragile, we miss other modules in multi-module
-                        //  things like us to take the first element on the classpath that fits
-                        if (applicationRoot == targetDir || applicationRoot == buildDir) {
-                            applicationRoot = path;
-                            System.out.println("made app root" + applicationRoot);
-                        }
-                    }
-                }
+                // Why do we do this rather than just using the project root?
+                // BootstrapConstants.OUTPUT_SOURCES_DIR does not have gradle additional source sets, but the classpath does
+                //  Path applicationRoot = getTestClassesLocationWithNoContext();
+                Path applicationRoot = projectRoot;
 
                 CuratedApplication curatedApplication;
                 // TODO this makes no sense here because we're on the wrong classloader unless a
@@ -164,7 +127,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
                     System.out.println("An alternate root we couuld do is " + projectRoot);
                     System.out.println(
-                            "That gives gradlle " + getGradleAppModelForIDE(Paths.get("")
+                            "That gives gradle " + getGradleAppModelForIDE(Paths.get("")
                                     .normalize()
                                     .toAbsolutePath()));
 
@@ -208,6 +171,26 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                     //                    currentTestAppConsumer.accept(curatedApplication);
 
                     // TODO   move this to close     shutdownTasks.add(curatedApplication::close);
+
+                    var appModelFactory = curatedApplication.getQuarkusBootstrap().newAppModelFactory();
+                    appModelFactory.setBootstrapAppModelResolver(null);
+                    appModelFactory.setTest(true);
+                    appModelFactory.setLocalArtifacts(Set.of());
+                    // TODO    if (!mainModule) {
+                    //      appModelFactory.setAppArtifact(null);
+                    appModelFactory.setProjectRoot(projectRoot);
+                    //   }
+
+                    // To do this deserialization, we need to have an app root, so we can't use it to find the application model
+
+                    final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
+                    System.out.println("HOLLY test model is " + testModel);
+                    System.out.println(
+                            "module dir is " + Arrays.toString(testModel.getWorkspaceModules().toArray()));
+                    System.out.println(
+                            "module dir is " + ((WorkspaceModule) testModel.getWorkspaceModules().toArray()[0]).getModuleDir());
+                    System.out.println(
+                            "app dir is " + testModel.getApplicationModule().getModuleDir());
                 }
 
                 System.out.println("HOLLY after launch mode is " + LaunchMode.current());

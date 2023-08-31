@@ -66,6 +66,7 @@ public class BuildToolHelper {
     }
 
     public static BuildTool findBuildTool(Path project) {
+        System.out.println("HOLLY finding build tool on " + project);
         Path currentPath = project;
         while (currentPath != null) {
             if (BuildTool.MAVEN.exists(currentPath)) {
@@ -107,6 +108,8 @@ public class BuildToolHelper {
 
     public static ApplicationModel enableGradleAppModel(Path projectRoot, String mode, List<String> jvmArgs, String... tasks)
             throws IOException, AppModelResolverException {
+        System.out.println("HOLLY OK! trying to gradle this up");
+        System.out.println("Is it gradle? " + isGradleProject(projectRoot));
         if (isGradleProject(projectRoot)) {
             log.infof("Loading Quarkus Gradle application model for %s", projectRoot);
             final ApplicationModel model = QuarkusGradleModelFactory.create(

@@ -102,6 +102,7 @@ public final class PathTestHelper {
         //endregion
 
         //region Maven
+        // TODO why is the file separator first on these fragments?
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 File.separator + "test-classes",
                 File.separator + "classes");
@@ -228,18 +229,43 @@ public final class PathTestHelper {
             }
             return Path.of(rootLocation);
         }
-        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.entrySet()
+        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.values()
                 .stream()
-                .map(e -> {
-                    return Path.of(
-                            rootLocation + File.separator + e.getValue());
-                })
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + s).replaceAll("//", "/")).normalize())
                 .filter(path -> Files.exists(path))
                 .findFirst();
         if (mainClassesDir.isPresent()) {
             System.out.println("WAHOO GOT A MAIN PATH" + mainClassesDir.get());
             return mainClassesDir.get();
         }
+
+        // TODO reduce duplicated code, check if we can get rid of some of the regexes
+
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.values()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + "target" + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            System.out.println("WAHOO GOT A MAIN PATH" + mainClassesDir.get());
+            return mainClassesDir.get();
+        }
+
+        // Try the gradle build dir
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.values()
+                .stream()
+                .map(s -> Path.of(
+                        (rootLocation + File.separator + "build" + File.separator + s).replaceAll("//", "/")).normalize())
+                .filter(path -> Files.exists(path))
+                .findFirst();
+        if (mainClassesDir.isPresent()) {
+            System.out.println("WAHOO GOT A MAIN PATH" + mainClassesDir.get());
+            return mainClassesDir.get();
+        }
+
+        // TODO is it safe to throw? are there other build systems we should be considering?
         throw new IllegalStateException("Unable to find any application content in " + rootLocation);
     }
 

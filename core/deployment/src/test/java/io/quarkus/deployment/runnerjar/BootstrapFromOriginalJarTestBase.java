@@ -69,6 +69,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
         IoUtils.mkdirs(ws);
 
         Path applicationRoot = resolver.resolve(appJar.toArtifact()).getResolvedPaths().getSinglePath();
+        System.out.println("HOLLY made curated with bootstrap from original jar base");
         final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
                 .setApplicationRoot(applicationRoot)
                 .setProjectRoot(applicationRoot)

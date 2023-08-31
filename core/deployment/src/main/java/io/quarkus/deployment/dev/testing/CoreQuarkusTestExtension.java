@@ -1,6 +1,6 @@
 package io.quarkus.deployment.dev.testing;
 
-import static io.quarkus.deployment.dev.testing.PathTestHelper.getAppClassLocationForRootLocation;
+import static io.quarkus.deployment.dev.testing.PathTestHelper.getAppClassLocationForTestLocation;
 import static io.quarkus.deployment.dev.testing.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
@@ -133,6 +133,7 @@ public class CoreQuarkusTestExtension {
         };
 
         final Path appClassLocation;
+        Path appClassLocation1;
         final Path projectRoot = Paths.get("")
                 .normalize()
                 .toAbsolutePath();
@@ -212,8 +213,8 @@ public class CoreQuarkusTestExtension {
         // testClassLocation = getTestClassesLocation(requiredTestClass);
         System.out.println("test class location is " + testClassLocation);
 
-        // TODO rename test class location, it's a root
-        appClassLocation = getAppClassLocationForRootLocation(testClassLocation.toString());
+        appClassLocation = getAppClassLocationForTestLocation(testClassLocation.toString());
+
         System.out.println("app class location is " + appClassLocation);
         if (!appClassLocation.equals(testClassLocation)) {
             System.out.println("Adding test class location explicitly");

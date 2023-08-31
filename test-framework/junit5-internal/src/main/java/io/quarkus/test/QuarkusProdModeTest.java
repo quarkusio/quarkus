@@ -427,6 +427,8 @@ public class QuarkusProdModeTest
                     Files.createDirectories(projectClassesDir);
                 }
             }
+
+            System.out.println("HOLLY making prod mode bootstrap builder");
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setApplicationRoot(deploymentDir)
                     .setMode(QuarkusBootstrap.Mode.PROD)

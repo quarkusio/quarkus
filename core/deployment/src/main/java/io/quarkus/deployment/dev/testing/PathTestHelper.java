@@ -219,7 +219,7 @@ public final class PathTestHelper {
         return getAppClassLocationForTestLocation(getTestClassesLocation(testClass).toString());
     }
 
-    public static Path getAppClassLocationForRootLocation(String rootLocation) {
+    public static Path getTestClassLocationForRootLocation(String rootLocation) {
         if (rootLocation.endsWith(".jar")) {
             if (rootLocation.endsWith("-tests.jar")) {
                 return Paths.get(new StringBuilder()
@@ -229,7 +229,7 @@ public final class PathTestHelper {
             }
             return Path.of(rootLocation);
         }
-        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.values()
+        Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
                 .stream()
                 .map(s -> Path.of(
                         (rootLocation + File.separator + s).replaceAll("//", "/")).normalize())
@@ -242,7 +242,7 @@ public final class PathTestHelper {
 
         // TODO reduce duplicated code, check if we can get rid of some of the regexes
 
-        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.values()
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
                 .stream()
                 .map(s -> Path.of(
                         (rootLocation + File.separator + "target" + File.separator + s).replaceAll("//", "/")).normalize())
@@ -254,7 +254,7 @@ public final class PathTestHelper {
         }
 
         // Try the gradle build dir
-        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.values()
+        mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.keySet()
                 .stream()
                 .map(s -> Path.of(
                         (rootLocation + File.separator + "build" + File.separator + s).replaceAll("//", "/")).normalize())
@@ -265,8 +265,9 @@ public final class PathTestHelper {
             return mainClassesDir.get();
         }
 
-        // TODO is it safe to throw? are there other build systems we should be considering?
-        throw new IllegalStateException("Unable to find any application content in " + rootLocation);
+        // TODO is it safe to throw or return null? are there other build systems we should be considering?
+        // throw new IllegalStateException("Unable to find any application content in " + rootLocation);
+        return null;
     }
 
     /**

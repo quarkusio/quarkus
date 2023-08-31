@@ -110,6 +110,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
+import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHandler;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
@@ -165,6 +166,7 @@ import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.EndpointDisabled;
+import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerFileBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
@@ -1022,6 +1024,12 @@ public class ResteasyReactiveProcessor {
     }
 
     @BuildStep
+    public void builtInReaderOverrides(BuildProducer<BuiltInReaderOverrideBuildItem> producer) {
+        producer.produce(new BuiltInReaderOverrideBuildItem(ServerFileBodyHandler.class.getName(),
+                QuarkusServerFileBodyHandler.class.getName()));
+    }
+
+    @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
     public void serverSerializers(ResteasyReactiveRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem,
@@ -1030,6 +1038,7 @@ public class ResteasyReactiveProcessor {
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
+            List<BuiltInReaderOverrideBuildItem> builtInReaderOverrideBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServerSerialisersBuildItem> serverSerializersProducer) {
 
@@ -1047,11 +1056,16 @@ public class ResteasyReactiveProcessor {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(builtinWriter.writerClass.getName())
                     .build());
         }
+        Map<String, String> builtInReaderOverrides = BuiltInReaderOverrideBuildItem.toMap(builtInReaderOverrideBuildItems);
         for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
-            registerReader(recorder, serialisers, builtinReader.entityClass.getName(), builtinReader.readerClass.getName(),
+            String effectiveReaderClassName = builtinReader.readerClass.getName();
+            if (builtInReaderOverrides.containsKey(effectiveReaderClassName)) {
+                effectiveReaderClassName = builtInReaderOverrides.get(effectiveReaderClassName);
+            }
+            registerReader(recorder, serialisers, builtinReader.entityClass.getName(), effectiveReaderClassName,
                     beanContainerBuildItem.getValue(),
                     builtinReader.mediaType, builtinReader.constraint);
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(builtinReader.readerClass.getName())
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(effectiveReaderClassName)
                     .build());
         }
 

@@ -19,6 +19,7 @@ import java.util.regex.Matcher;
 
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.GenericEntity;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.PathSegment;
 import jakarta.ws.rs.core.Request;
@@ -148,6 +149,11 @@ public abstract class ResteasyReactiveRequestContext
 
     @Override
     public abstract ServerHttpResponse serverResponse();
+
+    @Override
+    public HttpHeaders getRequestHeaders() {
+        return getHttpHeaders();
+    }
 
     public Deployment getDeployment() {
         return deployment;

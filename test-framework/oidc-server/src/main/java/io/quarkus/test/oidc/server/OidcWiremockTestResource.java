@@ -12,6 +12,7 @@ import static java.util.stream.Collectors.joining;
 
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,7 +26,9 @@ import org.jose4j.keys.X509Util;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.extension.responsetemplating.ResponseTemplateTransformer;
+import com.github.tomakehurst.wiremock.extension.responsetemplating.TemplateEngine;
 import com.google.common.collect.ImmutableSet;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -52,10 +55,11 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
     @Override
     public Map<String, String> start() {
 
-        server = new WireMockServer(
-                wireMockConfig()
-                        .extensions(new ResponseTemplateTransformer(false))
-                        .dynamicPort());
+        WireMockConfiguration wireMockConfiguration = wireMockConfig();
+        server = new WireMockServer(wireMockConfiguration
+                .extensions(new ResponseTemplateTransformer(TemplateEngine.defaultTemplateEngine(), false,
+                        wireMockConfiguration.filesRoot(), Collections.emptyList()))
+                .dynamicPort());
         server.start();
 
         server.stubFor(

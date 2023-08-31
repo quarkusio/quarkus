@@ -21,8 +21,8 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 
 public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWriter<File> {
-    protected static final String PREFIX = "pfx";
-    protected static final String SUFFIX = "sfx";
+    public static final String PREFIX = "pfx";
+    public static final String SUFFIX = "sfx";
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -33,16 +33,20 @@ public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWrit
     public File readFrom(Class<File> type, Type genericType,
             Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-        File downloadedFile = Files.createTempFile(PREFIX, SUFFIX).toFile();
+        return doRead(httpHeaders, entityStream, Files.createTempFile(PREFIX, SUFFIX).toFile());
+    }
+
+    public static File doRead(MultivaluedMap<String, String> httpHeaders, InputStream entityStream,
+            File file) throws IOException {
         if (HeaderUtil.isContentLengthZero(httpHeaders)) {
-            return downloadedFile;
+            return file;
         }
 
-        try (OutputStream output = new BufferedOutputStream(new FileOutputStream(downloadedFile))) {
+        try (OutputStream output = new BufferedOutputStream(new FileOutputStream(file))) {
             entityStream.transferTo(output);
         }
 
-        return downloadedFile;
+        return file;
     }
 
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

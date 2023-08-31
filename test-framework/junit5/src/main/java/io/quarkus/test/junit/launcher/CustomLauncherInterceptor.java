@@ -34,7 +34,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
     public CustomLauncherInterceptor() throws Exception {
         System.out.println("HOLLY interceipt construct" + getClass().getClassLoader());
         ClassLoader parent = Thread.currentThread()
-                                   .getContextClassLoader();
+                .getContextClassLoader();
         System.out.println("HOLLY CCL is " + parent);
 
         customClassLoader = parent;
@@ -46,7 +46,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         // We visit this several times
         System.out.println("HOLLY interceipt doing" + invocation);
         System.out.println("HOLLY interceipt support is " + TestSupport.instance()
-                                                                       .isPresent());
+                .isPresent());
         System.out.println("HOLLY interceipt holder is " + StartupActionHolder.getStored());
 
         // This class sets a Thead Context Classloader, which JUnit uses to load classes.
@@ -69,13 +69,13 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
             if (invocation instanceof LauncherSession) {
                 LauncherSession sess = (LauncherSession) invocation;
                 sess.getLauncher()
-                    .registerLauncherDiscoveryListeners(new LauncherDiscoveryListener() {
-                        @Override
-                        public void launcherDiscoveryStarted(LauncherDiscoveryRequest request) {
-                            System.out.println("YOYO discovery started " + request);
-                            LauncherDiscoveryListener.super.launcherDiscoveryStarted(request);
-                        }
-                    });
+                        .registerLauncherDiscoveryListeners(new LauncherDiscoveryListener() {
+                            @Override
+                            public void launcherDiscoveryStarted(LauncherDiscoveryRequest request) {
+                                System.out.println("YOYO discovery started " + request);
+                                LauncherDiscoveryListener.super.launcherDiscoveryStarted(request);
+                            }
+                        });
             }
 
             Thread currentThread = Thread.currentThread();
@@ -98,8 +98,8 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
             System.out.println("HOLLY before launch mode is " + LaunchMode.current());
             System.out.println("HOLLY other way us " + ConfigProvider.getConfig()
-                                                                     .unwrap(SmallRyeConfig.class)
-                                                                     .getProfiles());
+                    .unwrap(SmallRyeConfig.class)
+                    .getProfiles());
             try {
                 System.out.println("HOLLY interceipt original" + originalClassLoader);
                 CoreQuarkusTestExtension coreQuarkusTestExtension = new CoreQuarkusTestExtension();
@@ -112,8 +112,8 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 // TODO massi   ve assumptions, completely ignoring multi module projects
                 // Assume the test class lives in the first element on the classpath
                 Path projectRoot = Paths.get("")
-                                        .normalize()
-                                        .toAbsolutePath();
+                        .normalize()
+                        .toAbsolutePath();
 
                 // TODO can we be more elegant about this? What about multi-module?
                 // TODO should we cross-reference against the classpath?
@@ -135,7 +135,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 }
 
                 String[] ses = System.getProperty("java.class.path")
-                                     .split(":");
+                        .split(":");
                 for (String s : ses) {
                     Path path = Paths.get(s);
                     if (path.normalize()
@@ -165,34 +165,34 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                     System.out.println("An alternate root we couuld do is " + projectRoot);
                     System.out.println(
                             "That gives gradlle " + getGradleAppModelForIDE(Paths.get("")
-                                                                                 .normalize()
-                                                                                 .toAbsolutePath()));
+                                    .normalize()
+                                    .toAbsolutePath()));
 
                     curatedApplication = QuarkusBootstrap.builder()
-                                                         //.setExistingModel(gradleAppModel)
-                                                         // unfortunately this model is not
-                                                         // re-usable
-                                                         // due
-                                                         // to PathTree serialization by Gradle
-                                                         .setIsolateDeployment(true)
-                                                         .setMode(
-                                                                 QuarkusBootstrap.Mode.TEST) //
-                                                         // Even in continuous testing, we set
-                                                         // the mode to test - here, if we go
-                                                         // down this path we know it's normal mode
-                                                         // is this always right?
-                                                         .setTest(true)
+                            //.setExistingModel(gradleAppModel)
+                            // unfortunately this model is not
+                            // re-usable
+                            // due
+                            // to PathTree serialization by Gradle
+                            .setIsolateDeployment(true)
+                            .setMode(
+                                    QuarkusBootstrap.Mode.TEST) //
+                            // Even in continuous testing, we set
+                            // the mode to test - here, if we go
+                            // down this path we know it's normal mode
+                            // is this always right?
+                            .setTest(true)
 
-                                                         .setApplicationRoot(applicationRoot)
+                            .setApplicationRoot(applicationRoot)
 
-                                                         //                    .setTargetDirectory(
-                                                         //                            PathTestHelper
-                                                         //                            .getProjectBuildDir(
-                                                         //                                    projectRoot, testClassLocation))
-                                                         .setProjectRoot(projectRoot)
-                                                         //                        .setApplicationRoot(rootBuilder.build())
-                                                         .build()
-                                                         .bootstrap();
+                            //                    .setTargetDirectory(
+                            //                            PathTestHelper
+                            //                            .getProjectBuildDir(
+                            //                                    projectRoot, testClassLocation))
+                            .setProjectRoot(projectRoot)
+                            //                        .setApplicationRoot(rootBuilder.build())
+                            .build()
+                            .bootstrap();
 
                     //                    QuarkusClassLoader tcl = curatedApplication
                     //                    .createDeploymentClassLoader();
@@ -212,7 +212,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
                 System.out.println("HOLLY after launch mode is " + LaunchMode.current());
                 final QuarkusBootstrap.Mode currentMode = curatedApplication.getQuarkusBootstrap()
-                                                                            .getMode();
+                        .getMode();
                 ClassLoader loader = coreQuarkusTestExtension.doJavaStart(applicationRoot,
                         curatedApplication);
                 currentThread.setContextClassLoader(loader);
@@ -230,10 +230,10 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         } else {
             // TODO should we be unsetting the classloader somewhere?
             Thread.currentThread()
-                  .setContextClassLoader(StartupActionHolder.getStored()
-                                                            .getClassLoader());
+                    .setContextClassLoader(StartupActionHolder.getStored()
+                            .getClassLoader());
             System.out.println("HOLLY NOW TCCL IS " + Thread.currentThread()
-                                                            .getContextClassLoader());
+                    .getContextClassLoader());
             return invocation.proceed();
         }
     }

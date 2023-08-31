@@ -237,7 +237,7 @@ public class ResteasyReactiveJacksonProcessor {
                     if ((jsonViews == null) || (jsonViews.length == 0)) {
                         continue;
                     }
-                    recorder.recordJsonView(getMethodId(instance.target().asMethod()), jsonViews[0].name().toString());
+                    recorder.recordJsonView(getTargetId(instance.target()), jsonViews[0].name().toString());
                 }
             }
             if (resourceClass.annotationsMap().containsKey(CUSTOM_SERIALIZATION)) {

@@ -3,7 +3,6 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import jakarta.ws.rs.core.HttpHeaders;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +16,7 @@ import java.util.Objects;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.container.CompletionCallback;
 import jakarta.ws.rs.container.ConnectionCallback;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 

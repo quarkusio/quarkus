@@ -19,8 +19,8 @@ public class ResteasyReactiveServerJacksonRecorder {
     private static final Map<String, Class<?>> customSerializationMap = new HashMap<>();
     private static final Map<String, Class<?>> customDeserializationMap = new HashMap<>();
 
-    public void recordJsonView(String methodId, String className) {
-        jsonViewMap.put(methodId, loadClass(className));
+    public void recordJsonView(String targetId, String className) {
+        jsonViewMap.put(targetId, loadClass(className));
     }
 
     public void recordCustomSerialization(String target, String className) {
@@ -40,6 +40,10 @@ public class ResteasyReactiveServerJacksonRecorder {
                 customDeserializationMap.clear();
             }
         });
+    }
+
+    public static Class<?> jsonViewForClass(Class<?> clazz) {
+        return jsonViewMap.get(clazz.getName());
     }
 
     public static Class<?> jsonViewForMethod(String methodId) {

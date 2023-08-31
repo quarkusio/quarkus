@@ -255,35 +255,28 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @GET
     @Path("/user-without-view")
     public User userWithoutView() {
-        return testUser();
+        return User.testUser();
     }
 
     @JsonView(Views.Public.class)
     @GET
     @Path("/user-with-public-view")
     public User userWithPublicView() {
-        return testUser();
+        return User.testUser();
     }
 
     @JsonView(Views.Private.class)
     @GET
     @Path("/user-with-private-view")
     public User userWithPrivateView() {
-        return testUser();
+        return User.testUser();
     }
 
     @CustomSerialization(UnquotedFieldsPersonSerialization.class)
     @GET
     @Path("/invalid-use-of-custom-serializer")
     public User invalidUseOfCustomSerializer() {
-        return testUser();
-    }
-
-    private User testUser() {
-        User user = new User();
-        user.id = 1;
-        user.name = "test";
-        return user;
+        return User.testUser();
     }
 
     @GET

@@ -66,6 +66,13 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
                 Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
                 if (jsonViewValue != null) {
                     effectiveWriter = effectiveWriter.withView(jsonViewValue);
+                } else {
+                    jsonViewValue = ResteasyReactiveServerJacksonRecorder
+                            .jsonViewForClass(resourceInfo.getResourceClass());
+                    if (jsonViewValue != null) {
+                        effectiveWriter = effectiveWriter.withView(jsonViewValue);
+                    }
+
                 }
             }
             effectiveWriter.writeValue(stream, o);

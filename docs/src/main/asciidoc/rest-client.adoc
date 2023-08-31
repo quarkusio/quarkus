@@ -669,20 +669,20 @@ First, Wiremock needs to be added as a test dependency. For a Maven project that
 .pom.xml
 ----
 <dependency>
-    <groupId>com.github.tomakehurst</groupId>
-    <artifactId>wiremock-jre8</artifactId>
+    <groupId>org.wiremock</groupId>
+    <artifactId>wiremock</artifactId>
     <scope>test</scope>
     <version>${wiremock.version}</version> <1>
 </dependency>
 ----
-<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
 
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-testImplementation("com.github.tomakehurst:wiremock-jre8:$wiremockVersion") <1>
+testImplementation("org.wiremock:wiremock:$wiremockVersion") <1>
 ----
-<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/com.github.tomakehurst/wiremock-jre8[here].
+<1> Use a proper Wiremock version. All available versions can be found link:https://search.maven.org/artifact/org.wiremock/wiremock[here].
 
 In Quarkus tests when some service needs to be started before the Quarkus tests are ran, we utilize the `@io.quarkus.test.common.QuarkusTestResource`
 annotation to specify a `io.quarkus.test.common.QuarkusTestResourceLifecycleManager` which can start the service and supply configuration

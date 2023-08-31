@@ -88,7 +88,8 @@ updates:
       # Agroal
       - dependency-name: io.agroal:*
       # WireMock
-      - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
+      - dependency-name: org.wiremock:wiremock
+      - dependency-name: org.wiremock:wiremock-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
       # Picocli
       - dependency-name: info.picocli:*

@@ -110,7 +110,7 @@
 
         <assertj.version>3.24.2</assertj.version>
 
-        <wiremock-jre8.version>2.35.0</wiremock-jre8.version>
+        <wiremock.version>3.0.0</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
@@ -262,9 +262,9 @@
                 <version>${unboundid-ldap.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.github.tomakehurst</groupId>
-                <artifactId>wiremock-jre8-standalone</artifactId>
-                <version>${wiremock-jre8.version}</version>
+                <groupId>org.wiremock</groupId>
+                <artifactId>wiremock-standalone</artifactId>
+                <version>${wiremock.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
@@ -689,9 +689,9 @@
                     <version>${wiremock-maven-plugin.version}</version>
                     <dependencies>
                         <dependency>
-                            <groupId>com.github.tomakehurst</groupId>
-                            <artifactId>wiremock-jre8-standalone</artifactId>
-                            <version>${wiremock-jre8.version}</version>
+                            <groupId>org.wiremock</groupId>
+                            <artifactId>wiremock-standalone</artifactId>
+                            <version>${wiremock.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>

@@ -6,6 +6,8 @@ on:
     paths:
       - 'docs/src/main/asciidoc/**'
       - '.github/workflows/doc-build.yml'
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
 jobs:
   preview-teardown:

@@ -1,5 +1,7 @@
 package io.quarkus.test.junit.launcher;
 
+import static io.quarkus.deployment.dev.testing.PathTestHelper.getTestClassLocationForRootLocation;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -113,7 +115,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 // Why do we do this rather than just using the project root?
                 // BootstrapConstants.OUTPUT_SOURCES_DIR does not have gradle additional source sets, but the classpath does
                 //  Path applicationRoot = getTestClassesLocationWithNoContext();
-                Path applicationRoot = projectRoot;
+                Path applicationRoot = getTestClassLocationForRootLocation(projectRoot.toString());
 
                 CuratedApplication curatedApplication;
                 // TODO this makes no sense here because we're on the wrong classloader unless a

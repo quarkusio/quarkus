@@ -50,7 +50,6 @@ class QuarkusTestProfileAwareClassOrdererTest {
     }
 
     @Test
-    //@Disabled // TODO we broke test profiles
     void allVariants() {
         ClassDescriptor quarkusTest1Desc = quarkusDescriptorMock(Test01.class, null);
         ClassDescriptor quarkusTestWithUnrestrictedResourceDesc = quarkusDescriptorMock(Test02.class, Manager3.class, false);

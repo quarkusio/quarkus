@@ -204,9 +204,11 @@ Now, create the `org.acme.elasticsearch.FruitResource` class as follows:
 package org.acme.elasticsearch;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -350,7 +352,7 @@ If you want to use Docker to run an Elasticsearch instance, you can use the foll
 [source,bash,subs=attributes+]
 ----
 docker run --name elasticsearch  -e "discovery.type=single-node" -e "ES_JAVA_OPTS=-Xms512m -Xmx512m"\
-       -e "cluster.routing.allocation.disk.threshold_enabled=false"
+       -e "cluster.routing.allocation.disk.threshold_enabled=false" -e "xpack.security.enabled=false"\
        --rm -p 9200:9200 {elasticsearch-image}
 ----
 

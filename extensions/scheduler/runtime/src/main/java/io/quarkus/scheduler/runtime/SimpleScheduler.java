@@ -64,6 +64,7 @@ import io.quarkus.scheduler.common.runtime.SyntheticScheduled;
 import io.quarkus.scheduler.common.runtime.util.SchedulerUtils;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig.StartMode;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -390,16 +391,32 @@ public class SimpleScheduler implements Scheduler {
                 Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
                 VertxContextSafetyToggle.setContextSafe(context, true);
                 if (invoker.isBlocking()) {
-                    context.executeBlocking(new Handler<Promise<Object>>() {
-                        @Override
-                        public void handle(Promise<Object> p) {
-                            try {
-                                doInvoke(now, scheduledFireTime);
-                            } finally {
-                                p.complete();
+                    if (invoker.isRunningOnVirtualThread()) {
+                        // While counter-intuitive, we switch to a safe context, so that context is captured and attached
+                        // to the virtual thread.
+                        context.runOnContext(new Handler<Void>() {
+                            @Override
+                            public void handle(Void event) {
+                                VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        doInvoke(now, scheduledFireTime);
+                                    }
+                                });
                             }
-                        }
-                    }, false);
+                        });
+                    } else {
+                        context.executeBlocking(new Handler<Promise<Object>>() {
+                            @Override
+                            public void handle(Promise<Object> p) {
+                                try {
+                                    doInvoke(now, scheduledFireTime);
+                                } finally {
+                                    p.complete();
+                                }
+                            }
+                        }, false);
+                    }
                 } else {
                     context.runOnContext(new Handler<Void>() {
                         @Override
@@ -638,6 +655,11 @@ public class SimpleScheduler implements Scheduler {
                         } catch (Exception e) {
                             return CompletableFuture.failedStage(e);
                         }
+                    }
+
+                    @Override
+                    public boolean isRunningOnVirtualThread() {
+                        return runOnVirtualThread;
                     }
                 };
             } else {

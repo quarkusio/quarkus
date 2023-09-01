@@ -88,6 +88,7 @@ import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig;
 import io.quarkus.scheduler.runtime.SchedulerRuntimeConfig.StartMode;
 import io.quarkus.scheduler.runtime.SimpleScheduler;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
+import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -782,6 +783,11 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                             return CompletableFuture.failedStage(e);
                         }
                     }
+
+                    @Override
+                    public boolean isRunningOnVirtualThread() {
+                        return runOnVirtualThread;
+                    }
                 };
             } else {
                 invoker = new DefaultInvoker() {
@@ -868,17 +874,38 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                     } else {
                         Context context = VertxContext.getOrCreateDuplicatedContext(vertx);
                         VertxContextSafetyToggle.setContextSafe(context, true);
-                        context.executeBlocking(new Handler<Promise<Object>>() {
-                            @Override
-                            public void handle(Promise<Object> p) {
-                                try {
-                                    trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
-                                    p.complete();
-                                } catch (Exception e) {
-                                    p.tryFail(e);
+                        if (trigger.invoker.isRunningOnVirtualThread()) {
+                            // While counter-intuitive, we switch to a safe context, so that context is captured and attached
+                            // to the virtual thread.
+                            context.runOnContext(new Handler<Void>() {
+                                @Override
+                                public void handle(Void event) {
+                                    VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            try {
+                                                trigger.invoker
+                                                        .invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
+                                            } catch (Exception ignored) {
+                                                // already logged by the StatusEmitterInvoker
+                                            }
+                                        }
+                                    });
                                 }
-                            }
-                        }, false);
+                            });
+                        } else {
+                            context.executeBlocking(new Handler<Promise<Object>>() {
+                                @Override
+                                public void handle(Promise<Object> p) {
+                                    try {
+                                        trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
+                                        p.complete();
+                                    } catch (Exception e) {
+                                        p.tryFail(e);
+                                    }
+                                }
+                            }, false);
+                        }
                     }
                 } else {
                     Context context = VertxContext.getOrCreateDuplicatedContext(vertx);

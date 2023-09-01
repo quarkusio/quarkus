@@ -33,6 +33,8 @@
         <module>amqp-virtual-threads</module>
         <module>jms-virtual-threads</module>
         <module>vertx-event-bus-virtual-threads</module>
+        <module>scheduler-virtual-threads</module>
+        <module>quartz-virtual-threads</module>
     </modules>
 
     <build>

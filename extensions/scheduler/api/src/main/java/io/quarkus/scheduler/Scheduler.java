@@ -168,7 +168,18 @@ public interface Scheduler {
          * @param task
          * @return self
          */
-        JobDefinition setTask(Consumer<ScheduledExecution> task);
+        default JobDefinition setTask(Consumer<ScheduledExecution> task) {
+            return setTask(task, false);
+        }
+
+        /**
+         * Configures the task to schedule.
+         *
+         * @param task the task, must not be {@code null}
+         * @param runOnVirtualThread whether the task must be run on a virtual thread if the JVM allows it.
+         * @return self the current job definition
+         */
+        JobDefinition setTask(Consumer<ScheduledExecution> task, boolean runOnVirtualThread);
 
         /**
          *

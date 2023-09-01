@@ -396,7 +396,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <label slot="label">User name</label>
                         <vaadin-text-field class="frm-field" title="User" value="" required
                                            @value-changed="${e => {
-                                               this._passwordGrantUsername = (e.detail?.value || '').trim().toLowerCase();
+                                               this._passwordGrantUsername = (e.detail?.value || '').trim();
                                            }}"></vaadin-text-field>
                     </vaadin-form-item>
                 </vaadin-form-layout>
@@ -405,7 +405,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <label slot="label">Password</label>
                         <vaadin-password-field class="frm-field" title="Password" value=""
                                                @value-changed="${e => {
-                                                   this._passwordGrantPwd = (e.detail?.value || '').trim().toLowerCase();
+                                                   this._passwordGrantPwd = (e.detail?.value || '').trim();
                                                }}"></vaadin-password-field>
                     </vaadin-form-item>
                 </vaadin-form-layout>
@@ -595,7 +595,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                             <label slot="label">Secret</label>
                             <vaadin-password-field class="frm-field" title="Secret"
                                     @value-changed="${e => {
-                                        this._selectedClientSecret = (e.detail?.value || '').trim().toLowerCase();
+                                        this._selectedClientSecret = (e.detail?.value || '').trim();
                                     }}"
                                     value="${propertiesState.keycloakRealms?.length === 1 ? (propertiesState.clientSecret ?? '') : ''}">
                             </vaadin-password-field>
@@ -619,7 +619,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         <label slot="label">Client</label>
                         <vaadin-text-field class="frm-field" title="Client ID"
                                            @value-changed="${e => {
-                                                this._selectedClientId = (e.detail?.value || '').trim().toLowerCase();
+                                                this._selectedClientId = (e.detail?.value || '').trim();
                                             }}"
                                            value="${propertiesState.keycloakRealms?.length === 1 ? (propertiesState.clientId ?? '') : ''}">
                         </vaadin-text-field>

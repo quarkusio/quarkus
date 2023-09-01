@@ -1,7 +1,7 @@
 package io.quarkus.arc.test.unused;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.logging.Formatter;
@@ -17,7 +17,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.impl.ArcContainerImpl;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ApiLookupProblemDetectedTest {
+public class ArcContainerSupplierLookupProblemDetectedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -31,17 +31,17 @@ public class ApiLookupProblemDetectedTest {
                 Formatter fmt = new PatternFormatter("%m");
                 String message = fmt.format(warning);
                 assertTrue(message.contains(
-                        "Stack frame: io.quarkus.arc.test.unused.ApiLookupProblemDetectedTest.testWarning"),
+                        "Stack frame: io.quarkus.arc.test.unused.ArcContainerSupplierLookupProblemDetectedTest.testWarning"),
                         message);
                 assertTrue(message.contains(
-                        "Required type: class io.quarkus.arc.test.unused.ApiLookupProblemDetectedTest$Alpha"),
+                        "Required type: class io.quarkus.arc.test.unused.ArcContainerSupplierLookupProblemDetectedTest$Alpha"),
                         message);
             });
 
     @Test
     public void testWarning() {
         // Note that the warning is only displayed once, subsequent calls use a cached result
-        assertFalse(Arc.container().instance(Alpha.class).isAvailable());
+        assertNull(Arc.container().beanInstanceSupplier(Alpha.class));
     }
 
     // unused bean, will be removed

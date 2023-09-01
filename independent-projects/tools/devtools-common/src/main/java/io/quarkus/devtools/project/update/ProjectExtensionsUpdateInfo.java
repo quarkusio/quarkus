@@ -5,66 +5,44 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
 
 public class ProjectExtensionsUpdateInfo {
-    private final Map<String, List<ExtensionUpdateInfo>> managedExtensions;
-    final Map<String, List<ExtensionUpdateInfo>> versionedManagedExtensions;
-    final Map<String, List<ExtensionUpdateInfo>> removedExtensions;
-    final Map<String, List<ExtensionUpdateInfo>> addedExtensions;
-    final Map<String, List<ExtensionUpdateInfo>> nonPlatformExtensions;
+    private final Map<String, List<ExtensionUpdateInfo>> extensionsByProvider;
 
-    public ProjectExtensionsUpdateInfo(Map<String, List<ExtensionUpdateInfo>> managedExtensions,
-            Map<String, List<ExtensionUpdateInfo>> versionedManagedExtensions,
-            Map<String, List<ExtensionUpdateInfo>> removedExtensions,
-            Map<String, List<ExtensionUpdateInfo>> addedExtensions,
-            Map<String, List<ExtensionUpdateInfo>> nonPlatformExtensionUpdate) {
-        this.managedExtensions = managedExtensions;
-        this.versionedManagedExtensions = versionedManagedExtensions;
-        this.removedExtensions = removedExtensions;
-        this.addedExtensions = addedExtensions;
-        this.nonPlatformExtensions = nonPlatformExtensionUpdate;
+    public ProjectExtensionsUpdateInfo(Map<String, List<ExtensionUpdateInfo>> extensionsByProvider) {
+        this.extensionsByProvider = extensionsByProvider;
     }
 
-    public Map<String, List<ExtensionUpdateInfo>> getManagedExtensions() {
-        return managedExtensions;
+    public Map<String, List<ExtensionUpdateInfo>> extensionsByProvider() {
+        return extensionsByProvider;
     }
 
-    public Map<String, List<ExtensionUpdateInfo>> getVersionedManagedExtensions() {
-        return versionedManagedExtensions;
-    }
-
-    public Map<String, List<ExtensionUpdateInfo>> getRemovedExtensions() {
-        return removedExtensions;
-    }
-
-    public Map<String, List<ExtensionUpdateInfo>> getAddedExtensions() {
-        return addedExtensions;
-    }
-
-    public Map<String, List<ExtensionUpdateInfo>> getNonPlatformExtensions() {
-        return nonPlatformExtensions;
+    public boolean containsProvider(String provider) {
+        return extensionsByProvider.containsKey(provider);
     }
 
     public OptionalInt getMinJavaVersion() {
-        return Stream.of(getManagedExtensions().values(),
-                getVersionedManagedExtensions().values(),
-                getNonPlatformExtensions().values(),
-                getAddedExtensions().values())
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
+        return streamExtensions()
                 .mapToInt(e -> Optional.ofNullable(ExtensionProcessor.getMinimumJavaVersion(e.getRecommendedMetadata()))
                         .orElse(JavaVersion.DEFAULT_JAVA_VERSION))
                 .max();
     }
 
-    public boolean isUpToDate() {
-        return versionedManagedExtensions.isEmpty()
-                && removedExtensions.isEmpty()
-                && addedExtensions.isEmpty()
-                && nonPlatformExtensions.isEmpty();
+    private Stream<ExtensionUpdateInfo> streamExtensions() {
+        return extensionsByProvider.values().stream()
+                .flatMap(Collection::stream);
+    }
+
+    public List<ExtensionUpdateInfo> getSimpleVersionUpdates() {
+        return streamExtensions().filter(ExtensionUpdateInfo::isSimpleVersionUpdate).collect(Collectors.toList());
+    }
+
+    public boolean shouldUpdateExtensions() {
+        return streamExtensions().anyMatch(ExtensionUpdateInfo::shouldUpdateExtension);
     }
 }

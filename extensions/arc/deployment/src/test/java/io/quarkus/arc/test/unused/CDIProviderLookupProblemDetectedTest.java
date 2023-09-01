@@ -18,7 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.impl.ArcContainerImpl;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ArcLookupProblemDetectedTest {
+public class CDIProviderLookupProblemDetectedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -32,10 +32,10 @@ public class ArcLookupProblemDetectedTest {
                 Formatter fmt = new PatternFormatter("%m");
                 String message = fmt.format(warning);
                 assertTrue(message.contains(
-                        "Stack frame: io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest"),
+                        "Stack frame: io.quarkus.arc.test.unused.CDIProviderLookupProblemDetectedTest"),
                         message);
                 assertTrue(message.contains(
-                        "Required type: class io.quarkus.arc.test.unused.ArcLookupProblemDetectedTest$Alpha"),
+                        "Required type: class io.quarkus.arc.test.unused.CDIProviderLookupProblemDetectedTest$Alpha"),
                         message);
             });
 

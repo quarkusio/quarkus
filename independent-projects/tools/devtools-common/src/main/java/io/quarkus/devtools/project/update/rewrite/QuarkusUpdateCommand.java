@@ -10,7 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.qute.Qute;
@@ -75,9 +78,9 @@ public class QuarkusUpdateCommand {
                                         .collect(Collectors.joining(", ")))));
             }
             final String gradleBinary = findGradleBinary(baseDir);
-            String[] command = new String[] { gradleBinary.toString(), "--console", "plain", "--stacktrace",
+            List<String> command = List.of(gradleBinary.toString(), "--console", "plain", "--stacktrace",
                     "--init-script",
-                    tempInit.toAbsolutePath().toString(), dryRun ? "rewriteDryRun" : "rewriteRun" };
+                    tempInit.toAbsolutePath().toString(), dryRun ? "rewriteDryRun" : "rewriteRun");
             executeCommand(baseDir, command, log);
         } catch (QuarkusUpdateException e) {
             throw e;
@@ -96,6 +99,26 @@ public class QuarkusUpdateCommand {
         }
     }
 
+    private static String getMavenSettingsArg() {
+        final String mavenSettings = System.getProperty("maven.settings");
+        if (mavenSettings != null) {
+            return Files.exists(Paths.get(mavenSettings)) ? mavenSettings : null;
+        }
+        return BootstrapMavenOptions.newInstance().getOptionValue(BootstrapMavenOptions.ALTERNATE_USER_SETTINGS);
+    }
+
+    private static void propagateSystemPropertyIfSet(String name, List<String> command) {
+        if (System.getProperties().containsKey(name)) {
+            final StringBuilder buf = new StringBuilder();
+            buf.append("-D").append(name);
+            final String value = System.getProperty(name);
+            if (value != null && !value.isEmpty()) {
+                buf.append("=").append(value);
+            }
+            command.add(buf.toString());
+        }
+    }
+
     private static void runMavenUpdate(MessageWriter log, Path baseDir, String rewritePluginVersion, String recipesGAV,
             Path recipe,
             boolean dryRun) {
@@ -106,32 +129,51 @@ public class QuarkusUpdateCommand {
         executeCommand(baseDir, getMavenProcessSourcesCommand(mvnBinary), log);
     }
 
-    private static String[] getMavenProcessSourcesCommand(String mvnBinary) {
-        return new String[] { mvnBinary, "process-sources" };
+    private static List<String> getMavenProcessSourcesCommand(String mvnBinary) {
+        List<String> command = new ArrayList<>();
+        command.add(mvnBinary);
+        command.add("process-sources");
+        final String mavenSettings = getMavenSettingsArg();
+        if (mavenSettings != null) {
+            command.add("-s");
+            command.add(mavenSettings);
+        }
+        return command;
     }
 
-    private static String[] getMavenUpdateCommand(String mvnBinary, String rewritePluginVersion, String recipesGAV, Path recipe,
+    private static List<String> getMavenUpdateCommand(String mvnBinary, String rewritePluginVersion, String recipesGAV,
+            Path recipe,
             boolean dryRun) {
-        return new String[] { mvnBinary,
-                "-e",
+        final List<String> command = new ArrayList<>();
+        command.add(mvnBinary);
+        command.add("-e");
+        command.add(
                 String.format("%s:%s:%s:%s", MAVEN_REWRITE_PLUGIN_GROUP, MAVEN_REWRITE_PLUGIN_ARTIFACT, rewritePluginVersion,
-                        dryRun ? "dryRun" : "run"),
-                String.format("-DplainTextMasks=%s", ADDITIONAL_SOURCE_FILES),
-                String.format("-Drewrite.configLocation=%s", recipe.toAbsolutePath()),
-                String.format("-Drewrite.recipeArtifactCoordinates=%s", recipesGAV),
-                String.format("-DactiveRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS),
-                "-Drewrite.pomCacheEnabled=false" };
+                        dryRun ? "dryRun" : "run"));
+        command.add(String.format("-DplainTextMasks=%s", ADDITIONAL_SOURCE_FILES));
+        command.add(String.format("-Drewrite.configLocation=%s", recipe.toAbsolutePath()));
+        command.add(String.format("-Drewrite.recipeArtifactCoordinates=%s", recipesGAV));
+        command.add(String.format("-DactiveRecipes=%s", RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS));
+        command.add("-Drewrite.pomCacheEnabled=false");
+        final String mavenSettings = getMavenSettingsArg();
+        if (mavenSettings != null) {
+            command.add("-s");
+            command.add(mavenSettings);
+        }
+        return command;
     }
 
-    private static void executeCommand(Path baseDir, String[] command, MessageWriter log) {
+    private static void executeCommand(Path baseDir, List<String> command, MessageWriter log) {
+        final List<String> effectiveCommand = new ArrayList<>(command);
+        propagateSystemPropertyIfSet("maven.repo.local", effectiveCommand);
         ProcessBuilder processBuilder = new ProcessBuilder();
         log.info("");
         log.info("");
         log.info("");
         log.info(" ------------------------------------------------------------------------");
-        log.info("Executing:\n" + String.join(" ", command));
+        log.info("Executing:\n" + String.join(" ", effectiveCommand));
         log.info("");
-        processBuilder.command(command);
+        processBuilder.command(effectiveCommand);
 
         try {
             Process process = processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE)

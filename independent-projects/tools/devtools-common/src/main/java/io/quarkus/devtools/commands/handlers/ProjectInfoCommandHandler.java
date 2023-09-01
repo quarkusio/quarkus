@@ -187,7 +187,7 @@ public class ProjectInfoCommandHandler implements QuarkusCommandHandler {
                 if (dep.isNonRecommendedVersion()) {
                     sb.append(':').append(dep.getArtifact().getVersion());
                     if (rectify) {
-                        sb.append(" -> remove version (managed)");
+                        sb.append(" -> drop version (managed by platform)");
                     }
                     recommendationsAvailable = true;
                 } else {

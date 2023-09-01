@@ -140,7 +140,7 @@ final class Methods {
     }
 
     static boolean skipForDelegateSubclass(MethodInfo method) {
-        if (Modifier.isStatic(method.flags()) || method.isSynthetic() || isDefault(method)) {
+        if (Modifier.isStatic(method.flags()) || method.isSynthetic()) {
             return true;
         }
         if (IGNORED_METHODS.contains(method.name())) {

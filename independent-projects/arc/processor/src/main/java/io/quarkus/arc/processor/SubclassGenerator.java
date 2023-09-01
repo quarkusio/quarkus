@@ -637,13 +637,10 @@ public class SubclassGenerator extends AbstractGenerator {
         }
 
         List<String> constructorParameterTypes = new ArrayList<>();
-        // Fields and constructor
-        FieldCreator subclassField = null;
-        if (decoratedMethods.size() != nextDecoratorsValues.size()) {
-            subclassField = delegateSubclass.getFieldCreator("subclass", subclass.getClassName())
-                    .setModifiers(ACC_PRIVATE | ACC_FINAL);
-            constructorParameterTypes.add(subclass.getClassName());
-        }
+        // Holds a reference to the subclass of the decorated bean
+        FieldCreator subclassField = delegateSubclass.getFieldCreator("subclass", subclass.getClassName())
+                .setModifiers(ACC_PRIVATE | ACC_FINAL);
+        constructorParameterTypes.add(subclass.getClassName());
         Map<DecoratorInfo, FieldDescriptor> nextDecoratorToField = new HashMap<>();
         for (DecoratorInfo nextDecorator : decoratorParameters) {
             FieldCreator nextDecoratorField = delegateSubclass
@@ -653,6 +650,7 @@ public class SubclassGenerator extends AbstractGenerator {
             nextDecoratorToField.put(nextDecorator, nextDecoratorField.getFieldDescriptor());
         }
 
+        // Constructor
         MethodCreator constructor = delegateSubclass.getMethodCreator(Methods.INIT, "V",
                 constructorParameterTypes.toArray(new String[0]));
         int param = 0;
@@ -664,10 +662,8 @@ public class SubclassGenerator extends AbstractGenerator {
                     constructor.getThis());
         }
         // Set fields
-        if (subclassField != null) {
-            constructor.writeInstanceField(
-                    subclassField.getFieldDescriptor(), constructor.getThis(), constructor.getMethodParam(param++));
-        }
+        constructor.writeInstanceField(
+                subclassField.getFieldDescriptor(), constructor.getThis(), constructor.getMethodParam(param++));
         for (FieldDescriptor field : nextDecoratorToField.values()) {
             constructor.writeInstanceField(
                     field, constructor.getThis(), constructor.getMethodParam(param++));
@@ -700,10 +696,6 @@ public class SubclassGenerator extends AbstractGenerator {
 
         for (MethodKey m : methods) {
             MethodInfo method = m.method;
-            if (Methods.skipForDelegateSubclass(method)) {
-                continue;
-            }
-
             MethodDescriptor methodDescriptor = MethodDescriptor.of(method);
             MethodCreator forward = delegateSubclass.getMethodCreator(methodDescriptor);
             // Exceptions
@@ -818,9 +810,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // Create new delegate subclass instance and set the DecoratorDelegateProvider to satisfy the delegate IP
         ResultHandle[] paramHandles = new ResultHandle[constructorParameterTypes.size()];
         int paramIdx = 0;
-        if (subclassField != null) {
-            paramHandles[paramIdx++] = subclassConstructor.getThis();
-        }
+        paramHandles[paramIdx++] = subclassConstructor.getThis();
         for (DecoratorInfo decoratorParameter : decoratorParameters) {
             ResultHandle decoratorHandle = decoratorToResultHandle.get(decoratorParameter.getIdentifier());
             if (decoratorHandle == null) {

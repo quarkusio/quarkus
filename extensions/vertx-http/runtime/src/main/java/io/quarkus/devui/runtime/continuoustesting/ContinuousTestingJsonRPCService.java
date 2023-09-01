@@ -16,10 +16,10 @@ import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTestingSharedStateManager.State> {
 
     private final BroadcastProcessor<String> stateBroadcaster = BroadcastProcessor.create();
-    private final BroadcastProcessor<String> resultBroadcaster = BroadcastProcessor.create();
+    private final BroadcastProcessor<Object> resultBroadcaster = BroadcastProcessor.create();
 
     private String lastKnownState = "";
-    private String lastKnownResults = "";
+    private Object lastKnownResults = "";
 
     @Override
     public void accept(ContinuousTestingSharedStateManager.State state) {
@@ -46,7 +46,7 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
         return stateBroadcaster;
     }
 
-    public Multi<String> streamTestResults() {
+    public Multi<Object> streamTestResults() {
         return resultBroadcaster;
     }
 
@@ -56,7 +56,7 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
     }
 
     @NonBlocking
-    public String lastKnownResults() {
+    public Object lastKnownResults() {
         return this.lastKnownResults;
     }
 
@@ -89,7 +89,7 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
         return invokeAction("toggleInstrumentation");
     }
 
-    public String getResults() {
+    public Object getResults() {
         return invokeAction("getResults");
     }
 

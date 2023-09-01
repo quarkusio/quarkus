@@ -1,12 +1,9 @@
 package io.quarkus.devui.deployment.menu;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.IsDevelopment;
@@ -233,7 +230,6 @@ public class ContinuousTestingProcessor {
 
     private void registerGetResultsMethod(LaunchModeBuildItem launchModeBuildItem) {
         DevConsoleManager.register(NAMESPACE + DASH + "getResults", ignored -> {
-            ObjectMapper objectMapper = new ObjectMapper(); // Remove in favior of build in.
             try {
                 Optional<TestSupport> ts = TestSupport.instance();
                 if (testsDisabled(launchModeBuildItem, ts)) {
@@ -246,10 +242,7 @@ public class ContinuousTestingProcessor {
                     return null;
                 }
 
-                try (StringWriter sw = new StringWriter()) {
-                    objectMapper.writeValue(sw, testRunResults);
-                    return sw.toString();
-                }
+                return testRunResults;
 
             } catch (Exception e) {
                 throw new RuntimeException(e);

@@ -1,5 +1,6 @@
 package io.quarkus.devui.deployment.jsonrpc;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Instant;
@@ -137,6 +138,8 @@ public class DevUIDatabindCodec implements JsonMapper {
             module.addDeserializer(Instant.class, new InstantDeserializer());
             module.addSerializer(byte[].class, new ByteArraySerializer());
             module.addDeserializer(byte[].class, new ByteArrayDeserializer());
+            module.addSerializer(ByteArrayInputStream.class, new ByteArrayInputStreamSerializer());
+            module.addDeserializer(ByteArrayInputStream.class, new ByteArrayInputStreamDeserializer());
             mapper.registerModule(module);
 
             SimpleModule runtimeModule = new SimpleModule("vertx-module-runtime");

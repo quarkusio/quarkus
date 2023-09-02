@@ -1,6 +1,6 @@
 package io.quarkus.vertx.http.testrunner;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -56,22 +56,21 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(1L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        JsonNode jsonRPCResultString = super.executeJsonRPCMethod("getResults");
-        Assertions.assertNotNull(jsonRPCResultString);
+        JsonNode jsonRPCResult = super.executeJsonRPCMethod("getResults");
+        Assertions.assertNotNull(jsonRPCResult);
+        Assertions.assertTrue(jsonRPCResult.has("results"));
 
-        @SuppressWarnings("unchecked")
-        Map<String, Map<String, Map>> jsonRPCResult = mapper.readValue(jsonRPCResultString.textValue(), Map.class);
-
-        Assertions.assertTrue(jsonRPCResult.containsKey("results"));
-
-        Map<String, Map> results = jsonRPCResult.get("results");
+        JsonNode results = jsonRPCResult.get("results");
         Assertions.assertNotNull(results);
-        for (Map.Entry<String, Map> result : results.entrySet()) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> testResult = result.getValue();
-            String className = (String) testResult.get("className");
-            List passing = (List) testResult.get("passing");
-            List failing = (List) testResult.get("failing");
+
+        Iterator<Map.Entry<String, JsonNode>> fields = results.fields();
+
+        while (fields.hasNext()) {
+            JsonNode testResult = fields.next().getValue();
+            String className = testResult.get("className").asText();
+
+            JsonNode passing = testResult.get("passing");
+            JsonNode failing = testResult.get("failing");
 
             if (className.equals(SimpleET.class.getName())) {
                 Assertions.assertEquals(1, failing.size(), className);

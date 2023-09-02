@@ -244,21 +244,26 @@ public class OpenshiftProcessor {
         containerImageInfo.registry.ifPresent(registry -> {
             final String name = applicationInfo.getName();
             final String serviceAccountName = applicationInfo.getName();
-            String imagePushSecret = openshiftConfig.imagePushSecret.orElse(applicationInfo.getName() + "-push-secret");
             String repositoryWithRegistry = registry + "/" + containerImageInfo.getRepository();
 
-            if (registry.contains(OPENSHIFT_INTERNAL_REGISTRY)) {
+            if (openshiftConfig.imagePushSecret.isPresent()) {
+                //if a push secret has been specified, we need to apply it.
+                String imagePushSecret = openshiftConfig.imagePushSecret.get();
+                decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyDockerImageOutputToBuildConfigDecorator(
+                        applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
+            } else if (registry.contains(OPENSHIFT_INTERNAL_REGISTRY)) {
                 //no special handling of secrets is really needed.
             } else if (containerImageInfo.username.isPresent() && containerImageInfo.password.isPresent()) {
+                String imagePushSecret = applicationInfo.getName() + "-push-secret";
                 decorator.produce(new DecoratorBuildItem(OPENSHIFT,
                         new AddDockerConfigJsonSecretDecorator(imagePushSecret, containerImageInfo.registry.get(),
                                 containerImageInfo.username.get(), containerImageInfo.password.get())));
+                decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyDockerImageOutputToBuildConfigDecorator(
+                        applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
             } else {
                 LOG.warn("An external image registry has been specified, but no push secret or credentials.");
             }
 
-            decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyDockerImageOutputToBuildConfigDecorator(
-                    applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
             decorator.produce(new DecoratorBuildItem(OPENSHIFT,
                     new ApplyDockerImageRepositoryToImageStream(applicationInfo.getName(), repositoryWithRegistry)));
         });

@@ -34,9 +34,9 @@
 :quarkus-site-publications: /publications
 :quarkus-base-url: ${quarkus-base-url}
 :quarkus-clone-url: ${quarkus-base-url}.git
-:quarkus-archive-url: ${quarkus-base-url}/archive/main.zip
-:quarkus-blob-url: ${quarkus-base-url}/blob/main
-:quarkus-tree-url: ${quarkus-base-url}/tree/main
+:quarkus-archive-url: ${quarkus-base-url}/archive/3.2.zip
+:quarkus-blob-url: ${quarkus-base-url}/blob/3.2
+:quarkus-tree-url: ${quarkus-base-url}/tree/3.2
 :quarkus-issues-url: ${quarkus-base-url}/issues
 :quarkus-images-url: https://github.com/quarkusio/quarkus-images/tree
 :quarkus-chat-url: https://quarkusio.zulipchat.com
@@ -44,9 +44,9 @@
 :quarkus-mailing-list-index: https://groups.google.com/d/forum/quarkus-dev
 :quickstarts-base-url: ${quickstarts-base-url}
 :quickstarts-clone-url: ${quickstarts-base-url}.git
-:quickstarts-archive-url: ${quickstarts-base-url}/archive/main.zip
-:quickstarts-blob-url: ${quickstarts-base-url}/blob/main
-:quickstarts-tree-url: ${quickstarts-base-url}/tree/main
+:quickstarts-archive-url: ${quickstarts-base-url}/archive/3.2.zip
+:quickstarts-blob-url: ${quickstarts-base-url}/blob/3.2
+:quickstarts-tree-url: ${quickstarts-base-url}/tree/3.2
 // .
 :hibernate-orm-docs-url: https://docs.jboss.org/hibernate/orm/{hibernate-orm-version}/userguide/html_single/Hibernate_User_Guide.html
 :hibernate-search-docs-url: https://docs.jboss.org/hibernate/search/{hibernate-search-version}/reference/en-US/html_single/

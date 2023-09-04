@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -150,14 +151,24 @@ public class JunitTestRunner {
             LauncherDiscoveryRequestBuilder launchBuilder = LauncherDiscoveryRequestBuilder.request()
                     .selectors(quarkusTestClasses.testClasses.stream().map(DiscoverySelectors::selectClass)
                             .collect(Collectors.toList()));
+
+            System.out.println("HOLLY in prepare, launch is "
+                    + quarkusTestClasses.testClasses.stream().map(DiscoverySelectors::selectClass)
+                            .collect(Collectors.toList()));
             launchBuilder.filters(new PostDiscoveryFilter() {
                 @Override
                 public FilterResult apply(TestDescriptor testDescriptor) {
+                    System.out.println("HOLLY not-fultering " + testDescriptor);
                     allDiscoveredIds.add(testDescriptor.getUniqueId());
                     return FilterResult.included(null);
                 }
             });
             if (classScanResult != null) {
+                System.out.println("HOLLY class scan result is " + classScanResult);
+                System.out.println("HOLLY changed class names is "
+                        + classScanResult.getChangedClassNames());
+                System.out.println("HOLLY filtering is "
+                        + testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
                 launchBuilder.filters(testClassUsages.getTestsToRun(classScanResult.getChangedClassNames(), testState));
             }
             if (!includeTags.isEmpty()) {
@@ -186,6 +197,7 @@ public class JunitTestRunner {
                     .build();
             TestPlan testPlan = launcher.discover(request);
             long toRun = testPlan.countTestIdentifiers(TestIdentifier::isTest);
+            System.out.println("HOLLY to run is " + toRun);
             for (TestRunListener listener : listeners) {
                 listener.runStarted(toRun);
             }
@@ -243,6 +255,7 @@ public class JunitTestRunner {
                                 for (TestRunListener listener : listeners) {
                                     listener.testStarted(testIdentifier, testClassName);
                                 }
+                                System.out.println("HOLLY runner pushing onto touched ");
                                 touchedClasses.push(Collections.synchronizedSet(new HashSet<>()));
                             }
 
@@ -254,6 +267,7 @@ public class JunitTestRunner {
                                 touchedClasses.pop();
                                 Class<?> testClass = getTestClassFromSource(testIdentifier.getSource());
                                 String displayName = getDisplayNameFromIdentifier(testIdentifier, testClass);
+                                System.out.println("HOLLY skipping " + displayName);
                                 UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
                                 if (testClass != null) {
                                     Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
@@ -293,7 +307,7 @@ public class JunitTestRunner {
                                 Set<String> touched = touchedClasses.pop();
                                 Class<?> testClass = getTestClassFromSource(testIdentifier.getSource());
                                 String displayName = getDisplayNameFromIdentifier(testIdentifier, testClass);
-                                System.out.println("display name was " + displayName);
+                                System.out.println("execution finished display name was " + displayName);
                                 UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
 
                                 if (testClass == null) {
@@ -535,7 +549,7 @@ public class JunitTestRunner {
     }
 
     private DiscoveryResult discoverTestClasses() {
-        System.out.println("533 HOLLY doing discovery");
+        System.out.println(new Date() + "533 HOLLY doing discovery");
         //maven has a lot of rules around this and is configurable
         //for now this is out of scope, we are just going to do annotation based discovery
         //we will need to fix this sooner rather than later though
@@ -557,6 +571,8 @@ public class JunitTestRunner {
         });
 
         Index index = indexer.complete();
+
+        System.out.println("HOLLY index found known classes " + Arrays.toString(index.getKnownClasses().toArray()));
         //we now have all the classes by name
         //these tests we never run
         Set<String> integrationTestClasses = new HashSet<>();
@@ -719,6 +735,7 @@ public class JunitTestRunner {
             }
 
         }
+        System.out.println("HOLLY test tyoe us " + testType);
         if (testType == TestType.ALL) {
             //run unit style tests first
             //before the quarkus tests have started
@@ -726,6 +743,7 @@ public class JunitTestRunner {
             List<Class<?>> ret = new ArrayList<>(utClasses.size() + itClasses.size());
             ret.addAll(utClasses);
             ret.addAll(itClasses);
+            System.out.println("RETURNING " + Arrays.toString(ret.toArray()));
             return new DiscoveryResult(cl, ret);
         } else if (testType == TestType.UNIT) {
             return new DiscoveryResult(cl, utClasses);

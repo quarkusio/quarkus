@@ -70,4 +70,60 @@ public abstract class LaunchMojoTestBase extends RunAndCheckMojoTestBase {
 
     }
 
+    @Test
+    public void testThatTheTestsAreReRunClassic()
+            throws MavenInvocationException, IOException {
+        //we also check continuous testing
+        testDir = initProject("projects/classic", "projects/classic2-with-deps");
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = getTestingTestUtils();
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+
+        //check that the tests in both modules run
+        int totalTestCount = 2;
+        assertEquals(totalTestCount, results.getTestsPassed());
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        final String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        // Wait until we get "uuid"
+        // We can't poll, so just pause
+        try {
+            Thread.sleep(totalTestCount * 1000);
+        } catch (InterruptedException e) {
+            fail(e);
+        }
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        results = testingTestUtils.waitForNextCompletion();
+
+        //make sure the test is failing now
+        assertEquals(1, results.getTestsFailed());
+
+        //fix it again
+        filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
+
+        results = testingTestUtils.waitForNextCompletion();
+        assertEquals(totalTestCount, results.getTestsPassed());
+        assertEquals(0, results.getTestsFailed());
+
+        //now modify the passing test
+        var testSource = new File(testDir, "src/test/java/org/acme/test/HelloResourceTest.java");
+        filter(testSource, Collections.singletonMap("hello;", "nope"));
+        results = testingTestUtils.waitForNextCompletion();
+        assertEquals(1, results.getTotalTestsFailed());
+        //fix it again
+        filter(testSource, Collections.singletonMap("nope", "hello"));
+        results = testingTestUtils.waitForNextCompletion();
+        assertEquals(0, results.getTotalTestsFailed(), "Failed, actual results " + results);
+        assertEquals(totalTestCount, results.getTotalTestsPassed(), "Failed, actual results " + results);
+
+    }
+
 }

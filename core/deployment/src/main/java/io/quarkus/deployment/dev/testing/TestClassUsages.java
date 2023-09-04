@@ -44,6 +44,7 @@ public class TestClassUsages implements Serializable {
         //classes that have at least one test
         Set<String> testClassesToRun = new HashSet<>();
         for (Map.Entry<ClassAndMethod, Set<String>> entry : classNames.entrySet()) {
+            System.out.println("checking " + entry.getKey().className);
             if (entry.getKey().uniqueId != null) {
                 if (changedClasses.contains(entry.getKey().className)) {
                     touchedIds.add(entry.getKey().uniqueId);

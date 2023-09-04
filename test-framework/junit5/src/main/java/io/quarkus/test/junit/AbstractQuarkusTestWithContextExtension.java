@@ -54,9 +54,7 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     protected QuarkusTestExtensionState getState(ExtensionContext context) {
         ExtensionContext.Store store = getStoreFromContext(context);
-        System.out.println("HOLLY about to get state");
         QuarkusTestExtensionState state = store.get(QuarkusTestExtensionState.class.getName(), QuarkusTestExtensionState.class);
-        System.out.println("HOLLY succeeded in getting state");
         if (state != null) {
             Class<?> testingTypeOfState = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
             if (!this.getClass().equals(testingTypeOfState)) {

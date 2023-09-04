@@ -109,8 +109,6 @@ public class CoreQuarkusTestExtension {
 
     // TODO Re-used from AbstractJvmQuarkusTestExtension
     protected ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
-        System.out.println(
-                "HOLLY checking gradleness, guard is " + System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL));
         return System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null
                 ? BuildToolHelper.enableGradleAppModelForTest(projectRoot)
                 : null;
@@ -139,7 +137,6 @@ public class CoreQuarkusTestExtension {
                 .toAbsolutePath();
 
         final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
-        System.out.println("HOLLY gradle app model is " + gradleAppModel);
         //If gradle project running directly with IDE
         if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
             System.out.println("HOLLY going down IDE gradle path");
@@ -282,7 +279,7 @@ public class CoreQuarkusTestExtension {
             System.out.println("HOLLY read it from CurrentTestApp" + curatedApplication);
         } else {
             curatedApplication = QuarkusBootstrap.builder()
-                    //.setExistingModel(gradleAppModel)
+                    //.setExistingModel(gradleAppModel) TODO is this needed?
                     // unfortunately this model is not re-usable due
                     // to PathTree serialization by Gradle
                     .setIsolateDeployment(true)
@@ -293,6 +290,8 @@ public class CoreQuarkusTestExtension {
                                     projectRoot, testClassLocation))
                     .setProjectRoot(projectRoot)
                     .setApplicationRoot(rootBuilder.build())
+                    .setAuxiliaryApplication(true) // TODO should be conditional on the launch mode? do not set to true for normal holly addition are we sure this is safe to do here? it's not done in what we copied from? will this work with mvn verify? this guards instrumenting the classes with tracing to decide what to hot reload
+
                     .build()
                     .bootstrap();
             shutdownTasks.add(curatedApplication::close);

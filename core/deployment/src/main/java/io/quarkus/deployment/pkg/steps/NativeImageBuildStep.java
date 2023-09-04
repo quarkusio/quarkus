@@ -1003,7 +1003,7 @@ public class NativeImageBuildStep {
                                             + CONTAINER_BUILD_VOLUME_PATH + "/" + MOVED_TRUST_STORE_NAME);
                                 } catch (IOException e) {
                                     throw new UncheckedIOException("Unable to copy trustStore file '" + configuredTrustStorePath
-                                            + "' to volume root directory '" + outputDir.toAbsolutePath().toString() + "'", e);
+                                            + "' to volume root directory '" + outputDir.toAbsolutePath() + "'", e);
                                 }
                             }
                         } else {

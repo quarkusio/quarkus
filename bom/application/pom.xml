@@ -34,7 +34,7 @@
         <opentelemetry.version>1.28.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.28.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
-        <quarkus-http.version>5.0.2.Final</quarkus-http.version>
+        <quarkus-http.version>5.0.3.Final</quarkus-http.version>
         <micrometer.version>1.11.1</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
@@ -120,7 +120,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.2.2.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.0.Final</jboss-threads.version>
-        <vertx.version>4.4.4</vertx.version>
+        <vertx.version>4.4.5</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -142,7 +142,7 @@
         <infinispan.version>14.0.14.Final</infinispan.version>
         <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.94.Final</netty.version>
+        <netty.version>4.1.97.Final</netty.version>
         <brotli4j.version>1.12.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>

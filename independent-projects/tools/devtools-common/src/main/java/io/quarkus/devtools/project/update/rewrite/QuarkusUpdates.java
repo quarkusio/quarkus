@@ -2,7 +2,9 @@ package io.quarkus.devtools.project.update.rewrite;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -20,13 +22,19 @@ public final class QuarkusUpdates {
     private QuarkusUpdates() {
     }
 
-    public static FetchResult createRecipe(MessageWriter log, Path target, MavenArtifactResolver artifactResolver,
+    public static List<FetchResult> createRecipe(MessageWriter log, Path target, MavenArtifactResolver artifactResolver,
             BuildTool buildTool, String updateRecipesVersion,
             ProjectUpdateRequest request)
             throws IOException {
-        final FetchResult result = QuarkusUpdatesRepository.fetchRecipes(log, artifactResolver, buildTool, updateRecipesVersion,
+        List<ExtensionUpdateInfo> extensions = request.projectExtensionsUpdateInfo.getSimpleVersionUpdates();
+        List<FetchResult> results = extensions.stream()
+        .map(extension -> QuarkusUpdatesRepository.fetchRecipes(log, artifactResolver, buildTool,
+                updateRecipesVersion,
                 request.currentVersion,
-                request.targetVersion);
+                request.targetVersion,
+                extension.getCurrentDep()))
+        .collect(Collectors.toList());
+
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
                 .buildTool(request.buildTool);
         if (request.updateJavaVersion.isPresent()) {
@@ -47,7 +55,8 @@ public final class QuarkusUpdates {
                 recipe.addOperation(new UpdatePropertyOperation("quarkusPlatformVersion", request.targetVersion))
                         .addOperation(new UpdatePropertyOperation("quarkusPluginVersion", request.targetVersion));
                 if (request.kotlinVersion != null) {
-                    recipe.addOperation(new UpgradeGradlePluginOperation("org.jetbrains.kotlin.*", request.kotlinVersion));
+                    recipe.addOperation(
+                            new UpgradeGradlePluginOperation("org.jetbrains.kotlin.*", request.kotlinVersion));
                 }
                 break;
         }
@@ -60,11 +69,13 @@ public final class QuarkusUpdates {
                     versionUpdates.getRecommendedDependency().getVersion()));
         }
 
-        for (String s : result.getRecipes()) {
-            recipe.addRecipes(QuarkusUpdateRecipeIO.readRecipesYaml(s));
-        }
+        results.stream()
+                .flatMap(result -> result.getRecipes().stream())
+                .map(QuarkusUpdateRecipeIO::readRecipesYaml)
+                .forEach(recipe::addRecipes);
+
         QuarkusUpdateRecipeIO.write(target, recipe);
-        return result;
+        return results;
     }
 
     public static class ProjectUpdateRequest {
@@ -78,10 +89,12 @@ public final class QuarkusUpdates {
 
         public ProjectUpdateRequest(String currentVersion, String targetVersion, String kotlinVersion,
                 Optional<Integer> updateJavaVersion, ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo) {
-            this(BuildTool.MAVEN, currentVersion, targetVersion, kotlinVersion, updateJavaVersion, projectExtensionsUpdateInfo);
+            this(BuildTool.MAVEN, currentVersion, targetVersion, kotlinVersion, updateJavaVersion,
+                    projectExtensionsUpdateInfo);
         }
 
-        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion, String kotlinVersion,
+        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion,
+                String kotlinVersion,
                 Optional<Integer> updateJavaVersion, ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo) {
             this.buildTool = buildTool;
             this.currentVersion = currentVersion;

@@ -18,6 +18,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.state.TopExtensionDependency;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
 
@@ -34,20 +35,24 @@ public final class QuarkusUpdatesRepository {
     public static final String PROP_REWRITE_MAVEN_PLUGIN_VERSION = "rewrite-maven-plugin-version";
     public static final String PROP_REWRITE_GRADLE_PLUGIN_VERSION = "rewrite-gradle-plugin-version";
 
-    public static FetchResult fetchRecipes(MessageWriter log, MavenArtifactResolver artifactResolver, BuildTool buildTool,
+    public static FetchResult fetchRecipes(MessageWriter log, MavenArtifactResolver artifactResolver,
+            BuildTool buildTool,
             String recipeVersion, String currentVersion,
-            String targetVersion) {
+            String targetVersion, TopExtensionDependency topExtensionDependency) {
         final String gav = QUARKUS_RECIPE_GA + ":" + recipeVersion;
+        final String targetRecipe = topExtensionDependency.getArtifact().getArtifactId() + "/" + topExtensionDependency.getArtifact().getGroupId();
+
         try {
             final Artifact artifact = artifactResolver.resolve(DependencyUtils.toArtifact(gav)).getArtifact();
             final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
                     artifact.getFile());
-            final List<String> recipes = resourceLoader.loadResourceAsPath("quarkus-updates/core",
+            final List<String> recipes = resourceLoader.loadResourceAsPath(targetRecipe,
                     path -> {
                         try (final Stream<Path> pathStream = Files.walk(path)) {
                             return pathStream
                                     .filter(p -> p.getFileName().toString().matches("^\\d\\H+.ya?ml$"))
-                                    .filter(p -> shouldApplyRecipe(p.getFileName().toString(), currentVersion, targetVersion))
+                                    .filter(p -> shouldApplyRecipe(p.getFileName().toString(), currentVersion,
+                                            targetVersion))
                                     .map(p -> {
                                         try {
                                             return new String(Files.readAllBytes(p));

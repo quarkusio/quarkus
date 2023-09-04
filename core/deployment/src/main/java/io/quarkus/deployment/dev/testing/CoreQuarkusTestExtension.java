@@ -100,11 +100,12 @@ public class CoreQuarkusTestExtension {
     }
 
     protected PrepareResult createAugmentor(Class requiredTestClass, Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks) throws Exception {
+            Collection<Runnable> shutdownTasks, boolean isContinuousTesting) throws Exception {
 
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         // TODO this is probably wrong since we find the gradle path in the method but the other path elsewhere
-        return createAugmentor(testClassLocation, requiredTestClass, profile, shutdownTasks);
+        return createAugmentor(testClassLocation, requiredTestClass, profile, shutdownTasks,
+                isContinuousTesting);
     }
 
     // TODO Re-used from AbstractJvmQuarkusTestExtension
@@ -117,7 +118,7 @@ public class CoreQuarkusTestExtension {
     // TODO Re-used from AbstractJvmQuarkusTestExtension
     protected PrepareResult createAugmentor(Path testClassLocation, Class<?> requiredTestClass,
             Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks) throws Exception {
+            Collection<Runnable> shutdownTasks, boolean isContinuousTesting) throws Exception {
         System.out.println("HOLLY creating augmentor with prarams" + testClassLocation + " " + requiredTestClass);
 
         // I think the required test class is just an example, since the augmentor is only
@@ -290,7 +291,7 @@ public class CoreQuarkusTestExtension {
                                     projectRoot, testClassLocation))
                     .setProjectRoot(projectRoot)
                     .setApplicationRoot(rootBuilder.build())
-                    .setAuxiliaryApplication(true) // TODO should be conditional on the launch mode? do not set to true for normal holly addition are we sure this is safe to do here? it's not done in what we copied from? will this work with mvn verify? this guards instrumenting the classes with tracing to decide what to hot reload
+                    .setAuxiliaryApplication(isContinuousTesting) // TODO should be conditional on the launch mode? do not set to true for normal holly addition are we sure this is safe to do here? it's not done in what we copied from? will this work with mvn verify? this guards instrumenting the classes with tracing to decide what to hot reload
 
                     .build()
                     .bootstrap();
@@ -330,11 +331,13 @@ public class CoreQuarkusTestExtension {
         return result;
     }
 
-    public ClassLoader doJavaStart(Class testClass, CuratedApplication curatedApplication) throws Exception {
+    // TODO surely there's a cleaner way to see if it's continuous testing?
+    public ClassLoader doJavaStart(Class testClass, CuratedApplication curatedApplication, boolean isContinuousTesting)
+            throws Exception {
         Class<? extends QuarkusTestProfile> profile = null;
         // TODO do we want any of these?
         Collection shutdownTasks = new HashSet();
-        PrepareResult result = createAugmentor(testClass, profile, shutdownTasks);
+        PrepareResult result = createAugmentor(testClass, profile, shutdownTasks, isContinuousTesting);
         AugmentAction augmentAction = result.augmentAction;
         QuarkusTestProfile profileInstance = result.profileInstance;
 
@@ -351,12 +354,14 @@ public class CoreQuarkusTestExtension {
 
     }
 
-    public ClassLoader doJavaStart(Path location, CuratedApplication curatedApplication) throws Exception {
+    public ClassLoader doJavaStart(Path location, CuratedApplication curatedApplication, boolean isContinuousTesting)
+            throws Exception {
         Class<? extends QuarkusTestProfile> profile = null;
         // TODO do we want any of these?
         Collection shutdownTasks = new HashSet();
         // TODO clearly passing null is not really ideal
-        PrepareResult result = createAugmentor(location, null, profile, shutdownTasks);
+        PrepareResult result = createAugmentor(location, null, profile, shutdownTasks,
+                isContinuousTesting);
         AugmentAction augmentAction = result.augmentAction;
         QuarkusTestProfile profileInstance = result.profileInstance;
 

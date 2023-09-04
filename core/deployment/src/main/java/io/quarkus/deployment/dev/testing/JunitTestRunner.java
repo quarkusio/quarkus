@@ -672,7 +672,7 @@ public class JunitTestRunner {
                     System.out.println("HOLLY Making a java start with " + testApplication);
                     // Although it looks like we need to start once per class, the class is just indicative of where classes for this module live
                     rcl = new CoreQuarkusTestExtension()
-                            .doJavaStart(Thread.currentThread().getContextClassLoader().loadClass(i), testApplication);
+                            .doJavaStart(Thread.currentThread().getContextClassLoader().loadClass(i), testApplication, true);
                 }
                 Thread.currentThread().setContextClassLoader(rcl);
 

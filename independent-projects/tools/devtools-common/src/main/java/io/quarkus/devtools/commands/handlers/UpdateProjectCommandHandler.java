@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,6 +32,7 @@ import io.quarkus.devtools.project.update.ProjectUpdateInfos;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdateCommand;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdates;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository;
+import io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.FetchResult;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsConstants;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -62,14 +64,16 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             invocation.log().info("Instructions to update this project from '%s' to '%s':",
                     projectQuarkusPlatformBom.getVersion(), targetPlatformVersion);
             final QuarkusProject quarkusProject = invocation.getQuarkusProject();
-            final ProjectState recommendedState = resolveRecommendedState(currentState, targetCatalog, invocation.log());
+            final ProjectState recommendedState = resolveRecommendedState(currentState, targetCatalog,
+                    invocation.log());
             final ProjectPlatformUpdateInfo platformUpdateInfo = resolvePlatformUpdateInfo(currentState,
                     recommendedState);
             final ProjectExtensionsUpdateInfo extensionsUpdateInfo = ProjectUpdateInfos.resolveExtensionsUpdateInfo(
                     currentState,
                     recommendedState);
 
-            logUpdates(invocation.getQuarkusProject(), currentState, recommendedState, platformUpdateInfo, extensionsUpdateInfo,
+            logUpdates(invocation.getQuarkusProject(), currentState, recommendedState, platformUpdateInfo,
+                    extensionsUpdateInfo,
                     false, perModule,
                     quarkusProject.log());
             final boolean noRewrite = invocation.getValue(UpdateProject.NO_REWRITE, false);
@@ -95,25 +99,30 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 Path recipe = null;
                 try {
                     recipe = Files.createTempFile("quarkus-project-recipe-", ".yaml");
-                    final String updateRecipesVersion = invocation.getValue(UpdateProject.REWRITE_UPDATE_RECIPES_VERSION,
+                    final String updateRecipesVersion = invocation.getValue(
+                            UpdateProject.REWRITE_UPDATE_RECIPES_VERSION,
                             QuarkusUpdatesRepository.DEFAULT_UPDATE_RECIPES_VERSION);
-                    final QuarkusUpdatesRepository.FetchResult fetchResult = QuarkusUpdates.createRecipe(invocation.log(),
+                    final FetchResult fetchResult = QuarkusUpdates.createRecipe(invocation.log(),
                             recipe,
                             QuarkusProjectHelper.artifactResolver(), buildTool, updateRecipesVersion, request);
                     invocation.log().info("OpenRewrite recipe generated: %s", recipe);
-                    final String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,
-                            fetchResult.getRewritePluginVersion());
-                    final boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
-                    invocation.log().warn(
-                            "The update feature does not yet handle updates of the extension versions. If needed, update your extensions manually.");
-                    QuarkusUpdateCommand.handle(
-                            invocation.log(),
-                            buildTool,
-                            quarkusProject.getProjectDirPath(),
-                            rewritePluginVersion,
-                            fetchResult.getRecipesGAV(),
-                            recipe,
-                            rewriteDryRun);
+
+                        String rewritePluginVersion = invocation.getValue(UpdateProject.REWRITE_PLUGIN_VERSION,
+                                fetchResult.getRewritePluginVersion());
+                        boolean rewriteDryRun = invocation.getValue(UpdateProject.REWRITE_DRY_RUN, false);
+                        invocation.log().warn(
+                                "The update feature does not yet handle updates of the extension versions. If needed, update your extensions manually.");
+                        QuarkusUpdateCommand.handle(
+                                invocation.log(),
+                                buildTool,
+                                quarkusProject.getProjectDirPath(),
+                                rewritePluginVersion,
+                                fetchResult.getRecipesGAV(),
+                                recipe,
+                                rewriteDryRun);
+
+                    
+
                 } catch (IOException e) {
                     throw new QuarkusCommandException("Error while generating the project update script", e);
                 }
@@ -216,11 +225,13 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                             break;
                         case RECOMMEND_PLATFORM_MANAGED:
                             log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
-                                    UpdateProjectCommandHandler.UPDATE, e.getCurrentDep().getArtifact().toCompactCoords()
+                                    UpdateProjectCommandHandler.UPDATE,
+                                    e.getCurrentDep().getArtifact().toCompactCoords()
                                             + " -> drop version (managed by platform)"));
                             break;
                         case ADD_VERSION:
-                            log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT, UpdateProjectCommandHandler.UPDATE,
+                            log.info(String.format(UpdateProjectCommandHandler.ITEM_FORMAT,
+                                    UpdateProjectCommandHandler.UPDATE,
                                     e.getRecommendedDependency().getArtifact().toCompactCoords()
                                             + " -> add version (managed by platform)"));
                             break;

@@ -29,4 +29,14 @@ public class VirtualThreadsConfig {
      */
     @ConfigItem(defaultValue = "5s")
     public Optional<Duration> shutdownCheckInterval;
+
+    /**
+     * A flag to explicitly disabled virtual threads, even if the JVM support them.
+     * In this case, methods annotated with {@code @RunOnVirtualThread} are executed on the worker thread pool.
+     * <p>
+     * This flag is intended to be used when running with virtual threads become more expensive than plain worker threads,
+     * because of pinning, monopolization or thread-based object pool.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled;
 }

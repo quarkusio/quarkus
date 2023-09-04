@@ -69,6 +69,13 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
         // Bypass all this in continuous testing mode; the startup action holder is our best way
         // of detecting it
+
+        // TODO alternate way of detecting it ? Needs the build item, though
+        //        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
+        //        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
+        //            return;
+        //        }
+
         if (StartupActionHolder.getStored() == null) {
             if (invocation instanceof LauncherSession) {
                 LauncherSession sess = (LauncherSession) invocation;
@@ -118,10 +125,11 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 Path applicationRoot = getTestClassLocationForRootLocation(projectRoot.toString());
 
                 CuratedApplication curatedApplication;
-                // TODO this makes no sense here because we're on the wrong classloader unless a
-                //  TCCL is already around, and we reset it
+
                 if (CurrentTestApplication.curatedApplication != null) {
                     System.out.println("Re-using curated application");
+                    // TODO does this re-use mean we get interference between test runs in a way we didn't before?
+                    // No, it used to preserve the instance between runs unless the profile had changed
                     curatedApplication = CurrentTestApplication.curatedApplication;
                 } else {
 
@@ -147,6 +155,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                             // down this path we know it's normal mode
                             // is this always right?
                             .setTest(true)
+                            //   .setAuxiliaryApplication(true) // TODO holly addition, then removal are we sure this is safe to do here? it's not done in what we copied from? will this work with mvn verify?
 
                             .setApplicationRoot(applicationRoot)
 

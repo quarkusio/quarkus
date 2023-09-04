@@ -156,6 +156,8 @@ public class TestSupport implements TestController {
     }
 
     public void init() {
+        System.out.println("HOLLY 159 testsupport init");
+        // TODO is any of this needed or is it already done in the launcher?
         if (moduleRunners.isEmpty()) {
             TestWatchedFiles.setWatchedFilesListener(
                     (paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(paths, predicates, true));
@@ -181,6 +183,7 @@ public class TestSupport implements TestController {
 
                 try {
                     final Path projectDir = Path.of(module.getProjectDirectory());
+                    System.out.println("186 HOLLY making ANOTHER curated application ");
                     final QuarkusBootstrap.Builder bootstrapConfig = curatedApplication.getQuarkusBootstrap().clonedBuilder()
                             .setMode(QuarkusBootstrap.Mode.TEST)
                             .setAssertionsEnabled(true)

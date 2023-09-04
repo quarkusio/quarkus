@@ -70,6 +70,7 @@ public final class TestClassIndexer {
 
     public static Index readIndex(Path testClassLocation, Class<?> testClass) {
         Path path = indexPath(testClassLocation, testClass);
+        System.out.println("HOLLY OK the index path is " + path);
         if (path.toFile().exists()) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 return new IndexReader(fis).read();
@@ -80,7 +81,8 @@ public final class TestClassIndexer {
                 return indexTestClasses(testClass);
             }
         } else {
-            return indexTestClasses(testClass);
+            // TODO we used to pass the class, now we pass the location so we don't get snarled up in a quarkus:/ url
+            return indexTestClasses(testClassLocation);
         }
 
     }

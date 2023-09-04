@@ -135,7 +135,10 @@ public final class PathTestHelper {
      */
     public static Path getTestClassesLocation(Class<?> testClass) {
         String classFileName = testClass.getName().replace('.', File.separatorChar) + ".class";
-        URL resource = testClass.getClassLoader().getResource(fromClassNameToResourceName(testClass.getName()));
+
+        // TODO this used to be on disk, now it's transformed and in memory ... but the URL has a quarkus:/ protocol
+        // We could make a file system provider and filesystem, but is the memory location actually what we want?
+        URL resource = testClass.getClassLoader().getResource(testClass.getName().replace('.', '/') + ".class");
 
         if (resource.getProtocol().equals("jar")) {
             try {
@@ -145,6 +148,7 @@ public final class PathTestHelper {
                 throw new RuntimeException("Failed to resolve the location of the JAR containing " + testClass, e);
             }
         }
+        System.out.println("HOLLY 147 path is " + resource);
         Path path = toPath(resource);
         path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Path.of(classFileName).getNameCount()));
 

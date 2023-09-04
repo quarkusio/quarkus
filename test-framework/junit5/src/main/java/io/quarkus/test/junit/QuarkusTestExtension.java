@@ -991,6 +991,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             // the arguments were not loaded from TCCL so we need to deep clone them into the TCCL
             // because the test method runs from a class loaded from the TCCL
+            // TODO all of this code can be deleted, right? we don't even honour the clone required setting
             //TODO: make this more pluggable
             List<Object> originalArguments = invocationContext.getArguments();
             List<Object> argumentsFromTccl = new ArrayList<>();

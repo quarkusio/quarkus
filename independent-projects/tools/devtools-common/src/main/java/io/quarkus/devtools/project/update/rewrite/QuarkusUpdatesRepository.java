@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -18,6 +21,7 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.update.ExtensionUpdateInfo;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoaders;
 
@@ -34,29 +38,26 @@ public final class QuarkusUpdatesRepository {
     public static final String PROP_REWRITE_MAVEN_PLUGIN_VERSION = "rewrite-maven-plugin-version";
     public static final String PROP_REWRITE_GRADLE_PLUGIN_VERSION = "rewrite-gradle-plugin-version";
 
-    public static FetchResult fetchRecipes(MessageWriter log, MavenArtifactResolver artifactResolver, BuildTool buildTool,
+    public static FetchResult fetchRecipes(MessageWriter log, MavenArtifactResolver artifactResolver,
+            BuildTool buildTool,
             String recipeVersion, String currentVersion,
-            String targetVersion) {
+            String targetVersion, List<ExtensionUpdateInfo> topExtensionDependency) {
         final String gav = QUARKUS_RECIPE_GA + ":" + recipeVersion;
+
+        Map<String, String[]> recipeDirectoryNames = new LinkedHashMap<>();
+        recipeDirectoryNames.put("core", new String[] { currentVersion, targetVersion });
+        for (ExtensionUpdateInfo dep : topExtensionDependency) {
+            recipeDirectoryNames.put(
+                    dep.getCurrentDep().getArtifact().getArtifactId() + "/"
+                            + dep.getCurrentDep().getArtifact().getGroupId(),
+                    new String[] { dep.getCurrentDep().getVersion(), dep.getRecommendedDependency().getVersion() });
+        }
+
         try {
             final Artifact artifact = artifactResolver.resolve(DependencyUtils.toArtifact(gav)).getArtifact();
             final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
                     artifact.getFile());
-            final List<String> recipes = resourceLoader.loadResourceAsPath("quarkus-updates/core",
-                    path -> {
-                        try (final Stream<Path> pathStream = Files.walk(path)) {
-                            return pathStream
-                                    .filter(p -> p.getFileName().toString().matches("^\\d\\H+.ya?ml$"))
-                                    .filter(p -> shouldApplyRecipe(p.getFileName().toString(), currentVersion, targetVersion))
-                                    .map(p -> {
-                                        try {
-                                            return new String(Files.readAllBytes(p));
-                                        } catch (IOException e) {
-                                            throw new RuntimeException(e);
-                                        }
-                                    }).collect(Collectors.toList());
-                        }
-                    });
+            final List<String> recipes = fetchRecipesAsList(resourceLoader, "quarkus-updates", recipeDirectoryNames);
             final Properties props = resourceLoader.loadResourceAsPath("quarkus-updates/", p -> {
                 final Properties properties = new Properties();
                 final Path propPath = p.resolve("recipes.properties");
@@ -131,5 +132,44 @@ public final class QuarkusUpdatesRepository {
         final DefaultArtifactVersion currentAVersion = new DefaultArtifactVersion(currentVersion);
         final DefaultArtifactVersion targetAVersion = new DefaultArtifactVersion(targetVersion);
         return currentAVersion.compareTo(recipeAVersion) < 0 && targetAVersion.compareTo(recipeAVersion) >= 0;
+    }
+
+    static List<String> fetchRecipesAsList(ResourceLoader resourceLoader, String loaction,
+            Map<String, String[]> recipeDirectoryNames) throws IOException {
+        return resourceLoader.loadResourceAsPath(loaction,
+                path -> {
+                    try (final Stream<Path> pathStream = Files.walk(path)) {
+                        return pathStream
+                                .filter(Files::isDirectory)
+                                .flatMap(dir -> {
+                                    String key = path.relativize(dir).toString();
+                                    String versions[] = recipeDirectoryNames.get(key);
+                                    if (versions != null && versions.length != 0) {
+                                        try {
+                                            Stream<Path> recipePath = Files.walk(dir);
+                                            return recipePath
+                                                    .filter(p -> p.getFileName().toString().matches("^\\d\\H+.ya?ml$"))
+                                                    .filter(p -> shouldApplyRecipe(p.getFileName().toString(),
+                                                            versions[0], versions[1]))
+                                                    .map(p -> {
+                                                        try {
+                                                            return new String(Files.readAllBytes(p));
+                                                        } catch (IOException e) {
+                                                            throw new RuntimeException("Error reading file: " + p, e);
+                                                        }
+                                                    })
+                                                    .onClose(() -> recipePath.close());
+                                        } catch (IOException e) {
+                                            throw new RuntimeException("Error traversing directory: " + dir, e);
+                                        }
+                                    }
+                                    return null;
+
+                                }).filter(Objects::nonNull).collect(Collectors.toList());
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error traversing base directory", e);
+                    }
+                });
+
     }
 }

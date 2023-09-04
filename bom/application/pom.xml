@@ -3621,6 +3621,12 @@
                 <version>${vaadin.version}</version>
                 <scope>runtime</scope>
             </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>a11y-base</artifactId>
+                <version>${vaadin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
             <!-- There is a cyclic dependency on icon -->
             <!-- TODO: Detect and fix in mvnpm -->
             <dependency>

@@ -82,44 +82,54 @@ public class FlywayRecorder {
         return new Function<>() {
             @Override
             public Flyway apply(SyntheticCreationalContext<Flyway> context) {
-                Annotation flywayContainerQualifier;
-                if (DataSourceUtil.isDefault(dataSourceName)) {
-                    flywayContainerQualifier = Default.Literal.INSTANCE;
-                } else {
-                    flywayContainerQualifier = FlywayDataSourceLiteral.of(dataSourceName);
-                }
-
-                FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class, flywayContainerQualifier);
+                FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class,
+                        getFlywayContainerQualifier(dataSourceName));
                 return flywayContainer.getFlyway();
             }
         };
     }
 
-    public void doStartActions() {
-        for (InstanceHandle<FlywayContainer> flywayContainerHandle : Arc.container().listAll(FlywayContainer.class)) {
-            FlywayContainer flywayContainer = flywayContainerHandle.get();
+    public void doStartActions(String dataSourceName) {
+        FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
+                .getConfigForDataSourceName(dataSourceName);
 
-            if (!config.getValue().getConfigForDataSourceName(flywayContainer.getDataSourceName()).active) {
-                return;
-            }
-
-            if (flywayContainer.isCleanAtStart()) {
-                flywayContainer.getFlyway().clean();
-            }
-            if (flywayContainer.isValidateAtStart()) {
-                flywayContainer.getFlyway().validate();
-            }
-            if (flywayContainer.isBaselineAtStart()) {
-                new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())
-                        .execute(new BaselineCommand(flywayContainer.getFlyway()), true, null);
-            }
-            if (flywayContainer.isRepairAtStart()) {
-                flywayContainer.getFlyway().repair();
-            }
-            if (flywayContainer.isMigrateAtStart()) {
-                flywayContainer.getFlyway().migrate();
-            }
+        if (!config.getValue().getConfigForDataSourceName(dataSourceName).active) {
+            return;
         }
+
+        InstanceHandle<FlywayContainer> flywayContainerInstanceHandle = Arc.container().instance(FlywayContainer.class,
+                getFlywayContainerQualifier(dataSourceName));
+
+        if (!flywayContainerInstanceHandle.isAvailable()) {
+            return;
+        }
+
+        FlywayContainer flywayContainer = flywayContainerInstanceHandle.get();
+
+        if (flywayContainer.isCleanAtStart()) {
+            flywayContainer.getFlyway().clean();
+        }
+        if (flywayContainer.isValidateAtStart()) {
+            flywayContainer.getFlyway().validate();
+        }
+        if (flywayContainer.isBaselineAtStart()) {
+            new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())
+                    .execute(new BaselineCommand(flywayContainer.getFlyway()), true, null);
+        }
+        if (flywayContainer.isRepairAtStart()) {
+            flywayContainer.getFlyway().repair();
+        }
+        if (flywayContainer.isMigrateAtStart()) {
+            flywayContainer.getFlyway().migrate();
+        }
+    }
+
+    private static Annotation getFlywayContainerQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return FlywayDataSourceLiteral.of(dataSourceName);
     }
 
     static class BaselineCommand implements FlywayExecutor.Command<BaselineResult> {

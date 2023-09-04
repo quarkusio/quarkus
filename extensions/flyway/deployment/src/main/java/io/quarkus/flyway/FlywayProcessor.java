@@ -243,9 +243,14 @@ class FlywayProcessor {
             FlywayRuntimeConfig config,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
+            List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,
             MigrationStateBuildItem migrationsBuildItem) {
 
-        recorder.doStartActions();
+        Collection<String> dataSourceNames = getDataSourceNames(jdbcDataSourceBuildItems);
+
+        for (String dataSourceName : dataSourceNames) {
+            recorder.doStartActions(dataSourceName);
+        }
 
         // once we are done running the migrations, we produce a build item indicating that the
         // schema is "ready"

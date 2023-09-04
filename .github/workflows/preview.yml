@@ -77,7 +77,7 @@ jobs:
         id: deploy
         run: npx surge ./_site --domain https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
       - name: Update PR status comment on success
-        uses: actions-cool/maintain-one-comment@v3.1.0
+        uses: actions-cool/maintain-one-comment@v3.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
@@ -88,7 +88,7 @@ jobs:
           number: ${{ steps.pr.outputs.id }}
       - name: Update PR status comment on failure
         if: ${{ failure() }}
-        uses: actions-cool/maintain-one-comment@v3.1.0
+        uses: actions-cool/maintain-one-comment@v3.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |

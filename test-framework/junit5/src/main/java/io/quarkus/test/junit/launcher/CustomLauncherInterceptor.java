@@ -155,8 +155,6 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                             // down this path we know it's normal mode
                             // is this always right?
                             .setTest(true)
-                            //   .setAuxiliaryApplication(true) // TODO holly addition, then removal are we sure this is safe to do here? it's not done in what we copied from? will this work with mvn verify?
-
                             .setApplicationRoot(applicationRoot)
 
                             //                    .setTargetDirectory(
@@ -208,7 +206,7 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 final QuarkusBootstrap.Mode currentMode = curatedApplication.getQuarkusBootstrap()
                         .getMode();
                 ClassLoader loader = coreQuarkusTestExtension.doJavaStart(applicationRoot,
-                        curatedApplication);
+                        curatedApplication, false);
                 currentThread.setContextClassLoader(loader);
 
                 System.out.println("HOLLY did set to " + currentThread.getContextClassLoader());

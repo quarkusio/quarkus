@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.test.InjectMock;
 import io.smallrye.common.annotation.Experimental;
 
@@ -57,4 +58,15 @@ public @interface QuarkusComponentTest {
      * @see QuarkusComponentTestExtension#setConfigSourceOrdinal(int)
      */
     int configSourceOrdinal() default QuarkusComponentTestExtension.DEFAULT_CONFIG_SOURCE_ORDINAL;
+
+    /**
+     * The additional annotation transformers.
+     * <p>
+     * The initial set includes the {@link JaxrsSingletonTransformer}.
+     *
+     * @see AnnotationsTransformer
+     * @see QuarkusComponentTestExtension#addAnnotationsTransformer(AnnotationsTransformer)
+     */
+    Class<? extends AnnotationsTransformer>[] annotationsTransformers() default {};
+
 }

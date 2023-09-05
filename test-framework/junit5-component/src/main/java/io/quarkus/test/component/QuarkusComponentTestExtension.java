@@ -171,12 +171,14 @@ public class QuarkusComponentTestExtension
     private final AtomicBoolean useDefaultConfigProperties = new AtomicBoolean();
     private final AtomicBoolean addNestedClassesAsComponents = new AtomicBoolean(true);
     private final AtomicInteger configSourceOrdinal = new AtomicInteger(DEFAULT_CONFIG_SOURCE_ORDINAL);
+    private final List<AnnotationsTransformer> additionalAnnotationsTransformers;
 
     // Used for declarative registration
     public QuarkusComponentTestExtension() {
         this.additionalComponentClasses = List.of();
         this.configProperties = new HashMap<>();
         this.mockConfigurators = new ArrayList<>();
+        this.additionalAnnotationsTransformers = new ArrayList<>();
     }
 
     /**
@@ -189,6 +191,7 @@ public class QuarkusComponentTestExtension
         this.additionalComponentClasses = List.of(additionalComponentClasses);
         this.configProperties = new HashMap<>();
         this.mockConfigurators = new ArrayList<>();
+        this.additionalAnnotationsTransformers = new ArrayList<>();
     }
 
     /**
@@ -210,7 +213,7 @@ public class QuarkusComponentTestExtension
      *
      * @param key
      * @param value
-     * @return the extension
+     * @return self
      */
     public QuarkusComponentTestExtension configProperty(String key, String value) {
         this.configProperties.put(key, value);
@@ -222,7 +225,7 @@ public class QuarkusComponentTestExtension
      * <p>
      * For primitives the default values as defined in the JLS are used. For any other type {@code null} is injected.
      *
-     * @return the extension
+     * @return self
      */
     public QuarkusComponentTestExtension useDefaultConfigProperties() {
         this.useDefaultConfigProperties.set(true);
@@ -235,7 +238,7 @@ public class QuarkusComponentTestExtension
      * By default, all static nested classes declared on the test class are added to the set of additional components under
      * test.
      *
-     * @return the extension
+     * @return self
      */
     public QuarkusComponentTestExtension ignoreNestedClasses() {
         this.addNestedClassesAsComponents.set(false);
@@ -247,10 +250,21 @@ public class QuarkusComponentTestExtension
      * {@value #DEFAULT_CONFIG_SOURCE_ORDINAL} is used.
      *
      * @param val
-     * @return the extension
+     * @return self
      */
     public QuarkusComponentTestExtension setConfigSourceOrdinal(int val) {
         this.configSourceOrdinal.set(val);
+        return this;
+    }
+
+    /**
+     * Add an additional {@link AnnotationsTransformer}.
+     *
+     * @param transformer
+     * @return self
+     */
+    public QuarkusComponentTestExtension addAnnotationsTransformer(AnnotationsTransformer transformer) {
+        this.additionalAnnotationsTransformers.add(transformer);
         return this;
     }
 
@@ -295,6 +309,16 @@ public class QuarkusComponentTestExtension
             }
             this.addNestedClassesAsComponents.set(testAnnotation.addNestedClassesAsComponents());
             this.configSourceOrdinal.set(testAnnotation.configSourceOrdinal());
+            Class<? extends AnnotationsTransformer>[] transformers = testAnnotation.annotationsTransformers();
+            if (transformers.length > 0) {
+                for (Class<? extends AnnotationsTransformer> transformerClass : transformers) {
+                    try {
+                        this.additionalAnnotationsTransformers.add(transformerClass.getDeclaredConstructor().newInstance());
+                    } catch (Exception e) {
+                        LOG.errorf("Unable to instantiate %s", transformerClass);
+                    }
+                }
+            }
         }
         // All fields annotated with @Inject represent component classes
         Class<?> current = testClass;
@@ -606,6 +630,11 @@ public class QuarkusComponentTestExtension
 
             builder.addAnnotationTransformer(AnnotationsTransformer.appliedToField().whenContainsAny(qualifiers)
                     .whenContainsNone(DotName.createSimple(Inject.class)).thenTransform(t -> t.add(Inject.class)));
+
+            builder.addAnnotationTransformer(new JaxrsSingletonTransformer());
+            for (AnnotationsTransformer transformer : additionalAnnotationsTransformers) {
+                builder.addAnnotationTransformer(transformer);
+            }
 
             // Register:
             // 1) Dummy mock beans for all unsatisfied injection points

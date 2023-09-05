@@ -1,6 +1,5 @@
 ////
-This guide is maintained in the main Quarkus repository
-and pull requests should be submitted there:
+This guide is maintained in the main Quarkus repository, and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = YAML Configuration
@@ -20,7 +19,7 @@ To enable YAML configuration, add the `quarkus-config-yaml` extension:
 :add-extension-extensions: quarkus-config-yaml
 include::{includes}/devtools/extension-add.adoc[]
 
-You can also just add the following dependency into your project:
+You can also just add the following dependency to your project:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -115,7 +114,7 @@ As you can see in the previous snippet, you can use xref:config-reference.adoc#p
 key requires double quotes: `"%test"`. This is because YAML does not support keys starting with `%`.
 
 Everything under the `"%test"` key is only enabled when the `test` profile is active. For example, in the previous
-snippet it disables OIDC (`quarkus.oidc.enabled: false`), whereas without the `test` profile, it would be enabled.
+snippet, it disables OIDC (`quarkus.oidc.enabled: false`), whereas without the `test` profile, it would be enabled.
 
 As for the Java Properties format, you can define your own profile:
 
@@ -133,7 +132,7 @@ quarkus:
 
 If you enable the `staging` profile, the HTTP port will be 8082, whereas it would be 8081 otherwise.
 
-The YAML configuration also support profile aware files. In this case, properties for a specific profile may reside in
+The YAML configuration also supports profile-aware files. In this case, properties for a specific profile may reside in
 an `application-{profile}.yaml` named file. The previous example may be expressed as:
 
 .application.yaml
@@ -185,7 +184,7 @@ file has to be present in the root of the working directory relative to the Quar
 ├── my-app-runner
 ----
 
-The values from this file override any values from the regular `application.yaml` file if exists.
+The values from this file override any values from the regular `application.yaml` file if it exists.
 
 == Configuration key conflicts
 

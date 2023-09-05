@@ -406,7 +406,7 @@ If this default mechanism is not sufficient and you need a custom locale resolut
 
 === Validation groups for REST endpoint or service method validation
 
-It's sometimes necessary to enable different validation constraints
+It is sometimes necessary to enable different validation constraints
 for the same class when it's passed to a different method.
 
 For example, a `Book` may need to have a `null` identifier when passed to the `post` method

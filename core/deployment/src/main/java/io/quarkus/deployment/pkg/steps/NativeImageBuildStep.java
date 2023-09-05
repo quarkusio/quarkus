@@ -890,13 +890,15 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("-H:+AllowVMInspection");
                 }
 
+                List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
+                monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
                 if (nativeConfig.monitoring().isPresent()) {
-                    List<NativeConfig.MonitoringOption> monitoringOptions = nativeConfig.monitoring().get();
-                    if (!monitoringOptions.isEmpty()) {
-                        nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
-                                .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
-                    }
+                    monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
+                nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
+                        .distinct()
+                        .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
+
                 if (nativeConfig.autoServiceLoaderRegistration()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");
                     //When enabling, at least print what exactly is being added:

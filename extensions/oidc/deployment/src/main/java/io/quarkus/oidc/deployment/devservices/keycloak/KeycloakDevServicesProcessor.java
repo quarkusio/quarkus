@@ -341,6 +341,16 @@ public class KeycloakDevServicesProcessor {
             LOG.debug("Not starting Dev Services for Keycloak as 'quarkus.oidc.provider' has been provided");
             return null;
         }
+        try {
+            for (String prop : ConfigProvider.getConfig().getPropertyNames()) {
+                if (prop.startsWith(CONFIG_PREFIX) && prop.endsWith(".provider")) {
+                    LOG.debugf("Not starting Dev Services for Keycloak as %s has been provided", prop);
+                    return null;
+                }
+            }
+        } catch (Throwable t) {
+            // continue
+        }
 
         if (!dockerStatusBuildItem.isDockerAvailable()) {
             LOG.warn("Please configure 'quarkus.oidc.auth-server-url' or get a working docker instance");

@@ -29,9 +29,9 @@
 :quarkus-site-publications: /publications
 :quarkus-base-url: ${quarkus-base-url}
 :quarkus-clone-url: ${quarkus-base-url}.git
-:quarkus-archive-url: ${quarkus-base-url}/archive/main.zip
-:quarkus-blob-url: ${quarkus-base-url}/blob/main
-:quarkus-tree-url: ${quarkus-base-url}/tree/main
+:quarkus-archive-url: ${quarkus-base-url}/archive/2.16.zip
+:quarkus-blob-url: ${quarkus-base-url}/blob/2.16
+:quarkus-tree-url: ${quarkus-base-url}/tree/2.16
 :quarkus-issues-url: ${quarkus-base-url}/issues
 :quarkus-images-url: https://github.com/quarkusio/quarkus-images/tree
 :quarkus-chat-url: https://quarkusio.zulipchat.com
@@ -39,9 +39,9 @@
 :quarkus-mailing-list-index: https://groups.google.com/d/forum/quarkus-dev
 :quickstarts-base-url: ${quickstarts-base-url}
 :quickstarts-clone-url: ${quickstarts-base-url}.git
-:quickstarts-archive-url: ${quickstarts-base-url}/archive/main.zip
-:quickstarts-blob-url: ${quickstarts-base-url}/blob/main
-:quickstarts-tree-url: ${quickstarts-base-url}/tree/main
+:quickstarts-archive-url: ${quickstarts-base-url}/archive/2.16.zip
+:quickstarts-blob-url: ${quickstarts-base-url}/blob/2.16
+:quickstarts-tree-url: ${quickstarts-base-url}/tree/2.16
 // .
 :amazon-services-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-amazon-services/dev/index.html
 :config-consul-guide: https://quarkiverse.github.io/quarkiverse-docs/quarkus-config-extensions/dev/consul.html

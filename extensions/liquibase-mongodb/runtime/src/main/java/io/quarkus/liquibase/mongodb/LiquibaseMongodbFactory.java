@@ -3,6 +3,7 @@ package io.quarkus.liquibase.mongodb;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
@@ -91,7 +92,9 @@ public class LiquibaseMongodbFactory {
      * @return the label expression
      */
     public LabelExpression createLabels() {
-        return new LabelExpression(liquibaseMongodbConfig.labels.orElse(null));
+        // need to join because of https://github.com/liquibase/liquibase/issues/4763
+        return new LabelExpression(
+                liquibaseMongodbConfig.labels.map(labels -> labels.stream().collect(Collectors.joining(","))).orElse(null));
     }
 
     /**

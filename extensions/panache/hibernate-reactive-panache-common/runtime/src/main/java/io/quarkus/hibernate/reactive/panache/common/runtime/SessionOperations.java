@@ -49,6 +49,7 @@ public final class SessionOperations {
 
     // This key is used to indicate that a reactive session should be opened lazily (when needed) in the current vertx context
     private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
+    private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
 
     /**
      * Marks the current vertx duplicated context as "lazy" which indicates that a reactive session should be opened lazily if
@@ -70,6 +71,7 @@ public final class SessionOperations {
             // perform the work and eventually close the session and remove the key
             return work.get().eventually(() -> {
                 context.removeLocal(SESSION_ON_DEMAND_KEY);
+                context.removeLocal(SESSION_ON_DEMAND_OPENED_KEY);
                 return closeSession();
             });
         }
@@ -148,9 +150,15 @@ public final class SessionOperations {
             return Uni.createFrom().item(current);
         } else {
             if (context.getLocal(SESSION_ON_DEMAND_KEY) != null) {
-                // open a new reactive session and store it in the vertx duplicated context
-                // the context was marked as "lazy" which means that the session will be eventually closed
-                return getSessionFactory().openSession().invoke(s -> context.putLocal(key, s));
+                if (context.getLocal(SESSION_ON_DEMAND_OPENED_KEY) != null) {
+                    // a new reactive session is opened in a previous stage
+                    return Uni.createFrom().item(() -> getCurrentSession());
+                } else {
+                    // open a new reactive session and store it in the vertx duplicated context
+                    // the context was marked as "lazy" which means that the session will be eventually closed
+                    context.putLocal(SESSION_ON_DEMAND_OPENED_KEY, true);
+                    return getSessionFactory().openSession().invoke(s -> context.putLocal(key, s));
+                }
             } else {
                 throw new IllegalStateException("No current Mutiny.Session found"
                         + "\n\t- no reactive session was found in the context and the context was not marked to open a new session lazily"

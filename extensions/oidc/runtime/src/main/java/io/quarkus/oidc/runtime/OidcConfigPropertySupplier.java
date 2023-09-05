@@ -111,7 +111,11 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
                 scopes = providerConfig.authentication.scopes;
             }
             if (scopes.isPresent()) {
-                return OidcCommonUtils.urlEncode(String.join(" ", scopes.get()));
+                String scopesString = String.join(" ", scopes.get());
+                if (!scopes.get().contains(OidcConstants.OPENID_SCOPE)) {
+                    scopesString += (" " + OidcConstants.OPENID_SCOPE);
+                }
+                return OidcCommonUtils.urlEncode(scopesString);
             } else {
                 return OidcConstants.OPENID_SCOPE;
             }

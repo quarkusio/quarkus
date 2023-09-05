@@ -13,6 +13,7 @@ import java.util.Set;
 
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -205,6 +206,11 @@ public class ResteasyReactiveJacksonProcessor {
                 : ServerJacksonMessageBodyReader.class.getName();
     }
 
+    @BuildStep
+    void reflection(BuildProducer<ReflectiveClassBuildItem> producer) {
+        producer.produce(ReflectiveClassBuildItem.builder(Cookie.class).methods().build());
+    }
+
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void handleJsonAnnotations(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -231,7 +237,7 @@ public class ResteasyReactiveJacksonProcessor {
                     if ((jsonViews == null) || (jsonViews.length == 0)) {
                         continue;
                     }
-                    recorder.recordJsonView(getMethodId(instance.target().asMethod()), jsonViews[0].name().toString());
+                    recorder.recordJsonView(getTargetId(instance.target()), jsonViews[0].name().toString());
                 }
             }
             if (resourceClass.annotationsMap().containsKey(CUSTOM_SERIALIZATION)) {

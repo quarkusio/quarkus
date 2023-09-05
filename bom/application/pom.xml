@@ -51,7 +51,7 @@
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.1.0</smallrye-common.version>
-        <smallrye-config.version>3.3.3</smallrye-config.version>
+        <smallrye-config.version>3.3.4</smallrye-config.version>
         <smallrye-health.version>4.0.4</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.5.1</smallrye-open-api.version>
@@ -158,10 +158,10 @@
         <aws-xray.version>2.14.0</aws-xray.version>
         <azure-functions-java-library.version>2.2.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
-        <kotlin.version>1.9.0</kotlin.version>
-        <kotlin.coroutine.version>1.7.2</kotlin.coroutine.version>
+        <kotlin.version>1.9.10</kotlin.version>
+        <kotlin.coroutine.version>1.7.3</kotlin.coroutine.version>
         <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
-        <kotlin-serialization.version>1.5.1</kotlin-serialization.version>
+        <kotlin-serialization.version>1.6.0</kotlin-serialization.version>
         <dekorate.version>3.7.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
@@ -3618,6 +3618,12 @@
             <dependency>
                 <groupId>org.mvnpm.at.vaadin</groupId>
                 <artifactId>virtual-list</artifactId>
+                <version>${vaadin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>a11y-base</artifactId>
                 <version>${vaadin.version}</version>
                 <scope>runtime</scope>
             </dependency>

@@ -70,7 +70,7 @@ final public class Constants {
     public static final String ANNOTATION_CONFIG_WITH_UNNAMED_KEY = "io.smallrye.config.WithUnnamedKey";
 
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = Set.of(ANNOTATION_BUILD_STEP, ANNOTATION_CONFIG_GROUP,
-            ANNOTATION_CONFIG_ROOT, ANNOTATION_RECORDER);
+            ANNOTATION_CONFIG_ROOT, ANNOTATION_RECORDER, ANNOTATION_CONFIG_MAPPING);
 
     public static final Map<String, String> ALIASED_TYPES = Map.of(
             OptionalLong.class.getName(), Long.class.getName(),

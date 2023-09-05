@@ -1626,8 +1626,6 @@ The container is stopped and the config is released during the `after all` test 
 The fields annotated with `@Inject` and `@InjectMock` are injected after a test instance is created and unset before a test instance is destroyed.
 Finally, the CDI request context is activated and terminated per each test method.
 
-NOTE: By default, a new test instance is created for each test method. Therefore, a new CDI container is started for each test method. However, if the test class is annotated with `@org.junit.jupiter.api.TestInstance` and the test instance lifecycle is set to `org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS` then the CDI container will be shared across all test method executions of a given test class.
-
 === Auto Mocking Unsatisfied Dependencies
 
 Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency. 

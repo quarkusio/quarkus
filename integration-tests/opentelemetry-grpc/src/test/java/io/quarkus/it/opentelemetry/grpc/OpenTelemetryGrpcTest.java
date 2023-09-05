@@ -10,7 +10,6 @@ import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_H
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_SOCK_HOST_ADDR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_SOCK_PEER_ADDR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_SOCK_PEER_PORT;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_TRANSPORT;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_GRPC_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_METHOD;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SERVICE;
@@ -95,7 +94,6 @@ public class OpenTelemetryGrpcTest {
         assertNotNull(getAttributes(server).get(NET_SOCK_PEER_PORT.getKey()));
         assertNotNull(getAttributes(server).get(NET_SOCK_HOST_ADDR.getKey()));
         assertNotNull(getAttributes(server).get(NET_HOST_PORT.getKey()));
-        assertEquals("ip_tcp", getAttributes(server).get(NET_TRANSPORT.getKey()));
         assertEquals(server.get("parentSpanId"), client.get("spanId"));
     }
 

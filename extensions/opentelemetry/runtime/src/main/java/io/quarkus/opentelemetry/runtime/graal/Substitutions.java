@@ -10,6 +10,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 import io.opentelemetry.api.events.EventEmitterProvider;
 import io.opentelemetry.api.metrics.MeterProvider;
+import io.opentelemetry.sdk.autoconfigure.internal.SpiHelper;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.logs.SdkLoggerProviderBuilder;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
@@ -24,7 +25,7 @@ public class Substitutions {
         @Substitute
         static List<MetricReader> configureMetricReaders(
                 ConfigProperties config,
-                ClassLoader serviceClassLoader,
+                SpiHelper spiHelper,
                 BiFunction<? super MetricExporter, ConfigProperties, ? extends MetricExporter> metricExporterCustomizer,
                 List<Closeable> closeables) {
             // OTel metrics not supported and there is no need to call
@@ -40,7 +41,7 @@ public class Substitutions {
         static void configureLoggerProvider(
                 SdkLoggerProviderBuilder loggerProviderBuilder,
                 ConfigProperties config,
-                ClassLoader serviceClassLoader,
+                SpiHelper spiHelper,
                 MeterProvider meterProvider,
                 BiFunction<? super LogRecordExporter, ConfigProperties, ? extends LogRecordExporter> logRecordExporterCustomizer,
                 List<Closeable> closeables) {

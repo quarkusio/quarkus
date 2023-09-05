@@ -253,8 +253,11 @@ public class CodeFlowTest {
 
             // This is a redirect from the OIDC server to the endpoint containing the state and code
             String endpointLocation = webResponse.getResponseHeaderValue("location");
-            assertTrue(endpointLocation.startsWith("https"));
-            endpointLocation = "http" + endpointLocation.substring(5);
+            assertTrue(endpointLocation.startsWith("https://localhost:8081/tenant-https"));
+
+            String code = getCode(URI.create(endpointLocation).getQuery());
+
+            endpointLocation = "http://localhost:8081/tenant-https";
 
             // State cookie is present
             Cookie stateCookie = getStateCookie(webClient, "tenant-https_test");
@@ -262,20 +265,24 @@ public class CodeFlowTest {
             verifyCodeVerifierAndNonce(stateCookie, keycloakUrl);
 
             // Make a call without an extra state query param, status is 401
-            webResponse = webClient.loadWebResponse(new WebRequest(URI.create(endpointLocation + "&state=123").toURL()));
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create(endpointLocation + "?code=" + code).toURL()));
             assertEquals(401, webResponse.getStatusCode());
 
-            // Make a call without the state query param, confirm the old state cookie is removed, status is 302
-            webResponse = webClient.loadWebResponse(new WebRequest(URI.create("http://localhost:8081/tenant-https").toURL()));
-            assertEquals(302, webResponse.getStatusCode());
             // the old state cookie has been removed
             assertNull(webClient.getCookieManager().getCookie(stateCookie.getName()));
-            // new state cookie is created
-            Cookie newStateCookie = getStateCookie(webClient, "tenant-https_test");
-            assertNotEquals(newStateCookie.getName(), stateCookie.getName());
-
             webClient.getCookieManager().clearCookies();
         }
+    }
+
+    private String getCode(String query) {
+        final String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            if (pair.startsWith("code")) {
+                return pair.split("=")[1];
+            }
+        }
+        fail("Authorization code is missing");
+        return null;
     }
 
     @Test
@@ -821,6 +828,41 @@ public class CodeFlowTest {
 
             page = webClient.getPage(endpointLocationUri2.toString());
             assertEquals("callback-jwt:alice", page.getBody().asNormalizedText());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testIdTokenInjectionJwtMethodMissingStateQueryParam() throws IOException, InterruptedException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/web-app/callback-jwt-before-redirect").toURL()));
+            Cookie stateCookie = getNonUniqueStateCookie(webClient, "tenant-jwt");
+
+            assertEquals(stateCookie.getName(), "q_auth_tenant-jwt");
+            assertNotNull(getStateCookieStateParam(stateCookie));
+            assertNull(getStateCookieSavedPath(stateCookie));
+
+            HtmlPage page = webClient.getPage(webResponse.getResponseHeaderValue("location"));
+            assertEquals("Sign in to quarkus", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            webResponse = loginForm.getInputByName("login").click().getWebResponse();
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(true);
+
+            // This is a redirect from the OIDC server to the endpoint
+            String endpointLocation = webResponse.getResponseHeaderValue("location");
+            assertTrue(endpointLocation.startsWith("http://localhost:8081/web-app/callback-jwt-after-redirect"));
+            endpointLocation = "http://localhost:8081/web-app/callback-jwt-after-redirect";
+            webResponse = webClient.loadWebResponse(new WebRequest(URI.create(endpointLocation).toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            assertNotNull(getNonUniqueStateCookie(webClient, "tenant-jwt"));
+
             webClient.getCookieManager().clearCookies();
         }
     }

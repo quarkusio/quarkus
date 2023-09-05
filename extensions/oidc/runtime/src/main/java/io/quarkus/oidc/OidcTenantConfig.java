@@ -889,8 +889,8 @@ public class OidcTenantConfig extends OidcCommonConfig {
          * It will cause a new authentication redirect to OpenId Connect provider. Please be aware doing so may increase the
          * risk of browser redirect loops.
          */
-        @ConfigItem(defaultValue = "true")
-        public boolean failOnMissingStateParam = true;
+        @ConfigItem(defaultValue = "false")
+        public boolean failOnMissingStateParam = false;
 
         /**
          * If this property is set to 'true' then an OIDC UserInfo endpoint will be called.

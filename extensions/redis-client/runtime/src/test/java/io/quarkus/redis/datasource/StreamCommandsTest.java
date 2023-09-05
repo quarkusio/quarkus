@@ -86,6 +86,23 @@ public class StreamCommandsTest extends DatasourceTestBase {
                     Map.of("sensor-id", 1234, "temperature", 19))).isNotBlank();
         }
         assertThat(stream.xlen("my-second-stream")).isEqualTo(5);
+    }
+
+    @Test
+    @RequiresRedis7OrHigher
+    void xAddWithRedis7() {
+        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19)))
+                .isNotBlank().contains("-");
+
+        long now = System.currentTimeMillis();
+        assertThat(stream.xadd("mystream", new XAddArgs().id(now + 1000 + "-0"),
+                Map.of("sensor-id", 1234, "temperature", 19))).isEqualTo(now + 1000 + "-0");
+
+        for (int i = 0; i < 10; i++) {
+            assertThat(stream.xadd("my-second-stream", new XAddArgs().maxlen(5L),
+                    Map.of("sensor-id", 1234, "temperature", 19))).isNotBlank();
+        }
+        assertThat(stream.xlen("my-second-stream")).isEqualTo(5);
 
         for (int i = 0; i < 10; i++) {
             assertThat(stream.xadd("my-third-stream", new XAddArgs().minid("12345-0").nearlyExactTrimming()
@@ -472,6 +489,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void xAutoClaim() throws InterruptedException {
         String g1 = "my-group";
         stream.xgroupCreate(key, g1, "$", new XGroupCreateArgs().mkstream());
@@ -532,6 +550,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void xTrim() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
         for (int i = 0; i < 100; i++) {
@@ -549,12 +568,6 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
         assertThat(l).isEqualTo(10);
         assertThat(stream.xlen(key)).isEqualTo(40);
-
-        id = list.get(20).id();
-        l = stream.xtrim(key, new XTrimArgs().minid(id));
-
-        assertThat(l).isEqualTo(10);
-        assertThat(stream.xlen(key)).isEqualTo(30);
     }
 
     @Test
@@ -571,6 +584,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void xGroupCreateAndDeleteConsumer() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
         for (int i = 0; i < 100; i++) {
@@ -614,6 +628,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis7OrHigher
     void xGroupSetIdWithArgs() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
         List<String> ids = new ArrayList<>();
@@ -727,6 +742,19 @@ public class StreamCommandsTest extends DatasourceTestBase {
         stream.xgroupCreate(key, "my-group", "0-0");
         stream.xreadgroup("my-group", "consumer-123", key, ">");
         stream.xreadgroup("my-group", "consumer-456", key, ">");
+    }
+
+    @Test
+    @RequiresRedis6OrHigher
+    void xPendingExtendedTestWithConsumerAndIdleWithRedis6() {
+        Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
+        for (int i = 0; i < 100; i++) {
+            stream.xadd(key, payload);
+        }
+
+        stream.xgroupCreate(key, "my-group", "0-0");
+        stream.xreadgroup("my-group", "consumer-123", key, ">");
+        stream.xreadgroup("my-group", "consumer-456", key, ">");
 
         AtomicReference<List<PendingMessage>> reference = new AtomicReference<>();
         await().untilAsserted(() -> {
@@ -745,6 +773,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void xPendingExtendedTestWithIdle() {
         Map<String, Integer> payload = Map.of("sensor-id", 1234, "temperature", 19);
         for (int i = 0; i < 100; i++) {

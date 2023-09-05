@@ -253,7 +253,7 @@ public class MRangeArgs implements RedisCommandExtraArguments {
 
             if (bucketTimestamp != null) {
                 list.add("BUCKETTIMESTAMP");
-                list.add(bucketTimestamp.toString());
+                list.add(bucketTimestamp.toString().toLowerCase());
             }
 
             if (empty) {

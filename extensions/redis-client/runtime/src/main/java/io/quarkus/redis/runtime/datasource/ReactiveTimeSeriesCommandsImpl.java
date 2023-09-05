@@ -180,6 +180,28 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
             return Collections.emptyMap();
         }
         Map<String, SampleGroup> groups = new HashMap<>();
+
+        if (isMap(response)) {
+            for (String group : response.getKeys()) {
+                Map<String, String> labels = new HashMap<>();
+                List<Sample> samples = new ArrayList<>();
+                var nested = response.get(group);
+                for (Response label : nested.get(0)) {
+                    labels.put(label.get(0).toString(), label.get(1).toString());
+                }
+                for (Response sample : nested.get(nested.size() - 1)) { // samples are last
+                    if (sample.type() == ResponseType.MULTI) {
+                        samples.add(decodeSample(sample));
+                    } else {
+                        samples.add(new Sample(sample.toLong(), nested.get(nested.size() - 1).get(1).toDouble()));
+                        break;
+                    }
+                }
+                groups.put(group, new SampleGroup(group, labels, samples));
+            }
+            return groups;
+        }
+
         for (Response nested : response) {
             // this should be the group
             String group = nested.get(0).toString();

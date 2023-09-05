@@ -1,12 +1,12 @@
 package io.quarkus.redis.runtime.datasource;
 
 import static io.quarkus.redis.runtime.datasource.ReactiveJsonCommandsImpl.decodeArrPopResponse;
+import static io.quarkus.redis.runtime.datasource.ReactiveJsonCommandsImpl.getJsonObject;
 
 import io.quarkus.redis.datasource.json.JsonSetArgs;
 import io.quarkus.redis.datasource.json.ReactiveTransactionalJsonCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.redis.client.Response;
@@ -61,40 +61,36 @@ public class ReactiveTransactionalJsonCommandsImpl<K> extends AbstractTransactio
     @Override
     public <T> Uni<Void> jsonGet(K key, Class<T> clazz) {
         this.tx.enqueue(r -> {
-            if (r == null) {
-                return null;
+            var m = getJsonObject(r);
+            if (m != null) {
+                return m.mapTo(clazz);
             }
-            return Json.decodeValue(r.getDelegate().toBuffer(), clazz);
+            return null;
         });
         return this.reactive._jsonGet(key).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonGetObject(K key) {
-        this.tx.enqueue(r -> r.toBuffer().toJsonObject());
+        this.tx.enqueue(ReactiveJsonCommandsImpl::getJsonObject);
         return this.reactive._jsonGet(key).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonGetArray(K key) {
-        this.tx.enqueue(r -> r.toBuffer().toJsonArray());
+        this.tx.enqueue(ReactiveJsonCommandsImpl::getJsonArray);
         return this.reactive._jsonGet(key).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonGet(K key, String path) {
-        this.tx.enqueue(r -> r.toBuffer().toJsonArray());
+        this.tx.enqueue(ReactiveJsonCommandsImpl::getJsonArrayFromJsonGet);
         return this.reactive._jsonGet(key, path).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonGet(K key, String... paths) {
-        this.tx.enqueue(r -> {
-            if (r == null || r.toString().equalsIgnoreCase("null")) { // JSON null
-                return null;
-            }
-            return r.toBuffer().toJsonObject();
-        });
+        this.tx.enqueue(ReactiveJsonCommandsImpl::getJsonObject);
         return this.reactive._jsonGet(key, paths).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 

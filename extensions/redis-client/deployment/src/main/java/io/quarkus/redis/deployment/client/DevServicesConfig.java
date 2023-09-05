@@ -23,7 +23,7 @@ public interface DevServicesConfig {
     /**
      * The container image name to use, for container based DevServices providers.
      * If you want to use Redis Stack modules (bloom, graph, search...), use:
-     * {@code redis/redis-stack-server:latest}.
+     * {@code redis/redis-stack:latest}.
      */
     Optional<String> imageName();
 

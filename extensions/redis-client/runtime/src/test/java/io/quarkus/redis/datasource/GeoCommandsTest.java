@@ -94,6 +94,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     @Test
+    @RequiresRedis6OrHigher
     void geoaddUsingTypeReferences() {
         var g = ds.geo(new TypeReference<Map<String, Place>>() {
             // Empty on purpose

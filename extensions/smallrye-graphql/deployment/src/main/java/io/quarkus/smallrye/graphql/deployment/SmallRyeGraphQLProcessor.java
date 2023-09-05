@@ -71,6 +71,7 @@ import io.quarkus.vertx.http.deployment.WebsocketSubProtocolsBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.smallrye.graphql.api.AdaptWith;
 import io.smallrye.graphql.api.Deprecated;
 import io.smallrye.graphql.api.Entry;
@@ -147,6 +148,8 @@ public class SmallRyeGraphQLProcessor {
             SUBPROTOCOL_GRAPHQL_TRANSPORT_WS);
 
     private static final int GRAPHQL_WEBSOCKET_HANDLER_ORDER = -10000;
+
+    private static final String GRAPHQL_MEDIA_TYPE = "application/graphql+json";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> featureProducer) {
@@ -349,7 +352,8 @@ public class SmallRyeGraphQLProcessor {
             BodyHandlerBuildItem bodyHandlerBuildItem,
             SmallRyeGraphQLConfig graphQLConfig,
             BeanContainerBuildItem beanContainer,
-            BuildProducer<WebsocketSubProtocolsBuildItem> webSocketSubProtocols) {
+            BuildProducer<WebsocketSubProtocolsBuildItem> webSocketSubProtocols,
+            HttpBuildTimeConfig httpBuildTimeConfig) {
 
         /*
          * <em>Ugly Hack</em>
@@ -395,8 +399,11 @@ public class SmallRyeGraphQLProcessor {
         // Queries and Mutations
         boolean allowGet = getBooleanConfigValue(ConfigKey.ALLOW_GET, false);
         boolean allowQueryParametersOnPost = getBooleanConfigValue(ConfigKey.ALLOW_POST_WITH_QUERY_PARAMETERS, false);
+        boolean allowCompression = httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes
+                .map(mediaTypes -> mediaTypes.contains(GRAPHQL_MEDIA_TYPE))
+                .orElse(false);
         Handler<RoutingContext> executionHandler = recorder.executionHandler(graphQLInitializedBuildItem.getInitialized(),
-                allowGet, allowQueryParametersOnPost, runBlocking);
+                allowGet, allowQueryParametersOnPost, runBlocking, allowCompression);
 
         HttpRootPathBuildItem.Builder requestBuilder = httpRootPathBuildItem.routeBuilder()
                 .routeFunction(graphQLConfig.rootPath, recorder.routeFunction(bodyHandlerBuildItem.getHandler()))

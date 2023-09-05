@@ -90,7 +90,7 @@ public class HttpBuildTimeConfig {
      * List of media types for which the compression should be enabled automatically, unless declared explicitly via
      * {@link Compressed} or {@link Uncompressed}.
      */
-    @ConfigItem(defaultValue = "text/html,text/plain,text/xml,text/css,text/javascript,application/javascript")
+    @ConfigItem(defaultValue = "text/html,text/plain,text/xml,text/css,text/javascript,application/javascript,application/graphql+json")
     public Optional<List<String>> compressMediaTypes;
 
     /**

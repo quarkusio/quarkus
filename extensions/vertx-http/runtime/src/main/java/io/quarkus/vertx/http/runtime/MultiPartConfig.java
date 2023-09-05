@@ -4,13 +4,16 @@ import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConvertWith;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
-import io.smallrye.config.WithConverter;
 
 /**
  * A {@link ConfigGroup} for the settings related to HTTP multipart request handling.
  */
-public interface MultiPartConfig {
+@ConfigGroup
+public class MultiPartConfig {
+
     /**
      * A comma-separated list of {@code ContentType} to indicate whether a given multipart field should be handled as a file
      * part.
@@ -19,5 +22,7 @@ public interface MultiPartConfig {
      *
      * For now, this setting only works when using RESTEasy Reactive.
      */
-    Optional<List<@WithConverter(TrimmedStringConverter.class) String>> fileContentTypes();
+    @ConfigItem
+    @ConvertWith(TrimmedStringConverter.class)
+    public Optional<List<String>> fileContentTypes;
 }

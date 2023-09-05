@@ -34,7 +34,7 @@ public class CompressionScanner implements MethodScanner {
     @Override
     public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
-        if (!httpBuildTimeConfig.enableCompression()) {
+        if (!httpBuildTimeConfig.enableCompression) {
             return Collections.emptyList();
         }
 
@@ -58,7 +58,7 @@ public class CompressionScanner implements MethodScanner {
             return Collections.emptyList();
         }
         ResteasyReactiveCompressionHandler handler = new ResteasyReactiveCompressionHandler(
-                Set.copyOf(httpBuildTimeConfig.compressMediaTypes().orElse(Collections.emptyList())));
+                Set.copyOf(httpBuildTimeConfig.compressMediaTypes.orElse(Collections.emptyList())));
         handler.setCompression(compression);
         String[] produces = (String[]) methodContext.get(EndpointIndexer.METHOD_PRODUCES);
         if ((produces != null) && (produces.length > 0)) {

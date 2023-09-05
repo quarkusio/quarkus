@@ -14,8 +14,8 @@ public class CORSRecorder {
     }
 
     public Handler<RoutingContext> corsHandler() {
-        if (configuration.corsEnabled()) {
-            return new CORSFilter(configuration.cors());
+        if (configuration.corsEnabled) {
+            return new CORSFilter(configuration.cors);
         }
         return null;
     }

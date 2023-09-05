@@ -36,7 +36,7 @@ public class ManagementInterfaceSecurityProcessor {
     @BuildStep
     public void builtins(ManagementInterfaceBuildTimeConfig buildTimeConfig,
             BuildProducer<AdditionalBeanBuildItem> beanProducer) {
-        if (!buildTimeConfig.auth().permissions().isEmpty()) {
+        if (!buildTimeConfig.auth.permissions.isEmpty()) {
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(ManagementPathMatchingHttpSecurityPolicy.class));
         }
     }
@@ -51,7 +51,7 @@ public class ManagementInterfaceSecurityProcessor {
             return null;
         }
 
-        if (managementInterfaceBuildTimeConfig.auth().basic().orElse(false)) {
+        if (managementInterfaceBuildTimeConfig.auth.basic.orElse(false)) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(BasicAuthenticationMechanism.class)
                     .types(HttpAuthenticationMechanism.class)
@@ -75,15 +75,15 @@ public class ManagementInterfaceSecurityProcessor {
             ManagementInterfaceBuildTimeConfig buildTimeConfig) {
 
         Map<String, Supplier<HttpSecurityPolicy>> policyMap = new HashMap<>();
-        for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth().rolePolicy().entrySet()) {
+        for (Map.Entry<String, PolicyConfig> e : buildTimeConfig.auth.rolePolicy.entrySet()) {
             policyMap.put(e.getKey(),
-                    new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed())));
+                    new SupplierImpl<>(new RolesAllowedHttpSecurityPolicy(e.getValue().rolesAllowed)));
         }
         policyMap.put("deny", new SupplierImpl<>(new DenySecurityPolicy()));
         policyMap.put("permit", new SupplierImpl<>(new PermitSecurityPolicy()));
         policyMap.put("authenticated", new SupplierImpl<>(new AuthenticatedHttpSecurityPolicy()));
 
-        if (buildTimeConfig.auth().basic().orElse(false)
+        if (buildTimeConfig.auth.basic.orElse(false)
                 && capabilities.isPresent(Capability.SECURITY)) {
             beanProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable()
@@ -91,17 +91,17 @@ public class ManagementInterfaceSecurityProcessor {
                             .addBeanClass(ManagementInterfaceHttpAuthorizer.class).build());
             filterBuildItemBuildProducer
                     .produce(new ManagementInterfaceFilterBuildItem(
-                            recorder.authenticationMechanismHandler(buildTimeConfig.auth().proactive()),
+                            recorder.authenticationMechanismHandler(buildTimeConfig.auth.proactive),
                             ManagementInterfaceFilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
                     .produce(new ManagementInterfaceFilterBuildItem(recorder.permissionCheckHandler(buildTimeConfig, policyMap),
                             ManagementInterfaceFilterBuildItem.AUTHORIZATION));
-            if (!buildTimeConfig.auth().permissions().isEmpty()) {
+            if (!buildTimeConfig.auth.permissions.isEmpty()) {
                 beanContainerListenerBuildItemBuildProducer
                         .produce(new BeanContainerListenerBuildItem(recorder.initPermissions(buildTimeConfig, policyMap)));
             }
         } else {
-            if (!buildTimeConfig.auth().permissions().isEmpty()) {
+            if (!buildTimeConfig.auth.permissions.isEmpty()) {
                 throw new IllegalStateException("HTTP permissions have been set however security is not enabled");
             }
         }

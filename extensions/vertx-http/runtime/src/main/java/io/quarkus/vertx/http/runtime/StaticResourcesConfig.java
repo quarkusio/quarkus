@@ -2,48 +2,52 @@ package io.quarkus.vertx.http.runtime;
 
 import java.time.Duration;
 
-import io.smallrye.config.WithDefault;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
-public interface StaticResourcesConfig {
+@ConfigGroup
+public class StaticResourcesConfig {
+
     /**
      * Set the index page when serving static resources.
      */
-    @WithDefault("index.html")
-    String indexPage();
+    @ConfigItem(defaultValue = "index.html")
+    public String indexPage;
 
     /**
      * Set whether hidden files should be served.
      */
-    @WithDefault("true")
-    boolean includeHidden();
+    @ConfigItem(defaultValue = "true")
+    public boolean includeHidden;
 
     /**
      * Set whether range requests (resumable downloads; media streaming) should be enabled.
      */
-    @WithDefault("true")
-    boolean enableRangeSupport();
+    @ConfigItem(defaultValue = "true")
+    public boolean enableRangeSupport;
 
     /**
      * Set whether cache handling is enabled.
      */
-    @WithDefault("true")
-    boolean cachingEnabled();
+    @ConfigItem(defaultValue = "true")
+    public boolean cachingEnabled;
 
     /**
      * Set the cache entry timeout. The default is {@code 30} seconds.
      */
-    @WithDefault("30S")
-    Duration cacheEntryTimeout();
+    @ConfigItem(defaultValue = "30S")
+    public Duration cacheEntryTimeout;
 
     /**
      * Set value for max age in caching headers. The default is {@code 24} hours.
      */
-    @WithDefault("24H")
-    Duration maxAge();
+    @ConfigItem(defaultValue = "24H")
+    public Duration maxAge;
 
     /**
      * Set the max cache size.
      */
-    @WithDefault("10000")
-    int maxCacheSize();
+    @ConfigItem(defaultValue = "10000")
+    public int maxCacheSize;
+
 }

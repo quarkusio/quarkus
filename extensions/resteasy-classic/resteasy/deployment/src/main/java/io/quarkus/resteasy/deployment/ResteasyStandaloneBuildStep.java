@@ -111,7 +111,7 @@ public class ResteasyStandaloneBuildStep {
         final boolean noCustomAuthCompletionExMapper;
         final boolean noCustomAuthFailureExMapper;
         final boolean noCustomAuthRedirectExMapper;
-        if (vertxConfig.auth().proactive()) {
+        if (vertxConfig.auth.proactive) {
             noCustomAuthCompletionExMapper = notFoundCustomExMapper(AuthenticationCompletionException.class.getName(),
                     AuthenticationCompletionExceptionMapper.class.getName(), combinedIndexBuildItem.getIndex());
             noCustomAuthFailureExMapper = notFoundCustomExMapper(AuthenticationFailedException.class.getName(),
@@ -129,7 +129,7 @@ public class ResteasyStandaloneBuildStep {
         // so that user can define failure handlers that precede exception mappers
         final Handler<RoutingContext> failureHandler = recorder.vertxFailureHandler(vertx.getVertx(),
                 executorBuildItem.getExecutorProxy(), resteasyVertxConfig, noCustomAuthCompletionExMapper,
-                noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth().proactive());
+                noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth.proactive);
         filterBuildItemBuildProducer.produce(FilterBuildItem.ofAuthenticationFailureHandler(failureHandler));
 
         // Exact match for resources matched to the root path

@@ -4,21 +4,25 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import io.smallrye.config.WithDefault;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.DefaultConverter;
 
 /**
  * Shared configuration for setting up server-side SSL.
  */
-public interface ServerSslConfig {
+@ConfigGroup
+public class ServerSslConfig {
     /**
      * The server certificate configuration.
      */
-    CertificateConfig certificate();
+    public CertificateConfig certificate;
 
     /**
      * The cipher suites to use. If none is given, a reasonable default is selected.
      */
-    Optional<List<String>> cipherSuites();
+    @ConfigItem
+    public Optional<List<String>> cipherSuites;
 
     /**
      * Sets the ordered list of enabled SSL/TLS protocols.
@@ -30,13 +34,15 @@ public interface ServerSslConfig {
      * Note that setting an empty list, and enabling SSL/TLS is invalid.
      * You must at least have one protocol.
      */
-    @WithDefault("TLSv1.3,TLSv1.2")
-    Set<String> protocols();
+    @DefaultConverter
+    @ConfigItem(defaultValue = "TLSv1.3,TLSv1.2")
+    public Set<String> protocols;
 
     /**
      * Enables Server Name Indication (SNI), an TLS extension allowing the server to use multiple certificates.
      * The client indicate the server name during the TLS handshake, allowing the server to select the right certificate.
      */
-    @WithDefault("false")
-    boolean sni();
+    @ConfigItem(defaultValue = "false")
+    public boolean sni;
+
 }

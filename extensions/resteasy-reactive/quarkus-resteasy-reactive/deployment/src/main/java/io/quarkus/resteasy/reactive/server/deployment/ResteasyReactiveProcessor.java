@@ -1272,7 +1272,7 @@ public class ResteasyReactiveProcessor {
             final boolean noCustomAuthCompletionExMapper;
             final boolean noCustomAuthFailureExMapper;
             final boolean noCustomAuthRedirectExMapper;
-            if (vertxConfig.auth().proactive()) {
+            if (vertxConfig.auth.proactive) {
                 noCustomAuthCompletionExMapper = notFoundCustomExMapper(AuthenticationCompletionException.class.getName(),
                         AuthenticationCompletionExceptionMapper.class.getName(), exceptionMapping);
                 noCustomAuthFailureExMapper = notFoundCustomExMapper(AuthenticationFailedException.class.getName(),
@@ -1287,7 +1287,7 @@ public class ResteasyReactiveProcessor {
             }
 
             Handler<RoutingContext> failureHandler = recorder.failureHandler(restInitialHandler, noCustomAuthCompletionExMapper,
-                    noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth().proactive());
+                    noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, vertxConfig.auth.proactive);
 
             // we add failure handler right before QuarkusErrorHandler
             // so that user can define failure handlers that precede exception mappers
@@ -1506,10 +1506,10 @@ public class ResteasyReactiveProcessor {
                 List<HandlerChainCustomizer> securityHandlerList = consumeStandardSecurityAnnotations(method,
                         actualEndpointClass, index,
                         (c) -> Collections.singletonList(
-                                EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth().proactive())));
+                                EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive)));
                 if (securityHandlerList == null && (denyJaxRs || hasDefaultJaxRsRolesAllowed)) {
                     securityHandlerList = Collections
-                            .singletonList(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth().proactive()));
+                            .singletonList(EagerSecurityHandler.Customizer.newInstance(httpBuildTimeConfig.auth.proactive));
                 }
                 if (applySecurityInterceptors && eagerSecurityInterceptors.get().applyInterceptorOn(method)) {
                     List<HandlerChainCustomizer> nextSecurityHandlerList = new ArrayList<>();

@@ -338,7 +338,7 @@ public class SmallRyeOpenApiProcessor {
         String managementRoot = nonApplicationRootPathBuildItem.resolveManagementPath("/",
                 managementInterfaceBuildTimeConfig, launch, openApiConfig.managementEnabled);
 
-        return managementRoot.split(managementInterfaceBuildTimeConfig.rootPath())[0];
+        return managementRoot.split(managementInterfaceBuildTimeConfig.rootPath)[0];
 
     }
 
@@ -435,7 +435,7 @@ public class SmallRyeOpenApiProcessor {
     private boolean isManagement(ManagementInterfaceBuildTimeConfig managementInterfaceBuildTimeConfig,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
             LaunchModeBuildItem launchModeBuildItem) {
-        return managementInterfaceBuildTimeConfig.enabled() && smallRyeOpenApiConfig.managementEnabled
+        return managementInterfaceBuildTimeConfig.enabled && smallRyeOpenApiConfig.managementEnabled
                 && launchModeBuildItem.getLaunchMode().equals(LaunchMode.DEVELOPMENT);
     }
 

@@ -77,10 +77,10 @@ public class ResteasyStandaloneRecorder {
         if (deployment != null) {
             Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), deployment, contextPath,
                     new ResteasyVertxAllocator(config.responseBufferSize), executor,
-                    readTimeout.getValue().readTimeout().toMillis());
+                    readTimeout.getValue().readTimeout.toMillis());
 
-            Set<String> compressMediaTypes = httpBuildTimeConfig.compressMediaTypes().map(Set::copyOf).orElse(Set.of());
-            if (httpBuildTimeConfig.enableCompression() && !compressMediaTypes.isEmpty()) {
+            Set<String> compressMediaTypes = httpBuildTimeConfig.compressMediaTypes.map(Set::copyOf).orElse(Set.of());
+            if (httpBuildTimeConfig.enableCompression && !compressMediaTypes.isEmpty()) {
                 // If compression is enabled and the set of compressed media types is not empty then wrap the standalone handler
                 handler = new HttpCompressionHandler(handler, compressMediaTypes);
             }
@@ -99,7 +99,7 @@ public class ResteasyStandaloneRecorder {
             // used when auth failed before RESTEasy Classic began processing the request
             return new VertxRequestHandler(vertx.get(), deployment, contextPath,
                     new ResteasyVertxAllocator(config.responseBufferSize), executor,
-                    readTimeout.getValue().readTimeout().toMillis()) {
+                    readTimeout.getValue().readTimeout.toMillis()) {
 
                 @Override
                 public void handle(RoutingContext request) {

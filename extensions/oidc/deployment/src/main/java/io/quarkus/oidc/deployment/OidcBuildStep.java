@@ -162,7 +162,7 @@ public class OidcBuildStep {
             Capabilities capabilities, OidcRecorder recorder,
             BuildProducer<EagerSecurityInterceptorCandidateBuildItem> producer,
             HttpBuildTimeConfig buildTimeConfig) {
-        if (!buildTimeConfig.auth().proactive()
+        if (!buildTimeConfig.auth.proactive
                 && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY))) {
             // provide method interceptor that will be run before security checks
 

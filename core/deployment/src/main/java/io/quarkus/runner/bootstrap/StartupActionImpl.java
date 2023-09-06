@@ -79,8 +79,8 @@ public class StartupActionImpl implements StartupAction {
                     transformedClasses);
             runtimeClassLoader = curatedApplication.createRuntimeClassLoader(
                     resources, transformedClasses);
-            System.out.println("HOLLY STARTUP ACTION MADE RUNtime " + runtimeClassLoader);
-            System.out.println("startup thread is " + Thread.currentThread());
+            System.out.println("HOLLY FUNQ STARTUP ACTION MADE RUNtime " + runtimeClassLoader);
+            System.out.println("FUNQ startup thread is " + Thread.currentThread());
             // new Exception().printStackTrace();
         }
         this.runtimeClassLoader = runtimeClassLoader;

@@ -33,12 +33,12 @@ public final class Arc {
         if (container == null) {
             synchronized (INSTANCE) {
                 container = INSTANCE.get();
-                System.out.println("arc container instance is " + container);
+                System.out.println("FUNQ arc container instance is " + container);
                 if (container == null) {
                     // Set the container instance first because Arc.container() can be used within ArcContainerImpl.init()
                     container = new ArcContainerImpl(config.getCurrentContextFactory(), config.isStrictCompatibility());
                     INSTANCE.set(container);
-                    System.out.println("arc did set container");
+                    System.out.println("FUNQ arc did set container");
                     container.init();
                 }
             }
@@ -47,6 +47,13 @@ public final class Arc {
     }
 
     public static void setExecutor(ExecutorService executor) {
+        System.out.println(INSTANCE.get() + "HOLLY FUNQ trying to set the executor " + Arc.class.getClassLoader());
+        if (INSTANCE.get() == null) {
+            // TODO this happens because we tear things down and don't put them back properly
+            // Can we just ... init ourselves?
+            System.out.println("TODO HACK just putting it back");
+            initialize();
+        }
         INSTANCE.get().setExecutor(executor);
     }
 
@@ -65,6 +72,7 @@ public final class Arc {
                 container = INSTANCE.get();
                 if (container != null) {
                     container.shutdown();
+                    System.out.println("HOLLY FUNQ shutting down, setting instance to null " + Arc.class.getClassLoader());
                     INSTANCE.set(null);
                 }
             }

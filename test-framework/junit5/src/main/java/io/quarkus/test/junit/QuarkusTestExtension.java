@@ -234,6 +234,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             //            populateDeepCloneField(startupAction);
 
             //must be done after the TCCL has been set
+            // TODO could we load this with the normal class of this test? I think we could
             testResourceManager = (Closeable) Thread.currentThread().getContextClassLoader()
                     .loadClass(TestResourceManager.class.getName())
                     .getConstructor(Class.class, Class.class, List.class, boolean.class, Map.class, Optional.class, Path.class)
@@ -257,9 +258,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             populateTestMethodInvokers(startupAction.getClassLoader());
 
             if (profileInstance == null || !profileInstance.runMainMethod()) {
+                System.out.println("HOLLY FUNQ DOING THE STARTUP PATH");
                 runningQuarkusApplication = startupAction
                         .run(profileInstance == null ? new String[0] : profileInstance.commandLineParameters());
             } else {
+                System.out.println("HOLLY FUNQ doing the main class path");
 
                 Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true,
                         startupAction.getClassLoader());

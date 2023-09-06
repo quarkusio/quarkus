@@ -811,6 +811,8 @@ public class ArcProcessor {
     }
 
     /*
+     * TODO consolidate this with the code above, see if it enables prod test and quarkus test to co-exist, and isolate to its
+     * own change set?
      * TODO I'm not really happy with this as a general solution. Without this, we see classes being transformed twice if a
      * QuarkusProdModeTest is used and transformations are needed (such as adding a constructor)
      * I followed the model we use for QuarkusComponentTest, but it's limited in how much it will catch.

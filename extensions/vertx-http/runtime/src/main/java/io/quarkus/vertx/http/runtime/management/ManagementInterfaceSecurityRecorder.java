@@ -58,7 +58,7 @@ public class ManagementInterfaceSecurityRecorder {
             @Override
             public void created(BeanContainer container) {
                 container.beanInstance(ManagementPathMatchingHttpSecurityPolicy.class)
-                        .init(buildTimeConfig.auth().permissions(), policies, buildTimeConfig.rootPath());
+                        .init(buildTimeConfig.auth.permissions, policies, buildTimeConfig.rootPath);
             }
         };
     }

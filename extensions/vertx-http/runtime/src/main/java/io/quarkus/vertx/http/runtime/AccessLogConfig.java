@@ -2,19 +2,23 @@ package io.quarkus.vertx.http.runtime;
 
 import java.util.Optional;
 
-import io.smallrye.config.WithDefault;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
-public interface AccessLogConfig {
+@ConfigGroup
+public class AccessLogConfig {
+
     /**
      * If access logging is enabled. By default this will log via the standard logging facility
      */
-    @WithDefault("false")
-    boolean enabled();
+    @ConfigItem(defaultValue = "false")
+    public boolean enabled;
 
     /**
      * A regular expression that can be used to exclude some paths from logging.
      */
-    Optional<String> excludePattern();
+    @ConfigItem
+    Optional<String> excludePattern;
 
     /**
      * The access log pattern.
@@ -29,46 +33,48 @@ public interface AccessLogConfig {
      *
      * @asciidoclet
      */
-    @WithDefault("common")
-    String pattern();
+    @ConfigItem(defaultValue = "common")
+    public String pattern;
 
     /**
      * If logging should be done to a separate file.
      */
-    @WithDefault("false")
-    boolean logToFile();
+    @ConfigItem(defaultValue = "false")
+    public boolean logToFile;
 
     /**
      * The access log file base name, defaults to 'quarkus' which will give a log file
      * name of 'quarkus.log'.
      *
      */
-    @WithDefault("quarkus")
-    String baseFileName();
+    @ConfigItem(defaultValue = "quarkus")
+    public String baseFileName;
 
     /**
      * The log directory to use when logging access to a file
      *
      * If this is not set then the current working directory is used.
      */
-    Optional<String> logDirectory();
+    @ConfigItem
+    public Optional<String> logDirectory;
 
     /**
      * The log file suffix
      */
-    @WithDefault(".log")
-    String logSuffix();
+    @ConfigItem(defaultValue = ".log")
+    public String logSuffix;
 
     /**
      * The log category to use if logging is being done via the standard log mechanism (i.e. if base-file-name is empty).
      *
      */
-    @WithDefault("io.quarkus.http.access-log")
-    String category();
+    @ConfigItem(defaultValue = "io.quarkus.http.access-log")
+    public String category;
 
     /**
      * If the log should be rotated daily
      */
-    @WithDefault("true")
-    boolean rotate();
+    @ConfigItem(defaultValue = "true")
+    public boolean rotate;
+
 }

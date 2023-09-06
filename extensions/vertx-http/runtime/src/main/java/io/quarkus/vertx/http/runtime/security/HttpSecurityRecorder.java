@@ -94,7 +94,7 @@ public class HttpSecurityRecorder {
             @Override
             public void created(BeanContainer container) {
                 container.beanInstance(PathMatchingHttpSecurityPolicy.class)
-                        .init(buildTimeConfig.auth().permissions(), policies, buildTimeConfig.rootPath());
+                        .init(buildTimeConfig.auth.permissions, policies, buildTimeConfig.rootPath);
             }
         };
     }
@@ -106,7 +106,7 @@ public class HttpSecurityRecorder {
             @Override
             public FormAuthenticationMechanism get() {
                 String key;
-                if (!httpConfiguration.getValue().encryptionKey().isPresent()) {
+                if (!httpConfiguration.getValue().encryptionKey.isPresent()) {
                     if (encryptionKey != null) {
                         //persist across dev mode restarts
                         key = encryptionKey;
@@ -117,24 +117,23 @@ public class HttpSecurityRecorder {
                         log.warn("Encryption key was not specified for persistent FORM auth, using temporary key " + key);
                     }
                 } else {
-                    key = httpConfiguration.getValue().encryptionKey().get();
+                    key = httpConfiguration.getValue().encryptionKey.get();
                 }
-                FormAuthConfig form = buildTimeConfig.auth().form();
-                PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName(),
-                        form.timeout().toMillis(),
-                        form.newCookieInterval().toMillis(), form.httpOnlyCookie(), form.cookieSameSite().name(),
-                        form.cookiePath().orElse(null));
-                String loginPage = startWithSlash(form.loginPage().orElse(null));
-                String errorPage = startWithSlash(form.errorPage().orElse(null));
-                String landingPage = startWithSlash(form.landingPage().orElse(null));
-                String postLocation = startWithSlash(form.postLocation());
-                String usernameParameter = form.usernameParameter();
-                String passwordParameter = form.passwordParameter();
-                String locationCookie = form.locationCookie();
-                String cookiePath = form.cookiePath().orElse(null);
-                boolean redirectAfterLogin = form.redirectAfterLogin();
+                FormAuthConfig form = buildTimeConfig.auth.form;
+                PersistentLoginManager loginManager = new PersistentLoginManager(key, form.cookieName, form.timeout.toMillis(),
+                        form.newCookieInterval.toMillis(), form.httpOnlyCookie, form.cookieSameSite.name(),
+                        form.cookiePath.orElse(null));
+                String loginPage = startWithSlash(form.loginPage.orElse(null));
+                String errorPage = startWithSlash(form.errorPage.orElse(null));
+                String landingPage = startWithSlash(form.landingPage.orElse(null));
+                String postLocation = startWithSlash(form.postLocation);
+                String usernameParameter = form.usernameParameter;
+                String passwordParameter = form.passwordParameter;
+                String locationCookie = form.locationCookie;
+                String cookiePath = form.cookiePath.orElse(null);
+                boolean redirectAfterLogin = form.redirectAfterLogin;
                 return new FormAuthenticationMechanism(loginPage, postLocation, usernameParameter, passwordParameter,
-                        errorPage, landingPage, redirectAfterLogin, locationCookie, form.cookieSameSite().name(), cookiePath,
+                        errorPage, landingPage, redirectAfterLogin, locationCookie, form.cookieSameSite.name(), cookiePath,
                         loginManager);
             }
         };
@@ -151,8 +150,8 @@ public class HttpSecurityRecorder {
         return new Supplier<BasicAuthenticationMechanism>() {
             @Override
             public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(buildTimeConfig.auth().realm().orElse(null),
-                        buildTimeConfig.auth().form().enabled());
+                return new BasicAuthenticationMechanism(buildTimeConfig.auth.realm.orElse(null),
+                        buildTimeConfig.auth.form.enabled);
             }
         };
     }

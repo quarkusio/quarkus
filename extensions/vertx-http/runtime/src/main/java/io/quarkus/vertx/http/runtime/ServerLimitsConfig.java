@@ -4,45 +4,48 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.configuration.MemorySize;
-import io.smallrye.config.WithDefault;
 
-public interface ServerLimitsConfig {
+@ConfigGroup
+public class ServerLimitsConfig {
     /**
      * The maximum length of all headers.
      */
-    @WithDefault("20K")
-    MemorySize maxHeaderSize();
+    @ConfigItem(defaultValue = "20K")
+    public MemorySize maxHeaderSize;
 
     /**
      * The maximum size of a request body.
      */
-    @WithDefault("10240K")
-    Optional<MemorySize> maxBodySize();
+    @ConfigItem(defaultValue = "10240K")
+    public Optional<MemorySize> maxBodySize;
 
     /**
      * The max HTTP chunk size
      */
-    @WithDefault("8192")
-    MemorySize maxChunkSize();
+    @ConfigItem(defaultValue = "8192")
+    public MemorySize maxChunkSize;
 
     /**
      * The maximum length of the initial line (e.g. {@code "GET / HTTP/1.0"}).
      */
-    @WithDefault("4096")
-    int maxInitialLineLength();
+    @ConfigItem(defaultValue = "4096")
+    public int maxInitialLineLength;
 
     /**
      * The maximum length of a form attribute.
      */
-    @WithDefault("2048")
-    MemorySize maxFormAttributeSize();
+    @ConfigItem(defaultValue = "2048")
+    public MemorySize maxFormAttributeSize;
 
     /**
      * The maximum number of connections that are allowed at any one time. If this is set
      * it is recommended to set a short idle timeout.
      */
-    OptionalInt maxConnections();
+    @ConfigItem
+    public OptionalInt maxConnections;
 
     /**
      * Set the SETTINGS_HEADER_TABLE_SIZE HTTP/2 setting.
@@ -52,7 +55,8 @@ public interface ServerLimitsConfig {
      * specific to the header compression format inside a header block.
      * The initial value is {@code 4,096} octets.
      */
-    OptionalLong headerTableSize();
+    @ConfigItem
+    public OptionalLong headerTableSize;
 
     /**
      * Set SETTINGS_MAX_CONCURRENT_STREAMS HTTP/2 setting.
@@ -61,14 +65,16 @@ public interface ServerLimitsConfig {
      * applies to the number of streams that the sender permits the receiver to create. Initially, there is no limit to
      * this value. It is recommended that this value be no smaller than 100, to not unnecessarily limit parallelism.
      */
-    OptionalLong maxConcurrentStreams();
+    @ConfigItem
+    public OptionalLong maxConcurrentStreams;
 
     /**
      * Set the SETTINGS_MAX_FRAME_SIZE HTTP/2 setting.
      * Indicates the size of the largest frame payload that the sender is willing to receive, in octets.
      * The initial value is {@code 2^14} (16,384) octets.
      */
-    OptionalInt maxFrameSize();
+    @ConfigItem
+    public OptionalInt maxFrameSize;
 
     /**
      * Set the SETTINGS_MAX_HEADER_LIST_SIZE HTTP/2 setting.
@@ -77,5 +83,7 @@ public interface ServerLimitsConfig {
      * value in octets plus an overhead of 32 octets for each header field.
      * The default value is {@code 8192}
      */
-    OptionalLong maxHeaderListSize();
+    @ConfigItem
+    public OptionalLong maxHeaderListSize;
+
 }

@@ -270,8 +270,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (!oidcTenantConfig.authentication.allowMultipleCodeFlows
                 || context.request().path().equals(getRedirectPath(oidcTenantConfig, context))) {
             if (oidcTenantConfig.authentication.failOnMissingStateParam) {
+                removeStateCookies(oidcTenantConfig, context, cookies);
                 return Uni.createFrom().failure(new AuthenticationCompletionException());
-            } else {
+            }
+            if (!oidcTenantConfig.authentication.allowMultipleCodeFlows) {
                 removeStateCookies(oidcTenantConfig, context, cookies);
             }
         }

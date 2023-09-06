@@ -716,7 +716,6 @@ public class JunitTestRunner {
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     cr.accept(new TestTracingProcessor.TracingClassVisitor(writer, i), 0);
                     transformedClasses.put(i.replace('.', '/') + ".class", writer.toByteArray());
-                    System.out.println("669 HOLLY transformed " + i);
                 } catch (Exception e) {
                     log.error("Failed to instrument " + i + " for usage tracking", e);
                 }

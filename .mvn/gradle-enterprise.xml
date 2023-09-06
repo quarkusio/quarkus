@@ -26,10 +26,6 @@
             <enabled>false</enabled>
         </local>
         <remote>
-            <server>
-                <url>https://ge.quarkus.io/cache/main/</url>
-                <allowUntrusted>false</allowUntrusted>
-            </server>
             <enabled>true</enabled>
             <storeEnabled>#{env['CI'] != null}</storeEnabled>
         </remote>

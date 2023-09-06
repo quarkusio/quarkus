@@ -421,6 +421,12 @@ public class OpenshiftProcessor {
 
             applyOpenshiftResources(openShiftClient, buildResources);
             openshiftBuild(buildResources, tar, openshiftConfig, kubernetesClientBuilder);
+        } finally {
+            try {
+                tar.delete();
+            } catch (Exception e) {
+                LOG.warn("Unable to delete temporary file " + tar.toPath().toAbsolutePath(), e);
+            }
         }
     }
 

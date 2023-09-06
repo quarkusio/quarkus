@@ -16,7 +16,7 @@ Quarkus supports the JBoss Logging API as well as multiple other logging APIs, s
 You can use any of the <<logging-apis,following APIs>>:
 
 * link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
-* JDK `java.util.logging` (JUL)
+* link:https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
 * link:https://www.slf4j.org/[SLF4J]
 * link:https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
 * link:https://logging.apache.org/log4j/2.x/[Apache Log4j 2]

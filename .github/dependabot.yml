@@ -60,8 +60,6 @@ updates:
       - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:*
       - dependency-name: io.smallrye.reactive:*
-      # Swagger-UI
-      - dependency-name: org.webjars:swagger-ui
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies

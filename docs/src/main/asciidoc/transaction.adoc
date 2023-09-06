@@ -371,6 +371,7 @@ IMPORTANT: While there are several benefits to using a database to store transac
 
 Quarkus allows the following JDBC-specific configuration of the object store included in `quarkus.transacion-manager.object-store.<property>` properties, where <property> can be:
 
+
 * `type` (_string_): Configure this property to `jdbc` to enable usage of a Quarkus JDBC datasource for transaction logging.
 The default value is `file-system`.
 * `datasource` (_string_): Specify the name of the datasource for the transaction log storage.
@@ -381,6 +382,20 @@ The default value is `false`.
 The default value is `false`.
 * `table-prefix` (string): Specify the prefix for a related table name.
 The default value is `quarkus_`.
+
+// This paragraph will differ from the RHBQ docs in the future since it is not supported in the product yet.
+Additional information:
+
+* You can manually create the transaction log table during the initial setup by setting the `create-table` property to `true`.
+
+* JDBC datasources and ActiveMQ Artemis allow the enlistment and automatically register the `XAResourceRecovery`.
+
+** JDBC datasources is part of `quarkus-agroal`, and it needs to use `quarkus.datasource.jdbc.transactions=XA`.
+** ActiveMQ Artemis is part of `quarkus-pooled-jms`, and it needs to use `quarkus.pooled-jms.transaction=XA`.
++
+For more information, see link:https://issues.redhat.com/browse/CEQ-4878[CEQ-4878].
+
+* If your application employs eXtended Architecture (XA) transactions, enable the transaction crash recovery feature by using `quarkus.transaction-manager.enable-recovery=true`, to safeguard your data in the event of application crashes or failures. The default value for XA Recovery is `false`.
 
 [NOTE]
 ====

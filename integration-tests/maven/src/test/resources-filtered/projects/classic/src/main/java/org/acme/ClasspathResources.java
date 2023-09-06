@@ -72,7 +72,7 @@ public class ClasspathResources {
         try {
             //this class is only present in multi release jars
             //for fast-jar we need to make sure it is loaded correctly
-            Class<?> clazz = this.getClass().getClassLoader().loadClass("io.smallrye.common.cpu.ProcessorInfo");
+            Class<?> clazz = this.getClass().getClassLoader().loadClass("io.smallrye.common.vertx.VertxContext");
             if (clazz.getClassLoader() == getClass().getClassLoader()) {
                 return SUCCESS;
             }

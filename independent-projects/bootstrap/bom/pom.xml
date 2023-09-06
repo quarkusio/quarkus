@@ -421,8 +421,18 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.logmanager</groupId>
-                <artifactId>jboss-logmanager-embedded</artifactId>
-                <version>${jboss-logmanager-embedded.version}</version>
+                <artifactId>jboss-logmanager</artifactId>
+                <version>${jboss-logmanager.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.modules</groupId>
+                        <artifactId>jboss-modules</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.eclipse.parsson</groupId>
+                        <artifactId>jakarta.json</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.logging</groupId>

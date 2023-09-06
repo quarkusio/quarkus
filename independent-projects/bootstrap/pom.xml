@@ -68,7 +68,7 @@
         <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->
         <j2objc.annotations.version>2.8</j2objc.annotations.version><!-- keep in sync with guava.version -->
         <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
-        <jboss-logmanager-embedded.version>1.0.11</jboss-logmanager-embedded.version>
+        <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
         <slf4j-api.version>1.7.36</slf4j-api.version>
         <graal-sdk.version>23.0.1</graal-sdk.version>
@@ -77,7 +77,7 @@
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>
-        <smallrye-common.version>2.1.0</smallrye-common.version>
+        <smallrye-common.version>2.1.2</smallrye-common.version>
         <smallrye-beanbag.version>1.3.2</smallrye-beanbag.version>
         <gradle-tooling.version>8.3</gradle-tooling.version>
         <quarkus-fs-util.version>0.0.9</quarkus-fs-util.version>

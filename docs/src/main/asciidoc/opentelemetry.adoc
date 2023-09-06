@@ -609,6 +609,23 @@ It can be activated by setting `quarkus.otel.traces.exporter=otlp` and include t
 implementation("io.opentelemetry:opentelemetry-exporter-otlp-common")
 implementation("io.opentelemetry:opentelemetry-exporter-otlp")
 ----
+[[quarkus-extensions-using-opentelemetry]]
+== Quarkus core extensions instrumented with OpenTelemetry tracing
+
+* https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
+* https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
+* https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
+* https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
+* https://quarkus.io/guides/rest-client[`quarkus-rest-client`]
+* https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]
+** AMQP 1.0
+** RabbitMQ
+** Kafka
+** Pulsar
+* https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
 
 [[configuration-reference]]
 == OpenTelemetry Configuration Reference

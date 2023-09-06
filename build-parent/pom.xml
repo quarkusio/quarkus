@@ -110,7 +110,7 @@
 
         <assertj.version>3.24.2</assertj.version>
 
-        <wiremock.version>3.0.0</wiremock.version>
+        <wiremock.version>3.0.3</wiremock.version>
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->

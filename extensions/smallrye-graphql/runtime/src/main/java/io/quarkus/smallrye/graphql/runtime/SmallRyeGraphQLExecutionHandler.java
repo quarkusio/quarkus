@@ -46,7 +46,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private static final String EXTENSIONS = "extensions";
     private static final String APPLICATION_GRAPHQL = "application/graphql";
     private static final String OK = "OK";
-    private static final String DEFAULT_RESPONSE_CONTENT_TYPE = "application/graphql+json; charset="
+    private static final String DEFAULT_RESPONSE_CONTENT_TYPE = "application/graphql-response+json; charset="
             + StandardCharsets.UTF_8.name();
     private static final String DEFAULT_REQUEST_CONTENT_TYPE = "application/json; charset="
             + StandardCharsets.UTF_8.name();

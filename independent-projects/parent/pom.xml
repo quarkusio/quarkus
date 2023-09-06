@@ -279,16 +279,10 @@
                                     true
                                 </addDefaultImplementationEntries>
                             </manifest>
-                            <manifestEntries>
+                            <manifestEntries combine.children="append">
                                 <Implementation-URL>${project.url}</Implementation-URL>
-                                <Java-Version>${java.version}</Java-Version>
-                                <Java-Vendor>${java.vendor}</Java-Vendor>
-                                <Os-Name>${os.name}</Os-Name>
-                                <Os-Arch>${os.arch}</Os-Arch>
-                                <Os-Version>${os.version}</Os-Version>
                                 <Scm-Url>${project.scm.url}</Scm-Url>
                                 <Scm-Connection>${project.scm.connection}</Scm-Connection>
-                                <Scm-Revision>${buildNumber}</Scm-Revision>
                             </manifestEntries>
                         </archive>
                     </configuration>
@@ -339,16 +333,10 @@
                                     true
                                 </addDefaultImplementationEntries>
                             </manifest>
-                            <manifestEntries>
+                            <manifestEntries combine.children="append">
                                 <Implementation-URL>${project.url}</Implementation-URL>
-                                <Java-Version>${java.version}</Java-Version>
-                                <Java-Vendor>${java.vendor}</Java-Vendor>
-                                <Os-Name>${os.name}</Os-Name>
-                                <Os-Arch>${os.arch}</Os-Arch>
-                                <Os-Version>${os.version}</Os-Version>
                                 <Scm-Url>${project.scm.url}</Scm-Url>
                                 <Scm-Connection>${project.scm.connection}</Scm-Connection>
-                                <Scm-Revision>${buildNumber}</Scm-Revision>
                             </manifestEntries>
                         </archive>
                     </configuration>
@@ -719,6 +707,36 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifestEntries combine.children="append">
+                                    <Java-Version>${java.version}</Java-Version>
+                                    <Java-Vendor>${java.vendor}</Java-Vendor>
+                                    <Os-Name>${os.name}</Os-Name>
+                                    <Os-Arch>${os.arch}</Os-Arch>
+                                    <Scm-Revision>${buildNumber}</Scm-Revision>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <configuration>
+                            <archive>
+                                <manifestEntries combine.children="append">
+                                    <Java-Version>${java.version}</Java-Version>
+                                    <Java-Vendor>${java.vendor}</Java-Vendor>
+                                    <Os-Name>${os.name}</Os-Name>
+                                    <Os-Arch>${os.arch}</Os-Arch>
+                                    <Scm-Revision>${buildNumber}</Scm-Revision>
+                                </manifestEntries>
+                            </archive>
+                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>

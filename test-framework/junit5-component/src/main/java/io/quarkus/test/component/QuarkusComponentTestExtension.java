@@ -530,6 +530,9 @@ public class QuarkusComponentTestExtension
         boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
         ClassLoader oldTccl = Thread.currentThread().getContextClassLoader();
 
+        // TODO broken - if we use the tccl it's null, the test classloader should now be ok but "Classloader is not resettable"
+        // Are runtime classloaders always not resettable?
+        // TODO we might make this pass but in a way that means we cannot have component tests and quarkus tests together
         IndexView computingIndex = BeanArchives.buildComputingBeanArchiveIndex(oldTccl,
                 new ConcurrentHashMap<>(), index);
 

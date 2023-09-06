@@ -179,6 +179,7 @@ public class StartupBuildSteps {
             ResultHandle beanHandle = mc.invokeInterfaceMethod(ARC_CONTAINER_BEAN, containerHandle,
                     mc.load(bean.getIdentifier()));
             if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
+                System.out.println("172 HI! ARC making startup constructor");
                 // It does not make a lot of sense to support @Startup dependent beans but it's still a valid use case
                 ResultHandle creationalContext = mc.newInstance(
                         MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),

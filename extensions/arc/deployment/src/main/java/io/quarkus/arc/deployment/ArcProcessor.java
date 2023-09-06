@@ -332,6 +332,7 @@ public class ArcProcessor {
             });
         }
         builder.setTransformUnproxyableClasses(arcConfig.transformUnproxyableClasses);
+
         builder.setTransformPrivateInjectedFields(arcConfig.transformPrivateInjectedFields);
         builder.setFailOnInterceptedPrivateMethod(arcConfig.failOnInterceptedPrivateMethod);
         builder.setJtaCapabilities(capabilities.isPresent(Capability.TRANSACTIONS));
@@ -389,6 +390,7 @@ public class ArcProcessor {
         }
         if (launchModeBuildItem.getLaunchMode() == LaunchMode.TEST) {
             builder.addExcludeType(createQuarkusComponentTestExcludePredicate(index));
+            builder.addExcludeType(createQuarkusProdTestExcludePredicate(index));
         }
 
         for (SuppressConditionGeneratorBuildItem generator : suppressConditionGenerators) {
@@ -673,6 +675,7 @@ public class ArcProcessor {
     @BuildStep
     @Record(value = RUNTIME_INIT)
     void setupExecutor(ExecutorBuildItem executor, ArcRecorder recorder) {
+        System.out.println("HOLLY arc processor setting up executor");
         recorder.initExecutor(executor.getExecutorProxy());
     }
 
@@ -775,7 +778,7 @@ public class ArcProcessor {
     }
 
     Predicate<ClassInfo> createQuarkusComponentTestExcludePredicate(IndexView index) {
-        // Exlude static nested classed declared on a QuarkusComponentTest:
+        // Exclude static nested classed declared on a QuarkusComponentTest:
         // 1. Test class annotated with @QuarkusComponentTest
         // 2. Test class with a static field of a type QuarkusComponentTestExtension
         DotName quarkusComponentTest = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTest");
@@ -800,6 +803,43 @@ public class ArcProcessor {
                                 }
                             }
                         }
+                    }
+                }
+                return false;
+            }
+        };
+    }
+
+    /*
+     * TODO I'm not really happy with this as a general solution. Without this, we see classes being transformed twice if a
+     * QuarkusProdModeTest is used and transformations are needed (such as adding a constructor)
+     * I followed the model we use for QuarkusComponentTest, but it's limited in how much it will catch.
+     * For example, if a test declares a bean outside an inner class, we will double-transform.
+     * If we could avoid running the CustomLauncherInterceptor for prod mode tests, this would not be needed.
+     */
+    Predicate<ClassInfo> createQuarkusProdTestExcludePredicate(IndexView index) {
+        // Exclude static nested classed declared on a QuarkusComponentTest:
+        // 1. Test class with a static field of a type QuarkusProdModeTest
+        DotName quarkusComponentTestExtension = DotName.createSimple("io.quarkus.test.QuarkusProdModeTest");
+        return new Predicate<ClassInfo>() {
+
+            @Override
+            public boolean test(ClassInfo clazz) {
+                if (clazz.nestingType() == NestingType.INNER
+                        && Modifier.isStatic(clazz.flags())) {
+                    DotName enclosingClassName = clazz.enclosingClass();
+                    ClassInfo enclosingClass = index.getClassByName(enclosingClassName);
+                    if (enclosingClass != null) {
+
+                        for (FieldInfo field : enclosingClass.fields()) {
+                            if (!field.isSynthetic()
+                                    && Modifier.isStatic(field.flags())
+                                    && field.type().name().equals(quarkusComponentTestExtension)) {
+                                System.out.println("HOLLY Excluding " + clazz);
+                                return true;
+                            }
+                        }
+
                     }
                 }
                 return false;

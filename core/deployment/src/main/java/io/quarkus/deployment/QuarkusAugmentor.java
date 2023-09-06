@@ -158,8 +158,10 @@ public class QuarkusAugmentor {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
             BuildResult buildResult = execBuilder.execute();
-            String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
-                    + "ms";
+            String message = launchMode + "uarkus augmentation completed in "
+                    + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
+                    + "ms with cl " + deploymentClassLoader;
+            System.out.println(message);
             if (launchMode == LaunchMode.NORMAL) {
                 log.info(message);
                 if (Boolean.parseBoolean(System.getProperty("quarkus.debug.dump-build-metrics"))) {

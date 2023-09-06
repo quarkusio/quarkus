@@ -57,8 +57,10 @@ import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.common.PathTestHelper;
@@ -137,6 +139,7 @@ public class QuarkusProdModeTest
     private boolean clearRestAssuredURL;
 
     public QuarkusProdModeTest() {
+        System.out.println("HOLLY constructing prod mode test, TCCL is " + Thread.currentThread().getContextClassLoader());
         InputStream appPropsIs = Thread.currentThread().getContextClassLoader().getResourceAsStream("application.properties");
         if (appPropsIs != null) {
             customApplicationProperties = new Properties();
@@ -428,7 +431,20 @@ public class QuarkusProdModeTest
                 }
             }
 
-            System.out.println("HOLLY making prod mode bootstrap builder");
+            // TODO even if we did this, wouldn't it mean we were loaded with the wrong classloader?
+            if (this.getClass().getClassLoader() instanceof QuarkusClassLoader) {
+                System.out.println("HOLLY the prod mod test extension sees loader " + this.getClass().getClassLoader());
+                //          ((QuarkusClassLoader) this.getClass().getClassLoader()).reset(Collections.emptyMap(), Collections.emptyMap());
+            }
+            //  Thread.currentThread().setContextClassLoader(null);
+
+            System.out.println("HOLLY making prod mode bootstrap builder" + CurrentTestApplication.curatedApplication);
+            if (CurrentTestApplication.curatedApplication != null) {
+                //                System.out.println("HOLLY clearing out other curated applications");
+                //                CurrentTestApplication.curatedApplication.close();
+                // TODO even if we did this, wouldn't it mean we were loaded with the wrong classloader?
+            }
+
             QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
                     .setApplicationRoot(deploymentDir)
                     .setMode(QuarkusBootstrap.Mode.PROD)
@@ -470,6 +486,8 @@ public class QuarkusProdModeTest
                 builder.addAdditionalDeploymentArchive(additionalDeploymentDir);
             }
             curatedApplication = builder.build().bootstrap();
+            // TODO might be useful, but this happens after the launcher interceptor
+            CurrentTestApplication.curatedApplication = curatedApplication;
 
             AugmentAction action;
             if (buildChainCustomizerEntries.isEmpty()) {

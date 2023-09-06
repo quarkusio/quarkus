@@ -5,6 +5,7 @@ import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -12,6 +13,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -788,6 +790,13 @@ public final class Beans {
     static void validateBean(BeanInfo bean, List<Throwable> errors, Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             Set<DotName> classesReceivingNoArgsCtor, Set<BeanInfo> injectedBeans) {
 
+        System.out.println("HOLLY validating bean " + bean + " using my classloader " + Beans.class.getClassLoader());
+        if (bean.getImplClazz() != null) {
+            System.out.println("at this point " + bean + " says no args is " + bean.getImplClazz()
+                    .hasNoArgsConstructor());
+        }
+        System.out.println("HOLLY and the list we got given is " + Arrays.toString(classesReceivingNoArgsCtor.toArray()));
+
         // by default, we fail deployment due to unproxyability for all beans, but in strict mode,
         // we only do that for beans that are injected somewhere -- and defer the error to runtime otherwise,
         // due to CDI spec requirements
@@ -1157,7 +1166,7 @@ public final class Beans {
             constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClassName), constructor.getThis());
             // NOTE: it seems that we do not need to handle final fields
             constructor.returnVoid();
-            LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
+                        LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
             return transformer.applyTo(classVisitor);
         }
 

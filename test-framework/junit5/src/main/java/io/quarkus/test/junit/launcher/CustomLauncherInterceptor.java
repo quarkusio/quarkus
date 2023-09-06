@@ -5,8 +5,8 @@ import static io.quarkus.deployment.dev.testing.PathTestHelper.getTestClassLocat
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.platform.launcher.LauncherDiscoveryListener;
@@ -21,7 +21,6 @@ import io.quarkus.bootstrap.app.StartupActionHolder;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.deployment.dev.testing.CoreQuarkusTestExtension;
 import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.deployment.dev.testing.TestSupport;
@@ -47,11 +46,25 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
     @Override
     public <T> T intercept(Invocation<T> invocation) {
+        if (System.getProperty("prod.mode.tests") != null) {
+            return invocation.proceed();
+
+        } else {
+            return nintercept(invocation);
+        }
+
+    }
+
+    public <T> T nintercept(Invocation<T> invocation) {
         // We visit this several times
         System.out.println("HOLLY interceipt doing" + invocation);
         System.out.println("HOLLY interceipt support is " + TestSupport.instance()
                 .isPresent());
         System.out.println("HOLLY interceipt holder is " + StartupActionHolder.getStored());
+
+        // This interception is only actually needed in limited circumstances; when
+        // - running in normal mode
+        // - *and* there is a @QuarkusTest to run
 
         // This class sets a Thead Context Classloader, which JUnit uses to load classes.
         // However, in continuous testing mode, setting a TCCL here isn't sufficient for the
@@ -67,14 +80,17 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         // this interceptor doesn't need to do anything.
         // TODO what if we removed the changes in the runner code?
 
-        // Bypass all this in continuous testing mode; the startup action holder is our best way
+        // Bypass all this in continuous testing mode, where the custom runner will have already initialised things before we hit this class; the startup action holder is our best way
         // of detecting it
 
         // TODO alternate way of detecting it ? Needs the build item, though
+        // TODO could the extension pass this through to us? no, I think we're invoked before anything quarkusy, and junit5 isn't even an extension
         //        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
         //        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
         //            return;
         //        }
+
+        // Some places do this, but that assumes we already have a classloader!         boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
 
         if (StartupActionHolder.getStored() == null) {
             if (invocation instanceof LauncherSession) {
@@ -194,10 +210,10 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
                     final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
                     System.out.println("HOLLY test model is " + testModel);
-                    System.out.println(
-                            "module dir is " + Arrays.toString(testModel.getWorkspaceModules().toArray()));
-                    System.out.println(
-                            "module dir is " + ((WorkspaceModule) testModel.getWorkspaceModules().toArray()[0]).getModuleDir());
+                    //                    System.out.println(
+                    //                            "module dir is " + Arrays.toString(testModel.getWorkspaceModules().toArray()));
+                    //                    System.out.println(
+                    //                            "module dir is " + ((WorkspaceModule) testModel.getWorkspaceModules().toArray()[0]).getModuleDir());
                     System.out.println(
                             "app dir is " + testModel.getApplicationModule().getModuleDir());
                 }
@@ -208,6 +224,9 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 ClassLoader loader = coreQuarkusTestExtension.doJavaStart(applicationRoot,
                         curatedApplication, false);
                 currentThread.setContextClassLoader(loader);
+                Consumer currentTestAppConsumer = (Consumer) loader.loadClass(CurrentTestApplication.class.getName())
+                        .getDeclaredConstructor().newInstance();
+                currentTestAppConsumer.accept(curatedApplication);
 
                 System.out.println("HOLLY did set to " + currentThread.getContextClassLoader());
 

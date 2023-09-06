@@ -70,7 +70,7 @@ jobs:
           ### In cases where you want to specify the cache key, enable the above 2 inputs
           ### Follows the format here https://github.com/actions/cache
           #
-          # custom_opts: '--future'
+          custom_opts: '--config _config.yml,_only_latest_guides_config.yml'
           ### If you need to specify any Jekyll build options, enable the above input
           ### Flags accepted can be found here https://jekyllrb.com/docs/configuration/options/#build-command-options
       - name: Publishing to surge for preview

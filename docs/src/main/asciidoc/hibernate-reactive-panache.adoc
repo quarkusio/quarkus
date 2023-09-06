@@ -14,6 +14,16 @@ breadth of an Object Relational Mapper allowing you to access your database over
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
 Hibernate Reactive with Panache focuses on making your entities trivial and fun to write in Quarkus.
 
+[NOTE]
+====
+Hibernate Reactive is not a replacement for xref:hibernate-orm-panache.adoc[Hibernate ORM] or the future of Hibernate ORM.
+It is a different stack tailored for reactive use cases where you need high-concurrency.
+
+Furthermore, using RESTEasy Reactive, our default REST layer, does not require the use of Hibernate Reactive.
+It is perfectly valid to use RESTEasy Reactive with Hibernate ORM,
+and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
+====
+
 == First: an example
 
 What we're doing in Panache allows you to write your Hibernate Reactive entities like this:
@@ -685,7 +695,7 @@ matching the values returned by the select clause:
 ----
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection 
+@RegisterForReflection
 public class RaceWeight {
     public final String race;
     public final Double weight
@@ -736,7 +746,7 @@ NOTE: Note that a Panache entity may not be used from a blocking thread. See als
 Also make sure to wrap methods that modify the database or involve multiple queries (e.g. `entity.persist()`) within a transaction.
 You can annotate a CDI business method that returns `Uni` with the `@WithTransaction` annotation.
 The method will be intercepted and the returned `Uni` is triggered within a transaction boundary.
-Alternatively, you can use the `Panache.withTransaction()` method for the same effect. 
+Alternatively, you can use the `Panache.withTransaction()` method for the same effect.
 
 IMPORTANT: You cannot use the `@Transactional` annotation with Hibernate Reactive for your transactions: you must use `@WithTransaction`, and your annotated method must return a `Uni` to be non-blocking.
 
@@ -871,9 +881,9 @@ public class SomeTest {
 
     @Test
     @RunOnVertxContext
-    public void testEntity(TransactionalUniAsserter asserter) { 
+    public void testEntity(TransactionalUniAsserter asserter) {
         asserter.execute(() -> new MyEntity().persist()); <1>
-        asserter.assertEquals(() -> MyEntity.count(), 1l); <2> 
+        asserter.assertEquals(() -> MyEntity.count(), 1l); <2>
         asserter.execute(() -> MyEntity.deleteAll()); <3>
     }
 }
@@ -1062,7 +1072,7 @@ public class PanacheFunctionalityTest {
     @RunOnVertxContext // <1>
     @Test
     public void testPanacheRepositoryMocking(UniAsserter asserter) { // <2>
-        
+
         // Mocked classes always return a default value
         asserter.assertEquals(() -> mockablePersonRepository.count(), 0l);
 
@@ -1091,7 +1101,7 @@ public class PanacheFunctionalityTest {
         });
         asserter.assertThat(() -> mockablePersonRepository.findById(12l), p -> Assertions.assertSame(p, asserter.getData(key)));
         asserter.assertNull(() -> mockablePersonRepository.findById(42l));
-        
+
         // Mock throwing
         asserter.execute(() -> Mockito.when(mockablePersonRepository.findById(12l)).thenThrow(new WebApplicationException()));
         asserter.assertFailedWith(() -> {
@@ -1113,7 +1123,7 @@ public class PanacheFunctionalityTest {
             Mockito.verify(mockablePersonRepository).persist(Mockito.<Person> any());
             Mockito.verifyNoMoreInteractions(mockablePersonRepository);
         });
-        
+
         // IMPORTANT: We need to execute the asserter within a reactive session
         asserter.surroundWith(u -> Panache.withSession(() -> u));
     }

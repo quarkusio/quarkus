@@ -21,9 +21,13 @@ public class JPAFunctionalityInGraalITCase extends JPAFunctionalityTest {
         report.assertContains(org.postgresql.jdbc.PgSQLXML.class);
         report.assertContains(UUIDJdbcType.class);
 
-        //And finally verify we included the JDK XML by triggering
-        //io.quarkus.jdbc.postgresql.runtime.graal.SQLXLMFeature
-        report.assertContains(javax.xml.transform.TransformerFactory.class);
+        // And finally verify we included "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl" which is
+        // the fallback implementation class name used in javax.xml.transform.TransformerFactory.newInstance()
+        // whose invocation gets triggered when io.quarkus.jdbc.postgresql.runtime.graal.SQLXLMFeature is enabled.
+        // We cannot use class javax.xml.transform.TransformerFactory directly since delegation to
+        // the implementation might get inlined, thus resulting in 'javax.xml.transform.TransformerFactory'
+        // not showing up as a used class in the reports (due to '-H:+InlineBeforeAnalysis').
+        report.assertContains("com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl");
     }
 
 }

@@ -585,30 +585,6 @@ The `quarkus.otel.exporter.otlp.traces.protocol` default to `grpc` and `http/pro
 === On Quarkiverse
 Additional exporters will be available in the Quarkiverse https://github.com/quarkiverse/quarkus-opentelemetry-exporter/blob/main/README.md[quarkus-opentelemetry-exporter] project.
 
-=== OpenTelemetry exporter
-The default OpenTelemetry exporter can be used, but it's not recommended because of the additional dependency on the OkHttp library.
-
-It can be activated by setting `quarkus.otel.traces.exporter=otlp` and include the following dependencies in your project:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>io.opentelemetry</groupId>
-    <artifactId>opentelemetry-exporter-otlp-common</artifactId>
-</dependency>
-<dependency>
-    <groupId>io.opentelemetry</groupId>
-    <artifactId>opentelemetry-exporter-otlp</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation("io.opentelemetry:opentelemetry-exporter-otlp-common")
-implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-----
 [[quarkus-extensions-using-opentelemetry]]
 == Quarkus core extensions instrumented with OpenTelemetry tracing
 

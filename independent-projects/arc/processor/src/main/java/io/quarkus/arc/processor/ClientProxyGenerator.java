@@ -28,6 +28,7 @@ import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanGenerator.ProviderType;
+import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -332,18 +333,18 @@ public class ClientProxyGenerator extends AbstractGenerator {
         IndexView index = bean.getDeployment().getBeanArchiveIndex();
 
         if (bean.isClassBean()) {
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             ClassInfo classInfo = bean.getTarget().get().asClass();
             addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, classInfo);
         } else if (bean.isProducerMethod()) {
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
             ClassInfo returnTypeClass = getClassByName(index, producerMethod.returnType());
             addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
                     methodsFromWhichToRemoveFinal, returnTypeClass);
         } else if (bean.isProducerField()) {
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal = new HashMap<>();
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal = new HashMap<>();
             FieldInfo producerField = bean.getTarget().get().asField();
             ClassInfo fieldClass = getClassByName(index, producerField.type());
             addDelegatesAndTrasformIfNecessary(bytecodeTransformerConsumer, transformUnproxyableClasses, methods, index,
@@ -359,15 +360,15 @@ public class ClientProxyGenerator extends AbstractGenerator {
     private void addDelegatesAndTrasformIfNecessary(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             boolean transformUnproxyableClasses,
             Map<Methods.MethodKey, MethodInfo> methods, IndexView index,
-            Map<String, Set<Methods.NameAndDescriptor>> methodsFromWhichToRemoveFinal,
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal,
             ClassInfo fieldClass) {
         Methods.addDelegatingMethods(index, fieldClass, methods, methodsFromWhichToRemoveFinal,
                 transformUnproxyableClasses);
         if (!methodsFromWhichToRemoveFinal.isEmpty()) {
-            for (Map.Entry<String, Set<Methods.NameAndDescriptor>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
+            for (Map.Entry<String, Set<MethodKey>> entry : methodsFromWhichToRemoveFinal.entrySet()) {
                 String className = entry.getKey();
                 bytecodeTransformerConsumer.accept(new BytecodeTransformer(className,
-                        new Methods.RemoveFinalFromMethod(className, entry.getValue())));
+                        new Methods.RemoveFinalFromMethod(entry.getValue())));
             }
         }
     }

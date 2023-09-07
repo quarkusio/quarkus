@@ -28,11 +28,9 @@ import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.gizmo.DescriptorUtils;
-import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
 
 /**
@@ -63,7 +61,7 @@ final class Methods {
     }
 
     static void addDelegatingMethods(IndexView index, ClassInfo classInfo, Map<MethodKey, MethodInfo> methods,
-            Map<String, Set<NameAndDescriptor>> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal, boolean transformUnproxyableClasses) {
         if (classInfo != null) {
             // First methods declared on the class
             for (MethodInfo method : classInfo.methods()) {
@@ -104,7 +102,7 @@ final class Methods {
     }
 
     private static boolean skipForClientProxy(MethodInfo method, boolean transformUnproxyableClasses,
-            Map<String, Set<NameAndDescriptor>> methodsFromWhichToRemoveFinal) {
+            Map<String, Set<MethodKey>> methodsFromWhichToRemoveFinal) {
         if (Modifier.isStatic(method.flags()) || Modifier.isPrivate(method.flags())) {
             return true;
         }
@@ -120,7 +118,7 @@ final class Methods {
             if (!className.startsWith("java.")) {
                 if (transformUnproxyableClasses && (methodsFromWhichToRemoveFinal != null)) {
                     methodsFromWhichToRemoveFinal.computeIfAbsent(className, (k) -> new HashSet<>())
-                            .add(NameAndDescriptor.fromMethodInfo(method));
+                            .add(new MethodKey(method));
                     return false;
                 }
                 // in case we want to transform classes but are unable to, we log a WARN
@@ -184,7 +182,7 @@ final class Methods {
             boolean transformUnproxyableClasses, SubclassSkipPredicate skipPredicate, boolean ignoreMethodLevelBindings,
             Set<MethodKey> noClassInterceptorsMethods, boolean targetHasAroundInvokes) {
 
-        Set<NameAndDescriptor> methodsFromWhichToRemoveFinal = new HashSet<>();
+        Set<MethodKey> methodsFromWhichToRemoveFinal = new HashSet<>();
         Set<MethodInfo> finalMethodsFoundAndNotChanged = new HashSet<>();
         skipPredicate.startProcessing(classInfo, originalClassInfo);
 
@@ -204,7 +202,7 @@ final class Methods {
             boolean addToCandidates = true;
             if (Modifier.isFinal(method.flags()) && possiblyIntercepted) {
                 if (transformUnproxyableClasses && !isNoninterceptableKotlinMethod(method)) {
-                    methodsFromWhichToRemoveFinal.add(NameAndDescriptor.fromMethodInfo(method));
+                    methodsFromWhichToRemoveFinal.add(new MethodKey(method));
                 } else {
                     addToCandidates = false;
                     finalMethodsFoundAndNotChanged.add(method);
@@ -219,7 +217,7 @@ final class Methods {
         if (!methodsFromWhichToRemoveFinal.isEmpty()) {
             bytecodeTransformerConsumer.accept(
                     new BytecodeTransformer(classInfo.name().toString(),
-                            new RemoveFinalFromMethod(classInfo.name().toString(), methodsFromWhichToRemoveFinal)));
+                            new RemoveFinalFromMethod(methodsFromWhichToRemoveFinal)));
         }
 
         if (!classInfo.superName().equals(DotNames.OBJECT)) {
@@ -331,43 +329,6 @@ final class Methods {
         return result;
     }
 
-    static class NameAndDescriptor {
-        private final String name;
-        private final String descriptor;
-
-        public NameAndDescriptor(String name, String descriptor) {
-            this.name = name;
-            this.descriptor = descriptor;
-        }
-
-        public static NameAndDescriptor fromMethodInfo(MethodInfo method) {
-            String returnTypeDesc = DescriptorUtils.objectToDescriptor(method.returnType().name().toString());
-            String[] paramTypesDesc = new String[method.parametersCount()];
-            for (int i = 0; i < method.parametersCount(); i++) {
-                paramTypesDesc[i] = DescriptorUtils.objectToDescriptor(method.parameterType(i).name().toString());
-            }
-
-            return new NameAndDescriptor(method.name(),
-                    DescriptorUtils.methodSignatureToDescriptor(returnTypeDesc, paramTypesDesc));
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-            NameAndDescriptor that = (NameAndDescriptor) o;
-            return name.equals(that.name) &&
-                    descriptor.equals(that.descriptor);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(name, descriptor);
-        }
-    }
-
     static class MethodKey {
 
         final String name;
@@ -447,27 +408,20 @@ final class Methods {
 
     static class RemoveFinalFromMethod implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-        private final String classToTransform;
-        private final Set<NameAndDescriptor> methodsFromWhichToRemoveFinal;
+        private final Set<MethodKey> methodsFromWhichToRemoveFinal;
 
-        public RemoveFinalFromMethod(String classToTransform, Set<NameAndDescriptor> methodsFromWhichToRemoveFinal) {
-            this.classToTransform = classToTransform;
+        public RemoveFinalFromMethod(Set<MethodKey> methodsFromWhichToRemoveFinal) {
             this.methodsFromWhichToRemoveFinal = methodsFromWhichToRemoveFinal;
         }
 
         @Override
-        public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-                @Override
-                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
-                        String[] exceptions) {
-                    if (methodsFromWhichToRemoveFinal.contains(new NameAndDescriptor(name, descriptor))) {
-                        access = access & (~Opcodes.ACC_FINAL);
-                        LOGGER.debug("final modifier removed from method " + name + " of class " + classToTransform);
-                    }
-                    return super.visitMethod(access, name, descriptor, signature, exceptions);
-                }
-            };
+        public ClassVisitor apply(String className, ClassVisitor classVisitor) {
+            ClassTransformer transformer = new ClassTransformer(className);
+            for (MethodKey key : methodsFromWhichToRemoveFinal) {
+                LOGGER.debug("Final modifier removed from method " + key.name + " of class " + className);
+                transformer.modifyMethod(MethodDescriptor.of(key.method)).removeModifiers(Opcodes.ACC_FINAL);
+            }
+            return transformer.applyTo(classVisitor);
         }
     }
 

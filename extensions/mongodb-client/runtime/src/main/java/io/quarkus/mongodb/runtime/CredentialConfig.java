@@ -37,7 +37,8 @@ public class CredentialConfig {
 
     /**
      * Configures the source of the authentication credentials.
-     * This is typically the database that the credentials have been created. The value defaults to the database
+     * This is typically the database where the credentials have been created.
+     * The value defaults to the database
      * specified in the path portion of the connection string or in the 'database' configuration property.
      * If the database is specified in neither place, the default value is {@code admin}. This option is only
      * respected when using the MONGO-CR mechanism (the default).
@@ -61,10 +62,11 @@ public class CredentialConfig {
     /**
      * The credentials provider bean name.
      * <p>
-     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
-     * CredentialsProvider beans are available.
+     * This is a bean name (as in {@code @Named}) of a bean that implements {@code CredentialsProvider}.
+     * It is used to select the credentials provider bean when multiple exist.
+     * This is unnecessary when there is only one credentials provider available.
      * <p>
-     * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
+     * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
     @ConfigItem
     @ConvertWith(TrimmedStringConverter.class)

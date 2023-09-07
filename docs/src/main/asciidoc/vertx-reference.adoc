@@ -1008,6 +1008,52 @@ On macOS Sierra and above you can enable the following socket options:
 quarkus.http.so-reuse-port=true
 ----
 
+== Use a Vert.x context-aware scheduler
+
+Some Mutiny operators need to schedule work on an executor thread pool.
+A good example is `.onItem().delayIt().by(Duration.ofMillis(10)` as it needs such an executor to delay emissions.
+
+The default executor is returned by `io.smallrye.mutiny.infrastructure.Infrastructure` and it is already configured and managed by Quarkus.
+
+That being said, there are cases where you need to make sure that an operation is run on a Vert.x (duplicated) context and not just on any random thread.
+
+The `io.smallrye.mutiny.vertx.core.ContextAwareScheduler` interface offers an API to obtain context-aware schedulers.
+Such a scheduler is configured with:
+
+1. a delegate `ScheduledExecutorService` of your choice (hint: you can reuse `Infrastructure.getDefaultWorkerPool()`), and
+2. a context fetching strategy among:
+  - an explicit `Context`, or
+  - calling `Vertx::getOrCreateContext()` either on the current thread or later when the scheduling request happens, or
+  - calling `Vertx::currentContext()`, which fails if the current thread is not a Vert.x thread.
+
+Here is a sample where `ContextAwareScheduler` is used:
+
+[source,java]
+----
+class MyVerticle extends AbstractVerticle {
+
+    @Override
+    public Uni<Void> asyncStart() {
+        vertx.getOrCreateContext().put("foo", "bar");
+
+        var delegate = Infrastructure.getDefaultWorkerPool();
+        var scheduler = ContextAwareScheduler.delegatingTo(delegate)
+            .withCurrentContext();
+
+        return Uni.createFrom().voidItem()
+                .onItem().delayIt().onExecutor(scheduler).by(Duration.ofMillis(10))
+                .onItem().invoke(() -> {
+                    // Prints "bar"
+                    var ctx = vertx.getOrCreateContext();
+                    System.out.println(ctx.get("foo"));
+                });
+    }
+}
+----
+
+In this example a scheduler is created by capturing the context of the Vert.x event-loop that calls `asyncStart()`.
+The `delayIt` operator uses that scheduler, and we can check that the context that we get in `invoke` is a Vert.x duplicated context where the data for key `"foo"` has been propagated.
+
 == Use a Unix domain socket
 
 Listening on a Unix domain socket allows us to dispense with the overhead of TCP

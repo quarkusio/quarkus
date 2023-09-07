@@ -17,11 +17,12 @@ import io.quarkus.test.component.beans.Charlie;
 public class AnnotationsTransformerTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension()
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
             .addAnnotationsTransformer(AnnotationsTransformer.appliedToClass()
                     .whenClass(c -> c.declaredAnnotations().isEmpty()
                             && c.annotationsMap().containsKey(DotName.createSimple(Inject.class)))
-                    .thenTransform(t -> t.add(Singleton.class)));
+                    .thenTransform(t -> t.add(Singleton.class)))
+            .build();
 
     @Inject
     NotABean bean;

@@ -124,6 +124,7 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -142,6 +143,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -154,13 +156,13 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
-import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.FactoryUtils;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
@@ -399,7 +401,9 @@ public class ResteasyReactiveProcessor {
             BuildProducer<SetupEndpointsResultBuildItem> setupEndpointsResultProducer,
             BuildProducer<ResteasyReactiveResourceMethodEntriesBuildItem> resourceMethodEntriesBuildItemBuildProducer,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             List<ParameterContainersBuildItem> parameterContainersBuildItems,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicateBuildItems,
@@ -423,7 +427,8 @@ public class ResteasyReactiveProcessor {
         Map<DotName, String> scannedResourcePaths = result.getScannedResourcePaths();
         Map<DotName, String> pathInterfaces = result.getPathInterfaces();
 
-        ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
+        ApplicationScanningResult appResult = ResteasyReactiveCommonProcessor.getApplicationScanningResult(config,
+                combinedIndexBuildItem, buildTimeConditionBuildItems, closeablesBuildItem);
         Set<String> singletonClasses = appResult.getSingletonClasses();
 
         Map<String, String> existingConverters = new HashMap<>();
@@ -1022,7 +1027,10 @@ public class ResteasyReactiveProcessor {
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
     public void serverSerializers(ResteasyReactiveRecorder recorder,
             BeanContainerBuildItem beanContainerBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            ResteasyReactiveConfig config,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             List<MessageBodyReaderBuildItem> additionalMessageBodyReaders,
             List<MessageBodyWriterBuildItem> additionalMessageBodyWriters,
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
@@ -1031,9 +1039,11 @@ public class ResteasyReactiveProcessor {
             BuildProducer<ServerSerialisersBuildItem> serverSerializersProducer) {
 
         ServerSerialisers serialisers = recorder.createServerSerialisers();
-        SerializersUtil.setupSerializers(recorder, reflectiveClass, additionalMessageBodyReaders,
+        ApplicationScanningResult applicationScanningResult = ResteasyReactiveCommonProcessor.getApplicationScanningResult(
+                config, combinedIndexBuildItem, buildTimeConditionBuildItems, closeablesBuildItem);
+        SerializersUtil.setupSerializers(recorder, applicationScanningResult, reflectiveClass, additionalMessageBodyReaders,
                 additionalMessageBodyWriters, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
-                beanContainerBuildItem, applicationResultBuildItem, serialisers,
+                beanContainerBuildItem, serialisers,
                 RuntimeType.SERVER);
 
         // built-ins
@@ -1132,8 +1142,10 @@ public class ResteasyReactiveProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
-            ApplicationResultBuildItem applicationResultBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
+            CombinedIndexBuildItem index,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             ExceptionMappersBuildItem exceptionMappersBuildItem,
             ParamConverterProvidersBuildItem paramConverterProvidersBuildItem,
             ContextResolversBuildItem contextResolversBuildItem,
@@ -1152,7 +1164,8 @@ public class ResteasyReactiveProcessor {
                 mediaType -> Stream.of(mediaType.getType(), mediaType.getSubtype(), mediaType.getParameters())
                         .collect(toList()));
 
-        ApplicationScanningResult appResult = applicationResultBuildItem.getResult();
+        ApplicationScanningResult appResult = ResteasyReactiveCommonProcessor.getApplicationScanningResult(config, index,
+                buildTimeConditionBuildItems, closeablesBuildItem);
         Set<String> singletonClasses = appResult.getSingletonClasses();
         Application application = appResult.getApplication();
 

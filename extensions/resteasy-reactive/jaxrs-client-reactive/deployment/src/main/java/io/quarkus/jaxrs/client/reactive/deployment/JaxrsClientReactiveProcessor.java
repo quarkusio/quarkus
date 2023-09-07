@@ -116,12 +116,14 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.HashUtil;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.multipart.FileDownload;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.MethodDescriptors;
 import io.quarkus.arc.processor.Types;
@@ -138,6 +140,7 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -161,11 +164,11 @@ import io.quarkus.jaxrs.client.reactive.runtime.ParameterDescriptorFromClassSupp
 import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
-import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor;
 import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
@@ -244,8 +247,10 @@ public class JaxrsClientReactiveProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setupClientProxies(JaxrsClientReactiveRecorder recorder,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyBuildItemBuildProducer,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
@@ -270,9 +275,12 @@ public class JaxrsClientReactiveProcessor {
 
         Serialisers serialisers = recorder.createSerializers();
 
-        SerializersUtil.setupSerializers(recorder, reflectiveClassBuildItemBuildProducer, messageBodyReaderBuildItems,
+        ApplicationScanningResult applicationScanningResult = ResteasyReactiveCommonProcessor.getApplicationScanningResult(
+                config, combinedIndexBuildItem, buildTimeConditionBuildItems, closeablesBuildItem);
+        SerializersUtil.setupSerializers(recorder, applicationScanningResult, reflectiveClassBuildItemBuildProducer,
+                messageBodyReaderBuildItems,
                 messageBodyWriterBuildItems, messageBodyReaderOverrideBuildItems, messageBodyWriterOverrideBuildItems,
-                beanContainerBuildItem, applicationResultBuildItem, serialisers,
+                beanContainerBuildItem, serialisers,
                 RuntimeType.CLIENT);
         Set<DotName> scannedParameterContainers = new HashSet<>();
 
@@ -307,7 +315,7 @@ public class JaxrsClientReactiveProcessor {
                 .setInjectableBeans(new HashMap<>())
                 .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                 .setAdditionalWriters(additionalWriters)
-                .setDefaultBlocking(applicationResultBuildItem.getResult().getBlockingDefault())
+                .setDefaultBlocking(applicationScanningResult.getBlockingDefault())
                 .setHasRuntimeConverters(false)
                 .setDefaultProduces(defaultProducesType)
                 .setSmartDefaultProduces(disableSmartDefaultProduces.isEmpty())

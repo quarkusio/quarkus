@@ -8,6 +8,8 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.POST;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PUT;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
@@ -68,7 +70,44 @@ public class ResteasyReactiveScanner {
         METHOD_TO_BUILTIN_HTTP_ANNOTATIONS = Collections.unmodifiableMap(reverseMap);
     }
 
+    private static volatile ApplicationScanningResult CACHE = null;
+
     public static ApplicationScanningResult scanForApplicationClass(IndexView index, Set<String> excludedClasses) {
+        if (CACHE == null) {
+            synchronized (ResteasyReactiveScanner.class) {
+                if (CACHE == null) {
+                    CACHE = doScanForApplicationClass(index, excludedClasses);
+                }
+            }
+        }
+        return CACHE;
+    }
+
+    public static class CacheCleaner implements Closeable {
+
+        public static final CacheCleaner INSTANCE = new CacheCleaner();
+
+        private CacheCleaner() {
+        }
+
+        @Override
+        public void close() throws IOException {
+            clearCache();
+        }
+    }
+
+    public static void clearCache() {
+        if (CACHE != null) {
+            synchronized (CacheCleaner.class) {
+                if (CACHE != null) {
+                    CACHE = null;
+                }
+            }
+        }
+    }
+
+    private static ApplicationScanningResult doScanForApplicationClass(IndexView index,
+            Set<String> excludedClasses) {
         Collection<ClassInfo> applications = index
                 .getAllKnownSubclasses(ResteasyReactiveDotNames.APPLICATION);
         Set<String> allowedClasses = new HashSet<>();

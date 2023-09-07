@@ -9,6 +9,7 @@ import jakarta.ws.rs.RuntimeType;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.model.ResourceReader;
 import org.jboss.resteasy.reactive.common.model.ResourceWriter;
+import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -24,13 +25,13 @@ import io.quarkus.resteasy.reactive.spi.RuntimeTypeItem;
 public class SerializersUtil {
 
     public static void setupSerializers(ResteasyReactiveCommonRecorder recorder,
+            ApplicationScanningResult applicationScanningResult,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<MessageBodyReaderBuildItem> messageBodyReaderBuildItems,
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
             BeanContainerBuildItem beanContainerBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
             Serialisers serialisers, RuntimeType runtimeType) {
 
         Map<String, MessageBodyReaderWriterOverrideData> writerOverrides = new HashMap<>();
@@ -47,8 +48,9 @@ public class SerializersUtil {
             } else {
                 writer.setBuiltin(additionalWriter.isBuiltin());
             }
+
             writer.setFactory(FactoryUtils.factory(writerClassName,
-                    applicationResultBuildItem.getResult().getSingletonClasses(), recorder,
+                    applicationScanningResult.getSingletonClasses(), recorder,
                     beanContainerBuildItem));
             writer.setConstraint(additionalWriter.getRuntimeType());
             if (!additionalWriter.getMediaTypeStrings().isEmpty()) {
@@ -79,7 +81,7 @@ public class SerializersUtil {
                 reader.setBuiltin(additionalReader.isBuiltin());
             }
             reader.setFactory(FactoryUtils.factory(readerClassName,
-                    applicationResultBuildItem.getResult().getSingletonClasses(), recorder,
+                    applicationScanningResult.getSingletonClasses(), recorder,
                     beanContainerBuildItem));
             reader.setConstraint(additionalReader.getRuntimeType());
             if (!additionalReader.getMediaTypeStrings().isEmpty()) {

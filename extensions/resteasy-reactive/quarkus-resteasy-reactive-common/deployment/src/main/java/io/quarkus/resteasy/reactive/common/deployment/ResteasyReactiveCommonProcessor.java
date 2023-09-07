@@ -57,6 +57,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -87,6 +88,17 @@ public class ResteasyReactiveCommonProcessor {
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
     private static final Predicate<ResolvedDependency> IS_RESTEASY_CLASSIC_CLIENT_DEP = d -> d.getArtifactId()
             .contains("resteasy-client");
+
+    public static ApplicationScanningResult getApplicationScanningResult(ResteasyReactiveConfig config,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem) {
+        ApplicationScanningResult applicationScanningResult = ResteasyReactiveScanner
+                .scanForApplicationClass(combinedIndexBuildItem.getComputingIndex(),
+                        config.buildTimeConditionAware() ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
+        closeablesBuildItem.add(ResteasyReactiveScanner.CacheCleaner.INSTANCE);
+        return applicationScanningResult;
+    }
 
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
@@ -129,7 +141,9 @@ public class ResteasyReactiveCommonProcessor {
             JaxRsSecurityConfig securityConfig,
             Optional<ResourceScanningResultBuildItem> resteasyDeployment,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
+            ResteasyReactiveConfig config,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BuildProducer<AdditionalSecuredMethodsBuildItem> additionalSecuredClasses) {
 
         if (resteasyDeployment.isPresent()
@@ -145,7 +159,8 @@ public class ResteasyReactiveCommonProcessor {
                 if (!hasSecurityAnnotation(classInfo)) {
                     // collect class endpoints
                     Collection<MethodInfo> classEndpoints = collectClassEndpoints(classInfo, httpAnnotationToMethod,
-                            beanArchiveIndexBuildItem.getIndex(), applicationResultBuildItem.getResult());
+                            beanArchiveIndexBuildItem.getIndex(),
+                            getApplicationScanningResult(config, index, buildTimeConditions, closeablesBuildItem));
 
                     // add endpoints
                     for (MethodInfo classEndpoint : classEndpoints) {
@@ -167,14 +182,14 @@ public class ResteasyReactiveCommonProcessor {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @BuildStep
     ApplicationResultBuildItem handleApplication(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<BuildTimeConditionBuildItem> buildTimeConditions,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             ResteasyReactiveConfig config) {
-        ApplicationScanningResult result = ResteasyReactiveScanner
-                .scanForApplicationClass(combinedIndexBuildItem.getComputingIndex(),
-                        config.buildTimeConditionAware() ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
+        var result = getApplicationScanningResult(config, combinedIndexBuildItem, buildTimeConditions, closeablesBuildItem);
         if (result.getSelectedAppClass() != null) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(result.getSelectedAppClass().name().toString())
                     .build());
@@ -184,20 +199,26 @@ public class ResteasyReactiveCommonProcessor {
 
     @BuildStep
     public ResourceInterceptorsContributorBuildItem scanForIOInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem) {
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem) {
         return new ResourceInterceptorsContributorBuildItem(new Consumer<ResourceInterceptors>() {
             @Override
             public void accept(ResourceInterceptors interceptors) {
                 ResteasyReactiveInterceptorScanner.scanForIOInterceptors(interceptors,
                         combinedIndexBuildItem.getComputingIndex(),
-                        applicationResultBuildItem.getResult());
+                        getApplicationScanningResult(config, combinedIndexBuildItem, buildTimeConditionBuildItems,
+                                closeablesBuildItem));
             }
         });
     }
 
     @BuildStep
     public ResourceInterceptorsBuildItem buildResourceInterceptors(List<ResourceInterceptorsContributorBuildItem> scanningTasks,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            CombinedIndexBuildItem index,
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             List<WriterInterceptorBuildItem> writerInterceptors,
             List<ReaderInterceptorBuildItem> readerInterceptors,
@@ -212,7 +233,8 @@ public class ResteasyReactiveCommonProcessor {
         registerContainerBeans(beanBuilder, resourceInterceptors.getContainerRequestFilters());
         registerContainerBeans(beanBuilder, resourceInterceptors.getReaderInterceptors());
         registerContainerBeans(beanBuilder, resourceInterceptors.getWriterInterceptors());
-        Set<String> globalNameBindings = applicationResultBuildItem.getResult().getGlobalNameBindings();
+        Set<String> globalNameBindings = getApplicationScanningResult(config, index, buildTimeConditionBuildItems,
+                closeablesBuildItem).getGlobalNameBindings();
         for (WriterInterceptorBuildItem i : writerInterceptors) {
             registerInterceptors(globalNameBindings, resourceInterceptors.getWriterInterceptors(), i, beanBuilder);
         }
@@ -338,7 +360,10 @@ public class ResteasyReactiveCommonProcessor {
 
     @BuildStep
     public void setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -352,7 +377,8 @@ public class ResteasyReactiveCommonProcessor {
 
         IndexView index = beanArchiveIndexBuildItem.getIndex();
         SerializerScanningResult serializers = ResteasyReactiveScanner.scanForSerializers(index,
-                applicationResultBuildItem.getResult());
+                getApplicationScanningResult(config, combinedIndexBuildItem, buildTimeConditionBuildItems,
+                        closeablesBuildItem));
         for (var i : serializers.getReaders()) {
             messageBodyReaderBuildItemBuildProducer.produce(new MessageBodyReaderBuildItem(i.getClassName(),
                     i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
@@ -415,11 +441,14 @@ public class ResteasyReactiveCommonProcessor {
 
     @BuildStep
     public void scanForParameterContainers(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BuildProducer<ParameterContainersBuildItem> parameterContainersBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Set<DotName> res = ResteasyReactiveParameterContainerScanner.scanParameterContainers(index,
-                applicationResultBuildItem.getResult());
+                getApplicationScanningResult(config, combinedIndexBuildItem, buildTimeConditionBuildItems,
+                        closeablesBuildItem));
         parameterContainersBuildItemBuildProducer.produce(new ParameterContainersBuildItem(res));
     }
 }

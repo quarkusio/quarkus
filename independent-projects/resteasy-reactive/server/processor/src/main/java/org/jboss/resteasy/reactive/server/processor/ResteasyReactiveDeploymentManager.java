@@ -193,6 +193,7 @@ public class ResteasyReactiveDeploymentManager {
 
             ApplicationScanningResult applicationScanningResult = ResteasyReactiveScanner.scanForApplicationClass(index,
                     excludedClasses);
+            ResteasyReactiveScanner.clearCache();
             ResourceScanningResult resources = ResteasyReactiveScanner.scanResources(index, additionalResources,
                     additionalResourcePaths);
             SerializerScanningResult serializerScanningResult = ResteasyReactiveScanner.scanForSerializers(index,

@@ -4,6 +4,7 @@ import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanning
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+@Deprecated
 public final class ApplicationResultBuildItem extends SimpleBuildItem {
 
     final ApplicationScanningResult result;

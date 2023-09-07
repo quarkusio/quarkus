@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.deployment;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
+import static io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor.getApplicationScanningResult;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -47,6 +48,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFea
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.BuildTimeEnabledProcessor;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -57,11 +59,13 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.IndexingUtil;
-import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
+import io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.UnwrappedExceptionBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -106,13 +110,16 @@ public class ResteasyReactiveScanningProcessor {
 
     @BuildStep
     public ResourceInterceptorsContributorBuildItem scanForInterceptors(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem) {
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem) {
         return new ResourceInterceptorsContributorBuildItem(new Consumer<ResourceInterceptors>() {
             @Override
             public void accept(ResourceInterceptors interceptors) {
                 ResteasyReactiveInterceptorScanner.scanForContainerRequestFilters(interceptors,
                         combinedIndexBuildItem.getIndex(),
-                        applicationResultBuildItem.getResult());
+                        getApplicationScanningResult(config, combinedIndexBuildItem, buildTimeConditionBuildItems,
+                                closeablesBuildItem));
             }
         });
     }
@@ -125,14 +132,17 @@ public class ResteasyReactiveScanningProcessor {
 
     @BuildStep
     public ExceptionMappersBuildItem scanForExceptionMappers(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             List<ExceptionMapperBuildItem> mappers, List<UnwrappedExceptionBuildItem> unwrappedExceptions,
             Capabilities capabilities) {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
         ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
-                .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+                .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), getApplicationScanningResult(config,
+                        combinedIndexBuildItem, buildTimeConditionBuildItems, closeablesBuildItem));
 
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
@@ -221,11 +231,14 @@ public class ResteasyReactiveScanningProcessor {
 
     @BuildStep
     public void scanForDynamicFeatures(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BuildProducer<DynamicFeatureBuildItem> dynamicFeatureBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Set<String> features = ResteasyReactiveFeatureScanner.scanForDynamicFeatures(index,
-                applicationResultBuildItem.getResult());
+                ResteasyReactiveCommonProcessor.getApplicationScanningResult(config, combinedIndexBuildItem,
+                        buildTimeConditions, closeablesBuildItem));
         for (String dynamicFeatureClass : features) {
             dynamicFeatureBuildItemBuildProducer
                     .produce(new DynamicFeatureBuildItem(dynamicFeatureClass, true));
@@ -234,10 +247,13 @@ public class ResteasyReactiveScanningProcessor {
 
     @BuildStep
     public void scanForFeatures(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BuildProducer<JaxrsFeatureBuildItem> featureBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
-        Set<String> features = ResteasyReactiveFeatureScanner.scanForFeatures(index, applicationResultBuildItem.getResult());
+        Set<String> features = ResteasyReactiveFeatureScanner.scanForFeatures(index, getApplicationScanningResult(config,
+                combinedIndexBuildItem, buildTimeConditionBuildItems, closeablesBuildItem));
         for (String feature : features) {
             featureBuildItemBuildProducer
                     .produce(new JaxrsFeatureBuildItem(feature, true));
@@ -247,14 +263,21 @@ public class ResteasyReactiveScanningProcessor {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ContextResolversBuildItem scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<ContextResolverBuildItem> additionalResolvers) {
+            List<ContextResolverBuildItem> additionalResolvers,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
+            ResteasyReactiveConfig config,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem) {
+
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+
+        ApplicationScanningResult applicationScanningResult = getApplicationScanningResult(config, combinedIndexBuildItem,
+                buildTimeConditions, closeablesBuildItem);
+
         ContextResolvers resolvers = ResteasyReactiveContextResolverScanner.scanForContextResolvers(index,
-                applicationResultBuildItem.getResult());
+                applicationScanningResult);
         for (Map.Entry<Class<?>, List<ResourceContextResolver>> entry : resolvers.getResolvers().entrySet()) {
             for (ResourceContextResolver i : entry.getValue()) {
                 beanBuilder.addBeanClass(i.getClassName());
@@ -285,14 +308,17 @@ public class ResteasyReactiveScanningProcessor {
 
     @BuildStep
     public void scanForParamConverters(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            ResteasyReactiveConfig config,
+            List<BuildTimeConditionBuildItem> buildTimeConditionBuildItems,
+            QuarkusBuildCloseablesBuildItem closeablesBuildItem,
             BuildProducer<ParamConverterBuildItem> paramConverterBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         Collection<ClassInfo> paramConverterProviders = index
                 .getAllKnownImplementors(ResteasyReactiveDotNames.PARAM_CONVERTER_PROVIDER);
 
         for (ClassInfo converterClass : paramConverterProviders) {
-            ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult()
+            ApplicationScanningResult.KeepProviderResult keepProviderResult = getApplicationScanningResult(config,
+                    combinedIndexBuildItem, buildTimeConditionBuildItems, closeablesBuildItem)
                     .keepProvider(converterClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
                 AnnotationInstance priorityInstance = converterClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);

@@ -23,6 +23,7 @@ If any organization would like get added or removed please make a pull request b
 |GoWithFlow             | https://quarkus.io/blog/gowithflow-chooses-quarkus-to-deliver-fast-to-production/ |
 |Lufthansa Technik      | https://quarkus.io/blog/aviatar-experiences-significant-savings/                  |
 |Logicdrop              | https://quarkus.io/blog/logicdrop-customer-story/                                 |
+|[Microcks](https://landscape.cncf.io/?selected=microcks)               | https://itnext.io/mocking-and-contract-testing-in-your-inner-loop-with-microcks-part-3-quarkus-devservice-ftw-a14b807737be            |
 |Payair                 | https://quarkus.io/blog/why-did-payair-technologies-switch-to-quarkus/            |
 |Sedona                 | https://quarkus.io/blog/sedona-rewrites-insurance-premium/                        |
 |Stargate               | https://quarkus.io/blog/stargate-selects-quarkus-for-its-v2-implementation/       |

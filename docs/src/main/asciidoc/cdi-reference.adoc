@@ -160,7 +160,7 @@ quarkus.arc.exclude-dependency.acme.artifact-id=acme-services <2>
 == Native Executables and Private Members
 
 Quarkus is using GraalVM to build a native executable.
-One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/latest/reference-manual/native-image/Reflection/[Reflection, window="_blank"].
+One of the limitations of GraalVM is the usage of link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/Reflection/[Reflection, window="_blank"].
 Reflective operations are supported but all relevant members must be registered for reflection explicitly.
 Those registrations result in a bigger native executable.
 

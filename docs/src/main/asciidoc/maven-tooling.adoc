@@ -394,7 +394,7 @@ This goal will resolve all the runtime, build time, test and dev mode dependenci
 
 Native executables make Quarkus applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to the latest release of GraalVM version {graalvm-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to the latest release of GraalVM {graalvm-version}.
 Verify that your `pom.xml` has the proper `native` profile as shown in <<build-tool-maven>>.
 
 Create a native executable using:

@@ -3,6 +3,7 @@ package io.quarkus.resteasy.reactive.server.deployment;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_REQUEST;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.HTTP_SERVER_RESPONSE;
 import static io.quarkus.resteasy.reactive.common.deployment.QuarkusResteasyReactiveDotNames.ROUTING_CONTEXT;
+import static io.quarkus.resteasy.reactive.common.deployment.ResteasyReactiveCommonProcessor.getExcludedClasses;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveInterceptorScanner;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
@@ -47,6 +49,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResteasyReactiveFea
 import io.quarkus.arc.ArcUndeclaredThrowableException;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BuildTimeConditionBuildItem;
 import io.quarkus.arc.deployment.BuildTimeEnabledProcessor;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
@@ -62,6 +65,7 @@ import io.quarkus.deployment.index.IndexingUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceInterceptorsContributorBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ResourceScanningResultBuildItem;
+import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.UnwrappedExceptionBuildItem;
 import io.quarkus.resteasy.reactive.spi.ContainerRequestFilterBuildItem;
@@ -247,14 +251,21 @@ public class ResteasyReactiveScanningProcessor {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @BuildStep
     public ContextResolversBuildItem scanForContextResolvers(CombinedIndexBuildItem combinedIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<ContextResolverBuildItem> additionalResolvers) {
+            List<ContextResolverBuildItem> additionalResolvers,
+            List<BuildTimeConditionBuildItem> buildTimeConditions,
+            ResteasyReactiveConfig config) {
+
         IndexView index = combinedIndexBuildItem.getComputingIndex();
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
+
+        ApplicationScanningResult applicationScanningResult = ResteasyReactiveScanner
+                .scanForApplicationClass(combinedIndexBuildItem.getComputingIndex(),
+                        config.buildTimeConditionAware() ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
+
         ContextResolvers resolvers = ResteasyReactiveContextResolverScanner.scanForContextResolvers(index,
-                applicationResultBuildItem.getResult());
+                applicationScanningResult);
         for (Map.Entry<Class<?>, List<ResourceContextResolver>> entry : resolvers.getResolvers().entrySet()) {
             for (ResourceContextResolver i : entry.getValue()) {
                 beanBuilder.addBeanClass(i.getClassName());

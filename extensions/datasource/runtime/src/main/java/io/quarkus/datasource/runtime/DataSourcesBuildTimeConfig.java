@@ -29,7 +29,7 @@ public class DataSourcesBuildTimeConfig {
     public Map<String, DataSourceBuildTimeConfig> namedDataSources;
 
     /**
-     * Whether or not an health check is published in case the smallrye-health extension is present.
+     * Whether or not a health check is published in case the smallrye-health extension is present.
      * <p>
      * This is a global setting and is not specific to a datasource.
      */

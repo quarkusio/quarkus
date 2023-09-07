@@ -24,7 +24,7 @@ public class InfinispanClientsBuildTimeConfig {
     public Map<String, InfinispanClientBuildTimeConfig> namedInfinispanClients;
 
     /**
-     * Whether or not an health check is published in case the smallrye-health extension is present.
+     * Whether or not a health check is published in case the smallrye-health extension is present.
      * <p>
      * This is a global setting and is not specific to an Infinispan Client.
      */

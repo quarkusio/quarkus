@@ -1,4 +1,4 @@
-package io.quarkus.virtual.rr;
+package io.quarkus.virtual.disabled;
 
 import static org.hamcrest.Matchers.is;
 
@@ -10,7 +10,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-class RunOnVirtualThreadTest {
+class RunOnVirtualThreadDisabledTest {
 
     @Test
     void testGet() {

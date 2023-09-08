@@ -717,6 +717,11 @@ public class QuteProcessor {
 
                     addMethodParamsToParserHelper(parserHelper, pathToPathWithoutSuffix.get(templateId),
                             checkedTemplateIdToParamDecl);
+
+                    if (templateId.startsWith(TemplatePathBuildItem.TAGS)) {
+                        parserHelper.addParameter(UserTagSectionHelper.Factory.ARGS,
+                                UserTagSectionHelper.Arguments.class.getName());
+                    }
                 }
 
                 addMethodParamsToParserHelper(parserHelper, templateId, msgBundleTemplateIdToParamDecl);
@@ -827,7 +832,7 @@ public class QuteProcessor {
                     continue;
                 }
                 String typeInfo = expression.getParts().get(0).getTypeInfo();
-                if (typeInfo == null || (typeInfo != null && typeInfo.endsWith(LoopSectionHelper.Factory.HINT_METADATA))) {
+                if (typeInfo == null || (typeInfo != null && typeInfo.endsWith(SectionHelperFactory.HINT_METADATA))) {
                     continue;
                 }
                 Info info = TypeInfos.create(expression, index, null).get(0);

@@ -1148,6 +1148,45 @@ Qute executes the tag as an _isolated_ template, i.e. without access to the cont
 However, sometimes it might be useful to change the default behavior and disable the isolation.
 In this case, just add `_isolated=false` or `_unisolated` argument to the call site, for example `{#itemDetail item showImage=true _isolated=false /}` or `{#itemDetail item showImage=true _unisolated /}`.
 
+===== Arguments
+
+Named arguments can be accessed directly in a tag template.
+The first argument does not have to define a name but can be accessed using the `it` alias.
+Furthermore, arguments metadata are accessible in a tag using the `_args` alias.
+
+* `_args.size` - returns the actual number of arguments passed to a tag
+* `_args.empty` - returns `true` if no arguments are passed
+* `_args.get(String name)` - returns the argument value of the given name
+* `_args.filter(String...)` - returns the arguments matching the given names
+* `_args.skip(String...)` - returns only the arguments that do not match the given names
+* `_args.asHtmlAttributes` - renders the arguments as HTML attributes; e.g. `foo="true" bar="false"` (the arguments are sorted by name in alphabetical order)
+
+`_args` is also iterable: `{#each _args}{it.key}={it.value}{/each}`.
+
+For example, we can call the user tag defined below with `{#test 'Martin' readonly=true /}`.
+
+.`tags/test.html`
+[source]
+----
+{it} <1>
+{readonly} <2>
+{_args.filter('readonly').asHtmlAttributes} <3>
+----
+<1> `it` is replaced with the first unnamed parameter of the tag.
+<2> `readonly` is a named parameter.
+<3> `_args` represents arguments metadata. 
+
+The result would be:
+
+[source]
+----
+Martin
+true
+readonly="true"
+----
+
+===== Inheritance
+
 User tags can also make use of the template inheritance in the same way as regular `{#include}` sections do.
 
 .Tag `myTag`

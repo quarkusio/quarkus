@@ -122,7 +122,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
     private static Class<?> actualTestClass;
     private static Object actualTestInstance;
     // needed for @Nested
-    private static Deque<Object> outerInstances = new ArrayDeque<>(1);
+    private static final Deque<Object> outerInstances = new ArrayDeque<>(1);
     private static RunningQuarkusApplication runningQuarkusApplication;
     private static Pattern clonePattern;
     private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
@@ -644,17 +644,29 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
+        Class<?> requiredTestClass = context.getRequiredTestClass();
         GroovyClassValue.disable();
-        currentTestClassStack.push(context.getRequiredTestClass());
+        currentTestClassStack.push(requiredTestClass);
         //set the right launch mode in the outer CL, used by the HTTP host config source
         ProfileManager.setLaunchMode(LaunchMode.TEST);
-        if (isNativeOrIntegrationTest(context.getRequiredTestClass())) {
+        if (isNativeOrIntegrationTest(requiredTestClass)) {
             return;
         }
         resetHangTimeout();
         ensureStarted(context);
         if (runningQuarkusApplication != null) {
             pushMockContext();
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            try {
+                Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
+                invokeBeforeClassCallbacks(Class.class,
+                        runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
+            } finally {
+                Thread.currentThread().setContextClassLoader(old);
+            }
+        } else {
+            // can this ever happen?
+            invokeBeforeClassCallbacks(Class.class, requiredTestClass);
         }
     }
 
@@ -714,19 +726,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         T result;
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Class<?> requiredTestClass = extensionContext.getRequiredTestClass();
-
-        if (runningQuarkusApplication != null) {
-            try {
-                Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
-                invokeBeforeClassCallbacks(Class.class,
-                        runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
-            } finally {
-                Thread.currentThread().setContextClassLoader(old);
-            }
-        } else {
-            // can this ever happen?
-            invokeBeforeClassCallbacks(Class.class, requiredTestClass);
-        }
 
         try {
             Thread.currentThread().setContextClassLoader(requiredTestClass.getClassLoader());

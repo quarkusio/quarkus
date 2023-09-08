@@ -11,7 +11,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.health.SmallRyeHealth;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.AsyncResult;
+import io.smallrye.mutiny.vertx.MutinyHelper;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
@@ -45,7 +45,7 @@ abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContext> {
             Arc.container().instance(CurrentIdentityAssociation.class).get().setIdentity(user.getSecurityIdentity());
         }
         SmallRyeHealthReporter reporter = Arc.container().instance(SmallRyeHealthReporter.class).get();
-        getHealth(reporter, ctx).subscribe().with(health -> {
+        getHealth(reporter, ctx).emitOn(MutinyHelper.executor(ctx.vertx())).subscribe().with(health -> {
             HttpServerResponse resp = ctx.response();
             if (health.isDown()) {
                 resp.setStatusCode(503);

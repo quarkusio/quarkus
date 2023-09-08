@@ -30,10 +30,11 @@ public class KafkaJsonRPCService {
         return kafkaUiUtils.getTopics();
     }
 
-    public List<KafkaTopic> createTopic(String topicName, int partitions, int replications)
-            throws InterruptedException, ExecutionException {
+    public List<KafkaTopic> createTopic(final String topicName, final int partitions, final int replications, Map<String, String> configs)
+        throws InterruptedException, ExecutionException {
 
-        KafkaCreateTopicRequest createTopicRequest = new KafkaCreateTopicRequest(topicName, partitions, (short) replications);
+        KafkaCreateTopicRequest createTopicRequest = new KafkaCreateTopicRequest(topicName, partitions, (short) replications,
+            configs);
         boolean created = kafkaAdminClient.createTopic(createTopicRequest);
         if (created) {
             return kafkaUiUtils.getTopics();
@@ -41,7 +42,7 @@ public class KafkaJsonRPCService {
         throw new RuntimeException("Topic [" + topicName + "] not created");
     }
 
-    public List<KafkaTopic> deleteTopic(String topicName) throws InterruptedException, ExecutionException {
+    public List<KafkaTopic> deleteTopic(final String topicName) throws InterruptedException, ExecutionException {
         boolean deleted = kafkaAdminClient.deleteTopic(topicName);
         if (deleted) {
             return kafkaUiUtils.getTopics();
@@ -49,7 +50,7 @@ public class KafkaJsonRPCService {
         throw new RuntimeException("Topic [" + topicName + "] not deleted");
     }
 
-    public KafkaMessagePage topicMessages(String topicName) throws ExecutionException, InterruptedException {
+    public KafkaMessagePage topicMessages(final String topicName) throws ExecutionException, InterruptedException {
         List<Integer> partitions = getPartitions(topicName);
         KafkaOffsetRequest offsetRequest = new KafkaOffsetRequest(topicName, partitions, Order.NEW_FIRST);
         Map<Integer, Long> offset = kafkaUiUtils.getOffset(offsetRequest);
@@ -58,8 +59,8 @@ public class KafkaJsonRPCService {
     }
 
     public KafkaMessagePage createMessage(String topicName, Integer partition, String key, String value,
-            Map<String, String> headers)
-            throws ExecutionException, InterruptedException {
+        Map<String, String> headers)
+        throws ExecutionException, InterruptedException {
 
         if (partition < 0)
             partition = null;
@@ -71,7 +72,7 @@ public class KafkaJsonRPCService {
         return topicMessages(topicName);
     }
 
-    public List<Integer> getPartitions(String topicName) throws ExecutionException, InterruptedException {
+    public List<Integer> getPartitions(final String topicName) throws ExecutionException, InterruptedException {
         return new ArrayList<>(kafkaUiUtils.partitions(topicName));
     }
 

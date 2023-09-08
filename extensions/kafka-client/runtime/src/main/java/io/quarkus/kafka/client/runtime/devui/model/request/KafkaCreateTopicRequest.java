@@ -12,7 +12,7 @@ public class KafkaCreateTopicRequest {
     }
 
     public KafkaCreateTopicRequest(final String topicName, final Integer partitions, final Short replications,
-        final Map<String, String> configs) {
+            final Map<String, String> configs) {
         this.topicName = topicName;
         this.partitions = partitions;
         this.replications = replications;

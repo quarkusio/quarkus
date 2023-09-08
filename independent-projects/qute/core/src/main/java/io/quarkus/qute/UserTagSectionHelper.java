@@ -42,6 +42,8 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
     public static class Factory extends IncludeSectionHelper.AbstractIncludeFactory<UserTagSectionHelper> {
 
         private static final String IT = "it";
+        // Unlike regular includes user tags are isolated by default
+        private static final String ISOLATED_DEFAULT_VALUE = "true";
 
         private final String name;
         private final String templateId;
@@ -62,6 +64,11 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         }
 
         @Override
+        String isolatedDefaultValue() {
+            return ISOLATED_DEFAULT_VALUE;
+        }
+
+        @Override
         public ParametersInfo getParameters() {
             ParametersInfo.Builder builder = ParametersInfo.builder().addParameter(Parameter.builder(IT).defaultValue(IT));
             addDefaultParams(builder);
@@ -71,9 +78,11 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         @Override
         protected boolean ignoreParameterInit(String key, String value) {
             // {#myTag _isolated=true /}
-            return key.equals(IncludeSectionHelper.Factory.ISOLATED)
+            return key.equals(ISOLATED)
                     // {#myTag _isolated /}
-                    || value.equals(IncludeSectionHelper.Factory.ISOLATED)
+                    || value.equals(ISOLATED)
+                    // {#myTag _unisolated /}
+                    || value.equals(UNISOLATED)
                     // IT with default value, e.g. {#myTag foo=bar /}
                     || (key.equals(IT) && value.equals(IT));
         }
@@ -85,9 +94,12 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
         @Override
         protected UserTagSectionHelper newHelper(Supplier<Template> template, Map<String, Expression> params,
-                Map<String, SectionBlock> extendingBlocks, boolean isolated, SectionInitContext context) {
+                Map<String, SectionBlock> extendingBlocks, Boolean isolatedValue, SectionInitContext context) {
             boolean isNestedContentNeeded = !context.getBlock(SectionHelperFactory.MAIN_BLOCK_NAME).isEmpty();
-            return new UserTagSectionHelper(template, extendingBlocks, params, isolated, isNestedContentNeeded);
+            return new UserTagSectionHelper(template, extendingBlocks, params,
+                    isolatedValue != null ? isolatedValue
+                            : Boolean.parseBoolean(context.getParameterOrDefault(ISOLATED, ISOLATED_DEFAULT_VALUE)),
+                    isNestedContentNeeded);
         }
 
         @Override

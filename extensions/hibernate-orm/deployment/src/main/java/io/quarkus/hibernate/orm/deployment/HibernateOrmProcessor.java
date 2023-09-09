@@ -272,7 +272,7 @@ public final class HibernateOrmProcessor {
             List<JdbcDataSourceBuildItem> jdbcDataSourcesBuildItem, //This is from Agroal SPI: safe to use even for Hibernate Reactive
             Capabilities capabilities) {
         // If we have some blocking datasources defined, we can have an implied PU
-        if (jdbcDataSourcesBuildItem.size() == 0 && capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
+        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
             // if we don't have any blocking datasources and Hibernate Reactive is present,
             // we don't want a blocking persistence unit
             return ImpliedBlockingPersistenceUnitTypeBuildItem.none();

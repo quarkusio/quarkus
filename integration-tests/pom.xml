@@ -226,6 +226,7 @@
                 <module>hibernate-orm-panache-kotlin</module>
                 <module>hibernate-reactive-db2</module>
                 <module>hibernate-reactive-mysql</module>
+                <module>hibernate-reactive-mysql-agroal</module>
                 <module>hibernate-reactive-postgresql</module>
                 <module>hibernate-reactive-panache</module>
                 <module>hibernate-reactive-panache-kotlin</module>

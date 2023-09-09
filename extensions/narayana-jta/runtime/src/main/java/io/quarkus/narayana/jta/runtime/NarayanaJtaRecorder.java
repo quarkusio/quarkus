@@ -90,6 +90,8 @@ public class NarayanaJtaRecorder {
                 .setExpiryScannerClassNames(transactions.expiryScanners);
         BeanPopulator.getDefaultInstance(JTAEnvironmentBean.class)
                 .setXaResourceOrphanFilterClassNames(transactions.xaResourceOrphanFilters);
+        BeanPopulator.getDefaultInstance(JTAEnvironmentBean.class)
+                .setXaAssumeRecoveryComplete(transactions.xaAssumeRecoveryComplete);
     }
 
     private void setObjectStoreDir(String name, TransactionManagerConfiguration config) {

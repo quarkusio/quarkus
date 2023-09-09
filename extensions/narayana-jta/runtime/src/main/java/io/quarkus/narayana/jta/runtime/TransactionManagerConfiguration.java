@@ -46,6 +46,12 @@ public final class TransactionManagerConfiguration {
     public List<String> expiryScanners;
 
     /**
+     * Assume recovery complete when transactions cannot be recovered.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean xaAssumeRecoveryComplete;
+
+    /**
      * The list of orphan filters.
      */
     @ConfigItem(defaultValue = "com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResourceOrphanFilter," +

@@ -107,6 +107,7 @@ class NarayanaJtaProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(TransactionStatusConnectionManager.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(AtomicActionExpiryScanner.class.getName()));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(XAResourceRecord.class.getName()));
 
         indexBuildItem.getIndex().getAllKnownSubclasses(JDBCImple_driver.class).stream()
                 .map(impl -> ReflectiveClassBuildItem.builder(impl.name().toString()).build())

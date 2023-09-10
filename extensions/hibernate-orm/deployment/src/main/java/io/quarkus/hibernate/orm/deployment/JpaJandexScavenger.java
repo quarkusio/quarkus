@@ -38,6 +38,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
 
+import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -82,7 +83,7 @@ public final class JpaJandexScavenger {
         this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
     }
 
-    public JpaModelBuildItem discoverModelAndRegisterForReflection() {
+    public JpaModelBuildItem discoverModelAndRegisterForReflection() throws BuildException {
         Collector collector = new Collector();
 
         for (DotName packageAnnotation : HibernateOrmTypes.PACKAGE_ANNOTATIONS) {
@@ -308,7 +309,7 @@ public final class JpaJandexScavenger {
         addClassHierarchyToReflectiveList(collector, dotName);
     }
 
-    private void enlistEmbeddedsAndElementCollections(Collector collector) {
+    private void enlistEmbeddedsAndElementCollections(Collector collector) throws BuildException {
         Set<DotName> embeddedTypes = new HashSet<>();
 
         for (DotName embeddedAnnotation : EMBEDDED_ANNOTATIONS) {
@@ -319,10 +320,10 @@ public final class JpaJandexScavenger {
 
                 switch (target.kind()) {
                     case FIELD:
-                        collectEmbeddedTypes(embeddedTypes, target.asField().type());
+                        collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, target.asField().type());
                         break;
                     case METHOD:
-                        collectEmbeddedTypes(embeddedTypes, target.asMethod().returnType());
+                        collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, target.asMethod().returnType());
                         break;
                     default:
                         throw new IllegalStateException(
@@ -480,23 +481,34 @@ public final class JpaJandexScavenger {
         }
     }
 
-    private static void collectEmbeddedTypes(Set<DotName> embeddedTypes, Type indexType) {
+    private void collectEmbeddedTypes(DotName embeddedAnnotation, Set<DotName> embeddedTypes, Type indexType)
+            throws BuildException {
         switch (indexType.kind()) {
             case CLASS:
-                embeddedTypes.add(indexType.asClassType().name());
+                DotName className = indexType.asClassType().name();
+                validateEmbeddable(embeddedAnnotation, className);
+                embeddedTypes.add(className);
                 break;
             case PARAMETERIZED_TYPE:
                 embeddedTypes.add(indexType.name());
                 for (Type typeArgument : indexType.asParameterizedType().arguments()) {
-                    collectEmbeddedTypes(embeddedTypes, typeArgument);
+                    collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, typeArgument);
                 }
                 break;
             case ARRAY:
-                collectEmbeddedTypes(embeddedTypes, indexType.asArrayType().constituent());
+                collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, indexType.asArrayType().constituent());
                 break;
             default:
                 // do nothing
                 break;
+        }
+    }
+
+    private void validateEmbeddable(DotName embeddedAnnotation, DotName className) throws BuildException {
+        if ((ClassNames.EMBEDDED.equals(embeddedAnnotation) || ClassNames.EMBEDDED_ID.equals(embeddedAnnotation))
+                && !index.getClassByName(className).hasAnnotation(ClassNames.EMBEDDABLE)) {
+            throw new BuildException(
+                    className + " is used as an embeddable but does not have an @Embeddable annotation.");
         }
     }
 

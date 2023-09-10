@@ -211,13 +211,6 @@
                                             <time>20000</time>
                                             <healthy>true</healthy>
                                         </wait>
-                                        <volumes>
-                                            <bind>
-                                                <volume>
-                                                    ${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d${volume.access.modifier}
-                                                </volume>
-                                            </bind>
-                                        </volumes>
                                     </run>
                                 </image>
                             </images>

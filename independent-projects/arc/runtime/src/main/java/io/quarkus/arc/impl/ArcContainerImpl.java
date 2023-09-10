@@ -291,16 +291,6 @@ public class ArcContainerImpl implements ArcContainer {
 
     @Override
     public <T> Supplier<InstanceHandle<T>> beanInstanceSupplier(Class<T> type, Annotation... qualifiers) {
-        return createInstanceSupplier(false, type, qualifiers);
-    }
-
-    @Override
-    public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
-        return createInstanceSupplier(true, type, qualifiers);
-    }
-
-    private <T> Supplier<InstanceHandle<T>> createInstanceSupplier(boolean resolveAmbiguities, Class<T> type,
-            Annotation... qualifiers) {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
@@ -311,20 +301,8 @@ public class ArcContainerImpl implements ArcContainer {
         }
         Set<InjectableBean<?>> filteredBean = resolvedBeans;
         if (resolvedBeans.size() > 1) {
-            if (resolveAmbiguities) {
-                // this is non-standard CDI behavior that we momentarily keep to retain compatibility
-                // if there are multiple beans we look for an exact match
-                // this method is only called with the exact type required
-                // so ignoring subclasses is the correct behaviour
-                filteredBean = new HashSet<>();
-                for (InjectableBean<?> i : resolvedBeans) {
-                    if (i.getBeanClass().equals(type)) {
-                        filteredBean.add(i);
-                    }
-                }
-            } else {
-                throw new AmbiguousResolutionException("Beans: " + resolvedBeans);
-            }
+            throw new AmbiguousResolutionException("Beans: " + resolvedBeans);
+
         }
         @SuppressWarnings("unchecked")
         InjectableBean<T> bean = filteredBean.size() != 1 ? null

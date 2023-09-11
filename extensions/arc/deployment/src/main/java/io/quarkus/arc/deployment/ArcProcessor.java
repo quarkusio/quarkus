@@ -76,7 +76,9 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
@@ -473,14 +475,12 @@ public class ArcProcessor {
         return new ValidationPhaseBuildItem(validationContext, beanProcessor);
     }
 
-    // PHASE 5 - generate resources and initialize the container
+    // PHASE 5 - generate resources
     @BuildStep
-    @Record(STATIC_INIT)
-    public PreBeanContainerBuildItem generateResources(ArcConfig config, ArcRecorder recorder,
-            ShutdownContextBuildItem shutdown,
+    @Produce(ResourcesGeneratedPhaseBuildItem.class)
+    public void generateResources(ArcConfig config,
             ValidationPhaseBuildItem validationPhase,
             List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
-            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
@@ -489,7 +489,6 @@ public class ArcProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
             List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
-            Optional<CurrentContextFactoryBuildItem> currentContextFactory,
             ExecutorService buildExecutor) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
@@ -581,13 +580,28 @@ public class ArcProcessor {
             reflectiveClasses
                     .produce(ReflectiveClassBuildItem.builder(binding.name().toString()).methods().build());
         }
+    }
+
+    // PHASE 6 - initialize the container
+    @BuildStep
+    @Consume(ResourcesGeneratedPhaseBuildItem.class)
+    @Record(STATIC_INIT)
+    public ArcContainerBuildItem initializeContainer(ArcConfig config, ArcRecorder recorder,
+            ShutdownContextBuildItem shutdown, Optional<CurrentContextFactoryBuildItem> currentContextFactory)
+            throws Exception {
         ArcContainer container = recorder.initContainer(shutdown,
                 currentContextFactory.isPresent() ? currentContextFactory.get().getFactory() : null,
                 config.strictCompatibility);
-        BeanContainer beanContainer = recorder.initBeanContainer(container,
+        return new ArcContainerBuildItem(container);
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    public PreBeanContainerBuildItem notifyBeanContainerListeners(ArcContainerBuildItem container,
+            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems, ArcRecorder recorder) throws Exception {
+        BeanContainer beanContainer = recorder.initBeanContainer(container.getContainer(),
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));
-
         return new PreBeanContainerBuildItem(beanContainer);
     }
 

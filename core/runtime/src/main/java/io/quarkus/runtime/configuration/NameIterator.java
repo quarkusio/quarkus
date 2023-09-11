@@ -271,6 +271,9 @@ public final class NameIterator {
                 other.pos = other.getPosition(otherCookie);
                 return true;
             }
+            if (other.isSegmentDelimiter(otherCookie)) {
+                return false;
+            }
             if (charAt(cookie) != other.charAt(otherCookie)) {
                 return false;
             }

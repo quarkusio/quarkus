@@ -145,7 +145,6 @@ public class LoopSectionHelper implements SectionHelper {
         public static final String ITERATION_METADATA_PREFIX_NONE = "<none>";
 
         public static final String HINT_ELEMENT = "<loop-element>";
-        public static final String HINT_METADATA = "<loop-metadata>";
         public static final String HINT_PREFIX = "<loop#";
         private static final String IN = "in";
 

@@ -82,9 +82,9 @@ import io.quarkus.qute.EvaluatedParams;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.Expression.Part;
 import io.quarkus.qute.Expressions;
-import io.quarkus.qute.LoopSectionHelper;
 import io.quarkus.qute.Namespaces;
 import io.quarkus.qute.Resolver;
+import io.quarkus.qute.SectionHelperFactory;
 import io.quarkus.qute.deployment.QuteProcessor.JavaMemberLookupConfig;
 import io.quarkus.qute.deployment.QuteProcessor.MatchResult;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
@@ -394,7 +394,7 @@ public class MessageBundleProcessor {
             String name = firstPart.getName();
             String typeInfo = firstPart.getTypeInfo();
             boolean isGlobal = globals.contains(name);
-            boolean isLoopMetadata = typeInfo != null && typeInfo.endsWith(LoopSectionHelper.Factory.HINT_METADATA);
+            boolean isLoopMetadata = typeInfo != null && typeInfo.endsWith(SectionHelperFactory.HINT_METADATA);
             // Type info derived from a parent section, e.g "it<loop#3>" and "foo<set#3>"
             boolean hasDerivedTypeInfo = typeInfo != null && !typeInfo.startsWith("" + Expressions.TYPE_INFO_SEPARATOR);
 

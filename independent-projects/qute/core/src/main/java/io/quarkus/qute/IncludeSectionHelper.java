@@ -334,7 +334,9 @@ public class IncludeSectionHelper implements SectionHelper {
             return Expressions.splitParts(value).size() == 1;
         }
 
-        protected abstract boolean ignoreParameterInit(String key, String value);
+        protected boolean ignoreParameterInit(String key, String value) {
+            return key.equals(IGNORE_FRAGMENTS);
+        }
 
         protected abstract T newHelper(Supplier<Template> template, Map<String, Expression> params,
                 Map<String, SectionBlock> extendingBlocks, Boolean isolatedValue, SectionInitContext context);

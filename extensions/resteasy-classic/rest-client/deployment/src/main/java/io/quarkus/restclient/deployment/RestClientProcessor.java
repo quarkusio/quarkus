@@ -485,7 +485,7 @@ class RestClientProcessor {
                 jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
                 jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
 
-        if (!capabilities.isPresent(Capability.RESTEASY)) {
+        if (!capabilities.isPresent(Capability.RESTEASY) && !capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             // ResteasyProviderFactory will use our implementation when accessing instance statically. That's not
             // necessary when RESTEasy classic is present as then provider factory with correct provider classes is generated.
             restClientRecorder.setResteasyProviderFactoryInstance();

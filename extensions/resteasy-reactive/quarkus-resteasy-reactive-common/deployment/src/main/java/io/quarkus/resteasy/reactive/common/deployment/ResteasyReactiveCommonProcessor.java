@@ -383,16 +383,20 @@ public class ResteasyReactiveCommonProcessor {
             BuildProducer<MessageBodyWriterOverrideBuildItem> writers) {
         readers.produce(new MessageBodyReaderOverrideBuildItem(
                 "org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider", LEGACY_READER_PRIORITY, true));
-        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider",
+        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider",
                 LEGACY_READER_PRIORITY, true));
-        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider",
+        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.JacksonJaxbJsonProvider",
+                LEGACY_READER_PRIORITY, true));
+        readers.produce(new MessageBodyReaderOverrideBuildItem("org.keycloak.admin.client.JacksonProvider",
                 LEGACY_READER_PRIORITY, true));
 
         writers.produce(new MessageBodyWriterOverrideBuildItem(
                 "org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider", LEGACY_WRITER_PRIORITY, true));
-        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider",
+        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider",
                 LEGACY_WRITER_PRIORITY, true));
-        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider",
+        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.json.JacksonJaxbJsonProvider",
+                LEGACY_WRITER_PRIORITY, true));
+        writers.produce(new MessageBodyWriterOverrideBuildItem("org.keycloak.admin.client.JacksonProvider",
                 LEGACY_WRITER_PRIORITY, true));
     }
 

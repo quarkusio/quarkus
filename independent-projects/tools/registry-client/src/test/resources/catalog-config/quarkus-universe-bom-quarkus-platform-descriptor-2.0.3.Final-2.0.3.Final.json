@@ -4930,7 +4930,7 @@
     "origins" : [ "io.quarkus:quarkus-universe-bom-quarkus-platform-descriptor:2.0.3.Final:json:2.0.3.Final" ]
   }, {
     "name" : "Camel JPA",
-    "description" : "Store and retrieve Java objects from databases using Java Persistence API (JPA)",
+    "description" : "Store and retrieve Java objects from databases using Jakarta Persistence API (JPA)",
     "metadata" : {
       "guide" : "https://camel.apache.org/camel-quarkus/latest/reference/extensions/jpa.html",
       "categories" : [ "integration" ],

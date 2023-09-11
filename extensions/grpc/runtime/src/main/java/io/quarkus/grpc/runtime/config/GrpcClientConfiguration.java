@@ -188,10 +188,6 @@ public class GrpcClientConfiguration {
 
     /**
      * The deadline used for each call.
-     * <p>
-     * The format uses the standard {@link java.time.Duration} format. You can also provide duration values starting with a
-     * number. In this case, if the value consists only of a number, the converter treats the value as seconds. Otherwise,
-     * {@code PT} is implicitly prepended to the value to obtain a standard {@link java.time.Duration} format.
      */
     @ConfigItem
     public Optional<Duration> deadline;

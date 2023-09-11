@@ -249,6 +249,34 @@ public final class NameIterator {
         }
     }
 
+    public boolean moveBothToNextSegmentIfEquals(NameIterator other) {
+        if (other == this) {
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            next();
+            return true;
+        }
+        int cookie = initIteration();
+        int otherCookie = other.initIteration();
+        for (;;) {
+            cookie = nextPos(cookie);
+            otherCookie = other.nextPos(otherCookie);
+            if (isSegmentDelimiter(cookie)) {
+                if (!other.isSegmentDelimiter(otherCookie)) {
+                    return false;
+                }
+                // move both to next
+                pos = getPosition(cookie);
+                other.pos = other.getPosition(otherCookie);
+                return true;
+            }
+            if (charAt(cookie) != other.charAt(otherCookie)) {
+                return false;
+            }
+        }
+    }
+
     public String getNextSegment() {
         final StringBuilder b = new StringBuilder();
         int cookie = initIteration();

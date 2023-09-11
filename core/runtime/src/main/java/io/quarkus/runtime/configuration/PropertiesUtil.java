@@ -24,20 +24,14 @@ public class PropertiesUtil {
             final NameIterator rootNi = new NameIterator(root);
             // compare segments
             while (rootNi.hasNext()) {
-                String segment = rootNi.getNextSegment();
                 if (!propertyName.hasNext()) {
                     propertyName.goToStart();
                     break;
                 }
-
-                final String nextSegment = propertyName.getNextSegment();
-                if (!segment.equals(nextSegment)) {
+                if (!propertyName.moveBothToNextSegmentIfEquals(rootNi)) {
                     propertyName.goToStart();
                     break;
                 }
-
-                rootNi.next();
-                propertyName.next();
 
                 // root has no more segments, and we reached this far so everything matched.
                 // on top, property still has more segments to do the mapping.

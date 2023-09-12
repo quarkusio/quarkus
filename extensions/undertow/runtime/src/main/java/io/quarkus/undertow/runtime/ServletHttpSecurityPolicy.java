@@ -25,7 +25,7 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
 
-        String requestPath = request.request().path();
+        String requestPath = request.normalizedPath();
         if (!requestPath.startsWith(contextPath)) {
             //anything outside the context path we don't have anything to do with
             return Uni.createFrom().item(CheckResult.PERMIT);

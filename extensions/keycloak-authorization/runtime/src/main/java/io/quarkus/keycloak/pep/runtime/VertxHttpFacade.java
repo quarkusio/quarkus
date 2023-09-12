@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
 import java.util.List;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
@@ -76,7 +75,7 @@ public class VertxHttpFacade implements OIDCHttpFacade {
 
             @Override
             public String getRelativePath() {
-                return URI.create(request.uri()).getPath();
+                return routingContext.normalizedPath();
             }
 
             @Override

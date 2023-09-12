@@ -15,12 +15,11 @@ import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.AuthorizationRequestContext;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.CheckResult;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 /**
  * A security policy that allows for matching of other security policies based on paths.
- *
+ * <p>
  * This is used for the default path/method based RBAC.
  */
 public class AbstractPathMatchingHttpSecurityPolicy {
@@ -28,7 +27,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private final PathMatcher<List<HttpMatcher>> pathMatcher = new PathMatcher<>();
 
     public String getAuthMechanismName(RoutingContext routingContext) {
-        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.request().path());
+        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return null;
         }
@@ -42,7 +41,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
 
     public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
-        List<HttpSecurityPolicy> permissionCheckers = findPermissionCheckers(routingContext.request());
+        List<HttpSecurityPolicy> permissionCheckers = findPermissionCheckers(routingContext);
         return doPermissionCheck(routingContext, identity, 0, null, permissionCheckers, requestContext);
     }
 
@@ -126,8 +125,8 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         }
     }
 
-    public List<HttpSecurityPolicy> findPermissionCheckers(HttpServerRequest request) {
-        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(request.path());
+    public List<HttpSecurityPolicy> findPermissionCheckers(RoutingContext context) {
+        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(context.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return Collections.emptyList();
         }
@@ -136,7 +135,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         for (HttpMatcher i : toCheck.getValue()) {
             if (i.methods == null || i.methods.isEmpty()) {
                 noMethod.add(i.checker);
-            } else if (i.methods.contains(request.method().toString())) {
+            } else if (i.methods.contains(context.request().method().toString())) {
                 methodMatch.add(i.checker);
             }
         }

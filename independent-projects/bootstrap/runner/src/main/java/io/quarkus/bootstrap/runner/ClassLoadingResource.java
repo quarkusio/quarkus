@@ -11,7 +11,7 @@ public interface ClassLoadingResource {
      */
     void init();
 
-    byte[] getResourceData(String resource);
+    PooledBufferAllocator.Buffer getResourceData(String resource, PooledBufferAllocator allocator);
 
     URL getResourceURL(String resource);
 

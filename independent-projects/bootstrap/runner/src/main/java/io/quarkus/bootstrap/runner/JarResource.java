@@ -68,7 +68,7 @@ public class JarResource implements ClassLoadingResource {
     }
 
     @Override
-    public byte[] getResourceData(String resource) {
+    public PooledBufferAllocator.Buffer getResourceData(final String resource, final PooledBufferAllocator allocator) {
         final ZipFile zipFile = readLockAcquireAndGetJarReference();
         try {
             ZipEntry entry = zipFile.getEntry(resource);
@@ -76,9 +76,10 @@ public class JarResource implements ClassLoadingResource {
                 return null;
             }
             try (InputStream is = zipFile.getInputStream(entry)) {
-                byte[] data = new byte[(int) entry.getSize()];
+                int rem = (int) entry.getSize();
+                final PooledBufferAllocator.Buffer readSpan = allocator.allocate(rem);
+                final byte[] data = readSpan.array();
                 int pos = 0;
-                int rem = data.length;
                 while (rem > 0) {
                     int read = is.read(data, pos, rem);
                     if (read == -1) {
@@ -87,7 +88,7 @@ public class JarResource implements ClassLoadingResource {
                     pos += read;
                     rem -= read;
                 }
-                return data;
+                return readSpan;
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read zip entry " + resource, e);
             }

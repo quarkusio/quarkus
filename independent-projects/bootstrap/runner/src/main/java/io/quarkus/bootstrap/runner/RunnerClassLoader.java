@@ -1,12 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.crac.Context;
 import org.crac.Resource;
@@ -46,6 +41,8 @@ public final class RunnerClassLoader extends ClassLoader {
 
     private final CracResource resource;
 
+    private final PooledBufferAllocator bufferPool;
+
     RunnerClassLoader(ClassLoader parent, Map<String, ClassLoadingResource[]> resourceDirectoryMap,
             Set<String> parentFirstPackages, Set<String> nonExistentResources,
             List<String> fullyIndexedDirectories, Map<String, ClassLoadingResource[]> directlyIndexedResourcesIndexMap) {
@@ -55,7 +52,7 @@ public final class RunnerClassLoader extends ClassLoader {
         this.nonExistentResources = nonExistentResources;
         this.fullyIndexedDirectories = fullyIndexedDirectories;
         this.directlyIndexedResourcesIndexMap = directlyIndexedResourcesIndexMap;
-
+        this.bufferPool = new PooledBufferAllocator();
         resource = new CracResource();
         org.crac.Core.getGlobalContext().register(resource);
     }
@@ -96,19 +93,26 @@ public final class RunnerClassLoader extends ClassLoader {
             String classResource = name.replace('.', '/') + ".class";
             for (ClassLoadingResource resource : resources) {
                 accessingResource(resource);
-                byte[] data = resource.getResourceData(classResource);
-                if (data == null) {
-                    continue;
-                }
-                definePackage(packageName, resources);
+                PooledBufferAllocator.Buffer data = null;
                 try {
-                    return defineClass(name, data, 0, data.length, resource.getProtectionDomain());
-                } catch (LinkageError e) {
-                    loaded = findLoadedClass(name);
-                    if (loaded != null) {
-                        return loaded;
+                    data = resource.getResourceData(classResource, bufferPool);
+                    if (data == null) {
+                        continue;
                     }
-                    throw e;
+                    definePackage(packageName, resources);
+                    try {
+                        return defineClass(name, data.array(), 0, data.length(), resource.getProtectionDomain());
+                    } catch (LinkageError e) {
+                        loaded = findLoadedClass(name);
+                        if (loaded != null) {
+                            return loaded;
+                        }
+                        throw e;
+                    }
+                } finally {
+                    if (data != null) {
+                        bufferPool.release(data);
+                    }
                 }
             }
         }
@@ -295,7 +299,12 @@ public final class RunnerClassLoader extends ClassLoader {
                     i.resetInternalCaches();
                 }
             }
+            boolean releaseBuffers = !this.postBootPhase;
             this.postBootPhase = true;
+            if (releaseBuffers) {
+                // We are past boot phase, there's no need to pool buffers anymore
+                bufferPool.disablePooling();
+            }
         }
     }
 

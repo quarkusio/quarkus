@@ -490,6 +490,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithPassword({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret(),
                 username: this._passwordGrantUsername,
@@ -507,6 +508,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithPassword({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret(),
                 username: this._passwordGrantUsername,
@@ -539,6 +541,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithClientCred({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret()
             })
@@ -554,6 +557,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         this.jsonRpc
             .testServiceWithClientCred({
                 tokenUrl: this._getTokenUrl(),
+                serviceUrl: null,
                 clientId: this._getClientId(),
                 clientSecret: this._getClientSecret()
             })

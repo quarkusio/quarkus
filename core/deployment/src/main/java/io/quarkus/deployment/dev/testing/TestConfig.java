@@ -299,6 +299,12 @@ public class TestConfig {
          */
         @ConfigItem
         Map<String, String> labels;
+
+        /**
+         * A set of volume mounts to add to the launched container
+         */
+        @ConfigItem
+        Map<String, String> volumeMounts;
     }
 
     public enum Mode {

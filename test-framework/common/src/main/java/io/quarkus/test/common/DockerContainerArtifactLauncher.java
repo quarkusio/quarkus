@@ -13,5 +13,7 @@ public interface DockerContainerArtifactLauncher extends ArtifactLauncher<Docker
         Map<Integer, Integer> additionalExposedPorts();
 
         Map<String, String> labels();
+
+        Map<String, String> volumeMounts();
     }
 }

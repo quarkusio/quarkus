@@ -52,7 +52,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                     containerImage,
                     pullRequired,
                     additionalExposedPorts(config),
-                    labels(config)));
+                    labels(config),
+                    volumeMounts(config)));
             return launcher;
         } else {
             throw new IllegalStateException("The container image to be launched could not be determined");
@@ -62,6 +63,14 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
     private Map<Integer, Integer> additionalExposedPorts(SmallRyeConfig config) {
         try {
             return config.getValues("quarkus.test.container.additional-exposed-ports", Integer.class, Integer.class);
+        } catch (NoSuchElementException e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<String, String> volumeMounts(SmallRyeConfig config) {
+        try {
+            return config.getValues("quarkus.test.container.volume-mounts", String.class, String.class);
         } catch (NoSuchElementException e) {
             return Collections.emptyMap();
         }
@@ -81,18 +90,21 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final boolean pullRequired;
         private final Map<Integer, Integer> additionalExposedPorts;
         private Map<String, String> labels;
+        private Map<String, String> volumeMounts;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,
                 ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
                 String containerImage, boolean pullRequired,
                 Map<Integer, Integer> additionalExposedPorts,
-                Map<String, String> labels) {
+                Map<String, String> labels,
+                Map<String, String> volumeMounts) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
             this.additionalExposedPorts = additionalExposedPorts;
             this.labels = labels;
+            this.volumeMounts = volumeMounts;
         }
 
         @Override
@@ -114,5 +126,11 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         public Map<String, String> labels() {
             return labels;
         }
+
+        @Override
+        public Map<String, String> volumeMounts() {
+            return volumeMounts;
+        }
+
     }
 }

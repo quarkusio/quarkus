@@ -219,8 +219,12 @@ public class OtlpRecorder {
         }
 
         private KeyCertOptions toPemKeyCertOptions() {
-            PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
             OtlpExporterTracesConfig.KeyCert keyCert = tracesConfig.keyCert();
+            if (keyCert.certs().isEmpty() && keyCert.keys().isEmpty()) {
+                return null;
+            }
+
+            PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions();
             if (keyCert.certs().isPresent()) {
                 for (String cert : keyCert.certs().get()) {
                     pemKeyCertOptions.addCertPath(cert);
@@ -235,14 +239,18 @@ public class OtlpRecorder {
         }
 
         private PemTrustOptions toPemTrustOptions() {
-            PemTrustOptions pemTrustOptions = new PemTrustOptions();
             OtlpExporterTracesConfig.TrustCert trustCert = tracesConfig.trustCert();
             if (trustCert.certs().isPresent()) {
-                for (String cert : trustCert.certs().get()) {
-                    pemTrustOptions.addCertPath(cert);
+                List<String> certs = trustCert.certs().get();
+                if (!certs.isEmpty()) {
+                    PemTrustOptions pemTrustOptions = new PemTrustOptions();
+                    for (String cert : trustCert.certs().get()) {
+                        pemTrustOptions.addCertPath(cert);
+                    }
+                    return pemTrustOptions;
                 }
             }
-            return pemTrustOptions;
+            return null;
         }
     }
 }

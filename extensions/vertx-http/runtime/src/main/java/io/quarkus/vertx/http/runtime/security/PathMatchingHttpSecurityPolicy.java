@@ -16,7 +16,6 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -30,7 +29,7 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
     private final PathMatcher<List<HttpMatcher>> pathMatcher = new PathMatcher<>();
 
     public String getAuthMechanismName(RoutingContext routingContext) {
-        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.request().path());
+        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(routingContext.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return null;
         }
@@ -45,7 +44,7 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {
-        List<HttpSecurityPolicy> permissionCheckers = findPermissionCheckers(routingContext.request());
+        List<HttpSecurityPolicy> permissionCheckers = findPermissionCheckers(routingContext);
         return doPermissionCheck(routingContext, identity, 0, null, permissionCheckers, requestContext);
     }
 
@@ -128,8 +127,8 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
         }
     }
 
-    public List<HttpSecurityPolicy> findPermissionCheckers(HttpServerRequest request) {
-        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(request.path());
+    public List<HttpSecurityPolicy> findPermissionCheckers(RoutingContext rc) {
+        PathMatcher.PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(rc.normalizedPath());
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return Collections.emptyList();
         }
@@ -138,7 +137,7 @@ public class PathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
         for (HttpMatcher i : toCheck.getValue()) {
             if (i.methods == null || i.methods.isEmpty()) {
                 noMethod.add(i.checker);
-            } else if (i.methods.contains(request.method().toString())) {
+            } else if (i.methods.contains(rc.request().method().toString())) {
                 methodMatch.add(i.checker);
             }
         }

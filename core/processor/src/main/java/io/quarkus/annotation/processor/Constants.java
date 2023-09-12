@@ -106,13 +106,20 @@ final public class Constants {
             "\n[id='" + DURATION_NOTE_ANCHOR + "']\n" +
             ".About the Duration format\n" +
             "====\n" +
-            "The format for durations uses the standard `java.time.Duration` format.\n" +
-            "You can learn more about it in the link:https://docs.oracle.com/javase/8/docs/api/java/time/Duration.html#parse-java.lang.CharSequence-[Duration#parse() javadoc].\n"
+            "To write duration values, use the standard `java.time.Duration` format.\n" +
+            "See the link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/time/Duration.html#parse(java.lang.CharSequence)[Duration#parse() javadoc] for more information.\n"
             +
             "\n" +
-            "You can also provide duration values starting with a number.\n" +
-            "In this case, if the value consists only of a number, the converter treats the value as seconds.\n" +
-            "Otherwise, `PT` is implicitly prepended to the value to obtain a standard `java.time.Duration` format.\n" +
+            "You can also use a simplified format, starting with a number:\n" +
+            "\n" +
+            "* If the value is only a number, it represents time in seconds.\n" +
+            "* If the value is a number followed by `ms`, it represents time in milliseconds.\n" +
+            "\n" +
+            "In other cases, the simplified format is translated to the `java.time.Duration` format for parsing:\n" +
+            "\n" +
+            "* If the value is a number followed by `h`, `m`, or `s`, it is prefixed with `PT`.\n" +
+            "* If the value is a number followed by `d`, it is prefixed with `P`" +
+            ".\n" +
             "====\n" +
             "endif::no-duration-note[]\n";
 

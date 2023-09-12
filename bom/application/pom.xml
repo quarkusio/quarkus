@@ -228,7 +228,7 @@
         <async-http-client.version>2.12.3</async-http-client.version>
         <!-- Dev UI -->
         <importmap.version>1.0.10</importmap.version>
-        <vaadin.version>24.1.6</vaadin.version>
+        <vaadin.version>24.1.7</vaadin.version>
         <lit.version>2.8.0</lit.version>
         <lit-element.version>3.3.3</lit-element.version>
         <lit-html.version>2.8.0</lit-html.version>

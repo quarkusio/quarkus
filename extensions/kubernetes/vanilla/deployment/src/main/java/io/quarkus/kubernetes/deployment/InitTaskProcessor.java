@@ -22,13 +22,13 @@ import io.quarkus.kubernetes.spi.PolicyRule;
 public class InitTaskProcessor {
 
     private static final String INIT_CONTAINER_WAITER_NAME = "init";
-    private static final String INIT_CONTAINER_WAITER_DEFAULT_IMAGE = "groundnuty/k8s-wait-for:no-root-v1.7";
 
     static void process(
             String target, // kubernetes, openshift, etc.
             String name,
             ContainerImageInfoBuildItem image,
             List<InitTaskBuildItem> initTasks,
+            InitTaskConfig initTaskDefaults,
             Map<String, InitTaskConfig> initTasksConfig,
             BuildProducer<KubernetesJobBuildItem> jobs,
             BuildProducer<KubernetesInitContainerBuildItem> initContainers,
@@ -40,7 +40,7 @@ public class InitTaskProcessor {
 
         boolean generateRoleForJobs = false;
         for (InitTaskBuildItem task : initTasks) {
-            InitTaskConfig config = initTasksConfig.get(task.getName());
+            InitTaskConfig config = initTasksConfig.getOrDefault(task.getName(), initTaskDefaults);
             if (config == null || config.enabled) {
                 generateRoleForJobs = true;
                 jobs.produce(KubernetesJobBuildItem.create(image.getImage())
@@ -60,8 +60,8 @@ public class InitTaskProcessor {
                                     .build())));
                 });
 
-                initContainers.produce(KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME,
-                        config == null ? INIT_CONTAINER_WAITER_DEFAULT_IMAGE : config.image)
+                String waitForImage = config.image.orElse(config.waitForImage);
+                initContainers.produce(KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME, waitForImage)
                         .withTarget(target)
                         .withArguments(List.of("job", task.getName())));
             }

@@ -319,7 +319,7 @@ public class VanillaKubernetesProcessor {
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         if (config.externalizeInit) {
-            InitTaskProcessor.process(KUBERNETES, name, image, initTasks, config.initTasks,
+            InitTaskProcessor.process(KUBERNETES, name, image, initTasks, config.initTaskDefaults, config.initTasks,
                     jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
         }
     }

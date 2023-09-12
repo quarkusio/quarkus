@@ -64,7 +64,7 @@ jobs:
           github token: ${{ secrets.GITHUB_TOKEN }}
           start args: '--embed-certs --addons=metrics-server --force'
       - name: Quay login
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_QUARKUSCI_USERNAME }}

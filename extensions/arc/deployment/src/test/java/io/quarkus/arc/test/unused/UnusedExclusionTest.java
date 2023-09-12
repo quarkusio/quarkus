@@ -74,7 +74,7 @@ public class UnusedExclusionTest {
 
         public void test(BeanContainer beanContainer) {
             // This should trigger the warning - Gama was removed
-            Gama gama = beanContainer.beanInstance(Gama.class);
+            Gama gama = beanContainer.beanInstanceFactory(Gama.class).create().get();
             // Test that fallback was used - no injection was performed
             Assertions.assertNull(gama.beanManager);
         }

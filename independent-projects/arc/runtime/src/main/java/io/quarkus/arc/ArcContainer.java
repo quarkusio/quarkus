@@ -88,33 +88,12 @@ public interface ArcContainer {
     /**
      * Returns a supplier that can be used to create new instances, or null if no matching bean can be found.
      *
-     * Note that if there are multiple sub classes of the given type this will return the exact match. This means
-     * that this can be used to directly instantiate superclasses of other beans without causing problems. This behavior differs
-     * to standard CDI rules where an ambiguous dependency would exist.
-     *
-     * see https://github.com/quarkusio/quarkus/issues/3369
-     *
      * @param type
      * @param qualifiers
      * @param <T>
      * @return
      */
     <T> Supplier<InstanceHandle<T>> beanInstanceSupplier(Class<T> type, Annotation... qualifiers);
-
-    /**
-     * This method is deprecated and will be removed in future versions.
-     * Use {@link #beanInstanceSupplier(Class, Annotation...)} instead.
-     * </p>
-     * As opposed to {@link #beanInstanceSupplier(Class, Annotation...)}, this method does <b>NOT</b> follow CDI
-     * resolution rules and in case of ambiguous resolution performs a choice based on the class type parameter.
-     *
-     * @param type
-     * @param qualifiers
-     * @return
-     * @param <T>
-     */
-    @Deprecated
-    <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers);
 
     /**
      *

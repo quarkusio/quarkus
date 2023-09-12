@@ -41,10 +41,12 @@ public interface EnvVarHolder {
 
         // first process old-style configuration, this relies on each configuration having a name
         final String target = getTargetPlatformName();
-        getEnvVars().forEach((key, envConfig) -> {
-            validator.process(key, envConfig.value, envConfig.secret, envConfig.configmap, envConfig.field, target,
-                    true);
-        });
+        if (getEnvVars() != null) {
+            getEnvVars().forEach((key, envConfig) -> {
+                validator.process(key, envConfig.value, envConfig.secret, envConfig.configmap, envConfig.field, target,
+                        true);
+            });
+        }
 
         // override old-style with newer versions if present
         final EnvVarsConfig c = getEnv();

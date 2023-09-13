@@ -44,7 +44,8 @@ public class KeycloakPolicyEnforcerAuthorizer
     public CheckResult apply(RoutingContext routingContext, SecurityIdentity identity) {
 
         if (identity.isAnonymous()) {
-            PathConfig pathConfig = resolver.getPolicyEnforcer(null).getPathMatcher().matches(routingContext.request().path());
+            PathConfig pathConfig = resolver.getPolicyEnforcer(null).getPathMatcher().matches(
+                    routingContext.normalizedPath());
             if (pathConfig != null && pathConfig.getEnforcementMode() == EnforcementMode.ENFORCING) {
                 return CheckResult.DENY;
             }

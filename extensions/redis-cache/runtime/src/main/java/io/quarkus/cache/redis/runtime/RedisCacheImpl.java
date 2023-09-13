@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -9,6 +10,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -34,6 +37,8 @@ import io.vertx.mutiny.redis.client.Response;
  * Do not use it explicitly from your Quarkus application.
  */
 public class RedisCacheImpl extends AbstractCache implements RedisCache {
+
+    private static final Logger log = Logger.getLogger(RedisCacheImpl.class);
 
     private static final Map<String, Class<?>> PRIMITIVE_TO_CLASS_MAPPING = Map.of(
             "int", Integer.class,
@@ -185,7 +190,17 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                             }
                         }));
             }
-        });
+        })
+
+                .onFailure(ConnectException.class)
+                .recoverWithUni(e -> {
+                    log.error("Error connecting to Redis", e);
+                    if (isWorkerThread) {
+                        return Uni.createFrom().item(() -> valueLoader.apply(key));
+                    } else {
+                        return Uni.createFrom().item(valueLoader.apply(key));
+                    }
+                });
     }
 
     @Override
@@ -215,7 +230,12 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                             }
                         });
             }
-        });
+        })
+                .onFailure(ConnectException.class)
+                .recoverWithUni(e -> {
+                    log.error("Error connecting to Redis", e);
+                    return valueLoader.apply(key);
+                });
     }
 
     @Override

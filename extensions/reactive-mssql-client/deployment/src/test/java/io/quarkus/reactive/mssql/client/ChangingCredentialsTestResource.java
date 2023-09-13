@@ -24,7 +24,7 @@ public class ChangingCredentialsTestResource {
     ChangingCredentialsProvider credentialsProvider;
 
     void addUser(@Observes StartupEvent ignored) {
-        client.query("CREATE LOGIN user2 WITH PASSWORD = 'user2_Has_A_Str0ng_Required_Password'").executeAndAwait();
+        client.query("CREATE LOGIN user2 WITH PASSWORD = 'user2_yourStrong(!)Password'").executeAndAwait();
         client.query("CREATE USER user2 FOR LOGIN user2").executeAndAwait();
     }
 

@@ -91,7 +91,7 @@
         <postgres.image>docker.io/postgres:14</postgres.image>
         <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
         <db2.image>docker.io/ibmcom/db2:11.5.7.0a</db2.image>
-        <mssql.image>mcr.microsoft.com/mssql/server:2019-latest</mssql.image>
+        <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
         <mysql.image>docker.io/mysql:8.0</mysql.image>
         <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
         <mongo.image>docker.io/mongo:4.4</mongo.image>
@@ -169,7 +169,7 @@
         <!-- Quarkus Analytics -->
         <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
-        
+
         <!-- Dev UI -->
         <vaadin.version>24.1.9</vaadin.version>
         <lit.version>2.8.0</lit.version>
@@ -382,7 +382,7 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            
+
             <!-- Dev UI -->
             <!-- Vaadin Router -->
             <dependency>
@@ -1332,9 +1332,8 @@
 
                 <!-- See
                 https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
-                The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all.
-                The :latest tag segfaults with the same segfault as MSSQL Server but 1.0.6 seems to behave well -->
-                <mssql.image>mcr.microsoft.com/azure-sql-edge:1.0.6</mssql.image>
+                The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all. -->
+                <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
             </properties>
         </profile>
     </profiles>

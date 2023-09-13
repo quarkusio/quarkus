@@ -15,7 +15,7 @@
 
     <properties>
         <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
-        <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
+        <mssqldb.sa-password>yourStrong(!)Password</mssqldb.sa-password>
     </properties>
 
     <dependencies>
@@ -187,7 +187,7 @@
             <properties>
                 <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
                 <!-- Careful: SQL Server refuses to work with trivial passwords. -->
-                <mssqldb.sa-password>ActuallyRequired11Complexity</mssqldb.sa-password>
+                <mssqldb.sa-password>yourStrong(!)Password</mssqldb.sa-password>
             </properties>
             <build>
                 <plugins>
@@ -205,7 +205,7 @@
                                         </ports>
                                         <env>
                                             <ACCEPT_EULA>Y</ACCEPT_EULA>
-                                            <SA_PASSWORD>ActuallyRequired11Complexity</SA_PASSWORD>
+                                            <SA_PASSWORD>yourStrong(!)Password</SA_PASSWORD>
                                         </env>
                                         <log>
                                             <prefix>MS SQL Server:</prefix>

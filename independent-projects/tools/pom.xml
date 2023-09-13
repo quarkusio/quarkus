@@ -6,14 +6,14 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>3.2.999-SNAPSHOT</version>
+        <version>3.2.6.Final</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <artifactId>quarkus-tools-parent</artifactId>
     <name>Quarkus - Dev tools - Parent</name>
     <url>https://github.com/quarkusio/quarkus</url>
     <packaging>pom</packaging>
-    <version>3.2.999-SNAPSHOT</version>
+    <version>3.2.6.Final</version>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
@@ -62,7 +62,7 @@
         <version.enforcer.plugin>3.2.1</version.enforcer.plugin>
         <version.surefire.plugin>3.0.0</version.surefire.plugin>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <quarkus.version>3.2.999-SNAPSHOT</quarkus.version>
+        <quarkus.version>3.2.6.Final</quarkus.version>
         <maven-model-helper.version>21</maven-model-helper.version>
         <jandex.version>3.1.2</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>

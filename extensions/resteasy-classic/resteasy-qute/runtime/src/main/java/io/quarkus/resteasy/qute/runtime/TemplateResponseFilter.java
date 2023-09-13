@@ -17,6 +17,7 @@ import org.jboss.resteasy.core.interception.jaxrs.SuspendableContainerResponseCo
 
 import io.quarkus.arc.Arc;
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.Variant;
 
@@ -34,10 +35,22 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
 
             MediaType mediaType;
             TemplateInstance instance = (TemplateInstance) entity;
+
+            List<Variant> quteVariants = List.of();
             Object variantsAttr = instance.getAttribute(TemplateInstance.VARIANTS);
             if (variantsAttr != null) {
+                quteVariants = (List<Variant>) variantsAttr;
+            } else {
+                // If no variants are available then try to use the template variant
+                Template template = instance.getTemplate();
+                if (template.getVariant().isPresent()) {
+                    quteVariants = List.of(template.getVariant().get());
+                }
+            }
+
+            if (!quteVariants.isEmpty()) {
                 List<jakarta.ws.rs.core.Variant> variants = new ArrayList<>();
-                for (Variant variant : (List<Variant>) variantsAttr) {
+                for (Variant variant : quteVariants) {
                     variants.add(new jakarta.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
                             variant.getEncoding()));
                 }

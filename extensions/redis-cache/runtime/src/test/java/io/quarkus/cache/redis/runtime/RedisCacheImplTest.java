@@ -29,7 +29,12 @@ class RedisCacheImplTest extends RedisCacheTestBase {
 
     @AfterEach
     void clear() {
-        redis.send(Request.cmd(Command.FLUSHALL).arg("SYNC")).await().atMost(Duration.ofSeconds(10));
+        try {
+            redis.send(Request.cmd(Command.FLUSHALL).arg("SYNC")).await()
+                    .atMost(Duration.ofSeconds(10));
+        } catch (Exception ignored) {
+            // ignored.
+        }
     }
 
     @Test
@@ -43,6 +48,18 @@ class RedisCacheImplTest extends RedisCacheTestBase {
         assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
         var r = redis.send(Request.cmd(Command.GET).arg("cache:foo:" + k)).await().indefinitely();
         assertThat(r).isNotNull();
+    }
+
+    @Test
+    public void testPutInTheCacheWithoutRedis() {
+        String k = UUID.randomUUID().toString();
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.valueType = String.class.getName();
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+        server.close();
+        assertThat(cache.get(k, s -> "hello").await().indefinitely()).isEqualTo("hello");
     }
 
     @Test
@@ -353,6 +370,32 @@ class RedisCacheImplTest extends RedisCacheTestBase {
                     assertThat(p.firstName).isEqualTo("leia");
                     assertThat(p.lastName).isEqualTo("organa");
                 }));
+    }
+
+    @Test
+    void testAsyncGetWithDefaultTypeWithoutRedis() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "star-wars";
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
+        info.valueType = Person.class.getName();
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        server.close();
+
+        assertThat(cache
+                .getAsync("test",
+                        x -> Uni.createFrom().item(new Person("luke", "skywalker"))
+                                .runSubscriptionOn(Infrastructure.getDefaultExecutor()))
+                .await().indefinitely()).satisfies(p -> {
+                    assertThat(p.firstName).isEqualTo("luke");
+                    assertThat(p.lastName).isEqualTo("skywalker");
+                });
+
+        assertThat(cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa")))
+                .await().indefinitely()).satisfies(p -> {
+                    assertThat(p.firstName).isEqualTo("leia");
+                    assertThat(p.lastName).isEqualTo("organa");
+                });
     }
 
     @Test

@@ -24,7 +24,7 @@
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.2</parsson.version>
-        <resteasy-microprofile.version>2.1.1.Final</resteasy-microprofile.version>
+        <resteasy-microprofile.version>2.1.4.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.0.2.Final</resteasy-spring-web.version>
         <resteasy.version>6.2.5.Final</resteasy.version>
         <opentracing.version>0.33.0</opentracing.version>
@@ -54,7 +54,7 @@
         <smallrye-config.version>3.3.4</smallrye-config.version>
         <smallrye-health.version>4.0.4</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>3.5.1</smallrye-open-api.version>
+        <smallrye-open-api.version>3.5.2</smallrye-open-api.version>
         <smallrye-graphql.version>2.4.0</smallrye-graphql.version>
         <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>6.2.6</smallrye-fault-tolerance.version>
@@ -139,7 +139,7 @@
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.9.3</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.16.Final</infinispan.version>
+        <infinispan.version>14.0.17.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
         <netty.version>4.1.97.Final</netty.version>
@@ -168,7 +168,9 @@
         <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
         <flyway.version>9.21.2</flyway.version>
         <yasson.version>3.0.3</yasson.version>
-        <liquibase.version>4.20.0</liquibase.version>
+        <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
+        <liquibase.version>4.23.1</liquibase.version>
+        <liquibase-mongodb.version>4.23.0</liquibase-mongodb.version>
         <snakeyaml.version>2.1</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.10.2</mongo-client.version>
@@ -5893,6 +5895,10 @@
                         <groupId>javax.xml.bind</groupId>
                         <artifactId>jaxb-api</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <!-- liquibase-core has a dependency on org.osgi:osgi.core -->
@@ -5904,7 +5910,7 @@
             <dependency>
                 <groupId>org.liquibase.ext</groupId>
                 <artifactId>liquibase-mongodb</artifactId>
-                <version>${liquibase.version}</version>
+                <version>${liquibase-mongodb.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.codehaus.groovy</groupId>

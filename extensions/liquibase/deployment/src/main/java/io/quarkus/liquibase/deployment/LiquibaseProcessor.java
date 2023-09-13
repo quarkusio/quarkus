@@ -49,7 +49,6 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -75,6 +74,7 @@ import liquibase.changelog.DatabaseChangeLog;
 import liquibase.exception.LiquibaseException;
 import liquibase.parser.ChangeLogParser;
 import liquibase.parser.ChangeLogParserFactory;
+import liquibase.plugin.AbstractPluginFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
 
 class LiquibaseProcessor {
@@ -88,14 +88,6 @@ class LiquibaseProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.LIQUIBASE);
-    }
-
-    @BuildStep
-    public SystemPropertyBuildItem disableHub() {
-        // Don't block app startup with prompt:
-        // Do you want to see this operation's report in Liquibase Hub, which improves team collaboration?
-        // If so, enter your email. If not, enter [N] to no longer be prompted, or [S] to skip for now, but ask again next time (default "S"):
-        return new SystemPropertyBuildItem("liquibase.hub.mode", "off");
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -126,29 +118,26 @@ class LiquibaseProcessor {
                 .build());
 
         reflective.produce(ReflectiveClassBuildItem
-                .builder("liquibase.command.LiquibaseCommandFactory",
-                        liquibase.command.CommandFactory.class.getName())
+                .builder(combinedIndex.getIndex().getAllKnownSubclasses(AbstractPluginFactory.class).stream()
+                        .map(classInfo -> classInfo.name().toString())
+                        .toArray(String[]::new))
+                .constructors().build());
+
+        reflective.produce(ReflectiveClassBuildItem
+                .builder(liquibase.command.CommandFactory.class.getName())
                 .constructors().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.parser.ChangeLogParserConfiguration.class.getName(),
-                liquibase.hub.HubServiceFactory.class.getName(),
-                liquibase.logging.core.DefaultLoggerConfiguration.class.getName(),
                 liquibase.GlobalConfiguration.class.getName(),
-                liquibase.license.LicenseServiceFactory.class.getName(),
                 liquibase.executor.ExecutorService.class.getName(),
-                liquibase.change.ChangeFactory.class.getName(),
-                liquibase.logging.core.LogServiceFactory.class.getName(),
-                liquibase.logging.LogFactory.class.getName(),
                 liquibase.change.ColumnConfig.class.getName(),
                 liquibase.change.AddColumnConfig.class.getName(),
                 liquibase.change.core.LoadDataColumnConfig.class.getName(),
                 liquibase.sql.visitor.PrependSqlVisitor.class.getName(),
                 liquibase.sql.visitor.ReplaceSqlVisitor.class.getName(),
                 liquibase.sql.visitor.AppendSqlVisitor.class.getName(),
-                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName(),
-                liquibase.resource.PathHandlerFactory.class.getName(),
-                liquibase.logging.mdc.MdcManagerFactory.class.getName())
+                liquibase.sql.visitor.RegExpReplaceSqlVisitor.class.getName())
                 .constructors().methods().fields().build());
 
         reflective.produce(ReflectiveClassBuildItem.builder(
@@ -201,7 +190,6 @@ class LiquibaseProcessor {
                 liquibase.snapshot.SnapshotGenerator.class,
                 liquibase.sqlgenerator.SqlGenerator.class,
                 liquibase.structure.DatabaseObject.class,
-                liquibase.hub.HubService.class,
                 liquibase.logging.mdc.MdcManager.class)
                 .forEach(t -> consumeService(t, (serviceClass, implementations) -> {
                     services.produce(
@@ -244,6 +232,10 @@ class LiquibaseProcessor {
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.17.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.18.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.19.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.21.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.22.xsd",
+                "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd",
                 "www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd",
                 "liquibase.build.properties"));

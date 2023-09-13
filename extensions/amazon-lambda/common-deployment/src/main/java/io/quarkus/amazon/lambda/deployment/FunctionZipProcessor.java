@@ -2,7 +2,9 @@ package io.quarkus.amazon.lambda.deployment;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,8 +23,10 @@ import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.LegacyJarRequiredBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
+import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
+import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 /**
@@ -106,7 +110,8 @@ public class FunctionZipProcessor {
     public void nativeZip(OutputTargetBuildItem target,
             Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            NativeImageBuildItem nativeImage) throws Exception {
+            NativeImageBuildItem nativeImage,
+            NativeImageRunnerBuildItem nativeImageRunner) throws Exception {
         Path zipDir = findNativeZipDir(target.getOutputDirectory());
 
         Path zipPath = target.getOutputDirectory().resolve("function.zip");
@@ -137,8 +142,26 @@ public class FunctionZipProcessor {
                 }
             }
             addZipEntry(zip, nativeImage.getPath(), executableName, 0755);
+
+            final GraalVM.Version graalVMVersion = nativeImageRunner.getBuildRunner().getGraalVMVersion();
+            if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
+                // See https://github.com/oracle/graal/issues/4921
+                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(nativeImage.getPath().getParent(),
+                        "*.{so,dll}")) {
+                    sharedLibs.forEach(src -> {
+                        try {
+                            // In this use case, we can force all libs to be non-executable.
+                            addZipEntry(zip, src, src.getFileName().toString(), 0644);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                } catch (IOException e) {
+                    log.errorf("Could not list files in directory %s. Continuing. Error: %s", nativeImage.getPath().getParent(),
+                            e);
+                }
+            }
         }
-        ;
     }
 
     private void copyZipEntry(ZipArchiveOutputStream zip, InputStream zinput, ZipArchiveEntry from) throws Exception {

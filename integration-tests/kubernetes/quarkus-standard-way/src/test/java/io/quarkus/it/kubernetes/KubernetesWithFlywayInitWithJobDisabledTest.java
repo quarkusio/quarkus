@@ -34,7 +34,7 @@ public class KubernetesWithFlywayInitWithJobDisabledTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class))
             .setApplicationName(NAME)
             .setApplicationVersion("0.1-SNAPSHOT")
-            .overrideConfigKey("quarkus.kubernetes.init-tasks.\"" + NAME + "-flyway-init\".enabled", "false")
+            .overrideConfigKey("quarkus.kubernetes.init-tasks.\"flyway\".enabled", "false")
             .setForcedDependencies(Arrays.asList(
                     new AppArtifact("io.quarkus", "quarkus-kubernetes", Version.getVersion()),
                     new AppArtifact("io.quarkus", "quarkus-flyway", Version.getVersion())));
@@ -67,7 +67,7 @@ public class KubernetesWithFlywayInitWithJobDisabledTest {
                 assertThat(deploymentSpec.getTemplate()).satisfies(t -> {
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getInitContainers()).noneSatisfy(container -> {
-                            assertThat(container.getName()).isEqualTo("init");
+                            assertThat(container.getName()).startsWith("wait-for");
                         });
                     });
                 });
@@ -75,7 +75,7 @@ public class KubernetesWithFlywayInitWithJobDisabledTest {
         });
 
         Optional<Job> job = kubernetesList.stream()
-                .filter(j -> "Job".equals(j.getKind()) && (NAME + "-flyway-init").equals(j.getMetadata().getName()))
+                .filter(j -> "Job".equals(j.getKind()))
                 .map(j -> (Job) j)
                 .findAny();
         assertFalse(job.isPresent());

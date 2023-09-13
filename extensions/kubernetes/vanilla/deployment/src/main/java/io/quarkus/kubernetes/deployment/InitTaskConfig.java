@@ -15,15 +15,15 @@ public class InitTaskConfig {
 
     /**
      * The init task image to use by the init-container.
+     * Deprecated, use waitForContainer.image instead.
      */
     @Deprecated
     @ConfigItem
     public Optional<String> image;
 
     /**
-     * The init task image to use by the init-container.
+     * The configuration of the `wait for` container.
      */
-    @ConfigItem(defaultValue = "groundnuty/k8s-wait-for:no-root-v1.7")
-    public String waitForImage;
-
+    @ConfigItem
+    public InitTaskContainerConfig waitForContainer;
 }

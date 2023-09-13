@@ -18,6 +18,7 @@ import io.quarkus.test.QuarkusProdModeTest;
 public class KubernetesWithFlywayInitTest extends KubernetesWithFlywayInitBase {
 
     private static final String NAME = "kubernetes-with-flyway";
+    private static final String TASK_NAME = "flyway";
     private static final String IMAGE_PULL_SECRET = "my-pull-secret";
 
     @RegisterExtension
@@ -37,6 +38,6 @@ public class KubernetesWithFlywayInitTest extends KubernetesWithFlywayInitBase {
     @Test
     public void assertGeneratedResources() throws IOException {
         final Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
-        assertGeneratedResources(kubernetesDir, NAME, IMAGE_PULL_SECRET, NAME);
+        assertGeneratedResources(kubernetesDir, NAME, TASK_NAME, IMAGE_PULL_SECRET, NAME);
     }
 }

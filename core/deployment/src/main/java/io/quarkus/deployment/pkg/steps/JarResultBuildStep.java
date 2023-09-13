@@ -1003,11 +1003,15 @@ public class JarResultBuildStep {
 
             // Remove svm and graal-sdk artifacts as they are provided by GraalVM itself
             if (classLoadingConfig.removedArtifacts.isEmpty()) {
-                classLoadingConfig.removedArtifacts = Optional.of(new ArrayList<>(2));
+                classLoadingConfig.removedArtifacts = Optional.of(new ArrayList<>(6));
             }
             List<String> removedArtifacts = classLoadingConfig.removedArtifacts.get();
             removedArtifacts.add("org.graalvm.nativeimage:svm");
             removedArtifacts.add("org.graalvm.sdk:graal-sdk");
+            removedArtifacts.add("org.graalvm.sdk:nativeimage");
+            removedArtifacts.add("org.graalvm.sdk:word");
+            removedArtifacts.add("org.graalvm.sdk:collections");
+            removedArtifacts.add("org.graalvm.polyglot:polyglot");
 
             doLegacyThinJarGeneration(curateOutcomeBuildItem, outputTargetBuildItem, transformedClasses,
                     applicationArchivesBuildItem, applicationInfo, packageConfig, generatedResources, libDir, allClasses,

@@ -41,7 +41,7 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -136,7 +136,7 @@ public class ResteasyStandaloneBuildStep {
         routes.produce(
                 RouteBuildItem.builder()
                         .orderedRoute(standalone.deploymentRootPath,
-                                VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
+                                RouteConstants.ROUTE_ORDER_AFTER_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET)
                         .handler(handler).build());
         String matchPath = standalone.deploymentRootPath;
         if (matchPath.endsWith("/")) {
@@ -146,7 +146,7 @@ public class ResteasyStandaloneBuildStep {
         }
         // Match paths that begin with the deployment path
         routes.produce(RouteBuildItem.builder()
-                .orderedRoute(matchPath, VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET)
+                .orderedRoute(matchPath, RouteConstants.ROUTE_ORDER_AFTER_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET)
                 .handler(handler).build());
 
         recorder.start(shutdown, requireVirtual.isPresent());

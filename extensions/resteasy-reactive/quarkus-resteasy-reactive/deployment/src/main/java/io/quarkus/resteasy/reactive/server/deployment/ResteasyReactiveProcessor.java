@@ -203,7 +203,7 @@ import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
+import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
@@ -1251,11 +1251,11 @@ public class ResteasyReactiveProcessor {
                 .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
 
         boolean servletPresent = false;
-        int order = VertxHttpRecorder.AFTER_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET;
+        int order = RouteConstants.ROUTE_ORDER_AFTER_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET;
         if (capabilities.isPresent("io.quarkus.servlet")) {
             //if servlet is present we run RR before the default route
             //otherwise we run after it
-            order = VertxHttpRecorder.BEFORE_DEFAULT_ROUTE_ORDER_MARK + REST_ROUTE_ORDER_OFFSET;
+            order = RouteConstants.ROUTE_ORDER_BEFORE_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET;
             servletPresent = true;
         }
 

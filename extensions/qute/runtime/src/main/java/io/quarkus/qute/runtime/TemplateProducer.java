@@ -87,9 +87,6 @@ public class TemplateProducer {
         if (path == null || path.isEmpty()) {
             throw new IllegalStateException("No template location specified");
         }
-        // We inject a delegating template in order to:
-        // 1. Be able to select an appropriate variant if needed
-        // 2. Be able to reload the template when needed, i.e. when the cache is cleared
         return new InjectableTemplate(path, templateVariants, engine);
     }
 
@@ -100,11 +97,18 @@ public class TemplateProducer {
         return new InjectableTemplate(path, templateVariants, engine);
     }
 
+    /**
+     * We inject a delegating template in order to:
+     *
+     * 1. Be able to select an appropriate variant if needed
+     * 2. Be able to reload the template when needed, i.e. when the cache is cleared
+     */
     static class InjectableTemplate implements Template {
 
         private final String path;
         private final TemplateVariants variants;
         private final Engine engine;
+        // Some methods may only work if a single template variant is found
         private final LazyValue<Template> unambiguousTemplate;
 
         public InjectableTemplate(String path, Map<String, TemplateVariants> templateVariants, Engine engine) {
@@ -179,10 +183,7 @@ public class TemplateProducer {
 
         @Override
         public Fragment getFragment(String identifier) {
-            if (unambiguousTemplate != null) {
-                return unambiguousTemplate.get().getFragment(identifier);
-            }
-            throw ambiguousTemplates("getFragment()");
+            return new InjectableFragment(identifier);
         }
 
         @Override
@@ -200,6 +201,66 @@ public class TemplateProducer {
         @Override
         public String toString() {
             return "Injectable template [path=" + path + "]";
+        }
+
+        class InjectableFragment implements Fragment {
+
+            private final String identifier;
+
+            InjectableFragment(String identifier) {
+                this.identifier = identifier;
+            }
+
+            @Override
+            public List<Expression> getExpressions() {
+                return InjectableTemplate.this.getExpressions();
+            }
+
+            @Override
+            public Expression findExpression(Predicate<Expression> predicate) {
+                return InjectableTemplate.this.findExpression(predicate);
+            }
+
+            @Override
+            public String getGeneratedId() {
+                return InjectableTemplate.this.getGeneratedId();
+            }
+
+            @Override
+            public Optional<Variant> getVariant() {
+                return InjectableTemplate.this.getVariant();
+            }
+
+            @Override
+            public List<ParameterDeclaration> getParameterDeclarations() {
+                return InjectableTemplate.this.getParameterDeclarations();
+            }
+
+            @Override
+            public String getId() {
+                return identifier;
+            }
+
+            @Override
+            public Template getOriginalTemplate() {
+                return InjectableTemplate.this;
+            }
+
+            @Override
+            public Fragment getFragment(String id) {
+                return InjectableTemplate.this.getFragment(id);
+            }
+
+            @Override
+            public Set<String> getFragmentIds() {
+                return InjectableTemplate.this.getFragmentIds();
+            }
+
+            @Override
+            public TemplateInstance instance() {
+                return new InjectableFragmentTemplateInstanceImpl(identifier);
+            }
+
         }
 
         class InjectableTemplateInstanceImpl extends TemplateInstanceBase {
@@ -261,7 +322,7 @@ public class TemplateProducer {
                 return instance;
             }
 
-            private Template template() {
+            protected Template template() {
                 if (unambiguousTemplate != null) {
                     return unambiguousTemplate.get();
                 }
@@ -280,6 +341,22 @@ public class TemplateProducer {
             }
 
         }
+
+        class InjectableFragmentTemplateInstanceImpl extends InjectableTemplateInstanceImpl {
+
+            private final String identifier;
+
+            private InjectableFragmentTemplateInstanceImpl(String identifier) {
+                this.identifier = identifier;
+            }
+
+            @Override
+            protected Template template() {
+                return super.template().getFragment(identifier);
+            }
+
+        }
+
     }
 
     static class TemplateVariants {

@@ -1,11 +1,14 @@
 package io.quarkus.vertx.http.runtime;
 
-import io.smallrye.config.WithDefault;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
  * Request body related settings
  */
-public interface BodyConfig {
+@ConfigGroup
+public class BodyConfig {
+
     /**
      * Whether the files sent using {@code multipart/form-data} will be stored locally.
      * <p>
@@ -15,16 +18,16 @@ public interface BodyConfig {
      * will always return an empty collection. Note that even with this option being set to {@code false}, the
      * {@code multipart/form-data} requests will be accepted.
      */
-    @WithDefault("true")
-    boolean handleFileUploads();
+    @ConfigItem(defaultValue = "true")
+    public boolean handleFileUploads;
 
     /**
      * The directory where the files sent using {@code multipart/form-data} should be stored.
      * <p>
      * Either an absolute path or a path relative to the current directory of the application process.
      */
-    @WithDefault("${java.io.tmpdir}/uploads")
-    String uploadsDirectory();
+    @ConfigItem(defaultValue = "${java.io.tmpdir}/uploads")
+    public String uploadsDirectory;
 
     /**
      * Whether the form attributes should be added to the request parameters.
@@ -32,8 +35,8 @@ public interface BodyConfig {
      * If {@code true}, the form attributes will be added to the request parameters; otherwise the form parameters will
      * not be added to the request parameters
      */
-    @WithDefault("true")
-    boolean mergeFormAttributes();
+    @ConfigItem(defaultValue = "true")
+    public boolean mergeFormAttributes;
 
     /**
      * Whether the uploaded files should be removed after serving the request.
@@ -41,8 +44,8 @@ public interface BodyConfig {
      * If {@code true} the uploaded files stored in {@code quarkus.http.body-handler.uploads-directory} will be removed
      * after handling the request. Otherwise, the files will be left there forever.
      */
-    @WithDefault("true")
-    boolean deleteUploadedFilesOnEnd();
+    @ConfigItem(defaultValue = "true")
+    public boolean deleteUploadedFilesOnEnd;
 
     /**
      * Whether the body buffer should pre-allocated based on the {@code Content-Length} header value.
@@ -50,11 +53,12 @@ public interface BodyConfig {
      * If {@code true} the body buffer is pre-allocated according to the size read from the {@code Content-Length}
      * header. Otherwise, the body buffer is pre-allocated to 1KB, and is resized dynamically
      */
-    @WithDefault("false")
-    boolean preallocateBodyBuffer();
+    @ConfigItem
+    public boolean preallocateBodyBuffer;
 
     /**
      * HTTP multipart request related settings
      */
-    MultiPartConfig multipart();
+    @ConfigItem
+    public MultiPartConfig multipart;
 }

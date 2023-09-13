@@ -45,7 +45,7 @@ public class UnknownConfigTest {
     @Test
     void unknown() {
         assertEquals("1234", config.getConfigValue("quarkus.unknown.prop").getValue());
-        assertEquals("/1234", httpBuildTimeConfig.nonApplicationRootPath());
-        assertEquals(4443, httpConfiguration.sslPort());
+        assertEquals("/1234", httpBuildTimeConfig.nonApplicationRootPath);
+        assertEquals(4443, httpConfiguration.sslPort);
     }
 }

@@ -13,4 +13,8 @@ abstract class DelegateInvoker implements ScheduledInvoker {
         return delegate.isBlocking();
     }
 
+    @Override
+    public boolean isRunningOnVirtualThread() {
+        return delegate.isRunningOnVirtualThread();
+    }
 }

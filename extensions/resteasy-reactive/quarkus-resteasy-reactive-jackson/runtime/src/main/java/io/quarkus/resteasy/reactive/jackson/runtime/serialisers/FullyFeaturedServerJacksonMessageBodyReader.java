@@ -175,6 +175,13 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
                 Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
                 if (jsonViewValue != null) {
                     return effectiveReader.withView(jsonViewValue);
+                } else {
+                    jsonViewValue = ResteasyReactiveServerJacksonRecorder
+                            .jsonViewForClass(resourceInfo.getResourceClass());
+                    if (jsonViewValue != null) {
+                        return effectiveReader.withView(jsonViewValue);
+                    }
+
                 }
             }
         }

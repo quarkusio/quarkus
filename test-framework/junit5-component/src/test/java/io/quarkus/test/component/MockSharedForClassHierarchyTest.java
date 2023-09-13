@@ -13,10 +13,13 @@ import org.mockito.Mockito;
 public class MockSharedForClassHierarchyTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(Component.class).mock(Foo.class)
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
+            .mock(Foo.class)
             .createMockitoMock(foo -> {
                 Mockito.when(foo.ping()).thenReturn(11);
-            }).ignoreNestedClasses();
+            })
+            .ignoreNestedClasses()
+            .build();
 
     @Inject
     Component component;

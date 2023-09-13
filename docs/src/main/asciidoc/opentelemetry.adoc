@@ -358,12 +358,32 @@ public class CustomConfiguration {
 By setting `quarkus.otel.traces.eusp.enabled=true` you can add information about the user related to each span. The user's ID and roles will be added to the span attributes, if available.
 
 === Sampler
-A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling[sampler] decides whether
-a trace should be sampled and exported, controlling noise and overhead by reducing the number of sample of traces collected and sent
-to the collector.
+A https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#sampling[sampler] decides whether a trace should be discarded or forwarded, effectively managing noise and reducing overhead by limiting the number of collected traces sent to the collector.
 
-You can set a https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#built-in-samplers[built-in sampler]
-simply by setting the desired sampler config described in the <<configuration-reference>>.
+Quarkus comes equipped with a https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/sdk.md#built-in-samplers[built-in sampler], and you also have the option to create your custom sampler.
+
+To use the built-in sampler, you can configure it by setting the desired sampler parameters as detailed in the <<configuration-reference>>. As an example, you can configure the sampler to retain 50% of the traces:
+[source,application.properties]
+----
+# build time property only:
+quarkus.otel.traces.sampler=traceidratio
+# Runtime property:
+quarkus.otel.traces.sampler.arg=0.5
+----
+[TIP]
+====
+
+An interesting use case for the sampler is to activate and deactivate tracing export at runtime, acording to this example:
+[source,application.properties]
+----
+# build time property only:
+quarkus.otel.traces.sampler=traceidratio
+# On (default). All traces are exported:
+quarkus.otel.traces.sampler.arg=1.0
+# Off. No traces are exported:
+quarkus.otel.traces.sampler.arg=0.0
+----
+====
 
 [NOTE]
 ====
@@ -589,6 +609,23 @@ It can be activated by setting `quarkus.otel.traces.exporter=otlp` and include t
 implementation("io.opentelemetry:opentelemetry-exporter-otlp-common")
 implementation("io.opentelemetry:opentelemetry-exporter-otlp")
 ----
+[[quarkus-extensions-using-opentelemetry]]
+== Quarkus core extensions instrumented with OpenTelemetry tracing
+
+* https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
+* https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
+* https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
+* https://quarkus.io/guides/resteasy-reactive[`quarkus-resteasy-reactive`]
+* https://quarkus.io/guides/rest-client[`quarkus-rest-client`]
+* https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-smallrye-reactive-messaging[`quarkus-smallrye-reactive-messaging`]
+** AMQP 1.0
+** RabbitMQ
+** Kafka
+** Pulsar
+* https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
 
 [[configuration-reference]]
 == OpenTelemetry Configuration Reference

@@ -34,7 +34,7 @@
         <opentelemetry.version>1.28.0</opentelemetry.version>
         <opentelemetry-alpha.version>1.28.0-alpha</opentelemetry-alpha.version>
         <jaeger.version>1.8.1</jaeger.version>
-        <quarkus-http.version>5.0.2.Final</quarkus-http.version>
+        <quarkus-http.version>5.0.3.Final</quarkus-http.version>
         <micrometer.version>1.11.1</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
@@ -50,12 +50,12 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0</microprofile-lra.version>
         <microprofile-openapi.version>3.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.1.0</smallrye-common.version>
-        <smallrye-config.version>3.3.3</smallrye-config.version>
+        <smallrye-common.version>2.1.2</smallrye-common.version>
+        <smallrye-config.version>3.3.4</smallrye-config.version>
         <smallrye-health.version>4.0.4</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>3.5.1</smallrye-open-api.version>
-        <smallrye-graphql.version>2.3.0</smallrye-graphql.version>
+        <smallrye-open-api.version>3.5.2</smallrye-open-api.version>
+        <smallrye-graphql.version>2.4.0</smallrye-graphql.version>
         <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>6.2.6</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.3.0</smallrye-jwt.version>
@@ -100,7 +100,7 @@
         <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below),
              as well as hibernate-orm.version-for-documentation in docs/pom.xml -->
         <hibernate-orm.version>6.2.7.Final</hibernate-orm.version>
-        <bytebuddy.version>1.12.18</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
+        <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
         <hibernate-reactive.version>2.0.4.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
@@ -120,7 +120,7 @@
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
         <wildfly-elytron.version>2.2.2.Final</wildfly-elytron.version>
         <jboss-threads.version>3.5.0.Final</jboss-threads.version>
-        <vertx.version>4.4.4</vertx.version>
+        <vertx.version>4.4.5</vertx.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
         <httpasync.version>4.1.5</httpasync.version>
@@ -128,7 +128,7 @@
         <quartz.version>2.3.2</quartz.version>
         <h2.version>2.2.220</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions -->
         <postgresql-jdbc.version>42.6.0</postgresql-jdbc.version>
-        <mariadb-jdbc.version>3.1.4</mariadb-jdbc.version>
+        <mariadb-jdbc.version>3.2.0</mariadb-jdbc.version>
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>12.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
@@ -139,10 +139,10 @@
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.9.3</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.14.Final</infinispan.version>
-        <infinispan.protostream.version>4.6.2.Final</infinispan.protostream.version>
+        <infinispan.version>14.0.16.Final</infinispan.version>
+        <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.94.Final</netty.version>
+        <netty.version>4.1.97.Final</netty.version>
         <brotli4j.version>1.12.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
@@ -165,10 +165,12 @@
         <dekorate.version>3.7.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <jboss-logmanager.version>1.1.1</jboss-logmanager.version>
+        <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
         <flyway.version>9.21.2</flyway.version>
         <yasson.version>3.0.3</yasson.version>
-        <liquibase.version>4.20.0</liquibase.version>
+        <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
+        <liquibase.version>4.23.1</liquibase.version>
+        <liquibase-mongodb.version>4.23.0</liquibase-mongodb.version>
         <snakeyaml.version>2.1</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.10.2</mongo-client.version>
@@ -225,8 +227,8 @@
         <pulsar-client.version>3.0.0</pulsar-client.version>
         <async-http-client.version>2.12.3</async-http-client.version>
         <!-- Dev UI -->
-        <importmap.version>1.0.9</importmap.version>
-        <vaadin.version>24.1.4</vaadin.version>
+        <importmap.version>1.0.10</importmap.version>
+        <vaadin.version>24.1.6</vaadin.version>
         <lit.version>2.8.0</lit.version>
         <lit-element.version>3.3.3</lit-element.version>
         <lit-html.version>2.8.0</lit-html.version>
@@ -3221,8 +3223,15 @@
                 <version>${commons-logging-jboss-logging.version}</version>
             </dependency>
             <dependency>
+                <!-- NOTE: this dependency exists in order to help users who are using the old GAV for logging -->
+                <!-- The version doesn't need to be a property since it will be locked at 1.2.0.Final forever -->
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>jboss-logmanager-embedded</artifactId>
+                <version>1.2.0.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logmanager</groupId>
+                <artifactId>jboss-logmanager</artifactId>
                 <version>${jboss-logmanager.version}</version>
                 <exclusions>
                     <exclusion>
@@ -3230,8 +3239,8 @@
                         <artifactId>jboss-modules</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>javax.json</artifactId>
+                        <groupId>org.eclipse.parsson</groupId>
+                        <artifactId>jakarta.json</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -3239,13 +3248,6 @@
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>log4j2-jboss-logmanager</artifactId>
                 <version>${log4j2-jboss-logmanager.version}</version>
-                <exclusions>
-                    <!-- we use the embedded version -->
-                    <exclusion>
-                        <groupId>org.jboss.logmanager</groupId>
-                        <artifactId>jboss-logmanager</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <!--
             While we are not affected by CVE-2021-4428 as we are only using the Log4j2 API,
@@ -3260,13 +3262,6 @@
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>log4j-jboss-logmanager</artifactId>
                 <version>${log4j-jboss-logmanager.version}</version>
-                <exclusions>
-                    <!-- we use the embedded version -->
-                    <exclusion>
-                        <groupId>org.jboss.logmanager</groupId>
-                        <artifactId>jboss-logmanager</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
@@ -5900,6 +5895,10 @@
                         <groupId>javax.xml.bind</groupId>
                         <artifactId>jaxb-api</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>javax.activation</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <!-- liquibase-core has a dependency on org.osgi:osgi.core -->
@@ -5911,7 +5910,7 @@
             <dependency>
                 <groupId>org.liquibase.ext</groupId>
                 <artifactId>liquibase-mongodb</artifactId>
-                <version>${liquibase.version}</version>
+                <version>${liquibase-mongodb.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.codehaus.groovy</groupId>

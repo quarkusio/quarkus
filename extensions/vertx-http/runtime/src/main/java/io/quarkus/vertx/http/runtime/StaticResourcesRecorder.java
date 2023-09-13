@@ -39,11 +39,11 @@ public class StaticResourcesRecorder {
     }
 
     public Consumer<Route> start(Set<String> knownPaths) {
-        if (httpBuildTimeConfig.enableCompression() && httpBuildTimeConfig.compressMediaTypes().isPresent()) {
-            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes().get());
+        if (httpBuildTimeConfig.enableCompression && httpBuildTimeConfig.compressMediaTypes.isPresent()) {
+            this.compressMediaTypes = Set.copyOf(httpBuildTimeConfig.compressMediaTypes.get());
         }
         List<Handler<RoutingContext>> handlers = new ArrayList<>();
-        StaticResourcesConfig config = httpConfiguration.getValue().staticResources();
+        StaticResourcesConfig config = httpConfiguration.getValue().staticResources;
 
         if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
             for (Path resourcePath : hotDeploymentResourcePaths) {
@@ -51,9 +51,9 @@ public class StaticResourcesRecorder {
                 StaticHandler staticHandler = StaticHandler.create(FileSystemAccess.ROOT, root)
                         .setDefaultContentEncoding("UTF-8")
                         .setCachingEnabled(false)
-                        .setIndexPage(config.indexPage())
-                        .setIncludeHidden(config.includeHidden())
-                        .setEnableRangeSupport(config.enableRangeSupport());
+                        .setIndexPage(config.indexPage)
+                        .setIncludeHidden(config.includeHidden)
+                        .setEnableRangeSupport(config.enableRangeSupport);
                 handlers.add(new Handler<>() {
                     @Override
                     public void handle(RoutingContext ctx) {
@@ -73,18 +73,18 @@ public class StaticResourcesRecorder {
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
             StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES)
                     .setDefaultContentEncoding("UTF-8")
-                    .setCachingEnabled(config.cachingEnabled())
-                    .setIndexPage(config.indexPage())
-                    .setIncludeHidden(config.includeHidden())
-                    .setEnableRangeSupport(config.enableRangeSupport())
-                    .setMaxCacheSize(config.maxCacheSize())
-                    .setCacheEntryTimeout(config.cacheEntryTimeout().toMillis())
-                    .setMaxAgeSeconds(config.maxAge().toSeconds());
+                    .setCachingEnabled(config.cachingEnabled)
+                    .setIndexPage(config.indexPage)
+                    .setIncludeHidden(config.includeHidden)
+                    .setEnableRangeSupport(config.enableRangeSupport)
+                    .setMaxCacheSize(config.maxCacheSize)
+                    .setCacheEntryTimeout(config.cacheEntryTimeout.toMillis())
+                    .setMaxAgeSeconds(config.maxAge.toSeconds());
             // normalize index page like StaticHandler because its not expose
             // TODO: create a converter to normalize filename in config.indexPage?
-            final String indexPage = (config.indexPage().charAt(0) == '/')
-                    ? config.indexPage().substring(1)
-                    : config.indexPage();
+            final String indexPage = (config.indexPage.charAt(0) == '/')
+                    ? config.indexPage.substring(1)
+                    : config.indexPage;
             handlers.add(new Handler<>() {
                 @Override
                 public void handle(RoutingContext ctx) {
@@ -122,7 +122,7 @@ public class StaticResourcesRecorder {
     }
 
     private void compressIfNeeded(RoutingContext ctx, String path) {
-        if (httpBuildTimeConfig.enableCompression() && isCompressed(path)) {
+        if (httpBuildTimeConfig.enableCompression && isCompressed(path)) {
             // VertxHttpRecorder is adding "Content-Encoding: identity" to all requests if compression is enabled.
             // Handlers can remove the "Content-Encoding: identity" header to enable compression.
             ctx.response().headers().remove(HttpHeaders.CONTENT_ENCODING);

@@ -50,9 +50,9 @@ public class GrpcJsonRPCService {
             this.port = serverConfig.port;
             this.ssl = serverConfig.ssl.certificate.isPresent() || serverConfig.ssl.keyStore.isPresent();
         } else {
-            this.host = httpConfiguration.host();
-            this.port = httpConfiguration.port();
-            this.ssl = httpConfiguration.insecureRequests() != HttpConfiguration.InsecureRequests.ENABLED;
+            this.host = httpConfiguration.host;
+            this.port = httpConfiguration.port;
+            this.ssl = httpConfiguration.insecureRequests != HttpConfiguration.InsecureRequests.ENABLED;
         }
     }
 

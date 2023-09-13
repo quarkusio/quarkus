@@ -47,7 +47,7 @@ public class OidcDevJsonRpcService {
         // 'KeycloakDevServicesProcessor' is created with combined index
         OidcDevUiRpcSvcPropertiesBean props = Arc.container().instance(OidcDevUiRpcSvcPropertiesBean.class).get();
 
-        this.httpPort = httpConfiguration.port();
+        this.httpPort = httpConfiguration.port;
         this.config = config;
         this.vertx = vertx;
         this.authorizationUrl = props.getAuthorizationUrl();

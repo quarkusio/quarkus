@@ -464,6 +464,18 @@ public class MyListenerManager {
 }
 ----
 
+[[virtual-threads]]
+== Run scheduled methods on virtual threads
+
+Methods annotated with `@Scheduled` can also be annotated with `@RunOnVirtualThread`.
+In this case, the method is invoked on a virtual thread.
+
+The method must return `void` and your Java runtime must provide support for virtual threads.
+Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
+
+WARNING: This feature cannot be combined with the `run-blocking-method-on-quartz-thread` option.
+If `run-blocking-method-on-quartz-thread` is set, the scheduled method runs on a (platform) thread managed by Quartz.
+
 [[quartz-configuration-reference]]
 == Quartz Configuration Reference
 

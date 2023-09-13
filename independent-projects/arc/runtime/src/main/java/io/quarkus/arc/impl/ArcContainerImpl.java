@@ -304,7 +304,11 @@ public class ArcContainerImpl implements ArcContainer {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
-        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(type, qualifiers));
+        Resolvable resolvable = new Resolvable(type, qualifiers);
+        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(resolvable);
+        if (resolvedBeans.isEmpty()) {
+            scanRemovedBeans(resolvable);
+        }
         Set<InjectableBean<?>> filteredBean = resolvedBeans;
         if (resolvedBeans.size() > 1) {
             if (resolveAmbiguities) {

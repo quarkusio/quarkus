@@ -5,6 +5,13 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.Locale;
 import java.util.Set;
 
 import io.vertx.core.Handler;
@@ -22,7 +29,7 @@ public class MvnpmHandler implements Handler<RoutingContext> {
 
     public MvnpmHandler(String root, Set<URL> mvnpmJars) {
         this.root = root;
-        this.mvnpmLoader = new URLClassLoader(mvnpmJars.toArray(new URL[] {}));
+        this.mvnpmLoader = new URLClassLoader(mvnpmJars.toArray(URL[]::new));
     }
 
     @Override
@@ -37,18 +44,36 @@ public class MvnpmHandler implements Handler<RoutingContext> {
         }
 
         try {
-            InputStream is = mvnpmLoader.getResourceAsStream(BASE_DIR + fullPath);
-            if (is != null) {
-                byte[] contents = is.readAllBytes();
-                event.response()
-                        .putHeader(HttpHeaders.CONTENT_TYPE, getContentType(fileName))
-                        .end(Buffer.buffer(contents));
-                return;
+            URL url = mvnpmLoader.getResource(BASE_DIR + fullPath);
+            URLConnection openConnection = url.openConnection();
+            long lastModified = openConnection.getLastModified();
+            try (InputStream is = openConnection.getInputStream()) {
+                if (is != null) {
+                    byte[] contents = is.readAllBytes();
+                    event.response()
+                            .putHeader(HttpHeaders.CONTENT_TYPE, getContentType(fileName))
+                            .putHeader(HttpHeaders.CACHE_CONTROL, "public, immutable, max-age=31536000")
+                            .putHeader(HttpHeaders.LAST_MODIFIED, formatDate(lastModified))
+                            .putHeader("date", formatDate(LocalDateTime.now()))
+                            .end(Buffer.buffer(contents));
+                    return;
+                }
             }
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
         event.next();
+    }
+
+    private String formatDate(long m) {
+        Instant i = Instant.ofEpochMilli(m);
+        return formatDate(i);
+    }
+
+    private String formatDate(TemporalAccessor t) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss z", Locale.ENGLISH)
+                .withZone(ZoneId.of("GMT"));
+        return formatter.format(t);
     }
 
     private String getContentType(String filename) {

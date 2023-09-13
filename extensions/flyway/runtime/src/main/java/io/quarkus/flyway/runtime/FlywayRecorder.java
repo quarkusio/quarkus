@@ -11,8 +11,16 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.FlywayExecutor;
 import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.migration.JavaMigration;
+import org.flywaydb.core.api.output.BaselineResult;
+import org.flywaydb.core.internal.callback.CallbackExecutor;
+import org.flywaydb.core.internal.database.base.Database;
+import org.flywaydb.core.internal.database.base.Schema;
+import org.flywaydb.core.internal.jdbc.StatementInterceptor;
+import org.flywaydb.core.internal.resolver.CompositeMigrationResolver;
+import org.flywaydb.core.internal.schemahistory.SchemaHistory;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.runtime.DataSources;
@@ -101,12 +109,33 @@ public class FlywayRecorder {
             if (flywayContainer.isValidateAtStart()) {
                 flywayContainer.getFlyway().validate();
             }
+            if (flywayContainer.isBaselineAtStart()) {
+                new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())
+                        .execute(new BaselineCommand(flywayContainer.getFlyway()), true, null);
+            }
             if (flywayContainer.isRepairAtStart()) {
                 flywayContainer.getFlyway().repair();
             }
             if (flywayContainer.isMigrateAtStart()) {
                 flywayContainer.getFlyway().migrate();
             }
+        }
+    }
+
+    static class BaselineCommand implements FlywayExecutor.Command<BaselineResult> {
+        BaselineCommand(Flyway flyway) {
+            this.flyway = flyway;
+        }
+
+        final Flyway flyway;
+
+        @Override
+        public BaselineResult execute(CompositeMigrationResolver cmr, SchemaHistory schemaHistory, Database d,
+                Schema defaultSchema, Schema[] s, CallbackExecutor ce, StatementInterceptor si) {
+            if (!schemaHistory.exists()) {
+                return flyway.baseline();
+            }
+            return null;
         }
     }
 }

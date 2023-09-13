@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
-import io.smallrye.graphql.api.federation.Extends;
+import io.smallrye.graphql.api.federation.External;
 
 public class GraphQLFederationTest extends AbstractGraphQLTest {
 
@@ -36,7 +36,7 @@ public class GraphQLFederationTest extends AbstractGraphQLTest {
         RestAssured.given()
                 .get("/graphql/schema.graphql")
                 .then()
-                .body(containsString("name: String @extends"));
+                .body(containsString("name: String @external"));
     }
 
     @GraphQLApi
@@ -51,7 +51,7 @@ public class GraphQLFederationTest extends AbstractGraphQLTest {
 
     static class Foo {
 
-        @Extends
+        @External
         public String name;
 
     }

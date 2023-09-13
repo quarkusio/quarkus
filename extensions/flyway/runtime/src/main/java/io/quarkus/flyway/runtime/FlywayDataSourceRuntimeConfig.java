@@ -152,10 +152,21 @@ public final class FlywayDataSourceRuntimeConfig {
     public boolean validateAtStart;
 
     /**
-     * Enable the creation of the history table if it does not exist already.
+     * true to execute Flyway baseline before migrations This flag is ignored if the flyway_schema_history table exists in the
+     * current schema or if the current schema is empty.
+     * Note that this will not automatically call migrate, you must either enable baselineAtStart or programmatically call
+     * flyway.migrate().
      */
     @ConfigItem
     public boolean baselineOnMigrate;
+
+    /**
+     * true to execute Flyway baseline automatically when the application starts.
+     * This flag is ignored if the flyway_schema_history table exists in the current schema.
+     * This will work even if the current schema is empty.
+     */
+    @ConfigItem
+    public boolean baselineAtStart;
 
     /**
      * The initial baseline version.

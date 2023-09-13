@@ -754,8 +754,9 @@ jobs:
     steps:
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
-          echo "GE_CUSTOM_VALUES=gh-job-name=Virtual Thread Support Tests Native - ${{matrix.category}}" >> "$GITHUB_ENV"
+          category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
+          echo "GE_TAGS=virtual-thread-native-${category}" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
       - uses: actions/checkout@v3
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
@@ -881,7 +882,8 @@ jobs:
     steps:
       - name: Gradle Enterprise environment
         run: |
-          echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
+          category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
+          echo "GE_TAGS=native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - ${{matrix.category}}" >> "$GITHUB_ENV"
       - name: Support longpaths on Windows
         if: "startsWith(matrix.os-name, 'windows')"

@@ -136,7 +136,8 @@ public class SchedulerProcessor {
             MethodInfo method = annotationInstance.target().asMethod();
             if (Modifier.isStatic(method.flags()) && !KotlinUtil.isSuspendMethod(method)) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules,
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING)));
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
                 LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
             }
         }
@@ -176,7 +177,8 @@ public class SchedulerProcessor {
             }
             if (schedules != null) {
                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules,
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING)));
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
+                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
                 LOGGER.debugf("Found scheduled business method %s declared on %s", method, bean);
             }
         }
@@ -205,6 +207,11 @@ public class SchedulerProcessor {
                 errors.add(new IllegalStateException("@Scheduled method must not be private: "
                         + scheduledMethod.getMethodDescription()));
                 continue;
+            }
+
+            if (scheduledMethod.isNonBlocking() && scheduledMethod.isRunOnVirtualThread()) {
+                errors.add(new IllegalStateException("@Scheduled method cannot be non-blocking and annotated " +
+                        "with @RunOnVirtualThread: " + scheduledMethod.getMethodDescription()));
             }
 
             boolean isSuspendMethod = KotlinUtil.isSuspendMethod(method);
@@ -510,6 +517,13 @@ public class SchedulerProcessor {
         if (scheduledMethod.isNonBlocking()) {
             MethodCreator isBlocking = invokerCreator.getMethodCreator("isBlocking", boolean.class);
             isBlocking.returnValue(isBlocking.load(false));
+            isBlocking.close();
+        }
+
+        if (scheduledMethod.isRunOnVirtualThread()) {
+            MethodCreator isRunOnVirtualThread = invokerCreator.getMethodCreator("isRunningOnVirtualThread", boolean.class);
+            isRunOnVirtualThread.returnValue(isRunOnVirtualThread.load(true));
+            isRunOnVirtualThread.close();
         }
 
         invokerCreator.close();

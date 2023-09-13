@@ -726,7 +726,7 @@ class RestClientReactiveProcessor {
 
         BuiltinScope globalDefaultScope = BuiltinScope.from(DotName.createSimple(mpClientConfig.scope));
         if (globalDefaultScope == null) {
-            log.warnv("Unable to map the global rest client scope: '{}' to a scope. Using @ApplicationScoped",
+            log.warnv("Unable to map the global rest client scope: '{0}' to a scope. Using @ApplicationScoped",
                     mpClientConfig.scope);
             globalDefaultScope = BuiltinScope.APPLICATION;
         }

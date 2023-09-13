@@ -17,7 +17,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.quarkus.redis.datasource.timeseries.AddArgs;
 import io.quarkus.redis.datasource.timeseries.Aggregation;
 import io.quarkus.redis.datasource.timeseries.AlterArgs;
-import io.quarkus.redis.datasource.timeseries.BucketTimestamp;
 import io.quarkus.redis.datasource.timeseries.CreateArgs;
 import io.quarkus.redis.datasource.timeseries.DuplicatePolicy;
 import io.quarkus.redis.datasource.timeseries.Filter;
@@ -407,7 +406,7 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
         res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
                 new MRangeArgs().withLabels()
-                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).bucketTimestamp(BucketTimestamp.HIGH)
+                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000))
                         .groupBy("type", Reducer.MIN),
                 Filter.withLabel("type", "stock"));
         assertThat(res).hasSize(1);
@@ -515,7 +514,7 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
         list = ts.tsRange(a, TimeSeriesRange.fromTimeSeries(), new RangeArgs()
                 .align(10).count(2)
-                .aggregation(Aggregation.MIN, Duration.ofMillis(20)).bucketTimestamp(BucketTimestamp.MID));
+                .aggregation(Aggregation.MIN, Duration.ofMillis(20)));
         assertThat(list)
                 .hasSize(2)
                 .contains(new Sample(990, 100), new Sample(1010, 110));

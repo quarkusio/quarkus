@@ -120,6 +120,16 @@ public class LateBoundMDCProvider implements MDCProvider {
     }
 
     @Override
+    public boolean isEmpty() {
+        if (delegate == null) {
+            Map<String, Object> currentMap = threadLocalMap.get();
+            return currentMap == null || currentMap.isEmpty();
+        } else {
+            return delegate.isEmpty();
+        }
+    }
+
+    @Override
     public void clear() {
         if (delegate == null) {
             Map<String, Object> map = threadLocalMap.get();

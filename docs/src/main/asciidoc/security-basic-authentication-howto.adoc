@@ -8,7 +8,7 @@ Enable xref:security-basic-authentication.adoc[Basic authentication] for your Qu
 
 == Prerequisites
 
-* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as link:{url-quarkusio-guides}security-jdbc[Elytron JDBC].
+* You have installed at least one extension that provides an `IdentityProvider` based on username and password, such as xref:security-jdbc.adoc[Elytron JDBC].
 
 == Procedure
 

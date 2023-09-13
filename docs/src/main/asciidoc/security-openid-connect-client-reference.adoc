@@ -766,8 +766,8 @@ Add the following dependencies to your test project:
 [source,xml]
 ----
 <dependency>
-    <groupId>com.github.tomakehurst</groupId>
-    <artifactId>wiremock-jre8</artifactId>
+    <groupId>org.wiremock</groupId>
+    <artifactId>wiremock</artifactId>
     <scope>test</scope>
 </dependency>
 ----

@@ -1,9 +1,6 @@
 package io.quarkus.smallrye.health.runtime;
 
-import jakarta.annotation.Priority;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
-import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
@@ -19,13 +16,14 @@ import io.vertx.core.Vertx;
  * Quarkus specific health check factory that runs blocking and reactive
  * health checks with different executors provided by {@link MutinyHelper}.
  */
-@ApplicationScoped
-@Alternative
-@Priority(1)
+@Singleton
 public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {
 
-    @Inject
-    Vertx vertx;
+    private final Vertx vertx;
+
+    public QuarkusAsyncHealthCheckFactory(Vertx vertx) {
+        this.vertx = vertx;
+    }
 
     @Override
     public Uni<HealthCheckResponse> callSync(HealthCheck healthCheck) {

@@ -42,7 +42,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { GlobalDevServicesConfig.Enabled.class })
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
-    private static final String REDIS_7_ALPINE = "docker.io/redis:7-alpine";
+    private static final String REDIS_IMAGE = "docker.io/redis:7";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
 
@@ -171,8 +171,8 @@ public class DevServicesRedisProcessor {
             return null;
         }
 
-        DockerImageName dockerImageName = DockerImageName.parse(devServicesConfig.imageName().orElse(REDIS_7_ALPINE))
-                .asCompatibleSubstituteFor(REDIS_7_ALPINE);
+        DockerImageName dockerImageName = DockerImageName.parse(devServicesConfig.imageName().orElse(REDIS_IMAGE))
+                .asCompatibleSubstituteFor(REDIS_IMAGE);
 
         Supplier<RunningDevService> defaultRedisServerSupplier = () -> {
             QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, devServicesConfig.port(),

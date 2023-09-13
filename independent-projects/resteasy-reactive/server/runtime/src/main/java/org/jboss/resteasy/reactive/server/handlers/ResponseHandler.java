@@ -195,10 +195,13 @@ public class ResponseHandler implements ServerRestHandler {
         if (response.hasEntity()) {
             b.entity(response.getEntity());
         }
-        for (String headerName : response.getHeaders().keySet()) {
-            List<Object> headerValues = response.getHeaders().get(headerName);
-            for (Object headerValue : headerValues) {
-                b.header(headerName, headerValue);
+        var headers = response.getHeaders();
+        if (headers != null) {
+            for (String headerName : headers.keySet()) {
+                List<Object> headerValues = headers.get(headerName);
+                for (Object headerValue : headerValues) {
+                    b.header(headerName, headerValue);
+                }
             }
         }
         return (ResponseBuilderImpl) b;

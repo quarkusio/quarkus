@@ -26,13 +26,15 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 
-import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.ExtFormatter;
 import org.jboss.logmanager.LogContext;
+import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.Logger;
 import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
 import org.jboss.logmanager.filters.AllFilter;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.formatters.TextBannerFormatter;
 import org.jboss.logmanager.handlers.AsyncHandler;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
@@ -266,7 +268,7 @@ public class LoggingSetupRecorder {
         }
         addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-        InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+        InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
         return shutdownNotifier;
     }
 
@@ -362,7 +364,7 @@ public class LoggingSetupRecorder {
         }
         addNamedHandlersToRootHandlers(config.handlers, namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
-        InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+        InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
     }
 
     private boolean shouldCreateNamedHandlers(LogConfig logConfig,
@@ -556,21 +558,13 @@ public class LoggingSetupRecorder {
                 bannerSupplier = possibleBannerSupplier.getValue().get();
             }
             if (ColorSupport.isColorEnabled(consoleRuntimeConfig, config)) {
+                formatter = new ColorPatternFormatter(config.darken, config.format);
                 color = true;
-                ColorPatternFormatter colorPatternFormatter = new ColorPatternFormatter(config.darken,
-                        config.format);
-                if (bannerSupplier != null) {
-                    formatter = new BannerFormatter(colorPatternFormatter, true, bannerSupplier);
-                } else {
-                    formatter = colorPatternFormatter;
-                }
             } else {
-                PatternFormatter patternFormatter = new PatternFormatter(config.format);
-                if (bannerSupplier != null) {
-                    formatter = new BannerFormatter(patternFormatter, false, bannerSupplier);
-                } else {
-                    formatter = patternFormatter;
-                }
+                formatter = new PatternFormatter(config.format);
+            }
+            if (bannerSupplier != null) {
+                formatter = new TextBannerFormatter(bannerSupplier, ExtFormatter.wrap(formatter, false));
             }
         }
         final ConsoleHandler consoleHandler = new ConsoleHandler(

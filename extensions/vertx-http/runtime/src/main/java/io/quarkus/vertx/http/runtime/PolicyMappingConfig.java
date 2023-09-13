@@ -3,13 +3,19 @@ package io.quarkus.vertx.http.runtime;
 import java.util.List;
 import java.util.Optional;
 
-public interface PolicyMappingConfig {
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
+
+@ConfigGroup
+public class PolicyMappingConfig {
+
     /**
      * Determines whether the entire permission set is enabled, or not.
      *
      * By default, if the permission set is defined, it is enabled.
      */
-    Optional<Boolean> enabled();
+    @ConfigItem
+    public Optional<Boolean> enabled;
 
     /**
      * The HTTP policy that this permission set is linked to.
@@ -17,7 +23,8 @@ public interface PolicyMappingConfig {
      * There are 3 built in policies: permit, deny and authenticated. Role based
      * policies can be defined, and extensions can add their own policies.
      */
-    String policy();
+    @ConfigItem
+    public String policy;
 
     /**
      * The methods that this permission set applies to. If this is not set then they apply to all methods.
@@ -31,7 +38,8 @@ public interface PolicyMappingConfig {
      * and no other permissions are configured PUT requests to /admin will be denied.
      *
      */
-    Optional<List<String>> methods();
+    @ConfigItem
+    public Optional<List<String>> methods;
 
     /**
      * The paths that this permission check applies to. If the path ends in /* then this is treated
@@ -43,11 +51,13 @@ public interface PolicyMappingConfig {
      * over matches without methods set, otherwise the most restrictive permissions are applied.
      *
      */
-    Optional<List<String>> paths();
+    @ConfigItem
+    public Optional<List<String>> paths;
 
     /**
      * Path specific authentication mechanism which must be used to authenticate a user.
      * It needs to match {@link HttpCredentialTransport} authentication scheme such as 'basic', 'bearer', 'form', etc.
      */
-    Optional<String> authMechanism();
+    @ConfigItem
+    public Optional<String> authMechanism;
 }

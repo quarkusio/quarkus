@@ -60,8 +60,6 @@ updates:
       - dependency-name: io.smallrye.common:*
       - dependency-name: io.smallrye.config:*
       - dependency-name: io.smallrye.reactive:*
-      # Swagger-UI
-      - dependency-name: org.webjars:swagger-ui
       # RX Java 2
       - dependency-name: io.reactivex.rxjava2:rxjava
       # Test dependencies
@@ -88,7 +86,8 @@ updates:
       # Agroal
       - dependency-name: io.agroal:*
       # WireMock
-      - dependency-name: com.github.tomakehurst:wiremock-jre8-standalone
+      - dependency-name: org.wiremock:wiremock
+      - dependency-name: org.wiremock:wiremock-standalone
       - dependency-name: uk.co.automatictester:wiremock-maven-plugin
       # Picocli
       - dependency-name: info.picocli:*
@@ -141,11 +140,8 @@ updates:
       - dependency-name: org.eclipse.microprofile.opentracing:microprofile-opentracing-tck*
       - dependency-name: org.eclipse.microprofile.rest.client:microprofile-rest-client-tck
       # Dev UI web dependencies
-      - dependency-name: org.webjars:bootstrap
-      - dependency-name: org.webjars:font-awesome
-      - dependency-name: org.webjars:jquery
-      - dependency-name: org.webjars:codemirror
-      - dependency-name: org.webjars.npm:mermaid
+      - dependency-name: org.mvnpm:*
+      - dependency-name: org.mvnpm.*:*
       # Elasticsearch - we do not update the high level client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
       - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer

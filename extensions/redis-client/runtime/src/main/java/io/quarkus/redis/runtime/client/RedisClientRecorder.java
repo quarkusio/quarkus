@@ -65,9 +65,8 @@ public class RedisClientRecorder {
 
     private static void _registerCodecs() {
         Instance<Codec> codecs = CDI.current().select(Codec.class);
-        if (codecs.isResolvable()) {
-            Codecs.register(codecs.stream());
-        }
+
+        Codecs.register(codecs.stream());
     }
 
     public void _initialize(io.vertx.core.Vertx vertx, Set<String> names) {

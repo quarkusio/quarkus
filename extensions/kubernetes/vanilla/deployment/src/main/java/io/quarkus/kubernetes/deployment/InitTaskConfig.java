@@ -1,5 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -14,6 +16,14 @@ public class InitTaskConfig {
     /**
      * The init task image to use by the init-container.
      */
+    @Deprecated
+    @ConfigItem
+    public Optional<String> image;
+
+    /**
+     * The init task image to use by the init-container.
+     */
     @ConfigItem(defaultValue = "groundnuty/k8s-wait-for:no-root-v1.7")
-    public String image;
+    public String waitForImage;
+
 }

@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -9,6 +10,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
@@ -34,6 +37,8 @@ import io.vertx.mutiny.redis.client.Response;
  * Do not use it explicitly from your Quarkus application.
  */
 public class RedisCacheImpl extends AbstractCache implements RedisCache {
+
+    private static final Logger log = Logger.getLogger(RedisCacheImpl.class);
 
     private static final Map<String, Class<?>> PRIMITIVE_TO_CLASS_MAPPING = Map.of(
             "int", Integer.class,
@@ -123,6 +128,19 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         return new String(marshaller.encode(key), StandardCharsets.UTF_8);
     }
 
+    private <K, V> Uni<V> computeValue(K key, Function<K, V> valueLoader, boolean isWorkerThread) {
+        if (isWorkerThread) {
+            return Uni.createFrom().item(new Supplier<V>() {
+                @Override
+                public V get() {
+                    return valueLoader.apply(key);
+                }
+            }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
+        } else {
+            return Uni.createFrom().item(valueLoader.apply(key));
+        }
+    }
+
     @Override
     public <K, V> Uni<V> get(K key, Class<V> clazz, Function<K, V> valueLoader) {
         // With optimistic locking:
@@ -148,17 +166,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                 if (cached != null) {
                                     return Uni.createFrom().item(new StaticSupplier<>(cached));
                                 } else {
-                                    Uni<V> uni;
-                                    if (isWorkerThread) {
-                                        uni = Uni.createFrom().item(new Supplier<V>() {
-                                            @Override
-                                            public V get() {
-                                                return valueLoader.apply(key);
-                                            }
-                                        }).runSubscriptionOn(MutinyHelper.blockingExecutor(vertx.getDelegate()));
-                                    } else {
-                                        uni = Uni.createFrom().item(valueLoader.apply(key));
-                                    }
+                                    Uni<V> uni = computeValue(key, valueLoader, isWorkerThread);
 
                                     return uni.onItem().call(new Function<V, Uni<?>>() {
                                         @Override
@@ -185,7 +193,15 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                             }
                         }));
             }
-        });
+        })
+
+                .onFailure(ConnectException.class).recoverWithUni(new Function<Throwable, Uni<? extends V>>() {
+                    @Override
+                    public Uni<? extends V> apply(Throwable e) {
+                        log.warn("Unable to connect to Redis, recomputing cached value", e);
+                        return computeValue(key, valueLoader, isWorkerThread);
+                    }
+                });
     }
 
     @Override
@@ -215,7 +231,11 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                             }
                         });
             }
-        });
+        })
+                .onFailure(ConnectException.class).recoverWithUni(e -> {
+                    log.warn("Unable to connect to Redis, recomputing cached value", e);
+                    return valueLoader.apply(key);
+                });
     }
 
     @Override

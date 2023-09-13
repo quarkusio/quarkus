@@ -217,7 +217,8 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private boolean isCsrfTokenRequired(RoutingContext routing, CsrfReactiveConfig config) {
-        return config.createTokenPath.isPresent() ? config.createTokenPath.get().contains(routing.request().path()) : true;
+        return config.createTokenPath
+                .map(value -> value.contains(routing.normalizedPath())).orElse(true);
     }
 
     private void createCookie(String csrfToken, RoutingContext routing, CsrfReactiveConfig config) {

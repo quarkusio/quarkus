@@ -1,10 +1,13 @@
 package io.quarkus.it.csrf;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.net.URL;
+import java.time.Duration;
 import java.util.Base64;
 
 import org.junit.jupiter.api.Test;
@@ -17,11 +20,19 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
 public class CsrfReactiveTest {
+
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+
+    @TestHTTPResource
+    URL url;
 
     @Test
     public void testCsrfTokenInForm() throws Exception {
@@ -217,5 +228,47 @@ public class CsrfReactiveTest {
 
     private String basicAuth(String user, String password) {
         return "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes());
+    }
+
+    private void assurePostFormPath(io.vertx.ext.web.client.WebClient vertxWebClient, String path,
+            int expectedStatus, Cookie csrfCookie, String csrfToken, String responseBody) {
+        var req = vertxWebClient.post(url.getPort(), url.getHost(), path);
+        req.basicAuthentication("alice", "alice");
+        req.putHeader("X-CSRF-TOKEN", csrfToken);
+        req.putHeader("Cookie", csrfCookie.getName() + "=" + csrfCookie.getValue());
+
+        var result = req.sendForm(io.vertx.core.MultiMap.caseInsensitiveMultiMap()
+                .add("csrf-header", "X-CSRF-TOKEN"));
+
+        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        assertEquals(expectedStatus, result.result().statusCode(), path);
+        if (responseBody != null) {
+            assertEquals(responseBody, result.result().bodyAsString(), path);
+        }
+    }
+
+    private void assurePostJsonPath(io.vertx.ext.web.client.WebClient vertxWebClient, String path,
+            int expectedStatus, Cookie csrfCookie, String csrfToken, String responseBody) {
+        var req = vertxWebClient.post(url.getPort(), url.getHost(), path);
+        req.basicAuthentication("alice", "alice");
+        req.putHeader("X-CSRF-TOKEN", csrfToken);
+        req.putHeader("Cookie", csrfCookie.getName() + "=" + csrfCookie.getValue());
+
+        var result = req.sendJson(new JsonObject("{}"));
+
+        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        assertEquals(expectedStatus, result.result().statusCode(), path);
+        if (responseBody != null) {
+            assertEquals(responseBody, result.result().bodyAsString(), path);
+        }
+    }
+
+    private static void closeVertxWebClient(io.vertx.ext.web.client.WebClient vertxWebClient, Vertx vertx) {
+        if (vertxWebClient != null) {
+            vertxWebClient.close();
+        }
+        if (vertx != null) {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+        }
     }
 }

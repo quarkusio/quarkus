@@ -27,14 +27,13 @@ public final class QuarkusUpdates {
             BuildTool buildTool, String updateRecipesVersion,
             ProjectUpdateRequest request)
             throws IOException {
-        List<TopExtensionDependency> TopExtensionDependencyList = request.projectExtensionsUpdateInfo
-                .getSimpleVersionUpdates().stream().map(extension -> extension.getCurrentDep())
-                .collect(Collectors.toList());
+
         final FetchResult result = QuarkusUpdatesRepository.fetchRecipes(log, artifactResolver, buildTool,
                 updateRecipesVersion,
                 request.currentVersion,
                 request.targetVersion,
-                TopExtensionDependencyList);
+                request.projectExtensionsUpdateInfo
+                        .getSimpleVersionUpdates());
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
                 .buildTool(request.buildTool);
         if (request.updateJavaVersion.isPresent()) {

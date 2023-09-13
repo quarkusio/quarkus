@@ -21,6 +21,7 @@ class HelloWorldEndpointTestBase {
         assertThat(invoked).containsExactlyInAnyOrder(
                 "io.quarkus.grpc.examples.interceptors.ClientInterceptors$TypeTarget",
                 "io.quarkus.grpc.examples.interceptors.ClientInterceptors$MethodTarget",
+                "io.quarkus.grpc.examples.interceptors.PriorityImplInterceptor",
                 "io.quarkus.grpc.examples.interceptors.ServerInterceptors$TypeTarget",
                 "io.quarkus.grpc.examples.interceptors.ServerInterceptors$MethodTarget");
 

@@ -53,34 +53,41 @@ final class GrpcInterceptors {
     private static Set<DotName> allGlobalInterceptors(IndexView index, DotName interceptorInterface) {
         Set<DotName> result = new HashSet<>();
         for (AnnotationInstance instance : index.getAnnotations(GLOBAL_INTERCEPTOR)) {
-            ClassInfo classInfo = classInfo(index, instance.target());
-            if (isAssignableFrom(index, classInfo, interceptorInterface)) {
-                result.add(classInfo.name());
+            DotName className = className(instance.target());
+            if (isAssignableFrom(index, className, interceptorInterface)) {
+                result.add(className);
             }
         }
         return result;
     }
 
-    private static ClassInfo classInfo(IndexView index, AnnotationTarget target) {
+    private static DotName className(AnnotationTarget target) {
         if (target.kind() == CLASS) {
-            return target.asClass();
+            return target.asClass().name();
         } else if (target.kind() == METHOD) {
-            return index.getClassByName(target.asMethod().returnType().name());
+            return target.asMethod().returnType().name();
         }
         return null;
     }
 
-    private static boolean isAssignableFrom(IndexView index, ClassInfo classInfo, DotName interceptorInterface) {
-        if (classInfo == null) {
+    private static boolean isAssignableFrom(IndexView index, DotName className, DotName interceptorInterface) {
+        if (className == null) {
             return false;
         }
-        if (classInfo.interfaceNames().contains(interceptorInterface)) {
-            return true;
+
+        ClassInfo classInfo = index.getClassByName(className);
+        List<DotName> interfaceNames = classInfo.interfaceNames();
+        for (DotName in : interfaceNames) {
+            if (in.equals(interceptorInterface)) {
+                return true;
+            }
+            boolean result = isAssignableFrom(index, in, interceptorInterface);
+            if (result) {
+                return true;
+            }
         }
-        if (classInfo.superName() == null) {
-            return false;
-        }
-        return isAssignableFrom(index, index.getClassByName(classInfo.superName()), interceptorInterface);
+
+        return isAssignableFrom(index, classInfo.superName(), interceptorInterface);
     }
 
 }

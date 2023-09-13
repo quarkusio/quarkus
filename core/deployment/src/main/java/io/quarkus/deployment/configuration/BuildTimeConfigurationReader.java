@@ -1013,8 +1013,8 @@ public final class BuildTimeConfigurationReader {
          * properties in all profiles (active or not), so it is safe to fall back to different default on another
          * profile.
          * <br>
-         * We also filter the properties coming from System or Env with the registered roots, because we don't want to
-         * record properties set by the compiling JVM (or other properties that are only related to the build).
+         * We also filter the properties coming from System, Env or Build with the registered roots, because we don't
+         * want to record properties set by the compiling JVM (or other properties that are only related to the build).
          */
         private Set<String> getAllProperties(final Set<String> registeredRoots) {
             Set<String> properties = new HashSet<>();
@@ -1023,7 +1023,8 @@ public final class BuildTimeConfigurationReader {
             }
 
             for (ConfigSource configSource : config.getConfigSources()) {
-                if (configSource instanceof SysPropConfigSource || configSource instanceof EnvConfigSource) {
+                if (configSource instanceof SysPropConfigSource || configSource instanceof EnvConfigSource
+                        || "PropertiesConfigSource[source=Build system]".equals(configSource.getName())) {
                     for (String property : configSource.getPropertyNames()) {
                         NameIterator ni = new NameIterator(property);
                         if (ni.hasNext() && PropertiesUtil.isPropertyInRoot(registeredRoots, ni)) {

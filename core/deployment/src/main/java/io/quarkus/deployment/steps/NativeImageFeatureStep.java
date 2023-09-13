@@ -49,7 +49,7 @@ public class NativeImageFeatureStep {
     @BuildStep
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> features) {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport
-        // prior to 23.1 the class was provided by org.graalvm.sdk module and with 23.1 onwards, it's provided by org.graalvm.nativimage instead
+        // prior to 23.1 the class was provided by org.graalvm.sdk module and with 23.1 onwards, it's provided by org.graalvm.nativeimage instead
         features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl", null,
                 GraalVM.Version.VERSION_23_1_0));
         features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage", "org.graalvm.nativeimage.impl",

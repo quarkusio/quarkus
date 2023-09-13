@@ -354,6 +354,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                                                                         t.getCause())));
                                             }
                                             // Token has expired, try to refresh
+                                            if (isRpInitiatedLogout(context, configContext)) {
+                                                LOG.debug("Session has expired, performing an RP initiated logout");
+                                                fireEvent(SecurityEvent.Type.OIDC_LOGOUT_RP_INITIATED_SESSION_EXPIRED,
+                                                        Map.of(SecurityEvent.SESSION_TOKENS_PROPERTY, session));
+                                                return Uni.createFrom().item((SecurityIdentity) null)
+                                                        .call(() -> buildLogoutRedirectUriUni(context, configContext,
+                                                                currentIdToken));
+                                            }
                                             if (session.getRefreshToken() == null) {
                                                 LOG.debug(
                                                         "Token has expired, token refresh is not possible because the refresh token is null");
@@ -980,6 +988,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     private void fireEvent(SecurityEvent.Type eventType, SecurityIdentity securityIdentity) {
         if (resolver.isSecurityEventObserved()) {
             resolver.getSecurityEvent().fire(new SecurityEvent(eventType, securityIdentity));
+        }
+    }
+
+    private void fireEvent(SecurityEvent.Type eventType, Map<String, Object> properties) {
+        if (resolver.isSecurityEventObserved()) {
+            resolver.getSecurityEvent().fire(new SecurityEvent(eventType, properties));
         }
     }
 

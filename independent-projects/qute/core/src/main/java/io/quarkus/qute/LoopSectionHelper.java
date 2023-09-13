@@ -3,6 +3,8 @@ package io.quarkus.qute;
 import static io.quarkus.qute.Parameter.EMPTY;
 
 import java.lang.reflect.Array;
+import java.util.AbstractCollection;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,27 +73,31 @@ public class LoopSectionHelper implements SectionHelper {
     }
 
     private static int extractSize(Object it) {
-        if (it instanceof Collection) {
-            return ((Collection<?>) it).size();
-        } else if (it instanceof Map) {
-            return ((Map<?, ?>) it).size();
+        // Note that we intentionally use "instanceof" to test interfaces as the last resort in order to mitigate the "type pollution"
+        // See https://github.com/RedHatPerf/type-pollution-agent for more information
+        if (it instanceof AbstractCollection) {
+            return ((AbstractCollection<?>) it).size();
+        } else if (it instanceof AbstractMap) {
+            return ((AbstractMap<?, ?>) it).size();
         } else if (it.getClass().isArray()) {
             return Array.getLength(it);
         } else if (it instanceof Integer) {
             return ((Integer) it);
+        } else if (it instanceof Collection) {
+            return ((Collection<?>) it).size();
+        } else if (it instanceof Map) {
+            return ((Map<?, ?>) it).size();
         }
         return 10;
     }
 
     private Iterator<?> extractIterator(Object it) {
-        if (it instanceof Iterable) {
-            return ((Iterable<?>) it).iterator();
-        } else if (it instanceof Iterator) {
-            return (Iterator<?>) it;
-        } else if (it instanceof Map) {
-            return ((Map<?, ?>) it).entrySet().iterator();
-        } else if (it instanceof Stream) {
-            return ((Stream<?>) it).sequential().iterator();
+        // Note that we intentionally use "instanceof" to test interfaces as the last resort in order to mitigate the "type pollution"
+        // See https://github.com/RedHatPerf/type-pollution-agent for more information
+        if (it instanceof AbstractCollection) {
+            return ((AbstractCollection<?>) it).iterator();
+        } else if (it instanceof AbstractMap) {
+            return ((AbstractMap<?, ?>) it).entrySet().iterator();
         } else if (it instanceof Integer) {
             return IntStream.rangeClosed(1, (Integer) it).iterator();
         } else if (it.getClass().isArray()) {
@@ -102,6 +108,14 @@ public class LoopSectionHelper implements SectionHelper {
                 elements.add(Array.get(it, i));
             }
             return elements.iterator();
+        } else if (it instanceof Iterable) {
+            return ((Iterable<?>) it).iterator();
+        } else if (it instanceof Iterator) {
+            return (Iterator<?>) it;
+        } else if (it instanceof Map) {
+            return ((Map<?, ?>) it).entrySet().iterator();
+        } else if (it instanceof Stream) {
+            return ((Stream<?>) it).sequential().iterator();
         } else {
             TemplateException.Builder builder;
             if (Results.isNotFound(it)) {

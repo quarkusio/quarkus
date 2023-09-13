@@ -6,9 +6,9 @@ import java.util.function.Consumer;
 /**
  * Node of a result tree.
  */
-public interface ResultNode {
+public abstract class ResultNode {
 
-    static CompletionStage<ResultNode> NOOP = CompletedStage.of(new ResultNode() {
+    public static CompletionStage<ResultNode> NOOP = CompletedStage.of(new ResultNode() {
         @Override
         public void process(Consumer<String> resultConsumer) {
         }
@@ -18,6 +18,6 @@ public interface ResultNode {
      *
      * @param resultConsumer
      */
-    void process(Consumer<String> resultConsumer);
+    public abstract void process(Consumer<String> resultConsumer);
 
 }

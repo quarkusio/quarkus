@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 /**
  * Static text.
  */
-public class TextNode implements TemplateNode, ResultNode {
+public class TextNode extends ResultNode implements TemplateNode {
 
     private final CompletedStage<ResultNode> result;
     private final String value;

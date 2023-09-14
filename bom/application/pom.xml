@@ -198,7 +198,7 @@
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.4</picocli.version>
         <google-cloud-functions.version>1.1.0</google-cloud-functions.version>
-        <commons-compress.version>1.23.0</commons-compress.version>
+        <commons-compress.version>1.24.0</commons-compress.version>
         <commons-text.version>1.10.0</commons-text.version>
         <gson.version>2.10.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>

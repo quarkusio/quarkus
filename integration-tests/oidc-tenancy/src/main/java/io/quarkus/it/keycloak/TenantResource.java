@@ -1,5 +1,8 @@
 package io.quarkus.it.keycloak;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -19,6 +22,8 @@ import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.vertx.ext.web.RoutingContext;
 
@@ -159,6 +164,19 @@ public class TenantResource {
             throw new OIDCException("Groups are not expected");
         }
         return tenant + ":" + getNameWebAppType(idToken.getName(), "preferred_username", "upn");
+    }
+
+    @GET
+    @Path("webapp2-scope-permissions")
+    @PermissionsAllowed({ "openid", "email", "profile" })
+    public String scopePermissionsWebApp2(@PathParam("tenant") String tenant) {
+        if (!tenant.equals("tenant-web-app2")) {
+            throw new OIDCException("Wrong tenant");
+        }
+        return Arrays
+                .stream(accessToken.<String> getClaim(OidcConstants.TOKEN_SCOPE).split(" "))
+                .sorted(String::compareTo)
+                .collect(Collectors.joining(" "));
     }
 
     private String getNameWebAppType(String name,

@@ -9,6 +9,7 @@ import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/tenant-opaque")
@@ -40,6 +41,20 @@ public class TenantOpaqueResource {
         return "tenant-oidc-opaque:" + identity.getPrincipal().getName()
                 + ":" + tokenIntrospection.getString("scope")
                 + ":" + tokenIntrospection.getString("email");
+    }
+
+    @GET
+    @PermissionsAllowed("user")
+    @Path("tenant-oidc/api/user-permission")
+    public String userPermission() {
+        return "user";
+    }
+
+    @GET
+    @PermissionsAllowed("admin")
+    @Path("tenant-oidc/api/admin-permission")
+    public String adminPermission() {
+        return "admin";
     }
 
     @GET

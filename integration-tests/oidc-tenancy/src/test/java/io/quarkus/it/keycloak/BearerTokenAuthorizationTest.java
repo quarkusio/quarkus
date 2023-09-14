@@ -106,8 +106,18 @@ public class BearerTokenAuthorizationTest {
 
     @Test
     public void testResolveTenantIdentifierWebApp2() throws IOException {
+        testTenantWebApp2("webapp2", "tenant-web-app2:alice");
+    }
+
+    @Test
+    public void testScopePermissionsFromAccessToken() throws IOException {
+        // source of permissions is access token
+        testTenantWebApp2("webapp2-scope-permissions", "email openid profile");
+    }
+
+    private void testTenantWebApp2(String webApp2SubPath, String expectedResult) throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/webapp2");
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app2/api/user/" + webApp2SubPath);
             // State cookie is available but there must be no saved path parameter
             // as the tenant-web-app configuration does not set a redirect-path property
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app2"));
@@ -116,7 +126,7 @@ public class BearerTokenAuthorizationTest {
             loginForm.getInputByName("username").setValueAttribute("alice");
             loginForm.getInputByName("password").setValueAttribute("alice");
             page = loginForm.getInputByName("login").click();
-            assertEquals("tenant-web-app2:alice", page.getBody().asNormalizedText());
+            assertEquals(expectedResult, page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
         }
     }
@@ -233,6 +243,19 @@ public class BearerTokenAuthorizationTest {
                 .then()
                 .statusCode(200)
                 .body(equalTo("alice:service"));
+    }
+
+    @Test
+    public void testDefaultClientScopeAsPermission() {
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "hybrid"))
+                .when().get("/tenants/tenant-hybrid-webapp-service/api/mp-scope")
+                .then()
+                .statusCode(200)
+                .body(equalTo("microprofile-jwt"));
+        RestAssured.given().auth().oauth2(getAccessToken("alice", "hybrid"))
+                .when().get("/tenants/tenant-hybrid-webapp-service/api/non-existent-scope")
+                .then()
+                .statusCode(403);
     }
 
     @Test
@@ -634,6 +657,23 @@ public class BearerTokenAuthorizationTest {
                 .when().get("/tenant/tenant-requiredclaim/api/user")
                 .then()
                 .statusCode(401);
+    }
+
+    @Test
+    public void testOpaqueTokenScopePermission() {
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().post("/cache/clear").then().body(equalTo("0"));
+
+        // verify introspection scopes are mapped to the StringPermissions
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+                .when().get("/tenant-opaque/tenant-oidc/api/user-permission")
+                .then()
+                .statusCode(200)
+                .body(equalTo("user"));
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+                .when().get("/tenant-opaque/tenant-oidc/api/admin-permission")
+                .then()
+                .statusCode(403);
     }
 
     private String getAccessToken(String userName, String clientId) {

@@ -13,11 +13,13 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
 
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -43,27 +45,42 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class PgPoolRecorder {
 
-    public RuntimeValue<PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
+    private static final TypeLiteral<Instance<PgPoolCreator>> TYPE_LITERAL = new TypeLiteral<>() {
+    };
+
+    public Function<SyntheticCreationalContext<PgPool>, PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
             Supplier<Integer> eventLoopCount,
             String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
             DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
             ShutdownContext shutdown) {
+        return new Function<>() {
+            @Override
+            public PgPool apply(SyntheticCreationalContext<PgPool> context) {
+                PgPool pgPool = initialize((VertxInternal) vertx.getValue(),
+                        eventLoopCount.get(),
+                        dataSourceName,
+                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
+                        dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                        dataSourcesReactivePostgreSQLConfig.dataSources().get(dataSourceName).reactive().postgresql(),
+                        context);
 
-        PgPool pgPool = initialize((VertxInternal) vertx.getValue(),
-                eventLoopCount.get(),
-                dataSourceName,
-                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactivePostgreSQLConfig.dataSources().get(dataSourceName).reactive().postgresql());
-
-        shutdown.addShutdownTask(pgPool::close);
-        return new RuntimeValue<>(pgPool);
+                shutdown.addShutdownTask(pgPool::close);
+                return pgPool;
+            }
+        };
     }
 
-    public RuntimeValue<io.vertx.mutiny.pgclient.PgPool> mutinyPgPool(RuntimeValue<PgPool> pgPool) {
-        return new RuntimeValue<>(io.vertx.mutiny.pgclient.PgPool.newInstance(pgPool.getValue()));
+    public Function<SyntheticCreationalContext<io.vertx.mutiny.pgclient.PgPool>, io.vertx.mutiny.pgclient.PgPool> mutinyPgPool(
+            Function<SyntheticCreationalContext<PgPool>, PgPool> function) {
+        return new Function<>() {
+            @SuppressWarnings("unchecked")
+            @Override
+            public io.vertx.mutiny.pgclient.PgPool apply(SyntheticCreationalContext context) {
+                return io.vertx.mutiny.pgclient.PgPool.newInstance(function.apply(context));
+            }
+        };
     }
 
     private PgPool initialize(VertxInternal vertx,
@@ -71,14 +88,15 @@ public class PgPoolRecorder {
             String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
+            DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
+            SyntheticCreationalContext<PgPool> context) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactivePostgreSQLConfig);
         List<PgConnectOptions> pgConnectOptionsList = toPgConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig);
         Supplier<Future<PgConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, pgConnectOptionsList,
                 dataSourceRuntimeConfig);
-        return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName, databasesSupplier);
+        return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName, databasesSupplier, context);
     }
 
     private Supplier<Future<PgConnectOptions>> toDatabasesSupplier(Vertx vertx, List<PgConnectOptions> pgConnectOptionsList,
@@ -220,12 +238,13 @@ public class PgPoolRecorder {
     }
 
     private PgPool createPool(Vertx vertx, PoolOptions poolOptions, List<PgConnectOptions> pgConnectOptionsList,
-            String dataSourceName, Supplier<Future<PgConnectOptions>> databases) {
+            String dataSourceName, Supplier<Future<PgConnectOptions>> databases,
+            SyntheticCreationalContext<PgPool> context) {
         Instance<PgPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = Arc.container().select(PgPoolCreator.class);
+            instance = context.getInjectedReference(TYPE_LITERAL);
         } else {
-            instance = Arc.container().select(PgPoolCreator.class,
+            instance = context.getInjectedReference(TYPE_LITERAL,
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {

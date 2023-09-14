@@ -39,6 +39,7 @@ import jakarta.inject.Singleton;
 import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -60,6 +61,7 @@ import org.jboss.resteasy.reactive.client.interceptors.ClientGZIPDecodingInterce
 import org.jboss.resteasy.reactive.client.spi.MissingMessageBodyReaderErrorMessageContextualizer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.CustomScopeAnnotationsBuildItem;
@@ -331,12 +333,15 @@ class RestClientReactiveProcessor {
                 }
             }
 
-            Map<String, GeneratedClassResult> generatedProviders = new HashMap<>();
-            populateClientExceptionMapperFromAnnotations(generatedClasses, reflectiveClasses, index, generatedProviders);
-            populateClientRedirectHandlerFromAnnotations(generatedClasses, reflectiveClasses, index, generatedProviders);
+            MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
+            populateClientExceptionMapperFromAnnotations(generatedClasses, reflectiveClasses, index)
+                    .forEach(generatedProviders::add);
+            populateClientRedirectHandlerFromAnnotations(generatedClasses, reflectiveClasses, index)
+                    .forEach(generatedProviders::add);
             for (AnnotationToRegisterIntoClientContextBuildItem annotation : annotationsToRegisterIntoClientContext) {
-                populateClientProviderFromAnnotations(annotation, generatedClasses, reflectiveClasses,
-                        index, generatedProviders);
+                populateClientProviderFromAnnotations(annotation, generatedClasses, reflectiveClasses, index)
+                        .forEach(generatedProviders::add);
+
             }
 
             addGeneratedProviders(index, constructor, annotationsByClassName, generatedProviders);
@@ -551,77 +556,83 @@ class RestClientReactiveProcessor {
         }
     }
 
-    private void populateClientExceptionMapperFromAnnotations(BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index,
-            Map<String, GeneratedClassResult> generatedProviders) {
+    private Map<String, GeneratedClassResult> populateClientExceptionMapperFromAnnotations(
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index) {
 
+        var result = new HashMap<String, GeneratedClassResult>();
         ClientExceptionMapperHandler clientExceptionMapperHandler = new ClientExceptionMapperHandler(
                 new GeneratedClassGizmoAdaptor(generatedClasses, true));
         for (AnnotationInstance instance : index.getAnnotations(CLIENT_EXCEPTION_MAPPER)) {
-            GeneratedClassResult result = clientExceptionMapperHandler.generateResponseExceptionMapper(instance);
-            if (result == null) {
+            GeneratedClassResult classResult = clientExceptionMapperHandler.generateResponseExceptionMapper(instance);
+            if (classResult == null) {
                 continue;
             }
-            if (generatedProviders.containsKey(result.interfaceName)) {
+            if (result.containsKey(classResult.interfaceName)) {
                 throw new IllegalStateException("Only a single instance of '" + CLIENT_EXCEPTION_MAPPER
-                        + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
+                        + "' is allowed per REST Client interface. Offending class is '" + classResult.interfaceName + "'");
             }
-            generatedProviders.put(result.interfaceName, result);
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+            result.put(classResult.interfaceName, classResult);
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
                     .serialization(false).build());
         }
+        return result;
     }
 
-    private void populateClientRedirectHandlerFromAnnotations(BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index,
-            Map<String, GeneratedClassResult> generatedProviders) {
+    private Map<String, GeneratedClassResult> populateClientRedirectHandlerFromAnnotations(
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index) {
 
+        var result = new HashMap<String, GeneratedClassResult>();
         ClientRedirectHandler clientHandler = new ClientRedirectHandler(new GeneratedClassGizmoAdaptor(generatedClasses, true));
         for (AnnotationInstance instance : index.getAnnotations(CLIENT_REDIRECT_HANDLER)) {
-            GeneratedClassResult result = clientHandler.generateResponseExceptionMapper(instance);
-            if (result == null) {
+            GeneratedClassResult classResult = clientHandler.generateResponseExceptionMapper(instance);
+            if (classResult == null) {
                 continue;
             }
 
-            GeneratedClassResult existing = generatedProviders.get(result.interfaceName);
-            if (existing != null && existing.priority == result.priority) {
+            GeneratedClassResult existing = result.get(classResult.interfaceName);
+            if (existing != null && existing.priority == classResult.priority) {
                 throw new IllegalStateException("Only a single instance of '" + CLIENT_REDIRECT_HANDLER
                         + "' with the same priority is allowed per REST Client interface. "
-                        + "Offending class is '" + result.interfaceName + "'");
-            } else if (existing == null || existing.priority < result.priority) {
-                generatedProviders.put(result.interfaceName, result);
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+                        + "Offending class is '" + classResult.interfaceName + "'");
+            } else if (existing == null || existing.priority < classResult.priority) {
+                result.put(classResult.interfaceName, classResult);
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
                         .serialization(false).build());
             }
         }
+        return result;
     }
 
-    private void populateClientProviderFromAnnotations(AnnotationToRegisterIntoClientContextBuildItem annotationBuildItem,
+    private Map<String, GeneratedClassResult> populateClientProviderFromAnnotations(
+            AnnotationToRegisterIntoClientContextBuildItem annotationBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index,
-            Map<String, GeneratedClassResult> generatedProviders) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, IndexView index) {
 
+        var result = new HashMap<String, GeneratedClassResult>();
         ClientContextResolverHandler handler = new ClientContextResolverHandler(annotationBuildItem.getAnnotation(),
                 annotationBuildItem.getExpectedReturnType(),
                 new GeneratedClassGizmoAdaptor(generatedClasses, true));
         for (AnnotationInstance instance : index.getAnnotations(annotationBuildItem.getAnnotation())) {
-            GeneratedClassResult result = handler.generateContextResolver(instance);
-            if (result == null) {
+            GeneratedClassResult classResult = handler.generateContextResolver(instance);
+            if (classResult == null) {
                 continue;
             }
-            if (generatedProviders.containsKey(result.interfaceName)) {
+            if (result.containsKey(classResult.interfaceName)) {
                 throw new IllegalStateException("Only a single instance of '" + annotationBuildItem.getAnnotation()
-                        + "' is allowed per REST Client interface. Offending class is '" + result.interfaceName + "'");
+                        + "' is allowed per REST Client interface. Offending class is '" + classResult.interfaceName + "'");
             }
-            generatedProviders.put(result.interfaceName, result);
-            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(result.generatedClassName)
+            result.put(classResult.interfaceName, classResult);
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classResult.generatedClassName)
                     .serialization(false).build());
         }
+        return result;
     }
 
     private void addGeneratedProviders(IndexView index, MethodCreator constructor,
             Map<String, List<AnnotationInstance>> annotationsByClassName,
-            Map<String, GeneratedClassResult> generatedProviders) {
+            Map<String, List<GeneratedClassResult>> generatedProviders) {
         for (Map.Entry<String, List<AnnotationInstance>> annotationsForClass : annotationsByClassName.entrySet()) {
             ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
             for (AnnotationInstance value : annotationsForClass.getValue()) {
@@ -641,18 +652,24 @@ class RestClientReactiveProcessor {
             if (generatedProviders.containsKey(ifaceName)) {
                 // remove the interface from the generated provider since it's going to be handled now
                 // the remaining entries will be handled later
-                GeneratedClassResult result = generatedProviders.remove(ifaceName);
-                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(result.generatedClassName),
-                        constructor.load(result.priority));
+                List<GeneratedClassResult> providers = generatedProviders.remove(ifaceName);
+                for (GeneratedClassResult classResult : providers) {
+                    constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(classResult.generatedClassName),
+                            constructor.load(classResult.priority));
+                }
+
             }
             addProviders(constructor, ifaceName, map);
         }
 
-        for (Map.Entry<String, GeneratedClassResult> entry : generatedProviders.entrySet()) {
+        for (Map.Entry<String, List<GeneratedClassResult>> entry : generatedProviders.entrySet()) {
             ResultHandle map = constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class));
-            constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(entry.getValue().generatedClassName),
-                    constructor.load(entry.getValue().priority));
-            addProviders(constructor, entry.getKey(), map);
+            for (GeneratedClassResult classResult : entry.getValue()) {
+                constructor.invokeInterfaceMethod(MAP_PUT, map, constructor.loadClass(classResult.generatedClassName),
+                        constructor.load(classResult.priority));
+                addProviders(constructor, entry.getKey(), map);
+            }
+
         }
     }
 

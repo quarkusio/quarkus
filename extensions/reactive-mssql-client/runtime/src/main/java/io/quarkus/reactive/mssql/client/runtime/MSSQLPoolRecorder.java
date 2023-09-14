@@ -12,13 +12,15 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -43,9 +45,12 @@ import io.vertx.sqlclient.impl.Utils;
 @Recorder
 public class MSSQLPoolRecorder {
 
+    private static final TypeLiteral<Instance<MSSQLPoolCreator>> TYPE_LITERAL = new TypeLiteral<>() {
+    };
+
     private static final Logger log = Logger.getLogger(MSSQLPoolRecorder.class);
 
-    public RuntimeValue<MSSQLPool> configureMSSQLPool(RuntimeValue<Vertx> vertx,
+    public Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> configureMSSQLPool(RuntimeValue<Vertx> vertx,
             Supplier<Integer> eventLoopCount,
             String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -53,33 +58,47 @@ public class MSSQLPoolRecorder {
             DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig,
             ShutdownContext shutdown) {
 
-        MSSQLPool mssqlPool = initialize((VertxInternal) vertx.getValue(),
-                eventLoopCount.get(),
-                dataSourceName,
-                dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
-                dataSourcesReactiveMSSQLConfig.dataSources().get(dataSourceName).reactive().mssql());
+        return new Function<>() {
+            @Override
+            public MSSQLPool apply(SyntheticCreationalContext<MSSQLPool> context) {
+                MSSQLPool pool = initialize((VertxInternal) vertx.getValue(),
+                        eventLoopCount.get(),
+                        dataSourceName,
+                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
+                        dataSourcesReactiveRuntimeConfig.getDataSourceReactiveRuntimeConfig(dataSourceName),
+                        dataSourcesReactiveMSSQLConfig.dataSources().get(dataSourceName).reactive().mssql(),
+                        context);
 
-        shutdown.addShutdownTask(mssqlPool::close);
-        return new RuntimeValue<>(mssqlPool);
+                shutdown.addShutdownTask(pool::close);
+                return pool;
+            }
+        };
     }
 
-    public RuntimeValue<io.vertx.mutiny.mssqlclient.MSSQLPool> mutinyMSSQLPool(RuntimeValue<MSSQLPool> mssqlPool) {
-        return new RuntimeValue<>(io.vertx.mutiny.mssqlclient.MSSQLPool.newInstance(mssqlPool.getValue()));
+    public Function<SyntheticCreationalContext<io.vertx.mutiny.mssqlclient.MSSQLPool>, io.vertx.mutiny.mssqlclient.MSSQLPool> mutinyMSSQLPool(
+            Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> function) {
+        return new Function<SyntheticCreationalContext<io.vertx.mutiny.mssqlclient.MSSQLPool>, io.vertx.mutiny.mssqlclient.MSSQLPool>() {
+            @Override
+            @SuppressWarnings("unchecked")
+            public io.vertx.mutiny.mssqlclient.MSSQLPool apply(SyntheticCreationalContext context) {
+                return io.vertx.mutiny.mssqlclient.MSSQLPool.newInstance(function.apply(context));
+            }
+        };
     }
 
     private MSSQLPool initialize(VertxInternal vertx,
             Integer eventLoopCount,
             String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
+            DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig,
+            SyntheticCreationalContext<MSSQLPool> context) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceRuntimeConfig, dataSourceReactiveRuntimeConfig,
                 dataSourceReactiveMSSQLConfig);
         MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
         Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(mssqlConnectOptions),
                 dataSourceRuntimeConfig);
-        return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier);
+        return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
     private Supplier<Future<MSSQLConnectOptions>> toDatabasesSupplier(Vertx vertx,
@@ -214,12 +233,13 @@ public class MSSQLPoolRecorder {
     }
 
     private MSSQLPool createPool(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions mSSQLConnectOptions,
-            String dataSourceName, Supplier<Future<MSSQLConnectOptions>> databases) {
+            String dataSourceName, Supplier<Future<MSSQLConnectOptions>> databases,
+            SyntheticCreationalContext<MSSQLPool> context) {
         Instance<MSSQLPoolCreator> instance;
         if (DataSourceUtil.isDefault(dataSourceName)) {
-            instance = Arc.container().select(MSSQLPoolCreator.class);
+            instance = context.getInjectedReference(TYPE_LITERAL);
         } else {
-            instance = Arc.container().select(MSSQLPoolCreator.class,
+            instance = context.getInjectedReference(TYPE_LITERAL,
                     new ReactiveDataSource.ReactiveDataSourceLiteral(dataSourceName));
         }
         if (instance.isResolvable()) {

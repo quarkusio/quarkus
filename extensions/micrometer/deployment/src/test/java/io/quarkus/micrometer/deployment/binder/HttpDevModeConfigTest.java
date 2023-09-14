@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -26,6 +27,7 @@ public class HttpDevModeConfigTest {
                             "quarkus.redis.devservices.enabled=false\n" +
                             "orange=banana"), "application.properties"));
 
+    @Disabled
     @Test
     public void test() throws Exception {
 

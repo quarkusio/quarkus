@@ -67,7 +67,7 @@
         <rest-assured.version>5.3.2</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.15.2</jackson-bom.version>
-        <smallrye-stork.version>2.3.1</smallrye-stork.version>
+        <smallrye-stork.version>2.4.0</smallrye-stork.version>
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
         <yasson.version>3.0.3</yasson.version>
         <jakarta.json.bind-api.version>3.0.0</jakarta.json.bind-api.version>

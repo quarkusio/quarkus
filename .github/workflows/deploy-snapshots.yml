@@ -15,7 +15,7 @@ jobs:
     env:
       MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
       - name: Reclaim Disk Space

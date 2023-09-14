@@ -110,7 +110,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-11" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Initial JDK 11 Build" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # this is important for GIB to work
           fetch-depth: 0
@@ -220,7 +220,7 @@ jobs:
       run_quickstarts: ${{ steps.calc-run-flags.outputs.run_quickstarts }}
       run_tcks: ${{ steps.calc-run-flags.outputs.run_tcks }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Calculate matrix from native-tests.json
         id: calc-native-matrix
         run: |
@@ -294,7 +294,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # this is important for GIB to work
           fetch-depth: 0
@@ -404,7 +404,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # this is important for GIB to work
           fetch-depth: 0
@@ -494,7 +494,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
         with:
@@ -568,7 +568,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
         with:
@@ -642,7 +642,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.java.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
         with:
@@ -706,7 +706,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-${{matrix.java.name}}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Quickstarts Compilation - JDK ${{matrix.java.name}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
         with:
@@ -757,7 +757,7 @@ jobs:
           category=$(echo -n '${{matrix.category}}' | tr '[:upper:]' '[:lower:]' | tr -c '[:alnum:]-' '-' | sed -E 's/-+/-/g')
           echo "GE_TAGS=virtual-thread-native-${category}" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=Native Tests - Virtual Thread - ${{matrix.category}}" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Restore Maven Repository
         uses: actions/cache/restore@v3
         with:
@@ -809,7 +809,7 @@ jobs:
         run: |
           echo "GE_TAGS=jdk-11" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=MicroProfile TCKs Tests" >> "$GITHUB_ENV"
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # this is important for GIB to work
           fetch-depth: 0
@@ -888,7 +888,7 @@ jobs:
       - name: Support longpaths on Windows
         if: "startsWith(matrix.os-name, 'windows')"
         run: git config --global core.longpaths true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
         if: ${{ !startsWith(matrix.os-name, 'windows') }}

@@ -14,7 +14,7 @@ jobs:
       MAVEN_OPTS: -Xmx2560m
       JBANG_REPO: $HOME/release/repository
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
       - name: Reclaim Disk Space

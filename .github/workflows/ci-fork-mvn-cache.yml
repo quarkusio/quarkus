@@ -35,7 +35,7 @@ jobs:
     # Skip in main repo
     if: github.repository != 'quarkusio/quarkus'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
       - name: Set up JDK 11

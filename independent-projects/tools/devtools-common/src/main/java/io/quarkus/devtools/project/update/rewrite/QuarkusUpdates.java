@@ -10,6 +10,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.update.ExtensionUpdateInfo;
 import io.quarkus.devtools.project.update.ProjectExtensionsUpdateInfo;
 import io.quarkus.devtools.project.update.rewrite.QuarkusUpdatesRepository.FetchResult;
+import io.quarkus.devtools.project.update.rewrite.operations.DropDependencyVersionOperation;
 import io.quarkus.devtools.project.update.rewrite.operations.UpdateDependencyVersionOperation;
 import io.quarkus.devtools.project.update.rewrite.operations.UpdateJavaVersionOperation;
 import io.quarkus.devtools.project.update.rewrite.operations.UpdatePropertyOperation;
@@ -60,7 +61,9 @@ public final class QuarkusUpdates {
                 .getSimpleVersionUpdates()) {
             if (versionUpdates.getVersionUpdateType()
                     .equals(ExtensionUpdateInfo.VersionUpdateType.RECOMMEND_PLATFORM_MANAGED)) {
-                // Dropping the version is not supported yet by open-rewrite: https://github.com/openrewrite/rewrite/issues/3546
+                recipe.addOperation(new DropDependencyVersionOperation(
+                        versionUpdates.getCurrentDep().getArtifact().getGroupId(),
+                        versionUpdates.getCurrentDep().getArtifact().getArtifactId()));
             } else {
                 recipe.addOperation(new UpdateDependencyVersionOperation(
                         versionUpdates.getCurrentDep().getArtifact().getGroupId(),

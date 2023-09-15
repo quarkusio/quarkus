@@ -28,11 +28,11 @@ class QuarkusUpdatesRepositoryTest {
     void testShouldLoadRecipesFromTheDirectory() throws IOException {
         Map<String, String[]> recipeDirectoryNames = new LinkedHashMap<>();
         recipeDirectoryNames.put("core", new String[] { "2.7", "3.1" });
-        recipeDirectoryNames.put("org.apache.camel.quarkus/camel-quarkus-core", new String[] { "2.7", "3.0" });
+        recipeDirectoryNames.put("org.apache.camel.quarkus:camel-quarkus-core", new String[] { "2.7", "3.0" });
         ClassPathResourceLoader resourceLoader = new ClassPathResourceLoader();
         List<String> recipes = fetchRecipesAsList(resourceLoader, "dir/quarkus-update", recipeDirectoryNames);
         int noOfRecipes = recipes.size();
-        assertEquals(noOfRecipes, 3);
+        assertEquals(3, noOfRecipes);
 
     }
 }

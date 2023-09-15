@@ -48,8 +48,7 @@ public final class QuarkusUpdatesRepository {
         recipeDirectoryNames.put("core", new String[] { currentVersion, targetVersion });
         for (ExtensionUpdateInfo dep : topExtensionDependency) {
             recipeDirectoryNames.put(
-                    dep.getCurrentDep().getArtifact().getArtifactId() + "/"
-                            + dep.getCurrentDep().getArtifact().getGroupId(),
+                    toKey(dep),
                     new String[] { dep.getCurrentDep().getVersion(), dep.getRecommendedDependency().getVersion() });
         }
 
@@ -134,15 +133,15 @@ public final class QuarkusUpdatesRepository {
         return currentAVersion.compareTo(recipeAVersion) < 0 && targetAVersion.compareTo(recipeAVersion) >= 0;
     }
 
-    static List<String> fetchRecipesAsList(ResourceLoader resourceLoader, String loaction,
+    static List<String> fetchRecipesAsList(ResourceLoader resourceLoader, String location,
             Map<String, String[]> recipeDirectoryNames) throws IOException {
-        return resourceLoader.loadResourceAsPath(loaction,
+        return resourceLoader.loadResourceAsPath(location,
                 path -> {
                     try (final Stream<Path> pathStream = Files.walk(path)) {
                         return pathStream
                                 .filter(Files::isDirectory)
                                 .flatMap(dir -> {
-                                    String key = path.relativize(dir).toString();
+                                    String key = toKey(path.relativize(dir).toString());
                                     String versions[] = recipeDirectoryNames.get(key);
                                     if (versions != null && versions.length != 0) {
                                         try {
@@ -171,5 +170,16 @@ public final class QuarkusUpdatesRepository {
                     }
                 });
 
+    }
+
+    private static String toKey(ExtensionUpdateInfo dep) {
+        return String.format("%s:%s", dep.getCurrentDep().getArtifact().getGroupId(),
+                dep.getCurrentDep().getArtifact().getArtifactId());
+    }
+
+    static String toKey(String directory) {
+        return directory
+                .replaceAll("(^[/\\\\])|([/\\\\]$)", "")
+                .replaceAll("[/\\\\]", ":");
     }
 }

@@ -356,6 +356,8 @@
                 <module>opentelemetry</module>
                 <module>opentelemetry-spi</module>
                 <module>opentelemetry-jdbc-instrumentation</module>
+                <module>opentelemetry-quartz</module>
+                <module>opentelemetry-scheduler</module>
                 <module>opentelemetry-vertx</module>
                 <module>opentelemetry-reactive</module>
                 <module>opentelemetry-grpc</module>

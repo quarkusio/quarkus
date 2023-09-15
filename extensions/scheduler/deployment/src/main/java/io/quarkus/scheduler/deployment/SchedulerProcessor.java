@@ -367,30 +367,6 @@ public class SchedulerProcessor {
         }
     }
 
-    @BuildStep
-    public void tracing(SchedulerConfig config,
-            Capabilities capabilities, BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
-
-        if (config.tracingEnabled && capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
-            DotName withSpan = DotName.createSimple("io.opentelemetry.instrumentation.annotations.WithSpan");
-            DotName legacyWithSpan = DotName.createSimple("io.opentelemetry.extension.annotations.WithSpan");
-
-            annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer.builder()
-                    .appliesTo(METHOD)
-                    .whenContainsAny(List.of(SchedulerDotNames.SCHEDULED_NAME, SchedulerDotNames.SCHEDULES_NAME))
-                    .whenContainsNone(List.of(withSpan, legacyWithSpan))
-                    .transform(context -> {
-                        MethodInfo scheduledMethod = context.getTarget().asMethod();
-                        context.transform()
-                                .add(withSpan)
-                                .done();
-                        LOGGER.debugf("Added OpenTelemetry @WithSpan to a @Scheduled method %s#%s()",
-                                scheduledMethod.declaringClass().name(),
-                                scheduledMethod.name());
-                    })));
-        }
-    }
-
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
 
         BeanInfo bean = scheduledMethod.getBean();

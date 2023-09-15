@@ -146,5 +146,4 @@ public class InstrumentationProcessor {
         preExceptionMapperHandlerBuildItemBuildProducer
                 .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
     }
-
 }

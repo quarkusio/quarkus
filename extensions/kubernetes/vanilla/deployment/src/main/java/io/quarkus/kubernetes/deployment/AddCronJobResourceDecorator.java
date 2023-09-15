@@ -26,17 +26,16 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         this.config = config;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        CronJobBuilder builder = list.getItems().stream()
+        CronJobBuilder builder = list.buildItems().stream()
                 .filter(this::containsCronJobResource)
                 .map(replaceExistingCronJobResource(list))
                 .findAny()
                 .orElseGet(this::createCronJobResource)
                 .accept(CronJobBuilder.class, this::initCronJobResourceWithDefaults);
 
-        if (Strings.isNullOrEmpty(builder.getSpec().getSchedule())) {
+        if (Strings.isNullOrEmpty(builder.buildSpec().getSchedule())) {
             throw new IllegalArgumentException(
                     "When generating a CronJob resource, you need to specify a schedule CRON expression.");
         }
@@ -49,7 +48,7 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
     }
 
     private void initCronJobResourceWithDefaults(CronJobBuilder builder) {
-        CronJobFluent.SpecNested<CronJobBuilder> spec = builder.editOrNewSpec();
+        CronJobFluent<?>.SpecNested<CronJobBuilder> spec = builder.editOrNewSpec();
 
         var jobTemplateSpec = spec
                 .editOrNewJobTemplate()
@@ -106,7 +105,7 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         };
     }
 
-    private boolean containsContainerWithName(CronJobFluent.SpecNested<CronJobBuilder> spec) {
+    private boolean containsContainerWithName(CronJobFluent<?>.SpecNested<CronJobBuilder> spec) {
         var jobTemplate = spec.buildJobTemplate();
         if (jobTemplate == null
                 || jobTemplate.getSpec() == null

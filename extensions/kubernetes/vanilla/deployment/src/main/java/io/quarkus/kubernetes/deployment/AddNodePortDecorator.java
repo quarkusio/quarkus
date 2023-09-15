@@ -12,7 +12,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.ServicePortBuilder;
 import io.fabric8.kubernetes.api.model.ServiceSpecFluent;
 
-public class AddNodePortDecorator extends NamedResourceDecorator<ServiceSpecFluent> {
+public class AddNodePortDecorator extends NamedResourceDecorator<ServiceSpecFluent<?>> {
 
     private static final Logger log = Logger.getLogger(AddNodePortDecorator.class);
 
@@ -32,7 +32,7 @@ public class AddNodePortDecorator extends NamedResourceDecorator<ServiceSpecFlue
     @SuppressWarnings("unchecked")
     @Override
     public void andThenVisit(ServiceSpecFluent service, ObjectMeta resourceMeta) {
-        ServiceSpecFluent.PortsNested<?> editPort = service.editMatchingPort(new Predicate<ServicePortBuilder>() {
+        ServiceSpecFluent<?>.PortsNested<?> editPort = service.editMatchingPort(new Predicate<ServicePortBuilder>() {
             @Override
             public boolean test(ServicePortBuilder servicePortBuilder) {
                 return servicePortBuilder.hasName() && servicePortBuilder.getName().equals(matchingPortName);

@@ -69,7 +69,7 @@
 
         <!-- Dependency versions -->
         <jacoco.version>0.8.10</jacoco.version>
-        <kubernetes-client.version>6.7.2</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <kubernetes-client.version>6.8.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.57.2</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->

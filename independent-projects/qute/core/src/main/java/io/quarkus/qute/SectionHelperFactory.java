@@ -17,6 +17,9 @@ import io.quarkus.qute.TemplateNode.Origin;
  */
 public interface SectionHelperFactory<T extends SectionHelper> {
 
+    // The validation of expressions with the metadata hint may be relaxed in some cases
+    public static final String HINT_METADATA = "<metadata>";
+
     String MAIN_BLOCK_NAME = "$main";
 
     /**

@@ -31,52 +31,54 @@ public class VirtualThreadsRecorder {
 
     public void setupVirtualThreads(VirtualThreadsConfig c, ShutdownContext shutdownContext, LaunchMode launchMode) {
         config = c;
-        if (launchMode == LaunchMode.DEVELOPMENT) {
-            shutdownContext.addLastShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    Executor executor = current;
-                    if (executor instanceof ExecutorService) {
-                        ((ExecutorService) executor).shutdownNow();
+        if (config.enabled) {
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                shutdownContext.addLastShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        Executor executor = current;
+                        if (executor instanceof ExecutorService) {
+                            ((ExecutorService) executor).shutdownNow();
+                        }
+                        current = null;
                     }
-                    current = null;
-                }
-            });
-        } else {
-            shutdownContext.addLastShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    Executor executor = current;
-                    current = null;
-                    if (executor instanceof ExecutorService) {
-                        ExecutorService service = (ExecutorService) executor;
-                        service.shutdown();
+                });
+            } else {
+                shutdownContext.addLastShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        Executor executor = current;
+                        current = null;
+                        if (executor instanceof ExecutorService) {
+                            ExecutorService service = (ExecutorService) executor;
+                            service.shutdown();
 
-                        final long timeout = config.shutdownTimeout.toNanos();
-                        final long interval = config.shutdownCheckInterval.orElse(config.shutdownTimeout).toNanos();
+                            final long timeout = config.shutdownTimeout.toNanos();
+                            final long interval = config.shutdownCheckInterval.orElse(config.shutdownTimeout).toNanos();
 
-                        long start = System.nanoTime();
-                        int loop = 1;
-                        long elapsed = 0;
-                        for (;;) {
-                            // This log can be very useful when debugging problems
-                            logger.debugf("Await termination loop: %s, remaining: %s", loop++, timeout - elapsed);
-                            try {
-                                if (!service.awaitTermination(Math.min(timeout, interval), NANOSECONDS)) {
-                                    elapsed = System.nanoTime() - start;
-                                    if (elapsed >= timeout) {
-                                        service.shutdownNow();
-                                        break;
+                            long start = System.nanoTime();
+                            int loop = 1;
+                            long elapsed = 0;
+                            for (;;) {
+                                // This log can be very useful when debugging problems
+                                logger.debugf("Await termination loop: %s, remaining: %s", loop++, timeout - elapsed);
+                                try {
+                                    if (!service.awaitTermination(Math.min(timeout, interval), NANOSECONDS)) {
+                                        elapsed = System.nanoTime() - start;
+                                        if (elapsed >= timeout) {
+                                            service.shutdownNow();
+                                            break;
+                                        }
+                                    } else {
+                                        return;
                                     }
-                                } else {
-                                    return;
+                                } catch (InterruptedException ignored) {
                                 }
-                            } catch (InterruptedException ignored) {
                             }
                         }
                     }
-                }
-            });
+                });
+            }
         }
     }
 
@@ -133,35 +135,37 @@ public class VirtualThreadsRecorder {
      * using java 11 and executed with a loom-compliant JDK.
      */
     private static Executor createExecutor() {
-        try {
-            return new ContextPreservingExecutorService(newVirtualThreadExecutor());
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-            logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
-            //quite ugly but works
-            logger.warn("You weren't able to create an executor that spawns virtual threads, the default" +
-                    " blocking executor will be used, please check that your JDK is compatible with " +
-                    "virtual threads");
-            //if for some reason a class/method can't be loaded or invoked we return the traditional executor,
-            // wrapping executeBlocking.
-            return new Executor() {
-                @Override
-                public void execute(Runnable command) {
-                    var context = Vertx.currentContext();
-                    if (!(context instanceof ContextInternal)) {
-                        Infrastructure.getDefaultWorkerPool().execute(command);
-                    } else {
-                        context.executeBlocking(fut -> {
-                            try {
-                                command.run();
-                                fut.complete(null);
-                            } catch (Exception e) {
-                                fut.fail(e);
-                            }
-                        }, false);
-                    }
-                }
-            };
+        if (config.enabled) {
+            try {
+                return new ContextPreservingExecutorService(newVirtualThreadExecutor());
+            } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+                logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
+                //quite ugly but works
+                logger.warn("You weren't able to create an executor that spawns virtual threads, the default" +
+                        " blocking executor will be used, please check that your JDK is compatible with " +
+                        "virtual threads");
+                //if for some reason a class/method can't be loaded or invoked we return the traditional executor,
+                // wrapping executeBlocking.
+            }
         }
+        // Fallback to regular worker threads
+        return new Executor() {
+            @Override
+            public void execute(Runnable command) {
+                var context = Vertx.currentContext();
+                if (!(context instanceof ContextInternal)) {
+                    Infrastructure.getDefaultWorkerPool().execute(command);
+                } else {
+                    context.executeBlocking(fut -> {
+                        try {
+                            command.run();
+                            fut.complete(null);
+                        } catch (Exception e) {
+                            fut.fail(e);
+                        }
+                    }, false);
+                }
+            }
+        };
     }
-
 }

@@ -27,7 +27,7 @@ import jakarta.enterprise.inject.spi.ObserverMethod;
  * Furthermore, {@link #value()} can be used to specify the priority of the generated observer method and thus affects observers
  * ordering.
  * <p>
- * The contextual instance is destroyed immediately afterwards for {@link Dependent} beans.
+ * The contextual instance is destroyed immediately after the method is invoked for {@link Dependent} beans.
  * <p>
  * The following examples are functionally equivalent.
  *

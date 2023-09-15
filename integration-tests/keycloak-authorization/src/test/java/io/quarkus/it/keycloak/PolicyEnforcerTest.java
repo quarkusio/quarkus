@@ -1,24 +1,31 @@
 package io.quarkus.it.keycloak;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import org.hamcrest.Matchers;
+import java.net.URL;
+import java.time.Duration;
+
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessTokenResponse;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
-import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
+import com.gargoylesoftware.htmlunit.util.Cookie;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.client.WebClient;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -26,24 +33,37 @@ import io.restassured.http.ContentType;
 @QuarkusTest
 @QuarkusTestResource(KeycloakLifecycleManager.class)
 public class PolicyEnforcerTest {
-
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
     private static final String KEYCLOAK_REALM = "quarkus";
+
+    @TestHTTPResource
+    URL url;
+
+    static Vertx vertx = Vertx.vertx();
+    static WebClient client = WebClient.create(vertx);
+
+    @AfterAll
+    public static void closeVertxClient() {
+        if (client != null) {
+            client.close();
+            client = null;
+        }
+        if (vertx != null) {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+            vertx = null;
+        }
+    }
 
     @Test
     public void testUserHasAdminRoleServiceTenant() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api-permission-tenant")
-                .then()
-                .statusCode(403);
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api-permission-tenant")
-                .then()
-                .statusCode(403);
-        RestAssured.given().auth().oauth2(getAccessToken("admin"))
-                .when().get("/api-permission-tenant")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("Permission Resource Tenant"));
+        assureGetPath("/api-permission-tenant", 403, getAccessToken("alice"), null);
+        assureGetPath("//api-permission-tenant", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api-permission-tenant", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api-permission-tenant", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api-permission-tenant", 200, getAccessToken("admin"), "Permission Resource Tenant");
+        assureGetPath("//api-permission-tenant", 200, getAccessToken("admin"), "Permission Resource Tenant");
     }
 
     @Test
@@ -54,7 +74,7 @@ public class PolicyEnforcerTest {
     }
 
     private void testWebAppTenantAllowed(String user) throws Exception {
-        try (final WebClient webClient = createWebClient()) {
+        try (final com.gargoylesoftware.htmlunit.WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/api-permission-webapp");
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -66,12 +86,18 @@ public class PolicyEnforcerTest {
             WebResponse response = loginForm.getInputByName("login").click().getWebResponse();
             assertEquals(200, response.getStatusCode());
             assertTrue(response.getContentAsString().contains("Permission Resource WebApp"));
+
+            // Token is encrypted in the cookie
+            Cookie cookie = webClient.getCookieManager().getCookie("q_session_api-permission-webapp");
+            assureGetPathWithCookie("/api-permission-webapp", cookie, 200, null, "Permission Resource WebApp");
+            assureGetPathWithCookie("//api-permission-webapp", cookie, 200, null, "Permission Resource WebApp");
+
             webClient.getCookieManager().clearCookies();
         }
     }
 
     private void testWebAppTenantForbidden(String user) throws Exception {
-        try (final WebClient webClient = createWebClient()) {
+        try (final com.gargoylesoftware.htmlunit.WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081/api-permission-webapp");
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -86,186 +112,130 @@ public class PolicyEnforcerTest {
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(403, ex.getStatusCode());
             }
+
+            // Token is encrypted in the cookie
+            Cookie cookie = webClient.getCookieManager().getCookie("q_session_api-permission-webapp");
+            assureGetPathWithCookie("/api-permission-webapp", cookie, 403, null, null);
+            assureGetPathWithCookie("//api-permission-webapp", cookie, 403, null, null);
+
             webClient.getCookieManager().clearCookies();
         }
     }
 
-    private WebClient createWebClient() {
-        WebClient webClient = new WebClient();
+    private com.gargoylesoftware.htmlunit.WebClient createWebClient() {
+        com.gargoylesoftware.htmlunit.WebClient webClient = new com.gargoylesoftware.htmlunit.WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
         return webClient;
     }
 
     @Test
     public void testUserHasRoleConfidential() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/permission")
-                .then()
-                .statusCode(403);
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("Permission Resource"));
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scope?scope=write")
-                .then()
-                .statusCode(403);
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/annotation/scope-write")
-                .then()
-                .statusCode(403);
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scope?scope=read")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("read"));
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/annotation/scope-read")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("read"));
+        assureGetPath("/api/permission", 403, getAccessToken("alice"), null);
+        assureGetPath("//api/permission", 403, getAccessToken("alice"), null);
 
-        RestAssured.given().auth().oauth2(getAccessToken("admin"))
-                .when().get("/api/permission")
-                .then()
-                .statusCode(403);
+        assureGetPath("/api/permission", 200, getAccessToken("jdoe"), "Permission Resource");
+        assureGetPath("//api/permission", 200, getAccessToken("jdoe"), "Permission Resource");
 
-        RestAssured.given().auth().oauth2(getAccessToken("admin"))
-                .when().get("/api/permission/entitlements")
-                .then()
-                .statusCode(200);
+        assureGetPath("/api/permission/scope?scope=write", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api/permission/scope?scope=write", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api/permission/annotation/scope-write", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api/permission/annotation/scope-write", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api/permission/scope?scope=read", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api/permission/scope?scope=read", 200, getAccessToken("jdoe"), "read");
+
+        assureGetPath("/api/permission", 403, getAccessToken("admin"), null);
+        assureGetPath("//api/permission", 403, getAccessToken("admin"), null);
+
+        assureGetPath("/api/permission/entitlements", 200, getAccessToken("admin"), null);
+        assureGetPath("//api/permission/entitlements", 200, getAccessToken("admin"), null);
     }
 
     @Test
     public void testRequestParameterAsClaim() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/permission/claim-protected?grant=true")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("Claim Protected Resource"));
-        ;
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/permission/claim-protected?grant=false")
-                .then()
-                .statusCode(403);
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/permission/claim-protected")
-                .then()
-                .statusCode(403);
+        assureGetPath("/api/permission/claim-protected?grant=true", 200, getAccessToken("alice"),
+                "Claim Protected Resource");
+        assureGetPath("//api/permission/claim-protected?grant=true", 200, getAccessToken("alice"),
+                "Claim Protected Resource");
+
+        assureGetPath("/api/permission/claim-protected?grant=false", 403, getAccessToken("alice"), null);
+        assureGetPath("//api/permission/claim-protected?grant=false", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api/permission/claim-protected", 403, getAccessToken("alice"), null);
+        assureGetPath("//api/permission/claim-protected", 403, getAccessToken("alice"), null);
     }
 
     @Test
     public void testHttpResponseFromExternalServiceAsClaim() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/permission/http-response-claim-protected")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("Http Response Claim Protected Resource"));
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/http-response-claim-protected")
-                .then()
-                .statusCode(403);
+        assureGetPath("/api/permission/http-response-claim-protected", 200, getAccessToken("alice"), null);
+        assureGetPath("//api/permission/http-response-claim-protected", 200, getAccessToken("alice"), null);
+
+        assureGetPath("/api/permission/http-response-claim-protected", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api/permission/http-response-claim-protected", 403, getAccessToken("jdoe"), null);
     }
 
     @Test
     public void testBodyClaim() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .contentType(ContentType.JSON)
-                .body("{\"from-body\": \"grant\"}")
-                .when()
-                .post("/api/permission/body-claim")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("Body Claim Protected Resource"));
+        assurePostPath("/api/permission/body-claim", "{\"from-body\": \"grant\"}", 200, getAccessToken("alice"),
+                "Body Claim Protected Resource");
     }
 
     @Test
     public void testPublicResource() {
-        RestAssured.given()
-                .when().get("/api/public")
-                .then()
-                .statusCode(204);
+        assureGetPath("/api/public", 204, null, null);
     }
 
     @Test
     public void testPublicResourceWithEnforcingPolicy() {
-        RestAssured.given()
-                .when().get("/api/public-enforcing")
-                .then()
-                .statusCode(401);
+        assureGetPath("/api/public-enforcing", 401, null, null);
+        assureGetPath("//api/public-enforcing", 401, null, null);
     }
 
     @Test
     public void testPublicResourceWithEnforcingPolicyAndToken() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/public-enforcing")
-                .then()
-                .statusCode(403);
+        assureGetPath("/api/public-enforcing", 403, getAccessToken("alice"), null);
+        assureGetPath("//api/public-enforcing", 403, getAccessToken("alice"), null);
     }
 
     @Test
     public void testPublicResourceWithDisabledPolicyAndToken() {
-        RestAssured.given().auth().oauth2(getAccessToken("alice"))
-                .when().get("/api/public-token")
-                .then()
-                .statusCode(204);
+        assureGetPath("/api/public-token", 204, getAccessToken("alice"), null);
     }
 
     @Test
     public void testPathConfigurationPrecedenceWhenPathCacheNotDefined() {
-        RestAssured.given()
-                .when().get("/api2/resource")
-                .then()
-                .statusCode(401);
+        assureGetPath("/api2/resource", 401, null, null);
+        assureGetPath("//api2/resource", 401, null, null);
 
-        RestAssured.given()
-                .when().get("/hello")
-                .then()
-                .statusCode(404);
+        assureGetPath("/hello", 404, null, null);
+        assureGetPath("//hello", 404, null, null);
 
-        RestAssured.given()
-                .when().get("/")
-                .then()
-                .statusCode(404);
+        assureGetPath("/", 404, null, null);
+        assureGetPath("//", 400, null, null);
     }
 
     @Test
     public void testPermissionScopes() {
         // 'jdoe' has scope 'read' and 'read' is required
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scopes/standard-way")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("read"));
+        assureGetPath("/api/permission/scopes/standard-way", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api/permission/scopes/standard-way", 200, getAccessToken("jdoe"), "read");
 
         // 'jdoe' has scope 'read' while 'write' is required
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scopes/standard-way-denied")
-                .then()
-                .statusCode(403);
+        assureGetPath("/api/permission/scopes/standard-way-denied", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api/permission/scopes/standard-way-denied", 403, getAccessToken("jdoe"), null);
 
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scopes/programmatic-way")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("read"));
+        assureGetPath("/api/permission/scopes/programmatic-way", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api/permission/scopes/programmatic-way", 200, getAccessToken("jdoe"), "read");
 
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scopes/programmatic-way-denied")
-                .then()
-                .statusCode(403);
+        assureGetPath("/api/permission/scopes/programmatic-way-denied", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api/permission/scopes/programmatic-way-denied", 403, getAccessToken("jdoe"), null);
 
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scopes/annotation-way")
-                .then()
-                .statusCode(200)
-                .and().body(Matchers.containsString("read"));
+        assureGetPath("/api/permission/scopes/annotation-way", 200, getAccessToken("jdoe"), "read");
+        assureGetPath("//api/permission/scopes/annotation-way", 200, getAccessToken("jdoe"), "read");
 
-        RestAssured.given().auth().oauth2(getAccessToken("jdoe"))
-                .when().get("/api/permission/scopes/annotation-way-denied")
-                .then()
-                .statusCode(403);
+        assureGetPath("/api/permission/scopes/annotation-way-denied", 403, getAccessToken("jdoe"), null);
+        assureGetPath("//api/permission/scopes/annotation-way-denied", 403, getAccessToken("jdoe"), null);
     }
 
     protected String getAccessToken(String userName) {
@@ -281,4 +251,47 @@ public class PolicyEnforcerTest {
                         + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
+
+    private void assureGetPath(String path, int expectedStatusCode, String token, String body) {
+        var req = client.get(url.getPort(), url.getHost(), path);
+        if (token != null) {
+            req.bearerTokenAuthentication(token);
+        }
+        var result = req.send();
+        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        assertEquals(expectedStatusCode, result.result().statusCode(), path);
+        if (body != null) {
+            assertTrue(result.result().bodyAsString().contains(body), path);
+        }
+    }
+
+    private void assureGetPathWithCookie(String path, Cookie cookie, int expectedStatusCode, String token, String body) {
+        var req = client.get(url.getPort(), url.getHost(), path);
+        if (token != null) {
+            req.bearerTokenAuthentication(token);
+        }
+        req.putHeader("Cookie", cookie.getName() + "=" + cookie.getValue());
+        var result = req.send();
+        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        assertEquals(expectedStatusCode, result.result().statusCode(), path);
+        if (body != null) {
+            assertTrue(result.result().bodyAsString().contains(body), path);
+        }
+    }
+
+    private void assurePostPath(String path, String requestBody, int expectedStatusCode, String token,
+            String responseBody) {
+        var req = client.post(url.getPort(), url.getHost(), path);
+        if (token != null) {
+            req.bearerTokenAuthentication(token);
+        }
+        req.putHeader("Content-Type", "application/json");
+        var result = req.sendJson(new JsonObject(requestBody));
+        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        assertEquals(expectedStatusCode, result.result().statusCode(), path);
+        if (responseBody != null) {
+            assertTrue(result.result().bodyAsString().contains(responseBody), path);
+        }
+    }
+
 }

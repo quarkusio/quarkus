@@ -41,15 +41,6 @@ class RunOnVirtualThreadTest {
     }
 
     @Test
-    void testFilter() {
-        // Request scope
-        // Routing Context
-        // Duplicated context
-
-        // MDC
-    }
-
-    @Test
     void testNonBlocking() {
         // Non Blocking
         RestAssured.get("/non-blocking").then()

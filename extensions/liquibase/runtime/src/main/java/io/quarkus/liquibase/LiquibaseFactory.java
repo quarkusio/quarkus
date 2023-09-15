@@ -1,6 +1,7 @@
 package io.quarkus.liquibase;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -71,7 +72,10 @@ public class LiquibaseFactory {
      * @return the label expression
      */
     public LabelExpression createLabels() {
-        return new LabelExpression(config.labels);
+        // need to join because of https://github.com/liquibase/liquibase/issues/4763
+        return new LabelExpression(config.labels != null
+                ? config.labels.stream().collect(Collectors.joining(","))
+                : null);
     }
 
     /**

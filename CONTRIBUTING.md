@@ -213,6 +213,11 @@ Be sure to test your pull request in:
 1. Java mode
 2. Native mode
 
+Also, make sure that any native tests you add will actually get executed on CI.
+In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which
+are run in parallel. This means that each new integration test module needs to be configured explicitly
+in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
+
 ## Setup
 
 If you have not done so on this machine, you need to:
@@ -752,7 +757,7 @@ This project is an open source project, please act responsibly, be nice, polite 
 * The native integration test for my extension didn't run in the CI
 
   In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which
-  are run in parallel. This means that each new extension needs to be configured explicitly
+  are run in parallel. This means that each new integration test module needs to be configured explicitly
   in [`native-tests.json`](.github/native-tests.json) to have its integration tests run in native mode.
 
 * Build aborts complaining about missing (or superfluous) `minimal *-deployment dependencies`

@@ -22,23 +22,35 @@ class BeanContainerImpl implements BeanContainer {
     }
 
     @Override
-    public <T> Factory<T> beanInstanceFactory(Class<T> type, Annotation... qualifiers) {
-        Supplier<InstanceHandle<T>> handleSupplier = container.beanInstanceSupplier(type, qualifiers);
-        return createFactory(handleSupplier, type, qualifiers);
+    public <T> T beanInstance(Class<T> beanType, Annotation... beanQualifiers) {
+        return container.select(beanType, beanQualifiers).get();
     }
 
     @Override
-    public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
-        Supplier<InstanceHandle<T>> handleSupplier = container.instanceSupplier(type, qualifiers);
-        return createFactory(handleSupplier, type, qualifiers);
+    public <T> Factory<T> beanInstanceFactory(Class<T> type, Annotation... qualifiers) {
+        Supplier<InstanceHandle<T>> handleSupplier = container.beanInstanceSupplier(type, qualifiers);
+        return createFactory(handleSupplier, null, type, qualifiers);
     }
 
-    private <T> Factory<T> createFactory(Supplier<InstanceHandle<T>> handleSupplier, Class<T> type, Annotation... qualifiers) {
+    @Override
+    public <T> Factory<T> beanInstanceFactory(Supplier<Factory<T>> fallbackSupplier, Class<T> type,
+            Annotation... qualifiers) {
+        Supplier<InstanceHandle<T>> handleSupplier = container.beanInstanceSupplier(type, qualifiers);
+        return createFactory(handleSupplier, fallbackSupplier, type, qualifiers);
+    }
+
+    private <T> Factory<T> createFactory(Supplier<InstanceHandle<T>> handleSupplier, Supplier<Factory<T>> fallbackSupplier,
+            Class<T> type, Annotation... qualifiers) {
         if (handleSupplier == null) {
             LOGGER.debugf(
                     "No matching bean found for type %s and qualifiers %s. The bean might have been marked as unused and removed during build.",
                     type, Arrays.toString(qualifiers));
-            return new DefaultInstanceFactory<>(type);
+            if (fallbackSupplier != null) {
+                return fallbackSupplier.get();
+            } else {
+                // by default, if there is no bean, return factory that tries to instantiate non-cdi object
+                return new DefaultInstanceFactory<>(type);
+            }
         }
         return new Factory<T>() {
             @Override
@@ -64,7 +76,16 @@ class BeanContainerImpl implements BeanContainer {
         return container.requestContext();
     }
 
-    private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
+    /**
+     * A default fallback {@link Factory} implementation used by
+     * {@link BeanContainer#beanInstanceFactory(Class, Annotation...)}.
+     * <p/>
+     * This factory attempts to create instances of given class by calling their no-arg constructor. Any exceptions
+     * related to lack of such constructor of failure to invoke it are simply re-thrown.
+     *
+     * @param <T> represents the type that this factory can create
+     */
+    private final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
 
         private final Class<T> type;
 
@@ -87,5 +108,4 @@ class BeanContainerImpl implements BeanContainer {
             }
         }
     }
-
 }

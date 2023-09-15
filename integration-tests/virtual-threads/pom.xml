@@ -35,6 +35,7 @@
         <module>vertx-event-bus-virtual-threads</module>
         <module>scheduler-virtual-threads</module>
         <module>quartz-virtual-threads</module>
+        <module>virtual-threads-disabled</module>
     </modules>
 
     <build>
@@ -71,7 +72,6 @@
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${nexus-staging-maven-plugin.version}</version>
                 <configuration>
                     <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
                 </configuration>

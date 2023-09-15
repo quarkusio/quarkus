@@ -1,9 +1,16 @@
 package io.quarkus.openshift.deployment.config;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,6 +28,8 @@ public class OpenshiftConfigFallbackTest {
             .overrideConfigKey("quarkus.kubernetes.replicas", "10")
             .overrideConfigKey("quarkus.openshift.version", "999-SNAPSHOT")
             .overrideConfigKey("quarkus.openshift.labels.app", "openshift")
+            .overrideConfigKey("quarkus.openshift.route.expose", "true")
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .setRun(true);
 
     @ProdBuildResults
@@ -28,6 +37,16 @@ public class OpenshiftConfigFallbackTest {
 
     @Test
     void configFallback() throws Exception {
+        List<LogRecord> logRecords = prodModeTestResults.getRetainedBuildLogRecords();
+        Set<Object> unrecognized = logRecords.stream()
+                .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration key"))
+                .map(logRecord -> Optional.ofNullable(logRecord.getParameters())
+                        .map(parameters -> parameters[0])
+                        .orElse(new Object[0]))
+                .collect(toSet());
+
+        assertTrue(unrecognized.isEmpty());
+
         Path kubernetesDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
         YamlConfigSource kubernetes = new YamlConfigSource(kubernetesDir.resolve("kubernetes.yml").toUri().toURL());
         YamlConfigSource openshift = new YamlConfigSource(kubernetesDir.resolve("openshift.yml").toUri().toURL());

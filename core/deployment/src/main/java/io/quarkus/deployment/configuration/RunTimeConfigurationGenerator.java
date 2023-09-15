@@ -227,6 +227,9 @@ public final class RunTimeConfigurationGenerator {
 
     static final MethodDescriptor PU_IS_PROPERTY_IN_ROOT = MethodDescriptor.ofMethod(PropertiesUtil.class,
             "isPropertyInRoot", boolean.class, Set.class, NameIterator.class);
+    static final MethodDescriptor PU_FILTER_PROPERTIES_IN_ROOTS = MethodDescriptor.ofMethod(PropertiesUtil.class,
+            "filterPropertiesInRoots", Iterable.class, Iterable.class, Set.class);
+
     static final MethodDescriptor PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME = MethodDescriptor.ofMethod(PropertiesUtil.class,
             "isPropertyQuarkusCompoundName", boolean.class, NameIterator.class);
     static final MethodDescriptor PU_FILTER_UNKNOWN = MethodDescriptor.ofMethod(PropertiesUtil.class, "filterUnknown",
@@ -668,16 +671,10 @@ public final class RunTimeConfigurationGenerator {
 
         private void configSweepLoop(MethodDescriptor parserBody, MethodCreator method, ResultHandle config,
                 Set<String> registeredRoots, Type type) {
-            ResultHandle rootSet;
             ResultHandle nameSet;
             ResultHandle iterator;
 
-            rootSet = method.newInstance(HS_NEW);
-            for (String registeredRoot : registeredRoots) {
-                method.invokeVirtualMethod(HS_ADD, rootSet, method.load(registeredRoot));
-            }
-
-            nameSet = method.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, config);
+            nameSet = filterProperties(method, config, registeredRoots);
             iterator = method.invokeInterfaceMethod(ITRA_ITERATOR, nameSet);
 
             try (BytecodeCreator sweepLoop = method.createScope()) {
@@ -701,14 +698,27 @@ public final class RunTimeConfigurationGenerator {
                     // if (! keyIter.hasNext()) continue sweepLoop;
                     hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(sweepLoop);
                     // if (! keyIter.nextSegmentEquals("quarkus")) continue sweepLoop;
-                    hasNext.ifNonZero(hasNext.invokeStaticMethod(PU_IS_PROPERTY_IN_ROOT, rootSet, keyIter)).falseBranch()
-                            .continueScope(sweepLoop);
                     // parse(config, keyIter);
                     hasNext.invokeStaticMethod(parserBody, config, keyIter);
                     // continue sweepLoop;
                     hasNext.continueScope(sweepLoop);
                 }
             }
+        }
+
+        private ResultHandle filterProperties(MethodCreator method, ResultHandle config, Set<String> registeredRoots) {
+            // Roots
+            ResultHandle rootSet;
+            rootSet = method.newInstance(HS_NEW);
+            for (String registeredRoot : registeredRoots) {
+                method.invokeVirtualMethod(HS_ADD, rootSet, method.load(registeredRoot));
+            }
+
+            // PropertyNames
+            ResultHandle properties = method.invokeVirtualMethod(SRC_GET_PROPERTY_NAMES, config);
+
+            // Filtered Properties
+            return method.invokeStaticMethod(PU_FILTER_PROPERTIES_IN_ROOTS, properties, rootSet);
         }
 
         private Set<String> getRegisteredRoots(ConfigPhase configPhase) {

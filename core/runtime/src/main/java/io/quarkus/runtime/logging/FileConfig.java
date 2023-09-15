@@ -83,8 +83,10 @@ public class FileConfig {
         /**
          * The file handler rotation file suffix.
          * When used, the file will be rotated based on its suffix.
-         *
+         * <p>
          * Example fileSuffix: .yyyy-MM-dd
+         * <p>
+         * Note: If the suffix ends with .zip or .gz, the rotation file will also be compressed.
          */
         @ConfigItem
         Optional<String> fileSuffix;

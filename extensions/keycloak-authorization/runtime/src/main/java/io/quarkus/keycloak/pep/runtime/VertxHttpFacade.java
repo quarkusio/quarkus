@@ -2,7 +2,6 @@ package io.quarkus.keycloak.pep.runtime;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.List;
 
 import org.keycloak.adapters.authorization.TokenPrincipal;
@@ -122,7 +121,7 @@ public class VertxHttpFacade implements HttpRequest, HttpResponse {
 
             @Override
             public String getRelativePath() {
-                return URI.create(request.uri()).getPath();
+                return routingContext.normalizedPath();
             }
 
             @Override

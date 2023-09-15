@@ -7,14 +7,14 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and RESTEasy Reactive.
-:jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0
+:jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/jakarta.ws.rs
 :jaxrsspec: https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html
 :jdkapi: https://docs.oracle.com/en/java/javase/11/docs/api/java.base
-:mutinyapi: https://javadoc.io/doc/io.smallrye.reactive/mutiny/2.1.0
+:mutinyapi: https://javadoc.io/doc/io.smallrye.reactive/mutiny/2.1.0/io.smallrye.mutiny
 :httpspec: https://tools.ietf.org/html/rfc7231
-:jsonpapi: https://javadoc.io/doc/jakarta.json/jakarta.json-api/1.1.4
-:injectapi: https://javadoc.io/static/jakarta.inject/jakarta.inject-api/2.0.1
-:vertxapi: https://javadoc.io/doc/io.vertx/vertx-core/latest/index.html
+:jsonpapi: https://javadoc.io/doc/jakarta.json/jakarta.json-api/2.1.2/jakarta.json
+:injectapi: https://javadoc.io/static/jakarta.inject/jakarta.inject-api/2.0.1/jakarta.inject
+:vertxapi: https://javadoc.io/static/io.vertx/vertx-core/4.4.5
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}
 :resteasy-reactive-common-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-common/{quarkus-version}
 
@@ -466,7 +466,7 @@ The following parameter types will be supported out of the box:
 link:{jsonpapi}/jakarta/json/JsonStructure.html[`JsonStructure`], link:{jsonpapi}/jakarta/json/JsonValue.html[`JsonValue`]
 |JSON value types
 
-|link:{vertxapi}io/vertx/core/buffer/Buffer.html[`Buffer`]
+|link:{vertxapi}/io/vertx/core/buffer/Buffer.html[`Buffer`]
 |Vert.x Buffer
 
 |any other type

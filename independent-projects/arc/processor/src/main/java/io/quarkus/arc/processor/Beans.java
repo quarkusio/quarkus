@@ -34,12 +34,13 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
-import io.quarkus.gizmo.Gizmo;
+import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
 
 public final class Beans {
 
@@ -696,7 +697,7 @@ public final class Beans {
                 if (injection.isField() && Modifier.isPrivate(injection.getTarget().asField().flags())) {
                     bytecodeTransformerConsumer
                             .accept(new BytecodeTransformer(bean.getTarget().get().asClass().name().toString(),
-                                    new PrivateInjectedFieldTransformFunction(injection.getTarget().asField().name())));
+                                    new PrivateInjectedFieldTransformFunction(injection.getTarget().asField())));
                 }
             }
         }
@@ -791,7 +792,7 @@ public final class Beans {
                 for (Injection injection : bean.getInjections()) {
                     if (injection.isField() && Modifier.isPrivate(injection.getTarget().asField().flags())) {
                         bytecodeTransformerConsumer.accept(new BytecodeTransformer(beanClass.name().toString(),
-                                new PrivateInjectedFieldTransformFunction(injection.getTarget().asField().name())));
+                                new PrivateInjectedFieldTransformFunction(injection.getTarget().asField())));
                     }
                 }
             }
@@ -1046,8 +1047,7 @@ public final class Beans {
         Integer computedPriority = deployment.computeAlternativePriority(target, stereotypes);
         if (computedPriority != null) {
             if (alternativePriority != null) {
-                LOGGER.infof(
-                        "Computed priority [%s] overrides the priority [%s] declared via @Priority",
+                LOGGER.infof("Computed priority [%s] overrides the priority [%s] declared via @Priority",
                         computedPriority, alternativePriority);
             }
             alternativePriority = computedPriority;
@@ -1059,17 +1059,10 @@ public final class Beans {
 
         @Override
         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-
-                @Override
-                public void visit(int version, int access, String name, String signature,
-                        String superName,
-                        String[] interfaces) {
-                    LOGGER.debugf("Final flag removed from bean class %s", className);
-                    super.visit(version, access = access & (~Opcodes.ACC_FINAL), name, signature,
-                            superName, interfaces);
-                }
-            };
+            ClassTransformer transformer = new ClassTransformer(className);
+            transformer.removeModifiers(Opcodes.ACC_FINAL);
+            LOGGER.debugf("Final flag removed from bean class %s", className);
+            return transformer.applyTo(classVisitor);
         }
     }
 
@@ -1083,26 +1076,13 @@ public final class Beans {
 
         @Override
         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-
-                @Override
-                public void visit(int version, int access, String name, String signature,
-                        String superName,
-                        String[] interfaces) {
-                    super.visit(version, access, name, signature, superName, interfaces);
-                    MethodVisitor mv = visitMethod(Modifier.PUBLIC | Opcodes.ACC_SYNTHETIC, Methods.INIT, "()V", null,
-                            null);
-                    mv.visitCode();
-                    mv.visitVarInsn(Opcodes.ALOAD, 0);
-                    mv.visitMethodInsn(Opcodes.INVOKESPECIAL, superClassName, Methods.INIT, "()V",
-                            false);
-                    // NOTE: it seems that we do not need to handle final fields?
-                    mv.visitInsn(Opcodes.RETURN);
-                    mv.visitMaxs(1, 1);
-                    mv.visitEnd();
-                    LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
-                }
-            };
+            ClassTransformer transformer = new ClassTransformer(className);
+            MethodCreator constructor = transformer.addMethod(MethodDescriptor.ofConstructor(className));
+            constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClassName), constructor.getThis());
+            // NOTE: it seems that we do not need to handle final fields
+            constructor.returnVoid();
+            LOGGER.debugf("Added a no-args constructor to bean class: %s", className);
+            return transformer.applyTo(classVisitor);
         }
 
     }
@@ -1111,20 +1091,11 @@ public final class Beans {
 
         @Override
         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-
-                @Override
-                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
-                        String[] exceptions) {
-                    if (name.equals(Methods.INIT)) {
-                        access = access & (~Opcodes.ACC_PRIVATE);
-                        LOGGER.debugf(
-                                "Changed visibility of a private no-args constructor to package-private: %s",
-                                className);
-                    }
-                    return super.visitMethod(access, name, descriptor, signature, exceptions);
-                }
-            };
+            ClassTransformer transformer = new ClassTransformer(className);
+            transformer.modifyMethod(MethodDescriptor.ofConstructor(className)).removeModifiers(Opcodes.ACC_PRIVATE);
+            LOGGER.debugf("Changed visibility of a private no-args constructor to package-private: %s",
+                    className);
+            return transformer.applyTo(classVisitor);
         }
 
     }
@@ -1132,32 +1103,19 @@ public final class Beans {
     // alters an injected field modifier from private to package private
     static class PrivateInjectedFieldTransformFunction implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-        public PrivateInjectedFieldTransformFunction(String fieldName) {
-            this.fieldName = fieldName;
+        public PrivateInjectedFieldTransformFunction(FieldInfo field) {
+            this.field = field;
         }
 
-        private String fieldName;
+        private FieldInfo field;
 
         @Override
         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-            return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-
-                @Override
-                public FieldVisitor visitField(
-                        int access,
-                        String name,
-                        String descriptor,
-                        String signature,
-                        Object value) {
-                    if (name.equals(fieldName)) {
-                        access = access & (~Opcodes.ACC_PRIVATE);
-                        LOGGER.debugf(
-                                "Changed visibility of an injected private field to package-private. Field name: %s in class: %s",
-                                name, className);
-                    }
-                    return super.visitField(access, name, descriptor, signature, value);
-                }
-            };
+            ClassTransformer transformer = new ClassTransformer(className);
+            transformer.modifyField(FieldDescriptor.of(field)).removeModifiers(Opcodes.ACC_PRIVATE);
+            LOGGER.debugf("Changed visibility of an injected private field to package-private. Field name: %s in class: %s",
+                    field.name(), className);
+            return transformer.applyTo(classVisitor);
         }
 
     }

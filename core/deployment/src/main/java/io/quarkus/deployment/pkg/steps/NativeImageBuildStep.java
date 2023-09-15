@@ -713,7 +713,7 @@ public class NativeImageBuildStep {
                 }
                 final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
                 if (!includeLocales.isEmpty()) {
-                    nativeImageArgs.add("-H:IncludeLocales=" + includeLocales);
+                    addExperimentalVMOption(nativeImageArgs, "-H:IncludeLocales=" + includeLocales);
                 }
 
                 nativeImageArgs.add("-J-Dfile.encoding=" + nativeConfig.fileEncoding());
@@ -744,7 +744,7 @@ public class NativeImageBuildStep {
                      * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
                      * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
                      */
-                    nativeImageArgs.add("-H:-ParseOnce");
+                    addExperimentalVMOption(nativeImageArgs, "-H:-ParseOnce");
                 }
 
                 if (nativeConfig.debug().enabled() && graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
@@ -756,9 +756,9 @@ public class NativeImageBuildStep {
                      *
                      * See https://github.com/quarkusio/quarkus/issues/30772 for more details.
                      */
-                    nativeImageArgs.add("-H:+TrackNodeSourcePosition");
+                    addExperimentalVMOption(nativeImageArgs, "-H:+TrackNodeSourcePosition");
                     /* See https://github.com/Karm/mandrel-integration-tests/issues/154 for more details. */
-                    nativeImageArgs.add("-H:+DebugCodeInfoUseSourceMappings");
+                    addExperimentalVMOption(nativeImageArgs, "-H:+DebugCodeInfoUseSourceMappings");
                 }
 
                 /**
@@ -780,7 +780,7 @@ public class NativeImageBuildStep {
                 nativeImageArgs.add("-J--add-opens=java.base/java.util=ALL-UNNAMED");
 
                 if (nativeConfig.enableReports()) {
-                    nativeImageArgs.add("-H:PrintAnalysisCallTreeType=CSV");
+                    addExperimentalVMOption(nativeImageArgs, "-H:PrintAnalysisCallTreeType=CSV");
                 }
 
                 // only available in GraalVM 22.3.0+.
@@ -829,7 +829,7 @@ public class NativeImageBuildStep {
                 }
                 if (nativeConfig.debug().enabled()) {
                     nativeImageArgs.add("-g");
-                    nativeImageArgs.add("-H:DebugInfoSourceSearchPath=" + APP_SOURCES);
+                    addExperimentalVMOption(nativeImageArgs, "-H:DebugInfoSourceSearchPath=" + APP_SOURCES);
                 }
                 if (nativeConfig.debugBuildProcess()) {
                     String debugBuildProcessHost;
@@ -864,14 +864,14 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--enable-url-protocols=" + String.join(",", protocols));
                 }
                 if (!inlineBeforeAnalysis) {
-                    nativeImageArgs.add("-H:-InlineBeforeAnalysis");
+                    addExperimentalVMOption(nativeImageArgs, "-H:-InlineBeforeAnalysis");
                 }
                 if (!pie.isEmpty()) {
                     nativeImageArgs.add("-H:NativeLinkerOption=" + pie);
                 }
 
                 if (!nativeConfig.enableIsolates()) {
-                    nativeImageArgs.add("-H:-SpawnIsolates");
+                    addExperimentalVMOption(nativeImageArgs, "-H:-SpawnIsolates");
                 }
                 if (!nativeConfig.enableJni()) {
                     log.warn(
@@ -887,16 +887,18 @@ public class NativeImageBuildStep {
                                     + " will be removed in a future Quarkus version.");
                 }
                 if (nativeConfig.enableVmInspection()) {
-                    nativeImageArgs.add("-H:+AllowVMInspection");
+                    addExperimentalVMOption(nativeImageArgs, "-H:+AllowVMInspection");
                 }
 
+                List<NativeConfig.MonitoringOption> monitoringOptions = new ArrayList<>();
+                monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
                 if (nativeConfig.monitoring().isPresent()) {
-                    List<NativeConfig.MonitoringOption> monitoringOptions = nativeConfig.monitoring().get();
-                    if (!monitoringOptions.isEmpty()) {
-                        nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
-                                .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
-                    }
+                    monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
+                nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
+                        .distinct()
+                        .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));
+
                 if (nativeConfig.autoServiceLoaderRegistration()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+UseServiceLoaderFeature");
                     //When enabling, at least print what exactly is being added:
@@ -914,15 +916,16 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeConfig.enableDashboardDump()) {
-                    nativeImageArgs.add("-H:DashboardDump=" + outputTargetBuildItem.getBaseName() + "_dashboard.dump");
-                    nativeImageArgs.add("-H:+DashboardAll");
+                    addExperimentalVMOption(nativeImageArgs,
+                            "-H:DashboardDump=" + outputTargetBuildItem.getBaseName() + "_dashboard.dump");
+                    addExperimentalVMOption(nativeImageArgs, "-H:+DashboardAll");
                 }
 
                 if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
                     String additionalSecurityProviders = nativeImageSecurityProviders.stream()
                             .map(p -> p.getSecurityProvider())
                             .collect(Collectors.joining(","));
-                    nativeImageArgs.add("-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
+                    addExperimentalVMOption(nativeImageArgs, "-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
                 }
 
                 if (jpmsExports != null) {
@@ -1004,7 +1007,7 @@ public class NativeImageBuildStep {
                                             + CONTAINER_BUILD_VOLUME_PATH + "/" + MOVED_TRUST_STORE_NAME);
                                 } catch (IOException e) {
                                     throw new UncheckedIOException("Unable to copy trustStore file '" + configuredTrustStorePath
-                                            + "' to volume root directory '" + outputDir.toAbsolutePath().toString() + "'", e);
+                                            + "' to volume root directory '" + outputDir.toAbsolutePath() + "'", e);
                                 }
                             }
                         } else {

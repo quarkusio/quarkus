@@ -1,14 +1,16 @@
 package io.quarkus.it.csrf;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.net.URL;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
@@ -20,12 +22,19 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
-import io.restassured.http.Header;
+import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
 public class CsrfReactiveTest {
+
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+
+    @TestHTTPResource
+    URL url;
 
     @Test
     public void testCsrfTokenInForm() throws Exception {
@@ -196,76 +205,80 @@ public class CsrfReactiveTest {
 
     @Test
     public void testCsrfTokenHeaderValue() throws Exception {
-        try (final WebClient webClient = createWebClient()) {
+        Vertx vertx = Vertx.vertx();
+        io.vertx.ext.web.client.WebClient vertxWebClient = io.vertx.ext.web.client.WebClient.create(vertx);
+        try {
+            try (final WebClient webClient = createWebClient()) {
 
-            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
-            assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
-            List<DomElement> inputs = htmlPage.getElementsByIdAndOrName("X-CSRF-TOKEN");
-            String csrfToken = inputs.get(0).asNormalizedText();
+                HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
+                assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
+                List<DomElement> inputs = htmlPage.getElementsByIdAndOrName("X-CSRF-TOKEN");
+                String csrfToken = inputs.get(0).asNormalizedText();
 
-            Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
-            assertNotNull(csrfCookie);
+                Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
+                assertNotNull(csrfCookie);
 
-            RestAssured.given()
-                    .header("Authorization", basicAuth("alice", "alice"))
-                    .header(new Header("X-CSRF-TOKEN", csrfToken))
-                    .cookie(csrfCookie.getName(), csrfCookie.getValue())
-                    .urlEncodingEnabled(true)
-                    .param("csrf-header", "X-CSRF-TOKEN")
-                    .post("/service/csrfTokenWithHeader")
-                    .then()
-                    .body(Matchers.equalTo("verified:true:tokenHeaderIsSet=true"));
-            webClient.getCookieManager().clearCookies();
+                assurePostFormPath(vertxWebClient, "/service/csrfTokenWithHeader", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
+                assurePostFormPath(vertxWebClient, "//service/csrfTokenWithHeader", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
+
+                webClient.getCookieManager().clearCookies();
+            }
+        } finally {
+            closeVertxWebClient(vertxWebClient, vertx);
         }
     }
 
     @Test
     public void testCsrfTokenHeaderValueJson() throws Exception {
-        try (final WebClient webClient = createWebClient()) {
+        Vertx vertx = Vertx.vertx();
+        io.vertx.ext.web.client.WebClient vertxWebClient = io.vertx.ext.web.client.WebClient.create(vertx);
+        try {
+            try (final WebClient webClient = createWebClient()) {
 
-            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
-            assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
-            List<DomElement> inputs = htmlPage.getElementsByIdAndOrName("X-CSRF-TOKEN");
-            String csrfToken = inputs.get(0).asNormalizedText();
+                HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
+                assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
+                List<DomElement> inputs = htmlPage.getElementsByIdAndOrName("X-CSRF-TOKEN");
+                String csrfToken = inputs.get(0).asNormalizedText();
 
-            Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
-            assertNotNull(csrfCookie);
+                Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
+                assertNotNull(csrfCookie);
 
-            RestAssured.given()
-                    .header("Authorization", basicAuth("alice", "alice"))
-                    .header(new Header("X-CSRF-TOKEN", csrfToken))
-                    .cookie(csrfCookie.getName(), csrfCookie.getValue())
-                    .header(new Header("Content-Type", "application/json"))
-                    .body("{}")
-                    .post("/service/csrfTokenWithHeader")
-                    .then()
-                    .body(Matchers.equalTo("verified:true:tokenHeaderIsSet=true"));
+                assurePostJsonPath(vertxWebClient, "/service/csrfTokenWithHeader", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
+                assurePostJsonPath(vertxWebClient, "//service/csrfTokenWithHeader", 200, csrfCookie,
+                        csrfToken, "verified:true:tokenHeaderIsSet=true");
 
-            webClient.getCookieManager().clearCookies();
+                webClient.getCookieManager().clearCookies();
+            }
+        } finally {
+            closeVertxWebClient(vertxWebClient, vertx);
         }
     }
 
     @Test
     public void testWrongCsrfTokenHeaderValue() throws Exception {
-        try (final WebClient webClient = createWebClient()) {
+        Vertx vertx = Vertx.vertx();
+        io.vertx.ext.web.client.WebClient vertxWebClient = io.vertx.ext.web.client.WebClient.create(vertx);
+        try {
+            try (final WebClient webClient = createWebClient()) {
 
-            HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
-            assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
+                HtmlPage htmlPage = webClient.getPage("http://localhost:8081/service/csrfTokenWithHeader");
+                assertEquals("CSRF Token Header Test", htmlPage.getTitleText());
 
-            Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
-            assertNotNull(csrfCookie);
+                Cookie csrfCookie = webClient.getCookieManager().getCookie("csrftoken");
+                assertNotNull(csrfCookie);
 
-            RestAssured.given()
-                    .header("Authorization", basicAuth("alice", "alice"))
-                    // CSRF cookie is signed, so passing it as a header value will fail
-                    .header(new Header("X-CSRF-TOKEN", csrfCookie.getValue()))
-                    .cookie(csrfCookie.getName(), csrfCookie.getValue())
-                    .urlEncodingEnabled(true)
-                    .param("csrf-header", "X-CSRF-TOKEN")
-                    .post("/service/csrfTokenWithHeader")
-                    .then()
-                    .statusCode(400);
-            webClient.getCookieManager().clearCookies();
+                // CSRF cookie is signed, so passing it as a header value will fail
+                assurePostFormPath(vertxWebClient, "/service/csrfTokenWithHeader", 400, csrfCookie,
+                        csrfCookie.getValue(), null);
+                assurePostFormPath(vertxWebClient, "//service/csrfTokenWithHeader", 400, csrfCookie,
+                        csrfCookie.getValue(), null);
+                webClient.getCookieManager().clearCookies();
+            }
+        } finally {
+            closeVertxWebClient(vertxWebClient, vertx);
         }
     }
 
@@ -296,5 +309,47 @@ public class CsrfReactiveTest {
 
     private String basicAuth(String user, String password) {
         return "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes());
+    }
+
+    private void assurePostFormPath(io.vertx.ext.web.client.WebClient vertxWebClient, String path,
+            int expectedStatus, Cookie csrfCookie, String csrfToken, String responseBody) {
+        var req = vertxWebClient.post(url.getPort(), url.getHost(), path);
+        req.basicAuthentication("alice", "alice");
+        req.putHeader("X-CSRF-TOKEN", csrfToken);
+        req.putHeader("Cookie", csrfCookie.getName() + "=" + csrfCookie.getValue());
+
+        var result = req.sendForm(io.vertx.core.MultiMap.caseInsensitiveMultiMap()
+                .add("csrf-header", "X-CSRF-TOKEN"));
+
+        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        assertEquals(expectedStatus, result.result().statusCode(), path);
+        if (responseBody != null) {
+            assertEquals(responseBody, result.result().bodyAsString(), path);
+        }
+    }
+
+    private void assurePostJsonPath(io.vertx.ext.web.client.WebClient vertxWebClient, String path,
+            int expectedStatus, Cookie csrfCookie, String csrfToken, String responseBody) {
+        var req = vertxWebClient.post(url.getPort(), url.getHost(), path);
+        req.basicAuthentication("alice", "alice");
+        req.putHeader("X-CSRF-TOKEN", csrfToken);
+        req.putHeader("Cookie", csrfCookie.getName() + "=" + csrfCookie.getValue());
+
+        var result = req.sendJson(new JsonObject("{}"));
+
+        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        assertEquals(expectedStatus, result.result().statusCode(), path);
+        if (responseBody != null) {
+            assertEquals(responseBody, result.result().bodyAsString(), path);
+        }
+    }
+
+    private static void closeVertxWebClient(io.vertx.ext.web.client.WebClient vertxWebClient, Vertx vertx) {
+        if (vertxWebClient != null) {
+            vertxWebClient.close();
+        }
+        if (vertx != null) {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+        }
     }
 }

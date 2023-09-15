@@ -141,7 +141,7 @@ public class ParserTest {
         Expression machineStatusExpr = find(expressions, "machine.status");
         assertExpr(expressions, "OK", 1, "OK<when#" + machineStatusExpr.getGeneratedId() + ">");
 
-        assertExpr(expressions, "it_hasNext", 1, "|java.lang.Boolean|<loop-metadata>");
+        assertExpr(expressions, "it_hasNext", 1, "|java.lang.Boolean|<metadata>");
         assertExpr(expressions, "not_typesafe", 1, null);
     }
 

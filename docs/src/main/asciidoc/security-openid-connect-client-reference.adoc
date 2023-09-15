@@ -1117,6 +1117,66 @@ The `quarkus-oidc-token-propagation-reactive` extension provides `io.quarkus.oid
 The `quarkus-oidc-token-propagation-reactive` extension (as opposed to the non-reactive `quarkus-oidc-token-propagation` extension) does not currently support the exchanging or resigning the tokens before the propagation.
 However, these features may be added in the future.
 
+[[oidc-client-graphql-client]]
+== GraphQL client integration
+
+The `quarkus-oidc-client-graphql` extension provides a way to integrate an
+OIDC client into xref:smallrye-graphql-client.adoc[GraphQL clients]. This
+works similarly as with REST clients. When this extension is present, any
+configured (that means NOT created programmatically via the builder, but via
+configuration properties) GraphQL client will attempt to use the OIDC client
+to obtain an access token and set it as an `Authorization` header value.
+OIDC client will also refresh expired access tokens.
+
+To configure which OIDC client should be used by GraphQL client, select one of the configured OIDC clients with the `quarkus.oidc-client-graphql.client-name` property, for example:
+
+----
+quarkus.oidc-client-graphql.client-name=oidc-client-for-graphql
+
+# example declaration of the OIDC client itself
+quarkus.oidc-client.oidc-client-for-graphql.auth-server-url=${keycloak.url}
+quarkus.oidc-client.oidc-client-for-graphql.grant.type=password
+quarkus.oidc-client.oidc-client-for-graphql.grant-options.password.username=${username}
+quarkus.oidc-client.oidc-client-for-graphql.grant-options.password.password=${password}
+quarkus.oidc-client.oidc-client-for-graphql.client-id=${quarkus.oidc.client-id}
+quarkus.oidc-client.oidc-client-for-graphql.credentials.client-secret.value=${keycloak.credentials.secret}
+quarkus.oidc-client.oidc-client-for-graphql.credentials.client-secret.method=POST
+----
+
+NOTE: If you don't specify the `quarkus.oidc-client-graphql.client-name` property,
+GraphQL clients will use the default OIDC client (without an explicit name).
+
+Specifically for typesafe GraphQL clients, you can override this on a
+per-client basis by annotating the `GraphQLClientApi` interface with
+`@io.quarkus.oidc.client.filter.OidcClientFilter`. For example:
+
+[source,java]
+----
+@GraphQLClientApi(configKey = "order-client")
+@OidcClientFilter("oidc-client-for-graphql")
+public interface OrdersGraphQLClient {
+    // queries, mutations and subscriptions go here...
+}
+----
+
+To be able to use this with a programmatically created GraphQL client, both
+builders (`VertxDynamicGraphQLClientBuilder` and
+`VertxTypesafeGraphQLClientBuilder`) contain a method `dynamicHeader(String,
+Uni<String>`) that allows you to plug in a header that might change for
+every request. To plug an OIDC client into it, use
+
+[source,java]
+----
+@Inject
+OidcClients oidcClients;
+
+VertxTypesafeGraphQLClientBuilder builder = ....;
+Uni<String> tokenUni = oidcClients.getClient("OIDC_CLIENT_NAME")
+    .getTokens().map(t -> "Bearer " + t.getAccessToken());
+builder.dynamicHeader("Authorization", tokenUni);
+VertxDynamicGraphQLClient client = builder.build();
+----
+
 == References
 
 * xref:security-openid-connect-client.adoc[OpenID Connect Client and Token Propagation Quickstart]

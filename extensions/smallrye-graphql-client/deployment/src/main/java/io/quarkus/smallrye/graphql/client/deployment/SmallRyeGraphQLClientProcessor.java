@@ -170,7 +170,8 @@ public class SmallRyeGraphQLClientProcessor {
             shortNamesToQualifiedNames.put(clazz.name().withoutPackagePrefix(), clazz.name().toString());
             AnnotationValue configKeyValue = annotation.value("configKey");
             String configKey = configKeyValue != null ? configKeyValue.asString() : null;
-            knownConfigKeys.add((configKey != null && !configKey.equals("")) ? configKey : clazz.name().toString());
+            String actualConfigKey = (configKey != null && !configKey.equals("")) ? configKey : clazz.name().toString();
+            knownConfigKeys.add(actualConfigKey);
         }
 
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT)) {
@@ -181,7 +182,8 @@ public class SmallRyeGraphQLClientProcessor {
             knownConfigKeys.add(configKey);
         }
 
-        RuntimeValue<GraphQLClientSupport> support = recorder.clientSupport(shortNamesToQualifiedNames, knownConfigKeys);
+        RuntimeValue<GraphQLClientSupport> support = recorder.clientSupport(shortNamesToQualifiedNames,
+                knownConfigKeys);
 
         DotName supportClassName = DotName.createSimple(GraphQLClientSupport.class.getName());
         SyntheticBeanBuildItem bean = SyntheticBeanBuildItem

@@ -796,6 +796,11 @@ public class NativeImageBuildStep {
                             "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }
 
+                // only available in GraalVM 23.1.0+. Expected to become the default in GraalVM 24.0.0.
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
+                    nativeImageArgs.add("--strict-image-heap");
+                }
+
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
                  * quarkus.native.additional-build-args. So if you need a parameter to be overridable through

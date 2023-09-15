@@ -96,6 +96,7 @@ The current tenant's discovered link:https://openid.net/specs/openid-connect-dis
 
 The default tenant's `OidcConfigurationMetadata` is injected if the endpoint is public.
 
+[[token-claims-and-security-identity-roles]]
 === Token Claims And SecurityIdentity Roles
 
 SecurityIdentity roles can be mapped from the verified JWT access tokens as follows:
@@ -111,6 +112,50 @@ If the token is opaque (binary) then a `scope` property from the remote token in
 If UserInfo is the source of the roles then set `quarkus.oidc.authentication.user-info-required=true` and `quarkus.oidc.roles.source=userinfo`, and if needed, `quarkus.oidc.roles.role-claim-path`.
 
 Additionally, a custom `SecurityIdentityAugmentor` can also be used to add the roles as documented in xref:security-customization.adoc#security-identity-customization[Security Identity Customization].
+
+[[token-scopes-and-security-identity-permissions]]
+=== Token scopes And SecurityIdentity permissions
+
+SecurityIdentity permissions are mapped in the form of the `io.quarkus.security.StringPermission` from the scope parameter of the <<token-claims-and-security-identity-roles,source of the roles>>, using the same claim separator.
+
+[source, java]
+----
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.quarkus.security.PermissionsAllowed;
+
+@Path("/service")
+public class ProtectedResource {
+
+    @Inject
+    JsonWebToken accessToken;
+
+    @PermissionsAllowed("email") <1>
+    @GET
+    @Path("/email")
+    public Boolean isUserEmailAddressVerifiedByUser() {
+        return accessToken.getClaim(Claims.email_verified.name());
+    }
+
+    @PermissionsAllowed("orders_read") <2>
+    @GET
+    @Path("/order")
+    public List<Order> listOrders() {
+        return List.of(new Order(1));
+    }
+
+}
+----
+<1> Only requests with OpenID Connect scope `email` are going to be granted access.
+<2> The read access is limited to the client requests with scope `orders_read`.
+
+Please refer to the Permission annotation section of the xref:security-authorize-web-endpoints-reference.adoc#permission-annotation[Authorization of web endpoints]
+guide for more information about the `io.quarkus.security.PermissionsAllowed` annotation.
 
 [[token-verification-introspection]]
 === Token Verification And Introspection

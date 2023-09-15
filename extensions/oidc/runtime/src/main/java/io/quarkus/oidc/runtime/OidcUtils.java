@@ -1,17 +1,22 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
+
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
@@ -37,6 +42,7 @@ import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.security.AuthenticationFailedException;
+import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
@@ -261,12 +267,48 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         setRoutingContextAttribute(builder, vertxContext);
         setSecurityIdentityRoles(builder, config, rolesJson);
+        setSecurityIdentityPermissions(builder, config, rolesJson);
         setSecurityIdentityUserInfo(builder, userInfo);
         setSecurityIdentityIntrospection(builder, introspectionResult);
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
         setBlockingApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
         return builder.build();
+    }
+
+    static void setSecurityIdentityPermissions(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
+            JsonObject permissionsJson) {
+        addTokenScopesAsPermissions(builder, findClaimWithRoles(config.getRoles(), TOKEN_SCOPE, permissionsJson));
+    }
+
+    static void addTokenScopesAsPermissions(Builder builder, Collection<String> scopes) {
+        if (!scopes.isEmpty()) {
+            builder.addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
+
+                private final Permission[] permissions = transformScopesToPermissions(scopes);
+
+                @Override
+                public Uni<Boolean> apply(Permission requiredPermission) {
+                    for (Permission possessedPermission : permissions) {
+                        if (possessedPermission.implies(requiredPermission)) {
+                            // access granted
+                            return Uni.createFrom().item(Boolean.TRUE);
+                        }
+                    }
+                    // access denied
+                    return Uni.createFrom().item(Boolean.FALSE);
+                }
+            });
+        }
+    }
+
+    private static Permission[] transformScopesToPermissions(Collection<String> scopes) {
+        final Permission[] permissions = new Permission[scopes.size()];
+        int i = 0;
+        for (String scope : scopes) {
+            permissions[i++] = new StringPermission(scope);
+        }
+        return permissions;
     }
 
     public static void setSecurityIdentityRoles(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,

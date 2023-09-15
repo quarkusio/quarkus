@@ -400,6 +400,7 @@ It is possible to use multiple expressions in the role definition.
 In development mode, it allows any authenticated user.
 <5> Property expression `all-roles` will be treated as a collection type `List`, therefore the endpoint will be accessible for roles `Administrator`, `Software`, `Tester` and `User`.
 
+[[permission-annotation]]
 === Permission annotation
 
 Quarkus also provides the `io.quarkus.security.PermissionsAllowed` annotation, which authorizes any authenticated user with the given permission to access the resource.
@@ -728,3 +729,4 @@ CAUTION: Annotation permissions do not work with the custom xref:security-custom
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
 * xref:security-basic-authentication.adoc[Basic authentication]
 * xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
+* xref:security-oidc-bearer-token-authentication.adoc#token-scopes-and-security-identity-permissions[OpenID Connect Bearer Token Scopes And SecurityIdentity Permissions]

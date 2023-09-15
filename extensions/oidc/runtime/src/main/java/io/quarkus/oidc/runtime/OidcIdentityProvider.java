@@ -330,6 +330,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 Set<String> scopes = result.introspectionResult.getScopes();
                 if (scopes != null) {
                     builder.addRoles(scopes);
+                    OidcUtils.addTokenScopesAsPermissions(builder, scopes);
                 }
             }
             builder.setPrincipal(new Principal() {
@@ -339,8 +340,9 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 }
             });
             if (userInfo != null) {
-                OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig,
-                        new JsonObject(userInfo.getJsonObject().toString()));
+                var rolesJson = new JsonObject(userInfo.getJsonObject().toString());
+                OidcUtils.setSecurityIdentityRoles(builder, resolvedContext.oidcConfig, rolesJson);
+                OidcUtils.setSecurityIdentityPermissions(builder, resolvedContext.oidcConfig, rolesJson);
             }
             OidcUtils.setBlockingApiAttribute(builder, vertxContext);
             OidcUtils.setTenantIdAttribute(builder, resolvedContext.oidcConfig);

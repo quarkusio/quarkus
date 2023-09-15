@@ -50,9 +50,18 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setTenantId("tenant-oidc");
                     String uri = context.request().absoluteURI();
                     // authServerUri points to the JAX-RS `OidcResource`, root path is `/oidc`
-                    String authServerUri = path.contains("tenant-opaque")
-                            ? uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc")
-                            : uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+                    final String authServerUri;
+                    if (path.contains("tenant-opaque")) {
+                        if (path.endsWith("/tenant-opaque/tenant-oidc/api/user")) {
+                            authServerUri = uri.replace("/tenant-opaque/tenant-oidc/api/user", "/oidc");
+                        } else if (path.endsWith("/tenant-opaque/tenant-oidc/api/user-permission")) {
+                            authServerUri = uri.replace("/tenant-opaque/tenant-oidc/api/user-permission", "/oidc");
+                        } else {
+                            authServerUri = uri.replace("/tenant-opaque/tenant-oidc/api/admin-permission", "/oidc");
+                        }
+                    } else {
+                        authServerUri = uri.replace("/tenant/tenant-oidc/api/user", "/oidc");
+                    }
                     config.setAuthServerUrl(authServerUri);
                     config.setClientId("client");
                     config.setAllowTokenIntrospectionCache(false);

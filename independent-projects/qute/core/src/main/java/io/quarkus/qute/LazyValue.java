@@ -1,10 +1,14 @@
 package io.quarkus.qute;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-final class LazyValue<T> {
+class LazyValue<T> {
 
     private final Supplier<T> supplier;
+
+    private final Lock lock = new ReentrantLock();
 
     private transient volatile T value;
 
@@ -17,11 +21,15 @@ final class LazyValue<T> {
         if (valueCopy != null) {
             return valueCopy;
         }
-        synchronized (this) {
+
+        lock.lock();
+        try {
             if (value == null) {
                 value = supplier.get();
             }
             return value;
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -30,9 +38,9 @@ final class LazyValue<T> {
     }
 
     public void clear() {
-        synchronized (this) {
-            value = null;
-        }
+        lock.lock();
+        value = null;
+        lock.unlock();
     }
 
     public boolean isSet() {

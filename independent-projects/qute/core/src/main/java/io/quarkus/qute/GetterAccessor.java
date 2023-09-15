@@ -15,16 +15,10 @@ class GetterAccessor implements ValueAccessor, AccessorCandidate {
         this.method = method;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public CompletionStage<Object> getValue(Object instance) {
         try {
-            Object ret = method.invoke(instance);
-            if (ret instanceof CompletionStage) {
-                return (CompletionStage<Object>) ret;
-            } else {
-                return CompletedStage.of(ret);
-            }
+            return CompletionStageSupport.toCompletionStage(method.invoke(instance));
         } catch (Exception e) {
             throw new IllegalStateException("Reflection invocation error", e);
         }

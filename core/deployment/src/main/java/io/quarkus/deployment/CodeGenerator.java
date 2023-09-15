@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.StringJoiner;
@@ -19,6 +20,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigValue;
+import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
@@ -37,6 +41,7 @@ import io.quarkus.paths.OpenPathTree;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
@@ -270,7 +275,12 @@ public class CodeGenerator {
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
         return readConfig(appModel, launchMode, buildSystemProps, deploymentClassLoader,
-                configReader -> configReader.initConfiguration(launchMode, buildSystemProps, appModel.getPlatformProperties()));
+                configReader -> {
+                    final SmallRyeConfig config = configReader.initConfiguration(launchMode, buildSystemProps,
+                            appModel.getPlatformProperties());
+                    final Map<Class<?>, Object> objectsByClass = configReader.readConfiguration(config).getObjectsByClass();
+                    return new BuildTimeConfig(config, objectsByClass);
+                });
     }
 
     public static <T> T readConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
@@ -401,5 +411,67 @@ public class CodeGenerator {
     @FunctionalInterface
     private interface CodeGenAction<T> {
         T fire() throws CodeGenException;
+    }
+
+    /**
+     * Beyond regular functionality brought by the delegate {@link Config}, this implementation is able to lookup
+     * root build time configuration POJOs from the {@link #objectsByClass} map.
+     */
+    static class BuildTimeConfig implements Config {
+
+        private final Config delegate;
+        private final Map<Class<?>, Object> objectsByClass;
+
+        public BuildTimeConfig(Config delegate, Map<Class<?>, Object> objectsByClass) {
+            this.delegate = delegate;
+            this.objectsByClass = objectsByClass;
+        }
+
+        public <T> T getValue(String propertyName, Class<T> propertyType) {
+            final Object result = objectsByClass.get(propertyType);
+            if (result != null) {
+                final ConfigMapping configMapping = propertyType.getAnnotation(ConfigMapping.class);
+                if (configMapping != null) {
+                    final String prefix = configMapping.prefix();
+                    if (prefix != null && prefix.equals(propertyName)) {
+                        return (T) result;
+                    }
+                }
+            }
+            return delegate.getValue(propertyName, propertyType);
+        }
+
+        public ConfigValue getConfigValue(String propertyName) {
+            return delegate.getConfigValue(propertyName);
+        }
+
+        public <T> List<T> getValues(String propertyName, Class<T> propertyType) {
+            return delegate.getValues(propertyName, propertyType);
+        }
+
+        public <T> Optional<T> getOptionalValue(String propertyName, Class<T> propertyType) {
+            return delegate.getOptionalValue(propertyName, propertyType);
+        }
+
+        public <T> Optional<List<T>> getOptionalValues(String propertyName, Class<T> propertyType) {
+            return delegate.getOptionalValues(propertyName, propertyType);
+        }
+
+        public Iterable<String> getPropertyNames() {
+            return delegate.getPropertyNames();
+        }
+
+        public Iterable<ConfigSource> getConfigSources() {
+            return delegate.getConfigSources();
+        }
+
+        public <T> Optional<Converter<T>> getConverter(Class<T> forType) {
+            return delegate.getConverter(forType);
+        }
+
+        public <T> T unwrap(Class<T> type) {
+            return delegate.unwrap(type);
+        }
+
     }
 }

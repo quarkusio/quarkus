@@ -33,11 +33,22 @@ public class AcmeCodegenProvider implements CodeGenProvider {
 
 	@Override
 	public boolean trigger(CodeGenContext context) throws CodeGenException {
+		/* Let's test whether getting build time config POJOs from the config works */
+		final AcmeBuildTimeConfig config = context.config().getValue("quarkus.acme", AcmeBuildTimeConfig.class);
+		if (config == null) {
+			throw new AssertionError("context.config().getValue(\"quarkus.acme\", AcmeBuildTimeConfig.class) should return a AcmeBuildTimeConfig instance");
+		}
+		if (!config.codegen().enabled()) {
+			throw new AssertionError("config.codegen().enabled() should have default value \"true\"");
+		}
+		if (config.codegen().stringOptional().isPresent()) {
+			throw new AssertionError("config.codegen().stringOptional() should have no value");
+		}
 		generateEndpoint(context, AcmeConstants.ACME_CONFIG_FACTORY_PROP);
 		generateEndpoint(context, AcmeConstants.ACME_CONFIG_PROVIDER_PROP);
 		return true;
 	}
-	
+
 	@Override
 	public boolean shouldRun(Path sourceDir, Config config) {
 		return !sourceDir.getParent().getFileName().toString().equals("generated-test-sources");
@@ -50,9 +61,9 @@ public class AcmeCodegenProvider implements CodeGenProvider {
 			throw new CodeGenException("Failed to generate sources", e);
 		}
 	}
-	
+
 	private static void generateEndpoint(Path outputDir, String name, String value) throws IOException {
-		
+
 		final StringBuilder sb = new StringBuilder();
 		boolean nextUpperCase = true;
 		for(int i = 0; i < name.length(); ++i) {
@@ -67,7 +78,7 @@ public class AcmeCodegenProvider implements CodeGenProvider {
 			}
 		}
 		sb.append("Resource");
-		
+
 		final String className = sb.toString();
 		final Path javaFile = outputDir.resolve("org").resolve(ACME).resolve(className + ".java");
 		Files.createDirectories(javaFile.getParent());

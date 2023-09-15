@@ -64,9 +64,9 @@ public class ObjectMapperProducer {
         for (ObjectMapperCustomizer customizer : sortedCustomizers) {
             customizer.customize(objectMapper);
         }
-        if (true) {
-            objectMapper.getFactory().setBufferRecyclerPool(BufferRecyclerPool.LockFreePool.shared());
-        }
+
+        objectMapper.getFactory().setBufferRecyclerPool(HybridJacksonPool.INSTANCE);
+
         return objectMapper;
     }
 

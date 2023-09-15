@@ -21,6 +21,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
+import io.quarkus.devtools.project.JavaVersion;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.project.state.ProjectState;
@@ -44,7 +45,16 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
 
     @Override
     public QuarkusCommandOutcome execute(QuarkusCommandInvocation invocation) throws QuarkusCommandException {
-        invocation.log().info("Detected project Java version: %s", invocation.getQuarkusProject().getJavaVersion());
+        final JavaVersion projectJavaVersion = invocation.getQuarkusProject().getJavaVersion();
+        invocation.log().info("Detected project Java version: %s", projectJavaVersion);
+        if (projectJavaVersion.isEmpty()) {
+            String instruction = invocation.getQuarkusProject().getBuildTool().isAnyGradle() ? "java>targetCompatibility"
+                    : "maven.compiler.release property";
+            invocation.log().error(String.format("Project Java version not detected, set %s to fix the error.", instruction));
+            return QuarkusCommandOutcome.failure();
+        } else {
+            invocation.log().info("Detected project Java version: %s", projectJavaVersion);
+        }
         final ApplicationModel appModel = invocation.getValue(UpdateProject.APP_MODEL);
         final ExtensionCatalog targetCatalog = invocation.getValue(UpdateProject.TARGET_CATALOG);
         final String targetPlatformVersion = invocation.getValue(UpdateProject.TARGET_PLATFORM_VERSION);
@@ -80,7 +90,8 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
                 final OptionalInt minJavaVersion = extensionsUpdateInfo.getMinJavaVersion();
                 final Optional<Integer> updateJavaVersion;
                 if (minJavaVersion.isPresent()
-                        && minJavaVersion.getAsInt() > invocation.getQuarkusProject().getJavaVersion().getAsInt()) {
+                        && projectJavaVersion.isPresent()
+                        && minJavaVersion.getAsInt() > projectJavaVersion.getAsInt()) {
                     updateJavaVersion = Optional.of(minJavaVersion.getAsInt());
                 } else {
                     updateJavaVersion = Optional.empty();
@@ -184,7 +195,7 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             return;
         }
 
-        if (extensionsUpdateInfo.getMinJavaVersion().isPresent()) {
+        if (extensionsUpdateInfo.getMinJavaVersion().isPresent() && project.getJavaVersion().isPresent()) {
             final Integer extensionsMinJavaVersion = extensionsUpdateInfo.getMinJavaVersion().getAsInt();
             if (extensionsMinJavaVersion > project.getJavaVersion().getAsInt()) {
                 log.warn("We detected that some of the updated extensions require an update of the Java version to: %s",

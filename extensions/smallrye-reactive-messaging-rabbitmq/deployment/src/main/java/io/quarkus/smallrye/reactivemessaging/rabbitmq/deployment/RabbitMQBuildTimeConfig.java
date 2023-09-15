@@ -10,7 +10,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class RabbitMQBuildTimeConfig {
 
     /**
-     * Configuration for DevServices. DevServices allows Quarkus to automatically start a RabbitMQ broker in dev and test mode.
+     * Configuration for DevServices.
+     * DevServices allows Quarkus to start a RabbitMQ broker in dev and test mode automatically.
      */
     @ConfigItem
     public RabbitMQDevServicesBuildTimeConfig devservices;
@@ -24,10 +25,11 @@ public class RabbitMQBuildTimeConfig {
     /**
      * The credentials provider bean name.
      * <p>
-     * It is the {@code &#64;Named} value of the credentials provider bean. It is used to discriminate if multiple
-     * CredentialsProvider beans are available.
+     * This is a bean name (as in {@code @Named}) of a bean that implements {@code CredentialsProvider}.
+     * It is used to select the credentials provider bean when multiple exist.
+     * This is unnecessary when there is only one credentials provider available.
      * <p>
-     * For Vault it is: vault-credentials-provider. Not necessary if there is only one credentials provider available.
+     * For Vault, the credentials provider bean name is {@code vault-credentials-provider}.
      */
     @ConfigItem
     public Optional<String> credentialsProviderName = Optional.empty();

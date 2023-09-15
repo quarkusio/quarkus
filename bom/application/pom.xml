@@ -38,7 +38,7 @@
         <micrometer.version>1.11.1</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
-        <graphql-java.version>20.2</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
+        <graphql-java.version>21.1</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
         <microprofile-config-api.version>3.0.3</microprofile-config-api.version>
         <microprofile-health-api.version>4.0.1</microprofile-health-api.version>
         <microprofile-metrics-api.version>4.0.1</microprofile-metrics-api.version>
@@ -55,7 +55,7 @@
         <smallrye-health.version>4.0.4</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.6.2</smallrye-open-api.version>
-        <smallrye-graphql.version>2.4.0</smallrye-graphql.version>
+        <smallrye-graphql.version>2.5.0</smallrye-graphql.version>
         <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>6.2.6</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.3.1</smallrye-jwt.version>

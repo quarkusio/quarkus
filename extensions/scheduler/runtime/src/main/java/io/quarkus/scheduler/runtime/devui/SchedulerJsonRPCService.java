@@ -184,13 +184,12 @@ public class SchedulerJsonRPCService {
                     ScheduledInvoker invoker = c
                             .createInvoker(metadata.getInvokerClassName());
                     if (invoker.isBlocking()) {
-                        vdc.executeBlocking(p -> {
+                        vdc.executeBlocking(() -> {
                             try {
                                 invoker.invoke(new DevUIScheduledExecution());
                             } catch (Exception ignored) {
-                            } finally {
-                                p.complete();
                             }
+                            return null;
                         }, false);
                     } else {
                         vdc.runOnContext(x -> {

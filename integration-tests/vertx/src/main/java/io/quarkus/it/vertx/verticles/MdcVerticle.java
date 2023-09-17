@@ -19,10 +19,10 @@ public class MdcVerticle extends AbstractVerticle {
                     LOGGER.warn("Received message ### " + MDC.get(MDC_KEY));
                     vertx.setTimer(50, l -> {
                         LOGGER.warn("Timer fired ### " + MDC.get(MDC_KEY));
-                        vertx.executeBlocking(fut -> {
+                        vertx.executeBlocking(() -> {
                             LOGGER.warn("Blocking task executed ### " + MDC.get(MDC_KEY));
-                            fut.complete();
-                        }, bar -> message.reply("OK-" + MDC.get(MDC_KEY)));
+                            return null;
+                        }).onComplete(bar -> message.reply("OK-" + MDC.get(MDC_KEY)));
                     });
                 })
                 .completionHandler(done);

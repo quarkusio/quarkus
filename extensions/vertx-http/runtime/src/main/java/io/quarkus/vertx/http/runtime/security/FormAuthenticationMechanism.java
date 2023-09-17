@@ -144,7 +144,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                 throw new IllegalStateException(
                         "Landing page is no set, please make sure 'quarkus.http.auth.form.landing-page' is configured properly.");
             }
-            location = exchange.request().scheme() + "://" + exchange.request().host() + landingPage;
+            location = exchange.request().scheme() + "://" + exchange.request().authority() + landingPage;
         }
         exchange.response().setStatusCode(302);
         exchange.response().headers().add(HttpHeaderNames.LOCATION, location);
@@ -173,14 +173,14 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     static void sendRedirect(final RoutingContext exchange, final String location) {
-        String loc = exchange.request().scheme() + "://" + exchange.request().host() + location;
+        String loc = exchange.request().scheme() + "://" + exchange.request().authority() + location;
         exchange.response().headers().add(HttpHeaderNames.LOCATION, loc);
         exchange.response().setStatusCode(302);
         exchange.response().end();
     }
 
     static Uni<ChallengeData> getRedirect(final RoutingContext exchange, final String location) {
-        String loc = exchange.request().scheme() + "://" + exchange.request().host() + location;
+        String loc = exchange.request().scheme() + "://" + exchange.request().authority() + location;
         return Uni.createFrom().item(new ChallengeData(302, "Location", loc));
     }
 

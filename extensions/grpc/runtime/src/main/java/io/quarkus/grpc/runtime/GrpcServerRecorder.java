@@ -495,9 +495,9 @@ public class GrpcServerRecorder {
             applyNettySettings(configuration, vsBuilder);
             if (launchMode == LaunchMode.DEVELOPMENT) {
                 vsBuilder.commandDecorator(command -> vertx.executeBlocking(
-                        event -> event.complete(GrpcHotReplacementInterceptor.fire()),
-                        false,
-                        (Handler<AsyncResult<Boolean>>) result -> devModeWrapper.run(command)));
+                        GrpcHotReplacementInterceptor::fire,
+                        false)
+                        .onComplete(result -> devModeWrapper.run(command)));
             }
             builder = vsBuilder;
         }
@@ -650,7 +650,7 @@ public class GrpcServerRecorder {
                 });
             } else {
                 // XDS server blocks on initialStartFuture
-                vertx.executeBlocking((Handler<Promise<Void>>) event -> {
+                vertx.executeBlocking(() -> {
                     try {
                         grpcServer.start();
                         int actualPort = grpcServer.getPort();
@@ -663,6 +663,7 @@ public class GrpcServerRecorder {
                         LOGGER.error("Unable to start gRPC server", e);
                         startPromise.fail(e);
                     }
+                    return null;
                 });
             }
         }

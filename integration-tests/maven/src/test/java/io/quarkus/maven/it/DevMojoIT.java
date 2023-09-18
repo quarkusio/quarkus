@@ -474,7 +474,10 @@ public class DevMojoIT extends LaunchMojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> devModeClient.getHttpResponse("/app/hello").contains("hello " + uuid));
+                .until(() -> {
+                    System.out.println(devModeClient.getHttpResponse("/app/hello"));
+                    return devModeClient.getHttpResponse("/app/hello").contains("hello " + uuid);
+                });
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)

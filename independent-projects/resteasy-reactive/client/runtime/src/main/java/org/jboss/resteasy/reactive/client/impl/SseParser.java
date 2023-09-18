@@ -144,9 +144,6 @@ public class SseParser implements Handler<Buffer> {
     }
 
     private void dispatchEvent() {
-        // ignore empty events
-        if (dataBuffer.length() == 0 && commentBuffer.length() == 0)
-            return;
         WebTargetImpl webTarget = sseEventSource.getWebTarget();
         InboundSseEventImpl event;
         // tests don't set a web target, and we don't want them to end up starting vertx just to test parsing

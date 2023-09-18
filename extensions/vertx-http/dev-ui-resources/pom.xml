@@ -16,7 +16,7 @@
             <groupId>org.mvnpm.at.vaadin</groupId>
             <artifactId>router</artifactId>
             <scope>runtime</scope>
-        </dependency>    
+        </dependency>
         <dependency>
             <groupId>org.mvnpm</groupId>
             <artifactId>path-to-regexp</artifactId>
@@ -53,7 +53,7 @@
             <artifactId>dedupe-mixin</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
         <!-- Lit -->
         <dependency>
             <groupId>org.mvnpm</groupId>
@@ -90,21 +90,21 @@
             <artifactId>lit-element-state</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
         <!-- Apache echarts -->
         <dependency>
             <groupId>org.mvnpm</groupId>
             <artifactId>echarts</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
         <!-- Code editor -->
         <dependency>
             <groupId>org.mvnpm.at.vanillawc</groupId>
             <artifactId>wc-codemirror</artifactId>
             <scope>runtime</scope>
         </dependency>
-            
+
         <!-- Polyfill for importmaps -->
         <dependency>
             <groupId>org.mvnpm</groupId>

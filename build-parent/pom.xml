@@ -169,6 +169,26 @@
         <!-- Quarkus Analytics -->
         <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
+        
+        <!-- Dev UI -->
+        <vaadin.version>24.1.7</vaadin.version>
+        <lit.version>2.8.0</lit.version>
+        <lit-element.version>3.3.3</lit-element.version>
+        <lit-html.version>2.8.0</lit-html.version>
+        <ssr-dom-shim.version>1.1.1</ssr-dom-shim.version>
+        <trusted-types.version>2.0.3</trusted-types.version>
+        <reactive-element.version>1.6.3</reactive-element.version>
+        <vaadin-usage-statistics.version>2.1.2</vaadin-usage-statistics.version>
+        <vaadin-development-mode-detector.version>2.0.6</vaadin-development-mode-detector.version>
+        <polymer.version>3.5.1</polymer.version>
+        <shadycss.version>1.11.2</shadycss.version>
+        <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
+        <vaadin-router.version>1.7.5</vaadin-router.version>
+        <lit-state.version>1.7.0</lit-state.version>
+        <echarts.version>5.4.3</echarts.version>
+        <wc-codemirror.version>2.1.0</wc-codemirror.version>
+        <es-module-shims.version>1.8.0</es-module-shims.version>
+        <path-to-regexp.version>2.4.0</path-to-regexp.version>
     </properties>
 
     <dependencyManagement>
@@ -361,6 +381,126 @@
                         <artifactId>artemis-server</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            
+            <!-- Dev UI -->
+            <!-- Vaadin Router -->
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>router</artifactId>
+                <version>${vaadin-router.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>path-to-regexp</artifactId>
+                <version>${path-to-regexp.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <!-- Vaadin Web components -->
+            <dependency>
+                <groupId>org.mvnpm.at.mvnpm</groupId>
+                <artifactId>vaadin-webcomponents</artifactId>
+                <version>${vaadin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>vaadin-usage-statistics</artifactId>
+                <version>${vaadin-usage-statistics.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.vaadin</groupId>
+                <artifactId>vaadin-development-mode-detector</artifactId>
+                <version>${vaadin-development-mode-detector.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.polymer</groupId>
+                <artifactId>polymer</artifactId>
+                <version>${polymer.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.webcomponents</groupId>
+                <artifactId>shadycss</artifactId>
+                <version>${shadycss.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.open-wc</groupId>
+                <artifactId>dedupe-mixin</artifactId>
+                <version>${dedupe-mixin.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Lit -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit</artifactId>
+                <version>${lit.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.lit</groupId>
+                <artifactId>reactive-element</artifactId>
+                <version>${reactive-element.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit-element</artifactId>
+                <version>${lit-element.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit-html</artifactId>
+                <version>${lit-html.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.lit-labs</groupId>
+                <artifactId>ssr-dom-shim</artifactId>
+                <version>${ssr-dom-shim.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm.at.types</groupId>
+                <artifactId>trusted-types</artifactId>
+                <version>${trusted-types.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>lit-element-state</artifactId>
+                <version>${lit-state.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Apache echarts -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>echarts</artifactId>
+                <version>${echarts.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Code editor -->
+            <dependency>
+                <groupId>org.mvnpm.at.vanillawc</groupId>
+                <artifactId>wc-codemirror</artifactId>
+                <version>${wc-codemirror.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Polyfill for importmaps -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>es-module-shims</artifactId>
+                <version>${es-module-shims.version}</version>
+                <scope>runtime</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

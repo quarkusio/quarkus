@@ -1485,7 +1485,7 @@ To enable Service Binding for supported extensions, add the `quarkus-kubernetes-
 * `quarkus-jdbc-mssql`
 * `quarkus-jdbc-mysql`
 * `quarkus-jdbc-postgresql`
-* `quarkus-mongo-client`
+* `quarkus-mongodb-client`
 
 * `quarkus-kafka-client`
 * `quarkus-smallrye-reactive-messaging-kafka`

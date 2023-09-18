@@ -3094,6 +3094,11 @@
                 <artifactId>quarkus-project-core-extension-codestarts</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus.junit5</groupId>
+                <artifactId>junit5-virtual-threads</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- External dependencies -->
 

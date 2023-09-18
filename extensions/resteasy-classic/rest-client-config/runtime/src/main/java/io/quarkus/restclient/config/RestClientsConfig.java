@@ -102,6 +102,8 @@ public class RestClientsConfig {
 
     public RestClientLoggingConfig logging;
 
+    public RestClientMultipartConfig multipart;
+
     /**
      * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
      *

@@ -29,6 +29,7 @@ import org.mockito.Mockito;
 
 import io.netty.handler.codec.http.multipart.HttpPostRequestEncoder;
 import io.quarkus.restclient.config.RestClientConfig;
+import io.quarkus.restclient.config.RestClientMultipartConfig;
 import io.quarkus.restclient.config.RestClientsConfig;
 
 @SuppressWarnings({ "SameParameterValue" })
@@ -103,6 +104,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 103);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, false);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_REDIRECTS, 104);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, 1024);
         Mockito.verify(restClientBuilderMock).followRedirects(true);
         Mockito.verify(restClientBuilderMock).register(MyResponseFilter1.class);
         Mockito.verify(restClientBuilderMock).queryParamStyle(QueryParamStyle.COMMA_SEPARATED);
@@ -145,6 +147,7 @@ public class RestClientCDIDelegateBuilderTest {
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 203);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.KEEP_ALIVE_ENABLED, true);
         Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_REDIRECTS, 204);
+        Mockito.verify(restClientBuilderMock).property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, 1024);
         Mockito.verify(restClientBuilderMock).followRedirects(true);
         Mockito.verify(restClientBuilderMock).register(MyResponseFilter2.class);
         Mockito.verify(restClientBuilderMock).queryParamStyle(QueryParamStyle.MULTI_PAIRS);
@@ -173,6 +176,8 @@ public class RestClientCDIDelegateBuilderTest {
         configRoot.connectionPoolSize = Optional.of(203);
         configRoot.keepAliveEnabled = Optional.of(true);
         configRoot.maxRedirects = Optional.of(204);
+        configRoot.multipart = new RestClientMultipartConfig();
+        configRoot.multipart.maxChunkSize = Optional.of(1024);
         configRoot.followRedirects = Optional.of(true);
         configRoot.providers = Optional
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter2");
@@ -211,6 +216,8 @@ public class RestClientCDIDelegateBuilderTest {
         clientConfig.keepAliveEnabled = Optional.of(false);
         clientConfig.maxRedirects = Optional.of(104);
         clientConfig.followRedirects = Optional.of(true);
+        clientConfig.multipart = new RestClientMultipartConfig();
+        clientConfig.multipart.maxChunkSize = Optional.of(1024);
         clientConfig.providers = Optional
                 .of("io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter1");
         clientConfig.queryParamStyle = Optional.of(QueryParamStyle.COMMA_SEPARATED);

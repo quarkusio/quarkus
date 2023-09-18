@@ -576,4 +576,4 @@ the `QUARKUS_AWS_LAMBDA_FORCE_USER_NAME` environment variable
 
 == SnapStart
 
-To optimize your application for Lambda SnapStart, check xref:amazon-snapstart.adoc[the SnapStart Configuration Documentation].
+To optimize your application for Lambda SnapStart, check xref:aws-lambda-snapstart.adoc[the SnapStart Configuration Documentation].

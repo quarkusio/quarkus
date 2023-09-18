@@ -60,10 +60,10 @@ public class VerticleDeployer {
 
                         vertx.setTimer(50, l -> {
                             LOGGER.info("Timer fired ### " + MDC.get(MDC_KEY));
-                            vertx.executeBlocking(fut -> {
+                            vertx.executeBlocking(() -> {
                                 LOGGER.info("Blocking task executed ### " + MDC.get(MDC_KEY));
-                                fut.complete();
-                            }, false, bar -> request.send(rar -> {
+                                return null;
+                            }, false).onComplete(bar -> request.send(rar -> {
                                 String value = (String) MDC.get(MDC_KEY);
                                 LOGGER.info("Received Web Client response ### " + value);
                                 req.response().end(value);

@@ -191,12 +191,12 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public String getRequestHost() {
-        return request.host();
+        return request.authority().toString();
     }
 
     @Override
     public void closeConnection() {
-        response.close();
+        request.connection().close();
     }
 
     @Override

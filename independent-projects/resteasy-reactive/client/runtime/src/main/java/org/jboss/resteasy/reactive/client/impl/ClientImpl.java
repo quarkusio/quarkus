@@ -647,18 +647,21 @@ public class ClientImpl implements Client {
         }
 
         @Override
+        @Deprecated
         public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered,
                 Handler<AsyncResult<T>> asyncResultHandler) {
             getDelegate().executeBlocking(blockingCodeHandler, ordered, asyncResultHandler);
         }
 
         @Override
+        @Deprecated
         public <T> void executeBlocking(Handler<Promise<T>> blockingCodeHandler,
                 Handler<AsyncResult<T>> asyncResultHandler) {
             getDelegate().executeBlocking(blockingCodeHandler, asyncResultHandler);
         }
 
         @Override
+        @Deprecated
         public <T> Future<T> executeBlocking(Handler<Promise<T>> blockingCodeHandler, boolean ordered) {
             return getDelegate().executeBlocking(blockingCodeHandler, ordered);
         }

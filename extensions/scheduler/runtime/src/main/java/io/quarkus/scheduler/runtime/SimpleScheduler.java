@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +69,6 @@ import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 @Typed(Scheduler.class)
@@ -406,14 +406,11 @@ public class SimpleScheduler implements Scheduler {
                             }
                         });
                     } else {
-                        context.executeBlocking(new Handler<Promise<Object>>() {
+                        context.executeBlocking(new Callable<Void>() {
                             @Override
-                            public void handle(Promise<Object> p) {
-                                try {
-                                    doInvoke(now, scheduledFireTime);
-                                } finally {
-                                    p.complete();
-                                }
+                            public Void call() {
+                                doInvoke(now, scheduledFireTime);
+                                return null;
                             }
                         }, false);
                     }

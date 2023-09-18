@@ -7,6 +7,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.jboss.logging.Logger;
@@ -17,7 +18,6 @@ import io.quarkus.dev.spi.RemoteDevState;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
@@ -80,16 +80,13 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         final String type = event.headers().get(HttpHeaderNames.CONTENT_TYPE);
         if (APPLICATION_QUARKUS.equals(type)) {
             currentSessionTimeout = time + 60000;
-            VertxCoreRecorder.getVertx().get().executeBlocking(new Handler<Promise<Object>>() {
+            VertxCoreRecorder.getVertx().get().executeBlocking(new Callable<Void>() {
                 @Override
-                public void handle(Promise<Object> promise) {
-                    try {
-                        handleRequest(event);
-                    } finally {
-                        promise.complete();
-                    }
+                public Void call() {
+                    handleRequest(event);
+                    return null;
                 }
-            }, null);
+            });
             return;
         }
         next.handle(event);
@@ -127,9 +124,9 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                 if (checkSession(event, b.getBytes())) {
                     return;
                 }
-                VertxCoreRecorder.getVertx().get().executeBlocking(new Handler<Promise<Object>>() {
+                VertxCoreRecorder.getVertx().get().executeBlocking(new Callable<Void>() {
                     @Override
-                    public void handle(Promise<Object> promise) {
+                    public Void call() {
                         try {
                             Throwable problem = (Throwable) new ObjectInputStream(new ByteArrayInputStream(b.getBytes()))
                                     .readObject();
@@ -157,11 +154,10 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                         } catch (Exception e) {
                             log.error("Connect failed", e);
                             event.response().setStatusCode(500).end();
-                        } finally {
-                            promise.complete();
                         }
+                        return null;
                     }
-                }, null);
+                });
             }
         }).exceptionHandler(new Handler<Throwable>() {
             @Override

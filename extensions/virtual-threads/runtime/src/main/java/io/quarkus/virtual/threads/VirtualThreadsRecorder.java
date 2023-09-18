@@ -156,13 +156,9 @@ public class VirtualThreadsRecorder {
                 if (!(context instanceof ContextInternal)) {
                     Infrastructure.getDefaultWorkerPool().execute(command);
                 } else {
-                    context.executeBlocking(fut -> {
-                        try {
-                            command.run();
-                            fut.complete(null);
-                        } catch (Exception e) {
-                            fut.fail(e);
-                        }
+                    context.executeBlocking(() -> {
+                        command.run();
+                        return null;
                     }, false);
                 }
             }

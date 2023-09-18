@@ -61,7 +61,7 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
     }
 
     static Uni<ChallengeData> getRedirect(final RoutingContext exchange, final String location) {
-        String loc = exchange.request().scheme() + "://" + exchange.request().host() + location;
+        String loc = exchange.request().scheme() + "://" + exchange.request().authority() + location;
         return Uni.createFrom().item(new ChallengeData(302, "Location", loc));
     }
 

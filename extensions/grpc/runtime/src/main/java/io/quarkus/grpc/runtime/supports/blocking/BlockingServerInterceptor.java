@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
@@ -21,9 +22,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 /**
@@ -115,7 +113,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
             // that should always be called before this interceptor
             ContextState state = requestContext.getState();
             ReplayListener<ReqT> replay = new ReplayListener<>(state);
-            vertx.executeBlocking(f -> {
+            vertx.executeBlocking(() -> {
                 ServerCall.Listener<ReqT> listener;
                 try {
                     requestContext.activate(state);
@@ -123,9 +121,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                 } finally {
                     requestContext.deactivate();
                 }
-                f.complete(listener);
-            }, false,
-                    (Handler<AsyncResult<ServerCall.Listener<ReqT>>>) event -> replay.setDelegate(event.result()));
+                return listener;
+            }, false)
+                    .onComplete(event -> replay.setDelegate(event.result()));
 
             return replay;
         } else {
@@ -185,14 +183,14 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
          */
         private void executeBlockingWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
             final Context grpcContext = Context.current();
-            Handler<Promise<Object>> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
+            Callable<Void> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
                     requestContextState, getRequestContext(), this);
             if (devMode) {
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
             }
             this.isConsumingFromIncomingEvents = true;
-            vertx.executeBlocking(blockingHandler, true, p -> {
+            vertx.executeBlocking(blockingHandler, true).onComplete(p -> {
                 Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
                 if (next != null) {
                     executeBlockingWithRequestContext(next);
@@ -275,21 +273,25 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
 
         private void executeVirtualWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
             final Context grpcContext = Context.current();
-            Handler<Promise<Object>> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
+            Callable<Void> blockingHandler = new BlockingExecutionHandler<>(consumer, grpcContext, delegate,
                     requestContextState, getRequestContext(), this);
             if (devMode) {
                 blockingHandler = new DevModeBlockingExecutionHandler(Thread.currentThread().getContextClassLoader(),
                         blockingHandler);
             }
             this.isConsumingFromIncomingEvents = true;
-            Handler<Promise<Object>> finalBlockingHandler = blockingHandler;
+            var finalBlockingHandler = blockingHandler;
             virtualThreadExecutor.execute(() -> {
-                finalBlockingHandler.handle(Promise.promise());
-                Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
-                if (next != null) {
-                    executeVirtualWithRequestContext(next);
-                } else {
-                    this.isConsumingFromIncomingEvents = false;
+                try {
+                    finalBlockingHandler.call();
+                    Consumer<ServerCall.Listener<ReqT>> next = incomingEvents.poll();
+                    if (next != null) {
+                        executeVirtualWithRequestContext(next);
+                    } else {
+                        this.isConsumingFromIncomingEvents = false;
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             });
         }

@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.TimeZone;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,7 +93,6 @@ import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 
 /**
@@ -894,15 +894,10 @@ public class QuartzSchedulerImpl implements QuartzScheduler {
                                 }
                             });
                         } else {
-                            context.executeBlocking(new Handler<Promise<Object>>() {
+                            context.executeBlocking(new Callable<Object>() {
                                 @Override
-                                public void handle(Promise<Object> p) {
-                                    try {
-                                        trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
-                                        p.complete();
-                                    } catch (Exception e) {
-                                        p.tryFail(e);
-                                    }
+                                public Object call() throws Exception {
+                                    return trigger.invoker.invoke(new QuartzScheduledExecution(trigger, jobExecutionContext));
                                 }
                             }, false);
                         }

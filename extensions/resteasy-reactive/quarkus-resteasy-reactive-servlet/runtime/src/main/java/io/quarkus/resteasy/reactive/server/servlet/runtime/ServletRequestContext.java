@@ -236,7 +236,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public String getRequestHost() {
-        return context.request().host();
+        return context.request().authority().toString();
     }
 
     @Override
@@ -246,7 +246,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         } catch (IOException e) {
             //ignore
         }
-        context.response().close();
+        context.request().connection().close();
     }
 
     @Override

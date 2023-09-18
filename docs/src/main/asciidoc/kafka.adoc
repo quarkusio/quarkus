@@ -675,7 +675,7 @@ public void consume(List<Double> prices) {
 }
 ----
 
-The incoming method can also receive `Message<List<Payload>>`, `KafkaRecordBatch<Key, Payload>` `ConsumerRecords<Key, Payload>` types.
+The incoming method can also receive `Message<List<Payload>>`, `KafkaRecordBatch<Key, Payload>`, and `ConsumerRecords<Key, Payload>` types.
 They give access to record details such as offset or timestamp:
 
 [source, java]

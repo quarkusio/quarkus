@@ -247,7 +247,12 @@ A category configuration recursively applies to all subcategories of that catego
 The parent of all logging categories is called the "root category".
 This category, being the ultimate parent, may contain configuration which applies globally to all other categories. This includes the globally configured handlers and formatters.
 
-Thus, configurations made under `quarkus.log.console.+*+`, `quarkus.log.file.+*+`, and `quarkus.log.syslog.+*+` are global and apply for all categories.
+The global configuration that applies for all categories:
+
+* `quarkus.log.console.pass:c,a[*]`
+* `quarkus.log.file.pass:c,a[*]`
+* `quarkus.log.syslog.pass:c,a[*]`
+
 For more information, see <<loggingConfigurationReference>>.
 
 If you want to configure something extra for a specific category, create a named handler like `quarkus.log.handler.[console|file|syslog].<your-handler-name>.*` and set it up for that category by using `quarkus.log.category.<my-category>.handlers`.

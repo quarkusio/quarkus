@@ -451,7 +451,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
     @Test
     public void testThatSourceChangesAreDetectedOnPomChange() throws Exception {
         testDir = initProject("projects/classic", "projects/project-classic-run-src-and-pom-change");
-        runAndCheck();
+        runAndCheck(false);
 
         // Edit a Java file too
         final File javaSource = new File(testDir, "src/main/java/org/acme/HelloResource.java");

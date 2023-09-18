@@ -40,7 +40,7 @@
         <dependency>
             <groupId>io.opentelemetry.contrib</groupId>
             <artifactId>opentelemetry-aws-xray-propagator</artifactId>
-            <version>1.23.0-alpha</version>
+            <version>1.30.0-alpha</version>
         </dependency>
 
         <!-- Test Dependencies -->

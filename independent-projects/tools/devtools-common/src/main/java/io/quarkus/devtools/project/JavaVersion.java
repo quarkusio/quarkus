@@ -25,11 +25,18 @@ public final class JavaVersion {
         return version == null;
     }
 
+    public boolean isPresent() {
+        return version != null;
+    }
+
     public String getVersion() {
         return version;
     }
 
     public int getAsInt() {
+        if (version == null) {
+            throw new IllegalStateException("Version is not available and can't be parsed as an integer.");
+        }
         return Integer.parseInt(version);
     }
 
@@ -50,7 +57,7 @@ public final class JavaVersion {
 
     @Override
     public String toString() {
-        return version;
+        return isEmpty() ? "NA" : version;
     }
 
     // ordering is important here, so let's keep them ordered

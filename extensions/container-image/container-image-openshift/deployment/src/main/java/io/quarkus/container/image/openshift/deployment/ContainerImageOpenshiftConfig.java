@@ -15,8 +15,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 @ConfigRoot(name = "openshift", phase = ConfigPhase.BUILD_TIME)
 public class ContainerImageOpenshiftConfig {
 
-    public static final String DEFAULT_BASE_JVM_JDK11_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11:1.16";
-    public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.16";
+    public static final String DEFAULT_BASE_JVM_JDK11_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11:1.17";
+    public static final String DEFAULT_BASE_JVM_JDK17_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17:1.17";
     public static final String DEFAULT_BASE_NATIVE_IMAGE = "quay.io/quarkus/ubi-quarkus-native-binary-s2i:2.0";
     public static final String DEFAULT_NATIVE_TARGET_FILENAME = "application";
 
@@ -48,9 +48,9 @@ public class ContainerImageOpenshiftConfig {
      * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
      * When it references images already available in the internal Openshift registry, the corresponding streams are used
      * instead.
-     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17:1.16}
+     * When the application is built against Java 17 or higher, {@code registry.access.redhat.com/ubi8/openjdk-17:1.17}
      * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11:1.16} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi8/openjdk-11:1.17} is used as the default.
      */
     @ConfigItem
     public Optional<String> baseJvmImage;

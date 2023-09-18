@@ -16,7 +16,7 @@ class RedHatOpenJDKRuntimeBaseProviderTest {
         Path path = getPath("openjdk-11-runtime");
         var result = sut.determine(path);
         assertThat(result).hasValueSatisfying(v -> {
-            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.16");
+            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/openjdk-11-runtime:1.17");
             assertThat(v.getJavaVersion()).isEqualTo(11);
         });
     }
@@ -26,7 +26,7 @@ class RedHatOpenJDKRuntimeBaseProviderTest {
         Path path = getPath("openjdk-17-runtime");
         var result = sut.determine(path);
         assertThat(result).hasValueSatisfying(v -> {
-            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/openjdk-17-runtime:1.16");
+            assertThat(v.getBaseImage()).isEqualTo("registry.access.redhat.com/ubi8/openjdk-17-runtime:1.17");
             assertThat(v.getJavaVersion()).isEqualTo(17);
         });
     }

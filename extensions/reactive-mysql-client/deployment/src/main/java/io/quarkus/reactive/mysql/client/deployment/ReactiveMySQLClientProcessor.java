@@ -6,15 +6,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -51,7 +56,6 @@ import io.quarkus.reactive.mysql.client.MySQLPoolCreator;
 import io.quarkus.reactive.mysql.client.runtime.DataSourcesReactiveMySQLConfig;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
 import io.quarkus.reactive.mysql.client.runtime.MySQLServiceBindingConverter;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -59,6 +63,11 @@ import io.vertx.mysqlclient.MySQLPool;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveMySQLClientProcessor {
+
+    private static final ParameterizedType POOL_INJECTION_TYPE = ParameterizedType.create(DotName.createSimple(Instance.class),
+            new Type[] { ClassType.create(DotName.createSimple(MySQLPoolCreator.class.getName())) }, null);
+    private static final AnnotationInstance[] EMPTY_ANNOTATIONS = new AnnotationInstance[0];
+    private static final DotName REACTIVE_DATASOURCE = DotName.createSimple(ReactiveDataSource.class);
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -81,7 +90,7 @@ class ReactiveMySQLClientProcessor {
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, mySQLPool, vertxPool, syntheticBeans, dataSourceName,
+            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, mySQLPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMySQLConfig, defaultDataSourceDbKindBuildItems,
                     curateOutcomeBuildItem);
@@ -90,6 +99,7 @@ class ReactiveMySQLClientProcessor {
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
 
+        vertxPool.produce(new VertxPoolBuildItem());
         return new ServiceStartBuildItem("reactive-mysql-client");
     }
 
@@ -169,7 +179,6 @@ class ReactiveMySQLClientProcessor {
             EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<MySQLPoolBuildItem> mySQLPool,
-            BuildProducer<VertxPoolBuildItem> vertxPool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             String dataSourceName,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
@@ -185,20 +194,21 @@ class ReactiveMySQLClientProcessor {
             return;
         }
 
-        RuntimeValue<MySQLPool> pool = recorder.configureMySQLPool(vertx.getVertx(),
+        Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> poolFunction = recorder.configureMySQLPool(vertx.getVertx(),
                 eventLoopCount.getEventLoopCount(),
                 dataSourceName,
                 dataSourcesRuntimeConfig,
                 dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveMySQLConfig,
                 shutdown);
-        mySQLPool.produce(new MySQLPoolBuildItem(dataSourceName, pool));
+        mySQLPool.produce(new MySQLPoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator mySQLPoolBeanConfigurator = SyntheticBeanBuildItem.configure(MySQLPool.class)
                 .defaultBean()
                 .addType(Pool.class)
                 .scope(ApplicationScoped.class)
-                .runtimeValue(pool)
+                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .createWith(poolFunction)
                 .unremovable()
                 .setRuntimeInit();
 
@@ -210,14 +220,21 @@ class ReactiveMySQLClientProcessor {
                 .configure(io.vertx.mutiny.mysqlclient.MySQLPool.class)
                 .defaultBean()
                 .scope(ApplicationScoped.class)
-                .runtimeValue(recorder.mutinyMySQLPool(pool))
+                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .createWith(recorder.mutinyMySQLPool(poolFunction))
                 .setRuntimeInit();
 
         addQualifiers(mutinyMySQLPoolConfigurator, dataSourceName);
 
         syntheticBeans.produce(mutinyMySQLPoolConfigurator.done());
+    }
 
-        vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.MYSQL, DataSourceUtil.isDefault(dataSourceName)));
+    private AnnotationInstance[] injectionPointAnnotations(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return EMPTY_ANNOTATIONS;
+        }
+        return new AnnotationInstance[] {
+                AnnotationInstance.builder(REACTIVE_DATASOURCE).add("value", dataSourceName).build() };
     }
 
     private static boolean isReactiveMySQLPoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,

@@ -6,15 +6,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -51,7 +56,6 @@ import io.quarkus.reactive.mssql.client.MSSQLPoolCreator;
 import io.quarkus.reactive.mssql.client.runtime.DataSourcesReactiveMSSQLConfig;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolRecorder;
 import io.quarkus.reactive.mssql.client.runtime.MsSQLServiceBindingConverter;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -59,6 +63,11 @@ import io.vertx.mssqlclient.MSSQLPool;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveMSSQLClientProcessor {
+
+    private static final ParameterizedType POOL_INJECTION_TYPE = ParameterizedType.create(DotName.createSimple(Instance.class),
+            new Type[] { ClassType.create(DotName.createSimple(MSSQLPoolCreator.class.getName())) }, null);
+    private static final AnnotationInstance[] EMPTY_ANNOTATIONS = new AnnotationInstance[0];
+    private static final DotName REACTIVE_DATASOURCE = DotName.createSimple(ReactiveDataSource.class);
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -81,7 +90,7 @@ class ReactiveMSSQLClientProcessor {
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MSSQL_CLIENT));
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, msSQLPool, vertxPool, syntheticBeans, dataSourceName,
+            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, msSQLPool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMSSQLConfig, defaultDataSourceDbKindBuildItems,
                     curateOutcomeBuildItem);
@@ -90,6 +99,7 @@ class ReactiveMSSQLClientProcessor {
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REACTIVE_MSSQL_CLIENT));
 
+        vertxPool.produce(new VertxPoolBuildItem());
         return new ServiceStartBuildItem("reactive-mssql-client");
     }
 
@@ -168,7 +178,6 @@ class ReactiveMSSQLClientProcessor {
             EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<MSSQLPoolBuildItem> msSQLPool,
-            BuildProducer<VertxPoolBuildItem> vertxPool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             String dataSourceName,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
@@ -184,20 +193,21 @@ class ReactiveMSSQLClientProcessor {
             return;
         }
 
-        RuntimeValue<MSSQLPool> pool = recorder.configureMSSQLPool(vertx.getVertx(),
+        Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> poolFunction = recorder.configureMSSQLPool(vertx.getVertx(),
                 eventLoopCount.getEventLoopCount(),
                 dataSourceName,
                 dataSourcesRuntimeConfig,
                 dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveMSSQLConfig,
                 shutdown);
-        msSQLPool.produce(new MSSQLPoolBuildItem(dataSourceName, pool));
+        msSQLPool.produce(new MSSQLPoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator msSQLPoolBeanConfigurator = SyntheticBeanBuildItem.configure(MSSQLPool.class)
                 .defaultBean()
                 .addType(Pool.class)
                 .scope(ApplicationScoped.class)
-                .runtimeValue(pool)
+                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .createWith(poolFunction)
                 .unremovable()
                 .setRuntimeInit();
 
@@ -209,14 +219,21 @@ class ReactiveMSSQLClientProcessor {
                 .configure(io.vertx.mutiny.mssqlclient.MSSQLPool.class)
                 .defaultBean()
                 .scope(ApplicationScoped.class)
-                .runtimeValue(recorder.mutinyMSSQLPool(pool))
+                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .createWith(recorder.mutinyMSSQLPool(poolFunction))
                 .setRuntimeInit();
 
         addQualifiers(mutinyMSSQLPoolConfigurator, dataSourceName);
 
         syntheticBeans.produce(mutinyMSSQLPoolConfigurator.done());
+    }
 
-        vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.MSSQL, DataSourceUtil.isDefault(dataSourceName)));
+    private AnnotationInstance[] injectionPointAnnotations(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return EMPTY_ANNOTATIONS;
+        }
+        return new AnnotationInstance[] {
+                AnnotationInstance.builder(REACTIVE_DATASOURCE).add("value", dataSourceName).build() };
     }
 
     private static boolean isReactiveMSSQLPoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,

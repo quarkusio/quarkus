@@ -92,8 +92,8 @@ public class JibProcessor {
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
-    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.16";
-    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.16";
+    private static final String JAVA_17_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-17-runtime:1.17";
+    private static final String JAVA_11_BASE_IMAGE = "registry.access.redhat.com/ubi8/openjdk-11-runtime:1.17";
     private static final String DEFAULT_BASE_IMAGE_USER = "185";
 
     private static final String OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP = "io.opentelemetry.context.contextStorageProvider";

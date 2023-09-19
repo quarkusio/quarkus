@@ -97,7 +97,7 @@ If you cannot install GraalVM, you can use a multi-stage Docker build to run Mav
 There is an explanation of how to do this at <<#multistage-docker,the end of this guide>>.
 ====
 
-Version {graalvm-version} is required.
+GraalVM {graalvm-version} is required.
 
 1. Install GraalVM if you haven't already. You have a few options for this:
 ** Download the appropriate archive from <https://github.com/graalvm/mandrel/releases> or <https://github.com/graalvm/graalvm-ce-builds/releases>, and unpack it like you would any other JDK.
@@ -233,7 +233,7 @@ You can do so by prepending the flag with `-J` and passing it as additional nati
 IMPORTANT: Fully static native executables support is experimental.
 
 On Linux it's possible to package a native executable that doesn't depend on any system shared library.
-There are link:https://www.graalvm.org/latest/reference-manual/native-image/guides/build-static-executables/#prerequisites-and-preparation[some system requirements] to be fulfilled and additional build arguments to be used along with the `native-image` invocation, a minimum is `-Dquarkus.native.additional-build-args="--static","--libc=musl"`.
+There are link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/guides/build-static-executables/#prerequisites-and-preparation[some system requirements] to be fulfilled and additional build arguments to be used along with the `native-image` invocation, a minimum is `-Dquarkus.native.additional-build-args="--static","--libc=musl"`.
 
 Compiling fully static binaries is done by statically linking https://musl.libc.org/[musl] instead of `glibc` and should not be used in production without rigorous testing.
 

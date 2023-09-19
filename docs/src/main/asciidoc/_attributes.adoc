@@ -6,9 +6,9 @@
 // .
 :maven-version: ${proposed-maven-version}
 :graalvm-version: ${graal-community.version-for-documentation}
-:graalvm-flavor: ${graal-community.version-for-documentation}
-:mandrel-version: ${mandrel.version-for-documentation}
-:mandrel-flavor: ${mandrel.version-for-documentation}
+:graalvm-docs-version: ${graal-community.tag-for-documentation}
+:graalvm-flavor: ${graal-community.image-tag-for-documentation}
+:mandrel-flavor: ${mandrel.image-tag-for-documentation}
 :surefire-version: ${version.surefire.plugin}
 :gradle-version: ${gradle-wrapper.version}
 :elasticsearch-version: ${elasticsearch-server.version}

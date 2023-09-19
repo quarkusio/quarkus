@@ -26,7 +26,6 @@ import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttribut
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpClientAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanNameExtractor;
 import io.opentelemetry.instrumentation.api.instrumenter.http.HttpSpanStatusExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.net.NetClientAttributesGetter;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
@@ -62,7 +61,6 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     @Inject
     public OpenTelemetryClientFilter(final OpenTelemetry openTelemetry) {
         ClientAttributesExtractor clientAttributesExtractor = new ClientAttributesExtractor();
-        ClientNetAttributesGetter clientNetAttributesExtractor = new ClientNetAttributesGetter();
 
         InstrumenterBuilder<ClientRequestContext, ClientResponseContext> builder = Instrumenter.builder(
                 openTelemetry,
@@ -72,7 +70,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         this.instrumenter = builder
                 .setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))
                 .addAttributesExtractor(HttpClientAttributesExtractor.create(
-                        clientAttributesExtractor, clientNetAttributesExtractor))
+                        clientAttributesExtractor))
                 .buildClientInstrumenter(new ClientRequestContextTextMapSetter());
     }
 
@@ -156,32 +154,6 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
 
         @Override
-        public String getHttpRequestMethod(final ClientRequestContext request) {
-            return request.getMethod();
-        }
-
-        @Override
-        public List<String> getHttpRequestHeader(final ClientRequestContext request, final String name) {
-            return request.getStringHeaders().getOrDefault(name, emptyList());
-        }
-
-        @Override
-        public Integer getHttpResponseStatusCode(ClientRequestContext clientRequestContext,
-                ClientResponseContext clientResponseContext, Throwable error) {
-            return clientResponseContext.getStatus();
-        }
-
-        @Override
-        public List<String> getHttpResponseHeader(final ClientRequestContext request, final ClientResponseContext response,
-                final String name) {
-            return response.getHeaders().getOrDefault(name, emptyList());
-        }
-    }
-
-    private static class ClientNetAttributesGetter
-            implements NetClientAttributesGetter<ClientRequestContext, ClientResponseContext> {
-
-        @Override
         public String getTransport(ClientRequestContext clientRequestContext, ClientResponseContext clientResponseContext) {
             return SemanticAttributes.NetTransportValues.IP_TCP;
         }
@@ -206,6 +178,28 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         public String getNetworkProtocolVersion(ClientRequestContext clientRequestContext,
                 ClientResponseContext clientResponseContext) {
             return null;
+        }
+
+        @Override
+        public String getHttpRequestMethod(final ClientRequestContext request) {
+            return request.getMethod();
+        }
+
+        @Override
+        public List<String> getHttpRequestHeader(final ClientRequestContext request, final String name) {
+            return request.getStringHeaders().getOrDefault(name, emptyList());
+        }
+
+        @Override
+        public Integer getHttpResponseStatusCode(ClientRequestContext clientRequestContext,
+                ClientResponseContext clientResponseContext, Throwable error) {
+            return clientResponseContext.getStatus();
+        }
+
+        @Override
+        public List<String> getHttpResponseHeader(final ClientRequestContext request, final ClientResponseContext response,
+                final String name) {
+            return response.getHeaders().getOrDefault(name, emptyList());
         }
     }
 }

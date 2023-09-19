@@ -22,10 +22,12 @@ import io.opentelemetry.context.Scope;
 import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.Instrumenter;
 import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
-import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesExtractor;
-import io.opentelemetry.instrumentation.api.instrumenter.net.NetServerAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.network.ClientAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.network.ClientAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.network.NetworkAttributesGetter;
+import io.opentelemetry.instrumentation.api.instrumenter.network.ServerAttributesExtractor;
+import io.opentelemetry.instrumentation.api.instrumenter.network.ServerAttributesGetter;
 import io.opentelemetry.instrumentation.api.instrumenter.rpc.RpcServerAttributesExtractor;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.quarkus.grpc.GlobalInterceptor;
 
 @Singleton
@@ -39,8 +41,12 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
                 INSTRUMENTATION_NAME,
                 new GrpcSpanNameExtractor());
 
+        GrpcServerNetworkAttributesGetter getter = new GrpcServerNetworkAttributesGetter();
+
         builder.addAttributesExtractor(RpcServerAttributesExtractor.create(GrpcAttributesGetter.INSTANCE))
-                .addAttributesExtractor(NetServerAttributesExtractor.create(new GrpcServerNetServerAttributesGetter()))
+                .addAttributesExtractor(
+                        ServerAttributesExtractor.createForServerSide(getter))
+                .addAttributesExtractor(ClientAttributesExtractor.create(getter))
                 .addAttributesExtractor(new GrpcStatusCodeExtractor())
                 .setSpanStatusExtractor(new GrpcSpanStatusExtractor());
 
@@ -65,11 +71,9 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         return next.startCall(call, headers);
     }
 
-    private static class GrpcServerNetServerAttributesGetter implements NetServerAttributesGetter<GrpcRequest, Status> {
-        @Override
-        public String getTransport(final GrpcRequest grpcRequest) {
-            return SemanticAttributes.NetTransportValues.IP_TCP;
-        }
+    static class GrpcServerNetworkAttributesGetter implements NetworkAttributesGetter<GrpcRequest, Status>,
+            ServerAttributesGetter<GrpcRequest, Status>,
+            ClientAttributesGetter<GrpcRequest, Status> {
 
         @Override
         public String getServerAddress(GrpcRequest grpcRequest) {

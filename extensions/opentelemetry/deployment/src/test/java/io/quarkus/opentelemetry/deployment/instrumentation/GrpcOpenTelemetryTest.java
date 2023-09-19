@@ -4,7 +4,8 @@ import static io.opentelemetry.api.common.AttributeKey.stringKey;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_TRANSPORT;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_HOST_PORT;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.NET_SOCK_HOST_ADDR;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_GRPC_STATUS_CODE;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_METHOD;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.RPC_SERVICE;
@@ -13,6 +14,7 @@ import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpa
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -122,9 +124,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals("helloworld.Greeter", server.getAttributes().get(RPC_SERVICE));
         assertEquals("SayHello", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT));
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(NET_HOST_PORT));
+        assertNotNull(server.getAttributes().get(NET_SOCK_HOST_ADDR));
 
         final SpanData internal = getSpanByKindAndParentId(spans, INTERNAL, server.getSpanId());
         assertEquals("span.internal", internal.getName());
@@ -161,9 +162,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals("helloworld.Greeter", server.getAttributes().get(RPC_SERVICE));
         assertEquals("SayHello", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.UNKNOWN.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT));
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(NET_HOST_PORT));
+        assertNotNull(server.getAttributes().get(NET_SOCK_HOST_ADDR));
         assertEquals(Status.Code.UNKNOWN.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
 
         assertEquals(server.getTraceId(), client.getTraceId());
@@ -213,9 +213,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals("streaming.Streaming", server.getAttributes().get(RPC_SERVICE));
         assertEquals("Pipe", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT));
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(NET_HOST_PORT));
+        assertNotNull(server.getAttributes().get(NET_SOCK_HOST_ADDR));
         assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated")));
 
         assertEquals(server.getTraceId(), client.getTraceId());
@@ -250,9 +249,8 @@ public class GrpcOpenTelemetryTest {
         assertEquals("streaming.Streaming", server.getAttributes().get(RPC_SERVICE));
         assertEquals("PipeBlocking", server.getAttributes().get(RPC_METHOD));
         assertEquals(Status.Code.OK.value(), server.getAttributes().get(RPC_GRPC_STATUS_CODE));
-        //        assertNotNull(server.getAttributes().get(NET_PEER_IP));//now shows up on net.sock.peer.addr. Not available on attributes yet. FIXME
-        //        assertNotNull(server.getAttributes().get(NET_PEER_PORT)); // same for port. FIXME
-        assertEquals("ip_tcp", server.getAttributes().get(NET_TRANSPORT));
+        assertNotNull(server.getAttributes().get(NET_HOST_PORT));
+        assertNotNull(server.getAttributes().get(NET_SOCK_HOST_ADDR));
         assertEquals("true", server.getAttributes().get(stringKey("grpc.service.propagated.blocking")));
 
         assertEquals(server.getTraceId(), client.getTraceId());

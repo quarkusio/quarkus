@@ -23,6 +23,12 @@ public final class FlywayDataSourceRuntimeConfig {
     }
 
     /**
+     * Flag to activate/deactivate Flyway for a specific datasource at runtime.
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean active = true;
+
+    /**
      * The maximum number of retries when attempting to connect to the database.
      * <p>
      * After each failed attempt, Flyway will wait up to the configured `connect-retries-interval` duration before

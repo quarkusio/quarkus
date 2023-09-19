@@ -114,6 +114,39 @@ quarkus.oidc.credentials.secret=<Secret>
 
 TIP: You can also send access tokens issued by `Google` to `quarkus.oidc.application-type=service` or `quarkus.oidc.application-type=hybrid` Quarkus applications.
 
+[[mastodon]]
+=== Mastodon
+
+Create a https://joinmastodon.org/[Mastodon account]. You must https://joinmastodon.org/servers[pick a server], for example, `mastodon.social`.
+Select a `Development` option in you account and register an application, for example:
+
+image::oidc-mastodon-registere-app.png[role="thumb"]
+
+Select the registered application:
+
+image::oidc-mastodon-registered-apps.png[role="thumb"]
+
+and note its client id and client secret properties, use them to configure your `application.properties`:
+
+[source,properties]
+----
+quarkus.oidc.provider=mastodon
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret.value=<Client Secret>
+----
+
+By default, `quarkus.oidc.provider=mastodon` sets `quarkus.oidc.auth-server-url` to the `https://mastodon.social` Mastodon server address.
+
+You can override `quarkus.oidc.auth-server-url` if you have created your account in another Mastodon server, for example:
+
+[source,properties]
+----
+quarkus.oidc.provider=mastodon
+quarkus.oidc.auth-server-url=https://infosec.exchange
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.client-secret.value=<Client Secret>
+----
+
 [[microsoft]]
 === Microsoft
 

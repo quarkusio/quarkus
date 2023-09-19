@@ -146,6 +146,59 @@ public class OidcUtilsTest {
     }
 
     @Test
+    public void testAcceptMastodonProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MASTODON));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertFalse(config.isDiscoveryEnabled().get());
+        assertEquals("https://mastodon.social", config.getAuthServerUrl().get());
+        assertEquals("/oauth/authorize", config.getAuthorizationPath().get());
+        assertEquals("/oauth/token", config.getTokenPath().get());
+        assertEquals("/api/v1/accounts/verify_credentials", config.getUserInfoPath().get());
+
+        assertFalse(config.authentication.idTokenRequired.get());
+        assertTrue(config.authentication.userInfoRequired.get());
+        assertFalse(config.authentication.addOpenidScope.get());
+        assertEquals(List.of("read"), config.authentication.scopes.get());
+    }
+
+    @Test
+    public void testOverrideMastodonProperties() throws Exception {
+        OidcTenantConfig tenant = new OidcTenantConfig();
+        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+
+        tenant.setApplicationType(ApplicationType.HYBRID);
+        tenant.setDiscoveryEnabled(true);
+        tenant.setAuthServerUrl("http://localhost/wiremock");
+        tenant.setAuthorizationPath("authorization");
+        tenant.setTokenPath("tokens");
+        tenant.setUserInfoPath("userinfo");
+
+        tenant.authentication.setIdTokenRequired(true);
+        tenant.authentication.setUserInfoRequired(false);
+        tenant.authentication.setAddOpenidScope(true);
+        tenant.authentication.setScopes(List.of("write"));
+
+        OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MASTODON));
+
+        assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
+        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertTrue(config.isDiscoveryEnabled().get());
+        assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
+        assertEquals("authorization", config.getAuthorizationPath().get());
+        assertEquals("tokens", config.getTokenPath().get());
+        assertEquals("userinfo", config.getUserInfoPath().get());
+
+        assertTrue(config.authentication.idTokenRequired.get());
+        assertFalse(config.authentication.userInfoRequired.get());
+        assertEquals(List.of("write"), config.authentication.scopes.get());
+        assertTrue(config.authentication.addOpenidScope.get());
+    }
+
+    @Test
     public void testAcceptXProperties() throws Exception {
         OidcTenantConfig tenant = new OidcTenantConfig();
         tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);

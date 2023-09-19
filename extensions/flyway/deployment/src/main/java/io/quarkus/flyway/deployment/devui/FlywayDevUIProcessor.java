@@ -1,4 +1,4 @@
-package io.quarkus.flyway.devui;
+package io.quarkus.flyway.deployment.devui;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 

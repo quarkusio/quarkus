@@ -46,6 +46,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-deployment-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive-deployment</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-redis-client-deployment</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -205,6 +205,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "")
                                 .withTransformers("response-template")));
 
+        definePasswordGrantTokenStub();
+        defineClientCredGrantTokenStub();
+
         LOG.infof("Keycloak started in mock mode: %s", server.baseUrl());
         Map<String, String> conf = new HashMap<>();
         conf.put("keycloak.url", server.baseUrl() + "/auth");
@@ -291,6 +294,28 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 "  \"id_token\": \"" + getIdToken("alice", getAdminRoles())
                                 + "\"\n" +
                                 "}")));
+    }
+
+    private void definePasswordGrantTokenStub() {
+        server.stubFor(post("/auth/realms/quarkus/token")
+                .withRequestBody(containing("grant_type=password"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\n" +
+                                "  \"access_token\": \""
+                                + getAccessToken("alice", getAdminRoles()) + "\",\n" +
+                                "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\"}")));
+    }
+
+    private void defineClientCredGrantTokenStub() {
+        server.stubFor(post("/auth/realms/quarkus/token")
+                .withRequestBody(containing("grant_type=client_credentials"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\n" +
+                                "  \"access_token\": \""
+                                + getAccessToken("alice", getAdminRoles()) + "\",\n" +
+                                "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\"}")));
     }
 
     private void defineCodeFlowAuthorizationMockEncryptedTokenStub() {

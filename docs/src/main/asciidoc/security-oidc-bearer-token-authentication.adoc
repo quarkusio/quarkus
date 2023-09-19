@@ -515,6 +515,70 @@ public class CustomOidcWireMockStubTest {
 }
 ----
 
+[[integration-testing-oidc-test-client]]
+=== OidcTestClient
+
+If you work with SaaS OIDC providers such as `Auth0` and would like to run tests against the test (development) domain or prefer to run tests against a remote Keycloak test realm, when you already have `quarkus.oidc.auth-server-url` configured, you can use `OidcTestClient`.
+
+For example, lets assume you have the following configuration:
+
+[source,properties]
+----
+%test.quarkus.oidc.auth-server-url=https://dev-123456.eu.auth0.com/
+%test.quarkus.oidc.client-id=test-auth0-client
+%test.quarkus.oidc.credentials.secret=secret
+----
+
+Start with addding the same dependency as in the <<integration-testing-wiremock>> section, `quarkus-test-oidc-server`.
+
+Next, write the test code like this:
+
+[source, java]
+----
+package org.acme;
+
+import org.junit.jupiter.api.AfterAll;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.oidc.client.OidcTestClient;
+
+@QuarkusTest
+public class GreetingResourceTest {
+
+    static OidcTestClient oidcTestClient = new OidcTestClient();
+
+    @AfterAll
+    public static void close() {
+        client.close();
+    }
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+          .auth().oauth2(getAccessToken("alice", "alice"))
+          .when().get("/hello")
+          .then()
+             .statusCode(200)
+             .body(is("Hello, Alice"));
+    }
+
+    private String getAccessToken(String name, String secret) {
+        return oidcTestClient.getAccessToken(name, secret,
+            Map.of("audience", "https://dev-123456.eu.auth0.com/api/v2/",
+	           "scope", "profile"));
+    }
+}
+----
+
+This test code acquires a token using a `password` grant from the test `Auth0` domain which has an application with the client id `test-auth0-client` registered, and which has a user `alice` with a password `alice` created. The test `Auth0` application must have the `password` grant enabled for a test like this one to work. This example code also shows how to pass additional parameters. For `Auth0`, these are the `audience` and `scope` parameters.
+
+
 [[integration-testing-keycloak-devservices]]
 ==== Dev Services for Keycloak
 

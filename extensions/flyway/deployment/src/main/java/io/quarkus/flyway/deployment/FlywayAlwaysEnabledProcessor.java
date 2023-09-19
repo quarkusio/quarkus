@@ -1,4 +1,4 @@
-package io.quarkus.flyway;
+package io.quarkus.flyway.deployment;
 
 import org.flywaydb.core.extensibility.Plugin;
 

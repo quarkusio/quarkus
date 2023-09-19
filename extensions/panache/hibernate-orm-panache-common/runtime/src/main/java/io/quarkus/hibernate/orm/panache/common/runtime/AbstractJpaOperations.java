@@ -16,6 +16,7 @@ import jakarta.transaction.SystemException;
 import jakarta.transaction.TransactionManager;
 
 import org.hibernate.Session;
+import org.hibernate.jpa.HibernateHints;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.DataSource;
@@ -320,12 +321,16 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public long count(Class<?> entityClass) {
         return (long) getEntityManager(entityClass)
                 .createQuery("SELECT COUNT(*) FROM " + PanacheJpaUtil.getEntityName(entityClass))
+                .setHint(HibernateHints.HINT_READ_ONLY, true)
                 .getSingleResult();
     }
 
     public long count(Class<?> entityClass, String panacheQuery, Object... params) {
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
             Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            if (!namedQuery.getHints().containsKey(HibernateHints.HINT_READ_ONLY)) {
+                namedQuery.setHint(HibernateHints.HINT_READ_ONLY, true);
+            }
             return (long) bindParameters(namedQuery, params).getSingleResult();
         }
 
@@ -333,7 +338,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
             return (long) bindParameters(
                     getEntityManager(entityClass)
                             .createQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params))),
-                    params).getSingleResult();
+                    params)
+                    .setHint(HibernateHints.HINT_READ_ONLY, true)
+                    .getSingleResult();
         } catch (IllegalArgumentException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }
@@ -342,6 +349,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public long count(Class<?> entityClass, String panacheQuery, Map<String, Object> params) {
         if (PanacheJpaUtil.isNamedQuery(panacheQuery)) {
             Query namedQuery = extractNamedQuery(entityClass, panacheQuery);
+            if (!namedQuery.getHints().containsKey(HibernateHints.HINT_READ_ONLY)) {
+                namedQuery.setHint(HibernateHints.HINT_READ_ONLY, true);
+            }
             return (long) bindParameters(namedQuery, params).getSingleResult();
         }
 
@@ -349,7 +359,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
             return (long) bindParameters(
                     getEntityManager(entityClass)
                             .createQuery(PanacheJpaUtil.createCountQuery(entityClass, panacheQuery, paramCount(params))),
-                    params).getSingleResult();
+                    params)
+                    .setHint(HibernateHints.HINT_READ_ONLY, true)
+                    .getSingleResult();
         } catch (IllegalArgumentException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }

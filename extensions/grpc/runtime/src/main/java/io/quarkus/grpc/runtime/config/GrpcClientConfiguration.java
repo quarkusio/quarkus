@@ -47,6 +47,12 @@ public class GrpcClientConfiguration {
     public int port;
 
     /**
+     * The gRPC service test port.
+     */
+    @ConfigItem
+    public OptionalInt testPort;
+
+    /**
      * The host name / IP on which the service is exposed.
      */
     @ConfigItem(defaultValue = "localhost")

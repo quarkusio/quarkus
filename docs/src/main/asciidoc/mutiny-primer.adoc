@@ -209,7 +209,7 @@ Unlike `transform`, the function passed to `transformToUni` returns a Uni.
 ----
 Uni<String> uni1 = …
 uni1
-.onItem().transformtoUni(item -> anotherAsynchronousAction(item));
+.onItem().transformToUni(item -> anotherAsynchronousAction(item));
 ----
 
 More details about asynchronous transformation can be found in the https://smallrye.io/smallrye-mutiny/latest/tutorials/transforming-items-asynchronously/[Mutiny documentation].

@@ -9,12 +9,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-hibernate-reactive-mysql</artifactId>
-    <name>Quarkus - Integration Tests - Hibernate Reactive - MySQL</name>
-    <description>Hibernate Reactive related tests running with the MySQL database</description>
+    <artifactId>quarkus-integration-test-hibernate-reactive-mariadb</artifactId>
+    <name>Quarkus - Integration Tests - Hibernate Reactive - MariaDB</name>
+    <description>Hibernate Reactive related tests running with the MariaDB database</description>
 
     <properties>
-        <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
+        <reactive-mariadb.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mariadb.url>
     </properties>
 
     <dependencies>
@@ -98,8 +98,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables>
-                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true
-                        </org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -108,8 +107,7 @@
                 <configuration>
                     <skip>true</skip>
                     <systemPropertyVariables>
-                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true
-                        </org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
+                        <org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>true</org.hibernate.reactive.common.InternalStateAssertions.ENFORCE>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -154,14 +152,14 @@
         </profile>
 
         <profile>
-            <id>docker-mysql</id>
+            <id>docker-mariadb</id>
             <activation>
                 <property>
                     <name>start-containers</name>
                 </property>
             </activation>
             <properties>
-                <reactive-mysql.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test?allowPublicKeyRetrieval=true</reactive-mysql.url>
+                <reactive-mariadb.url>vertx-reactive:mysql://localhost:3308/hibernate_orm_test</reactive-mariadb.url>
             </properties>
             <build>
                 <plugins>
@@ -171,10 +169,10 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>healthcheck-${mysql.image}</name>
-                                    <alias>quarkus-test-mysql</alias>
+                                    <name>healthcheck-${mariadb.image}</name>
+                                    <alias>quarkus-test-mariadb</alias>
                                     <build>
-                                        <from>${mysql.image}</from>
+                                        <from>${mariadb.image}</from>
                                         <healthCheck>
                                             <!-- The exact values for these aren't very important, but it is important they are there -->
                                             <interval>5s</interval>
@@ -184,11 +182,14 @@
                                             <!--  We could also use /usr/local/bin/healthcheck.sh but it seemed complicated to get the right level.
                                             Note that mysqladmin ping returns 0 even if the password is wrong so we don't need to pass in a password, but it makes the logs cleaner-->
                                             <cmd>
-                                                <shell>mysqladmin ping -h localhost -u hibernate_orm_test -phibernate_orm_test || exit 1 </shell>
+                                                <shell>mysqladmin ping -h localhost -u root -psecret|| exit 1</shell>
                                             </cmd>
                                         </healthCheck>
                                     </build>
                                     <run>
+                                        <network>
+                                            <mode>bridge</mode>
+                                        </network>
                                         <ports>
                                             <port>3308:3306</port>
                                         </ports>
@@ -199,21 +200,21 @@
                                             <MYSQL_RANDOM_ROOT_PASSWORD>true</MYSQL_RANDOM_ROOT_PASSWORD>
                                         </env>
                                         <log>
-                                            <prefix>MySQL:</prefix>
+                                            <prefix>MariaDB:</prefix>
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>
                                         <!-- Speed things up a bit by not actually flushing writes to disk -->
                                         <tmpfs>/var/lib/mysql</tmpfs>
-                                        <!-- good docs found at: https://dmp.fabric8.io/#start-wait -->
                                         <wait>
+                                            <!-- good docs found at: https://dmp.fabric8.io/#start-wait -->
                                             <time>20000</time>
                                             <healthy>true</healthy>
                                         </wait>
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mysql images currently running, not just those we just started.
+                            <!--Stops all mariadb images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>

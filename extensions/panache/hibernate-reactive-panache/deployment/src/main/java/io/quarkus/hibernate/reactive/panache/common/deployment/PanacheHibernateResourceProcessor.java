@@ -38,6 +38,7 @@ import io.quarkus.panache.common.deployment.HibernateEnhancersRegisteredBuildIte
 import io.quarkus.panache.common.deployment.PanacheJpaEntityOperationsEnhancer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
+import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -145,7 +146,8 @@ public final class PanacheHibernateResourceProcessor {
         return null;
     }
 
-    private static final String CHECK_RETURN_VALUE_BINARY_NAME = "io/smallrye/common/annotation/CheckReturnValue";
+    private static final DotName DOTNAME_CHECK_RETURN_VALUE_CLASS = DotName.createSimple(CheckReturnValue.class);
+    private static final String CHECK_RETURN_VALUE_BINARY_NAME = CheckReturnValue.class.getName().replace('.', '/');
     private static final String CHECK_RETURN_VALUE_SIGNATURE = "L" + CHECK_RETURN_VALUE_BINARY_NAME + ";";
 
     @BuildStep
@@ -154,7 +156,8 @@ public final class PanacheHibernateResourceProcessor {
             @Override
             public void customize(Type entityClassSignature, MethodInfo method, MethodVisitor mv) {
                 DotName returnType = method.returnType().name();
-                if (returnType.equals(DOTNAME_UNI) || returnType.equals(DOTNAME_MULTI)) {
+                if ((returnType.equals(DOTNAME_UNI) || returnType.equals(DOTNAME_MULTI))
+                        && !method.hasDeclaredAnnotation(DOTNAME_CHECK_RETURN_VALUE_CLASS)) {
                     mv.visitAnnotation(CHECK_RETURN_VALUE_SIGNATURE, true);
                 }
             }

@@ -96,19 +96,19 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
 
     //TODO: add the rest of static methods of Response if we need them
 
-    public static Response.ResponseBuilder withStatus(Response.Status status) {
-        return new ResponseBuilderImpl().status(status);
+    public static ResponseBuilderImpl withStatus(Response.Status status) {
+        return (ResponseBuilderImpl) new ResponseBuilderImpl().status(status);
     }
 
-    public static Response.ResponseBuilder ok() {
+    public static ResponseBuilderImpl ok() {
         return withStatus(Response.Status.OK);
     }
 
-    public static Response.ResponseBuilder ok(Object entity) {
-        return ok().entity(entity);
+    public static ResponseBuilderImpl ok(Object entity) {
+        return (ResponseBuilderImpl) ok().entity(entity);
     }
 
-    public static Response.ResponseBuilder noContent() {
+    public static ResponseBuilderImpl noContent() {
         return withStatus(Response.Status.NO_CONTENT);
     }
 }

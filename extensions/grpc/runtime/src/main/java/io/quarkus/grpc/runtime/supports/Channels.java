@@ -102,16 +102,18 @@ public class Channels {
             throw new IllegalStateException("gRPC client " + name + " is missing configuration.");
         }
 
-        if (LaunchMode.current() == LaunchMode.TEST) {
-            config.port = testPort(configProvider.getServerConfiguration());
-        }
-
         GrpcBuilderProvider provider = GrpcBuilderProvider.findChannelBuilderProvider(config);
 
         boolean vertxGrpc = config.useQuarkusGrpcClient;
 
         String host = config.host;
+
+        // handle client port
         int port = config.port;
+        if (LaunchMode.current() == LaunchMode.TEST) {
+            port = config.testPort.orElse(testPort(configProvider.getServerConfiguration()));
+        }
+
         String nameResolver = config.nameResolver;
 
         boolean stork = Stork.STORK.equalsIgnoreCase(nameResolver);
@@ -316,6 +318,7 @@ public class Channels {
     private static GrpcClientConfiguration testConfig(GrpcServerConfiguration serverConfiguration) {
         GrpcClientConfiguration config = new GrpcClientConfiguration();
         config.port = serverConfiguration.testPort;
+        config.testPort = OptionalInt.empty();
         config.host = serverConfiguration.host;
         config.plainText = Optional.of(serverConfiguration.plainText);
         config.compression = Optional.empty();

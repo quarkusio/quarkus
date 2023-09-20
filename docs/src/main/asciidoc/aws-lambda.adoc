@@ -715,4 +715,4 @@ That's all there is to it!
 
 == SnapStart
 
-To optimize your application for Lambda SnapStart, check xref:amazon-snapstart.adoc[the SnapStart Configuration Documentation].
+To optimize your application for Lambda SnapStart, check xref:aws-lambda-snapstart.adoc[the SnapStart Configuration Documentation].

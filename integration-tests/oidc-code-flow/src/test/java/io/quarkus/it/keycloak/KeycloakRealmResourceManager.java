@@ -35,7 +35,7 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
         // revoke refresh tokens so that they can only be used once
         logoutRealm.setRevokeRefreshToken(true);
         logoutRealm.setRefreshTokenMaxReuse(0);
-        logoutRealm.setSsoSessionMaxLifespan(15);
+        logoutRealm.setSsoSessionMaxLifespan(10);
         logoutRealm.setAccessTokenLifespan(5);
         client.createRealm(logoutRealm);
         realms.add(logoutRealm);

@@ -604,6 +604,22 @@ public class CodeFlowTest {
 
             page = webClient.getPage("http://localhost:8081/tenant-logout");
             assertEquals("Sign in to logout-realm", page.getTitleText());
+
+            // login again
+            loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+            page = loginForm.getInputByName("login").click();
+            assertEquals("Tenant Logout, refreshed: false", page.asNormalizedText());
+
+            assertNotNull(getSessionCookie(webClient, "tenant-logout"));
+
+            await().atLeast(Duration.ofSeconds(11));
+
+            page = webClient.getPage("http://localhost:8081/tenant-logout/logout");
+            assertTrue(page.asNormalizedText().contains("You were logged out, please login again"));
+            assertNull(getSessionCookie(webClient, "tenant-logout"));
+
             webClient.getCookieManager().clearCookies();
         }
     }

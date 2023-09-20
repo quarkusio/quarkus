@@ -602,6 +602,7 @@ is not used at all (since all the necessary plumbing is done at build time). Sim
 * Native and named queries when using `@Query`
 * https://github.com/spring-projects/spring-data-jpa/blob/main/src/main/asciidoc/jpa.adoc#entity-state-detection-strategies[Entity State-detection Strategies]
 via `EntityInformation`.
+* The use of `org.springframework.data.jpa.repository.Lock`
 
 The Quarkus team is exploring various alternatives to bridging the gap between the JPA and Reactive worlds.
 

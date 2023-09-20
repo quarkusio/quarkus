@@ -1316,6 +1316,11 @@ public interface SomeConfig {
 }
 ----
 <1> This will generate a configuration map key named `quarkus.some."cache-name"` instead of `quarkus.some."namespace"`.
+
+It is possible to write a textual explanation for the documentation default value, this is useful when it is generated: `@ConfigDocDefault("explain how this is generated")`.
+
+`@ConfigDocEnumValue` gives a way to explicitly customize the string displayed in the documentation when listing accepted values for an enum.
+
 ====
 
 ===== Writing section documentation

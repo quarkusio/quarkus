@@ -1,4 +1,4 @@
-package io.quarkus.flyway;
+package io.quarkus.flyway.deployment;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;

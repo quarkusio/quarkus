@@ -67,6 +67,7 @@ import io.undertow.server.DefaultExchangeHandler;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.PathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
@@ -374,6 +375,7 @@ public class UndertowDeploymentRecorder {
                     .addPrefixPath(manager.getDeployment().getDeploymentInfo().getContextPath(), main);
             main = pathHandler;
         }
+        main = new CanonicalPathHandler(main);
         currentRoot = main;
 
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);

@@ -6,15 +6,20 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -51,7 +56,6 @@ import io.quarkus.reactive.db2.client.DB2PoolCreator;
 import io.quarkus.reactive.db2.client.runtime.DB2PoolRecorder;
 import io.quarkus.reactive.db2.client.runtime.DB2ServiceBindingConverter;
 import io.quarkus.reactive.db2.client.runtime.DataSourcesReactiveDB2Config;
-import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -59,6 +63,12 @@ import io.vertx.db2client.DB2Pool;
 import io.vertx.sqlclient.Pool;
 
 class ReactiveDB2ClientProcessor {
+
+    private static final ParameterizedType POOL_INJECTION_TYPE = ParameterizedType.create(DotName.createSimple(Instance.class),
+            new Type[] { ClassType.create(DotName.createSimple(DB2PoolCreator.class.getName())) }, null);
+    private static final AnnotationInstance[] EMPTY_ANNOTATIONS = new AnnotationInstance[0];
+
+    private static final DotName REACTIVE_DATASOURCE = DotName.createSimple(ReactiveDataSource.class);
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -81,7 +91,7 @@ class ReactiveDB2ClientProcessor {
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_DB2_CLIENT));
 
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, db2Pool, vertxPool, syntheticBeans, dataSourceName,
+            createPoolIfDefined(recorder, vertx, eventLoopCount, shutdown, db2Pool, syntheticBeans, dataSourceName,
                     dataSourcesBuildTimeConfig, dataSourcesRuntimeConfig, dataSourcesReactiveBuildTimeConfig,
                     dataSourcesReactiveRuntimeConfig, dataSourcesReactiveDB2Config, defaultDataSourceDbKindBuildItems,
                     curateOutcomeBuildItem);
@@ -90,6 +100,7 @@ class ReactiveDB2ClientProcessor {
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.REACTIVE_DB2_CLIENT));
 
+        vertxPool.produce(new VertxPoolBuildItem());
         return new ServiceStartBuildItem("reactive-db2-client");
     }
 
@@ -168,7 +179,6 @@ class ReactiveDB2ClientProcessor {
             EventLoopCountBuildItem eventLoopCount,
             ShutdownContextBuildItem shutdown,
             BuildProducer<DB2PoolBuildItem> db2Pool,
-            BuildProducer<VertxPoolBuildItem> vertxPool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             String dataSourceName,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
@@ -184,20 +194,21 @@ class ReactiveDB2ClientProcessor {
             return;
         }
 
-        RuntimeValue<DB2Pool> pool = recorder.configureDB2Pool(vertx.getVertx(),
+        Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> poolFunction = recorder.configureDB2Pool(vertx.getVertx(),
                 eventLoopCount.getEventLoopCount(),
                 dataSourceName,
                 dataSourcesRuntimeConfig,
                 dataSourcesReactiveRuntimeConfig,
                 dataSourcesReactiveDB2Config,
                 shutdown);
-        db2Pool.produce(new DB2PoolBuildItem(dataSourceName, pool));
+        db2Pool.produce(new DB2PoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator db2PoolBeanConfigurator = SyntheticBeanBuildItem.configure(DB2Pool.class)
                 .defaultBean()
                 .addType(Pool.class)
                 .scope(ApplicationScoped.class)
-                .runtimeValue(pool)
+                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .createWith(poolFunction)
                 .unremovable()
                 .setRuntimeInit();
 
@@ -209,14 +220,21 @@ class ReactiveDB2ClientProcessor {
                 .configure(io.vertx.mutiny.db2client.DB2Pool.class)
                 .defaultBean()
                 .scope(ApplicationScoped.class)
-                .runtimeValue(recorder.mutinyDB2Pool(pool))
+                .addInjectionPoint(POOL_INJECTION_TYPE, injectionPointAnnotations(dataSourceName))
+                .createWith(recorder.mutinyDB2Pool(poolFunction))
                 .setRuntimeInit();
 
         addQualifiers(mutinyDB2PoolConfigurator, dataSourceName);
 
         syntheticBeans.produce(mutinyDB2PoolConfigurator.done());
+    }
 
-        vertxPool.produce(new VertxPoolBuildItem(pool, DatabaseKind.DB2, DataSourceUtil.isDefault(dataSourceName)));
+    private AnnotationInstance[] injectionPointAnnotations(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return EMPTY_ANNOTATIONS;
+        }
+        return new AnnotationInstance[] {
+                AnnotationInstance.builder(REACTIVE_DATASOURCE).add("value", dataSourceName).build() };
     }
 
     private static boolean isReactiveDB2PoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,

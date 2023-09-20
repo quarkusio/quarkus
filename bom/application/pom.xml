@@ -99,10 +99,10 @@
         <classmate.version>1.5.1</classmate.version>
         <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below),
              as well as hibernate-orm.version-for-documentation in docs/pom.xml -->
-        <hibernate-orm.version>6.2.7.Final</hibernate-orm.version>
+        <hibernate-orm.version>6.2.9.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
-        <hibernate-reactive.version>2.0.4.Final</hibernate-reactive.version>
+        <hibernate-reactive.version>2.0.5.Final</hibernate-reactive.version>
         <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
         <!-- When updating, align hibernate-search.version-for-documentation in docs/pom.xml -->
         <hibernate-search.version>6.2.1.Final</hibernate-search.version>
@@ -169,8 +169,8 @@
         <flyway.version>9.21.2</flyway.version>
         <yasson.version>3.0.3</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
-        <liquibase.version>4.23.1</liquibase.version>
-        <liquibase-mongodb.version>4.23.0</liquibase-mongodb.version>
+        <liquibase.version>4.23.2</liquibase.version>
+        <liquibase-mongodb.version>4.23.1</liquibase-mongodb.version>
         <snakeyaml.version>2.1</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>4.10.2</mongo-client.version>
@@ -198,7 +198,7 @@
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.4</picocli.version>
         <google-cloud-functions.version>1.1.0</google-cloud-functions.version>
-        <commons-compress.version>1.23.0</commons-compress.version>
+        <commons-compress.version>1.24.0</commons-compress.version>
         <commons-text.version>1.10.0</commons-text.version>
         <gson.version>2.10.1</gson.version>
         <log4j2-jboss-logmanager.version>1.1.1.Final</log4j2-jboss-logmanager.version>
@@ -215,7 +215,7 @@
         <aesh.version>2.7</aesh.version>
         <aesh-readline.version>2.4</aesh-readline.version>
         <jansi.version>2.4.0</jansi.version> <!-- Keep in sync with aesh-readline and dekorate -->
-        <jgit.version>6.6.0.202305301015-r</jgit.version>
+        <jgit.version>6.6.1.202309021850-r</jgit.version>
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.12.0</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>9.31</strimzi-oauth.nimbus.version>

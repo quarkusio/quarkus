@@ -9,9 +9,18 @@ include::_attributes.adoc[]
 :reactive-doc-url-prefix: https://hibernate.org/reactive/documentation/1.1/reference/html_single/#getting-started
 :extension-status: preview
 
-
 link:https://hibernate.org/reactive/[Hibernate Reactive] is a reactive API for Hibernate ORM, supporting non-blocking database drivers
 and a reactive style of interaction with the database.
+
+[NOTE]
+====
+Hibernate Reactive is not a replacement for xref:hibernate-orm.adoc[Hibernate ORM] or the future of Hibernate ORM.
+It is a different stack tailored for reactive use cases where you need high-concurrency.
+
+Also, using RESTEasy Reactive, our default REST layer, does not require the use of Hibernate Reactive.
+It is perfectly valid to use RESTEasy Reactive with Hibernate ORM,
+and if you do not need high-concurrency, or are not accustomed to the reactive paradigm, it is recommended to use Hibernate ORM.
+====
 
 [NOTE]
 ====

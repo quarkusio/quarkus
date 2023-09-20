@@ -8,7 +8,6 @@ import java.util.function.Function;
 import javax.sql.DataSource;
 
 import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.FlywayExecutor;
@@ -67,7 +66,7 @@ public class FlywayRecorder {
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
                 DataSource dataSource = context.getInjectedReference(DataSources.class).getDataSource(dataSourceName);
                 if (dataSource instanceof UnconfiguredDataSource) {
-                    throw new UnsatisfiedResolutionException("No datasource present");
+                    return new UnconfiguredDataSourceFlywayContainer(dataSourceName);
                 }
 
                 FlywayContainerProducer flywayProducer = context.getInjectedReference(FlywayContainerProducer.class);
@@ -82,44 +81,58 @@ public class FlywayRecorder {
         return new Function<>() {
             @Override
             public Flyway apply(SyntheticCreationalContext<Flyway> context) {
-                Annotation flywayContainerQualifier;
-                if (DataSourceUtil.isDefault(dataSourceName)) {
-                    flywayContainerQualifier = Default.Literal.INSTANCE;
-                } else {
-                    flywayContainerQualifier = FlywayDataSourceLiteral.of(dataSourceName);
-                }
-
-                FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class, flywayContainerQualifier);
+                FlywayContainer flywayContainer = context.getInjectedReference(FlywayContainer.class,
+                        getFlywayContainerQualifier(dataSourceName));
                 return flywayContainer.getFlyway();
             }
         };
     }
 
-    public void doStartActions() {
-        if (!config.getValue().enabled) {
+    public void doStartActions(String dataSourceName) {
+        FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
+                .getConfigForDataSourceName(dataSourceName);
+
+        if (!config.getValue().getConfigForDataSourceName(dataSourceName).active) {
             return;
         }
 
-        for (InstanceHandle<FlywayContainer> flywayContainerHandle : Arc.container().listAll(FlywayContainer.class)) {
-            FlywayContainer flywayContainer = flywayContainerHandle.get();
+        InstanceHandle<FlywayContainer> flywayContainerInstanceHandle = Arc.container().instance(FlywayContainer.class,
+                getFlywayContainerQualifier(dataSourceName));
 
-            if (flywayContainer.isCleanAtStart()) {
-                flywayContainer.getFlyway().clean();
-            }
-            if (flywayContainer.isValidateAtStart()) {
-                flywayContainer.getFlyway().validate();
-            }
-            if (flywayContainer.isBaselineAtStart()) {
-                new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())
-                        .execute(new BaselineCommand(flywayContainer.getFlyway()), true, null);
-            }
-            if (flywayContainer.isRepairAtStart()) {
-                flywayContainer.getFlyway().repair();
-            }
-            if (flywayContainer.isMigrateAtStart()) {
-                flywayContainer.getFlyway().migrate();
-            }
+        if (!flywayContainerInstanceHandle.isAvailable()) {
+            return;
         }
+
+        FlywayContainer flywayContainer = flywayContainerInstanceHandle.get();
+
+        if (flywayContainer instanceof UnconfiguredDataSourceFlywayContainer) {
+            return;
+        }
+
+        if (flywayContainer.isCleanAtStart()) {
+            flywayContainer.getFlyway().clean();
+        }
+        if (flywayContainer.isValidateAtStart()) {
+            flywayContainer.getFlyway().validate();
+        }
+        if (flywayContainer.isBaselineAtStart()) {
+            new FlywayExecutor(flywayContainer.getFlyway().getConfiguration())
+                    .execute(new BaselineCommand(flywayContainer.getFlyway()), true, null);
+        }
+        if (flywayContainer.isRepairAtStart()) {
+            flywayContainer.getFlyway().repair();
+        }
+        if (flywayContainer.isMigrateAtStart()) {
+            flywayContainer.getFlyway().migrate();
+        }
+    }
+
+    private static Annotation getFlywayContainerQualifier(String dataSourceName) {
+        if (DataSourceUtil.isDefault(dataSourceName)) {
+            return Default.Literal.INSTANCE;
+        }
+
+        return FlywayDataSourceLiteral.of(dataSourceName);
     }
 
     static class BaselineCommand implements FlywayExecutor.Command<BaselineResult> {

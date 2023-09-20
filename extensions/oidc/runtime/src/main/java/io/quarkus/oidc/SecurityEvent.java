@@ -9,6 +9,8 @@ import io.quarkus.security.identity.SecurityIdentity;
  *
  */
 public class SecurityEvent {
+    public static final String SESSION_TOKENS_PROPERTY = "session-tokens";
+
     public enum Type {
         /**
          * OIDC Login event which is reported after the first user authentication but also when the user's session
@@ -29,6 +31,12 @@ public class SecurityEvent {
          * OIDC Logout event is reported when the current user has started an RP-initiated OIDC logout flow.
          */
         OIDC_LOGOUT_RP_INITIATED,
+
+        /**
+         * OIDC Logout event is reported when the current user has started an RP-initiated OIDC logout flow but the session has
+         * already expired.
+         */
+        OIDC_LOGOUT_RP_INITIATED_SESSION_EXPIRED,
 
         /**
          * OIDC BackChannel Logout initiated event is reported when the BackChannel logout request to logout the current user

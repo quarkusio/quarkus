@@ -1,5 +1,8 @@
 package io.quarkus.opentelemetry.runtime;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
@@ -7,6 +10,13 @@ import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanBuilder;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 
 public class OpenTelemetryUtilTest {
 
@@ -57,5 +67,55 @@ public class OpenTelemetryUtilTest {
         Map<String, String> actual = OpenTelemetryUtil
                 .convertKeyValueListToMap(Collections.emptyList());
         Assertions.assertThat(actual).containsExactly();
+    }
+
+    @Test
+    public void testGetSpanData() {
+        SpanProcessor mockedSpanProcessor = mock(SpanProcessor.class);
+
+        SdkTracerProvider tracerSdkFactory = SdkTracerProvider.builder()
+                .addSpanProcessor(mockedSpanProcessor)
+                .build();
+        Tracer spanBuilderSdkTest = tracerSdkFactory.get("SpanBuilderSdkTest");
+        SpanBuilder spanBuilder = spanBuilderSdkTest.spanBuilder("SpanName");
+
+        Span parent = spanBuilder.startSpan();
+        Context contextParent = Context.current().with(parent);
+
+        Span child = spanBuilder.setParent(contextParent).startSpan();
+        Context contextChild = Context.current().with(child);
+
+        Map<String, String> actual = OpenTelemetryUtil.getSpanData(contextChild);
+        assertEquals(4, actual.size());
+        assertEquals(child.getSpanContext().getSpanId(), actual.get("spanId"));
+        assertEquals(child.getSpanContext().getTraceId(), actual.get("traceId"));
+        assertEquals("true", actual.get("sampled"));
+        assertEquals(parent.getSpanContext().getSpanId(), actual.get("parentId"));
+    }
+
+    @Test
+    public void testGetSpanData_noParent() {
+        SpanProcessor mockedSpanProcessor = mock(SpanProcessor.class);
+        SdkTracerProvider tracerSdkFactory = SdkTracerProvider.builder()
+                .addSpanProcessor(mockedSpanProcessor)
+                .build();
+        Tracer spanBuilderSdkTest = tracerSdkFactory.get("SpanBuilderSdkTest");
+
+        SpanBuilder spanBuilder = spanBuilderSdkTest.spanBuilder("SpanName");
+
+        Span child = spanBuilder.startSpan();
+        Context contextChild = Context.current().with(child);
+
+        Map<String, String> actual = OpenTelemetryUtil.getSpanData(contextChild);
+        assertEquals(3, actual.size());
+        assertEquals(child.getSpanContext().getSpanId(), actual.get("spanId"));
+        assertEquals(child.getSpanContext().getTraceId(), actual.get("traceId"));
+        assertEquals("true", actual.get("sampled"));
+    }
+
+    @Test
+    public void testGetSpanData_nullValue() {
+        Map<String, String> actual = OpenTelemetryUtil.getSpanData(null);
+        assertEquals(0, actual.size());
     }
 }

@@ -248,10 +248,10 @@ public class PackageConfig {
     public boolean includeDependencyList;
 
     /**
-     * Quiltflower Decompiler configuration
+     * Vineflower Decompiler configuration
      */
     @ConfigItem
-    public QuiltFlowerConfig quiltflower;
+    public VineFlowerConfig vineflower;
 
     /**
      * If set to {@code true}, it will result in the Quarkus writing the transformed application bytecode
@@ -302,7 +302,7 @@ public class PackageConfig {
     }
 
     @ConfigGroup
-    public static class QuiltFlowerConfig {
+    public static class VineFlowerConfig {
         /**
          * An advanced option that will decompile generated and transformed bytecode into the 'decompiled' directory.
          * This is only taken into account when fast-jar is used.
@@ -311,13 +311,13 @@ public class PackageConfig {
         public boolean enabled;
 
         /**
-         * The version of Quiltflower to use
+         * The version of Vineflower to use
          */
-        @ConfigItem(defaultValue = "1.8.1")
+        @ConfigItem(defaultValue = "1.9.3")
         public String version;
 
         /**
-         * The directory into which to save the Quiltflower tool if it doesn't exist
+         * The directory into which to save the Vineflower tool if it doesn't exist
          */
         @ConfigItem(defaultValue = "${user.home}/.quarkus")
         public String jarDirectory;

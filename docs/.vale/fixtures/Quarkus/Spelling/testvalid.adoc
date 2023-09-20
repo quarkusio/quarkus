@@ -270,7 +270,6 @@ Pytorch
 qeth
 Quarkiverse
 Quarkus
-Quiltflower
 Qute
 Readonly
 Rebalance
@@ -376,6 +375,7 @@ Valgrind
 validator
 Velero
 Vert.x
+Vineflower
 vsix
 WebAuthn
 WebSocket

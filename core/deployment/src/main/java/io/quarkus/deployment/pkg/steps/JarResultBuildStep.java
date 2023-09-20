@@ -603,17 +603,17 @@ public class JarResultBuildStep {
         Path decompiledOutputDir = null;
         boolean wasDecompiledSuccessfully = true;
         Decompiler decompiler = null;
-        if (packageConfig.quiltflower.enabled) {
+        if (packageConfig.vineflower.enabled) {
             decompiledOutputDir = buildDir.getParent().resolve("decompiled");
             FileUtil.deleteDirectory(decompiledOutputDir);
             Files.createDirectory(decompiledOutputDir);
-            if (packageConfig.quiltflower.enabled) {
-                decompiler = new Decompiler.QuiltflowerDecompiler();
-                Path jarDirectory = Paths.get(packageConfig.quiltflower.jarDirectory);
+            if (packageConfig.vineflower.enabled) {
+                decompiler = new Decompiler.VineflowerDecompiler();
+                Path jarDirectory = Paths.get(packageConfig.vineflower.jarDirectory);
                 if (!Files.exists(jarDirectory)) {
                     Files.createDirectory(jarDirectory);
                 }
-                decompiler.init(new Decompiler.Context(packageConfig.quiltflower.version, jarDirectory, decompiledOutputDir));
+                decompiler.init(new Decompiler.Context(packageConfig.vineflower.version, jarDirectory, decompiledOutputDir));
                 decompiler.downloadIfNecessary();
             }
         }
@@ -1576,7 +1576,7 @@ public class JarResultBuildStep {
 
         }
 
-        class QuiltflowerDecompiler implements Decompiler {
+        class VineflowerDecompiler implements Decompiler {
 
             private Context context;
             private Path decompilerJar;
@@ -1584,7 +1584,7 @@ public class JarResultBuildStep {
             @Override
             public void init(Context context) {
                 this.context = context;
-                this.decompilerJar = context.jarLocation.resolve(String.format("quiltflower-%s.jar", context.versionStr));
+                this.decompilerJar = context.jarLocation.resolve(String.format("vineflower-%s.jar", context.versionStr));
             }
 
             @Override
@@ -1593,7 +1593,7 @@ public class JarResultBuildStep {
                     return true;
                 }
                 String downloadURL = String.format(
-                        "https://github.com/QuiltMC/quiltflower/releases/download/%s/quiltflower-%s.jar",
+                        "https://repo.maven.apache.org/maven2/org/vineflower/vineflower/%s/vineflower-%s.jar",
                         context.versionStr, context.versionStr);
                 try (BufferedInputStream in = new BufferedInputStream(new URL(downloadURL).openStream());
                         FileOutputStream fileOutputStream = new FileOutputStream(decompilerJar.toFile())) {
@@ -1604,7 +1604,7 @@ public class JarResultBuildStep {
                     }
                     return true;
                 } catch (IOException e) {
-                    log.error("Unable to download Quiltflower from " + downloadURL, e);
+                    log.error("Unable to download Vineflower from " + downloadURL, e);
                     return false;
                 }
             }
@@ -1637,7 +1637,7 @@ public class JarResultBuildStep {
                 }
 
                 if (exitCode != 0) {
-                    log.errorf("Quiltflower decompiler exited with error code: %d.", exitCode);
+                    log.errorf("Vineflower decompiler exited with error code: %d.", exitCode);
                     return false;
                 }
 

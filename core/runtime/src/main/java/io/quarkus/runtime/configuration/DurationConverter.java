@@ -20,7 +20,7 @@ public class DurationConverter implements Converter<Duration>, Serializable {
     private static final String PERIOD = "P";
     private static final String PERIOD_OF_TIME = "PT";
     public static final Pattern DIGITS = Pattern.compile("^[-+]?\\d+$");
-    private static final Pattern DIGITS_AND_UNIT = Pattern.compile("^[-+]?\\d+(?:\\.\\d+)?(?i)[hms]$");
+    private static final Pattern DIGITS_AND_UNIT = Pattern.compile("^(?:[-+]?\\d+(?:\\.\\d+)?(?i)[hms])+$");
     private static final Pattern DAYS = Pattern.compile("^[-+]?\\d+(?i)d$");
     private static final Pattern MILLIS = Pattern.compile("^[-+]?\\d+(?i)ms$");
 

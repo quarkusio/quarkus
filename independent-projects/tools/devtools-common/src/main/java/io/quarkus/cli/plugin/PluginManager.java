@@ -238,7 +238,9 @@ public class PluginManager {
                 .orElseThrow(() -> new IllegalArgumentException("Unknwon plugin catalog location."));
         List<PluginType> installedTypes = catalog.getPlugins().entrySet().stream().map(Map.Entry::getValue).map(Plugin::getType)
                 .collect(Collectors.toList());
-        Map<String, Plugin> installablePlugins = state.getInstallablePlugins().entrySet().stream()
+        //Let's only fetch installable plugins of the corresponding types.
+        //This will help us avoid uneeded calls to things like jbang if no jbang plugins are installed
+        Map<String, Plugin> installablePlugins = state.installablePlugins(installedTypes).entrySet().stream()
                 .filter(e -> installedTypes.contains(e.getValue().getType()))
                 .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
 

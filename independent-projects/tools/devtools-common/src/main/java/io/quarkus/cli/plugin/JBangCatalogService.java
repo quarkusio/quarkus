@@ -40,6 +40,10 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
         this.jbang = new JBangSupport(interactiveMode, output);
     }
 
+    public boolean ensureJBangIsInstalled() {
+        return jbang.ensureJBangIsInstalled();
+    }
+
     @Override
     public JBangCatalog readCatalog(Path path) {
         if (!jbang.isAvailable() && !jbang.isInstallable()) {
@@ -93,8 +97,9 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
             });
         });
 
-        //If not catalog have been specified use all available.
-        if (remoteCatalogs.length == 0) {
+        if (!jbang.isAvailable()) {
+            //If jbang is not available, ignore aliases
+        } else if (remoteCatalogs.length == 0) { //If not catalog have been specified use all available.
             aliases.putAll(listAliasesOrFallback(jbang, fallbackCatalog).entrySet()
                     .stream()
                     .filter(e -> !aliases.containsKey(e.getKey()))

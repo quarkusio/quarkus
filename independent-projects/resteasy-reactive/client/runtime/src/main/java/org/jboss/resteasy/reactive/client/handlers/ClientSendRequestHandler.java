@@ -70,9 +70,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
     private final LoggingScope loggingScope;
     private final ClientLogger clientLogger;
     private final Map<Class<?>, MultipartResponseData> multipartResponseDataMap;
+    private final int maxChunkSize;
 
-    public ClientSendRequestHandler(boolean followRedirects, LoggingScope loggingScope, ClientLogger logger,
+    public ClientSendRequestHandler(int maxChunkSize, boolean followRedirects, LoggingScope loggingScope, ClientLogger logger,
             Map<Class<?>, MultipartResponseData> multipartResponseDataMap) {
+        this.maxChunkSize = maxChunkSize;
         this.followRedirects = followRedirects;
         this.loggingScope = loggingScope;
         this.clientLogger = logger;
@@ -457,7 +459,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             mode = (PausableHttpPostRequestEncoder.EncoderMode) property;
         }
         QuarkusMultipartFormUpload multipartFormUpload = new QuarkusMultipartFormUpload(Vertx.currentContext(), multipartForm,
-                true, mode);
+                true, maxChunkSize, mode);
         httpClientRequest.setChunked(multipartFormUpload.isChunked());
         setEntityRelatedHeaders(headerMap, state.getEntity());
 

@@ -43,6 +43,8 @@ public class RestClientConfig {
         EMPTY.connectionPoolSize = Optional.empty();
         EMPTY.keepAliveEnabled = Optional.empty();
         EMPTY.maxRedirects = Optional.empty();
+        EMPTY.multipart = new RestClientMultipartConfig();
+        EMPTY.multipart.maxChunkSize = Optional.empty();
         EMPTY.headers = Collections.emptyMap();
         EMPTY.shared = Optional.empty();
         EMPTY.name = Optional.empty();
@@ -50,6 +52,8 @@ public class RestClientConfig {
         EMPTY.http2 = Optional.empty();
         EMPTY.alpn = Optional.empty();
     }
+
+    public RestClientMultipartConfig multipart;
 
     /**
      * The base URL to use for this service. This property or the `uri` property is considered required, unless
@@ -296,6 +300,9 @@ public class RestClientConfig {
         instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
         instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
 
+        instance.multipart = new RestClientMultipartConfig();
+        instance.multipart.maxChunkSize = getConfigValue(configKey, "multipart.max-chunk-size", Integer.class);
+
         return instance;
     }
 
@@ -332,6 +339,9 @@ public class RestClientConfig {
         instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
         instance.http2 = getConfigValue(interfaceClass, "http2", Boolean.class);
         instance.alpn = getConfigValue(interfaceClass, "alpn", Boolean.class);
+
+        instance.multipart = new RestClientMultipartConfig();
+        instance.multipart.maxChunkSize = getConfigValue(interfaceClass, "multipart.max-chunk-size", Integer.class);
 
         return instance;
     }

@@ -3,6 +3,11 @@ package org.jboss.resteasy.reactive.client.api;
 public class QuarkusRestClientProperties {
 
     /**
+     * Configures the maximum chunk size.
+     */
+    public static final String MAX_CHUNK_SIZE = "io.quarkus.rest.client.max-chunk-size";
+
+    /**
      * Configure the connect timeout in ms.
      */
     public static final String CONNECT_TIMEOUT = "io.quarkus.rest.client.connect-timeout";

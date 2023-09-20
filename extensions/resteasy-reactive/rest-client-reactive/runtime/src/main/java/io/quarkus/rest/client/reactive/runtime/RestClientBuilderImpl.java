@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.runtime;
 
+import static io.quarkus.rest.client.reactive.runtime.Constants.DEFAULT_MAX_CHUNK_SIZE;
+
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -358,6 +360,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             clientBuilder.setUserAgent(userAgent);
         } else if (restClientsConfig.userAgent.isPresent()) {
             clientBuilder.setUserAgent(restClientsConfig.userAgent.get());
+        }
+
+        Integer maxChunkSize = (Integer) getConfiguration().getProperty(QuarkusRestClientProperties.MAX_CHUNK_SIZE);
+        if (maxChunkSize != null) {
+            clientBuilder.maxChunkSize(maxChunkSize);
+        } else {
+            clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
         }
 
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2)) {

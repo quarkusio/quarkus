@@ -18,6 +18,9 @@ import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -61,6 +64,21 @@ public class MultiByteFileTest {
                 () -> (byte) ((i.getAndIncrement() + 1) % 123)).atMost(BYTES_SENT);
         String result = client.postMultipart(form);
         assertThat(result).isEqualTo("myFile");
+    }
+
+    @Test
+    void shouldChunkRequest() {
+        Client client = RestClientBuilder.newBuilder()
+                .baseUri(baseUri)
+                .property("io.quarkus.rest.client.max-chunk-size", 2)
+                .build(Client.class);
+
+        ClientForm form = new ClientForm();
+        form.file = Multi.createBy().repeating().supplier(
+                () -> (byte) 'A').atMost(10);
+
+        String result = client.chunked(form);
+        assertThat(result).isEqualTo("myFile/-1/chunked");
     }
 
     @Test
@@ -180,6 +198,15 @@ public class MultiByteFileTest {
             return form.myFile != null ? "NON_NULL_FILE_FROM_NULL_MULTI" : "NULL_FILE";
         }
 
+        @Path("/chunked")
+        @POST
+        @Produces(MediaType.TEXT_PLAIN)
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        public String chunked(@Context HttpHeaders headers, @MultipartForm FormData form) {
+            String filename = verifyFile(form.myFile, 10, b -> (byte) 'A');
+            return filename + "/" + headers.getLength() + "/" + headers.getHeaderString("transfer-encoding");
+        }
+
         @Path("/")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -268,6 +295,11 @@ public class MultiByteFileTest {
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         String postMultipart(@MultipartForm ClientForm clientForm);
+
+        @Path("/chunked")
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        String chunked(@MultipartForm ClientForm clientForm);
 
         @Path("/two-files")
         @POST

@@ -71,6 +71,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private LoggingScope loggingScope;
     private Integer loggingBodySize = 100;
+    private int maxChunkSize = 8096;
     private MultiQueryParamMode multiQueryParamMode;
 
     private ClientLogger clientLogger = new DefaultClientLogger();
@@ -196,6 +197,11 @@ public class ClientBuilderImpl extends ClientBuilder {
         return this;
     }
 
+    public ClientBuilder maxChunkSize(int maxChunkSize) {
+        this.maxChunkSize = maxChunkSize;
+        return this;
+    }
+
     @Override
     public ClientImpl build() {
         HttpClientOptions options = Optional.ofNullable(configuration.getFromContext(HttpClientOptions.class))
@@ -287,6 +293,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
         clientLogger.setBodySize(loggingBodySize);
 
+        options.setMaxChunkSize(maxChunkSize);
         return new ClientImpl(options,
                 configuration,
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),

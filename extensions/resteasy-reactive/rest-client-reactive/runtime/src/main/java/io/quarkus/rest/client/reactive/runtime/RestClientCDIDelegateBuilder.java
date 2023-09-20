@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.runtime;
 
+import static io.quarkus.rest.client.reactive.runtime.Constants.DEFAULT_MAX_CHUNK_SIZE;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -119,6 +121,10 @@ public class RestClientCDIDelegateBuilder<T> {
         if (userAgent.isPresent()) {
             builder.property(QuarkusRestClientProperties.USER_AGENT, userAgent.get());
         }
+
+        Optional<Integer> maxChunkSize = oneOf(clientConfigByClassName().multipart.maxChunkSize,
+                clientConfigByConfigKey().multipart.maxChunkSize, configRoot.multipart.maxChunkSize);
+        builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
         Boolean http2 = oneOf(clientConfigByClassName().http2,
                 clientConfigByConfigKey().http2).orElse(configRoot.http2);

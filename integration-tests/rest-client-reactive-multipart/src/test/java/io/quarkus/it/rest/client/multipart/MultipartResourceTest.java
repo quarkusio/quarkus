@@ -333,6 +333,30 @@ public class MultipartResourceTest {
                 .body(equalTo("HELLO WORLD"));
     }
 
+    @Test
+    public void shouldSendSingleChunk() {
+        RestAssured.given()
+                .queryParam("size", 1)
+                .when()
+                .get("/client/chunked")
+                .then()
+                .contentType(ContentType.TEXT)
+                .statusCode(200)
+                .body(equalTo("transfer-encodingOk:false"));
+    }
+
+    @Test
+    public void shouldSendMultipleChunks() {
+        RestAssured.given()
+                .queryParam("size", 1000)
+                .when()
+                .get("/client/chunked")
+                .then()
+                .contentType(ContentType.TEXT)
+                .statusCode(200)
+                .body(equalTo("transfer-encodingOk:true"));
+    }
+
     private void assertMultipartResponseContains(String response, String name, String contentType, Object value) {
         String[] lines = response.split("--");
         assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_PART, name))

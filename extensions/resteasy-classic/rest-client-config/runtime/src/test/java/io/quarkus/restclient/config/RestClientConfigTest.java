@@ -72,6 +72,7 @@ public class RestClientConfigTest {
         assertThat(config.connectionTTL.get()).isEqualTo(30000);
         assertThat(config.connectionPoolSize).isPresent();
         assertThat(config.connectionPoolSize.get()).isEqualTo(10);
+        assertThat(config.multipart.maxChunkSize.get()).isEqualTo(1024);
     }
 
     private static void setupMPConfig() throws IOException {

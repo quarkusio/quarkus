@@ -9,9 +9,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-hibernate-reactive-mysql-agroal</artifactId>
-    <name>Quarkus - Integration Tests - Hibernate Reactive - MySQL</name>
-    <description>Hibernate Reactive related tests running with the MySQL database</description>
+    <artifactId>quarkus-integration-test-hibernate-reactive-mysql-agroal-flyway</artifactId>
+    <name>Quarkus - Integration Tests - Hibernate Reactive - MySQL - With Agroal and Flyway</name>
+    <description>Hibernate Reactive related tests running with the MySQL database and also using Agroal and Flyway</description>
 
     <properties>
         <reactive-mysql.url>vertx-reactive:mysql://localhost:3306/hibernate_orm_test</reactive-mysql.url>
@@ -38,6 +38,14 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -108,6 +116,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-jsonb-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

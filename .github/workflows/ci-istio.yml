@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     if: "github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
@@ -43,7 +43,7 @@ jobs:
         kubernetes: [v1.20.1]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - uses: actions/setup-java@v3
         with:
           distribution: 'temurin'

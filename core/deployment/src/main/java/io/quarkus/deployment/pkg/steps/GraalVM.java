@@ -1,5 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -138,10 +139,11 @@ public final class GraalVM {
         public static final int UNDEFINED = -1;
 
         final String fullVersion;
-        final org.graalvm.home.Version version;
         public final int javaFeatureVersion;
         public final int javaUpdateVersion;
         final Distribution distribution;
+        private int[] versions;
+        private String suffix;
 
         Version(String fullVersion, String version, Distribution distro) {
             this(fullVersion, version, 11, UNDEFINED, distro);
@@ -149,10 +151,19 @@ public final class GraalVM {
 
         Version(String fullVersion, String version, int javaFeatureVersion, int javaUpdateVersion, Distribution distro) {
             this.fullVersion = fullVersion;
-            this.version = org.graalvm.home.Version.parse(version);
+            breakdownVersion(version);
             this.javaFeatureVersion = javaFeatureVersion;
             this.javaUpdateVersion = javaUpdateVersion;
             this.distribution = distro;
+        }
+
+        private void breakdownVersion(String version) {
+            int dash = version.indexOf('-');
+            if (dash != -1) {
+                this.suffix = version.substring(dash + 1);
+                version = version.substring(0, dash);
+            }
+            this.versions = Arrays.stream(version.split("\\.")).mapToInt(Integer::parseInt).toArray();
         }
 
         String getFullVersion() {
@@ -189,11 +200,27 @@ public final class GraalVM {
 
         @Override
         public int compareTo(Version o) {
-            return this.version.compareTo(o.version);
+            int i = 0;
+            for (; i < this.versions.length; i++) {
+                if (i >= o.versions.length) {
+                    if (this.versions[i] != 0) {
+                        return 1;
+                    }
+                } else if (this.versions[i] != o.versions[i]) {
+                    return this.versions[i] - o.versions[i];
+                }
+            }
+            for (; i < o.versions.length; i++) {
+                if (o.versions[i] != 0) {
+                    return -1;
+                }
+            }
+            return 0;
         }
 
-        static Version of(Stream<String> output) {
-            List<String> lines = output
+        public static Version of(Stream<String> output) {
+            String stringOutput = output.collect(Collectors.joining("\n"));
+            List<String> lines = stringOutput.lines()
                     .dropWhile(l -> !l.startsWith("GraalVM") && !l.startsWith("native-image"))
                     .collect(Collectors.toUnmodifiableList());
 
@@ -227,17 +254,26 @@ public final class GraalVM {
             }
 
             throw new IllegalArgumentException(
-                    "Cannot parse version from output: " + output.collect(Collectors.joining("\n")));
+                    "Cannot parse version from output: \n" + stringOutput);
         }
 
         private static boolean isMandrel(String s) {
             return s != null && s.contains("Mandrel Distribution");
         }
 
+        /**
+         * Returns the Mandrel/GraalVM version as a string. e.g. 21.3.0-rc1
+         */
+        public String getVersionAsString() {
+            return String.join(Arrays.stream(versions).mapToObj(Integer::toString).collect(Collectors.joining()), ".") + "-"
+                    + suffix;
+        }
+
         @Override
         public String toString() {
             return "Version{" +
-                    "version=" + version +
+                    "version="
+                    + getVersionAsString() +
                     ", fullVersion=" + fullVersion +
                     ", distribution=" + distribution +
                     ", javaFeatureVersion=" + javaFeatureVersion +

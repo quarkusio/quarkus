@@ -147,7 +147,7 @@ public class NativeImageBuildStep {
 
         try {
             Files.writeString(outputDir.resolve("native-image.args"), String.join(" ", command));
-            Files.writeString(outputDir.resolve("graalvm.version"), GraalVM.Version.CURRENT.version.toString());
+            Files.writeString(outputDir.resolve("graalvm.version"), GraalVM.Version.CURRENT.getVersionAsString());
             if (nativeImageRunner.isContainerBuild()) {
                 Files.writeString(outputDir.resolve("native-builder.image"), nativeConfig.builderImage().getEffectiveImage());
             }
@@ -297,7 +297,7 @@ public class NativeImageBuildStep {
 
             return new NativeImageBuildItem(finalExecutablePath,
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
-                            graalVMVersion.version.toString(),
+                            graalVMVersion.getVersionAsString(),
                             graalVMVersion.javaFeatureVersion,
                             graalVMVersion.distribution.name()));
         } catch (ImageGenerationFailureException e) {
@@ -462,7 +462,7 @@ public class NativeImageBuildStep {
         log.info("Running Quarkus native-image plugin on " + version.getFullVersion());
         if (version.isObsolete()) {
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getFullVersion() + "."
-                    + " Quarkus currently supports " + GraalVM.Version.CURRENT.version
+                    + " Quarkus currently supports " + GraalVM.Version.CURRENT.getVersionAsString()
                     + ". Please upgrade GraalVM to this version.");
         }
     }

@@ -19,20 +19,20 @@ public class GraalVMTest {
     @Test
     public void testGraalVMVersionDetected() {
         // Version detection after: https://github.com/oracle/graal/pull/6302 (3 lines of version output)
-        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
                         + "OpenJDK Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
                         + "OpenJDK 64-Bit Server VM Mandrel-23.0.0-dev (build 17.0.6+10, mixed mode)").split("\\n"))));
-        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
                         + "GraalVM Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
                         + "Substrate VM Mandrel-23.0.0-dev (build 17.0.6+10, serial gc)").split("\\n"))));
-        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.7 2023-04-18\n"
                         + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
                         + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)").split("\\n"))));
         // should also work when the image is not around and we have to download it
-        assertVersion(org.graalvm.home.Version.create(23, 0, 0), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
                 Version.of(
                         Stream.of(("Unable to find image 'quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17' locally\n"
                                 + "jdk-17: Pulling from quarkus/ubi-quarkus-mandrel-builder-image\n"
@@ -57,36 +57,36 @@ public class GraalVMTest {
                                 + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
                                 + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)")
                                 .split("\\n"))));
-        assertVersion(org.graalvm.home.Version.create(23, 0), ORACLE,
+        assertVersion(new Version("GraalVM 23.0", "23.0", ORACLE), ORACLE,
                 Version.of(Stream.of(("native-image 20 2023-03-21\n"
                         + "GraalVM Runtime Environment GraalVM CE (build 20+34-jvmci-23.0-b10)\n"
                         + "Substrate VM GraalVM CE (build 20+34, serial gc)").split("\\n"))));
 
         // Older version parsing
-        assertVersion(org.graalvm.home.Version.create(20, 1), ORACLE,
+        assertVersion(new Version("GraalVM 20.1", "20.1", ORACLE), ORACLE,
                 Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
-        assertVersion(org.graalvm.home.Version.create(20, 1, 0, 1), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", ORACLE), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(org.graalvm.home.Version.create(20, 1, 0, 1), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", ORACLE), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1-Final 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(org.graalvm.home.Version.create(21, 0), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.0", "21.0", ORACLE), MANDREL, Version
                 .of(Stream.of("GraalVM Version 21.0.0.0-0b3 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(org.graalvm.home.Version.create(20, 3, 1, 2), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.3.1.2", "20.3.1.2", ORACLE), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.3.1.2-dev (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(org.graalvm.home.Version.create(21, 1), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), MANDREL, Version
                 .of(Stream.of("native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(org.graalvm.home.Version.create(21, 1), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), MANDREL, Version
                 .of(Stream.of("GraalVM 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(org.graalvm.home.Version.create(21, 1), ORACLE, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), ORACLE, Version
                 .of(Stream.of("GraalVM 21.1.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(org.graalvm.home.Version.create(21, 1), ORACLE, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), ORACLE, Version
                 .of(Stream.of("native-image 21.1.0.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(org.graalvm.home.Version.create(21, 2), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.2", "21.2", ORACLE), MANDREL, Version
                 .of(Stream.of("native-image 21.2.0.0-Final Mandrel Distribution (Java Version 11.0.12+7)")));
     }
 
-    static void assertVersion(org.graalvm.home.Version graalVmVersion, Distribution distro, Version version) {
-        assertThat(graalVmVersion.compareTo(version.version)).isEqualTo(0);
+    static void assertVersion(Version graalVmVersion, Distribution distro, Version version) {
+        assertThat(graalVmVersion.compareTo(version)).isEqualTo(0);
         assertThat(version.distribution).isEqualTo(distro);
         if (distro == MANDREL) {
             assertThat(version.isMandrel()).isTrue();
@@ -99,6 +99,18 @@ public class GraalVMTest {
         assertOlderThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");
         assertOlderThan("GraalVM Version 21.2.0 (Java Version 11.0.12)", Version.VERSION_21_3);
         assertOlderThan("GraalVM Version 21.2.0 (Java Version 11.0.12)", Version.VERSION_21_3_0);
+        assertOlderThan("native-image 21 2023-09-19\n" +
+                "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +
+                "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)\n",
+                "native-image 21-beta 2023-09-19\n" +
+                        "OpenJDK Runtime Environment Mandrel-23.1.0.1-devde078ae3bea (build 21-beta+35-ea)\n" +
+                        "OpenJDK 64-Bit Server VM Mandrel-23.1.0.1-devde078ae3bea (build 21-beta+35-ea, mixed mode)");
+        assertOlderThan("native-image 21-beta 2023-09-19\n" +
+                "OpenJDK Runtime Environment Mandrel-23.0.0.1-devde078ae3bea (build 21-beta+35-ea)\n" +
+                "OpenJDK 64-Bit Server VM Mandrel-23.0.0.1-devde078ae3bea (build 21-beta+35-ea, mixed mode)",
+                "native-image 21 2023-09-19\n" +
+                        "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +
+                        "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)\n");
     }
 
     /**
@@ -126,17 +138,24 @@ public class GraalVMTest {
         assertCompareEqualTo("GraalVM 21.3.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)",
                 "GraalVM 21.3.0.0.0.0 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
         assertThat(Version.VERSION_21_3.compareTo(Version.VERSION_21_3_0)).isEqualTo(0);
+        assertCompareEqualTo("native-image 21-beta 2023-09-19\n" +
+                "OpenJDK Runtime Environment Mandrel-23.1.0.0-devde078ae3bea (build 21-beta+35-ea)\n" +
+                "OpenJDK 64-Bit Server VM Mandrel-23.1.0.0-devde078ae3bea (build 21-beta+35-ea, mixed mode)",
+                "native-image 21 2023-09-19\n" +
+                        "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +
+                        "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)\n");
     }
 
     /**
      * Asserts that version is equals to other when compared.
      */
     static void assertCompareEqualTo(String version, String other) {
-        assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isEqualTo(0);
+        assertThat(Version.of(Stream.of(version.split("\\n"))).compareTo(Version.of(Stream.of(other.split("\\n")))))
+                .isEqualTo(0);
     }
 
     static void assertCompareNotEqualTo(String version, String other) {
-        assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other)))).isNotEqualTo(0);
+        assertThat(Version.of(Stream.of(version)).compareTo(Version.of(Stream.of(other.split("\\n"))))).isNotEqualTo(0);
     }
 
     @Test
@@ -150,6 +169,18 @@ public class GraalVMTest {
                 "GraalVM 21.3 Java 11 CE (Java Version 11.0.13+7-jvmci-21.3-b05)");
         assertNewerThan("native-image 22.3.0-dev6d51160e2f3 Mandrel Distribution (Java Version 17.0.4-beta+7-202206162318)",
                 "native-image 22.2.0-dev6d51160e2f3 Mandrel Distribution (Java Version 17.0.4-beta+7-202206162318)");
+        assertNewerThan("native-image 21-beta 2023-09-19\n" +
+                "OpenJDK Runtime Environment Mandrel-23.1.0.1-devde078ae3bea (build 21-beta+35-ea)\n" +
+                "OpenJDK 64-Bit Server VM Mandrel-23.1.0.1-devde078ae3bea (build 21-beta+35-ea, mixed mode)",
+                "native-image 21 2023-09-19\n" +
+                        "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +
+                        "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)\n");
+        assertNewerThan("native-image 21 2023-09-19\n" +
+                "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +
+                "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)\n",
+                "native-image 21-beta 2023-09-19\n" +
+                        "OpenJDK Runtime Environment Mandrel-23.0.0.1-devde078ae3bea (build 21-beta+35-ea)\n" +
+                        "OpenJDK 64-Bit Server VM Mandrel-23.0.0.1-devde078ae3bea (build 21-beta+35-ea, mixed mode)");
     }
 
     /**

@@ -1,9 +1,12 @@
 package io.quarkus.bootstrap.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,7 +42,25 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
 
     @Override
     public Collection<ResolvedDependency> getDependencies() {
-        return dependencies;
+        var result = new ArrayList<ResolvedDependency>(dependencies.size());
+        for (var d : getDependencies(DependencyFlags.DEPLOYMENT_CP)) {
+            result.add(d);
+        }
+        return result;
+    }
+
+    @Override
+    public Collection<ResolvedDependency> getRuntimeDependencies() {
+        var result = new ArrayList<ResolvedDependency>();
+        for (var d : getDependencies(DependencyFlags.RUNTIME_CP)) {
+            result.add(d);
+        }
+        return result;
+    }
+
+    @Override
+    public Iterable<ResolvedDependency> getDependencies(int flags) {
+        return new FlagDependencyIterator(flags);
     }
 
     @Override
@@ -78,5 +99,53 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     @Override
     public Map<ArtifactKey, Set<String>> getRemovedResources() {
         return excludedResources;
+    }
+
+    private class FlagDependencyIterator implements Iterable<ResolvedDependency> {
+
+        private final int flags;
+
+        private FlagDependencyIterator(int flags) {
+            this.flags = flags;
+        }
+
+        @Override
+        public Iterator<ResolvedDependency> iterator() {
+            return new Iterator<>() {
+
+                final Iterator<ResolvedDependency> i = dependencies.iterator();
+                ResolvedDependency next;
+
+                {
+                    moveOn();
+                }
+
+                @Override
+                public boolean hasNext() {
+                    return next != null;
+                }
+
+                @Override
+                public ResolvedDependency next() {
+                    if (next == null) {
+                        throw new NoSuchElementException();
+                    }
+                    var current = next;
+                    moveOn();
+                    return current;
+                }
+
+                private void moveOn() {
+                    next = null;
+                    while (i.hasNext()) {
+                        var d = i.next();
+                        if ((d.getFlags() & flags) == flags) {
+                            next = d;
+                            break;
+                        }
+                    }
+                }
+            };
+        }
     }
 }

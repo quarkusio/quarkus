@@ -542,9 +542,67 @@ Finally,  you need to configure the Google Calendar address and request  the Goo
 
 [source,properties]
 ----
+quarkus.oidc.provider=google
+quarkus.oidc.client-id=<Client ID>
+quarkus.oidc.credentials.secret=<Secret>
+
+# Add a required calendar scope
 quarkus.oidc.authentication.extra-params.scope=https://www.googleapis.com/auth/calendar
+
+# Point REST client to Google Calendar endpoint
 quarkus.rest-client.google-calendar-api.url=https://www.googleapis.com/calendar/v3
 ----
+
+Now you are ready to have users authenticated with Google and support updating their `Google` calendars on their behalf, for example:
+
+[source,java]
+----
+package org.acme.calendar;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import io.quarkus.oidc.IdToken;
+import io.quarkus.security.Authenticated;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+
+@Path("/calendar")
+@Authenticated
+public class CalendarService {
+
+    @Inject
+    @IdToken
+    JsonWebToken jwt;
+
+    @Inject
+    @RestClient
+    GoogleCalendarClient calendarClient;
+
+    @GET
+    @Path("/event")
+    @Produces("text/plain")
+    public Uni<String> get() {
+        return calendarClient.addEvent(new Event()).onItem()
+           .transform(c -> ("Hello " + jwt.getName() + ", new event: " + c));
+    }
+}
+----
+
+You must update the application registered with the <<google>> provider to list `http://localhost:8080/calendar/event` as one of the authorized redirect URIs if you would like to test this endpoint on the local host, for example:
+
+image::oidc-google-authorized-redirects.png[role="thumb"]
+
+You might also have to register one or more test users:
+
+image::oidc-google-test-users.png[role="thumb"]
+
+Follow the same approach if the endpoint must access other Google services.
+
+The pattern of authenticating with a given provider, where the endpoint uses either an ID token or UserInfo (especially if an OAuth2-only provider such as `GitHub` is used) to get some information about the currently authenticated user and using an access token to access some downstream services (provider or application specific ones) on behalf of this user can be universally applied, irrespectively of which provider is used to secure the application.
 
 == HTTPS Redirect URL
 

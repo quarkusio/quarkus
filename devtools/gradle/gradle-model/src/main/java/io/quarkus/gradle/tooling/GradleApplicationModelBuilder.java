@@ -275,7 +275,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                         .setVersion(version)
                         .setResolvedPath(f.toPath())
                         .setDirect(true)
-                        .setRuntimeCp();
+                        .setRuntimeCp()
+                        .setDeploymentCp();
                 processQuarkusDependency(artifactBuilder, modelBuilder);
                 modelBuilder.addDependency(artifactBuilder);
             }
@@ -296,7 +297,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             final ArtifactCoords depCoords = toArtifactCoords(a);
             final ResolvedDependencyBuilder depBuilder = ResolvedDependencyBuilder.newInstance()
                     .setCoords(depCoords)
-                    .setRuntimeCp();
+                    .setRuntimeCp()
+                    .setDeploymentCp();
             if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
                 depBuilder.setDirect(true);
                 flags = clearFlag(flags, COLLECT_DIRECT_DEPS);

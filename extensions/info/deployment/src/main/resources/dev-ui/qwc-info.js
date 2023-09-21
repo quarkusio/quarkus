@@ -1,4 +1,5 @@
 import { LitElement, html, css} from 'lit';
+import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { infoUrl } from 'build-time-data';
 import '@vaadin/progress-bar';
@@ -22,12 +23,19 @@ export class QwcInfo extends LitElement {
         }
         .cardContent {
             display: flex;
-            align-items: center;
             padding: 10px;
             gap: 10px;
+            height: 100%;
         }
         vaadin-icon {
             font-size: xx-large;
+        }
+        .table {
+            height: fit-content;
+        }
+        .row-header {
+            color: var(--lumo-contrast-50pct);
+            vertical-align: top;
         }
     `;
 
@@ -58,8 +66,8 @@ export class QwcInfo extends LitElement {
             return html`
                 ${this._renderOsInfo(this._info)}
                 ${this._renderJavaInfo(this._info)}
-                ${this._renderGitInfo(this._info)}
                 ${this._renderBuildInfo(this._info)}
+                ${this._renderGitInfo(this._info)}
             `;
         }else{
             return html`
@@ -78,9 +86,9 @@ export class QwcInfo extends LitElement {
                     <div class="cardContent" slot="content">
                         ${this._renderOsIcon(os.name)}    
                         <table class="table">
-                            <tr><td>Name</td><td>${os.name}</td></tr>
-                            <tr><td>Version</td><td>${os.version}</td></tr>
-                            <tr><td>Arch</td><td>${os.arch}</td></tr>
+                            <tr><td class="row-header">Name</td><td>${os.name}</td></tr>
+                            <tr><td class="row-header">Version</td><td>${os.version}</td></tr>
+                            <tr><td class="row-header">Arch</td><td>${os.arch}</td></tr>
                         </table>
                     </div>
                 </qui-card>`;
@@ -94,7 +102,7 @@ export class QwcInfo extends LitElement {
                     <div class="cardContent" slot="content">
                         <vaadin-icon icon="font-awesome-brands:java"></vaadin-icon>
                         <table class="table">
-                            <tr><td>Version</td><td>${java.version}</td></tr>
+                            <tr><td class="row-header">Version</td><td>${java.version}</td></tr>
                         </table>
                     </div>    
                 </qui-card>`;
@@ -121,13 +129,33 @@ export class QwcInfo extends LitElement {
                     <div class="cardContent" slot="content">
                         <vaadin-icon icon="font-awesome-brands:git"></vaadin-icon>
                         <table class="table">
-                            <tr><td>Branch</td><td>${git.branch}</td></tr>
-                            <tr><td>Commit</td><td>${git.commit.id}</td></tr>
-                            <tr><td>Time</td><td>${git.commit.time}</td></tr>
+                            <tr><td class="row-header">Branch</td><td>${git.branch}</td></tr>
+                            <tr><td class="row-header">Commit Id </td><td>${this._renderCommitId(git)}</td></tr>
+                            <tr><td class="row-header">Commit Time</td><td>${git.commit.time}</td></tr>
+                            ${this._renderOptionalData(git)}
                         </table>
                     </div>
                 </qui-card>`;
         }
+    }
+    
+    _renderCommitId(git){
+        if(typeof git.commit.id === "string"){
+            return html`${git.commit.id}`;
+        }else {
+            return html`${git.commit.id.full}`;
+        }
+    }
+    
+    _renderOptionalData(git){
+        if(typeof git.commit.id !== "string"){
+            return html`<tr><td class="row-header">Commit User</td><td>${git.commit.user.name} &lt;${git.commit.user.email}&gt;</td></tr>
+                        <tr><td class="row-header">Commit Message</td><td>${unsafeHTML(this._replaceNewLine(git.commit.id.message.full))}</td></tr>`
+        }
+    }
+    
+    _replaceNewLine(line){
+        return line.replace(new RegExp('\r?\n','g'), '<br />');
     }
     
     _renderBuildInfo(info){
@@ -136,10 +164,10 @@ export class QwcInfo extends LitElement {
             return html`<qui-card title="Build">
                     <div class="cardContent" slot="content">
                         <table class="table">
-                            <tr><td>Group</td><td>${build.group}</td></tr>
-                            <tr><td>Artifact</td><td>${build.artifact}</td></tr>
-                            <tr><td>Version</td><td>${build.version}</td></tr>
-                            <tr><td>Time</td><td>${build.time}</td></tr>
+                            <tr><td class="row-header">Group</td><td>${build.group}</td></tr>
+                            <tr><td class="row-header">Artifact</td><td>${build.artifact}</td></tr>
+                            <tr><td class="row-header">Version</td><td>${build.version}</td></tr>
+                            <tr><td class="row-header">Time</td><td>${build.time}</td></tr>
                         </table>
                     </div>
                 </qui-card>`;

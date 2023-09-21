@@ -23,7 +23,7 @@
     </buildScan>
     <buildCache>
         <local>
-            <enabled>false</enabled>
+            <enabled>#{env['GRADLE_LOCAL_BUILD_CACHE'] != null}</enabled>
         </local>
         <remote>
             <enabled>true</enabled>

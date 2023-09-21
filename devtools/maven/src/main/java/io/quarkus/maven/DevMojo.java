@@ -829,6 +829,7 @@ public class DevMojo extends AbstractMojo {
         String projectDirectory;
         Set<Path> sourcePaths;
         String classesPath = null;
+        String generatedSourcesPath = null;
         Set<Path> resourcePaths;
         Set<Path> testSourcePaths;
         String testClassesPath = null;
@@ -895,7 +896,11 @@ public class DevMojo extends AbstractMojo {
         Path classesDir = null;
         resourcePaths = new LinkedHashSet<>();
         if (sources != null) {
-            classesDir = sources.getSourceDirs().iterator().next().getOutputDir().toAbsolutePath();
+            SourceDir firstSourceDir = sources.getSourceDirs().iterator().next();
+            classesDir = firstSourceDir.getOutputDir().toAbsolutePath();
+            if (firstSourceDir.getAptSourcesDir() != null) {
+                generatedSourcesPath = firstSourceDir.getAptSourcesDir().toAbsolutePath().toString();
+            }
             if (Files.isDirectory(classesDir)) {
                 classesPath = classesDir.toString();
             }
@@ -948,11 +953,19 @@ public class DevMojo extends AbstractMojo {
 
         Path targetDir = Path.of(project.getBuild().getDirectory());
 
+        // In some cases, we may have a generatedSourcesPath that has not been created, or that has been deleted
+        // after Maven created it. Javac will not be happy about it, and we will mimic Maven and auto-create it
+        // when this happens, to avoid crashing the compiler
+        if (generatedSourcesPath != null && Files.notExists(Path.of(generatedSourcesPath))) {
+            Files.createDirectories(Path.of(generatedSourcesPath));
+        }
+
         DevModeContext.ModuleInfo moduleInfo = new DevModeContext.ModuleInfo.Builder()
                 .setArtifactKey(module.getKey())
                 .setProjectDirectory(projectDirectory)
                 .setSourcePaths(PathList.from(sourcePaths))
                 .setClassesPath(classesPath)
+                .setGeneratedSourcesPath(generatedSourcesPath)
                 .setResourcesOutputPath(classesPath)
                 .setResourcePaths(PathList.from(resourcePaths))
                 .setSourceParents(PathList.of(sourceParent.toAbsolutePath()))

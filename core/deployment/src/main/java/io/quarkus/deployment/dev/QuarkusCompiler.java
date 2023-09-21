@@ -210,6 +210,8 @@ public class QuarkusCompiler implements Closeable {
                                 context.getTargetJvmVersion(),
                                 context.getCompilerPluginArtifacts(),
                                 context.getCompilerPluginsOptions(),
+                                compilationUnit.getGeneratedSourcesPath() == null ? null
+                                        : new File(compilationUnit.getGeneratedSourcesPath()),
                                 context.getBuildSystemProperties().getOrDefault("quarkus.live-reload.ignore-module-info",
                                         "true")));
             }

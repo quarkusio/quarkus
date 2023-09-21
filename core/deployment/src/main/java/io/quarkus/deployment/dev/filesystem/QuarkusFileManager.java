@@ -18,6 +18,9 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         try {
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
+            if (context.getGeneratedSourcesDirectory() != null) {
+                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot initialize file manager", e);
         }
@@ -29,6 +32,9 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         try {
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
+            if (context.getGeneratedSourcesDirectory() != null) {
+                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot reset file manager", e);
         }
@@ -45,14 +51,16 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         private final File outputDirectory;
         private final Charset sourceEncoding;
         private final boolean ignoreModuleInfo;
+        private final File generatedSourcesDirectory;
 
         public Context(Set<File> classPath, Set<File> reloadableClassPath,
-                File outputDirectory, Charset sourceEncoding, boolean ignoreModuleInfo) {
+                File outputDirectory, File generatedSourcesDirectory, Charset sourceEncoding, boolean ignoreModuleInfo) {
             this.classPath = classPath;
             this.reloadableClassPath = reloadableClassPath;
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding;
             this.ignoreModuleInfo = ignoreModuleInfo;
+            this.generatedSourcesDirectory = generatedSourcesDirectory;
         }
 
         public Set<File> getClassPath() {
@@ -73,6 +81,10 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
 
         public boolean ignoreModuleInfo() {
             return ignoreModuleInfo;
+        }
+        
+        public File getGeneratedSourcesDirectory() {
+            return generatedSourcesDirectory;
         }
     }
 }

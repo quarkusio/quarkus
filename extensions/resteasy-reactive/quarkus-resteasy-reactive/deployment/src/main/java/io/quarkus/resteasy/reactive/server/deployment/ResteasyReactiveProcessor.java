@@ -521,17 +521,19 @@ public class ResteasyReactiveProcessor {
                                                 .constructors(false).methods().build());
                             }
 
-                            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
-                                    .type(method.returnType())
-                                    .index(index)
-                                    .ignoreTypePredicate(
-                                            QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                                    .ignoreFieldPredicate(
-                                            QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                                    .ignoreMethodPredicate(
-                                            QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                                    .source(source)
-                                    .build());
+                            if (!result.getPossibleSubResources().containsKey(method.returnType().name())) {
+                                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem.Builder()
+                                        .type(method.returnType())
+                                        .index(index)
+                                        .ignoreTypePredicate(
+                                                QuarkusResteasyReactiveDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                                        .ignoreFieldPredicate(
+                                                QuarkusResteasyReactiveDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                                        .ignoreMethodPredicate(
+                                                QuarkusResteasyReactiveDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                                        .source(source)
+                                        .build());
+                            }
 
                             boolean paramsRequireReflection = false;
                             for (short i = 0; i < method.parametersCount(); i++) {

@@ -111,7 +111,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 result.put(i.getName().replace(".", "/") + ".class", i.getClassData());
             }
             for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
-                result.put(i.getName(), i.getClassData());
+                result.put(i.getName(), i.getData());
             }
             for (Map.Entry<Path, Set<TransformedClassesBuildItem.TransformedClass>> entry : buildResult
                     .consume(TransformedClassesBuildItem.class).getTransformedClassesByJar().entrySet()) {

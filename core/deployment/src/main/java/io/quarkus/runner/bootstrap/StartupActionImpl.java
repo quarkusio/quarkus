@@ -409,7 +409,7 @@ public class StartupActionImpl implements StartupAction {
                 if (i.isExcludeFromDevCL()) {
                     continue;
                 }
-                data.put(i.getName(), i.getClassData());
+                data.put(i.getName(), i.getData());
             }
         }
         return data;

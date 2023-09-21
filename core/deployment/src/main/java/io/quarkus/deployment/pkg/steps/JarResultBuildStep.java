@@ -661,7 +661,7 @@ public class JarResultBuildStep {
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
                 }
-                Files.write(target, i.getClassData());
+                Files.write(target, i.getData());
             }
         }
         if (decompiler != null) {
@@ -1192,10 +1192,10 @@ public class JarResultBuildStep {
                 continue;
             }
             if (i.getName().startsWith("META-INF/services/")) {
-                concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getClassData());
+                concatenatedEntries.computeIfAbsent(i.getName(), (u) -> new ArrayList<>()).add(i.getData());
             } else {
                 try (final OutputStream os = wrapForJDK8232879(Files.newOutputStream(target))) {
-                    os.write(i.getClassData());
+                    os.write(i.getData());
                 }
             }
         }

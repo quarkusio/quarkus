@@ -131,6 +131,7 @@ public final class GraalVM {
         public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", Distribution.ORACLE);
         public static final Version VERSION_22_2_0 = new Version("GraalVM 22.2.0", "22.2.0", Distribution.ORACLE);
         public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", Distribution.ORACLE);
+        public static final Version VERSION_23_0_999 = new Version("GraalVM 23.0.999", "23.0.999", Distribution.ORACLE);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", Distribution.ORACLE);
 
         public static final Version MINIMUM = VERSION_22_2_0;

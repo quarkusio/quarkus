@@ -48,6 +48,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.common.MapBackedConfigSource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.operators.multi.split.MultiSplitter;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 import io.smallrye.reactive.messaging.kafka.KafkaRecordBatch;
@@ -66,6 +67,7 @@ public class DefaultSerdeConfigTest {
 
         List<Class<?>> classes = new ArrayList<>(Arrays.asList(classesToIndex));
         classes.add(Incoming.class);
+        classes.add(Outgoing.class);
         DefaultSerdeDiscoveryState discovery = new DefaultSerdeDiscoveryState(index(classes)) {
             @Override
             Config getConfig() {
@@ -2723,6 +2725,45 @@ public class DefaultSerdeConfigTest {
         @Incoming("channel4")
         void method2(JsonObject msg) {
 
+        }
+
+    }
+
+    @Test
+    void repeatableOutgoings() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel2.value.serializer", "org.apache.kafka.common.serialization.StringSerializer"),
+                tuple("mp.messaging.outgoing.channel3.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel4.value.serializer", "io.quarkus.kafka.client.serialization.JsonObjectSerializer"),
+                tuple("mp.messaging.outgoing.channel5.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+                tuple("mp.messaging.outgoing.channel6.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
+        };
+        doTest(expectations, RepeatableOutgoingsChannels.class);
+    }
+
+    private static class RepeatableOutgoingsChannels {
+
+        @Outgoing("channel1")
+        @Outgoing("channel2")
+        String method1() {
+            return null;
+        }
+
+        @Outgoing("channel3")
+        @Outgoing("channel4")
+        JsonObject method2() {
+            return null;
+        }
+
+        enum T {
+
+        }
+
+        @Outgoing("channel5")
+        @Outgoing("channel6")
+        MultiSplitter<Long, T> method3() {
+            return null;
         }
 
     }

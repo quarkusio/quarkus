@@ -24,6 +24,8 @@ public class KafkaConnectorTest {
 
     protected static final TypeRef<List<Person>> TYPE_REF = new TypeRef<List<Person>>() {
     };
+    protected static final TypeRef<List<Fruit>> FRUIT_TYPE_REF = new TypeRef<List<Fruit>>() {
+    };
 
     protected static final TypeRef<ProcessingState<KafkaReceivers.PeopleState>> PEOPLE_STATE_REF = new TypeRef<ProcessingState<KafkaReceivers.PeopleState>>() {
     };
@@ -48,7 +50,7 @@ public class KafkaConnectorTest {
 
     @Test
     public void testFruits() {
-        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/fruits").as(TYPE_REF).size(), 4));
+        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/fruits").as(FRUIT_TYPE_REF).size(), 5));
     }
 
     @Test

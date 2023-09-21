@@ -9,6 +9,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.KOTLIN_UNIT;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.MERGE;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOING;
+import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.OUTGOINGS;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.SMALLRYE_BLOCKING;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.TRANSACTIONAL;
@@ -116,10 +117,12 @@ public final class QuarkusMediatorConfigurationUtil {
         incomingValues.addAll(getIncomingValues(methodInfo));
         configuration.setIncomings(incomingValues);
 
-        String outgoingValue = getValue(methodInfo, OUTGOING);
-        configuration.setOutgoing(outgoingValue);
+        // We need to extract the value of @Outgoing and @Outgoings (which contains an array of @Outgoing)
+        List<String> outgoingValues = new ArrayList<>(getValues(methodInfo, OUTGOING));
+        outgoingValues.addAll(getOutgoingValues(methodInfo));
+        configuration.setOutgoings(outgoingValues);
 
-        Shape shape = mediatorConfigurationSupport.determineShape(incomingValues, outgoingValue);
+        Shape shape = mediatorConfigurationSupport.determineShape(incomingValues, outgoingValues);
         configuration.setShape(shape);
         Acknowledgment.Strategy acknowledgment = mediatorConfigurationSupport
                 .processSuppliedAcknowledgement(incomingValues,
@@ -161,7 +164,7 @@ public final class QuarkusMediatorConfigurationUtil {
             }
         }));
 
-        configuration.setBroadcastValue(mediatorConfigurationSupport.processBroadcast(outgoingValue,
+        configuration.setBroadcastValue(mediatorConfigurationSupport.processBroadcast(outgoingValues,
                 new Supplier<Integer>() {
                     @Override
                     public Integer get() {
@@ -176,6 +179,7 @@ public final class QuarkusMediatorConfigurationUtil {
                         return null;
                     }
                 }));
+        configuration.setHasTargetedOutput(mediatorConfigurationSupport.processTargetedOutput());
 
         AnnotationInstance blockingAnnotation = methodInfo.annotation(BLOCKING);
         AnnotationInstance smallryeBlockingAnnotation = methodInfo.annotation(SMALLRYE_BLOCKING);
@@ -325,6 +329,13 @@ public final class QuarkusMediatorConfigurationUtil {
         return methodInfo.annotations().stream().filter(ai -> ai.name().equals(INCOMINGS))
                 .flatMap(incomings -> Arrays.stream(incomings.value().asNestedArray()))
                 .map(incoming -> incoming.value().asString())
+                .collect(Collectors.toList());
+    }
+
+    private static List<String> getOutgoingValues(MethodInfo methodInfo) {
+        return methodInfo.annotations().stream().filter(ai -> ai.name().equals(OUTGOINGS))
+                .flatMap(outgoings -> Arrays.stream(outgoings.value().asNestedArray()))
+                .map(outgoing -> outgoing.value().asString())
                 .collect(Collectors.toList());
     }
 

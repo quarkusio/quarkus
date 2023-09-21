@@ -181,9 +181,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!runtimeConfig.enableGracefulShutdownInDevAndTestMode) {
                 List<AnnotationInstance> incomings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.INCOMING);
+                List<AnnotationInstance> outgoings = discoveryState.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING);
                 List<AnnotationInstance> channels = discoveryState.findAnnotationsOnInjectionPoints(DotNames.CHANNEL);
                 List<AnnotationInstance> annotations = new ArrayList<>();
                 annotations.addAll(incomings);
+                annotations.addAll(outgoings);
                 annotations.addAll(channels);
                 for (AnnotationInstance annotation : annotations) {
                     String channelName = annotation.value().asString();
@@ -221,7 +223,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                     alreadyGeneratedDeserializers);
         }
 
-        for (AnnotationInstance annotation : discovery.findAnnotationsOnMethods(DotNames.OUTGOING)) {
+        for (AnnotationInstance annotation : discovery.findRepeatableAnnotationsOnMethods(DotNames.OUTGOING)) {
             String channelName = annotation.value().asString();
             if (!discovery.isKafkaConnector(channelsManagedByConnectors, false, channelName)) {
                 continue;
@@ -428,6 +430,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         if ((isPublisher(returnType) && parametersCount == 0)
                 || (isPublisherBuilder(returnType) && parametersCount == 0)
                 || (isMulti(returnType) && parametersCount == 0)
+                || (isMultiSplitter(returnType) && parametersCount == 0)
                 || (isCompletionStage(returnType) && parametersCount == 0)
                 || (isUni(returnType) && parametersCount == 0)) {
             outgoingType = returnType.asParameterizedType().arguments().get(0);
@@ -443,7 +446,8 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                     || (isUni(returnType) && parametersCount == 1)
                     || (isPublisher(returnType) && parametersCount == 1)
                     || (isPublisherBuilder(returnType) && parametersCount == 1)
-                    || (isMulti(returnType) && parametersCount == 1)) {
+                    || (isMulti(returnType) && parametersCount == 1)
+                    || (isMultiSplitter(returnType) && parametersCount == 1)) {
                 outgoingType = returnType.asParameterizedType().arguments().get(0);
             } else if ((isProcessor(returnType) && parametersCount == 0)
                     || (isProcessorBuilder(returnType) && parametersCount == 0)) {
@@ -554,6 +558,13 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         return DotNames.MULTI.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 1;
+    }
+
+    private static boolean isMultiSplitter(Type type) {
+        // raw type MultiSplitter is wrong, must be MultiSplitter<Something, KeyEnum>
+        return DotNames.MULTI_SPLITTER.equals(type.name())
+                && type.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && type.asParameterizedType().arguments().size() == 2;
     }
 
     private static boolean isSubscriber(Type type) {

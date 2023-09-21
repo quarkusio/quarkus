@@ -23,6 +23,7 @@ import io.smallrye.reactive.messaging.annotations.EmitterFactoryFor;
 import io.smallrye.reactive.messaging.annotations.Incomings;
 import io.smallrye.reactive.messaging.annotations.Merge;
 import io.smallrye.reactive.messaging.annotations.OnOverflow;
+import io.smallrye.reactive.messaging.annotations.Outgoings;
 import io.smallrye.reactive.messaging.connector.InboundConnector;
 import io.smallrye.reactive.messaging.connector.OutboundConnector;
 import io.smallrye.reactive.messaging.keyed.KeyValueExtractor;
@@ -38,6 +39,7 @@ public final class ReactiveMessagingDotNames {
     static final DotName INCOMING = DotName.createSimple(Incoming.class.getName());
     static final DotName INCOMINGS = DotName.createSimple(Incomings.class.getName());
     static final DotName OUTGOING = DotName.createSimple(Outgoing.class.getName());
+    static final DotName OUTGOINGS = DotName.createSimple(Outgoings.class.getName());
 
     public static final DotName CONNECTOR = DotName.createSimple(Connector.class.getName());
     static final DotName CONNECTOR_ATTRIBUTES = DotName.createSimple(ConnectorAttributes.class.getName());

@@ -19,7 +19,7 @@ import io.quarkus.qute.TemplateInstance;
 public class BuildReport {
 
     static native TemplateInstance buildReport(String buildTarget, long duration, Set<String> threads,
-            List<BuildStepRecord> records);
+            List<BuildStepRecord> records, List<BuildItem> buildItems, int buildItemsCount);
 
     private final BuildSystemRunner runner;
 
@@ -41,12 +41,18 @@ public class BuildReport {
         long duration = root.get("duration").asLong();
         Set<String> threads = new HashSet<>();
         List<BuildStepRecord> records = new ArrayList<>();
+        List<BuildItem> items = new ArrayList<>();
+        int itemsCount = root.get("itemsCount").asInt();
 
         for (JsonNode record : root.get("records")) {
             String thread = record.get("thread").asText();
             threads.add(thread);
             records.add(new BuildStepRecord(record.get("stepId").asText(), record.get("started").asText(),
                     record.get("duration").asLong(), thread));
+        }
+
+        for (JsonNode item : root.get("items")) {
+            items.add(new BuildItem(item.get("class").asText(), item.get("count").asInt()));
         }
 
         File output = runner.getProjectRoot().resolve(runner.getBuildTool().getBuildDirectory())
@@ -56,7 +62,7 @@ public class BuildReport {
         }
         try {
             Files.writeString(output.toPath(),
-                    BuildReport.buildReport(buildTarget, duration, threads, records).render());
+                    BuildReport.buildReport(buildTarget, duration, threads, records, items, itemsCount).render());
             return output;
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
@@ -75,6 +81,18 @@ public class BuildReport {
             this.started = started;
             this.duration = duration;
             this.thread = thread;
+        }
+
+    }
+
+    public static class BuildItem {
+
+        public final String clazz;
+        public final int count;
+
+        public BuildItem(String clazz, int count) {
+            this.clazz = clazz;
+            this.count = count;
         }
 
     }

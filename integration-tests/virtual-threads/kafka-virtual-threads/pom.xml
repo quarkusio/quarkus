@@ -81,7 +81,8 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>        <dependency>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
             <version>${project.version}</version>

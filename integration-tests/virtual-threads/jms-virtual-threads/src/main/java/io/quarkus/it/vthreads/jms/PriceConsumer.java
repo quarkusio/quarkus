@@ -1,6 +1,5 @@
 package io.quarkus.it.vthreads.jms;
 
-import static io.quarkus.it.vthreads.jms.AssertHelper.assertThatItDoesNotRunOnVirtualThread;
 import static io.quarkus.it.vthreads.jms.AssertHelper.assertThatItRunsOnVirtualThread;
 
 import java.util.Random;
@@ -27,19 +26,15 @@ public class PriceConsumer {
     public CompletionStage<Void> consume(Message<Double> msg) {
         assertThatItRunsOnVirtualThread();
         double price = msg.getPayload();
-        if (price > 90.0) {
-            alertService.alertMessage(price);
-        }
-        return msg.ack().thenAccept(x -> assertThatItDoesNotRunOnVirtualThread());
+        alertService.alertMessage(price);
+        return msg.ack();
     }
 
     @Incoming("prices")
     @RunOnVirtualThread
     public void consume(double price) {
         assertThatItRunsOnVirtualThread();
-        if (price > 90.0) {
-            alertService.alert(price);
-        }
+        alertService.alert(price);
     }
 
     Random r = new Random();

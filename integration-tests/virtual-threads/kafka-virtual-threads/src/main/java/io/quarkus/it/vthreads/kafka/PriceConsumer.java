@@ -28,9 +28,7 @@ public class PriceConsumer {
         assertThatItRunsOnVirtualThread();
         assertThatItRunsOnADuplicatedContext();
         double price = msg.getPayload();
-        if (price > 90.0) {
-            alertService.alertMessage(price);
-        }
+        alertService.alertMessage(price);
         return msg.ack().thenAccept(x -> {
             assertThatItRunsOnADuplicatedContext();
             // While the ack always runs on event loop thread
@@ -43,9 +41,7 @@ public class PriceConsumer {
     public void consume(double price) {
         assertThatItRunsOnVirtualThread();
         assertThatItRunsOnADuplicatedContext();
-        if (price > 90.0) {
-            alertService.alert(price);
-        }
+        alertService.alert(price);
     }
 
     Random r = new Random();

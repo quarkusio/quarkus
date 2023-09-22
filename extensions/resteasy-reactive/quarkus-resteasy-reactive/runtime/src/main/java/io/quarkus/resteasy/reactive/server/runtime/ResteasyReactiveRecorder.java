@@ -77,6 +77,13 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         }
     };
 
+    public static final Supplier<Executor> VTHREAD_EXECUTOR_SUPPLIER = new Supplier<Executor>() {
+        @Override
+        public Executor get() {
+            return VirtualThreadsRecorder.getCurrent();
+        }
+    };
+
     static volatile Deployment currentDeployment;
 
     public static Deployment getCurrentDeployment() {
@@ -129,7 +136,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
-                VirtualThreadsRecorder::getCurrent,
+                VTHREAD_EXECUTOR_SUPPLIER,
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
                 vertxConfig.rootPath);
         Deployment deployment = runtimeDeploymentManager.deploy();

@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.faulttolerance.test.circuitbreaker.maintenance.inheritance;
+package io.quarkus.smallrye.faulttolerance.test.circuitbreaker.maintenance.duplicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

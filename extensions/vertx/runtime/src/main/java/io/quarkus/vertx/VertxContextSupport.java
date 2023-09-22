@@ -1,5 +1,6 @@
 package io.quarkus.vertx;
 
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.Arc;
@@ -7,7 +8,9 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.groups.MultiSubscribe;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -56,6 +59,41 @@ public final class VertxContextSupport {
                 }
             });
         }).await().indefinitely();
+    }
+
+    /**
+     * Subscribes to the supplied {@link Multi} on a Vertx duplicated context; does not block the current thread.
+     *
+     * @param <T>
+     * @param multiSupplier
+     * @param subscribeConsumer
+     */
+    public static <T> void subscribe(Supplier<Multi<T>> multiSupplier, Consumer<MultiSubscribe<T>> subscribeConsumer) {
+        Context context = getContext();
+        VertxContextSafetyToggle.setContextSafe(context, true);
+        context.runOnContext(new Handler<Void>() {
+
+            @Override
+            public void handle(Void event) {
+                subscribeConsumer.accept(multiSupplier.get().subscribe());
+            }
+        });
+    }
+
+    /**
+     * Subscribes to the supplied {@link Multi} on a Vertx duplicated context; does not block the current thread.
+     *
+     * @param <T>
+     * @param multiSupplier
+     * @param onItem
+     */
+    public static <T> void subscribeWith(Supplier<Multi<T>> multiSupplier, Consumer<? super T> onItem) {
+        subscribe(multiSupplier, new Consumer<MultiSubscribe<T>>() {
+            @Override
+            public void accept(MultiSubscribe<T> ms) {
+                ms.with(onItem);
+            }
+        });
     }
 
     private static Context getContext() {

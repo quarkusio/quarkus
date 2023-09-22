@@ -59,8 +59,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  */
 public final class JpaJandexScavenger {
 
-    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED_ID, ClassNames.EMBEDDED,
-            ClassNames.ELEMENT_COLLECTION);
+    public static final List<DotName> EMBEDDED_ANNOTATIONS = Arrays.asList(ClassNames.EMBEDDED_ID, ClassNames.EMBEDDED);
 
     private static final String XML_MAPPING_DEFAULT_ORM_XML = "META-INF/orm.xml";
     private static final String XML_MAPPING_NO_FILE = "no-file";
@@ -313,17 +312,15 @@ public final class JpaJandexScavenger {
         Set<DotName> embeddedTypes = new HashSet<>();
 
         for (DotName embeddedAnnotation : EMBEDDED_ANNOTATIONS) {
-            Collection<AnnotationInstance> annotations = index.getAnnotations(embeddedAnnotation);
-
-            for (AnnotationInstance annotation : annotations) {
+            for (AnnotationInstance annotation : index.getAnnotations(embeddedAnnotation)) {
                 AnnotationTarget target = annotation.target();
 
                 switch (target.kind()) {
                     case FIELD:
-                        collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, target.asField().type());
+                        collectEmbeddedType(embeddedTypes, target.asField().type(), true);
                         break;
                     case METHOD:
-                        collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, target.asMethod().returnType());
+                        collectEmbeddedType(embeddedTypes, target.asMethod().returnType(), true);
                         break;
                     default:
                         throw new IllegalStateException(
@@ -331,6 +328,23 @@ public final class JpaJandexScavenger {
                 }
 
             }
+        }
+
+        for (AnnotationInstance annotation : index.getAnnotations(ClassNames.ELEMENT_COLLECTION)) {
+            AnnotationTarget target = annotation.target();
+
+            switch (target.kind()) {
+                case FIELD:
+                    collectElementCollectionTypes(embeddedTypes, target.asField().type());
+                    break;
+                case METHOD:
+                    collectElementCollectionTypes(embeddedTypes, target.asMethod().returnType());
+                    break;
+                default:
+                    throw new IllegalStateException(
+                            "[internal error] " + ClassNames.ELEMENT_COLLECTION + " placed on a unknown element: " + target);
+            }
+
         }
 
         for (DotName embeddedType : embeddedTypes) {
@@ -481,34 +495,48 @@ public final class JpaJandexScavenger {
         }
     }
 
-    private void collectEmbeddedTypes(DotName embeddedAnnotation, Set<DotName> embeddedTypes, Type indexType)
+    private void collectEmbeddedType(Set<DotName> embeddedTypes, Type embeddedType, boolean validate)
+            throws BuildException {
+        DotName className;
+        switch (embeddedType.kind()) {
+            case CLASS:
+                className = embeddedType.asClassType().name();
+                break;
+            case PARAMETERIZED_TYPE:
+                className = embeddedType.name();
+                break;
+            default:
+                // do nothing
+                return;
+        }
+        if (validate && !index.getClassByName(className).hasAnnotation(ClassNames.EMBEDDABLE)) {
+            throw new BuildException(
+                    className + " is used as an embeddable but does not have an @Embeddable annotation.");
+        }
+        embeddedTypes.add(embeddedType.name());
+    }
+
+    private void collectElementCollectionTypes(Set<DotName> embeddedTypes, Type indexType)
             throws BuildException {
         switch (indexType.kind()) {
             case CLASS:
-                DotName className = indexType.asClassType().name();
-                validateEmbeddable(embeddedAnnotation, className);
-                embeddedTypes.add(className);
+                // Raw collection type, nothing we can do
                 break;
             case PARAMETERIZED_TYPE:
                 embeddedTypes.add(indexType.name());
-                for (Type typeArgument : indexType.asParameterizedType().arguments()) {
-                    collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, typeArgument);
+                var typeArguments = indexType.asParameterizedType().arguments();
+                for (Type typeArgument : typeArguments) {
+                    // We don't validate @Embeddable annotations on element collections at the moment
+                    // See https://github.com/quarkusio/quarkus/pull/35822
+                    collectEmbeddedType(embeddedTypes, typeArgument, false);
                 }
                 break;
             case ARRAY:
-                collectEmbeddedTypes(embeddedAnnotation, embeddedTypes, indexType.asArrayType().constituent());
+                collectEmbeddedType(embeddedTypes, indexType.asArrayType().constituent(), true);
                 break;
             default:
                 // do nothing
                 break;
-        }
-    }
-
-    private void validateEmbeddable(DotName embeddedAnnotation, DotName className) throws BuildException {
-        if ((ClassNames.EMBEDDED.equals(embeddedAnnotation) || ClassNames.EMBEDDED_ID.equals(embeddedAnnotation))
-                && !index.getClassByName(className).hasAnnotation(ClassNames.EMBEDDABLE)) {
-            throw new BuildException(
-                    className + " is used as an embeddable but does not have an @Embeddable annotation.");
         }
     }
 

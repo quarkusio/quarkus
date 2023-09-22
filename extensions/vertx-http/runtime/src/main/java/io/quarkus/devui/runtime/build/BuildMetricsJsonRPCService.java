@@ -19,9 +19,12 @@ public class BuildMetricsJsonRPCService {
         return buildExecutionMetrics;
     }
 
-    public JsonArray getBuildItems() {
+    public BuildItems getBuildItems() {
         Map<String, Object> buildStepMetrics = buildStepMetrics();
-        return (JsonArray) buildStepMetrics.get("items");
+        BuildItems buildItems = new BuildItems();
+        buildItems.items = (JsonArray) buildStepMetrics.get("items");
+        buildItems.itemsCount = (int) buildStepMetrics.get("itemsCount");
+        return buildItems;
     }
 
     public BuildMetrics getBuildMetrics() {
@@ -58,6 +61,11 @@ public class BuildMetricsJsonRPCService {
         public int numberOfThreads;
         public Long duration;
         public JsonArray records;
+    }
+
+    static class BuildItems {
+        public int itemsCount;
+        public JsonArray items;
     }
 
     static class BuildExecutionMetrics {

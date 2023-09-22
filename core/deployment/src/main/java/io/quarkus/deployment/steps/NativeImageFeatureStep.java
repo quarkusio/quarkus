@@ -53,7 +53,7 @@ public class NativeImageFeatureStep {
         features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl", null,
                 GraalVM.Version.VERSION_23_1_0));
         features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage", "org.graalvm.nativeimage.impl",
-                GraalVM.Version.VERSION_23_0_0));
+                GraalVM.Version.VERSION_23_1_0));
     }
 
     @BuildStep

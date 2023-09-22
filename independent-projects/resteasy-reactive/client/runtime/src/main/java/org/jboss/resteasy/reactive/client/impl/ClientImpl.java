@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
+import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CAPTURE_STACKTRACE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_POOL_SIZE;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECTION_TTL;
 import static org.jboss.resteasy.reactive.client.api.QuarkusRestClientProperties.CONNECT_TIMEOUT;
@@ -201,8 +202,17 @@ public class ClientImpl implements Client {
             });
         }
 
-        handlerChain = new HandlerChain(options.getMaxChunkSize(), followRedirects, loggingScope,
+        handlerChain = new HandlerChain(isCaptureStacktrace(configuration), options.getMaxChunkSize(), followRedirects,
+                loggingScope,
                 clientContext.getMultipartResponsesData(), clientLogger);
+    }
+
+    private boolean isCaptureStacktrace(ConfigurationImpl configuration) {
+        Object captureStacktraceObj = configuration.getProperty(CAPTURE_STACKTRACE);
+        if (captureStacktraceObj == null) {
+            return false;
+        }
+        return (boolean) captureStacktraceObj;
     }
 
     public ClientContext getClientContext() {

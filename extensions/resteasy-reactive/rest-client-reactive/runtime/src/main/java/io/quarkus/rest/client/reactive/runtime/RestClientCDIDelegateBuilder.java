@@ -135,6 +135,10 @@ public class RestClientCDIDelegateBuilder<T> {
         if (alpn.isPresent()) {
             builder.property(QuarkusRestClientProperties.ALPN, alpn.get());
         }
+
+        Boolean captureStacktrace = oneOf(clientConfigByClassName().captureStacktrace,
+                clientConfigByConfigKey().captureStacktrace).orElse(configRoot.captureStacktrace);
+        builder.property(QuarkusRestClientProperties.CAPTURE_STACKTRACE, captureStacktrace);
     }
 
     private void configureProxy(QuarkusRestClientBuilder builder) {

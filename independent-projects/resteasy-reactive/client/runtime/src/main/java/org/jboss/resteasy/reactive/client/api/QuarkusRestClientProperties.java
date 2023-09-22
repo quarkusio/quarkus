@@ -78,4 +78,9 @@ public class QuarkusRestClientProperties {
      */
     public static final String ALPN = "io.quarkus.rest.client.alpn";
 
+    /**
+     * If set to true, the stacktrace of the invocation of the REST Client method is captured
+     */
+    public static final String CAPTURE_STACKTRACE = "io.quarkus.rest.client.capture-stacktrace";
+
 }

@@ -51,6 +51,7 @@ public class RestClientConfig {
         EMPTY.userAgent = Optional.empty();
         EMPTY.http2 = Optional.empty();
         EMPTY.alpn = Optional.empty();
+        EMPTY.captureStacktrace = Optional.empty();
     }
 
     public RestClientMultipartConfig multipart;
@@ -267,6 +268,13 @@ public class RestClientConfig {
     @ConfigItem
     public Optional<Boolean> alpn;
 
+    /**
+     * If {@code true}, the stacktrace of the invocation of the REST Client method is captured.
+     * This stacktrace will be used if the invocation throws an exception
+     */
+    @ConfigItem
+    public Optional<Boolean> captureStacktrace;
+
     public static RestClientConfig load(String configKey) {
         final RestClientConfig instance = new RestClientConfig();
 
@@ -299,6 +307,7 @@ public class RestClientConfig {
         instance.name = getConfigValue(configKey, "name", String.class);
         instance.userAgent = getConfigValue(configKey, "user-agent", String.class);
         instance.http2 = getConfigValue(configKey, "http2", Boolean.class);
+        instance.captureStacktrace = getConfigValue(configKey, "capture-stacktrace", Boolean.class);
 
         instance.multipart = new RestClientMultipartConfig();
         instance.multipart.maxChunkSize = getConfigValue(configKey, "multipart.max-chunk-size", Integer.class);
@@ -339,6 +348,7 @@ public class RestClientConfig {
         instance.userAgent = getConfigValue(interfaceClass, "user-agent", String.class);
         instance.http2 = getConfigValue(interfaceClass, "http2", Boolean.class);
         instance.alpn = getConfigValue(interfaceClass, "alpn", Boolean.class);
+        instance.captureStacktrace = getConfigValue(interfaceClass, "capture-stacktrace", Boolean.class);
 
         instance.multipart = new RestClientMultipartConfig();
         instance.multipart.maxChunkSize = getConfigValue(interfaceClass, "multipart.max-chunk-size", Integer.class);

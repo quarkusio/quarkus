@@ -61,7 +61,7 @@ public final class JavaVersion {
     }
 
     // ordering is important here, so let's keep them ordered
-    public static final SortedSet<Integer> JAVA_VERSIONS_LTS = new TreeSet<>(List.of(11, 17));
+    public static final SortedSet<Integer> JAVA_VERSIONS_LTS = new TreeSet<>(List.of(11, 17, 21));
     public static final int DEFAULT_JAVA_VERSION = 11;
     public static final int MAX_LTS_SUPPORTED_BY_KOTLIN = 17;
     public static final String DETECT_JAVA_RUNTIME_VERSION = "<<detect java runtime version>>";

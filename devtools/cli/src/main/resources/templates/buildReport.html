@@ -77,13 +77,18 @@
     <div class="container">
 
         <h1>Quarkus Build Report - {buildTarget}</h1>
+        
+        <ul>
+            <li><a href="#build_steps">Build Steps</a></li>
+            <li><a href="#build_items">Build Items</a></li>
+        </ul>
+        
+        <h2 id="build_steps">Build Steps</h2>
 
         <p class="lead">
             Executed <strong>{records.size}</strong> build steps on <strong>{threads.size}</strong> threads in
             <strong>{duration}</strong> ms.
         </p>
-
-        <h2>Build Steps</h2>
 
         <table>
             <thead>
@@ -113,6 +118,36 @@
                     {/for}
             </tbody>
         </table>
+        
+        <h2 id="build_items">Build Items</h2>
+        
+        <p class="lead">
+            Produced <strong>{buildItemsCount}</strong> build items of <strong>{buildItems.size}</strong> types.
+        </p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Build Item Class</th>
+                    <th scope="col">Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {#for buildItem in buildItems}
+                <tr>
+                    <td>{buildItem_count}</td>
+                    <td>
+                        {buildItem.clazz}
+                    </td>
+                    <td>
+                        {buildItem.count}
+                    </td>
+                    {/for}
+            </tbody>
+        </table>
+        
+        
     </div>
 
 </body>

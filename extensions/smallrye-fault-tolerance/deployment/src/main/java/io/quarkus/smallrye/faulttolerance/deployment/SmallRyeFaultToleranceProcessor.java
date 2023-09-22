@@ -24,7 +24,6 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
@@ -279,6 +278,7 @@ public class SmallRyeFaultToleranceProcessor {
 
         List<FaultToleranceMethod> ftMethods = new ArrayList<>();
         List<Throwable> exceptions = new ArrayList<>();
+        Map<String, Set<String>> existingCircuitBreakerNames = new HashMap<>();
 
         for (BeanInfo info : validationPhase.getContext().beans()) {
             ClassInfo beanClass = info.getImplClazz();
@@ -319,6 +319,12 @@ public class SmallRyeFaultToleranceProcessor {
                                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get()).build());
                             }
                         }
+
+                        if (annotationStore.hasAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME)) {
+                            AnnotationInstance ann = annotationStore.getAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME);
+                            existingCircuitBreakerNames.computeIfAbsent(ann.value().asString(), ignored -> new HashSet<>())
+                                    .add(method + " @ " + method.declaringClass());
+                        }
                     }
                 });
 
@@ -337,16 +343,6 @@ public class SmallRyeFaultToleranceProcessor {
 
         recorder.createFaultToleranceOperation(ftMethods);
 
-        // since annotation transformations are applied lazily, we can't know
-        // all transformed `@CircuitBreakerName`s and have to rely on Jandex here
-        Map<String, Set<String>> existingCircuitBreakerNames = new HashMap<>();
-        for (AnnotationInstance it : index.getAnnotations(DotNames.CIRCUIT_BREAKER_NAME)) {
-            if (it.target().kind() == Kind.METHOD) {
-                MethodInfo method = it.target().asMethod();
-                existingCircuitBreakerNames.computeIfAbsent(it.value().asString(), ignored -> new HashSet<>())
-                        .add(method + " @ " + method.declaringClass());
-            }
-        }
         for (Map.Entry<String, Set<String>> entry : existingCircuitBreakerNames.entrySet()) {
             if (entry.getValue().size() > 1) {
                 exceptions.add(new DefinitionException("Multiple circuit breakers have the same name '"

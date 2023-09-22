@@ -300,6 +300,13 @@ public class RestClientsConfig {
     @ConfigItem
     public Optional<Boolean> alpn;
 
+    /**
+     * If {@code true}, the stacktrace of the invocation of the REST Client method is captured.
+     * This stacktrace will be used if the invocation throws an exception
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean captureStacktrace;
+
     public RestClientConfig getClientConfig(String configKey) {
         if (configKey == null) {
             return RestClientConfig.EMPTY;

@@ -4,6 +4,7 @@ import static io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import io.quarkus.awt.runtime.graal.DarwinAwtFeature;
@@ -21,6 +22,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsupportedOSBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
+import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
@@ -95,7 +98,11 @@ class AwtProcessor {
     void setupAWTInit(BuildProducer<JniRuntimeAccessBuildItem> jc,
             BuildProducer<JniRuntimeAccessMethodBuildItem> jm,
             BuildProducer<JniRuntimeAccessFieldBuildItem> jf,
-            NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
+            NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
+            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
+        nativeImageRunnerBuildItem.getBuildRunner()
+                .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
@@ -118,7 +125,11 @@ class AwtProcessor {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    JniRuntimeAccessBuildItem setupJava2DClasses(NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
+    JniRuntimeAccessBuildItem setupJava2DClasses(NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
+            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
+        nativeImageRunnerBuildItem.getBuildRunner()
+                .setup(processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
         final GraalVM.Version v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
         final List<String> classes = new ArrayList<>();
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReader");

@@ -10,7 +10,7 @@ import java.util.Map;
 import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import io.quarkus.devtools.codestarts.core.reader.TargetFile;
 
-final class ReplaceCodestartFileStrategyHandler implements DefaultCodestartFileStrategyHandler {
+public final class ReplaceCodestartFileStrategyHandler implements DefaultCodestartFileStrategyHandler {
 
     @Override
     public String name() {

@@ -26,7 +26,7 @@ import io.quarkus.devtools.codestarts.core.strategy.CodestartFileStrategyHandler
 import io.quarkus.devtools.codestarts.core.strategy.DefaultCodestartFileStrategyHandler;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 
-final class CodestartProcessor {
+public final class CodestartProcessor {
 
     private final MessageWriter log;
     private final String languageName;
@@ -35,7 +35,7 @@ final class CodestartProcessor {
     private final Map<String, Object> data;
     private final Map<String, List<TargetFile>> files = new LinkedHashMap<>();
 
-    CodestartProcessor(final MessageWriter log,
+    public CodestartProcessor(final MessageWriter log,
             final String languageName,
             final Path targetDirectory,
             final List<CodestartFileStrategy> strategies,
@@ -47,7 +47,7 @@ final class CodestartProcessor {
         this.data = data;
     }
 
-    void process(final CodestartResource projectResource, final Codestart codestart) {
+    public void process(final CodestartResource projectResource, final Codestart codestart) {
         log.debug("processing codestart '%s'...", codestart.getName());
         addBuiltinData();
         codestart.use(l -> {

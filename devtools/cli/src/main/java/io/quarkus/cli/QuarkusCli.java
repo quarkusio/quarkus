@@ -19,6 +19,7 @@ import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.TargetQuarkusPlatformGroup;
+import io.quarkus.cli.generate.Generate;
 import io.quarkus.cli.plugin.Plugin;
 import io.quarkus.cli.plugin.PluginCommandFactory;
 import io.quarkus.cli.plugin.PluginListItem;
@@ -45,7 +46,8 @@ import picocli.CommandLine.ScopeType;
 import picocli.CommandLine.UnmatchedArgumentException;
 
 @CommandLine.Command(name = "quarkus", subcommands = {
-        Create.class, Build.class, Dev.class, Run.class, Test.class, ProjectExtensions.class, Image.class, Deploy.class,
+        Create.class, Generate.class, Build.class, Dev.class, Run.class, Test.class, ProjectExtensions.class, Image.class,
+        Deploy.class,
         Registry.class,
         Info.class,
         Update.class,

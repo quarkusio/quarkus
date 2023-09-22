@@ -2,13 +2,17 @@ package io.quarkus.devtools.project;
 
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.buildfile.MavenProjectBuildFile;
 import io.quarkus.devtools.project.extensions.ExtensionManager;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.tools.ToolsUtils;
 import io.quarkus.registry.ExtensionCatalogResolver;
 import io.quarkus.registry.RegistryResolutionException;
@@ -42,6 +46,18 @@ public class QuarkusProjectHelper {
 
     public static BuildTool detectExistingBuildTool(Path projectDirPath) {
         return BuildTool.fromProject(projectDirPath);
+    }
+
+    public static SourceType detectSourceType(Path projectDirPath) {
+        QuarkusProject project = getProject(projectDirPath);
+        List<String> extesions;
+        try {
+            extesions = project.getExtensionManager().getInstalled().stream().map(ArtifactCoords::getArtifactId)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("Could not read installed extensions", e);
+        }
+        return SourceType.resolve(extesions);
     }
 
     public static QuarkusProject getProject(Path projectDir) {

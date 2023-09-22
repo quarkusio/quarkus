@@ -2,44 +2,24 @@ package io.quarkus.jackson.runtime;
 
 import com.fasterxml.jackson.core.util.BufferRecycler;
 import com.fasterxml.jackson.core.util.BufferRecyclerPool;
-import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
-import org.jctools.util.Pow2;
-import org.jctools.util.UnsafeAccess;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Predicate;
 
 public class HybridJacksonPool implements BufferRecyclerPool {
 
     static final BufferRecyclerPool INSTANCE = new HybridJacksonPool();
 
-    private HybridJacksonPool() { }
-
-    private static final Predicate<Thread> isVirtual = findIsVirtual();
-
-    private static Predicate<Thread> findIsVirtual() {
-        try {
-            MethodHandle virtualMh = MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual", MethodType.methodType(boolean.class));
-            return t -> {
-                try {
-                    return (boolean) virtualMh.invokeExact(t);
-                } catch (Throwable e) {
-                    throw new RuntimeException(e);
-                }
-            };
-        } catch (Exception e) {
-            return t -> false;
-        }
-    }
+    private static final Predicate<Thread> isVirtual = VirtualPredicate.findIsVirtualPredicate();
 
     private final BufferRecyclerPool nativePool = BufferRecyclerPool.threadLocalPool();
 
     static class VirtualPoolHolder {
         // Lazy on-demand initialization
-        private static final BufferRecyclerPool virtualPool = new StripedJCToolsPool(4);
+        private static final BufferRecyclerPool virtualPool = new StripedLockFreePool(4);
     }
 
     @Override
@@ -58,76 +38,72 @@ public class HybridJacksonPool implements BufferRecyclerPool {
         // the native thread pool is based on ThreadLocal, so it doesn't have anything to do on release
     }
 
-    private static class StripedJCToolsPool implements BufferRecyclerPool {
+    private static class StripedLockFreePool implements BufferRecyclerPool {
 
-        private static final long PROBE = getProbeOffset();
+        private static final int CACHE_LINE_SHIFT = 4;
 
-        private final int mask;
+        private static final int CACHE_LINE_PADDING = 1 << CACHE_LINE_SHIFT;
 
-        private final MpmcUnboundedXaddArrayQueue<BufferRecycler>[] queues;
+        private final XorShiftThreadProbe threadProbe;
 
-        public StripedJCToolsPool(int stripesCount) {
+        private final AtomicReferenceArray<Node> heads;
+
+        public StripedLockFreePool(int stripesCount) {
             if (stripesCount <= 0) {
                 throw new IllegalArgumentException("Expecting a stripesCount that is larger than 0");
             }
 
-            int size = Pow2.roundToPowerOfTwo(stripesCount);
-            mask = (size - 1);
+            int size = roundToPowerOfTwo(stripesCount);
+            this.heads = new AtomicReferenceArray<>(size * CACHE_LINE_PADDING);
 
-            this.queues = new MpmcUnboundedXaddArrayQueue[size];
-            for (int i = 0; i < size; i++) {
-                this.queues[i] = new MpmcUnboundedXaddArrayQueue<>(128);
-            }
-        }
-
-        private static long getProbeOffset() {
-            try {
-                return UnsafeAccess.UNSAFE.objectFieldOffset(Thread.class.getDeclaredField("threadLocalRandomProbe"));
-            } catch (NoSuchFieldException e) {
-                return -1L;
-            }
-        }
-
-        private int index() {
-            return probe() & mask;
-        }
-
-        private int probe() {
-            // Fast path for reliable well-distributed probe, available from JDK 7+.
-            // As long as PROBE is final static this branch will be constant folded
-            // (i.e removed).
-            if (PROBE != -1) {
-                int probe;
-                if ((probe = UnsafeAccess.UNSAFE.getInt(Thread.currentThread(), PROBE)) == 0) {
-                    ThreadLocalRandom.current(); // force initialization
-                    probe = UnsafeAccess.UNSAFE.getInt(Thread.currentThread(), PROBE);
-                }
-                return probe;
-            }
-
-            /*
-             * Else use much worse (for values distribution) method:
-             * Mix thread id with golden ratio and then xorshift it
-             * to spread consecutive ids (see Knuth multiplicative method as reference).
-             */
-            int probe = (int) ((Thread.currentThread().getId() * 0x9e3779b9) & Integer.MAX_VALUE);
-            // xorshift
-            probe ^= probe << 13;
-            probe ^= probe >>> 17;
-            probe ^= probe << 5;
-            return probe;
+            int mask = (size - 1) << CACHE_LINE_SHIFT;
+            this.threadProbe = new XorShiftThreadProbe(mask);
         }
 
         @Override
         public BufferRecycler acquireBufferRecycler() {
-            int index = index();
-            BufferRecycler bufferRecycler = queues[index].poll();
-            return bufferRecycler != null ? bufferRecycler : new VThreadBufferRecycler(index);
+            int index = threadProbe.index();
+
+            Node currentHead = heads.get(index);
+            while (true) {
+                if (currentHead == null) {
+                    return new VThreadBufferRecycler(index);
+                }
+
+                Node witness = heads.compareAndExchange(index, currentHead, currentHead.next);
+                if (witness == currentHead) {
+                    currentHead.next = null;
+                    return currentHead.value;
+                } else {
+                    currentHead = witness;
+                }
+            }
         }
 
         @Override
         public void releaseBufferRecycler(BufferRecycler recycler) {
-            queues[((VThreadBufferRecycler) recycler).slot].offer(recycler);
+            VThreadBufferRecycler vThreadBufferRecycler = (VThreadBufferRecycler) recycler;
+            Node newHead = new Node(vThreadBufferRecycler);
+
+            Node next = heads.get(vThreadBufferRecycler.slot);
+            while (true) {
+                Node witness = heads.compareAndExchange(vThreadBufferRecycler.slot, next, newHead);
+                if (witness == next) {
+                    newHead.next = next;
+                    return;
+                } else {
+                    next = witness;
+                }
+            }
+        }
+
+        private static class Node {
+            final VThreadBufferRecycler value;
+            Node next;
+
+            Node(VThreadBufferRecycler value) {
+                this.value = value;
+            }
         }
     }
 
@@ -137,5 +113,63 @@ public class HybridJacksonPool implements BufferRecyclerPool {
         VThreadBufferRecycler(int slot) {
             this.slot = slot;
         }
+    }
+
+    private static class VirtualPredicate {
+        private static final MethodHandle virtualMh = findVirtualMH();
+
+        private static MethodHandle findVirtualMH() {
+            try {
+                return MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual", MethodType.methodType(boolean.class));
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        private static Predicate<Thread> findIsVirtualPredicate() {
+            return virtualMh != null ? t -> {
+                try {
+                    return (boolean) virtualMh.invokeExact(t);
+                } catch (Throwable e) {
+                    throw new RuntimeException(e);
+                }
+            } : t -> false;
+        }
+    }
+
+    private static class XorShiftThreadProbe {
+
+        private final int mask;
+
+
+        XorShiftThreadProbe(int mask) {
+            this.mask = mask;
+        }
+
+        public int index() {
+            return probe() & mask;
+        }
+
+        private int probe() {
+            int probe = (int) ((Thread.currentThread().getId() * 0x9e3779b9) & Integer.MAX_VALUE);
+            // xorshift
+            probe ^= probe << 13;
+            probe ^= probe >>> 17;
+            probe ^= probe << 5;
+            return probe;
+        }
+    }
+
+    private static final int MAX_POW2 = 1 << 30;
+
+    private static int roundToPowerOfTwo(final int value) {
+        if (value > MAX_POW2) {
+            throw new IllegalArgumentException("There is no larger power of 2 int for value:"+value+" since it exceeds 2^31.");
+        }
+        if (value < 0) {
+            throw new IllegalArgumentException("Given value:"+value+". Expecting value >= 0.");
+        }
+        final int nextPow2 = 1 << (32 - Integer.numberOfLeadingZeros(value - 1));
+        return nextPow2;
     }
 }

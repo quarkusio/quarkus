@@ -354,8 +354,7 @@ public class KubernetesCommonHelper {
             }
         }
 
-        // Add service account from extensions: use the one provided by the user always
-        Optional<String> effectiveServiceAccount = config.getServiceAccount();
+        Optional<String> effectiveServiceAccount = Optional.empty();
         String effectiveServiceAccountNamespace = null;
         for (KubernetesServiceAccountBuildItem sa : serviceAccountsFromExtensions) {
             String saName = Optional.ofNullable(sa.getName()).orElse(name);
@@ -380,6 +379,12 @@ public class KubernetesCommonHelper {
                 effectiveServiceAccount = Optional.of(saName);
                 effectiveServiceAccountNamespace = sa.getValue().namespace.orElse(null);
             }
+        }
+
+        // The user provided service account should always take precedence
+        if (config.getServiceAccount().isPresent()) {
+            effectiveServiceAccount = config.getServiceAccount();
+            effectiveServiceAccountNamespace = null;
         }
 
         // Prepare default configuration

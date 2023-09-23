@@ -699,9 +699,25 @@ public class KubernetesCommonHelper {
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
+        List<ApplyServiceAccountNameDecorator> serviceAccountDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(ApplyServiceAccountNameDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
         items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
 
             for (final AddImagePullSecretDecorator delegate : imagePullSecretDecorators) {
+                result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
+                    @Override
+                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
+                        delegate.andThenVisit(builder, meta);
+                    }
+                }));
+            }
+
+            for (final ApplyServiceAccountNameDecorator delegate : serviceAccountDecorators) {
                 result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
                     @Override
                     public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {

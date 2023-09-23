@@ -52,6 +52,7 @@ public interface CompilationProvider extends Closeable {
         private final List<String> compilerPluginOptions;
         private final boolean ignoreModuleInfo;
         private final File generatedSourcesDirectory;
+        private final Set<File> annotationProcessorPaths;
 
         public Context(
                 String name,
@@ -68,6 +69,7 @@ public interface CompilationProvider extends Closeable {
                 List<String> compilePluginArtifacts,
                 List<String> compilerPluginOptions,
                 File generatedSourcesDirectory,
+                Set<File> annotationProcessorPaths,
                 String ignoreModuleInfo) {
             this.name = name;
             this.classpath = classpath;
@@ -84,6 +86,7 @@ public interface CompilationProvider extends Closeable {
             this.compilerPluginOptions = compilerPluginOptions;
             this.ignoreModuleInfo = Boolean.parseBoolean(ignoreModuleInfo);
             this.generatedSourcesDirectory = generatedSourcesDirectory;
+            this.annotationProcessorPaths = annotationProcessorPaths;
         }
 
         public String getName() {
@@ -96,6 +99,10 @@ public interface CompilationProvider extends Closeable {
 
         public Set<File> getReloadableClasspath() {
             return reloadableClasspath;
+        }
+
+        public Set<File> getAnnotationProcessorPaths() {
+            return annotationProcessorPaths;
         }
 
         public File getProjectDirectory() {

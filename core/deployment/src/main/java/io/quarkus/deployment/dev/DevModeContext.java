@@ -64,6 +64,8 @@ public class DevModeContext implements Serializable {
     private String baseName;
     private final Set<ArtifactKey> localArtifacts = new HashSet<>();
 
+    private Set<File> processorPaths;
+
     public boolean isLocalProjectDiscovery() {
         return localProjectDiscovery;
     }
@@ -237,6 +239,14 @@ public class DevModeContext implements Serializable {
 
     public Set<ArtifactKey> getLocalArtifacts() {
         return localArtifacts;
+    }
+
+    public void setAnnotationProcessorPaths(Set<File> processorPaths) {
+        this.processorPaths = processorPaths;
+    }
+
+    public Set<File> getAnnotationProcessorPaths() {
+        return processorPaths;
     }
 
     public static class ModuleInfo implements Serializable {

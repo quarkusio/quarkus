@@ -75,6 +75,7 @@ public class JavaCompilationProvider implements CompilationProvider {
         final QuarkusFileManager.Context sourcesContext = new QuarkusFileManager.Context(
                 context.getClasspath(), context.getReloadableClasspath(),
                 context.getOutputDirectory(), context.getGeneratedSourcesDirectory(), 
+                context.getAnnotationProcessorPaths(),
                 context.getSourceEncoding(),
                 context.ignoreModuleInfo());
 

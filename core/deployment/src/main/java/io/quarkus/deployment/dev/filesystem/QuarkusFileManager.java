@@ -21,6 +21,9 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
             if (context.getGeneratedSourcesDirectory() != null) {
                 this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
             }
+            if (context.getAnnotationProcessorPaths() != null) {
+                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
+            }
         } catch (IOException e) {
             throw new RuntimeException("Cannot initialize file manager", e);
         }
@@ -34,6 +37,9 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
             if (context.getGeneratedSourcesDirectory() != null) {
                 this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
+            }
+            if (context.getAnnotationProcessorPaths() != null) {
+                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
             }
         } catch (IOException e) {
             throw new RuntimeException("Cannot reset file manager", e);
@@ -52,15 +58,22 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         private final Charset sourceEncoding;
         private final boolean ignoreModuleInfo;
         private final File generatedSourcesDirectory;
+        private final Set<File> annotationProcessorPaths;
 
         public Context(Set<File> classPath, Set<File> reloadableClassPath,
-                File outputDirectory, File generatedSourcesDirectory, Charset sourceEncoding, boolean ignoreModuleInfo) {
+                File outputDirectory, File generatedSourcesDirectory, Set<File> annotationProcessorPaths, 
+                Charset sourceEncoding, boolean ignoreModuleInfo) {
             this.classPath = classPath;
             this.reloadableClassPath = reloadableClassPath;
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding;
             this.ignoreModuleInfo = ignoreModuleInfo;
             this.generatedSourcesDirectory = generatedSourcesDirectory;
+            this.annotationProcessorPaths = annotationProcessorPaths;
+        }
+
+        public Set<File> getAnnotationProcessorPaths() {
+            return annotationProcessorPaths;
         }
 
         public Set<File> getClassPath() {

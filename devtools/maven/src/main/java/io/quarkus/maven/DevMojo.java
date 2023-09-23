@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -43,6 +44,8 @@ import org.aesh.terminal.Attributes;
 import org.aesh.terminal.utils.ANSI;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.handler.ArtifactHandler;
+import org.apache.maven.artifact.handler.manager.ArtifactHandlerManager;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.BuildBase;
 import org.apache.maven.model.Dependency;
@@ -266,6 +269,9 @@ public class DevMojo extends AbstractMojo {
 
     @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
+
+    @Component
+    private ArtifactHandlerManager artifactHandlerManager;
 
     @Component
     private RepositorySystem repoSystem;
@@ -706,6 +712,73 @@ public class DevMojo extends AbstractMojo {
                         project,
                         session,
                         pluginManager));
+    }
+
+    private Set<File> readAnnotationProcessorPaths(Xpp3Dom pluginConfig) throws MojoExecutionException {
+        Xpp3Dom annotationProcessorPaths = pluginConfig.getChild("annotationProcessorPaths");
+        if (annotationProcessorPaths == null) {
+            return Collections.emptySet();
+        }
+        Xpp3Dom[] paths = annotationProcessorPaths.getChildren("path");
+        Set<File> elements = new LinkedHashSet<>();
+        try {
+            List<org.eclipse.aether.graph.Dependency> dependencies = convertToDependencies(paths);
+            CollectRequest collectRequest = new CollectRequest(dependencies, Collections.emptyList(),
+                    project.getRemoteProjectRepositories());
+            DependencyRequest dependencyRequest = new DependencyRequest();
+            dependencyRequest.setCollectRequest(collectRequest);
+            DependencyResult dependencyResult = repoSystem.resolveDependencies(session.getRepositorySession(),
+                    dependencyRequest);
+
+            for (ArtifactResult resolved : dependencyResult.getArtifactResults()) {
+                elements.add(resolved.getArtifact().getFile());
+            }
+            return elements;
+        } catch (Exception e) {
+            throw new MojoExecutionException(
+                    "Resolution of annotationProcessorPath dependencies failed: " + e.getLocalizedMessage(), e);
+        }
+    }
+
+    private List<org.eclipse.aether.graph.Dependency> convertToDependencies(Xpp3Dom[] paths) {
+        List<org.eclipse.aether.graph.Dependency> dependencies = new ArrayList<>();
+        for (Xpp3Dom path : paths) {
+            String type = getValue(path, "type", "jar");
+            ArtifactHandler handler = artifactHandlerManager.getArtifactHandler(type);
+            org.eclipse.aether.artifact.Artifact artifact = new DefaultArtifact(
+                    getValue(path, "groupId", null),
+                    getValue(path, "artifactId", null),
+                    getValue(path, "classifier", null),
+                    handler.getExtension(),
+                    getValue(path, "version", null));
+            Set<org.eclipse.aether.graph.Exclusion> exclusions = convertToAetherExclusions(path.getChild("exclusions"));
+            dependencies.add(new org.eclipse.aether.graph.Dependency(artifact, JavaScopes.RUNTIME, false, exclusions));
+        }
+        return dependencies;
+    }
+
+    private String getValue(Xpp3Dom path, String element, String defaultValue) {
+        Xpp3Dom child = path.getChild(element);
+        if (child == null) {
+            return defaultValue;
+        }
+        return child.getValue();
+    }
+
+    private Set<org.eclipse.aether.graph.Exclusion> convertToAetherExclusions(Xpp3Dom exclusions) {
+        if (exclusions == null) {
+            return Collections.emptySet();
+        }
+        Set<Exclusion> aetherExclusions = new HashSet<>();
+        for (Xpp3Dom exclusion : exclusions.getChildren("exclusion")) {
+            Exclusion aetherExclusion = new Exclusion(
+                    getValue(exclusion, "groupId", null),
+                    getValue(exclusion, "artifactId", null),
+                    getValue(exclusion, "classifier", null),
+                    getValue(exclusion, "extension", "jar"));
+            aetherExclusions.add(aetherExclusion);
+        }
+        return aetherExclusions;
     }
 
     private boolean isGoalConfigured(Plugin plugin, String goal) {
@@ -1163,6 +1236,7 @@ public class DevMojo extends AbstractMojo {
         }
 
         setKotlinSpecificFlags(builder);
+        setAnnotationProcessorFlags(builder);
 
         // path to the serialized application model
         final Path appModelLocation = resolveSerializedModelLocation();
@@ -1409,6 +1483,36 @@ public class DevMojo extends AbstractMojo {
                     options.add(argConfiguration.getValue());
                 }
             }
+        }
+        builder.compilerPluginOptions(options);
+    }
+
+    private void setAnnotationProcessorFlags(MavenDevModeLauncher.Builder builder) {
+        Plugin compilerMavenPlugin = null;
+        for (Plugin plugin : project.getBuildPlugins()) {
+            if (plugin.getArtifactId().equals("maven-compiler-plugin")
+                    && plugin.getGroupId().equals("org.apache.maven.plugins")) {
+                compilerMavenPlugin = plugin;
+                break;
+            }
+        }
+
+        if (compilerMavenPlugin == null) {
+            return;
+        }
+
+        getLog().debug("Maven compiler plugin found, looking for annotation processors");
+
+        List<String> options = new ArrayList<>();
+        Xpp3Dom compilerPluginConfiguration = (Xpp3Dom) compilerMavenPlugin.getConfiguration();
+        try {
+            Set<File> processorPaths = this.readAnnotationProcessorPaths(compilerPluginConfiguration);
+            getLog().debug("Found processor paths: " + processorPaths);
+            if (!processorPaths.isEmpty()) {
+                builder.annotationProcessorPaths(processorPaths);
+            }
+        } catch (MojoExecutionException e) {
+            throw new RuntimeException(e);
         }
         builder.compilerPluginOptions(options);
     }

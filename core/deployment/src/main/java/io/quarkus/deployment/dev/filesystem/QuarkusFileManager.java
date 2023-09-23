@@ -61,7 +61,7 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         private final Set<File> annotationProcessorPaths;
 
         public Context(Set<File> classPath, Set<File> reloadableClassPath,
-                File outputDirectory, File generatedSourcesDirectory, Set<File> annotationProcessorPaths, 
+                File outputDirectory, File generatedSourcesDirectory, Set<File> annotationProcessorPaths,
                 Charset sourceEncoding, boolean ignoreModuleInfo) {
             this.classPath = classPath;
             this.reloadableClassPath = reloadableClassPath;
@@ -95,7 +95,7 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         public boolean ignoreModuleInfo() {
             return ignoreModuleInfo;
         }
-        
+
         public File getGeneratedSourcesDirectory() {
             return generatedSourcesDirectory;
         }

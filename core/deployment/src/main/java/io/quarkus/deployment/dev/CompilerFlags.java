@@ -19,19 +19,22 @@ public class CompilerFlags {
     private final String releaseJavaVersion; //can be null
     private final String sourceJavaVersion; //can be null
     private final String targetJavaVersion; //can be null
+    private final List<String> annotationProcessors; //can be null
 
     public CompilerFlags(
             Set<String> defaultFlags,
             Collection<String> userFlags,
             String releaseJavaVersion,
             String sourceJavaVersion,
-            String targetJavaVersion) {
+            String targetJavaVersion,
+            List<String> annotationProcessors) {
 
         this.defaultFlags = defaultFlags == null ? new LinkedHashSet<>() : new LinkedHashSet<>(defaultFlags);
         this.userFlags = userFlags == null ? new ArrayList<>() : new ArrayList<>(userFlags);
         this.releaseJavaVersion = releaseJavaVersion;
         this.sourceJavaVersion = sourceJavaVersion;
         this.targetJavaVersion = targetJavaVersion;
+        this.annotationProcessors = annotationProcessors;
     }
 
     public List<String> toList() {
@@ -59,6 +62,11 @@ public class CompilerFlags {
                 flagList.add("-target");
                 flagList.add(targetJavaVersion);
             }
+        }
+
+        if (annotationProcessors != null && !annotationProcessors.isEmpty()) {
+            flagList.add("-processor");
+            flagList.add(String.join(",", annotationProcessors));
         }
 
         flagList.addAll(userFlags);

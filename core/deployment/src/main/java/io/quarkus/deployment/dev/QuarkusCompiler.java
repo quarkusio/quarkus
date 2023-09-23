@@ -213,6 +213,7 @@ public class QuarkusCompiler implements Closeable {
                                 compilationUnit.getGeneratedSourcesPath() == null ? null
                                         : new File(compilationUnit.getGeneratedSourcesPath()),
                                 context.getAnnotationProcessorPaths(),
+                                context.getAnnotationProcessors(),
                                 context.getBuildSystemProperties().getOrDefault("quarkus.live-reload.ignore-module-info",
                                         "true")));
             }

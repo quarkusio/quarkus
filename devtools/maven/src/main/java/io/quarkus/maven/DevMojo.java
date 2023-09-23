@@ -714,6 +714,22 @@ public class DevMojo extends AbstractMojo {
                         pluginManager));
     }
 
+    private List<String> readAnnotationProcessors(Xpp3Dom pluginConfig) {
+        Xpp3Dom annotationProcessors = pluginConfig.getChild("annotationProcessors");
+        if (annotationProcessors == null) {
+            return Collections.emptyList();
+        }
+        Xpp3Dom[] processors = annotationProcessors.getChildren("annotationProcessor");
+        if (processors.length == 0) {
+            return Collections.emptyList();
+        }
+        List<String> ret = new ArrayList<>(processors.length);
+        for (Xpp3Dom processor : processors) {
+            ret.add(processor.getValue());
+        }
+        return ret;
+    }
+
     private Set<File> readAnnotationProcessorPaths(Xpp3Dom pluginConfig) throws MojoExecutionException {
         Xpp3Dom annotationProcessorPaths = pluginConfig.getChild("annotationProcessorPaths");
         if (annotationProcessorPaths == null) {
@@ -1513,6 +1529,11 @@ public class DevMojo extends AbstractMojo {
             }
         } catch (MojoExecutionException e) {
             throw new RuntimeException(e);
+        }
+        List<String> processors = this.readAnnotationProcessors(compilerPluginConfiguration);
+        getLog().debug("Found processors: " + processors);
+        if (!processors.isEmpty()) {
+            builder.annotationProcessors(processors);
         }
         builder.compilerPluginOptions(options);
     }

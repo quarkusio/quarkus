@@ -4,11 +4,13 @@ import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 
+import io.smallrye.faulttolerance.api.CircuitBreakerName;
+
 @Singleton
-@CircuitBreaker
-public class SubCircuitBreakerService extends SuperCircuitBreakerService {
-    @Override
+public class CircuitBreakerService2 {
+    @CircuitBreaker
+    @CircuitBreakerName("hello")
     public String hello() {
-        return "sub";
+        return "2";
     }
 }

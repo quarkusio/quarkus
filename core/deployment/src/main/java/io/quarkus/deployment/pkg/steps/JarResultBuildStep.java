@@ -736,14 +736,25 @@ public class JarResultBuildStep {
 
         Path appInfo = buildDir.resolve(QuarkusEntryPoint.QUARKUS_APPLICATION_DAT);
 
-        // merge all the jars in boot into a single one
-        // the idea is to cut down on the memory needed to load them
-
         List<Path> copiedBootJars = Files.list(bootLib)
                 .filter(p -> p.getFileName().toString().endsWith(".jar"))
                 .collect(Collectors.toList());
+        Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+        if (!rebuild) {
+            try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
+                ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
+                generateManifest(runnerZipFs,
+                        "",
+                        packageConfig, appArtifact,
+                        QuarkusEntryPoint.class.getName(),
+                        applicationInfo);
+            }
+        }
 
-        mergeBootJars(packageConfig, bootLib, copiedBootJars,
+        // merge all the jars in boot into a single one
+        // the idea is to cut down on the memory needed to load them
+
+        mergeBootJars(packageConfig, initJar, copiedBootJars,
                 parentFirstTargetPathToArtifact);
 
         try (OutputStream out = Files.newOutputStream(appInfo)) {
@@ -773,14 +784,10 @@ public class JarResultBuildStep {
                 throw new UncheckedIOException(e);
             }
         });
-
-        StringBuilder classPath = new StringBuilder(LIB + "/" + BOOT_LIB + "/" + MERGED_BOOT_LIB + ".jar");
-        Files.list(bootLib).filter(p -> !p.getFileName().toString().contains(MERGED_BOOT_LIB)).forEach(p -> {
-            classPath.append(" " + LIB + "/" + BOOT_LIB + "/" + p.getFileName().toString());
-        });
+        Files.delete(bootLib);
 
         runnerJar.toFile().setReadable(true, false);
-        Path initJar = buildDir.resolve(QUARKUS_RUN_JAR);
+
         boolean mutableJar = packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.MUTABLE_JAR.getValue());
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
@@ -797,14 +804,6 @@ public class JarResultBuildStep {
             }
         }
         if (!rebuild) {
-            try (FileSystem runnerZipFs = ZipUtils.newZip(initJar)) {
-                ResolvedDependency appArtifact = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
-                generateManifest(runnerZipFs,
-                        classPath.toString(),
-                        packageConfig, appArtifact,
-                        QuarkusEntryPoint.class.getName(),
-                        applicationInfo);
-            }
 
             //now copy the deployment artifacts, if required
             if (mutableJar) {
@@ -879,7 +878,7 @@ public class JarResultBuildStep {
     }
 
     private void mergeBootJars(PackageConfig packageConfig,
-            Path bootLib, List<Path> copiedBootJars,
+            Path initJar, List<Path> copiedBootJars,
             Map<Path, Dependency> parentFirstTargetPathToArtifact) throws IOException {
         final Map<String, String> seen = new HashMap<>();
         final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
@@ -894,8 +893,7 @@ public class JarResultBuildStep {
             }
         };
 
-        Path mergedBootLibJar = bootLib.resolve(MERGED_BOOT_LIB + ".jar");
-        try (FileSystem runnerZipFs = ZipUtils.newZip(mergedBootLibJar)) {
+        try (FileSystem runnerZipFs = ZipUtils.newFileSystem(initJar)) {
             Path manifestPath = runnerZipFs.getPath("META-INF", "MANIFEST.MF");
             Manifest manifest = new Manifest();
             Files.createDirectories(manifestPath.getParent());
@@ -1372,7 +1370,9 @@ public class JarResultBuildStep {
             log.warn(
                     "A CLASS_PATH entry was already defined in your MANIFEST.MF or using the property quarkus.package.manifest.attributes.\"Class-Path\". Quarkus has overwritten this existing entry.");
         }
-        attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        if (!((classPath == null) || classPath.isEmpty())) {
+            attributes.put(Attributes.Name.CLASS_PATH, classPath);
+        }
         if (attributes.containsKey(Attributes.Name.MAIN_CLASS)) {
             String existingMainClass = attributes.getValue(Attributes.Name.MAIN_CLASS);
             if (!mainClassName.equals(existingMainClass)) {

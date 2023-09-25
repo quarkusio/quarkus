@@ -3,6 +3,7 @@ package io.quarkus.smallrye.openapi.runtime;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -34,7 +35,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
     private final OpenApiDocumentHolder documentHolder;
     private final String previousOpenApiServersSystemPropertyValue;
 
-    public OpenApiDocumentService(OASFilter autoSecurityFilter, Config config) {
+    public OpenApiDocumentService(List<OASFilter> filters, Config config) {
 
         String servers = config.getOptionalValue("quarkus.smallrye-openapi.servers", String.class).orElse(null);
         this.previousOpenApiServersSystemPropertyValue = System.getProperty(OPENAPI_SERVERS);
@@ -43,9 +44,9 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
         }
 
         if (config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class).orElse(Boolean.FALSE)) {
-            this.documentHolder = new DynamicDocument(config, autoSecurityFilter);
+            this.documentHolder = new DynamicDocument(config, filters);
         } else {
-            this.documentHolder = new StaticDocument(config, autoSecurityFilter);
+            this.documentHolder = new StaticDocument(config, filters);
         }
     }
 
@@ -76,7 +77,7 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
         private byte[] jsonDocument;
         private byte[] yamlDocument;
 
-        StaticDocument(Config config, OASFilter autoFilter) {
+        StaticDocument(Config config, List<OASFilter> filters) {
             ClassLoader cl = OpenApiConstants.classLoader == null ? Thread.currentThread().getContextClassLoader()
                     : OpenApiConstants.classLoader;
             try (InputStream is = cl.getResourceAsStream(OpenApiConstants.BASE_NAME + Format.JSON)) {
@@ -89,11 +90,12 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
                         document.reset();
                         document.config(openApiConfig);
                         document.modelFromStaticFile(OpenApiProcessor.modelFromStaticFile(openApiConfig, staticFile));
-                        if (autoFilter != null) {
-                            document.filter(autoFilter);
+                        if (filters != null) {
+                            for (OASFilter filter : filters) {
+                                document.filter(filter);
+                            }
                         }
                         document.filter(new DisabledRestEndpointsFilter());
-                        document.filter(OpenApiProcessor.getFilter(openApiConfig, cl, EMPTY_INDEX));
                         document.initialize();
 
                         this.jsonDocument = OpenApiSerializer.serialize(document.get(), Format.JSON)
@@ -125,19 +127,17 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
 
         private OpenAPI generatedOnBuild;
         private OpenApiConfig openApiConfig;
-        private OASFilter userFilter;
-        private OASFilter autoFilter;
+        private List<OASFilter> filters;
         private DisabledRestEndpointsFilter disabledEndpointsFilter;
 
-        DynamicDocument(Config config, OASFilter autoFilter) {
+        DynamicDocument(Config config, List<OASFilter> filters) {
             ClassLoader cl = OpenApiConstants.classLoader == null ? Thread.currentThread().getContextClassLoader()
                     : OpenApiConstants.classLoader;
             try (InputStream is = cl.getResourceAsStream(OpenApiConstants.BASE_NAME + Format.JSON)) {
                 if (is != null) {
                     try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, Format.JSON)) {
                         this.openApiConfig = new OpenApiConfigImpl(config);
-                        this.userFilter = OpenApiProcessor.getFilter(openApiConfig, cl, EMPTY_INDEX);
-                        this.autoFilter = autoFilter;
+                        this.filters = filters;
                         this.generatedOnBuild = OpenApiProcessor.modelFromStaticFile(this.openApiConfig, staticFile);
                         this.disabledEndpointsFilter = new DisabledRestEndpointsFilter();
                     }
@@ -178,11 +178,12 @@ public class OpenApiDocumentService implements OpenApiDocumentHolder {
             document.reset();
             document.config(this.openApiConfig);
             document.modelFromStaticFile(this.generatedOnBuild);
-            if (this.autoFilter != null) {
-                document.filter(this.autoFilter);
+            if (this.filters != null) {
+                for (OASFilter filter : this.filters) {
+                    document.filter(filter);
+                }
             }
             document.filter(this.disabledEndpointsFilter);
-            document.filter(this.userFilter);
             document.initialize();
             return document;
         }

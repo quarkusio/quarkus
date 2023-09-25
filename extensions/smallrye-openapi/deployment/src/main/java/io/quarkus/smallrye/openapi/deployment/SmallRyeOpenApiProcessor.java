@@ -84,6 +84,7 @@ import io.quarkus.resteasy.server.common.spi.AllowedJaxRsAnnotationPrefixBuildIt
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.security.Authenticated;
+import io.quarkus.smallrye.openapi.OpenApiFilter;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoRolesAllowedFilter;
 import io.quarkus.smallrye.openapi.deployment.filter.AutoServerFilter;
@@ -92,6 +93,7 @@ import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.OpenApiDocumentBuildItem;
+import io.quarkus.smallrye.openapi.runtime.OASFilters;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
@@ -230,8 +232,25 @@ public class SmallRyeOpenApiProcessor {
             }
         }
 
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
-                .supplier(recorder.autoSecurityFilterSupplier(autoSecurityFilter)).done());
+        List<OASFilter> filters = List.of(autoSecurityFilter);
+        
+        DotName dn = DotName.createSimple(OASFilters.class.getName());
+        
+        SyntheticBeanBuildItem syntheticBeanBuildItem = SyntheticBeanBuildItem.configure(dn)
+                                                                            .setRuntimeInit()
+                                                                            .
+                                                                            .supplier(recorder.filtersSupplier(filters))
+                                                                            .done();
+        
+        syntheticBeans.produce(syntheticBeanBuildItem);
+        
+//        syntheticBeans.produce(SyntheticBeanBuildItem.configure(dn)
+//                .creator(OASFiltersCreator.class)
+//                .providerType(type)
+//                .types(type)
+//                .addQualifier(MP_CONFIG_PROPERTY_NAME)
+//                .param("requiredType", type.name().toString()).done());
+        
     }
 
     @BuildStep
@@ -578,6 +597,37 @@ public class SmallRyeOpenApiProcessor {
             }
         }
         return methodReferences;
+    }
+
+    private List<String> getUserDefinedBuildtimeFilters(OpenApiConfig openApiConfig, IndexView index) {
+        return getUserDefinedFilters(openApiConfig, index, OpenApiFilter.RunStage.build);
+    }
+
+    private List<String> getUserDefinedRuntimeFilters(OpenApiConfig openApiConfig, IndexView index) {
+        List<String> userDefinedFilters = getUserDefinedFilters(openApiConfig, index, OpenApiFilter.RunStage.run);
+        // Also add the MP way
+        String filter = openApiConfig.filter();
+        if (filter != null) {
+            userDefinedFilters.add(filter);
+        }
+        return userDefinedFilters;
+    }
+
+    private List<String> getUserDefinedFilters(OpenApiConfig openApiConfig, IndexView index, OpenApiFilter.RunStage stage) {
+        List<String> userDefinedFilters = new ArrayList<>();
+        Collection<AnnotationInstance> annotations = index.getAnnotations(DotName.createSimple(OpenApiFilter.class.getName()));
+        for (AnnotationInstance ai : annotations) {
+            AnnotationTarget annotationTarget = ai.target();
+            ClassInfo classInfo = annotationTarget.asClass();
+            if (classInfo.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName()))) {
+
+                OpenApiFilter.RunStage runStage = (OpenApiFilter.RunStage) ai.value().value();
+                if (runStage.equals(OpenApiFilter.RunStage.both) || runStage.equals(stage)) {
+                    userDefinedFilters.add(classInfo.name().toString());
+                }
+            }
+        }
+        return userDefinedFilters;
     }
 
     private List<String> getAuthenticatedMethodReferences(
@@ -1100,7 +1150,10 @@ public class SmallRyeOpenApiProcessor {
         OpenApiDocument document = prepareOpenApiDocument(loadedModel, null, Collections.emptyList(), index);
 
         if (includeRuntimeFilters) {
-            document.filter(filter(openApiConfig, index)); // This usually happens at runtime, so when storing we want to filter here too.
+            List<String> userDefinedRuntimeFilters = getUserDefinedRuntimeFilters(openApiConfig, index);
+            for (String s : userDefinedRuntimeFilters) {
+                document.filter(filter(s, index)); // This usually happens at runtime, so when storing we want to filter here too.
+            }
         }
 
         // By default, also add the auto generated server
@@ -1151,6 +1204,11 @@ public class SmallRyeOpenApiProcessor {
             OASFilter otherExtensionFilter = openAPIBuildItem.getOASFilter();
             document.filter(otherExtensionFilter);
         }
+        // Add user defined Build time filters
+        List<String> userDefinedFilters = getUserDefinedBuildtimeFilters(openApiConfig, index);
+        for (String filter : userDefinedFilters) {
+            document.filter(filter(filter, index));
+        }
         return document;
     }
 
@@ -1161,8 +1219,7 @@ public class SmallRyeOpenApiProcessor {
         return document;
     }
 
-    private OASFilter filter(OpenApiConfig openApiConfig, IndexView index) {
-        return OpenApiProcessor.getFilter(openApiConfig,
-                Thread.currentThread().getContextClassLoader(), index);
+    private OASFilter filter(String className, IndexView index) {
+        return OpenApiProcessor.getFilter(className, Thread.currentThread().getContextClassLoader(), index);
     }
 }

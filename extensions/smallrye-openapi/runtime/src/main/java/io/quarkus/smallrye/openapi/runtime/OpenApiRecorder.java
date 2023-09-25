@@ -19,6 +19,7 @@ import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
+import java.util.List;
 
 @Recorder
 public class OpenApiRecorder {
@@ -101,12 +102,12 @@ public class OpenApiRecorder {
 
     }
 
-    public Supplier<OASFilter> autoSecurityFilterSupplier(OASFilter autoSecurityFilter) {
-        return new Supplier<>() {
-            @Override
-            public OASFilter get() {
-                return autoSecurityFilter;
-            }
-        };
-    }
+//    public Supplier<List<OASFilter>> filtersSupplier(List<OASFilter> filters) {
+//        return new Supplier<>() {
+//            @Override
+//            public List<OASFilter> get() {
+//                return filters;
+//            }
+//        };
+//    }
 }

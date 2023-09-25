@@ -2017,11 +2017,14 @@ Create a Quarkus Test using the test resource created above:
 
 [source, java]
 ----
+import static org.awaitility.Awaitility.await;
+
 @QuarkusTest
 @QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
 class BaristaTest {
 
     @Inject
+    @Connector("smallrye-in-memory")
     InMemoryConnector connector; // <1>
 
     @Test
@@ -2053,6 +2056,74 @@ class BaristaTest {
 <4> Use the `send` method to send a message to the `orders` channel.
 The application will process this message and send a message to `beverages` channel.
 <5> Use the `received` method on `beverages` channel to check the messages produced by the application.
+
+If your Kafka consumer is batch based, you will need to send a batch of messages to the channel as by creating them manually.
+
+For instance:
+
+[source, java]
+----
+@ApplicationScoped
+public class BeverageProcessor {
+
+    @Incoming("orders")
+    CompletionStage<Void> process(KafkaRecordBatch<String, Order> orders) {
+        System.out.println("Order received " + orders.getPayload().size());
+        return orders.ack();
+    }
+}
+----
+
+[source, java]
+----
+import static org.awaitility.Awaitility.await;
+
+@QuarkusTest
+@QuarkusTestResource(KafkaTestResourceLifecycleManager.class)
+class BaristaTest {
+
+    @Inject
+    @Connector("smallrye-in-memory")
+
+    InMemoryConnector connector;
+
+    @Test
+    void testProcessOrder() {
+        InMemorySource<IncomingKafkaRecordBatch<String, Order>> ordersIn = connector.source("orders");
+        var committed = new AtomicBoolean(false);  // <1>
+        var commitHandler = new KafkaCommitHandler() {
+            @Override
+            public <K, V> Uni<Void> handle(IncomingKafkaRecord<K, V> record) {
+                committed.set(true);  // <2>
+                return null;
+            }
+        };
+        var failureHandler = new KafkaFailureHandler() {
+            @Override
+            public <K, V> Uni<Void> handle(IncomingKafkaRecord<K, V> record, Throwable reason, Metadata metadata) {
+                return null;
+            }
+        };
+
+        Order order = new Order();
+        order.setProduct("coffee");
+        order.setName("Coffee lover");
+        order.setOrderId("1234");
+        var record = new ConsumerRecord<>("topic", 0, 0, "key", order);
+        var records = new ConsumerRecords<>(Map.of(new TopicPartition("topic", 1), List.of(record)));
+        var batch = new IncomingKafkaRecordBatch<>(
+            records, "kafka", 0, commitHandler, failureHandler, false, false);  // <3>
+
+        ordersIn.send(batch);
+
+        await().until(committed::get);  // <4>
+    }
+}
+----
+<1> Create an `AtomicBoolean` to track if the batch has been committed.
+<2> Update `committed` when the batch is committed.
+<3> Create a `IncomingKafkaRecordBatch` with a single record.
+<4> Wait until the batch is committed.
 
 [IMPORTANT]
 ====

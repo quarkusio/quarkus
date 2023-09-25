@@ -1,5 +1,7 @@
 package io.quarkus.rest.client.reactive.jackson.runtime.serialisers;
 
+import static io.quarkus.rest.client.reactive.jackson.runtime.serialisers.JacksonUtil.getObjectMapperFromContext;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -13,8 +15,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.ext.ContextResolver;
-import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.ClientWebApplicationException;
@@ -33,7 +33,8 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
 
     private static final Logger log = Logger.getLogger(ClientJacksonMessageBodyReader.class);
 
-    private final ConcurrentMap<ObjectMapper, ObjectReader> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ResolverMapKey, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ObjectMapper, ObjectReader> objectReaderMap = new ConcurrentHashMap<>();
     private RestClientRequestContext context;
 
     @Inject
@@ -66,43 +67,16 @@ public class ClientJacksonMessageBodyReader extends JacksonBasicMessageBodyReade
     }
 
     private ObjectReader getEffectiveReader(Class<Object> type, MediaType responseMediaType) {
-        ObjectMapper effectiveMapper = getObjectMapperFromContext(type, responseMediaType);
+        ObjectMapper effectiveMapper = getObjectMapperFromContext(type, responseMediaType, context, contextResolverMap);
         if (effectiveMapper == null) {
             return getEffectiveReader();
         }
 
-        return contextResolverMap.computeIfAbsent(effectiveMapper, new Function<>() {
+        return objectReaderMap.computeIfAbsent(effectiveMapper, new Function<>() {
             @Override
             public ObjectReader apply(ObjectMapper objectMapper) {
                 return objectMapper.reader();
             }
         });
-    }
-
-    private ObjectMapper getObjectMapperFromContext(Class<Object> type, MediaType responseMediaType) {
-        Providers providers = getProviders();
-        if (providers == null) {
-            return null;
-        }
-
-        ContextResolver<ObjectMapper> contextResolver = providers.getContextResolver(ObjectMapper.class,
-                responseMediaType);
-        if (contextResolver == null) {
-            // TODO: not sure if this is correct, but Jackson does this as well...
-            contextResolver = providers.getContextResolver(ObjectMapper.class, null);
-        }
-        if (contextResolver != null) {
-            return contextResolver.getContext(type);
-        }
-
-        return null;
-    }
-
-    private Providers getProviders() {
-        if (context != null && context.getClientRequestContext() != null) {
-            return context.getClientRequestContext().getProviders();
-        }
-
-        return null;
     }
 }

@@ -3,13 +3,11 @@ package io.quarkus.rest.client.reactive.jackson.test;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.GET;
@@ -70,10 +68,17 @@ public class DifferentObjectMapperForClientAndServerTest {
      */
     @Test
     void shouldClientUseCustomObjectMapperUnwrappingRootElement() {
-        assertFalse(ClientObjectMapperUnwrappingRootElement.USED.get());
+        AtomicLong count = ClientObjectMapperUnwrappingRootElement.COUNT;
+        assertEquals(0, count.get());
         Request request = clientUnwrappingRootElement.get();
         assertEquals("good", request.value);
-        assertTrue(ClientObjectMapperUnwrappingRootElement.USED.get());
+        assertEquals(1, count.get());
+
+        assertEquals("good", clientUnwrappingRootElement.get().value);
+        assertEquals("good", clientUnwrappingRootElement.get().value);
+        assertEquals("good", clientUnwrappingRootElement.get().value);
+        // count should not change as the resolution of the ObjectMapper should be cached
+        assertEquals(1, count.get());
     }
 
     /**
@@ -82,10 +87,17 @@ public class DifferentObjectMapperForClientAndServerTest {
      */
     @Test
     void shouldClientUseCustomObjectMapperNotUnwrappingRootElement() {
-        assertFalse(MyClientNotUnwrappingRootElement.CUSTOM_OBJECT_MAPPER_USED.get());
+        AtomicLong count = MyClientNotUnwrappingRootElement.CUSTOM_OBJECT_MAPPER_COUNT;
+        assertEquals(0, count.get());
         Request request = clientNotUnwrappingRootElement.get();
         assertNull(request.value);
-        assertTrue(MyClientNotUnwrappingRootElement.CUSTOM_OBJECT_MAPPER_USED.get());
+        assertEquals(1, count.get());
+
+        assertNull(clientNotUnwrappingRootElement.get().value);
+        assertNull(clientNotUnwrappingRootElement.get().value);
+        assertNull(clientNotUnwrappingRootElement.get().value);
+        // count should not change as the resolution of the ObjectMapper should be cached
+        assertEquals(1, count.get());
     }
 
     @Path("/server")
@@ -108,14 +120,14 @@ public class DifferentObjectMapperForClientAndServerTest {
     @Path("/server")
     @Produces(MediaType.APPLICATION_JSON)
     public interface MyClientNotUnwrappingRootElement {
-        AtomicBoolean CUSTOM_OBJECT_MAPPER_USED = new AtomicBoolean(false);
+        AtomicLong CUSTOM_OBJECT_MAPPER_COUNT = new AtomicLong();
 
         @GET
         Request get();
 
         @ClientObjectMapper
         static ObjectMapper objectMapper(ObjectMapper defaultObjectMapper) {
-            CUSTOM_OBJECT_MAPPER_USED.set(true);
+            CUSTOM_OBJECT_MAPPER_COUNT.incrementAndGet();
             return defaultObjectMapper.copy()
                     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .disable(DeserializationFeature.UNWRAP_ROOT_VALUE);
@@ -158,11 +170,11 @@ public class DifferentObjectMapperForClientAndServerTest {
     }
 
     public static class ClientObjectMapperUnwrappingRootElement implements ContextResolver<ObjectMapper> {
-        static final AtomicBoolean USED = new AtomicBoolean(false);
+        static final AtomicLong COUNT = new AtomicLong();
 
         @Override
         public ObjectMapper getContext(Class<?> type) {
-            USED.set(true);
+            COUNT.incrementAndGet();
             return new ObjectMapper().enable(DeserializationFeature.UNWRAP_ROOT_VALUE);
         }
     }

@@ -354,8 +354,7 @@ public class KubernetesCommonHelper {
             }
         }
 
-        // Add service account from extensions: use the one provided by the user always
-        Optional<String> effectiveServiceAccount = config.getServiceAccount();
+        Optional<String> effectiveServiceAccount = Optional.empty();
         String effectiveServiceAccountNamespace = null;
         for (KubernetesServiceAccountBuildItem sa : serviceAccountsFromExtensions) {
             String saName = Optional.ofNullable(sa.getName()).orElse(name);
@@ -380,6 +379,12 @@ public class KubernetesCommonHelper {
                 effectiveServiceAccount = Optional.of(saName);
                 effectiveServiceAccountNamespace = sa.getValue().namespace.orElse(null);
             }
+        }
+
+        // The user provided service account should always take precedence
+        if (config.getServiceAccount().isPresent()) {
+            effectiveServiceAccount = config.getServiceAccount();
+            effectiveServiceAccountNamespace = null;
         }
 
         // Prepare default configuration
@@ -699,9 +704,25 @@ public class KubernetesCommonHelper {
                 .map(Optional::get)
                 .collect(Collectors.toList());
 
+        List<ApplyServiceAccountNameDecorator> serviceAccountDecorators = decorators.stream()
+                .filter(d -> d.getGroup() == null || d.getGroup().equals(target))
+                .map(d -> d.getDecorator(ApplyServiceAccountNameDecorator.class))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
         items.stream().filter(item -> item.getTarget() == null || item.getTarget().equals(target)).forEach(item -> {
 
             for (final AddImagePullSecretDecorator delegate : imagePullSecretDecorators) {
+                result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
+                    @Override
+                    public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {
+                        delegate.andThenVisit(builder, meta);
+                    }
+                }));
+            }
+
+            for (final ApplyServiceAccountNameDecorator delegate : serviceAccountDecorators) {
                 result.add(new DecoratorBuildItem(target, new NamedResourceDecorator<PodSpecBuilder>("Job", item.getName()) {
                     @Override
                     public void andThenVisit(PodSpecBuilder builder, ObjectMeta meta) {

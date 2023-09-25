@@ -289,7 +289,7 @@ The GraphQL UI can be accessed from http://localhost:8080/q/graphql-ui/ .
 
 image:graphql-ui-screenshot01.png[alt=GraphQL UI]
 
-Have a look at the link:security-authorization[Authorization of Web Endpoints] Guide on how to add/remove security for the GraphQL UI.
+Have a look at the link:security-authorize-web-endpoints-reference[Authorization of Web Endpoints] Guide on how to add/remove security for the GraphQL UI.
 
 == Query the GraphQL API
 

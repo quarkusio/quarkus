@@ -87,17 +87,22 @@ public class ResteasyReactiveCommonProcessor {
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
     private static final Predicate<ResolvedDependency> IS_RESTEASY_CLASSIC_CLIENT_DEP = d -> d.getArtifactId()
             .contains("resteasy-client");
+    private static final Predicate<ResolvedDependency> IS_RESTEASY_CLASSIC_CORE_DEP = d -> d.getArtifactId()
+            .equals("resteasy-core");
+    private static final Predicate<ResolvedDependency> IS_NOT_TEST_SCOPED = d -> !"test".equals(d.getScope());
 
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
     void checkMixingStacks(Capabilities capabilities, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         List<ResolvedDependency> resteasyClassicDeps = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
                 .filter(d -> d.getGroupId().equals("org.jboss.resteasy")).collect(Collectors.toList());
-        boolean hasResteasyCoreDep = resteasyClassicDeps.stream().anyMatch(d -> d.getArtifactId().equals("resteasy-core"));
+        boolean hasResteasyCoreDep = resteasyClassicDeps.stream()
+                .anyMatch(IS_NOT_TEST_SCOPED.and(IS_RESTEASY_CLASSIC_CORE_DEP));
         if (!hasResteasyCoreDep) {
             return;
         }
-        boolean hasResteasyClassicClient = resteasyClassicDeps.stream().anyMatch(IS_RESTEASY_CLASSIC_CLIENT_DEP);
+        boolean hasResteasyClassicClient = resteasyClassicDeps.stream()
+                .anyMatch(IS_NOT_TEST_SCOPED.and(IS_RESTEASY_CLASSIC_CLIENT_DEP));
         if (!hasResteasyClassicClient) { // there is no bulletproof way of knowing whether a server specific dependency has been included, so we deduce it by the absence of client dependency
             throw new DeploymentException("Mixing RESTEasy Reactive and RESTEasy Classic server parts is not supported");
         }

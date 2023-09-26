@@ -2,6 +2,7 @@ package io.quarkus.arc.runtime;
 
 import java.lang.annotation.Annotation;
 import java.util.Optional;
+import java.util.Set;
 
 import jakarta.enterprise.inject.spi.Annotated;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -21,6 +22,10 @@ public class ConfigMappingCreator implements BeanCreator<Object> {
         InjectionPoint injectionPoint = context.getInjectedReference(InjectionPoint.class);
         if (injectionPoint == null) {
             throw new IllegalStateException("No current injection point found");
+        }
+
+        if ((boolean) context.getParams().get("nativeBuild")) {
+            NativeBuildConfigCheckInterceptor.verifyCurrentImageMode(Set.of());
         }
 
         Class<?> interfaceType = (Class<?>) context.getParams().get("type");

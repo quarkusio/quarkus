@@ -4,7 +4,13 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ *
+ * @deprecated TODO
+ */
+@Deprecated(forRemoval = true)
 public final class ConfigInjectionStaticInitBuildItem extends MultiBuildItem {
+
     private final DotName declaringCandidate;
 
     public ConfigInjectionStaticInitBuildItem(final DotName declaringCandidate) {

@@ -70,6 +70,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -83,7 +84,7 @@ public class ConfigBuildStep {
     private static final Logger LOGGER = Logger.getLogger(ConfigBuildStep.class.getName());
 
     private static final DotName MP_CONFIG = DotName.createSimple(Config.class.getName());
-    private static final DotName MP_CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
+    static final DotName MP_CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
     private static final DotName MP_CONFIG_PROPERTIES_NAME = DotName.createSimple(ConfigProperties.class.getName());
     private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
 
@@ -290,6 +291,7 @@ public class ConfigBuildStep {
             BeanRegistrationPhaseBuildItem beanRegistration,
             List<ConfigClassBuildItem> configClasses,
             CombinedIndexBuildItem combinedIndex,
+            PackageConfig packageConfig,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
 
         if (configClasses.isEmpty()) {
@@ -323,7 +325,8 @@ public class ConfigBuildStep {
                     .creator(ConfigMappingCreator.class)
                     .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
                     .param("type", configClass.getConfigClass())
-                    .param("prefix", configClass.getPrefix());
+                    .param("prefix", configClass.getPrefix())
+                    .param("nativeBuild", packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE.getValue()));
 
             if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
                 bean.unremovable();
@@ -338,6 +341,7 @@ public class ConfigBuildStep {
             BeanRegistrationPhaseBuildItem beanRegistration,
             List<ConfigClassBuildItem> configClasses,
             CombinedIndexBuildItem combinedIndex,
+            PackageConfig packageConfig,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
 
         if (configClasses.isEmpty()) {
@@ -371,7 +375,9 @@ public class ConfigBuildStep {
                             .creator(ConfigMappingCreator.class)
                             .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
                             .param("type", configClass.getConfigClass())
-                            .param("prefix", configClass.getPrefix())));
+                            .param("prefix", configClass.getPrefix())
+                            .param("nativeBuild",
+                                    packageConfig.type.equalsIgnoreCase(PackageConfig.BuiltInType.NATIVE.getValue()))));
         }
     }
 

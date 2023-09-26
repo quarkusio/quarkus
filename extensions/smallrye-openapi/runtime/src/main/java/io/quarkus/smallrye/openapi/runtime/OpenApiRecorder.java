@@ -5,9 +5,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 import org.jboss.logging.Logger;
 
@@ -19,7 +17,8 @@ import io.quarkus.vertx.http.runtime.filters.Filter;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.RoutingContext;
-import java.util.List;
+import java.util.function.Supplier;
+import org.eclipse.microprofile.openapi.OASFilter;
 
 @Recorder
 public class OpenApiRecorder {
@@ -102,12 +101,12 @@ public class OpenApiRecorder {
 
     }
 
-//    public Supplier<List<OASFilter>> filtersSupplier(List<OASFilter> filters) {
-//        return new Supplier<>() {
-//            @Override
-//            public List<OASFilter> get() {
-//                return filters;
-//            }
-//        };
-//    }
+    public Supplier<OASFilter[]> filtersSupplier(OASFilter[] filters) {
+        return new Supplier<>() {
+            @Override
+            public OASFilter[] get() {
+                return filters;
+            }
+        };
+    }
 }

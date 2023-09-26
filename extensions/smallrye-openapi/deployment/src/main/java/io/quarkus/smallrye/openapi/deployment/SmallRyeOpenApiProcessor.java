@@ -233,24 +233,23 @@ public class SmallRyeOpenApiProcessor {
         }
 
         List<OASFilter> filters = List.of(autoSecurityFilter);
-        
+
         DotName dn = DotName.createSimple(OASFilters.class.getName());
-        
+
         SyntheticBeanBuildItem syntheticBeanBuildItem = SyntheticBeanBuildItem.configure(dn)
                                                                             .setRuntimeInit()
-                                                                            .
                                                                             .supplier(recorder.filtersSupplier(filters))
                                                                             .done();
-        
+
         syntheticBeans.produce(syntheticBeanBuildItem);
-        
+
 //        syntheticBeans.produce(SyntheticBeanBuildItem.configure(dn)
 //                .creator(OASFiltersCreator.class)
 //                .providerType(type)
 //                .types(type)
 //                .addQualifier(MP_CONFIG_PROPERTY_NAME)
 //                .param("requiredType", type.name().toString()).done());
-        
+
     }
 
     @BuildStep

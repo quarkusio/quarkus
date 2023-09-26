@@ -26,6 +26,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.runner.MainMethodInvoker;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
@@ -104,13 +105,12 @@ public class StartupActionImpl implements StartupAction {
         try {
             // force init here
             Class<?> appClass = Class.forName(className, true, runtimeClassLoader);
-            Method start = appClass.getMethod("main", String[].class);
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     Thread.currentThread().setContextClassLoader(runtimeClassLoader);
                     try {
-                        start.invoke(null, (Object) (args == null ? new String[0] : args));
+                        MainMethodInvoker.invoke(appClass, args);
                     } catch (Throwable e) {
                         log.error("Error running Quarkus", e);
                         //this can happen if we did not make it to application init

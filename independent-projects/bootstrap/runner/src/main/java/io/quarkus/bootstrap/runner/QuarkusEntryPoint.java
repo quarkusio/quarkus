@@ -1,5 +1,7 @@
 package io.quarkus.bootstrap.runner;
 
+import static io.quarkus.bootstrap.runner.MainMethodInvoker.invoke;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +38,7 @@ public class QuarkusEntryPoint {
         }
     }
 
-    private static void doRun(Object args) throws IOException, ClassNotFoundException, IllegalAccessException,
+    private static void doRun(String[] args) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
         String path = QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         String decodedPath = URLDecoder.decode(path, "UTF-8");
@@ -57,8 +59,12 @@ public class QuarkusEntryPoint {
             try {
                 Thread.currentThread().setContextClassLoader(appRunnerClassLoader);
                 QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(appRunnerClassLoader);
+
                 Class<?> mainClass = appRunnerClassLoader.loadClass(app.getMainClass());
-                mainClass.getMethod("main", String[].class).invoke(null, args);
+
+                invoke(mainClass, args);
+            } catch (InstantiationException e) {
+                throw new RuntimeException(e);
             } finally {
                 QuarkusForkJoinWorkerThread.setQuarkusAppClassloader(null);
                 appRunnerClassLoader.close();

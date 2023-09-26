@@ -31,6 +31,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASConfig;
@@ -93,7 +95,6 @@ import io.quarkus.smallrye.openapi.deployment.filter.SecurityConfigFilter;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.IgnoreStaticDocumentBuildItem;
 import io.quarkus.smallrye.openapi.deployment.spi.OpenApiDocumentBuildItem;
-import io.quarkus.smallrye.openapi.runtime.OASFilters;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
@@ -217,7 +218,7 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void registerAutoSecurityFilter(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    void registerAutoFilters(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeOpenApiConfig openApiConfig,
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
@@ -232,24 +233,21 @@ public class SmallRyeOpenApiProcessor {
             }
         }
 
-        List<OASFilter> filters = List.of(autoSecurityFilter);
+        List<OASFilter> filters = new ArrayList<>();
+        if (autoSecurityFilter != null) {
+            filters.add(autoSecurityFilter);
+        }
 
-        DotName dn = DotName.createSimple(OASFilters.class.getName());
-
-        SyntheticBeanBuildItem syntheticBeanBuildItem = SyntheticBeanBuildItem.configure(dn)
-                                                                            .setRuntimeInit()
-                                                                            .supplier(recorder.filtersSupplier(filters))
-                                                                            .done();
+        // TODO: Add other
+        SyntheticBeanBuildItem syntheticBeanBuildItem = SyntheticBeanBuildItem.configure(OASFilter.class)
+                .scope(ApplicationScoped.class)
+                .types(OASFilter.class)
+                .supplier(recorder.filtersSupplier(filters))
+                .setRuntimeInit()
+                .unremovable()
+                .done();
 
         syntheticBeans.produce(syntheticBeanBuildItem);
-
-//        syntheticBeans.produce(SyntheticBeanBuildItem.configure(dn)
-//                .creator(OASFiltersCreator.class)
-//                .providerType(type)
-//                .types(type)
-//                .addQualifier(MP_CONFIG_PROPERTY_NAME)
-//                .param("requiredType", type.name().toString()).done());
-
     }
 
     @BuildStep

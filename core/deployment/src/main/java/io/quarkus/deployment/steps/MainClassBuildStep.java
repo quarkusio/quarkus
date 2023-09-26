@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.objectweb.asm.ClassVisitor;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
@@ -40,6 +42,7 @@ import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderConstantDefinitionBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -65,6 +68,7 @@ import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
@@ -106,6 +110,7 @@ public class MainClassBuildStep {
             void.class);
     private static final DotName QUARKUS_APPLICATION = DotName.createSimple(QuarkusApplication.class.getName());
     private static final DotName OBJECT = DotName.createSimple(Object.class.getName());
+    private static final Type STRING_ARRAY = Type.create(DotName.createSimple(String[].class.getName()), Type.Kind.ARRAY);
 
     @BuildStep
     void build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
@@ -143,14 +148,14 @@ public class MainClassBuildStep {
         scField.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
         MethodCreator ctor = file.getMethodCreator("<init>", void.class);
-        ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(Application.class, "<init>", void.class, boolean.class),
+        ctor.invokeSpecialMethod(ofMethod(Application.class, "<init>", void.class, boolean.class),
                 ctor.getThis(), ctor.load(launchMode.isAuxiliaryApplication()));
         ctor.returnValue(null);
 
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
         if (!namingConfig.enableJndi && allowJNDIBuildItems.isEmpty()) {
-            mv.invokeStaticMethod(MethodDescriptor.ofMethod(DisabledInitialContextManager.class, "register", void.class));
+            mv.invokeStaticMethod(ofMethod(DisabledInitialContextManager.class, "register", void.class));
         }
 
         //very first thing is to set system props (for build time)
@@ -161,12 +166,12 @@ public class MainClassBuildStep {
         //set the launch mode
         ResultHandle lm = mv
                 .readStaticField(FieldDescriptor.of(LaunchMode.class, launchMode.getLaunchMode().name(), LaunchMode.class));
-        mv.invokeStaticMethod(MethodDescriptor.ofMethod(ProfileManager.class, "setLaunchMode", void.class, LaunchMode.class),
+        mv.invokeStaticMethod(ofMethod(ProfileManager.class, "setLaunchMode", void.class, LaunchMode.class),
                 lm);
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
 
-        mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class, boolean.class),
+        mv.invokeStaticMethod(ofMethod(Timing.class, "staticInitStarted", void.class, boolean.class),
                 mv.load(launchMode.isAuxiliaryApplication()));
 
         // ensure that the config class is initialized
@@ -248,7 +253,7 @@ public class MainClassBuildStep {
 
         //now set the command line arguments
         mv.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(StartupContext.class, "setCommandLineArguments", void.class, String[].class),
+                ofMethod(StartupContext.class, "setCommandLineArguments", void.class, String[].class),
                 startupContext, mv.getMethodParam(0));
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
@@ -333,6 +338,7 @@ public class MainClassBuildStep {
 
     @BuildStep
     public MainClassBuildItem mainClassBuildStep(BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<BytecodeTransformerBuildItem> transformedClass,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             Optional<QuarkusApplicationClassBuildItem> quarkusApplicationClass,
@@ -357,6 +363,7 @@ public class MainClassBuildStep {
             quarkusMainAnnotations.put(name, sanitizeMainClassName(classInfo, index));
         }
 
+        MethodInfo mainClassMethod = null;
         if (packageConfig.mainClass.isPresent()) {
             String mainAnnotationClass = quarkusMainAnnotations.get(packageConfig.mainClass.get());
             if (mainAnnotationClass != null) {
@@ -378,7 +385,7 @@ public class MainClassBuildStep {
 
                 MethodCreator mv = file.getMethodCreator("main", void.class, String[].class);
                 mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-                mv.invokeStaticMethod(MethodDescriptor.ofMethod(Quarkus.class, "run", void.class, String[].class),
+                mv.invokeStaticMethod(ofMethod(Quarkus.class, "run", void.class, String[].class),
                         mv.getMethodParam(0));
                 mv.returnValue(null);
 
@@ -388,10 +395,9 @@ public class MainClassBuildStep {
             Collection<ClassInfo> impls = index
                     .getAllKnownImplementors(QUARKUS_APPLICATION);
             ClassInfo classByName = index.getClassByName(DotName.createSimple(mainClassName));
-            MethodInfo mainClassMethod = null;
             if (classByName != null) {
                 mainClassMethod = classByName
-                        .method("main", Type.create(DotName.createSimple(String[].class.getName()), Type.Kind.ARRAY));
+                        .method("main", STRING_ARRAY);
             }
             if (mainClassMethod == null) {
                 boolean found = false;
@@ -413,6 +419,10 @@ public class MainClassBuildStep {
                     }
                 }
             }
+        }
+
+        if (!mainClassName.equals(MAIN_CLASS) && ((mainClassMethod == null) || !Modifier.isPublic(mainClassMethod.flags()))) {
+            transformedClass.produce(new BytecodeTransformerBuildItem(mainClassName, new MainMethodTransformer(index)));
         }
 
         return new MainClassBuildItem(mainClassName);
@@ -443,7 +453,7 @@ public class MainClassBuildStep {
 
         MethodCreator mv = file.getMethodCreator("main", void.class, String[].class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
-        mv.invokeStaticMethod(MethodDescriptor.ofMethod(Quarkus.class, "run", void.class, Class.class, String[].class),
+        mv.invokeStaticMethod(ofMethod(Quarkus.class, "run", void.class, Class.class, String[].class),
                 mv.loadClassFromTCCL(quarkusApplicationClassName),
                 mv.getMethodParam(0));
         mv.returnValue(null);
@@ -492,6 +502,194 @@ public class MainClassBuildStep {
     @BuildStep
     ReflectiveClassBuildItem applicationReflection() {
         return ReflectiveClassBuildItem.builder(Application.APP_CLASS_NAME).build();
+    }
+
+    /**
+     * Transform the main class to support the launch protocol described in <a href="https://openjdk.org/jeps/445">JEP 445</a>.
+     * Note that we can support this regardless of the JDK version running the application.
+     */
+    private static class MainMethodTransformer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+        private final IndexView index;
+
+        public MainMethodTransformer(IndexView index) {
+            this.index = index;
+        }
+
+        @Override
+        public ClassVisitor apply(String mainClassName, ClassVisitor outputClassVisitor) {
+            ClassInfo mainClassInfo = index.getClassByName(mainClassName);
+            if (mainClassInfo == null) {
+                throw new IllegalStateException(mainClassName + " should have a corresponding ClassInfo at this point");
+            }
+            ClassTransformer transformer = new ClassTransformer(mainClassName);
+            Result result = doApply(mainClassName, outputClassVisitor, transformer, mainClassInfo);
+            if (!result.isValid) {
+                throw new RuntimeException(errorMessage(mainClassName));
+            }
+            if (result.classVisitor == null) {
+                throw new IllegalStateException("result.classvisitor should not be null at this point");
+            }
+            return result.classVisitor;
+        }
+
+        private Result doApply(String originalMainClassName,
+                ClassVisitor classVisitor, ClassTransformer transformer,
+                ClassInfo currentClassInfo) {
+            boolean isTopLevel = currentClassInfo.name().toString().equals(originalMainClassName);
+            boolean allowStatic = isTopLevel;
+            boolean hasStaticWithArgs = false;
+            boolean hasStaticWithoutArgs = false;
+            boolean hasInstanceWithArgs = false;
+            boolean hasInstanceWithoutArgs = false;
+
+            MethodInfo withArgs = currentClassInfo.method("main", STRING_ARRAY);
+            MethodInfo withoutArgs = currentClassInfo.method("main");
+
+            if (withArgs != null) {
+                if (Modifier.isStatic(withArgs.flags())) {
+                    if (allowStatic) {
+                        hasStaticWithArgs = true;
+                    }
+                } else {
+                    hasInstanceWithArgs = true;
+                }
+            }
+            if (withoutArgs != null) {
+                if (Modifier.isStatic(withoutArgs.flags())) {
+                    if (allowStatic) {
+                        hasStaticWithoutArgs = true;
+                    }
+                } else {
+                    hasInstanceWithoutArgs = true;
+                }
+            }
+
+            Result result;
+
+            //impl NOTE: the sequence of boolean checks is very important as it follows what the JEP says is the proper sequence of method lookups
+            if (hasStaticWithArgs) {
+                if (Modifier.isPublic(withArgs.flags())) {
+                    // nothing to do here
+                    result = Result.valid(classVisitor);
+                } else if (Modifier.isPrivate(withArgs.flags())) {
+                    // the launch protocol says we can't use this one, but we still need to rename it to avoid conflicts with the potentially generated main
+                    transformer.modifyMethod(MethodDescriptor.of(withArgs)).rename("$originalMain$");
+                    result = Result.invalid(transformer.applyTo(classVisitor));
+                } else {
+                    // this is the simplest case where we just make the method public
+                    transformer.modifyMethod(MethodDescriptor.of(withArgs)).removeModifiers(Modifier.PROTECTED)
+                            .addModifiers(Modifier.PUBLIC);
+                    result = Result.valid(transformer.applyTo(classVisitor));
+                }
+            } else if (hasStaticWithoutArgs) {
+                if (Modifier.isPrivate(withoutArgs.flags())) {
+                    // the launch protocol says we can't use this one
+                    result = Result.invalid();
+                    ;
+                } else {
+                    // we create a public static void(String[] args) method and all the target from it
+                    MethodCreator standardMain = createStandardMain(transformer);
+                    standardMain.invokeStaticMethod(MethodDescriptor.of(withoutArgs));
+                    standardMain.returnValue(null);
+                    result = Result.valid(transformer.applyTo(classVisitor));
+                }
+            } else if (hasInstanceWithArgs) {
+                if (Modifier.isPrivate(withArgs.flags())) {
+                    // the launch protocol says we can't use this one, but we still need to rename it to avoid conflicts with the potentially generated main
+                    transformer.modifyMethod(MethodDescriptor.of(withArgs)).rename("$originalMain$");
+                    result = Result.invalid(transformer.applyTo(classVisitor));
+                } else {
+                    // here we need to construct an instance and call the instance method with the args parameter
+                    MethodCreator standardMain = createStandardMain(transformer);
+                    ResultHandle instanceHandle = standardMain.newInstance(ofConstructor(originalMainClassName));
+                    ResultHandle argsParamHandle = standardMain.getMethodParam(0);
+                    if (isTopLevel) {
+                        // we need to rename the method in order to avoid having two main methods with the same name
+                        standardMain.invokeVirtualMethod(
+                                ofMethod(originalMainClassName, "$$main$$", void.class, String[].class),
+                                instanceHandle, argsParamHandle);
+
+                        transformer.modifyMethod(MethodDescriptor.of(withArgs)).rename("$$main$$");
+                    } else {
+                        // Invoke super
+                        standardMain.invokeSpecialMethod(withArgs, instanceHandle, argsParamHandle);
+                    }
+                    standardMain.returnValue(null);
+                    result = Result.valid(transformer.applyTo(classVisitor));
+                }
+            } else if (hasInstanceWithoutArgs) {
+                if (Modifier.isPrivate(withoutArgs.flags())) {
+                    // the launch protocol says we can't use this one
+                    result = Result.invalid();
+                } else {
+                    // here we need to construct an instance and call the instance method without any parameters
+                    MethodCreator standardMain = createStandardMain(transformer);
+                    ResultHandle instanceHandle = standardMain.newInstance(ofConstructor(originalMainClassName));
+                    standardMain.invokeVirtualMethod(MethodDescriptor.of(withoutArgs), instanceHandle);
+                    standardMain.returnValue(null);
+                    result = Result.valid(transformer.applyTo(classVisitor));
+                }
+            } else {
+                // this means that no main (with our without args was found)
+                result = resultFromSuper(originalMainClassName, classVisitor, transformer, currentClassInfo);
+            }
+            if (!result.isValid) {
+                // this means there were private main methods that we ignored
+                result = resultFromSuper(originalMainClassName, classVisitor, transformer, currentClassInfo);
+            }
+
+            return result;
+        }
+
+        private Result resultFromSuper(String originalMainClassName, ClassVisitor outputClassVisitor,
+                ClassTransformer transformer, ClassInfo currentClassInfo) {
+            DotName superName = currentClassInfo.superName();
+            if (superName.equals(OBJECT)) {
+                // no valid main method was found
+                return Result.invalid();
+            }
+            ClassInfo superClassInfo = index.getClassByName(superName);
+            if (superClassInfo == null) {
+                throw new IllegalStateException("Unable to find main method on class '" + originalMainClassName
+                        + "' while it was also not possible to traverse the class hierarchy");
+            }
+
+            // check if the superclass has any valid candidates
+            return doApply(originalMainClassName, outputClassVisitor, transformer, superClassInfo);
+        }
+
+        private static String errorMessage(String originalMainClassName) {
+            return "Unable to find a valid main method on class '" + originalMainClassName
+                    + "'. See https://openjdk.org/jeps/445 for details of what constitutes a valid main method.";
+        }
+
+        private static MethodCreator createStandardMain(ClassTransformer transformer) {
+            return transformer.addMethod("main", void.class, String[].class)
+                    .setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+        }
+
+        private static class Result {
+            private final boolean isValid;
+            private final ClassVisitor classVisitor;
+
+            private Result(boolean isValid, ClassVisitor classVisitor) {
+                this.isValid = isValid;
+                this.classVisitor = classVisitor;
+            }
+
+            private static Result valid(ClassVisitor classVisitor) {
+                return new Result(true, classVisitor);
+            }
+
+            private static Result invalid(ClassVisitor classVisitor) {
+                return new Result(false, classVisitor);
+            }
+
+            private static Result invalid() {
+                return new Result(false, null);
+            }
+        }
     }
 
 }

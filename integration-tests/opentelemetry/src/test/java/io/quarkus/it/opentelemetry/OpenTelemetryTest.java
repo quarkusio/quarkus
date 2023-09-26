@@ -15,6 +15,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -555,6 +556,79 @@ public class OpenTelemetryTest {
         assertEquals("200", clientServer.get("attr_http.status_code"));
         assertNotNull(clientServer.get("attr_http.client_ip"));
         assertNotNull(clientServer.get("attr_user_agent.original"));
+    }
+
+    @Test
+    void testClientTracingWithInterceptor() {
+        given()
+                .when().get("/client/pong-intercept/one")
+                .then()
+                .statusCode(200)
+                .body(containsString("one"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 4);
+        List<Map<String, Object>> spans = getSpans();
+        assertEquals(4, spans.size());
+        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+
+        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals(SERVER.toString(), server.get("kind"));
+        verifyResource(server);
+        assertEquals("GET /client/pong-intercept/{message}", server.get("name"));
+        assertEquals(SERVER.toString(), server.get("kind"));
+        assertTrue((Boolean) server.get("ended"));
+        assertEquals(SpanId.getInvalid(), server.get("parent_spanId"));
+        assertEquals(TraceId.getInvalid(), server.get("parent_traceId"));
+        assertFalse((Boolean) server.get("parent_valid"));
+        assertFalse((Boolean) server.get("parent_remote"));
+        assertEquals("GET", server.get("attr_http.method"));
+        assertEquals("/client/pong-intercept/one", server.get("attr_http.target"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
+        assertEquals("http", server.get("attr_http.scheme"));
+        assertEquals("/client/pong-intercept/{message}", server.get("attr_http.route"));
+        assertEquals("200", server.get("attr_http.status_code"));
+        assertNotNull(server.get("attr_http.client_ip"));
+        assertNotNull(server.get("attr_user_agent.original"));
+
+        Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
+        assertEquals("PingPongRestClient.pingpongIntercept", fromInterceptor.get("name"));
+        assertEquals(INTERNAL.toString(), fromInterceptor.get("kind"));
+        assertTrue((Boolean) fromInterceptor.get("ended"));
+        assertTrue((Boolean) fromInterceptor.get("parent_valid"));
+        assertFalse((Boolean) fromInterceptor.get("parent_remote"));
+        assertNull(fromInterceptor.get("attr_http.method"));
+        assertNull(fromInterceptor.get("attr_http.status_code"));
+        assertEquals("one", fromInterceptor.get("attr_message"));
+
+        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
+        assertEquals("GET", client.get("name"));
+        assertEquals(SpanKind.CLIENT.toString(), client.get("kind"));
+        assertTrue((Boolean) client.get("ended"));
+        assertTrue((Boolean) client.get("parent_valid"));
+        assertFalse((Boolean) client.get("parent_remote"));
+        assertEquals("GET", client.get("attr_http.method"));
+        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_http.url"));
+        assertEquals("200", client.get("attr_http.status_code"));
+
+        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
+        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        verifyResource(clientServer);
+        assertEquals("GET /client/pong/{message}", clientServer.get("name"));
+        assertEquals(SERVER.toString(), clientServer.get("kind"));
+        assertTrue((Boolean) clientServer.get("ended"));
+        assertTrue((Boolean) clientServer.get("parent_valid"));
+        assertTrue((Boolean) clientServer.get("parent_remote"));
+        assertEquals("GET", clientServer.get("attr_http.method"));
+        assertEquals("/client/pong/one", clientServer.get("attr_http.target"));
+        assertEquals(pathParamUrl.getHost(), server.get("attr_net.host.name"));
+        assertEquals(pathParamUrl.getPort(), Integer.valueOf((String) server.get("attr_net.host.port")));
+        assertEquals("http", clientServer.get("attr_http.scheme"));
+        assertEquals("/client/pong/{message}", clientServer.get("attr_http.route"));
+        assertEquals("200", clientServer.get("attr_http.status_code"));
+        assertNotNull(clientServer.get("attr_http.client_ip"));
+        assertNotNull(clientServer.get("attr_user_agent.original"));
+        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
     }
 
     @Test

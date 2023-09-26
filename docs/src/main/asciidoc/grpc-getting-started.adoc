@@ -203,8 +203,8 @@ For instance, having the following properties in your `application.properties`:
 
 [source,properties]
 ----
-quarkus.generate-code.grpc.scan-for-proto-includes."<groupId>\:<artifactId>"=foo/**,bar/**,banana/a-proto.proto
-quarkus.generate-code.grpc.scan-for-proto-excludes."<groupId>\:<artifactId>"=foo/private/**,bar/another-proto.proto
+quarkus.generate-code.grpc.scan-for-proto-include."<groupId>\:<artifactId>"=foo/**,bar/**,banana/a-proto.proto
+quarkus.generate-code.grpc.scan-for-proto-exclude."<groupId>\:<artifactId>"=foo/private/**,bar/another-proto.proto
 ----
 
 will include:

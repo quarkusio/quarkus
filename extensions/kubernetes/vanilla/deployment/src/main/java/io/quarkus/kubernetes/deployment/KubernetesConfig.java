@@ -634,4 +634,16 @@ public class KubernetesConfig implements PlatformConfiguration {
 
         return DeploymentResourceKind.Deployment;
     }
+
+    public boolean isExternalizeInit() {
+        return externalizeInit;
+    }
+
+    public Map<String, InitTaskConfig> getInitTasks() {
+        return initTasks;
+    }
+
+    public InitTaskConfig getInitTaskDefaults() {
+        return initTaskDefaults;
+    }
 }

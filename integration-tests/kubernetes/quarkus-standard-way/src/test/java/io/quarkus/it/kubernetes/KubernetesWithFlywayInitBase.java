@@ -15,13 +15,15 @@ import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 
 public class KubernetesWithFlywayInitBase {
 
-    public void assertGeneratedResources(Path kubernetesDir, String name, String imagePullSecret, String serviceAccount)
+    public void assertGeneratedResources(Path kubernetesDir, String name, String taskName, String imagePullSecret,
+            String serviceAccount)
             throws IOException {
         assertThat(kubernetesDir)
                 .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.json"))
                 .isDirectoryContaining(p -> p.getFileName().endsWith("kubernetes.yml"));
         List<HasMetadata> kubernetesList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
+        String jobName = name + "-" + taskName + "-init";
         Optional<Deployment> deployment = kubernetesList.stream()
                 .filter(d -> "Deployment".equals(d.getKind())
                         && name.equals(d.getMetadata().getName()))
@@ -41,7 +43,7 @@ public class KubernetesWithFlywayInitBase {
                                 .satisfies(s -> assertThat(s.getName()).isEqualTo(imagePullSecret));
                         assertThat(podSpec.getServiceAccountName()).isEqualTo(serviceAccount);
                         assertThat(podSpec.getInitContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo("init");
+                            assertThat(container.getName()).isEqualTo("wait-for-" + taskName);
                             assertThat(container.getImage()).isEqualTo("groundnuty/k8s-wait-for:no-root-v1.7");
                         });
 
@@ -51,7 +53,7 @@ public class KubernetesWithFlywayInitBase {
         });
 
         Optional<Job> job = kubernetesList.stream()
-                .filter(j -> "Job".equals(j.getKind()) && (name + "-flyway-init").equals(j.getMetadata().getName()))
+                .filter(j -> "Job".equals(j.getKind()) && jobName.equals(j.getMetadata().getName()))
                 .map(j -> (Job) j)
                 .findAny();
         assertTrue(job.isPresent());
@@ -66,7 +68,7 @@ public class KubernetesWithFlywayInitBase {
                         assertThat(podSpec.getServiceAccountName()).isEqualTo(serviceAccount);
                         assertThat(podSpec.getRestartPolicy()).isEqualTo("OnFailure");
                         assertThat(podSpec.getContainers()).singleElement().satisfies(container -> {
-                            assertThat(container.getName()).isEqualTo(name + "-flyway-init");
+                            assertThat(container.getName()).isEqualTo(jobName);
                             assertThat(container.getEnv()).filteredOn(env -> "QUARKUS_FLYWAY_ENABLED".equals(env.getName()))
                                     .singleElement().satisfies(env -> {
                                         assertThat(env.getValue()).isEqualTo("true");

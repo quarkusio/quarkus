@@ -17,12 +17,14 @@ import io.quarkus.container.spi.ContainerImageLabelBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.deployment.AddPortToKubernetesConfig;
 import io.quarkus.kubernetes.deployment.DevClusterHelper;
+import io.quarkus.kubernetes.deployment.InitTaskProcessor;
 import io.quarkus.kubernetes.deployment.KubernetesCommonHelper;
 import io.quarkus.kubernetes.deployment.KubernetesConfig;
 import io.quarkus.kubernetes.deployment.ResourceNameUtil;
@@ -121,5 +123,26 @@ public class MinikubeProcessor {
                 baseImage, image, command, ports, portName,
                 livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings, customProjectRoot);
+    }
+
+    @BuildStep
+    void externalizeInitTasks(
+            ApplicationInfoBuildItem applicationInfo,
+            KubernetesConfig config,
+            ContainerImageInfoBuildItem image,
+            List<InitTaskBuildItem> initTasks,
+            BuildProducer<KubernetesJobBuildItem> jobs,
+            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
+            BuildProducer<KubernetesEnvBuildItem> env,
+            BuildProducer<KubernetesRoleBuildItem> roles,
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
+            BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
+
+            BuildProducer<DecoratorBuildItem> decorators) {
+        final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        if (config.isExternalizeInit()) {
+            InitTaskProcessor.process(MINIKUBE, name, image, initTasks, config.getInitTaskDefaults(), config.getInitTasks(),
+                    jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
+        }
     }
 }

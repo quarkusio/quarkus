@@ -87,6 +87,11 @@ This results in an archive generation process that on one hand is completely saf
 As a result, users are expected to get a slightly more effective archive if they manually go through the hoops of generating the AppCDS archive.
 ====
 
+[IMPORTANT]
+====
+AppCDS has improved significantly in the latest JDK releases. This means that to ensure the best possible improvements from it, make sure your projects targets the highest possible Java version (ideally 17 or 21).
+====
+
 === Usage in containers
 
 When building container images using the `quarkus-container-image-jib` extension, Quarkus automatically takes care of all the steps needed to generate the archive

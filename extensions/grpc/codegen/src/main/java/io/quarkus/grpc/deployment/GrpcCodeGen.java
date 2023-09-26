@@ -286,8 +286,15 @@ public class GrpcCodeGen implements CodeGenProvider {
                                 protoDirectories.add(path.getParent().normalize().toAbsolutePath().toString());
                             } else { // archive
                                 Path relativePath = path.getRoot().relativize(path);
+                                String uniqueName = artifact.getGroupId() + ":" + artifact.getArtifactId();
+                                if (artifact.getVersion() != null) {
+                                    uniqueName += ":" + artifact.getVersion();
+                                }
+                                if (artifact.getClassifier() != null) {
+                                    uniqueName += "-" + artifact.getClassifier();
+                                }
                                 Path protoUnzipDir = workDir
-                                        .resolve(HashUtil.sha1(root.normalize().toAbsolutePath().toString()))
+                                        .resolve(HashUtil.sha1(uniqueName))
                                         .normalize().toAbsolutePath();
                                 try {
                                     Files.createDirectories(protoUnzipDir);

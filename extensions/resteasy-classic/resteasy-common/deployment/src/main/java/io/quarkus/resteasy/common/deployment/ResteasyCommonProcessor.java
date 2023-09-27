@@ -43,7 +43,6 @@ import org.jboss.resteasy.spi.InjectorFactory;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.ConfigInjectionStaticInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.Capabilities;
@@ -179,11 +178,6 @@ public class ResteasyCommonProcessor {
             ResteasyInjectorFactoryRecorder recorder) {
         RuntimeValue<InjectorFactory> injectorFactory = recorder.setup();
         return new ResteasyInjectionReadyBuildItem(injectorFactory);
-    }
-
-    @BuildStep
-    ConfigInjectionStaticInitBuildItem configInjectionStaticInitProvider() {
-        return new ConfigInjectionStaticInitBuildItem(ResteasyDotNames.PROVIDER);
     }
 
     @BuildStep

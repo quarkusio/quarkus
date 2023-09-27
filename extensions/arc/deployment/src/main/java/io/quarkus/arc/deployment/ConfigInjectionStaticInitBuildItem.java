@@ -6,7 +6,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  *
- * @deprecated TODO
+ * @deprecated This build item is not used anymore
  */
 @Deprecated(forRemoval = true)
 public final class ConfigInjectionStaticInitBuildItem extends MultiBuildItem {

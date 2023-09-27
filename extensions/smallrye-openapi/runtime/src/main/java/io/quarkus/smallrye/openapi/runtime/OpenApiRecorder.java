@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -108,5 +109,23 @@ public class OpenApiRecorder {
                 return autoSecurityFilter;
             }
         };
+    }
+
+    public Supplier<?> createUserDefinedRuntimeFilters(List<String> filters) {
+        return new Supplier<Object>() {
+            @Override
+            public UserDefinedRuntimeFilters get() {
+                return new UserDefinedRuntimeFilters() {
+                    @Override
+                    public List<String> filters() {
+                        return filters;
+                    }
+                };
+            }
+        };
+    }
+
+    public interface UserDefinedRuntimeFilters {
+        List<String> filters();
     }
 }

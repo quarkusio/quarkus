@@ -28,7 +28,6 @@ public final class ReplaceCodestartFileStrategyHandler implements DefaultCodesta
             throws IOException {
         checkNotEmptyCodestartFiles(codestartFiles);
         final Path targetPath = targetDirectory.resolve(relativePath);
-        checkTargetDoesNotExist(targetPath);
         createDirectories(targetPath);
         writeFile(targetPath,
                 codestartFiles.get(codestartFiles.size() - 1).getContent());

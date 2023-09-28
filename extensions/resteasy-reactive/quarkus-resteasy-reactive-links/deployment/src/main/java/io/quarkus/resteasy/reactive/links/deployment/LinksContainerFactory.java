@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.links.deployment;
 
+import static org.jboss.resteasy.reactive.common.processor.JandexUtil.isAssignableFrom;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COLLECTION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETABLE_FUTURE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
@@ -17,8 +19,6 @@ import jakarta.ws.rs.core.UriBuilder;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
@@ -138,14 +138,7 @@ final class LinksContainerFactory {
     }
 
     private boolean isCollection(Type type, IndexView index) {
-        if (type.kind() == Type.Kind.PRIMITIVE) {
-            return false;
-        }
-        ClassInfo classInfo = index.getClassByName(type.name());
-        if (classInfo == null) {
-            return false;
-        }
-        return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Collection.class.getName())::equals);
+        return isAssignableFrom(COLLECTION, type.name(), index);
     }
 
     private Type getNonAsyncReturnType(Type returnType) {

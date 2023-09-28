@@ -5,8 +5,10 @@ import java.io.InputStream;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -413,6 +415,44 @@ public final class JandexUtil {
             throw new RuntimeException("The class " + superType.name() + " is not inside the Jandex index");
         }
         return isImplementorOf(index, superClass, name, additionalIgnoredSuperClasses);
+    }
+
+    public static boolean isAssignableFrom(DotName superType, DotName subType, IndexView index) {
+        // java.lang.Object is assignable from any type
+        if (superType.equals(DOTNAME_OBJECT)) {
+            return true;
+        }
+        // type1 is the same as type2
+        if (superType.equals(subType)) {
+            return true;
+        }
+        // type1 is a superclass
+        return findSupertypes(subType, index).contains(superType);
+    }
+
+    private static Set<DotName> findSupertypes(DotName name, IndexView index) {
+        Set<DotName> result = new HashSet<>();
+
+        Deque<DotName> workQueue = new ArrayDeque<>();
+        workQueue.add(name);
+        while (!workQueue.isEmpty()) {
+            DotName type = workQueue.poll();
+            if (result.contains(type)) {
+                continue;
+            }
+            result.add(type);
+
+            ClassInfo clazz = index.getClassByName(type);
+            if (clazz == null) {
+                continue;
+            }
+            if (clazz.superName() != null) {
+                workQueue.add(clazz.superName());
+            }
+            workQueue.addAll(clazz.interfaceNames());
+        }
+
+        return result;
     }
 
 }

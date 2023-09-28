@@ -7,7 +7,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
-public class OpenApiBuiltTimeFilterTestCase {
+public class OpenApiAnnotatedBuildtimeFilterTestCase {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension

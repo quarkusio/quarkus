@@ -1,7 +1,8 @@
 package io.quarkus.jackson.runtime;
 
 import com.fasterxml.jackson.core.util.BufferRecycler;
-import com.fasterxml.jackson.core.util.BufferRecyclerPool;
+import com.fasterxml.jackson.core.util.JsonBufferRecyclers;
+import com.fasterxml.jackson.core.util.RecyclerPool;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -9,36 +10,36 @@ import java.lang.invoke.MethodType;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Predicate;
 
-public class HybridJacksonPool implements BufferRecyclerPool {
+public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
 
-    static final BufferRecyclerPool INSTANCE = new HybridJacksonPool();
+    static final RecyclerPool INSTANCE = new HybridJacksonPool();
 
     private static final Predicate<Thread> isVirtual = VirtualPredicate.findIsVirtualPredicate();
 
-    private final BufferRecyclerPool nativePool = BufferRecyclerPool.threadLocalPool();
+    private final RecyclerPool<BufferRecycler> nativePool = JsonBufferRecyclers.threadLocalPool();
 
     static class VirtualPoolHolder {
         // Lazy on-demand initialization
-        private static final BufferRecyclerPool virtualPool = new StripedLockFreePool(4);
+        private static final RecyclerPool<BufferRecycler> virtualPool = new StripedLockFreePool(4);
     }
 
     @Override
-    public BufferRecycler acquireBufferRecycler() {
+    public BufferRecycler acquirePooled() {
         return isVirtual.test(Thread.currentThread()) ?
-                VirtualPoolHolder.virtualPool.acquireBufferRecycler() :
-                nativePool.acquireBufferRecycler();
+                VirtualPoolHolder.virtualPool.acquirePooled() :
+                nativePool.acquirePooled();
     }
 
     @Override
-    public void releaseBufferRecycler(BufferRecycler bufferRecycler) {
+    public void releasePooled(BufferRecycler bufferRecycler) {
         if (bufferRecycler instanceof VThreadBufferRecycler) {
             // if it is a PooledBufferRecycler it has been acquired by a virtual thread, so it has to be release to the same pool
-            VirtualPoolHolder.virtualPool.releaseBufferRecycler(bufferRecycler);
+            VirtualPoolHolder.virtualPool.releasePooled(bufferRecycler);
         }
         // the native thread pool is based on ThreadLocal, so it doesn't have anything to do on release
     }
 
-    private static class StripedLockFreePool implements BufferRecyclerPool {
+    private static class StripedLockFreePool implements RecyclerPool<BufferRecycler> {
 
         private static final int CACHE_LINE_SHIFT = 4;
 
@@ -61,7 +62,7 @@ public class HybridJacksonPool implements BufferRecyclerPool {
         }
 
         @Override
-        public BufferRecycler acquireBufferRecycler() {
+        public BufferRecycler acquirePooled() {
             int index = threadProbe.index();
 
             Node currentHead = heads.get(index);
@@ -81,7 +82,7 @@ public class HybridJacksonPool implements BufferRecyclerPool {
         }
 
         @Override
-        public void releaseBufferRecycler(BufferRecycler recycler) {
+        public void releasePooled(BufferRecycler recycler) {
             VThreadBufferRecycler vThreadBufferRecycler = (VThreadBufferRecycler) recycler;
             Node newHead = new Node(vThreadBufferRecycler);
 

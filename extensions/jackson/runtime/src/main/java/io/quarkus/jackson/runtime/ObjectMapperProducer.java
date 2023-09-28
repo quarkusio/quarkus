@@ -11,7 +11,6 @@ import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.util.BufferRecyclerPool;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;

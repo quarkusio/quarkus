@@ -147,13 +147,25 @@ public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
         }
 
         private static Predicate<Thread> findIsVirtualPredicate() {
-            return virtualMh != null ? t -> {
-                try {
-                    return (boolean) virtualMh.invokeExact(t);
-                } catch (Throwable e) {
-                    throw new RuntimeException(e);
+            if (virtualMh != null) {
+                return new Predicate<Thread>() {
+                    @Override
+                    public boolean test(Thread thread) {
+                        try {
+                            return (boolean) virtualMh.invokeExact(thread);
+                        } catch (Throwable e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                };
+            }
+
+            return new Predicate<Thread>() {
+                @Override
+                public boolean test(Thread thread) {
+                    return false;
                 }
-            } : t -> false;
+            };
         }
     }
 

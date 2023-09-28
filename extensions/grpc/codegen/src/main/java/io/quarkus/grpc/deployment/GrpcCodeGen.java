@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
@@ -100,11 +101,14 @@ public class GrpcCodeGen implements CodeGenProvider {
             Collection<Path> protoFilesFromDependencies = gatherProtosFromDependencies(dirWithProtosFromDependencies, protoDirs,
                     context);
             if (!protoFilesFromDependencies.isEmpty()) {
-                protoFilesFromDependencies.stream()
-                        .map(Path::normalize)
-                        .map(Path::toAbsolutePath)
-                        .map(Path::toString)
-                        .forEach(protoFiles::add);
+                for (Path files : protoFilesFromDependencies) {
+                    var pathToProtoFile = files.normalize().toAbsolutePath();
+                    var pathToParentDir = files.getParent();
+                    // Add the proto file to the list of proto to compile, but also add the directory containing the
+                    // proto file to the list of directories to include (it's a set, so no duplicate).
+                    protoFiles.add(pathToProtoFile.toString());
+                    protoDirs.add(pathToParentDir.toString());
+                }
             }
 
             if (!protoFiles.isEmpty()) {
@@ -115,11 +119,11 @@ public class GrpcCodeGen implements CodeGenProvider {
 
                 List<String> command = new ArrayList<>();
                 command.add(executables.protoc.toString());
-                for (String protoImportDir : protosToImport) {
-                    command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
-                }
                 for (String protoDir : protoDirs) {
                     command.add(String.format("-I=%s", escapeWhitespace(protoDir)));
+                }
+                for (String protoImportDir : protosToImport) {
+                    command.add(String.format("-I=%s", escapeWhitespace(protoImportDir)));
                 }
 
                 command.addAll(asList("--plugin=protoc-gen-grpc=" + executables.grpc,
@@ -203,17 +207,21 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
         boolean scanAll = "all".equalsIgnoreCase(scanDependencies);
 
-        List<String> dependenciesToScan = asList(scanDependencies.split(","));
+        List<String> dependenciesToScan = Arrays.stream(scanDependencies.split(",")).map(String::trim)
+                .collect(Collectors.toList());
 
         ApplicationModel appModel = context.applicationModel();
         List<Path> protoFilesFromDependencies = new ArrayList<>();
         for (ResolvedDependency artifact : appModel.getRuntimeDependencies()) {
             String packageId = String.format("%s:%s", artifact.getGroupId(), artifact.getArtifactId());
             Collection<String> includes = properties
-                    .getOptionalValues(String.format(SCAN_DEPENDENCIES_FOR_PROTO_INCLUDE_PATTERN, packageId), String.class)
+                    .getOptionalValue(String.format(SCAN_DEPENDENCIES_FOR_PROTO_INCLUDE_PATTERN, packageId), String.class)
+                    .map(s -> Arrays.stream(s.split(",")).map(String::trim).collect(Collectors.toList()))
                     .orElse(List.of());
+
             Collection<String> excludes = properties
-                    .getOptionalValues(String.format(SCAN_DEPENDENCIES_FOR_PROTO_EXCLUDE_PATTERN, packageId), String.class)
+                    .getOptionalValue(String.format(SCAN_DEPENDENCIES_FOR_PROTO_EXCLUDE_PATTERN, packageId), String.class)
+                    .map(s -> Arrays.stream(s.split(",")).map(String::trim).collect(Collectors.toList()))
                     .orElse(List.of());
 
             if (scanAll
@@ -247,7 +255,8 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
 
         boolean scanAll = "all".equals(scanForImports.toLowerCase(Locale.getDefault()));
-        List<String> dependenciesToScan = Arrays.asList(scanForImports.split(","));
+        List<String> dependenciesToScan = Arrays.stream(scanForImports.split(",")).map(String::trim)
+                .collect(Collectors.toList());
 
         Set<String> importDirectories = new HashSet<>();
         ApplicationModel appModel = context.applicationModel();
@@ -277,8 +286,15 @@ public class GrpcCodeGen implements CodeGenProvider {
                                 protoDirectories.add(path.getParent().normalize().toAbsolutePath().toString());
                             } else { // archive
                                 Path relativePath = path.getRoot().relativize(path);
+                                String uniqueName = artifact.getGroupId() + ":" + artifact.getArtifactId();
+                                if (artifact.getVersion() != null) {
+                                    uniqueName += ":" + artifact.getVersion();
+                                }
+                                if (artifact.getClassifier() != null) {
+                                    uniqueName += "-" + artifact.getClassifier();
+                                }
                                 Path protoUnzipDir = workDir
-                                        .resolve(HashUtil.sha1(root.normalize().toAbsolutePath().toString()))
+                                        .resolve(HashUtil.sha1(uniqueName))
                                         .normalize().toAbsolutePath();
                                 try {
                                     Files.createDirectories(protoUnzipDir);

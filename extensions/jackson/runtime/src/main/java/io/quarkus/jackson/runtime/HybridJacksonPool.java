@@ -10,6 +10,25 @@ import java.lang.invoke.MethodType;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Predicate;
 
+/**
+ * This is a custom implementation of the Jackson's {@link RecyclerPool} intended to work equally well with both
+ * platform and virtual threads. This pool works regardless of the version of the JVM in use and internally uses
+ * 2 distinct pools one for platform threads (which is exactly the same {@link ThreadLocal} based one provided
+ * by Jackson out of the box) and the other designed for being virtual threads friendly. It switches between
+ * the 2 only depending on the nature of thread (virtual or not) requiring the acquisition of a pooled resource,
+ * obtained via {@link MethodHandle} to guarantee compatibility also with old JVM versions. The pool also guarantees
+ * that the pooled resource is always released to the same internal pool from where it has been acquired, regardless
+ * if the releasing thread is different from the one that originally made the acquisition.
+ * <p>
+ * The virtual thread friendly inner pool is implemented with N striped linked lists using a simple lock free
+ * algorithm based on CAS. The striping is performed shuffling the id of the thread requiring to acquire a pooled
+ * resource with a xorshift based computation. The resulting of this computation is also stored in the pooled resource,
+ * bringing the twofold advantage of always releasing the resource in the same bucket from where it has been taken
+ * regardless if the releasing thread is different from the one that did the acquisition and avoiding the need of
+ * recalculating the position of that bucket also during the release. The heads of the linked lists are hold in an
+ * {@link AtomicReferenceArray} where each head has a distance of 16 positions from the adjacent ones to prevent
+ * the false sharing problem.
+ */
 public class HybridJacksonPool implements RecyclerPool<BufferRecycler> {
 
     static final RecyclerPool INSTANCE = new HybridJacksonPool();

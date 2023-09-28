@@ -44,13 +44,15 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         private final Set<File> reloadableClassPath;
         private final File outputDirectory;
         private final Charset sourceEncoding;
+        private final boolean ignoreModuleInfo;
 
         public Context(Set<File> classPath, Set<File> reloadableClassPath,
-                File outputDirectory, Charset sourceEncoding) {
+                File outputDirectory, Charset sourceEncoding, boolean ignoreModuleInfo) {
             this.classPath = classPath;
             this.reloadableClassPath = reloadableClassPath;
             this.outputDirectory = outputDirectory;
             this.sourceEncoding = sourceEncoding;
+            this.ignoreModuleInfo = ignoreModuleInfo;
         }
 
         public Set<File> getClassPath() {
@@ -67,6 +69,10 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
 
         public Charset getSourceEncoding() {
             return sourceEncoding;
+        }
+
+        public boolean ignoreModuleInfo() {
+            return ignoreModuleInfo;
         }
     }
 }

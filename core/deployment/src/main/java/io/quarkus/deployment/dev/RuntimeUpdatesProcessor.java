@@ -723,6 +723,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                                     .collect(Collectors.toSet());
                             moduleChangedSourceFilePaths.addAll(changedPaths);
                             compiler.compile(sourcePath.toString(), changedSourceFiles.stream()
+                                    .filter(file -> !file.getName().equals("module-info.java"))
                                     .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
                             compileProblem = null;
                             if (compilingTests) {

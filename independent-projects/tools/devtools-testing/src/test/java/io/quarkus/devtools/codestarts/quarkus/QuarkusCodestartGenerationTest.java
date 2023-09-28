@@ -267,7 +267,7 @@ class QuarkusCodestartGenerationTest {
         final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
                 .buildTool(BuildTool.GRADLE)
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-github");
         getCatalog().createProject(input).generate(projectDir);
@@ -284,7 +284,7 @@ class QuarkusCodestartGenerationTest {
                 .buildTool(BuildTool.GRADLE)
                 .noBuildToolWrapper()
                 .addData(getGenerationTestInputData())
-                .addCodestarts(Collections.singletonList("github-action"))
+                .addCodestarts(Collections.singletonList("tooling-github-action"))
                 .build();
         Path projectDir = testDirPath.resolve("gradle-nowrapper-github");
         getCatalog().createProject(input).generate(projectDir);

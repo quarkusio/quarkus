@@ -1,4 +1,4 @@
-name: dockerfiles
+name: tooling-dockerfiles
 type: tooling
 language:
   base:

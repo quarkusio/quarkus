@@ -333,10 +333,10 @@ public class ConfiguredBeanTest {
 
     @Test
     public void testConfigDefaultValuesSourceOrdinal() {
-        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
-        assertEquals(Integer.MIN_VALUE + 100, defaultValues.getOrdinal());
+        assertEquals(Integer.MIN_VALUE, defaultValues.getOrdinal());
 
         ConfigSource applicationProperties = null;
         for (ConfigSource configSource : config.getConfigSources()) {
@@ -355,7 +355,7 @@ public class ConfiguredBeanTest {
 
     @Test
     public void testProfileDefaultValuesSource() {
-        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
 
@@ -388,7 +388,7 @@ public class ConfiguredBeanTest {
         assertEquals("5678", anotherPrefixConfig.prop);
         assertEquals("5678", anotherPrefixConfig.map.get("prop"));
 
-        Optional<ConfigSource> runTimeDefaults = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> runTimeDefaults = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(runTimeDefaults.isPresent());
         // java.version should not be recorded
         assertFalse(runTimeDefaults.get().getPropertyNames().contains("java.version"));
@@ -402,7 +402,7 @@ public class ConfiguredBeanTest {
         assertEquals("quarkus.bt.bt-config-value", btConfigValue.getName());
         assertEquals("value", btConfigValue.getValue());
 
-        Optional<ConfigSource> source = config.getConfigSource("RunTime Defaults");
+        Optional<ConfigSource> source = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(source.isPresent());
         ConfigSource defaultValues = source.get();
 

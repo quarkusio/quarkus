@@ -1,7 +1,6 @@
 package io.quarkus.runtime.configuration;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
-
+import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigFactory;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -23,18 +22,18 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
     public SmallRyeConfig getConfigFor(final SmallRyeConfigProviderResolver configProviderResolver,
             final ClassLoader classLoader) {
         if (config == null) {
-            //TODO: this code path is only hit when start fails in dev mode very early in the process
-            //the recovery code will fail without this as it cannot read any properties such as
-            //the HTTP port or logging info
-            return ConfigUtils.emptyConfigBuilder().addDiscoveredSources().build();
+            return ConfigUtils.configBuilder(true, true, LaunchMode.NORMAL).build();
         }
         return config;
     }
 
     public static void setConfig(SmallRyeConfig config) {
-        if (QuarkusConfigFactory.config != null) {
-            ConfigProviderResolver.instance().releaseConfig(QuarkusConfigFactory.config);
-        }
+        SmallRyeConfigProviderResolver configProviderResolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+                .instance();
+        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
         QuarkusConfigFactory.config = config;
+        if (QuarkusConfigFactory.config != null) {
+            configProviderResolver.registerConfig(config, Thread.currentThread().getContextClassLoader());
+        }
     }
 }

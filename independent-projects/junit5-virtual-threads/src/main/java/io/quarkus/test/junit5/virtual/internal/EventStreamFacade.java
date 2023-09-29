@@ -57,7 +57,6 @@ public class EventStreamFacade {
             tempStop = lookup.findVirtual(clazz, "stop", MethodType.methodType(boolean.class));
             en = true;
         } catch (Throwable e) {
-            e.printStackTrace();
             en = false;
         }
         available = en;

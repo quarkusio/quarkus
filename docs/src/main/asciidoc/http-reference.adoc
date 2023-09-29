@@ -11,10 +11,6 @@ include::_attributes.adoc[]
 :sectnums:
 :sectnumlevels: 4
 
-:numbered:
-:sectnums:
-:sectnumlevels: 4
-
 
 This document explains various HTTP features that you can use in Quarkus.
 
@@ -393,6 +389,44 @@ It is important that you enable all origins only for the dev profile, allowing a
 == HTTP Limits Configuration
 
 include::{generated-dir}/config/quarkus-vertx-http-config-group-server-limits-config.adoc[leveloffset=+1, opts=optional]
+
+== Configure traffic shaping
+
+Traffic shaping allows you to limit the bandwidth across all channels (i.e. connections), regardless of the number of open channels.
+This can be useful when you want to control the overall network traffic to prevent congestion or prioritize certain types of traffic.
+
+To enable traffic shaping, add the following property in your application configuration:
+
+
+[source, properties]
+----
+quarkus.http.traffic-shaping.enabled=true # Required to enable traffic shaping
+----
+
+The traffic shaping allows you to configure various parameters, such as write and read limitations (in bytes per  second), check interval (the delay between two computations of the bandwidth), and maximum time to wait:
+
+[source, properties]
+----
+quarkus.http.traffic-shaping.enabled=true # Required to enable traffic shaping
+quarkus.http.traffic-shaping.check-interval=30s
+quarkus.http.traffic-shaping.outbound-global-bandwidth=1M
+quarkus.http.traffic-shaping.inbound-global-bandwidth=1M
+quarkus.http.traffic-shaping.max-delay=10s
+----
+
+The check interval represents the period at which the traffic is computed, and a higher interval may result in
+ less precise traffic shaping.
+Despite 0 being accepted (no accounting), it is recommended to set a positive value for the check interval, even if it is high since the precision of the traffic shaping depends on the period where the traffic is computed.
+In this case, a suggested value is something close to 5 or 10 minutes.
+
+ The `outbound-global-bandwidth` and `inbound-global-bandwidth` parameters represent the maximum number of bytes per second for write and read operations, respectively.
+You shall also consider to have object size in read or write operations relatively adapted to the bandwidth you required.
+For instance having 10 MB objects for 10KB/s will lead to burst effect, while having 100 KB objects for 1 MB/s should be smoothly handle by the traffic shaping.
+
+Additionally, you can set the maximum time to wait (`max-delay`), which specifies an upper bound for time shaping.
+By default, it is set to 15 seconds.
+It must be less than the HTTP timeout.
+When one of the threshold is reached, no write happens for that period of time.
 
 == Configuring HTTP Access Logs
 

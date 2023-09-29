@@ -29,7 +29,9 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.net.JdkSSLEngineOptions;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.TrafficShapingOptions;
 
+@SuppressWarnings("OptionalIsPresent")
 public class HttpServerOptionsUtils {
 
     /**
@@ -276,6 +278,34 @@ public class HttpServerOptionsUtils {
         }
 
         httpServerOptions.setUseProxyProtocol(httpConfiguration.proxy.useProxyProtocol);
+        configureTrafficShapingIfEnabled(httpServerOptions, httpConfiguration);
+    }
+
+    private static void configureTrafficShapingIfEnabled(HttpServerOptions httpServerOptions,
+            HttpConfiguration httpConfiguration) {
+        if (httpConfiguration.trafficShaping.enabled) {
+            TrafficShapingOptions options = new TrafficShapingOptions();
+            if (httpConfiguration.trafficShaping.checkInterval.isPresent()) {
+                options.setCheckIntervalForStats(httpConfiguration.trafficShaping.checkInterval.get().toSeconds());
+                options.setCheckIntervalForStatsTimeUnit(TimeUnit.SECONDS);
+            }
+            if (httpConfiguration.trafficShaping.maxDelay.isPresent()) {
+                options.setMaxDelayToWait(httpConfiguration.trafficShaping.maxDelay.get().toSeconds());
+                options.setMaxDelayToWaitUnit(TimeUnit.SECONDS);
+            }
+            if (httpConfiguration.trafficShaping.inboundGlobalBandwidth.isPresent()) {
+                options.setInboundGlobalBandwidth(httpConfiguration.trafficShaping.inboundGlobalBandwidth.get().asLongValue());
+            }
+            if (httpConfiguration.trafficShaping.outboundGlobalBandwidth.isPresent()) {
+                options.setOutboundGlobalBandwidth(
+                        httpConfiguration.trafficShaping.outboundGlobalBandwidth.get().asLongValue());
+            }
+            if (httpConfiguration.trafficShaping.peakOutboundGlobalBandwidth.isPresent()) {
+                options.setPeakOutboundGlobalBandwidth(
+                        httpConfiguration.trafficShaping.peakOutboundGlobalBandwidth.get().asLongValue());
+            }
+            httpServerOptions.setTrafficShapingOptions(options);
+        }
     }
 
     public static void applyCommonOptionsForManagementInterface(HttpServerOptions options,

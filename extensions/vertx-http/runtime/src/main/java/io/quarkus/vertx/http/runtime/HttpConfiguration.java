@@ -229,7 +229,9 @@ public class HttpConfiguration {
     @ConfigItem
     public boolean recordRequestStartTime;
 
-    AccessLogConfig accessLog;
+    public AccessLogConfig accessLog;
+
+    public TrafficShapingConfig trafficShaping;
 
     /**
      * Configuration that allows setting the same site attributes for cookies.

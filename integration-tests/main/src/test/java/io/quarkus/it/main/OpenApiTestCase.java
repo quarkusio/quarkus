@@ -22,6 +22,7 @@ import io.quarkus.test.junit.QuarkusTest;
 public class OpenApiTestCase {
 
     private static final String DEFAULT_MEDIA_TYPE = "application/json";
+    private static final String DEFAULT_MEDIA_TYPE_PRIMITAVE = "plain/text";
 
     @TestHTTPResource("q/openapi")
     URL uri;
@@ -63,7 +64,8 @@ public class OpenApiTestCase {
         // test RESTEasy extensions
 
         JsonObject schemasObj = obj.getJsonObject("components").getJsonObject("schemas");
-        String testSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, testObj.getJsonObject("get").getJsonObject("responses"),
+        String testSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITAVE,
+                testObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         String rxSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE,
                 injectionObj.getJsonObject("get").getJsonObject("responses"),

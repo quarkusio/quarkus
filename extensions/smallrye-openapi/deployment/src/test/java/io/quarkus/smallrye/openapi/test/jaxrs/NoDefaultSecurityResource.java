@@ -7,13 +7,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
 @Path("/greeting")
-public class DefaultContentTypeResource {
-
-    @GET
-    @Path("/foo")
-    public String foo() {
-        return "bar";
-    }
+public class NoDefaultSecurityResource {
 
     @GET
     @Path("/hello")

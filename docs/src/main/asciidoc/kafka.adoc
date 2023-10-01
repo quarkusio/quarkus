@@ -1245,6 +1245,66 @@ Reciprocally, multiple producers on the same channel can be merged by setting `m
 On the `@Incoming` methods, you can control how multiple channels are merged using the `@Merge` annotation.
 ====
 
+Repeating the `@Outgoing` annotation on outbound or processing methods allows another way of dispatching messages to multiple outgoing channels:
+
+[source, java]
+----
+import java.util.Random;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+@ApplicationScoped
+public class MultipleProducers {
+
+    private final Random random = new Random();
+
+    @Outgoing("generated")
+    @Outgoing("generated-2")
+    double priceBroadcast() {
+        return random.nextDouble();
+    }
+
+}
+----
+
+In the previous example generated price will be broadcast to both outbound channels.
+The following example selectively sends messages to multiple outgoing channels using the `Targeted` container object,
+containing key as channel name and value as message payload.
+
+[source, java]
+----
+import jakarta.enterprise.context.ApplicationScoped;
+
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+
+import io.smallrye.reactive.messaging.Targeted;
+
+@ApplicationScoped
+public class TargetedProducers {
+
+    @Incoming("in")
+    @Outgoing("out1")
+    @Outgoing("out2")
+    @Outgoing("out3")
+    public Targeted process(double price) {
+        Targeted targeted = Targeted.of("out1", "Price: " + price,
+                "out2", "Quote: " + price);
+        if (price > 90.0) {
+            return targeted.with("out3", price);
+        }
+        return targeted;
+    }
+
+}
+----
+
+Note that <<serialization-autodetection,the auto-detection for Kafka serializers>> doesn't work for signatures using the `Targeted`.
+
+For more details on using multiple outgoings, please refer to the http://smallrye.io/smallrye-reactive-messaging/4.10.0/concepts/outgoings/[SmallRye Reactive Messaging documentation].
+
 === Kafka Transactions
 
 Kafka transactions enable atomic writes to multiple Kafka topics and partitions.
@@ -2261,7 +2321,7 @@ See the xref:quarkus-reactive-architecture.adoc[Quarkus Reactive Architecture do
 
 == Channel Decorators
 
-SmallRye Reactive Messaging supports decorating incoming and outgoing channels for implementing cross-cutting concerns such as monitoring, tracing or message interception. For more information on implementing decorators and message interceptors see the http://smallrye.io/smallrye-reactive-messaging/3.19.1/concepts/decorators/[SmallRye Reactive Messaging documentation].
+SmallRye Reactive Messaging supports decorating incoming and outgoing channels for implementing cross-cutting concerns such as monitoring, tracing or message interception. For more information on implementing decorators and message interceptors see the http://smallrye.io/smallrye-reactive-messaging/latest/concepts/decorators/[SmallRye Reactive Messaging documentation].
 
 [[kafka-configuration]]
 == Configuration Reference

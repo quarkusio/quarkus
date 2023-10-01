@@ -28,6 +28,7 @@ final class DotNames {
     static final DotName PROCESSOR = DotName.createSimple(org.reactivestreams.Processor.class.getName());
     static final DotName PROCESSOR_BUILDER = DotName.createSimple(org.eclipse.microprofile.reactive.streams.operators.ProcessorBuilder.class.getName());
     static final DotName MULTI = DotName.createSimple(io.smallrye.mutiny.Multi.class.getName());
+    static final DotName MULTI_SPLITTER = DotName.createSimple(io.smallrye.mutiny.operators.multi.split.MultiSplitter.class.getName());
 
     static final DotName AVRO_GENERATED = DotName.createSimple("org.apache.avro.specific.AvroGenerated");
     static final DotName AVRO_GENERIC_RECORD = DotName.createSimple("org.apache.avro.generic.GenericRecord");

@@ -28,7 +28,7 @@ public class DefaultContentTypeTest {
                         Matchers.containsString("#/components/schemas/Greeting"))
                 .body("paths.'/greeting/hello'.get.responses.'200'.content.'application/json'.schema.$ref",
                         Matchers.containsString("#/components/schemas/Greeting"))
-                .body("paths.'/greeting/foo'.get.responses.'200'.content.'plain/text'.schema.type",
+                .body("paths.'/greeting/foo'.get.responses.'200'.content.'text/plain'.schema.type",
                         Matchers.equalTo("string"))
                 .body("paths.'/greeting/hello'.post.responses.'200'.content.'application/json'.schema.$ref",
                         Matchers.containsString("#/components/schemas/Greeting"));

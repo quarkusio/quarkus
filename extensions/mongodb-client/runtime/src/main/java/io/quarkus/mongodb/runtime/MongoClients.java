@@ -322,6 +322,10 @@ public class MongoClients {
             settings.readConcern(new ReadConcern(ReadConcernLevel.fromString(config.readConcern.get())));
         }
 
+        if (config.uuidRepresentation.isPresent()) {
+            settings.uuidRepresentation(config.uuidRepresentation.get());
+        }
+
         return settings.build();
     }
 

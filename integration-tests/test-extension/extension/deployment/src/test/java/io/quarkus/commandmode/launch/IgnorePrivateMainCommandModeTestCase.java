@@ -1,0 +1,48 @@
+package io.quarkus.commandmode.launch;
+
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.runtime.annotations.QuarkusMain;
+import io.quarkus.test.QuarkusProdModeTest;
+
+public class IgnorePrivateMainCommandModeTestCase {
+    @RegisterExtension
+    static final QuarkusProdModeTest config = new QuarkusProdModeTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(HelloWorldSuperSuper.class, HelloWorldSuper.class, HelloWorldMain.class))
+            .setApplicationName("run-exit")
+            .setApplicationVersion("0.1-SNAPSHOT")
+            .setExpectExit(true)
+            .setRun(true);
+
+    @Test
+    public void testRun() {
+        Assertions.assertThat(config.getStartupConsoleOutput()).contains("Hello World");
+        Assertions.assertThat(config.getExitCode()).isEqualTo(0);
+    }
+
+    @QuarkusMain
+    public static class HelloWorldMain extends HelloWorldSuper {
+
+        private static void main(String[] args) {
+            System.out.println("Private Static World");
+        }
+    }
+
+    public static class HelloWorldSuperSuper {
+
+        protected void main() {
+            System.out.println("Hello World");
+        }
+    }
+
+    public static class HelloWorldSuper extends HelloWorldSuperSuper {
+
+        private void main(String[] args) {
+            System.out.println("Private Instance World");
+        }
+    }
+
+}

@@ -117,21 +117,6 @@ public class VertxHttpRecorder {
 
     private static final String DISABLE_WEBSOCKETS_PROP_NAME = "vertx.disableWebsockets";
 
-    /**
-     * Order mark for route with priority over the default route (add an offset from this mark)
-     **/
-    public static final int BEFORE_DEFAULT_ROUTE_ORDER_MARK = 1_000;
-
-    /**
-     * Default route order (i.e. Static Resources, Servlet)
-     **/
-    public static final int DEFAULT_ROUTE_ORDER = 10_000;
-
-    /**
-     * Order mark for route without priority over the default route (add an offset from this mark)
-     **/
-    public static final int AFTER_DEFAULT_ROUTE_ORDER_MARK = 20_000;
-
     private static final Logger LOGGER = Logger.getLogger(VertxHttpRecorder.class.getName());
 
     private static volatile Handler<RoutingContext> hotReplacementHandler;
@@ -273,7 +258,7 @@ public class VertxHttpRecorder {
             }
             Router router = Router.router(vertx);
             if (hotReplacementHandler != null) {
-                router.route().order(Integer.MIN_VALUE).blockingHandler(hotReplacementHandler);
+                router.route().order(RouteConstants.ROUTE_ORDER_HOT_REPLACEMENT).blockingHandler(hotReplacementHandler);
             }
 
             Handler<HttpServerRequest> root = router;
@@ -402,7 +387,7 @@ public class VertxHttpRecorder {
         }
 
         if (defaultRouteHandler != null) {
-            defaultRouteHandler.accept(httpRouteRouter.route().order(DEFAULT_ROUTE_ORDER));
+            defaultRouteHandler.accept(httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_DEFAULT));
         }
 
         applyCompression(httpBuildTimeConfig.enableCompression, httpRouteRouter);
@@ -412,7 +397,7 @@ public class VertxHttpRecorder {
         if (requireBodyHandler) {
             //if this is set then everything needs the body handler installed
             //TODO: config etc
-            httpRouteRouter.route().order(Integer.MIN_VALUE + 1).handler(new Handler<RoutingContext>() {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext routingContext) {
                     routingContext.request().resume();
@@ -433,13 +418,14 @@ public class VertxHttpRecorder {
             if (hotReplacementHandler != null) {
                 //recorders are always executed in the current CL
                 ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
-                httpRouteRouter.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
-                    @Override
-                    public void handle(RoutingContext event) {
-                        Thread.currentThread().setContextClassLoader(currentCl);
-                        hotReplacementHandler.handle(event);
-                    }
-                });
+                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_HOT_REPLACEMENT)
+                        .handler(new Handler<RoutingContext>() {
+                            @Override
+                            public void handle(RoutingContext event) {
+                                Thread.currentThread().setContextClassLoader(currentCl);
+                                hotReplacementHandler.handle(event);
+                            }
+                        });
             }
             root = httpRouteRouter;
         } else {
@@ -449,7 +435,7 @@ public class VertxHttpRecorder {
 
             if (hotReplacementHandler != null) {
                 ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
-                mainRouter.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+                mainRouter.route().order(RouteConstants.ROUTE_ORDER_HOT_REPLACEMENT).handler(new Handler<RoutingContext>() {
                     @Override
                     public void handle(RoutingContext event) {
                         Thread.currentThread().setContextClassLoader(currentCl);
@@ -484,15 +470,16 @@ public class VertxHttpRecorder {
             AccessLogHandler handler = new AccessLogHandler(receiver, accessLog.pattern, getClass().getClassLoader(),
                     accessLog.excludePattern);
             if (rootPath.equals("/") || nonRootPath.equals("/")) {
-                mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route().order(Integer.MIN_VALUE)
+                mainRouterRuntimeValue.orElse(httpRouterRuntimeValue).getValue().route()
+                        .order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER)
                         .handler(handler);
             } else if (nonRootPath.startsWith(rootPath)) {
-                httpRouteRouter.route().order(Integer.MIN_VALUE).handler(handler);
+                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
             } else if (rootPath.startsWith(nonRootPath)) {
-                frameworkRouter.getValue().route().order(Integer.MIN_VALUE).handler(handler);
+                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
             } else {
-                httpRouteRouter.route().order(Integer.MIN_VALUE).handler(handler);
-                frameworkRouter.getValue().route().order(Integer.MIN_VALUE).handler(handler);
+                httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
+                frameworkRouter.getValue().route().order(RouteConstants.ROUTE_ORDER_ACCESS_LOG_HANDLER).handler(handler);
             }
 
             quarkusWrapperNeeded = true;
@@ -518,7 +505,7 @@ public class VertxHttpRecorder {
         Handler<HttpServerRequest> delegate = root;
         root = HttpServerCommonHandlers.enforceDuplicatedContext(delegate);
         if (httpConfiguration.recordRequestStartTime) {
-            httpRouteRouter.route().order(Integer.MIN_VALUE).handler(new Handler<RoutingContext>() {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_RECORD_START_TIME).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext event) {
                     event.put(REQUEST_START_TIME, System.nanoTime());
@@ -539,9 +526,10 @@ public class VertxHttpRecorder {
             mr.route().last().failureHandler(
                     new QuarkusErrorHandler(launchMode.isDevOrTest(), httpConfiguration.unhandledErrorContentTypeDefault));
 
-            mr.route().order(Integer.MIN_VALUE).handler(createBodyHandlerForManagementInterface());
+            mr.route().order(RouteConstants.ROUTE_ORDER_BODY_HANDLER_MANAGEMENT)
+                    .handler(createBodyHandlerForManagementInterface());
             // We can use "*" here as the management interface is not expected to be used publicly.
-            mr.route().order(Integer.MIN_VALUE).handler(CorsHandler.create().addOrigin("*"));
+            mr.route().order(RouteConstants.ROUTE_ORDER_CORS_MANAGEMENT).handler(CorsHandler.create().addOrigin("*"));
 
             HttpServerCommonHandlers.applyFilters(managementConfiguration.getValue().filter, mr);
             for (Filter filter : managementInterfaceFilterList) {
@@ -562,7 +550,7 @@ public class VertxHttpRecorder {
 
     private void applyCompression(boolean enableCompression, Router httpRouteRouter) {
         if (enableCompression) {
-            httpRouteRouter.route().order(0).handler(new Handler<RoutingContext>() {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_COMPRESSION).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext ctx) {
                     // Add "Content-Encoding: identity" header that disables the compression

@@ -16,6 +16,7 @@ import io.quarkus.vertx.http.runtime.ForwardingProxyOptions;
 import io.quarkus.vertx.http.runtime.HeaderConfig;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
 import io.quarkus.vertx.http.runtime.ResumingRequestWrapper;
+import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.TrustedProxyCheck;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
@@ -33,7 +34,7 @@ public class HttpServerCommonHandlers {
         if (limits.maxBodySize.isPresent()) {
             long limit = limits.maxBodySize.get().asLongValue();
             Long limitObj = limit;
-            httpRouteRouter.route().order(-2).handler(new Handler<RoutingContext>() {
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_UPLOAD_LIMIT).handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext event) {
                     String lengthString = event.request().headers().get(HttpHeaderNames.CONTENT_LENGTH);
@@ -150,7 +151,7 @@ public class HttpServerCommonHandlers {
                 var config = entry.getValue();
                 if (config.methods.isEmpty()) {
                     httpRouteRouter.route(config.path)
-                            .order(Integer.MIN_VALUE)
+                            .order(RouteConstants.ROUTE_ORDER_HEADERS)
                             .handler(new Handler<RoutingContext>() {
                                 @Override
                                 public void handle(RoutingContext event) {
@@ -161,7 +162,7 @@ public class HttpServerCommonHandlers {
                 } else {
                     for (String method : config.methods.get()) {
                         httpRouteRouter.route(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), config.path)
-                                .order(Integer.MIN_VALUE)
+                                .order(RouteConstants.ROUTE_ORDER_HEADERS)
                                 .handler(new Handler<RoutingContext>() {
                                     @Override
                                     public void handle(RoutingContext event) {

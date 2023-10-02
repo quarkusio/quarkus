@@ -77,7 +77,7 @@ public class PathSegmentImpl implements PathSegment {
     }
 
     public String toString() {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         if (path != null)
             buf.append(path);
         if (matrixParameters != null) {

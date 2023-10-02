@@ -752,5 +752,9 @@ triage:
       notifyInPullRequest: true
       directories:
         - jakarta/
+    - id: virtual-threads
+      labels: [area/virtual-threads]
+      title: "(virtual.thread|RunOnVirtualThread"
+      notify: [cescoffier, ozangunalp]
   qe:
     notify: [rsvoboda, mjurc]

@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.deployment;
 
 import static io.quarkus.arc.processor.DotNames.APPLICATION_SCOPED;
-import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 
 import java.security.Permission;
 import java.util.HashMap;
@@ -216,7 +215,9 @@ public class HttpSecurityProcessor {
                 && !buildTimeConfig.auth.basic.orElse(false)) {
             //if not explicitly enabled we make this a default bean, so it is the fallback if nothing else is defined
             configurator.defaultBean();
-            securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
+            if (buildTimeConfig.auth.basic.isPresent() && buildTimeConfig.auth.basic.get()) {
+                securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
+            }
         }
 
         return configurator.done();

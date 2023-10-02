@@ -56,7 +56,7 @@ public final class QuarkusUpdatesRepository {
             final Artifact artifact = artifactResolver.resolve(DependencyUtils.toArtifact(gav)).getArtifact();
             final ResourceLoader resourceLoader = ResourceLoaders.resolveFileResourceLoader(
                     artifact.getFile());
-            final List<String> recipes = fetchRecipesAsList(resourceLoader, "quarkus-updates", recipeDirectoryNames);
+            final List<String[]> recipes = fetchRecipesAsList(resourceLoader, "quarkus-updates", recipeDirectoryNames);
             final Properties props = resourceLoader.loadResourceAsPath("quarkus-updates/", p -> {
                 final Properties properties = new Properties();
                 final Path propPath = p.resolve("recipes.properties");
@@ -77,8 +77,16 @@ public final class QuarkusUpdatesRepository {
                     targetVersion,
                     buildTool,
                     propRewritePluginVersion));
+            log.debug(String.format(
+                    "Detected dependencies:\n %s ",
+                    recipeDirectoryNames.entrySet().stream()
+                            .map(e -> String.format("%s (%s -> %s)", e.getKey(), e.getValue()[0], e.getValue()[1]))
+                            .sorted().collect(Collectors.joining("\n"))));
+            log.debug(String.format(
+                    "Detected recipe(s):\n %s",
+                    recipes.stream().map(o -> o[0]).sorted().collect(Collectors.joining("\n"))));
             return new FetchResult(artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion(),
-                    recipes, propRewritePluginVersion);
+                    recipes.stream().map(o -> o[1]).collect(Collectors.toList()), propRewritePluginVersion);
         } catch (BootstrapMavenException e) {
             throw new RuntimeException("Failed to resolve artifact: " + gav, e);
         } catch (IOException e) {
@@ -133,7 +141,7 @@ public final class QuarkusUpdatesRepository {
         return currentAVersion.compareTo(recipeAVersion) < 0 && targetAVersion.compareTo(recipeAVersion) >= 0;
     }
 
-    static List<String> fetchRecipesAsList(ResourceLoader resourceLoader, String location,
+    static List<String[]> fetchRecipesAsList(ResourceLoader resourceLoader, String location,
             Map<String, String[]> recipeDirectoryNames) throws IOException {
         return resourceLoader.loadResourceAsPath(location,
                 path -> {
@@ -152,7 +160,8 @@ public final class QuarkusUpdatesRepository {
                                                             versions[0], versions[1]))
                                                     .map(p -> {
                                                         try {
-                                                            return new String(Files.readAllBytes(p));
+                                                            return new String[] { p.toString(),
+                                                                    new String(Files.readAllBytes(p)) };
                                                         } catch (IOException e) {
                                                             throw new RuntimeException("Error reading file: " + p, e);
                                                         }

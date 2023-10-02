@@ -5,9 +5,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
+import jakarta.enterprise.context.RequestScoped;
+
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.ClaimValue;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -19,6 +22,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem.BeanConfiguratorBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
@@ -60,6 +64,12 @@ class SmallRyeJwtProcessor {
 
     private static final DotName CLAIM_NAME = DotName.createSimple(Claim.class.getName());
     private static final DotName CLAIMS_NAME = DotName.createSimple(Claims.class.getName());
+
+    private static final DotName CLAIM_VALUE_NAME = DotName.createSimple(ClaimValue.class);
+    private static final DotName REQUEST_SCOPED_NAME = DotName.createSimple(RequestScoped.class);
+
+    private static final Set<DotName> ALL_PROVIDER_NAMES = Set.of(DotNames.PROVIDER, DotNames.INSTANCE,
+            DotNames.INJECTABLE_INSTANCE);
 
     SmallRyeJwtBuildTimeConfig config;
 
@@ -161,14 +171,29 @@ class SmallRyeJwtProcessor {
                 continue;
             }
             AnnotationInstance claimQualifier = injectionPoint.getRequiredQualifier(CLAIM_NAME);
-            if (claimQualifier != null && injectionPoint.getType().name().equals(DotNames.PROVIDER)) {
-                // Classes from jakarta.json are handled specially
+            if (claimQualifier != null) {
                 Type actualType = injectionPoint.getRequiredType();
-                if (actualType.name().equals(DotNames.OPTIONAL) && !actualType.name().toString()
-                        .startsWith("jakarta.json")) {
+
+                Optional<BeanInfo> bean = injectionPoint.getTargetBean();
+                if (bean.isPresent()) {
+                    DotName scope = bean.get().getScope().getDotName();
+                    if (!REQUEST_SCOPED_NAME.equals(scope)
+                            && (!ALL_PROVIDER_NAMES.contains(injectionPoint.getType().name())
+                                    && !CLAIM_VALUE_NAME.equals(actualType.name()))) {
+                        String error = String.format(
+                                "%s type can not be used to represent JWT claims in @Singleton or @ApplicationScoped beans"
+                                        + ", make the bean @RequestScoped or wrap this type with org.eclipse.microprofile.jwt.ClaimValue"
+                                        + " or jakarta.inject.Provider or jakarta.enterprise.inject.Instance",
+                                actualType.name());
+                        throw new IllegalStateException(error);
+                    }
+                }
+
+                if (injectionPoint.getType().name().equals(DotNames.PROVIDER) && actualType.name().equals(DotNames.OPTIONAL)) {
                     additionalTypes.add(actualType);
                 }
             }
+
         }
 
         // Register a custom bean

@@ -296,7 +296,7 @@ Note that all three models can be used in a single application.
 
 == Use virtual thread friendly clients
 
-As mentioned in the href:why-not[Why not run everything on virtual threads?] section, the Java ecosystem is not entirely ready for virtual threads.
+As mentioned in the xref:why-not[Why not run everything on virtual threads?] section, the Java ecosystem is not entirely ready for virtual threads.
 So, you need to be careful, especially when using a libraries doing I/O.
 
 Fortunately, Quarkus provides a massive ecosystem that is ready to be used in virtual threads.

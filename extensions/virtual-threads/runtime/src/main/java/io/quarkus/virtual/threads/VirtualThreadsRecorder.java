@@ -5,19 +5,16 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Optional;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
 
 @Recorder
 public class VirtualThreadsRecorder {
@@ -26,8 +23,15 @@ public class VirtualThreadsRecorder {
 
     static VirtualThreadsConfig config = new VirtualThreadsConfig();
 
-    private static volatile Executor current;
+    private static volatile ExecutorService current;
     private static final Object lock = new Object();
+
+    public static Supplier<ExecutorService> VIRTUAL_THREADS_EXECUTOR_SUPPLIER = new Supplier<ExecutorService>() {
+        @Override
+        public ExecutorService get() {
+            return new DelegatingExecutorService(VirtualThreadsRecorder.getCurrent());
+        }
+    };
 
     public void setupVirtualThreads(VirtualThreadsConfig c, ShutdownContext shutdownContext, LaunchMode launchMode) {
         config = c;
@@ -36,9 +40,9 @@ public class VirtualThreadsRecorder {
                 shutdownContext.addLastShutdownTask(new Runnable() {
                     @Override
                     public void run() {
-                        Executor executor = current;
-                        if (executor instanceof ExecutorService) {
-                            ((ExecutorService) executor).shutdownNow();
+                        ExecutorService service = current;
+                        if (service != null) {
+                            service.shutdownNow();
                         }
                         current = null;
                     }
@@ -47,10 +51,9 @@ public class VirtualThreadsRecorder {
                 shutdownContext.addLastShutdownTask(new Runnable() {
                     @Override
                     public void run() {
-                        Executor executor = current;
+                        ExecutorService service = current;
                         current = null;
-                        if (executor instanceof ExecutorService) {
-                            ExecutorService service = (ExecutorService) executor;
+                        if (service != null) {
                             service.shutdown();
 
                             final long timeout = config.shutdownTimeout.toNanos();
@@ -82,8 +85,12 @@ public class VirtualThreadsRecorder {
         }
     }
 
-    public static Executor getCurrent() {
-        Executor executor = current;
+    public Supplier<ExecutorService> getCurrentSupplier() {
+        return VIRTUAL_THREADS_EXECUTOR_SUPPLIER;
+    }
+
+    public static ExecutorService getCurrent() {
+        ExecutorService executor = current;
         if (executor != null) {
             return executor;
         }
@@ -134,7 +141,7 @@ public class VirtualThreadsRecorder {
      * Since we try to load the "Loom-preview" classes/methods at runtime, the application can even be compiled
      * using java 11 and executed with a loom-compliant JDK.
      */
-    private static Executor createExecutor() {
+    private static ExecutorService createExecutor() {
         if (config.enabled) {
             try {
                 return new ContextPreservingExecutorService(newVirtualThreadExecutor());
@@ -149,19 +156,6 @@ public class VirtualThreadsRecorder {
             }
         }
         // Fallback to regular worker threads
-        return new Executor() {
-            @Override
-            public void execute(Runnable command) {
-                var context = Vertx.currentContext();
-                if (!(context instanceof ContextInternal)) {
-                    Infrastructure.getDefaultWorkerPool().execute(command);
-                } else {
-                    context.executeBlocking(() -> {
-                        command.run();
-                        return null;
-                    }, false);
-                }
-            }
-        };
+        return new FallbackVirtualThreadsExecutorService();
     }
 }

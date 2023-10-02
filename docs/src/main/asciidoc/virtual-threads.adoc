@@ -447,6 +447,50 @@ quarkus.virtual-threads.name-prefix=
 
 ----
 
+== Inject the virtual thread executor
+
+In order to run tasks on virtual threads Quarkus manages an internal `ThreadPerTaskExecutor`.
+In rare instances where you'd need to access this executor directly you can inject it using the `@VirtualThreads` CDI qualifier:
+
+IMPORTANT: Injecting the Virtual Thread ExecutorService is experimental and may change in future versions.
+
+[source,java]
+----
+package org.acme;
+
+import org.acme.fortune.repository.FortuneRepository;
+
+import java.util.concurrent.ExecutorService;
+
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+import io.quarkus.logging.Log;
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.virtual.threads.VirtualThreads;
+
+public class MyApplication {
+
+    @Inject
+    FortuneRepository repository;
+
+    @Inject
+    @VirtualThreads
+    ExecutorService vThreads;
+
+    void onEvent(@Observes StartupEvent event) {
+        vThreads.execute(this::findAll);
+    }
+
+    @Transactional
+    void findAll() {
+        Log.info(repository.findAllBlocking());
+    }
+
+}
+----
+
 == Testing virtual thread applications
 
 As mentioned above, virtual threads have a few limitations that can drastically affect your application performance and memory usage.

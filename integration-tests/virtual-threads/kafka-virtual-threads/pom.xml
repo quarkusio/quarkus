@@ -33,6 +33,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.junit5</groupId>
+            <artifactId>junit5-virtual-threads</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
@@ -81,7 +86,8 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>        <dependency>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-client-reactive-deployment</artifactId>
             <version>${project.version}</version>

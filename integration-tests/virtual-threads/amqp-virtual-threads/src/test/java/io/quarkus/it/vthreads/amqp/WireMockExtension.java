@@ -24,7 +24,7 @@ public class WireMockExtension implements QuarkusTestResourceLifecycleManager {
         wireMockServer.stubFor(post(urlEqualTo("/price/alert-message"))
                 .willReturn(aResponse().withBody("ok")));
 
-        return Map.of("price-alert/mp-rest/url", wireMockServer.baseUrl());
+        return Map.of("quarkus.rest-client.price-alert.url", wireMockServer.baseUrl());
     }
 
     @Override

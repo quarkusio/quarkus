@@ -106,19 +106,6 @@
                         <argLine>--enable-preview -Djdk.tracePinnedThreads -Dgradle.scan.captureTestLogging=false</argLine>
                         <skipTests>${skipTests}</skipTests>
                     </configuration>
-                    <executions>
-                        <execution>
-                            <id>pinning-test</id>
-                            <goals>
-                                <goal>test</goal>
-                            </goals>
-                            <configuration>
-                                <includes>
-                                    <include>NoPinningVerify.java</include>
-                                </includes>
-                            </configuration>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>

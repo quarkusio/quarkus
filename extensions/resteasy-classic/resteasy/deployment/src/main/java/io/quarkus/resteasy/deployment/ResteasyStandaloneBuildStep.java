@@ -136,7 +136,7 @@ public class ResteasyStandaloneBuildStep {
         routes.produce(
                 RouteBuildItem.builder()
                         .orderedRoute(standalone.deploymentRootPath,
-                                RouteConstants.ROUTE_ORDER_AFTER_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET)
+                                RouteConstants.ROUTE_ORDER_AFTER_DEFAULT + REST_ROUTE_ORDER_OFFSET)
                         .handler(handler).build());
         String matchPath = standalone.deploymentRootPath;
         if (matchPath.endsWith("/")) {
@@ -146,7 +146,7 @@ public class ResteasyStandaloneBuildStep {
         }
         // Match paths that begin with the deployment path
         routes.produce(RouteBuildItem.builder()
-                .orderedRoute(matchPath, RouteConstants.ROUTE_ORDER_AFTER_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET)
+                .orderedRoute(matchPath, RouteConstants.ROUTE_ORDER_AFTER_DEFAULT + REST_ROUTE_ORDER_OFFSET)
                 .handler(handler).build());
 
         recorder.start(shutdown, requireVirtual.isPresent());

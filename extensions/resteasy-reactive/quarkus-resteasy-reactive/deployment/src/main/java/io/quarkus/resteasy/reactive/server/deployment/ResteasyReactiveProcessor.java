@@ -1251,11 +1251,11 @@ public class ResteasyReactiveProcessor {
                 .produce(new ResteasyReactiveDeploymentInfoBuildItem(deploymentInfo));
 
         boolean servletPresent = false;
-        int order = RouteConstants.ROUTE_ORDER_AFTER_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET;
+        int order = RouteConstants.ROUTE_ORDER_AFTER_DEFAULT + REST_ROUTE_ORDER_OFFSET;
         if (capabilities.isPresent("io.quarkus.servlet")) {
             //if servlet is present we run RR before the default route
             //otherwise we run after it
-            order = RouteConstants.ROUTE_ORDER_BEFORE_DEFAULT_MARK + REST_ROUTE_ORDER_OFFSET;
+            order = RouteConstants.ROUTE_ORDER_BEFORE_DEFAULT + REST_ROUTE_ORDER_OFFSET;
             servletPresent = true;
         }
 

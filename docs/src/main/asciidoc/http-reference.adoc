@@ -591,21 +591,19 @@ link:https://undertow.io/undertow-docs/undertow-docs-2.0.0/index.html#predicates
 
 If you are using a `web.xml` file as your configuration file, you can place it in the `src/main/resources/META-INF` directory.
 
-== References
+=== Built-in route order values
 
-=== Well-known route order values
+Route order values are the values that are specified via Vert.x route `io.vertx.ext.web.Route.order(int)` function.
 
-Route order marks are the values that are specified via Vert.x route `io.vertx.ext.web.Route.order(int)` function.
-
-Quarkus uses a couple of route order marks itself. Your route order mark values should be at least a positive integer
-value above `20000` (see `RouteConstants.ROUTE_ORDER_AFTER_DEFAULT_MARK`) to not interfere with the functionality provided
-by Quarkus or its extensions.
+Quarkus registers a couple of routes with specific order values.
+The constants are defined in the `io.quarkus.vertx.http.runtime.RouteConstants` class and listed in the table below.
+A custom route should define the order of value 20000 or higher so that it does not interfere with the functionality provided by Quarkus and extensions.
 
 Route order constants defined in `io.quarkus.vertx.http.runtime.RouteConstants` and known extensions:
 
 [cols="1,1,3"]
 |===
-| Route order mark| Constant name| Origin
+| Route order value| Constant name| Origin
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_ACCESS_LOG_HANDLER` | Access-log handler, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_RECORD_START_TIME` | Handler adding the start-time, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HOT_REPLACEMENT` | -replacement body handler.
@@ -615,7 +613,7 @@ Route order constants defined in `io.quarkus.vertx.http.runtime.RouteConstants` 
 | `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_BODY_HANDLER` | Body handler.
 | `-2` | `ROUTE_ORDER_UPLOAD_LIMIT` | Route that enforces the upload body size limit.
 | `0` | `ROUTE_ORDER_COMPRESSION` | Compression handler.
-| `1000` | `ROUTE_ORDER_BEFORE_DEFAULT_MARK` | Route with priority over the default route (add an offset from this mark).
+| `1000` | `ROUTE_ORDER_BEFORE_DEFAULT` | Route with priority over the default route (add an offset from this value).
 | `10000` | `ROUTE_ORDER_DEFAULT` | Default route order (i.e. Static Resources, Servlet).
-| `20000` | `ROUTE_ORDER_AFTER_DEFAULT_MARK` | Route without priority over the default route (add an offset from this mark)
+| `20000` | `ROUTE_ORDER_AFTER_DEFAULT` | Route without priority over the default route (add an offset from this value)
 |===

@@ -304,7 +304,7 @@ public class ParameterParser {
 
         int start = offset;
 
-        StringBuffer newChars = new StringBuffer();
+        StringBuilder newChars = new StringBuilder();
 
         while (hasChar()) {
             paramName = parseToken(new char[] { '=', separator });

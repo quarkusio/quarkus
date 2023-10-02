@@ -22,7 +22,7 @@ import io.quarkus.test.junit.QuarkusTest;
 public class OpenApiTestCase {
 
     private static final String DEFAULT_MEDIA_TYPE = "application/json";
-    private static final String DEFAULT_MEDIA_TYPE_PRIMITAVE = "plain/text";
+    private static final String DEFAULT_MEDIA_TYPE_PRIMITAVE = "text/plain";
 
     @TestHTTPResource("q/openapi")
     URL uri;

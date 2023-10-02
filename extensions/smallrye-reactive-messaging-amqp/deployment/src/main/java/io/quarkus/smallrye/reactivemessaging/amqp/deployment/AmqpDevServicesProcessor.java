@@ -37,8 +37,8 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
  * Starts a AMQP 1.0 broker as dev service if needed.
- * It uses https://quay.io/repository/artemiscloud/activemq-artemis-broker as image.
- * See https://artemiscloud.io/ for details.
+ * It uses <a href="https://quay.io/repository/artemiscloud/activemq-artemis-broker">activemq-artemis-broker</a> as image.
+ * See <a href="https://artemiscloud.io/">Artemis Cloud</a> for details.
  */
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = GlobalDevServicesConfig.Enabled.class)
 public class AmqpDevServicesProcessor {

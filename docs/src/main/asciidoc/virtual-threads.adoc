@@ -375,7 +375,7 @@ mvn package
 
 === Using a local GraalVM installation
 
-To compile a Quarkus applications leveraging `@RunOnVirtualThreads` into native executable, you must be sure to use a GraalVM / Mandrel `native-image` supporting virtual threads, so providing at least Java 19+.
+To compile a Quarkus applications leveraging `@RunOnVirtualThread` into native executable, you must be sure to use a GraalVM / Mandrel `native-image` supporting virtual threads, so providing at least Java 19+.
 
 Then, until Java 21, you need to add the following property to your `application.properties` file:
 

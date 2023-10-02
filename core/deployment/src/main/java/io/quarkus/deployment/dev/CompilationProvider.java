@@ -50,6 +50,7 @@ public interface CompilationProvider extends Closeable {
         private final String targetJvmVersion;
         private final List<String> compilePluginArtifacts;
         private final List<String> compilerPluginOptions;
+        private final boolean ignoreModuleInfo;
 
         public Context(
                 String name,
@@ -64,7 +65,7 @@ public interface CompilationProvider extends Closeable {
                 String sourceJavaVersion,
                 String targetJvmVersion,
                 List<String> compilePluginArtifacts,
-                List<String> compilerPluginOptions) {
+                List<String> compilerPluginOptions, String ignoreModuleInfo) {
             this.name = name;
             this.classpath = classpath;
             this.reloadableClasspath = reloadableClasspath;
@@ -78,6 +79,7 @@ public interface CompilationProvider extends Closeable {
             this.targetJvmVersion = targetJvmVersion;
             this.compilePluginArtifacts = compilePluginArtifacts;
             this.compilerPluginOptions = compilerPluginOptions;
+            this.ignoreModuleInfo = Boolean.parseBoolean(ignoreModuleInfo);
         }
 
         public String getName() {
@@ -130,6 +132,10 @@ public interface CompilationProvider extends Closeable {
 
         public List<String> getCompilerPluginOptions() {
             return compilerPluginOptions;
+        }
+
+        public boolean ignoreModuleInfo() {
+            return ignoreModuleInfo;
         }
     }
 }

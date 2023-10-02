@@ -407,6 +407,8 @@ public abstract class QuarkusDevModeLauncher {
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.name", applicationName);
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.version", applicationVersion);
 
+        devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.live-reload.ignore-module-info", "true");
+
         devModeContext.setSourceEncoding(sourceEncoding);
         devModeContext.setCompilerOptions(compilerOptions);
 

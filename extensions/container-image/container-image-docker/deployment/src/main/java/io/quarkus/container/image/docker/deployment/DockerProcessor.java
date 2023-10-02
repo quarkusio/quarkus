@@ -46,7 +46,6 @@ public class DockerProcessor {
     private static final Logger log = Logger.getLogger(DockerProcessor.class);
     private static final String DOCKER = "docker";
     private static final String DOCKERFILE_JVM = "Dockerfile.jvm";
-    private static final String DOCKERFILE_LEGACY_JAR = "Dockerfile.legacy-jar";
     private static final String DOCKERFILE_NATIVE = "Dockerfile.native";
     private static final String DOCKER_DIRECTORY_NAME = "docker";
     static final String DOCKER_CONTAINER_IMAGE_NAME = "docker";
@@ -353,8 +352,6 @@ public class DockerProcessor {
         } else {
             if (dockerConfig.dockerfileJvmPath.isPresent()) {
                 return ProvidedDockerfile.get(Paths.get(dockerConfig.dockerfileJvmPath.get()), outputDirectory);
-            } else if (packageConfig.isLegacyJar()) {
-                return DockerfileDetectionResult.detect(DOCKERFILE_LEGACY_JAR, outputDirectory);
             } else {
                 return DockerfileDetectionResult.detect(DOCKERFILE_JVM, outputDirectory);
             }

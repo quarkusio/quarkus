@@ -147,7 +147,7 @@ For each of them, the object stored in the `ThreadLocal` is created (often large
 This problem leads to high memory usage.
 Unfortunately, it requires sophisticated code changes in the libraries themselves.
 
-=== Use @RunVirtualThread with RESTEasy Reactive
+=== Use @RunOnVirtualThread with RESTEasy Reactive
 
 This section shows a brief example of using the link:{runonvthread}[@RunOnVirtualThread] annotation.
 It also explains the various development and execution models offered by Quarkus.

@@ -8,6 +8,6 @@ import io.quarkus.reactive.datasource.ChangingCredentialsProviderBase;
 public class ChangingCredentialsProvider extends ChangingCredentialsProviderBase {
 
     public ChangingCredentialsProvider() {
-        super("sa", "yourStrong(!)Password", "user2", "user2_yourStrong(!)Password");
+        super("sa", "yourStrong(!)Password", "user2", "yourStrong(!)Password2");
     }
 }

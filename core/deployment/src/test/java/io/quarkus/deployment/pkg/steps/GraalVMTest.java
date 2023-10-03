@@ -94,6 +94,39 @@ public class GraalVMTest {
     }
 
     @Test
+    public void testGraalVM21VersionParser() {
+        Version graalVM21Dev = Version.of(Stream.of(("native-image 21 2023-09-19\n"
+                + "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n"
+                + "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)").split("\\n")));
+        assertThat(graalVM21Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1");
+        assertThat(graalVM21Dev.javaFeatureVersion).isEqualTo(21);
+        assertThat(graalVM21Dev.javaUpdateVersion).isEqualTo(0);
+    }
+
+    @Test
+    public void testGraalVM21DevVersionParser() {
+        Version graalVM21Dev = Version.of(Stream.of(("native-image 21 2023-09-19\n" +
+                "GraalVM Runtime Environment GraalVM CE 21-dev+35.1 (build 21+35-jvmci-23.1-b14)\n" +
+                "Substrate VM GraalVM CE 21-dev+35.1 (build 21+35, serial gc)").split("\\n")));
+        assertThat(graalVM21Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVM21Dev.getVersionAsString()).isEqualTo("23.1-dev");
+        assertThat(graalVM21Dev.javaFeatureVersion).isEqualTo(21);
+        assertThat(graalVM21Dev.javaUpdateVersion).isEqualTo(0);
+    }
+
+    @Test
+    public void testGraalVM22DevVersionParser() {
+        Version graalVM22Dev = Version.of(Stream.of(("native-image 22 2024-03-19\n"
+                + "GraalVM Runtime Environment GraalVM CE 22-dev+16.1 (build 22+16-jvmci-b01)\n"
+                + "Substrate VM GraalVM CE 22-dev+16.1 (build 22+16, serial gc)").split("\\n")));
+        assertThat(graalVM22Dev.distribution.name()).isEqualTo("GRAALVM");
+        assertThat(graalVM22Dev.getVersionAsString()).isEqualTo("24.0-dev");
+        assertThat(graalVM22Dev.javaFeatureVersion).isEqualTo(22);
+        assertThat(graalVM22Dev.javaUpdateVersion).isEqualTo(0);
+    }
+
+    @Test
     public void testGraalVMVersionsOlderThan() {
         assertOlderThan("GraalVM Version 19.3.6 CE", "GraalVM Version 20.2.0 (Java Version 11.0.9)");
         assertOlderThan("GraalVM Version 20.0.0 (Java Version 11.0.7)", "GraalVM Version 20.1.0 (Java Version 11.0.8)");

@@ -518,10 +518,15 @@ For example, if you have Quarkus services deployed on the following two domains,
 
 
 [[token-state-manager]]
-===== Customizing the cookie with TokenStateManager
+==== Session cookie and default TokenStateManager
 
-OIDC `CodeAuthenticationMechanism` uses the default `io.quarkus.oidc.TokenStateManager` interface implementation to keep the ID, access, and refresh tokens returned in the authorization code or to refresh grant responses in a session cookie.
-This makes Quarkus OIDC endpoints completely stateless.
+OIDC `CodeAuthenticationMechanism` uses the default `io.quarkus.oidc.TokenStateManager` interface implementation to keep the ID, access, and refresh tokens returned in the authorization code or refresh grant responses in an encrypted session cookie.
+
+It makes Quarkus OIDC endpoints completely stateless and it is recommended to follow this strategy in order to achieve the best scalability results.
+
+See <<db-token-state-manager>> and <<custom-token-state-manager>> sections of this guide for alternative approaches where tokens can be stored in the database or other server-side storage, if you prefer and have good reasons for storing the token state on the server.
+
+You can configure the default `TokenStateManager` to avoid saving an access token in the session cookie and only keep ID and refresh tokens or ID token only.
 
 An access token is only required if the endpoint needs to:
 
@@ -542,13 +547,12 @@ In such cases, use the `quarkus.oidc.token-state-manager.strategy` property to c
 
 |===
 
-
-If your chosen cookie strategy combines tokens and generates a large session cookie value that is greater than 4KB, some browsers might not be able to handle such cookie sizes.
+If your chosen session cookie strategy combines tokens and generates a large session cookie value that is greater than 4KB, some browsers might not be able to handle such cookie sizes.
 This can occur when the ID, access, and refresh tokens are JWT tokens and the selected strategy is `keep-all-tokens` or with ID and refresh tokens when the strategy is `id-refresh-token`.
-To workaround this issue,  you can set `quarkus.oidc.token-state-manager.split-tokens=true` to create a unique session token for each token.
+To workaround this issue, you can set `quarkus.oidc.token-state-manager.split-tokens=true` to create a unique session token for each token. An alternative solution is to have the tokens saved in the database, see <<db-token-state-manager>> for more information.
 
-`TokenStateManager` encrypts the tokens before storing them in the session cookie.
-The following example shows how you configure `TokenStateManager` to split the tokens and encrypt them:
+Default `TokenStateManager` encrypts the tokens before storing them in the session cookie.
+The following example shows how you configure it to split the tokens and encrypt them:
 
 [source, properties]
 ----
@@ -563,7 +567,6 @@ quarkus.oidc.token-state-manager.encryption-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34Y
 The token encryption secret must be at least 32 characters long. 
 If this key is not configured then either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.jwt.secret` will be hashed to create an encryption key.
 
-
 Configure the `quarkus.oidc.token-state-manager.encryption-secret` property if Quarkus authenticates to the OpenId Connect Provider by using one of the following authentication methods:
 
 * mTLS
@@ -573,8 +576,12 @@ Otherwise, a random key is generated, which can be problematic if the Quarkus ap
 
 You can disable token encryption in the session cookie by setting `quarkus.oidc.token-state-manager.encryption-required=false`.
 
-Register your own `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean if you need to customize the way the tokens are associated with the session cookie. 
-For example, you may want to keep the tokens in a database and have only a database pointer stored in a session cookie. 
+[[custom-token-state-manager]]
+==== Session cookie and custom TokenStateManager
+
+Register a custom `io.quarkus.oidc.TokenStateManager' implementation as an `@ApplicationScoped` CDI bean if you need to customize the way the tokens are associated with the session cookie.
+
+For example, you may want to keep the tokens in a cache cluster and have only a key stored in a session cookie.
 Note that this approach might introduce some challenges if you need to make the tokens available across multiple microservices nodes.
 
 Here is a simple example:
@@ -631,7 +638,102 @@ public class CustomTokenStateManager implements TokenStateManager {
     }
 }
 ----
-//SJ: In next iteration, propose to recompose Logout information into a new concept topic
+
+See <<token-state-manager>> for the information about the default `TokenStateManager` storing the tokens in an encrypted session cookie.
+
+See <<db-token-state-manager>> for the information about the custom `TokenStatemanager` implementation provided by Quarkus.
+
+[[db-token-state-manager]]
+==== Database TokenStateManager
+
+If you prefer to follow a stateful token storage strategy, then you can use a custom `TokenStateManager` provided by Quarkus to have your application storing tokens in a database, instead of storing them in an encrypted session cookie which is done by default, as described in the <<token-state-manager>> section.
+
+To use this feature, add the following extension to your project:
+
+:add-extension-extensions: oidc-db-token-state-manager
+include::{includes}/devtools/extension-add.adoc[]
+
+This extension will replace the default `io.quarkus.oidc.TokenStateManager' with a database-based one.
+
+OIDC Database Token State Manager is using a Reactive SQL client under the hood to avoid blocking since the authentication is likely to happen on IO thread.
+
+Depending on your database, please include and configure exactly one xref:reactive-sql-clients.adoc[Reactive SQL client].
+Following Reactive SQL clients are supported:
+
+* Reactive MS SQL client
+* Reactive MySQL client
+* Reactive PostgreSQL client
+* Reactive Oracle client
+* Reactive DB2 client
+
+IMPORTANT: Your application is not required to switch to using the Reactive SQL client if it already uses Hibernate ORM with one of the JDBC driver extensions.
+
+Let's say you already have application that is using the Hibernate ORM extension together with a PostgreSQL JDBC Driver and your datasource is configured like this:
+
+[source, properties]
+----
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=quarkus_test
+quarkus.datasource.password=quarkus_test
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+----
+
+Now, if you decided to use OIDC Database Token State Manager, you need to add following dependencies and set a reactive driver URL.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-oidc-db-token-state-manager</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-reactive-pg-client</artifactId>
+</dependency>
+----
+
+[source, properties]
+----
+quarkus.datasource.reactive.url=postgresql://localhost:5432/quarkus_test
+----
+
+And you are ready to go.
+
+By default, a database table used for storing tokens is created for you, however you can disable this option with the `quarkus.oidc.db-token-state-manager.create-database-table-if-not-exists` configuration property.
+Should you want the Hibernate ORM extension to create this table instead, you simply need to include an Entity like this one:
+
+[source, java]
+----
+package org.acme.manager;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
+@Table(name = "oidc_db_token_state_manager") <1>
+@Entity
+public class OidcDbTokenStateManagerEntity {
+
+    @Id
+    String id;
+
+    @Column(name = "id_token", length = 4000) <2>
+    String idToken;
+
+    @Column(name = "refresh_token", length = 4000)
+    String refreshToken;
+
+    @Column(name = "access_token", length = 4000)
+    String accessToken;
+
+    @Column(name = "expires_in")
+    Long expiresIn;
+}
+----
+<1> The Hibernate ORM extension will only create this table for you when database schema is generated. Please refer to the xref:hibernate-orm.adoc[Hibernate ORM] guide for more information.
+<2> You can choose column length depending on the length of your tokens.
 
 ==== Logout and expiration
 

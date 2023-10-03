@@ -19,6 +19,8 @@ public class KnownOidcProviders {
                 return github();
             case GOOGLE:
                 return google();
+            case MASTODON:
+                return mastodon();
             case MICROSOFT:
                 return microsoft();
             case SPOTIFY:
@@ -72,6 +74,25 @@ public class KnownOidcProviders {
         ret.getAuthentication().setScopes(List.of("openid", "email", "profile"));
         ret.getToken().setPrincipalClaim("name");
         ret.getToken().setVerifyAccessTokenWithUserInfo(true);
+        return ret;
+    }
+
+    private static OidcTenantConfig mastodon() {
+        OidcTenantConfig ret = new OidcTenantConfig();
+        ret.setDiscoveryEnabled(false);
+        ret.setAuthServerUrl("https://mastodon.social");
+        ret.setApplicationType(OidcTenantConfig.ApplicationType.WEB_APP);
+        ret.setAuthorizationPath("/oauth/authorize");
+        ret.setTokenPath("/oauth/token");
+
+        ret.setUserInfoPath("/api/v1/accounts/verify_credentials");
+
+        OidcTenantConfig.Authentication authentication = ret.getAuthentication();
+        authentication.setAddOpenidScope(false);
+        authentication.setScopes(List.of("read"));
+        authentication.setUserInfoRequired(true);
+        authentication.setIdTokenRequired(false);
+
         return ret;
     }
 

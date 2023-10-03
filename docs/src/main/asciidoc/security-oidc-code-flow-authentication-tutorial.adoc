@@ -8,7 +8,7 @@ With the Quarkus OpenID Connect (OIDC) extension, you can protect application HT
 
 To learn more about the OIDC authorization code flow mechanism, see xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications].
 
-To learn about how well-known social providers such as Google, GitHub, Microsoft, Twitter, Apple, Facebook, and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
+To learn about how well-known social providers such as Apple, Facebook, GitHub, Google, Mastodon, Microsoft, Twitch, Twitter (X), and Spotify can be used with Quarkus OIDC, see xref:security-openid-connect-providers.adoc[Configuring Well-Known OpenID Connect Providers].
 See also, xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus].
 
 If you want to protect your service applications by using OIDC Bearer token authentication, see xref:security-oidc-bearer-token-authentication-concept.adoc[OIDC Bearer token authentication].

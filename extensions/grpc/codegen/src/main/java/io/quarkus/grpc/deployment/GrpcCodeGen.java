@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -81,7 +82,7 @@ public class GrpcCodeGen implements CodeGenProvider {
         }
         Path outDir = context.outDir();
         Path workDir = context.workDir();
-        Set<String> protoDirs = new HashSet<>();
+        Set<String> protoDirs = new LinkedHashSet<>();
 
         try {
             List<String> protoFiles = new ArrayList<>();
@@ -108,6 +109,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                     // proto file to the list of directories to include (it's a set, so no duplicate).
                     protoFiles.add(pathToProtoFile.toString());
                     protoDirs.add(pathToParentDir.toString());
+
                 }
             }
 
@@ -119,6 +121,7 @@ public class GrpcCodeGen implements CodeGenProvider {
 
                 List<String> command = new ArrayList<>();
                 command.add(executables.protoc.toString());
+
                 for (String protoDir : protoDirs) {
                     command.add(String.format("-I=%s", escapeWhitespace(protoDir)));
                 }
@@ -298,7 +301,9 @@ public class GrpcCodeGen implements CodeGenProvider {
                                         .normalize().toAbsolutePath();
                                 try {
                                     Files.createDirectories(protoUnzipDir);
-                                    protoDirectories.add(protoUnzipDir.toString());
+                                    if (filesToInclude.isEmpty()) {
+                                        protoDirectories.add(protoUnzipDir.toString());
+                                    }
                                 } catch (IOException e) {
                                     throw new GrpcCodeGenException("Failed to create directory: " + protoUnzipDir, e);
                                 }

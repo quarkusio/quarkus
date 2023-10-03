@@ -1,7 +1,7 @@
 package io.quarkus.deployment.pkg.steps;
 
+import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.GRAALVM;
 import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.MANDREL;
-import static io.quarkus.deployment.pkg.steps.GraalVM.Distribution.ORACLE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
@@ -19,20 +19,20 @@ public class GraalVMTest {
     @Test
     public void testGraalVMVersionDetected() {
         // Version detection after: https://github.com/oracle/graal/pull/6302 (3 lines of version output)
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
                         + "OpenJDK Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
                         + "OpenJDK 64-Bit Server VM Mandrel-23.0.0-dev (build 17.0.6+10, mixed mode)").split("\\n"))));
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
                         + "GraalVM Runtime Environment Mandrel-23.0.0-dev (build 17.0.6+10)\n"
                         + "Substrate VM Mandrel-23.0.0-dev (build 17.0.6+10, serial gc)").split("\\n"))));
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.7 2023-04-18\n"
                         + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
                         + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)").split("\\n"))));
         // should also work when the image is not around and we have to download it
-        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", ORACLE), MANDREL,
+        assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(
                         Stream.of(("Unable to find image 'quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-17' locally\n"
                                 + "jdk-17: Pulling from quarkus/ubi-quarkus-mandrel-builder-image\n"
@@ -57,31 +57,31 @@ public class GraalVMTest {
                                 + "OpenJDK Runtime Environment Mandrel-23.0.0.0-Final (build 17.0.7+7)\n"
                                 + "OpenJDK 64-Bit Server VM Mandrel-23.0.0.0-Final (build 17.0.7+7, mixed mode)")
                                 .split("\\n"))));
-        assertVersion(new Version("GraalVM 23.0", "23.0", ORACLE), ORACLE,
+        assertVersion(new Version("GraalVM 23.0", "23.0", GRAALVM), GRAALVM,
                 Version.of(Stream.of(("native-image 20 2023-03-21\n"
                         + "GraalVM Runtime Environment GraalVM CE (build 20+34-jvmci-23.0-b10)\n"
                         + "Substrate VM GraalVM CE (build 20+34, serial gc)").split("\\n"))));
 
         // Older version parsing
-        assertVersion(new Version("GraalVM 20.1", "20.1", ORACLE), ORACLE,
+        assertVersion(new Version("GraalVM 20.1", "20.1", GRAALVM), GRAALVM,
                 Version.of(Stream.of("GraalVM Version 20.1.0 (Java Version 11.0.7)")));
-        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1.Alpha2 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.1.0.1", "20.1.0.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.1.0.1-Final 56d4ee1b28 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 21.0", "21.0", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.0", "21.0", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 21.0.0.0-0b3 (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 20.3.1.2", "20.3.1.2", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 20.3.1.2", "20.3.1.2", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM Version 20.3.1.2-dev (Mandrel Distribution) (Java Version 11.0.8)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("native-image 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), MANDREL, Version
                 .of(Stream.of("GraalVM 21.1.0.0-Final (Mandrel Distribution) (Java Version 11.0.11+9)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), ORACLE, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), GRAALVM, Version
                 .of(Stream.of("GraalVM 21.1.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(new Version("GraalVM 21.1", "21.1", ORACLE), ORACLE, Version
+        assertVersion(new Version("GraalVM 21.1", "21.1", GRAALVM), GRAALVM, Version
                 .of(Stream.of("native-image 21.1.0.0 Java 11 CE (Java Version 11.0.11+5-jvmci-21.1-b02)")));
-        assertVersion(new Version("GraalVM 21.2", "21.2", ORACLE), MANDREL, Version
+        assertVersion(new Version("GraalVM 21.2", "21.2", GRAALVM), MANDREL, Version
                 .of(Stream.of("native-image 21.2.0.0-Final Mandrel Distribution (Java Version 11.0.12+7)")));
     }
 

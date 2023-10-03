@@ -68,7 +68,7 @@ public final class GraalVM {
                     graalVersion = graalVersion + "-dev";
                 }
                 String mandrelVersion = mandrelVersion(vendorVersion);
-                Distribution dist = isMandrel(vendorVersion) ? Distribution.MANDREL : Distribution.ORACLE;
+                Distribution dist = isMandrel(vendorVersion) ? Distribution.MANDREL : Distribution.GRAALVM;
                 String versNum = (dist == Distribution.MANDREL ? mandrelVersion : graalVersion);
                 if (versNum == null) {
                     return UNKNOWN_VERSION;
@@ -147,12 +147,12 @@ public final class GraalVM {
                 "(GraalVM|native-image)( Version)? " + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?" +
                         "(\\(Java Version (?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)?$");
 
-        static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.ORACLE);
-        static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.ORACLE);
-        public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", Distribution.ORACLE);
-        public static final Version VERSION_22_2_0 = new Version("GraalVM 22.2.0", "22.2.0", Distribution.ORACLE);
-        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", Distribution.ORACLE);
-        public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", Distribution.ORACLE);
+        static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.GRAALVM);
+        static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);
+        public static final Version VERSION_22_3_0 = new Version("GraalVM 22.3.0", "22.3.0", Distribution.GRAALVM);
+        public static final Version VERSION_22_2_0 = new Version("GraalVM 22.2.0", "22.2.0", Distribution.GRAALVM);
+        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", Distribution.GRAALVM);
+        public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", Distribution.GRAALVM);
 
         public static final Version MINIMUM = VERSION_22_2_0;
         public static final Version CURRENT = VERSION_23_0_0;
@@ -272,7 +272,7 @@ public final class GraalVM {
                             version,
                             jFeature,
                             jUpdate,
-                            isMandrel(distro) ? Distribution.MANDREL : Distribution.ORACLE);
+                            isMandrel(distro) ? Distribution.MANDREL : Distribution.GRAALVM);
                 }
             }
 
@@ -313,7 +313,7 @@ public final class GraalVM {
     }
 
     enum Distribution {
-        ORACLE,
+        GRAALVM,
         MANDREL;
     }
 }

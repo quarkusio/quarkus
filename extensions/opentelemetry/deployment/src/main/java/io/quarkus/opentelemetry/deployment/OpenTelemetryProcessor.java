@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
@@ -19,12 +20,14 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.exporter.otlp.internal.OtlpSpanExporterProvider;
+import io.opentelemetry.instrumentation.annotations.AddingSpanAttributes;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider;
@@ -42,6 +45,7 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.processor.Transformation;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -64,6 +68,7 @@ import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.build.ExporterType;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.intrumentation.InstrumentationRecorder;
 import io.quarkus.runtime.LaunchMode;
@@ -76,8 +81,17 @@ public class OpenTelemetryProcessor {
     private static final DotName LEGACY_WITH_SPAN = DotName.createSimple(
             io.opentelemetry.extension.annotations.WithSpan.class.getName());
     private static final DotName WITH_SPAN = DotName.createSimple(WithSpan.class.getName());
+    private static final DotName ADD_SPAN_ATTRIBUTES = DotName.createSimple(AddingSpanAttributes.class.getName());
+    private static final Predicate<AnnotationInstance> isAddSpanAttribute = new Predicate<>() {
+        @Override
+        public boolean test(AnnotationInstance annotationInstance) {
+            return annotationInstance.name().equals(ADD_SPAN_ATTRIBUTES);
+        }
+    };
     private static final DotName SPAN_KIND = DotName.createSimple(SpanKind.class.getName());
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
+    private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
+            .createSimple(AddingSpanAttributesInterceptor.class.getName());
     private static final DotName SPAN_ATTRIBUTE = DotName.createSimple(SpanAttribute.class.getName());
 
     @BuildStep
@@ -168,11 +182,15 @@ public class OpenTelemetryProcessor {
                 new InterceptorBindingRegistrar() {
                     @Override
                     public List<InterceptorBinding> getAdditionalBindings() {
-                        return List.of(InterceptorBinding.of(WithSpan.class, Set.of("value", "kind")));
+                        return List.of(
+                                InterceptorBinding.of(WithSpan.class, Set.of("value", "kind")),
+                                InterceptorBinding.of(AddingSpanAttributes.class, Set.of("value")));
                     }
                 }));
 
-        additionalBeans.produce(new AdditionalBeanBuildItem(WithSpanInterceptor.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(
+                WithSpanInterceptor.class,
+                AddingSpanAttributesInterceptor.class));
     }
 
     @BuildStep
@@ -209,11 +227,21 @@ public class OpenTelemetryProcessor {
 
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(transformationContext -> {
             AnnotationTarget target = transformationContext.getTarget();
+            Transformation transform = transformationContext.transform();
             if (target.kind().equals(AnnotationTarget.Kind.CLASS)) {
                 if (target.asClass().name().equals(WITH_SPAN_INTERCEPTOR)) {
-                    transformationContext.transform().add(WITH_SPAN).done();
+                    transform.add(WITH_SPAN);
+                } else if (target.asClass().name().equals(ADD_SPAN_ATTRIBUTES_INTERCEPTOR)) {
+                    transform.add(ADD_SPAN_ATTRIBUTES);
+                }
+            } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
+                MethodInfo methodInfo = target.asMethod();
+                // WITH_SPAN_INTERCEPTOR and ADD_SPAN_ATTRIBUTES must not be applied at the same time and the first has priority.
+                if (methodInfo.hasAnnotation(WITH_SPAN) && methodInfo.hasAnnotation(ADD_SPAN_ATTRIBUTES)) {
+                    transform.remove(isAddSpanAttribute);
                 }
             }
+            transform.done();
         }));
     }
 

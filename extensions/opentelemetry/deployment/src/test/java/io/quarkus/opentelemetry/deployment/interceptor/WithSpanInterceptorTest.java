@@ -1,11 +1,15 @@
-package io.quarkus.opentelemetry.deployment;
+package io.quarkus.opentelemetry.deployment.interceptor;
 
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.api.trace.StatusCode.ERROR;
 import static io.quarkus.opentelemetry.deployment.common.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
 
@@ -24,9 +28,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.extension.annotations.SpanAttribute;
-import io.opentelemetry.extension.annotations.WithSpan;
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import io.opentelemetry.sdk.trace.internal.data.ExceptionEventData;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestSpanExporterProvider;
 import io.quarkus.runtime.StartupEvent;
@@ -34,7 +39,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.ext.web.Router;
 
-public class WithSpanLegacyInterceptorTest {
+public class WithSpanInterceptorTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(
@@ -62,6 +67,7 @@ public class WithSpanLegacyInterceptorTest {
         List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
         assertEquals("SpanBean.span", spanItems.get(0).getName());
         assertEquals(INTERNAL, spanItems.get(0).getKind());
+        assertNotEquals(ERROR, spanItems.get(0).getStatus().getStatusCode());
     }
 
     @Test
@@ -112,11 +118,35 @@ public class WithSpanLegacyInterceptorTest {
         final SpanData server = getSpanByKindAndParentId(spans, SERVER, client.getSpanId());
     }
 
+    @Test
+    void spanWithException() {
+        try {
+            spanBean.spanWithException();
+            fail("Exception expected");
+        } catch (Exception e) {
+            assertThrows(RuntimeException.class, () -> {
+                throw e;
+            });
+        }
+        List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
+        assertEquals("SpanBean.spanWithException", spanItems.get(0).getName());
+        assertEquals(INTERNAL, spanItems.get(0).getKind());
+        assertEquals(ERROR, spanItems.get(0).getStatus().getStatusCode());
+        assertEquals(1, spanItems.get(0).getEvents().size());
+        assertEquals("spanWithException for tests",
+                ((ExceptionEventData) spanItems.get(0).getEvents().get(0)).getException().getMessage());
+    }
+
     @ApplicationScoped
     public static class SpanBean {
         @WithSpan
         public void span() {
 
+        }
+
+        @WithSpan
+        public void spanWithException() {
+            throw new RuntimeException("spanWithException for tests");
         }
 
         @WithSpan("name")

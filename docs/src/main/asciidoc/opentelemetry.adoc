@@ -496,8 +496,12 @@ The instrumentation documented in this section has been tested with Quarkus and 
 Annotating a method in any CDI aware bean with the `io.opentelemetry.instrumentation.annotations.WithSpan`
 annotation will create a new Span and establish any required relationships with the current Trace context.
 
+Annotating a method in any CDI aware bean with the `io.opentelemetry.instrumentation.annotations.AddingSpanAttributes` will not create a new span but will add annotated method parameters to attributes in the current span.
+
+If a method is annotated by mistake with `@AddingSpanAttributes` and `@WithSpan` annotations, the `@WithSpan` annotation will take precedence.
+
 Method parameters can be annotated with the `io.opentelemetry.instrumentation.annotations.SpanAttribute` annotation to
-indicate which method parameters should be part of the Trace.
+indicate which method parameters should be part of the span. The parameter name can be customized as well.
 
 Example:
 [source,java]
@@ -521,6 +525,11 @@ class SpanBean {
 
     @WithSpan
     void spanArgs(@SpanAttribute(value = "arg") String arg) {
+
+    }
+
+    @AddingSpanAttributes
+    void addArgumentToExistingSpan(@SpanAttribute(value = "arg") String arg) {
 
     }
 }

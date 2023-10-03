@@ -2,6 +2,7 @@ package io.quarkus.deployment.pkg.steps;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -62,7 +63,7 @@ public final class GraalVM {
                 String vendorVersion = secondMatcher.group(VENDOR_VERSION_GROUP);
 
                 String buildInfo = secondMatcher.group(BUILD_INFO_GROUP);
-                String graalVersion = graalVersion(buildInfo);
+                String graalVersion = graalVersion(buildInfo, v.feature());
                 if (vendorVersion.contains("-dev")) {
                     graalVersion = graalVersion + "-dev";
                 }
@@ -106,7 +107,7 @@ public final class GraalVM {
             return null;
         }
 
-        private static String graalVersion(String buildInfo) {
+        private static String graalVersion(String buildInfo, int jdkFeature) {
             if (buildInfo == null) {
                 return null;
             }
@@ -115,9 +116,22 @@ public final class GraalVM {
                 return null;
             }
             String version = buildInfo.substring(idx + JVMCI_BUILD_PREFIX.length());
-            return matchVersion(version);
+            Matcher versMatcher = VERSION_PATTERN.matcher(version);
+            if (versMatcher.find()) {
+                return matchVersion(version);
+            } else {
+                return GRAAL_MAPPING.get(jdkFeature);
+            }
         }
     }
+
+    // Temporarily work around https://github.com/quarkusio/quarkus/issues/36246,
+    // till we have a consensus on how to move forward in
+    // https://github.com/quarkusio/quarkus/issues/34161
+    private static final Map<Integer, String> GRAAL_MAPPING = Map.of(22, "24.0",
+            23, "24.1",
+            24, "25.0",
+            25, "25.1");
 
     public static final class Version implements Comparable<Version> {
 

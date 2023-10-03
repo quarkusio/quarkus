@@ -392,7 +392,12 @@ public class QuarkusProdModeTest
         Class<?> testClass = extensionContext.getRequiredTestClass();
 
         try {
-            outputDir = Files.createTempDirectory("quarkus-prod-mode-test");
+            Optional<Path> projectBuildDir = Optional.ofNullable(System.getProperty("project.build.directory")) //maven
+                    .or(() -> Optional.ofNullable(System.getProperty("buildDir"))) //gradle
+                    .map(Path::of);
+
+            outputDir = projectBuildDir.isPresent() ? Files.createTempDirectory(projectBuildDir.get(), "quarkus-prod-mode-test")
+                    : Files.createTempDirectory("quarkus-prod-mode-test");
             Path deploymentDir = outputDir.resolve("deployment-result");
             buildDir = outputDir.resolve("build-result");
 

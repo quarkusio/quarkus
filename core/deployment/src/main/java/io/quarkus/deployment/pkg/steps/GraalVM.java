@@ -265,8 +265,11 @@ public final class GraalVM {
          * Returns the Mandrel/GraalVM version as a string. e.g. 21.3.0-rc1
          */
         public String getVersionAsString() {
-            return String.join(Arrays.stream(versions).mapToObj(Integer::toString).collect(Collectors.joining()), ".") + "-"
-                    + suffix;
+            String version = Arrays.stream(versions).mapToObj(Integer::toString).collect(Collectors.joining("."));
+            if (suffix != null) {
+                return version + "-" + suffix;
+            }
+            return version;
         }
 
         @Override

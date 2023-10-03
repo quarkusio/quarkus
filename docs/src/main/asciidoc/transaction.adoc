@@ -369,7 +369,7 @@ In cloud environments where persistent storage is not available, such as when ap
 
 IMPORTANT: While there are several benefits to using a database to store transaction logs, you might notice a reduction in performance compared with using the file system to store the logs.
 
-Quarkus allows the following JDBC-specific configuration of the object store included in `quarkus.transacion-manager.object-store.<property>` properties, where <property> can be:
+Quarkus allows the following JDBC-specific configuration of the object store included in `quarkus.transaction-manager.object-store.<property>` properties, where <property> can be:
 
 
 * `type` (_string_): Configure this property to `jdbc` to enable usage of a Quarkus JDBC datasource for transaction logging.

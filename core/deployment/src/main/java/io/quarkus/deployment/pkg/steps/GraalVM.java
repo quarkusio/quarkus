@@ -63,9 +63,15 @@ public final class GraalVM {
 
                 String buildInfo = secondMatcher.group(BUILD_INFO_GROUP);
                 String graalVersion = graalVersion(buildInfo);
+                if (vendorVersion.contains("-dev")) {
+                    graalVersion = graalVersion + "-dev";
+                }
                 String mandrelVersion = mandrelVersion(vendorVersion);
                 Distribution dist = isMandrel(vendorVersion) ? Distribution.MANDREL : Distribution.ORACLE;
                 String versNum = (dist == Distribution.MANDREL ? mandrelVersion : graalVersion);
+                if (versNum == null) {
+                    return UNKNOWN_VERSION;
+                }
                 return new Version(lines.stream().collect(Collectors.joining("\n")),
                         versNum, v.feature(), v.update(), dist);
             } else {
@@ -226,7 +232,10 @@ public final class GraalVM {
 
             if (lines.size() == 3) {
                 // Attempt to parse the new 3-line version scheme first.
-                return VersionParseHelper.parse(lines);
+                Version parsedVersion = VersionParseHelper.parse(lines);
+                if (parsedVersion != VersionParseHelper.UNKNOWN_VERSION) {
+                    return parsedVersion;
+                }
             } else if (lines.size() == 1) {
                 // Old, single line version parsing logic
                 final String line = lines.get(0);

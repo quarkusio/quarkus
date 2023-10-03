@@ -120,7 +120,7 @@ TIP: You can also send access tokens issued by `Google` to `quarkus.oidc.applica
 Create a https://joinmastodon.org/[Mastodon account]. You must https://joinmastodon.org/servers[pick a server], for example, `mastodon.social`.
 Select a `Development` option in you account and register an application, for example:
 
-image::oidc-mastodon-registere-app.png[role="thumb"]
+image::oidc-mastodon-register-app.png[role="thumb"]
 
 Select the registered application:
 

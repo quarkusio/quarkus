@@ -84,7 +84,10 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
                 .redirectOutput(logOutput)
                 // Should prevent "fragmented" output (parts of stdout and stderr interleaved)
                 .redirectErrorStream(true);
-        if (System.getenv("JAVA_HOME") == null) {
+        if (System.getenv("GRADLE_JAVA_HOME") != null) {
+            // JAVA_HOME for Gradle explicitly configured.
+            pb.environment().put("JAVA_HOME", System.getenv("GRADLE_JAVA_HOME"));
+        } else if (System.getenv("JAVA_HOME") == null || System.getenv("JAVA_HOME").isEmpty()) {
             // This helps running the tests in IntelliJ w/o configuring an explicit JAVA_HOME env var.
             pb.environment().put("JAVA_HOME", System.getProperty("java.home"));
         }

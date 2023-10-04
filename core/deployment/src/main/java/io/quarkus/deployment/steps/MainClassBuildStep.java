@@ -77,6 +77,7 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ApplicationLifecycleManager;
+import io.quarkus.runtime.ExecutionModeManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.NativeImageRuntimePropertiesRecorder;
 import io.quarkus.runtime.PreventFurtherStepsException;
@@ -106,6 +107,14 @@ public class MainClassBuildStep {
             void.class, StartupContext.class);
     public static final MethodDescriptor CONFIGURE_STEP_TIME_ENABLED = ofMethod(StepTiming.class.getName(), "configureEnabled",
             void.class);
+    public static final MethodDescriptor RUNTIME_EXECUTION_STATIC_INIT = ofMethod(ExecutionModeManager.class.getName(),
+            "staticInit", void.class);
+    public static final MethodDescriptor RUNTIME_EXECUTION_RUNTIME_INIT = ofMethod(ExecutionModeManager.class.getName(),
+            "runtimeInit", void.class);
+    public static final MethodDescriptor RUNTIME_EXECUTION_RUNNING = ofMethod(ExecutionModeManager.class.getName(),
+            "running", void.class);
+    public static final MethodDescriptor RUNTIME_EXECUTION_UNSET = ofMethod(ExecutionModeManager.class.getName(),
+            "unset", void.class);
     public static final MethodDescriptor CONFIGURE_STEP_TIME_START = ofMethod(StepTiming.class.getName(), "configureStart",
             void.class);
     private static final DotName QUARKUS_APPLICATION = DotName.createSimple(QuarkusApplication.class.getName());
@@ -170,6 +179,7 @@ public class MainClassBuildStep {
                 lm);
 
         mv.invokeStaticMethod(CONFIGURE_STEP_TIME_ENABLED);
+        mv.invokeStaticMethod(RUNTIME_EXECUTION_STATIC_INIT);
 
         mv.invokeStaticMethod(ofMethod(Timing.class, "staticInitStarted", void.class, boolean.class),
                 mv.load(launchMode.isAuxiliaryApplication()));
@@ -227,6 +237,7 @@ public class MainClassBuildStep {
                     mv.load(i.getKey()), mv.load(i.getValue()));
         }
         mv.invokeStaticMethod(ofMethod(NativeImageRuntimePropertiesRecorder.class, "doRuntime", void.class));
+        mv.invokeStaticMethod(RUNTIME_EXECUTION_RUNTIME_INIT);
 
         // Set the SSL system properties
         if (!javaLibraryPathAdditionalPaths.isEmpty()) {
@@ -267,6 +278,8 @@ public class MainClassBuildStep {
                     recordableConstructorBuildItems,
                     loaders, constants, gizmoOutput, startupContext, tryBlock);
         }
+
+        tryBlock.invokeStaticMethod(RUNTIME_EXECUTION_RUNNING);
 
         // Startup log messages
         List<String> featureNames = new ArrayList<>();
@@ -324,6 +337,7 @@ public class MainClassBuildStep {
 
         mv = file.getMethodCreator("doStop", void.class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
+        mv.invokeStaticMethod(RUNTIME_EXECUTION_UNSET);
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
         mv.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         mv.returnValue(null);

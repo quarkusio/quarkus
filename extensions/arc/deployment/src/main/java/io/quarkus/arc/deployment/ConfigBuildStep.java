@@ -83,7 +83,7 @@ public class ConfigBuildStep {
     private static final Logger LOGGER = Logger.getLogger(ConfigBuildStep.class.getName());
 
     private static final DotName MP_CONFIG = DotName.createSimple(Config.class.getName());
-    private static final DotName MP_CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
+    static final DotName MP_CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
     private static final DotName MP_CONFIG_PROPERTIES_NAME = DotName.createSimple(ConfigProperties.class.getName());
     private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
 

@@ -1,5 +1,7 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
@@ -8,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -15,12 +18,15 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.banner.BannerConfig;
 import io.quarkus.builder.Version;
+import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsTest;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.TipOfTheDayBuildItem;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.runtime.BannerRecorder;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -28,6 +34,23 @@ import io.quarkus.runtime.util.ClassPathUtils;
 public class BannerProcessor {
 
     private static final Logger logger = Logger.getLogger(BannerProcessor.class);
+
+    @BuildStep
+    void tips(BuildProducer<TipOfTheDayBuildItem> tipOfTheDayBuildItem) {
+        tipOfTheDayBuildItem.produce(
+                new TipOfTheDayBuildItem("You can find additional Quarkus extensions in Quarkiverse: https://quarkiverse.io"));
+    }
+
+    @BuildStep(onlyIf = IsDevelopment.class)
+    @Record(ExecutionTime.STATIC_INIT)
+    void tipOfTheDay(
+            BannerRecorder recorder,
+            List<TipOfTheDayBuildItem> tipOfTheDayBuildItems) {
+        if (!tipOfTheDayBuildItems.isEmpty()) {
+            recorder.setTipOfTheDay(
+                    tipOfTheDayBuildItems.get((int) (Math.random() * tipOfTheDayBuildItems.size())).getMessage());
+        }
+    }
 
     @BuildStep(onlyIfNot = { IsTest.class })
     @Record(ExecutionTime.RUNTIME_INIT)

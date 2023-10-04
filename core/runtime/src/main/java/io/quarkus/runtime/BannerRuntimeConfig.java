@@ -12,4 +12,10 @@ public class BannerRuntimeConfig {
      */
     @ConfigItem(defaultValue = "true")
     public boolean enabled;
+
+    /**
+     * Display the tip of the day, next to the banner
+     */
+    @ConfigItem(defaultValue = "true")
+    public boolean tips;
 }

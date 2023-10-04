@@ -90,7 +90,8 @@ public class OpenApiTestCase {
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
 
-        String uniSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE, uniObj.getJsonObject("get").getJsonObject("responses"),
+        String uniSchemaType = schemaType("200", DEFAULT_MEDIA_TYPE_PRIMITAVE,
+                uniObj.getJsonObject("get").getJsonObject("responses"),
                 schemasObj);
         // make sure String, CompletionStage<String> and Uni<String> are detected the same
         Assertions.assertEquals(testSchemaType,

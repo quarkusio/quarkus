@@ -4,11 +4,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A thread-safe buffer allocator that pools heap buffers.<br>
- * It's currently implemented using a concurrent linked stack, but the users shouldn't rely on how it's implemented,
- * as it's subject to change. Conversely, users can rely on the fact that it's thread-safe.
+ * It's currently implemented using a concurrent linked stack and it's not designed to handle high concurrency
+ * nor a large number of buffers.<br>
+ * It's primary purpose is to reduce the allocation pressure of {@link RunnerClassLoader} during the startup phase
+ * where frequent and large heap allocations can both slow down the startup and increase the memory footprint.
  *
- * Users which relies on its buffer API, but doesn't need anymore to pool buffers, can call {@link #disablePooling()}
- * which will make it behave as if it was disabled from the start and release any buffer that was still pooled.
  */
 public final class PooledBufferAllocator {
 
@@ -21,7 +21,7 @@ public final class PooledBufferAllocator {
      */
     public static final class Buffer {
         private byte[] data;
-        private int length;
+        private final int length;
         private Buffer next;
 
         private Buffer(byte[] data, int length) {
@@ -31,6 +31,7 @@ public final class PooledBufferAllocator {
         }
 
         private Buffer() {
+            this.length = 0;
         }
 
         public byte[] array() {
@@ -48,6 +49,7 @@ public final class PooledBufferAllocator {
             byte[] data = this.data;
             // it's forbidden to modify EMPTY
             if (this != EMPTY) {
+                // not necessary, but make explicit to the GC that the data isn't referenced anymore by the old node
                 this.data = null;
             }
             if (data == null || data.length < requiredCapacity) {
@@ -71,13 +73,12 @@ public final class PooledBufferAllocator {
 
     private Buffer popBuffer() {
         AtomicReference<Buffer> top = topStack;
-        Buffer topBuffer;
+        Buffer topBuffer = top.get();
         do {
-            topBuffer = top.get();
             if (topBuffer == EMPTY || topBuffer == null) {
                 return EMPTY;
             }
-        } while (!top.compareAndSet(topBuffer, topBuffer.next));
+        } while (topBuffer != (topBuffer = top.compareAndExchange(topBuffer, topBuffer.next)));
         topBuffer.next = null;
         assert topBuffer != EMPTY;
         return topBuffer;
@@ -90,15 +91,14 @@ public final class PooledBufferAllocator {
      */
     public void release(Buffer buffer) {
         final AtomicReference<Buffer> top = topStack;
-        Buffer topBuffer;
+        Buffer topBuffer = top.get();
         do {
-            topBuffer = top.get();
             if (topBuffer == EMPTY) {
                 return;
             }
             // implicit throw NPE, no need to check upfront
             buffer.next = topBuffer;
-        } while (!top.compareAndSet(topBuffer, buffer));
+        } while (topBuffer != (topBuffer = top.compareAndExchange(topBuffer, buffer)));
     }
 
     public void disablePooling() {

@@ -612,6 +612,28 @@ quarkus.kubernetes.app-config-map=<name of the config map containing the configu
 When these properties are used, the generated manifests will contain everything required.
 The application config volumes will be created using path: `/mnt/app-secret` and `/mnt/app-config-map` for secrets and configmaps respectively.
 
+[NOTE]
+====
+
+For this to work, the secret or configmap must contain an entry with a configuration file name recognized by Quarkus (e.g. `config.properties`)
+as its key and the file content as its value.
+
+To create such a secret from the existing properties file `config.properties` in the active Kubernetes cluster via `kubectl`, use
+
+[source,bash]
+----
+kubectl create secret generic <name of the secret containing the configuration> --from-file config.properties
+----
+
+For a config map, the command would be
+
+[source,bash]
+----
+kubectl create configmap <name of the config map containing the configuration> --from-file config.properties
+----
+
+====
+
 Note: Users may use both properties at the same time.
 
 === Changing the number of replicas:

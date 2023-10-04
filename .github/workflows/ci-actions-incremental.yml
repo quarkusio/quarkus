@@ -277,6 +277,7 @@ jobs:
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
+      JAVA_VERSION_GRADLE: ${{ matrix.java.java-version-gradle || matrix.java.java-version }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.calculate-test-jobs.outputs.jvm_matrix) }}
@@ -309,10 +310,25 @@ jobs:
         if: "!startsWith(matrix.java.os-name, 'windows') && !startsWith(matrix.java.os-name, 'macos')"
         run: .github/ci-prerequisites.sh
 
-      - name: Set up JDK ${{ matrix.java.java-version }}
+      - name: Set up JDK ${{ env.JAVA_VERSION_GRADLE }} for Gradle (if needed)
+        if: ${{ env.JAVA_VERSION_GRADLE != matrix.java.java-version }}
         uses: actions/setup-java@v3
         with:
           distribution: temurin
+          java-version: ${{ matrix.java.java-version-gradle }}
+          architecture: ${{ matrix.java.architecture || 'x64' }}
+
+      - name: Set up GRADLE_JAVA_HOME (if needed)
+        if: ${{ env.JAVA_VERSION_GRADLE != matrix.java.java-version }}
+        run: |
+          JAVA_HOME_ARCHITECTURE=$(echo "${{ matrix.java.architecture || 'x64' }}" | tr [:lower:] [:upper:])
+          GRADLE_JAVA_HOME_VARIABLE="JAVA_HOME_${JAVA_VERSION_GRADLE}_${JAVA_HOME_ARCHITECTURE}"
+          echo "GRADLE_JAVA_HOME=${!GRADLE_JAVA_HOME_VARIABLE}" >> "$GITHUB_ENV"
+
+      - name: Set up JDK ${{ matrix.java.java-version }}
+        uses: actions/setup-java@v3
+        with:
+          distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version }}
           architecture: ${{ matrix.java.architecture || 'x64' }}
 

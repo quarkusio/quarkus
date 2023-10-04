@@ -16,7 +16,7 @@ Quarkus supports the JBoss Logging API as well as multiple other logging APIs, s
 You can use any of the <<logging-apis,following APIs>>:
 
 * link:https://github.com/jboss-logging/jboss-logging[JBoss Logging]
-* JDK `java.util.logging` (JUL)
+* link:https://docs.oracle.com/en/java/javase/11/docs/api/java.logging/java/util/logging/package-summary.html[JDK `java.util.logging` (JUL)]
 * link:https://www.slf4j.org/[SLF4J]
 * link:https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
 * link:https://logging.apache.org/log4j/2.x/[Apache Log4j 2]
@@ -241,13 +241,35 @@ All potential properties are listed in the <<loggingConfigurationReference,loggi
 
 === Logging categories
 
-Logging is done on a per-category basis, with each category being configured independently.
-A category configuration recursively applies to all subcategories of that category unless there is a more specific matching sub-category configuration.
+Logging is configured on a per-category basis, with each category being configured independently.
+Configuration for a category applies recursively to all subcategories unless there is a more specific subcategory configuration.
 
-The parent of all logging categories is called the "root category".
-This category, being the ultimate parent, may contain configuration which applies globally to all other categories. This includes the globally configured handlers and formatters.
+The parent of all logging categories is called the "root category."
+As the ultimate parent, this category might contain a configuration that applies globally to all other categories.
+This includes the globally configured handlers and formatters.
 
-Thus, configurations made under `quarkus.log.console.*`, `quarkus.log.file.*`, and `quarkus.log.syslog.*`, are global and apply for all categories. For more information, see <<loggingConfigurationReference>>.
+.An example of a global configuration that applies to all categories:
+====
+[source, properties]
+----
+quarkus.log.handlers=console,mylog
+----
+
+In this example, the root category is configured to use two handlers: `console` and `mylog`.
+====
+
+.An example of a per-category configuration:
+====
+[source, properties]
+----
+quarkus.log.category."org.apache.kafka.clients".level=INFO
+quarkus.log.category."org.apache.kafka.common.utils".level=INFO
+----
+
+This example shows how you can configure the minimal log level on the categories `org.apache.kafka.clients` and `org.apache.kafka.common.utils`.
+====
+
+For more information, see <<loggingConfigurationReference>>.
 
 If you want to configure something extra for a specific category, create a named handler like `quarkus.log.handler.[console|file|syslog].<your-handler-name>.*` and set it up for that category by using `quarkus.log.category.<my-category>.handlers`.
 

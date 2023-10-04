@@ -11,19 +11,19 @@ import io.quarkus.runtime.annotations.ConfigItem;
 public class DevServicesBuildTimeConfig {
 
     /**
-     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
-     * by default, unless there is an existing configuration present.
+     * If DevServices has been explicitly enabled or disabled.
+     * DevServices is generally enabled by default unless an existing configuration is present.
      *
-     * When DevServices is enabled Quarkus will attempt to automatically configure and start
-     * a database when running in Dev or Test mode.
+     * When DevServices is enabled, Quarkus will attempt to automatically configure and start a database when running in Dev or
+     * Test mode.
      */
     @ConfigItem
     public Optional<Boolean> enabled = Optional.empty();
 
     /**
-     * The container image name to use, for container based DevServices providers.
+     * The container image name for container-based DevServices providers.
      *
-     * If the provider is not container based (e.g. a H2 Database) then this has no effect.
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     @ConfigItem
     public Optional<String> imageName;
@@ -37,8 +37,8 @@ public class DevServicesBuildTimeConfig {
     /**
      * Generic properties that are passed for additional container configuration.
      * <p>
-     * Properties defined here are database specific and are interpreted specifically in each database dev service
-     * implementation.
+     * Properties defined here are database-specific
+     * and are interpreted specifically in each database dev service implementation.
      */
     @ConfigItem
     public Map<String, String> containerProperties;
@@ -58,15 +58,15 @@ public class DevServicesBuildTimeConfig {
     public OptionalInt port;
 
     /**
-     * The container start command to use, for container based DevServices providers.
+     * The container start command to use for container-based DevServices providers.
      *
-     * If the provider is not container based (e.g. a H2 Database) then this has no effect.
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     @ConfigItem
     public Optional<String> command;
 
     /**
-     * The name of the database to use if this Dev Service supports overriding it.
+     * The database name to use if this Dev Service supports overriding it.
      */
     @ConfigItem
     public Optional<String> dbName;
@@ -84,22 +84,23 @@ public class DevServicesBuildTimeConfig {
     public Optional<String> password;
 
     /**
-     * Path to a SQL script that will be loaded from the classpath and applied to the Dev Service database
+     * The path to a SQL script to be loaded from the classpath and applied to the Dev Service database.
      *
-     * If the provider is not container based (e.g. an H2 or Derby Database) then this has no effect.
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     @ConfigItem
     public Optional<String> initScriptPath;
 
     /**
-     * The volumes to be mapped to the container. The map key corresponds to the host location and the map value is the
-     * container location. If the host location starts with "classpath:", then the mapping will load the resource from the
-     * classpath with read-only permission.
+     * The volumes to be mapped to the container.
+     * The map key corresponds to the host location; the map value is the container location.
+     * If the host location starts with "classpath:",
+     * the mapping loads the resource from the classpath with read-only permission.
      *
-     * When using a file system location, the volume will be created with read-write permission, so the data in your file
-     * system might be wiped out or altered.
+     * When using a file system location, the volume will be generated with read-write permission,
+     * potentially leading to data loss or modification in your file system.
      *
-     * If the provider is not container based (e.g. an H2 or Derby Database) then this has no effect.
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     @ConfigItem
     public Map<String, String> volumes;

@@ -17,5 +17,3 @@ guides:
   - src/main/asciidoc/security-openid-connect-client-reference.adoc
   - src/main/asciidoc/security-overview.adoc
   - src/main/asciidoc/security-proactive-authentication.adoc
-  - src/main/asciidoc/security-vulnerability-detection.adoc
-  - src/main/asciidoc/update-quarkus.adoc

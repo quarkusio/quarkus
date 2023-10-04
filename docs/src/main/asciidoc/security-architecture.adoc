@@ -73,7 +73,7 @@ You can customize the following core security components of Quarkus:
 * `IdentityProvider`
 * `SecurityidentityAugmentor`
 
-For more information about customizing Quarkus Security, including reactive security and how to register a security provider, see the Quarkus link:{url-quarkusio-guides}security-customization[Security tips and tricks] guide.
+For more information about customizing Quarkus Security, including reactive security and how to register a security provider, see the Quarkus xref:security-customization.adoc[Security tips and tricks] guide.
 
 == References
 

@@ -118,12 +118,12 @@ final public class ConfigDocItemScanner {
         }
     }
 
-    public Set<ConfigDocGeneratedOutput> scanExtensionsConfigurationItems(Properties javaDocProperties)
+    public Set<ConfigDocGeneratedOutput> scanExtensionsConfigurationItems(Properties javaDocProperties, boolean configMapping)
             throws IOException {
 
         Set<ConfigDocGeneratedOutput> configDocGeneratedOutputs = new HashSet<>();
         final ConfigDocItemFinder configDocItemFinder = new ConfigDocItemFinder(configRoots, configGroupsToTypeElement,
-                javaDocProperties, allConfigGroupGeneratedDocs, allExtensionGeneratedDocs);
+                javaDocProperties, allConfigGroupGeneratedDocs, allExtensionGeneratedDocs, configMapping);
         final ScannedConfigDocsItemHolder inMemoryScannedItemsHolder = configDocItemFinder.findInMemoryConfigurationItems();
 
         if (!inMemoryScannedItemsHolder.isEmpty()) {

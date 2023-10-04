@@ -71,6 +71,11 @@ Secrets engines are components that store, generate, or encrypt data.
 Quarkus provides comprehensive HashiCorp Vault support.
 For more information, see the link:{vault-guide}[Quarkus and HashiCorp Vault] documentation.
 
+== Secrets in environment properties
+
+Quarkus provides support to store secrets in environment properties.
+See xref:config.adoc#secrets-in-environment-properties[store secrets in an environment properties file].
+
 [[secure-serialization]]
 === Secure serialization
 

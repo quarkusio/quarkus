@@ -103,7 +103,7 @@ QUARKUS_DATASOURCE_PASSWORD=youshallnotpass <1>
 <1> The name `QUARKUS_DATASOURCE_PASSWORD` the same conversion rules used for <<environment-variables>>.
 
 For `dev` mode, this file can be placed in the root of the project, but it is advised to **not** check it in to version
-control.
+control because it typically contains passwords, access tokens, API keys or other secrets.
 
 IMPORTANT: Environment variables in the `.env` file are not available via the `System.getenv(String)` API.
 

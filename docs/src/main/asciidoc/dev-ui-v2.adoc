@@ -24,13 +24,13 @@ image::dev-ui-overview-v2.png[alt=Dev UI overview,role="center"]
 
 It allows you to:
 
-- quickly visualise all the extensions currently loaded
+- quickly visualize all the extensions currently loaded
 - view extension statuses and go directly to extension documentation 
 - view and change `Configuration`
-- manage and visualise `Continuous Testing`
+- manage and visualize `Continuous Testing`
 - view `Dev Services` information
 - view the Build information
-- view and stream various logs.
+- view and stream various logs
 
 Each extension used in the application will be listed and you can navigate to the guide for each extension, see some more information on the extension, and view configuration applicable for that extension:
 
@@ -42,7 +42,7 @@ In order to make your extension listed in the Dev UI you don't need to do anythi
 
 So you can always start with that :)
 
-Extension can:
+Extensions can:
 
 - <<add-links-to-an-extension-card,Add links to an extension card>> 
 - <<add-full-pages,Add full custom pages>>
@@ -60,7 +60,7 @@ A good example of this is the SmallRye OpenAPI extension that contains links to 
 
 image::dev-ui-extension-openapi-v2.png[alt=Dev UI extension card,role="center"]
 
-The links to these external references is know at build time, so to get links like this on your card, all you need to do is add the following Build Step in your extension:
+The links to these external references is known at build time, so to get links like this on your card, all you need to do is add the following Build Step in your extension:
 
 [source,java]
 ----
@@ -87,9 +87,9 @@ public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRoo
     return cardPageBuildItem;
 }
 ----
-<1> Always make sure that this build step only run when dev mode
+<1> Always make sure that this build step is only run when in dev mode
 <2> To add anything on the card, you need to return/produce a `CardPageBuildItem`.
-<3> To add a link, you can use the `addPage` method, as all links go to a "page". `Page` has got some builders to assist with building a page. For `external` links, use the `externalPageBuilder`
+<3> To add a link, you can use the `addPage` method, as all links go to a "page". `Page` has some builders to assist with building a page. For `external` links, use the `externalPageBuilder`
 <4> Adding the url of the external link (in this case we use `NonApplicationRootPathBuildItem` to create this link, as this link is under the configurable non application path, default `/q`). Always use `NonApplicationRootPathBuildItem` if your link is available under `/q`.
 <5> You can (optionally) hint the content type of the content you are navigating to. If there is no hint, a header call will be made to determine the `MediaType`;
 <6> You can add an icon. All free font-awesome icons are available.
@@ -101,15 +101,15 @@ If you find your icon at https://fontawesome.com/search?o=r&m=free[Font awesome]
 
 ==== Embedding external content
 
-By default, even external links will render inside (embedded) in Dev UI. In the case of HTML the page will be rendered and any other content will be shown using https://codemirror.net/[code-mirror] to markup the media type, for example the open api schema document in `yaml` format:
+By default, even external links will render inside (embedded) in Dev UI. In the case of HTML, the page will be rendered and any other content will be shown using https://codemirror.net/[code-mirror] to markup the media type. For example the open api schema document in `yaml` format:
 
 image::dev-ui-extension-openapi-embed-v2.png[alt=Dev UI embedded page,role="center"]
 
-If you do not want to embed the content, you can use the `.doNotEmbed()` on the Page Builder, this will then open a new tab.
+If you do not want to embed the content, you can use the `.doNotEmbed()` on the Page Builder, this will then open the link in a new tab.
 
 ==== Runtime external links 
 
-The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case you can use a <<JsonRPC>> Method that returns the link to add and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`. 
+The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case you can use a <<JsonRPC>> Method that returns the link to add, and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`. 
 
 ==== Adding labels
 
@@ -189,7 +189,7 @@ image::dev-ui-table-page-v2.png[alt=Dev UI table page,role="center"]
 
 ==== Qute data
 
-You can also display your build time data using a qute template. All build time data keys is available to use int the template:
+You can also display your build time data using a qute template. All build time data keys are available to use in the template:
 
 [source,java]
 ----
@@ -200,7 +200,7 @@ cardPageBuildItem.addPage(Page.quteDataPageBuilder("Qute data") // <1>
 <1> Use the `quteDataPageBuilder`.
 <2> Link to the Qute template in `/deployment/src/main/resources/dev-ui/`.
 
-Using any qute template to display the data, example `qute-jokes-template.html`:
+Using any Qute template to display the data, for example `qute-jokes-template.html`:
 
 [source,html]
 ----
@@ -227,7 +227,7 @@ Using any qute template to display the data, example `qute-jokes-template.html`:
 
 ==== Web Component page
 
-To build an interactive page with actions and runtime (or built time) data, you need to use the web component page:
+To build an interactive page with actions and runtime (or build time) data, you need to use the web component page:
 
 [source,java]
 ----
@@ -237,7 +237,7 @@ cardPageBuildItem.addPage(Page.webComponentPageBuilder() // <1>
                     .staticLabel(String.valueOf(beans.size())));
 ----
 <1> Use the `webComponentPageBuilder`.
-<2> Link to the Web Component in `/deployment/src/main/resources/dev-ui/`. The title can also be defined (using `.title("My title")` in the builder), but if not the title will be assumed from the componentLink, that should always have the format `qwc` (stands for Quarkus Web Component) dash `extensionName` (example, `arc` in this case ) dash `page title` ("Beans" in this case)
+<2> Link to the Web Component in `/deployment/src/main/resources/dev-ui/`. The title can also be defined (using `.title("My title")` in the builder), but if not the title will be assumed from the componentLink, which should always have the format `qwc` (stands for Quarkus Web Component) dash `extensionName` (example, `arc` in this case ) dash `page title` ("Beans" in this case)
 
 Dev UI uses https://lit.dev/[Lit] to make building these web components easier. You can read more about Web Components and Lit:
 
@@ -292,14 +292,14 @@ customElements.define('qwc-arc-beans', QwcArcBeans); // <10>
 ----
 
 <1> You can import Classes and/or functions from other libraries. 
-In this case we use `LitElement` class and `html` & `css` functions from `Lit`
-<2> Build time data as defined in the Build step can be imported using the key and always from `build-time-data`. All keys added in your Build step will be available.
+In this case we use the `LitElement` class and `html` & `css` functions from `Lit`
+<2> Build time data as defined in the Build step and can be imported using the key and always from `build-time-data`. All keys added in your Build step will be available.
 <3> The component should be named in the following format: Qwc (stands for Quarkus Web Component) then Extension Name then Page Title, all concatenated with Camel Case. This will also match the file name format as described earlier. The component should also extend `LitComponent`.
 <4> CSS styles can be added using the `css` function, and these styles only apply to your component.
 <5> Styles can reference globally defined CSS variables to make sure your page renders correctly, especially when switching between light and dark mode. You can find all CSS variables in the Vaadin documentation (https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/color[Color], https://vaadin.com/docs/latest/styling/lumo/lumo-style-properties/size-space[Sizing and Spacing], etc)
-<6> Properties can be added. Use `_` in front of a property if that property is private. Properties are usually injected in the HTML template, and can be defined as having state, meaning that if that property changes, the component should re-render. In this case, the beans are Build time data and only change on hot-reload, that we will cover later.
+<6> Properties can be added. Use `_` in front of a property if that property is private. Properties are usually injected in the HTML template, and can be defined as having state, meaning that if that property changes, the component should re-render. In this case, the beans are Build time data and only change on hot-reload, which will be covered later.
 <7> Constructors (optional) should always call `super` first, and then set the default values for the properties.
-<8> The render method (comes from `LitElement` will be called to render the page). In this method you return the markup of the page you want. You can use the `html` function from `Lit`, that gives you a template language to output the HTML you want. Once the template is created, you only need to set/change the properties to re-render the page content. Read more about https://lit.dev/docs/components/rendering/[Lit html]
+<8> The render method (from `LitElement`) will be called to render the page. In this method you return the markup of the page you want. You can use the `html` function from `Lit`, that gives you a template language to output the HTML you want. Once the template is created, you only need to set/change the properties to re-render the page content. Read more about https://lit.dev/docs/components/rendering/[Lit html]
 <9> You can use the built-in template functions to do conditional, list, etc. Read more about https://lit.dev/docs/templates/overview/[Lit Templates]
 <10> You always need to register your Web component as a custom element, with a unique tag. Here the tag will follow the same format as the filename (`qwc` dash `extension name` dash `page title` );
 
@@ -458,11 +458,11 @@ customElements.define('qwc-arc-beans', QwcArcBeans);
 ----
 <1> Import the Vaadin component you want to use
 <2> You can also import other functions if needed
-<3> There are some internal UI component that you can use, described below
+<3> There are some internal UI components that you can use, described below
 
 ===== Using internal UI components
 
-Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qui[internal UI components] (under the `qui` namespace) is available to make certain things easier:
+Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qui[internal UI components] (under the `qui` namespace) are available to make certain things easier:
 
 - Card
 - Badge
@@ -501,7 +501,7 @@ image::dev-ui-qui-badge-v2.png[alt=Dev UI Badge,role="center"]
 import 'qui-badge';
 ----
 
-You can use any combination of small, primary, pill, with icon and clickable with any level of `default`, `success`, `warning`, `error`, `contrast` or set your own colours.
+You can use any combination of small, primary, pill, with icon and clickable with any level of `default`, `success`, `warning`, `error`, `contrast` or set your own colors.
 
 [source,html]
 ----
@@ -603,7 +603,7 @@ https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d73
 
 ====== Alert
 
-Alerts is modelled around the Bootstrap alerts. Click https://getbootstrap.com/docs/4.0/components/alerts[here] for more info.
+Alerts are modeled around the Bootstrap alerts. Click https://getbootstrap.com/docs/4.0/components/alerts[here] for more info.
 
 Also see Notification controller below as an alternative.
 
@@ -733,7 +733,7 @@ https://github.com/quarkusio/quarkus/blob/582f1f78806d2268885faea7aa8f5a4d2b3f5b
 
 ===== Using internal controllers
 
-Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller[internal controllers] is available to make certain things easier:
+Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller[internal controllers] are available to make certain things easier:
 
 - Notifier
 - Storage
@@ -776,7 +776,7 @@ https://github.com/phillip-kruger/quarkus-jokes/blob/f572ed6f949de0c0b8cbfa99d73
 
 An easy way to access the local storage in a safe way. This will store values in the local storage, scoped to your extension. This way you do not have to worry that you might clash with another extension.
 
-Local storage is useful to remember user preferences or state. Example, the footer remembers the state (open/close) and the size when open of the bottom drawer.
+Local storage is useful to remember user preferences or state. For example, the footer remembers the state (open/close) and the size when open of the bottom drawer.
 
 [source,javascript]
 ----
@@ -836,7 +836,7 @@ https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-reso
 
 ====== Router
 
-The router is mostly used internally. This uses https://github.com/vaadin/router[Vaadin Router] under the covers to route urls to the correct page/section within the SPA. It will update the navigation and allow history (back button). This also creates the sub-menu available on extensions that has multiple pages.
+The router is mostly used internally. This uses https://github.com/vaadin/router[Vaadin Router] under the covers to route URLs to the correct page/section within the SPA. It will update the navigation and allow history (back button). This also creates the sub-menu available on extensions that have multiple pages.
 
 See the https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/router-controller.js[controller] for some methods that might be useful.
 
@@ -860,7 +860,7 @@ JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {// <2>
 ----
 <1> Always only do this in Dev Mode
 <2> Produce / return a `JsonRPCProvidersBuildItem`
-<3> Define the class in your runtime module that will contain methods that makes data available in the UI
+<3> Define the class in your runtime module that will contain methods that make data available in the UI
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/java/io/quarkus/cache/deployment/devui/CacheDevUiProcessor.java[Example code]
 
@@ -930,13 +930,13 @@ connectedCallback() {
 ----
 
 <1> Note the method `getAll` corresponds to the method in your Java Service. This method returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise] with the JsonRPC result.
-<2> in this case the result is an array, so we can loop over it.
+<2> In this case the result is an array, so we can loop over it.
 
 JsonArray (or any Java collection) in either blocking or non-blocking will return an array, else a JsonObject will be returned.
 
 https://github.com/quarkusio/quarkus/blob/main/extensions/cache/deployment/src/main/resources/dev-ui/qwc-cache-caches.js[Example code]
 
-You can also pass in parameters in the method being called, example:
+You can also pass in parameters in the method being called, for example:
 (In the Runtime Java code)
 
 [source,java]
@@ -1047,7 +1047,7 @@ export class QwcMyExtensionPage extends QwcHotReloadElement {
 
 == Custom cards
 
-You can customise the card that is being displayed on the extension page if you do not want to use the default built-in card.
+You can customize the card that is being displayed on the extension page if you do not want to use the default built-in card.
 
 To do this, you need to provide a Webcomponent that will be loaded in the place of the provided card and register this in the Java Processor:
 
@@ -1063,7 +1063,7 @@ On the Javascript side, you have access to all the pages (in case you want to cr
 import { pages } from 'build-time-data';
 ----
 
-And the following properties will be passes in:
+And the following properties will be passed in:
 
 - extensionName
 - description

@@ -1,5 +1,6 @@
 package io.quarkus.rest.client.reactive.jackson.runtime.serialisers;
 
+import static io.quarkus.rest.client.reactive.jackson.runtime.serialisers.JacksonUtil.getObjectMapperFromContext;
 import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.createDefaultWriter;
 import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.doLegacyWrite;
 
@@ -27,7 +28,8 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
 
     protected final ObjectMapper originalMapper;
     protected final ObjectWriter defaultWriter;
-    private final ConcurrentMap<ObjectMapper, ObjectWriter> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ResolverMapKey, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ObjectMapper, ObjectWriter> objectWriterMap = new ConcurrentHashMap<>();
     private RestClientRequestContext context;
 
     @Inject
@@ -44,7 +46,7 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
-        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter());
+        doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(type, mediaType));
     }
 
     @Override
@@ -52,22 +54,18 @@ public class ClientJacksonMessageBodyWriter implements MessageBodyWriter<Object>
         this.context = requestContext;
     }
 
-    protected ObjectWriter getEffectiveWriter() {
-        if (context == null) {
-            // no context injected when writer is not running within a rest client context
-            return defaultWriter;
-        }
-
-        ObjectMapper objectMapper = context.getConfiguration().getFromContext(ObjectMapper.class);
+    protected ObjectWriter getEffectiveWriter(Class<?> type, MediaType responseMediaType) {
+        ObjectMapper objectMapper = getObjectMapperFromContext(type, responseMediaType, context, contextResolverMap);
         if (objectMapper == null) {
             return defaultWriter;
         }
 
-        return contextResolverMap.computeIfAbsent(objectMapper, new Function<>() {
+        return objectWriterMap.computeIfAbsent(objectMapper, new Function<>() {
             @Override
             public ObjectWriter apply(ObjectMapper objectMapper) {
                 return createDefaultWriter(objectMapper);
             }
         });
     }
+
 }

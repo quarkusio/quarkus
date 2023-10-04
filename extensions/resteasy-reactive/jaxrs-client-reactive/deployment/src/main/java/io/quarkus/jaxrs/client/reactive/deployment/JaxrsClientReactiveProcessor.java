@@ -7,10 +7,13 @@ import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
 import static org.jboss.jandex.Type.Kind.PRIMITIVE;
 import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP;
 import static org.jboss.resteasy.reactive.common.processor.EndpointIndexer.extractProducesConsumesValues;
+import static org.jboss.resteasy.reactive.common.processor.JandexUtil.*;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COLLECTION;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.COMPLETION_STAGE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONSUMES;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PART_TYPE_NAME;
@@ -2744,28 +2747,11 @@ public class JaxrsClientReactiveProcessor {
     }
 
     private boolean isCollection(Type type, IndexView index) {
-        if (type.kind() == Type.Kind.PRIMITIVE) {
-            return false;
-        }
-        ClassInfo classInfo = index.getClassByName(type.name());
-        if (classInfo == null) {
-            return false;
-        }
-        return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Collection.class.getName())::equals);
+        return isAssignableFrom(COLLECTION, type.name(), index);
     }
 
     private boolean isMap(Type type, IndexView index) {
-        if (type.kind() == Type.Kind.PRIMITIVE) {
-            return false;
-        }
-        ClassInfo classInfo = index.getClassByName(type.name());
-        if (classInfo == null) {
-            return false;
-        }
-        if (ResteasyReactiveDotNames.MAP.equals(classInfo.name())) {
-            return true;
-        }
-        return classInfo.interfaceNames().stream().anyMatch(DotName.createSimple(Map.class.getName())::equals);
+        return isAssignableFrom(MAP, type.name(), index);
     }
 
     private void addHeaderParam(BytecodeCreator invoBuilderEnricher, AssignableResultHandle invocationBuilder,

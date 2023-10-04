@@ -43,7 +43,8 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
     private final Providers providers;
     private final ConcurrentMap<String, ObjectReader> perMethodReader = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, ObjectReader> perTypeReader = new ConcurrentHashMap<>();
-    private final ConcurrentMap<ObjectMapper, ObjectReader> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Class<?>, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ObjectMapper, ObjectReader> objectReaderMap = new ConcurrentHashMap<>();
 
     @Inject
     public FullyFeaturedServerJacksonMessageBodyReader(ObjectMapper mapper, Providers providers) {
@@ -154,7 +155,7 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
         ObjectReader effectiveReader = defaultReader;
         if (effectiveMapper != originalMapper) {
             // Effective reader based on the context
-            effectiveReader = contextResolverMap.computeIfAbsent(effectiveMapper, new Function<>() {
+            effectiveReader = objectReaderMap.computeIfAbsent(effectiveMapper, new Function<>() {
                 @Override
                 public ObjectReader apply(ObjectMapper objectMapper) {
                     return objectMapper.reader();
@@ -201,7 +202,16 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends JacksonBasicMes
             contextResolver = providers.getContextResolver(ObjectMapper.class, null);
         }
         if (contextResolver != null) {
-            return contextResolver.getContext(type);
+            var cr = contextResolver;
+            ObjectMapper result = contextResolverMap.computeIfAbsent(type, new Function<>() {
+                @Override
+                public ObjectMapper apply(Class<?> aClass) {
+                    return cr.getContext(type);
+                }
+            });
+            if (result != null) {
+                return result;
+            }
         }
 
         return originalMapper;

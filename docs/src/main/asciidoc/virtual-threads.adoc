@@ -147,7 +147,7 @@ For each of them, the object stored in the `ThreadLocal` is created (often large
 This problem leads to high memory usage.
 Unfortunately, it requires sophisticated code changes in the libraries themselves.
 
-=== Use @RunVirtualThread with RESTEasy Reactive
+=== Use @RunOnVirtualThread with RESTEasy Reactive
 
 This section shows a brief example of using the link:{runonvthread}[@RunOnVirtualThread] annotation.
 It also explains the various development and execution models offered by Quarkus.
@@ -296,7 +296,7 @@ Note that all three models can be used in a single application.
 
 == Use virtual thread friendly clients
 
-As mentioned in the href:why-not[Why not run everything on virtual threads?] section, the Java ecosystem is not entirely ready for virtual threads.
+As mentioned in the xref:why-not[Why not run everything on virtual threads?] section, the Java ecosystem is not entirely ready for virtual threads.
 So, you need to be careful, especially when using a libraries doing I/O.
 
 Fortunately, Quarkus provides a massive ecosystem that is ready to be used in virtual threads.
@@ -375,7 +375,7 @@ mvn package
 
 === Using a local GraalVM installation
 
-To compile a Quarkus applications leveraging `@RunOnVirtualThreads` into native executable, you must be sure to use a GraalVM / Mandrel `native-image` supporting virtual threads, so providing at least Java 19+.
+To compile a Quarkus applications leveraging `@RunOnVirtualThread` into native executable, you must be sure to use a GraalVM / Mandrel `native-image` supporting virtual threads, so providing at least Java 19+.
 
 Then, until Java 21, you need to add the following property to your `application.properties` file:
 

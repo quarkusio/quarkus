@@ -1,4 +1,4 @@
-package io.quarkus.smallrye.faulttolerance.test.circuitbreaker.maintenance.duplicate;
+package io.quarkus.smallrye.faulttolerance.test.circuitbreaker.maintenance.inheritance;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 

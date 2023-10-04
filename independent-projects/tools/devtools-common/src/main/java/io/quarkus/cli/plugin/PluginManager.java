@@ -97,10 +97,11 @@ public class PluginManager {
         Map<String, Plugin> installablePlugins = state.installablePlugins();
         Optional<Plugin> plugin = Optional.ofNullable(installablePlugins.get(name)).map(Plugin::inUserCatalog);
         return plugin.map(p -> {
-            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(p);
+            Plugin withDescription = p.withDescription(description);
+            PluginCatalog updatedCatalog = state.pluginCatalog(userCatalog).addPlugin(withDescription);
             pluginCatalogService.writeCatalog(updatedCatalog);
             state.invalidateInstalledPlugins();
-            return p;
+            return withDescription;
         });
     }
 

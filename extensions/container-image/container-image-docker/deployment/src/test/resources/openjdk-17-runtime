@@ -1,10 +1,10 @@
 # Use Java 17 base image
-FROM registry.access.redhat.com/ubi8/openjdk-17-runtime:1.16
+FROM registry.access.redhat.com/ubi8/openjdk-17-runtime:1.17
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en'
 
-# Configure the JAVA_OPTIONS, you can add -XshowSettings:vm to also display the heap size.
-ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+# Append additional options to the java process, you can add -XshowSettings:vm to also display the heap size.
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/

@@ -51,6 +51,10 @@ public class UpxCompressionBuildStep {
             if (!runUpxFromHost(upxPathFromSystem.get(), image.getPath().toFile(), nativeConfig)) {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
+        } else if (nativeConfig.remoteContainerBuild()) {
+            log.errorf("Compression of native executables is not yet implemented for remote container builds.");
+            throw new IllegalStateException(
+                    "Unable to compress the native executable: Compression of native executables is not yet supported for remote container builds");
         } else if (nativeImageRunner.isContainerBuild()) {
             log.infof("Running UPX from a container using the builder image: " + effectiveBuilderImage);
             if (!runUpxInContainer(image, nativeConfig, effectiveBuilderImage)) {

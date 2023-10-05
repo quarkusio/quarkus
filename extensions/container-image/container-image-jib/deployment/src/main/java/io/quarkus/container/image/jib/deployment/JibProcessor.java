@@ -383,6 +383,8 @@ public class JibProcessor {
                 }
                 registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(dockerConfigPath));
             }
+
+            registryImage.addCredentialRetriever(credentialRetrieverFactory.googleApplicationDefaultCredentials());
         }
         return registryImage;
     }

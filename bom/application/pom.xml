@@ -137,6 +137,7 @@
         <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>5.3.2</rest-assured.version>
+        <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
         <infinispan.version>14.0.17.Final</infinispan.version>
@@ -3624,6 +3625,11 @@
                         <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest</artifactId>
+                <version>${hamcrest.version}</version>
             </dependency>
 
             <dependency>

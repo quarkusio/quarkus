@@ -60,13 +60,13 @@ import io.vertx.ext.web.RoutingContext;
 
 public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
 
+    public static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final String AMP = "&";
     static final String EQ = "=";
     static final String COMMA = ",";
     static final String UNDERSCORE = "_";
     static final String COOKIE_DELIM = "|";
     static final Pattern COOKIE_PATTERN = Pattern.compile("\\" + COOKIE_DELIM);
-    static final String SESSION_MAX_AGE_PARAM = "session-max-age";
     static final String STATE_COOKIE_RESTORE_PATH = "restore-path";
     static final Uni<Void> VOID_UNI = Uni.createFrom().voidItem();
     static final Integer MAX_COOKIE_VALUE_LENGTH = 4096;

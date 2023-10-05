@@ -3,6 +3,7 @@ package io.quarkus.it.keycloak;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -64,6 +65,7 @@ public class SmallRyeJwtOidcWebAppTest {
     @Test
     public void testGetUserNameWithCodeFlow() throws Exception {
         try (final WebClient webClient = createWebClient()) {
+            assertTokenStateCount(0);
             HtmlPage page = webClient.getPage("http://localhost:8081/protected");
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -77,6 +79,7 @@ public class SmallRyeJwtOidcWebAppTest {
 
             assertEquals("alice", page.getBody().asNormalizedText());
             webClient.getCookieManager().clearCookies();
+            assertTokenStateCount(1);
         }
     }
 
@@ -84,5 +87,13 @@ public class SmallRyeJwtOidcWebAppTest {
         WebClient webClient = new WebClient();
         webClient.setCssErrorHandler(new SilentCssErrorHandler());
         return webClient;
+    }
+
+    private static void assertTokenStateCount(Integer expectedNumOfTokens) {
+        RestAssured
+                .get("/public/token-state-count")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is(expectedNumOfTokens.toString()));
     }
 }

@@ -437,14 +437,14 @@ public class OidcTenantConfig extends OidcCommonConfig {
         public boolean splitTokens;
 
         /**
-         * Mandates that the session cookie that stores the tokens is encrypted.
+         * Mandates that the Default TokenStateManager will encrypt the session cookie that stores the tokens.
          */
         @ConfigItem(defaultValue = "true")
         public boolean encryptionRequired = true;
 
         /**
-         * Secret which will be used to encrypt the session cookie storing the tokens when {@link #encryptionRequired} property
-         * is enabled.
+         * Secret which will be used by the Default TokenStateManager to encrypt the session cookie
+         * storing the tokens when {@link #encryptionRequired} property is enabled.
          * <p>
          * If this secret is not set, the client secret configured with
          * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` will be checked.

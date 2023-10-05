@@ -97,21 +97,36 @@ final public class ConfigDocItemScanner {
                     }
                 }
 
+                String docFileName = null;
+                for (AnnotationMirror mirror : clazz.getAnnotationMirrors()) {
+                    if (mirror.getAnnotationType().toString().equals(Constants.ANNOTATION_CONFIG_DOC_FILE_NAME)) {
+                        for (Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : mirror.getElementValues()
+                                .entrySet()) {
+                            if ("value()".equals(entry.getKey().toString())) {
+                                docFileName = entry.getValue().getValue().toString();
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+
                 name = getName(prefix, name, clazz.getSimpleName().toString(), configPhase);
                 if (name.endsWith(Constants.DOT + Constants.PARENT)) {
                     // take into account the root case which would contain characters that can't be used to create the final file
                     name = name.replace(Constants.DOT + Constants.PARENT, "");
                 }
 
-                final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(pkg.toString());
-                final String fileName;
-                if (pkgMatcher.find()) {
-                    fileName = DocGeneratorUtil.computeExtensionDocFileName(clazz.toString());
-                } else {
-                    fileName = name.replace(Constants.DOT, Constants.DASH.charAt(0)) + Constants.ADOC_EXTENSION;
+                if (docFileName == null || docFileName.isEmpty()) {
+                    final Matcher pkgMatcher = Constants.PKG_PATTERN.matcher(pkg.toString());
+                    if (pkgMatcher.find()) {
+                        docFileName = DocGeneratorUtil.computeExtensionDocFileName(clazz.toString());
+                    } else {
+                        docFileName = name.replace(Constants.DOT, Constants.DASH.charAt(0))
+                                + Constants.ADOC_EXTENSION;
+                    }
                 }
-
-                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, fileName);
+                ConfigRootInfo configRootInfo = new ConfigRootInfo(name, clazz, configPhase, docFileName);
                 configRoots.add(configRootInfo);
                 break;
             }

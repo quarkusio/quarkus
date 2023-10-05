@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using OpenID Connect (OIDC) and Keycloak to Centralize Authorization
 include::_attributes.adoc[]
 :categories: security
+:keywords: sso oidc security keycloak
 :summary: This guide demonstrates how your Quarkus application can authorize access to protected resources using Keycloak Authorization Services.
 
 This guide demonstrates how your Quarkus application can authorize a bearer token access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].

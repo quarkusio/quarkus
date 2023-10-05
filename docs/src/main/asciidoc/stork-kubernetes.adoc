@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Stork with Kubernetes
 :extension-status: preview
-
 include::_attributes.adoc[]
 
 This guide explains how to use Stork with Kubernetes for service discovery and load balancing.

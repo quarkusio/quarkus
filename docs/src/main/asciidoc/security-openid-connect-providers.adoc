@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
+:keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch
 :toclevels: 3
 
 This document explains how to configure well-known social OIDC and OAuth2 providers.
@@ -178,7 +179,7 @@ quarkus.oidc.token.customizer-name=azure-access-token-customizer
 [[apple]]
 === Apple
 
-In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99€/year program, but you cannot test your application on `localhost` like most other OIDC providers: 
+In order to set up OIDC for Apple you need to create a developer account, and sign up for the 99€/year program, but you cannot test your application on `localhost` like most other OIDC providers:
 you will need to run it over `https` and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
@@ -287,7 +288,7 @@ quarkus.oidc.credentials.jwt.subject=<Bundle ID}
 [[facebook]]
 === Facebook
 
-Facebook you will not be let you test your application on `localhost` like most other OIDC providers: 
+Facebook you will not be let you test your application on `localhost` like most other OIDC providers:
 you will need to run it over `https` and make it publicly accessible, so for development purposes
 you may want to use a service such as https://ngrok.com.
 
@@ -411,7 +412,7 @@ Please see <<twitter>> for more information about registering your Quarkus appli
 === Spotify
 
 Create a https://developer.spotify.com/documentation/general/guides/authorization/app-settings/[Spotify application]:
- 
+
 image::oidc-spotify-1.png[role="thumb"]
 
 Don't forget to add `http://localhost:8080` as a redirect URI for testing during development purposes. You should get a client id and secret generated once a Spotify application setup has been complete, for example:
@@ -433,7 +434,7 @@ quarkus.oidc.credentials.secret=<Client Secret>
 === Twitch
 
 Create a https://dev.twitch.tv/console/apps[Twitch application]:
- 
+
 image::oidc-twitch-1.png[role="thumb"]
 
 You can now configure your `application.properties`:
@@ -486,7 +487,7 @@ For more information, see the Quarkus xref:security-openid-connect-multitenancy.
 Sometimes, only authenticating users with a social provider is not enough.
 A provider-specific service also needs to be accessed for the Quarkus OIDC `web-app` application to fetch or update data from the provider service on behalf of the currently authenticated user.
 
-As mentioned in the xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications] guide, ID and access tokens are returned after the authorization code flow has been completed, with some providers like `GitHub` returning an access token only. 
+As mentioned in the xref:security-oidc-code-flow-authentication.adoc[OIDC code flow mechanism for protecting web applications] guide, ID and access tokens are returned after the authorization code flow has been completed, with some providers like `GitHub` returning an access token only.
 It is this access token that has to be propagated to services such as `Google Calendar`, or `Spotify Playlists` for the currently authenticated user to be able to use such services.
 
 You do not have to bring provider-specific libraries in order to achieve this, but instead you can use a reactive `Token Propagation` filter, which can be bound to a given REST client with a simple annotation.

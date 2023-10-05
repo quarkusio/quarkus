@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Contexts and Dependency Injection
 include::_attributes.adoc[]
 :categories: core
+:keywords: arc
 :summary: Go more in depth into the Quarkus implementation of CDI.
 :numbered:
 :sectnums:

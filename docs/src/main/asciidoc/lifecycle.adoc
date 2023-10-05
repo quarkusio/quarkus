@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Application Initialization and Termination
 include::_attributes.adoc[]
 :categories: core
+:keywords: lifecycle event
 :summary: You often need to execute custom actions when the application starts and clean up everything when the application stops. This guide explains how to be notified when an application stops or starts.
 
 You often need to execute custom actions when the application starts and clean up everything when the application stops.
@@ -175,7 +176,7 @@ NOTE: The methods can access injected beans. Check the link:{quickstarts-blob-ur
 
 === What is the difference from `@Initialized(ApplicationScoped.class)` and `@Destroyed(ApplicationScoped.class)`
 
-In the JVM mode, there is no real difference, except that `StartupEvent` is always fired *after* `@Initialized(ApplicationScoped.class)` and `ShutdownEvent` is fired *before* `@Destroyed(ApplicationScoped.class)`. 
+In the JVM mode, there is no real difference, except that `StartupEvent` is always fired *after* `@Initialized(ApplicationScoped.class)` and `ShutdownEvent` is fired *before* `@Destroyed(ApplicationScoped.class)`.
 For a native executable build, however, `@Initialized(ApplicationScoped.class)` is fired as *part of the native build process*, whereas `StartupEvent` is fired when the native image is executed.
 See xref:writing-extensions.adoc#bootstrap-three-phases[Three Phases of Bootstrap and Quarkus Philosophy] for more details.
 
@@ -193,10 +194,10 @@ package org.acme.lifecycle;
 import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 
-@Startup // <1> 
+@Startup // <1>
 @ApplicationScoped
 public class EagerAppBean {
-  
+
    private final String name;
 
    EagerAppBean(NameGenerator generator) { // <2>
@@ -222,10 +223,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public class EagerAppBean {
-  
+
    @Startup
    void init() { <1>
-     doSomeCoolInit(); 
+     doSomeCoolInit();
    }
 }
 ----
@@ -234,7 +235,7 @@ public class EagerAppBean {
 [[shutdown_annotation]]
 === Using `@Shutdown` to execute a business method of a CDI bean during application shutdown
 
-The `@io.quarkus.runtime.Shutdown` annotation is used to mark a business method of a CDI bean that should be executed during application shutdown. 
+The `@io.quarkus.runtime.Shutdown` annotation is used to mark a business method of a CDI bean that should be executed during application shutdown.
 The annotated method must be non-private and non-static and declare no arguments.
 The behavior is similar to a declaration of a `ShutdownEvent` observer.
 The following examples are functionally equivalent.

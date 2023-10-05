@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Cross-Site Request Forgery Prevention
-
 include::_attributes.adoc[]
 
 https://owasp.org/www-community/attacks/csrf[Cross-Site Request Forgery (CSRF)] is an attack that forces an end user to execute unwanted actions on a web application in which they are currently authenticated.
@@ -58,14 +57,14 @@ Next, let's add a `csrfToken.html` Qute template producing an HTML form in the `
 <html>
 <head>
 <meta charset="UTF-8">
-<title>User Name Input</title> 
+<title>User Name Input</title>
 </head>
 <body>
     <h1>User Name Input</h1>
 
     <form action="/service/csrfTokenForm" method="post">
     	<input type="hidden" name="{inject:csrf.parameterName}" value="{inject:csrf.token}" />  <1>
-    	
+
     	<p>Your Name: <input type="text" name="name" /></p>
     	<p><input type="submit" name="submit"/></p>
     </form>

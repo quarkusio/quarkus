@@ -93,7 +93,7 @@ You can find the latest plugin version in the https://plugins.gradle.org/plugin/
 [source,kotlin,subs=attributes+]
 ----
 plugins {
-    id("org.kordamp.gradle.jandex") version '{jandex-gradle-plugin-version}'
+    id("org.kordamp.gradle.jandex") version "{jandex-gradle-plugin-version}"
 }
 ----
 You can find the latest plugin version in the https://plugins.gradle.org/plugin/org.kordamp.gradle.jandex[Gradle Plugin Portal]

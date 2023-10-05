@@ -459,9 +459,10 @@ public class NativeImageBuildStep {
     }
 
     private void checkGraalVMVersion(GraalVM.Version version) {
-        log.info("Running Quarkus native-image plugin on " + version.getFullVersion());
+        log.info("Running Quarkus native-image plugin on " + version.distribution.name() + " " + version.getVersionAsString()
+                + " JDK " + version.javaFeatureVersion + "." + version.javaUpdateVersion);
         if (version.isObsolete()) {
-            throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getFullVersion() + "."
+            throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getVersionAsString() + "."
                     + " Quarkus currently supports " + GraalVM.Version.CURRENT.getVersionAsString()
                     + ". Please upgrade GraalVM to this version.");
         }

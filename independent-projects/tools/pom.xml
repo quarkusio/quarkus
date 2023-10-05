@@ -40,7 +40,7 @@
         <maven.compiler.release>11</maven.compiler.release>
 
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.3</proposed-maven-version>
+        <proposed-maven-version>3.9.5</proposed-maven-version>
         <maven-wrapper.version>3.2.0</maven-wrapper.version>
         <gradle-wrapper.version>8.3</gradle-wrapper.version>
 

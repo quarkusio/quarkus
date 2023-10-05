@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using OpenID Connect (OIDC) Multi-Tenancy
 include::_attributes.adoc[]
 :categories: security
+:keywords: sso oidc oauth2 security
 :summary: This guide demonstrates how your OpenID Connect application can support multi-tenancy so that you can serve multiple tenants from a single application.
 
 This guide demonstrates how your OpenID Connect (OIDC) application can support multi-tenancy so that you can serve multiple tenants from a single application. Tenants can be distinct realms or security domains within the same OpenID Provider or even distinct OpenID Providers.
@@ -590,9 +591,9 @@ To configure the resolution of the tenant identifier, use one of the following o
 [[default-tenant-resolver]]
 === Default resolution
 
-The default resolution for a tenant identifier is convention based, whereby the authentication request must include the tenant identifier in the last segment of the request path. 
+The default resolution for a tenant identifier is convention based, whereby the authentication request must include the tenant identifier in the last segment of the request path.
 
-The following `application.properties` example shows how you can configure two tenants named `google` and `github`:  
+The following `application.properties` example shows how you can configure two tenants named `google` and `github`:
 
 [source,properties]
 ----
@@ -609,7 +610,7 @@ quarkus.oidc.github.credentials.secret=${github-client-secret}
 quarkus.oidc.github.authentication.redirect-path=/signed-in
 ----
 
-In this example, both tenants configure OIDC `web-app` applications to use an authorization code flow to authenticate users and also require session cookies to get generated after the authentication has taken place. 
+In this example, both tenants configure OIDC `web-app` applications to use an authorization code flow to authenticate users and also require session cookies to get generated after the authentication has taken place.
 After either Google or GitHub authenticates the current user, the user gets returned to the `/signed-in` area for authenticated users, for example, a secured resource path on the JAX-RS endpoint.
 
 Finally, to complete the default tenant resolution, set the following configuration property:
@@ -620,8 +621,8 @@ quarkus.http.auth.permission.login.paths=/google,/github
 quarkus.http.auth.permission.login.policy=authenticated
 ----
 
-If the endpoint is running on `http://localhost:8080`, you can also provide UI options for users to log in to either `http://localhost:8080/google` or `http://localhost:8080/github`, without having to add specific`/google` or `/github` JAX-RS resource paths. 
-Tenant identifiers are also recorded in the session cookie names after the authentication is completed. 
+If the endpoint is running on `http://localhost:8080`, you can also provide UI options for users to log in to either `http://localhost:8080/google` or `http://localhost:8080/github`, without having to add specific`/google` or `/github` JAX-RS resource paths.
+Tenant identifiers are also recorded in the session cookie names after the authentication is completed.
 Therefore, authenticated users can access the secured application area without requiring either the `google` or `github` path values to be included in the secured URL.
 
 Default resolution can also work for Bearer token authentication but it might be less practical in this case because a tenant identifier will always need to be set as the last path segment value.
@@ -629,7 +630,7 @@ Default resolution can also work for Bearer token authentication but it might be
 [[tenant-resolver]]
 === Resolve with `TenantResolver`
 
-The following `application.properties` example shows how you can resolve the tenant identifier of two tenants named `a` and `b` by using the `TenantResolver` method: 
+The following `application.properties` example shows how you can resolve the tenant identifier of two tenants named `a` and `b` by using the `TenantResolver` method:
 
 [source,properties]
 ----

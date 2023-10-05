@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Security Tips and Tricks
-
 include::_attributes.adoc[]
 
 == Quarkus Security Dependency
@@ -621,6 +620,6 @@ xref:context-propagation.adoc[Context Propagation Guide].
 == References
 
 * xref:security-overview.adoc[Quarkus Security overview]
-* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-architecture.adoc[Quarkus Security architecture]
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
 * xref:security-identity-providers.adoc[Identity providers]

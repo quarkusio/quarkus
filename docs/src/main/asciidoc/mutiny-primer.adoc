@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Mutiny - Async for bare mortal
-
 include::_attributes.adoc[]
 
 https://smallrye.io/smallrye-mutiny[Mutiny] is an intuitive, reactive programming library.

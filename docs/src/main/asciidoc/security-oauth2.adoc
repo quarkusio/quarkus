@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using OAuth2 RBAC
 include::_attributes.adoc[]
 :categories: security
+:keywords: oauth
 :summary: This guide explains how your Quarkus application can utilize OAuth2 tokens to provide secured access to the Jakarta REST endpoints.
 :extension-name: Elytron Security OAuth2
 

@@ -4,7 +4,6 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -107,32 +106,25 @@ public class VirtualThreadsRecorder {
         Method ofVirtual = Thread.class.getMethod("ofVirtual");
         Object vtb = ofVirtual.invoke(VirtualThreadsRecorder.class);
         Class<?> vtbClass = Class.forName("java.lang.Thread$Builder$OfVirtual");
-        Method name = vtbClass.getMethod("name", String.class, long.class);
-        vtb = name.invoke(vtb, prefix, 0);
+        // .name()
+        if (prefix != null) {
+            Method name = vtbClass.getMethod("name", String.class, long.class);
+            vtb = name.invoke(vtb, prefix, 0);
+        }
+        // .uncaughtExceptionHandler()
+        Method uncaughtHandler = vtbClass.getMethod("uncaughtExceptionHandler", Thread.UncaughtExceptionHandler.class);
+        vtb = uncaughtHandler.invoke(vtb, new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                logger.errorf(e, "Thread %s threw an uncaught exception:", t);
+            }
+        });
+        // .factory()
         Method factory = vtbClass.getMethod("factory");
         ThreadFactory tf = (ThreadFactory) factory.invoke(vtb);
 
         return (ExecutorService) Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class)
                 .invoke(VirtualThreadsRecorder.class, tf);
-    }
-
-    static ExecutorService newVirtualThreadPerTaskExecutor()
-            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        return (ExecutorService) Executors.class.getMethod("newVirtualThreadPerTaskExecutor")
-                .invoke(VirtualThreadsRecorder.class);
-    }
-
-    static ExecutorService newVirtualThreadExecutor()
-            throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        try {
-            Optional<String> namePrefix = config.namePrefix;
-            return namePrefix.isPresent() ? newVirtualThreadPerTaskExecutorWithName(namePrefix.get())
-                    : newVirtualThreadPerTaskExecutor();
-        } catch (ClassNotFoundException e) {
-            logger.warn("Unable to invoke java.util.concurrent.Executors#newThreadPerTaskExecutor" +
-                    " with VirtualThreadFactory, falling back to unnamed virtual threads", e);
-            return newVirtualThreadPerTaskExecutor();
-        }
     }
 
     /**
@@ -144,8 +136,9 @@ public class VirtualThreadsRecorder {
     private static ExecutorService createExecutor() {
         if (config.enabled) {
             try {
-                return new ContextPreservingExecutorService(newVirtualThreadExecutor());
-            } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+                String prefix = config.namePrefix.orElse(null);
+                return new ContextPreservingExecutorService(newVirtualThreadPerTaskExecutorWithName(prefix));
+            } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
                 logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
                 //quite ugly but works
                 logger.warn("You weren't able to create an executor that spawns virtual threads, the default" +

@@ -25,12 +25,13 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class TestResourceManager implements Closeable {
 
@@ -179,8 +180,8 @@ public class TestResourceManager implements Closeable {
             }
         }
         try {
-            ConfigProviderResolver cpr = ConfigProviderResolver.instance();
-            cpr.releaseConfig(cpr.getConfig());
+            ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
+                    .releaseConfig(Thread.currentThread().getContextClassLoader());
         } catch (Throwable ignored) {
         }
         configProperties.clear();

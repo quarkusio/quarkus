@@ -7,7 +7,6 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
@@ -23,7 +22,6 @@ public interface ConfigConfig {
     /**
      * Profile that will be active when Quarkus launches.
      */
-    @WithDefault("prod")
     Optional<String> profile();
 
     /**

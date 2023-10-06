@@ -470,7 +470,6 @@ public final class BuildTimeConfigurationReader {
         final SmallRyeConfig config;
         final ConfigTrackingInterceptor buildConfigTracker;
         final Set<String> processedNames = new HashSet<>();
-
         final Map<Class<?>, Object> objectsByClass = new HashMap<>();
         final Map<String, String> allBuildTimeValues = new TreeMap<>();
         final Map<String, String> buildTimeRunTimeValues = new TreeMap<>();
@@ -510,6 +509,7 @@ public final class BuildTimeConfigurationReader {
 
             allBuildTimeValues.putAll(getDefaults(buildTimePatternMap));
             buildTimeRunTimeValues.putAll(getDefaults(buildTimeRunTimePatternMap));
+            runTimeDefaultValues.putAll(getDefaults(runTimePatternMap));
 
             SmallRyeConfig runtimeDefaultsConfig = getConfigForRuntimeDefaults();
             Set<String> registeredRoots = allRoots.stream().map(RootDefinition::getName).collect(toSet());

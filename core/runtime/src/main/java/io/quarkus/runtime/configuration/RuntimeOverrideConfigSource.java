@@ -7,6 +7,8 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
+import io.smallrye.config.SmallRyeConfigBuilder;
+
 /**
  * Config source that is used to handle {@code io.quarkus.bootstrap.app.StartupAction#overrideConfig(java.util.Map)}
  *
@@ -62,4 +64,7 @@ public class RuntimeOverrideConfigSource implements ConfigSource {
         return "Config Override Config Source";
     }
 
+    public static void registerRuntimeOverrideConfigSource(SmallRyeConfigBuilder builder) {
+        builder.withSources(new RuntimeOverrideConfigSource(builder.getClassLoader()));
+    }
 }

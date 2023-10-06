@@ -255,8 +255,9 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private boolean isValidAcceptRequest(String mimeType) {
-        // At this point we only accept two
         return mimeType.startsWith("application/json")
+                || mimeType.startsWith("application/graphql-response+json")
+                // application/graphql+json is incorrect, but we keep it for backwards compatibility
                 || mimeType.startsWith("application/graphql+json");
     }
 

@@ -43,7 +43,7 @@ env:
   # Workaround testsuite locale issue
   LANG: en_US.UTF-8
   COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
-  NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=5g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests clean install -DskipDocs"
+  NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dformat.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dformat.skip -DskipDocs -Dquarkus.test.hang-detection-timeout=60"
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test

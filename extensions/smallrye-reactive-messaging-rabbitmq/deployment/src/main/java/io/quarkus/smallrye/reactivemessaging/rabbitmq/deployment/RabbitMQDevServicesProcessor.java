@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+
 import java.io.Closeable;
 import java.time.Duration;
 import java.util.Collections;
@@ -24,6 +26,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
@@ -31,7 +34,10 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
+import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -53,12 +59,15 @@ public class RabbitMQDevServicesProcessor {
     private static final int RABBITMQ_PORT = 5672;
     private static final int RABBITMQ_HTTP_PORT = 15672;
 
-    private static final ContainerLocator rabbitmqContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, RABBITMQ_PORT);
+    private static final ContainerLocator rabbitmqContainerLocator = locateContainerWithLabels(RABBITMQ_PORT,
+            DEV_SERVICE_LABEL);
+
     private static final String RABBITMQ_HOST_PROP = "rabbitmq-host";
     private static final String RABBITMQ_PORT_PROP = "rabbitmq-port";
     private static final String RABBITMQ_HTTP_PORT_PROP = "rabbitmq-http-port";
     private static final String RABBITMQ_USERNAME_PROP = "rabbitmq-username";
     private static final String RABBITMQ_PASSWORD_PROP = "rabbitmq-password";
+    public static final String RABBITMQ_DEFAULT_USER_PASS = "guest";
 
     static volatile RunningDevService devService;
     static volatile RabbitMQDevServiceCfg cfg;
@@ -67,6 +76,7 @@ public class RabbitMQDevServicesProcessor {
     @BuildStep
     public DevServicesResultBuildItem startRabbitMQDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LaunchModeBuildItem launchMode,
             RabbitMQBuildTimeConfig rabbitmqClientBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -88,8 +98,8 @@ public class RabbitMQDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "RabbitMQ Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            RunningDevService newDevService = startRabbitMQBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout());
+            RunningDevService newDevService = startRabbitMQBroker(dockerStatusBuildItem, composeProjectBuildItem,
+                    configuration, launchMode, devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
 
@@ -150,6 +160,7 @@ public class RabbitMQDevServicesProcessor {
     }
 
     private RunningDevService startRabbitMQBroker(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
@@ -199,15 +210,34 @@ public class RabbitMQDevServicesProcessor {
                     container.getPort(), container.getHttpPort(), container.getAdminUsername(), container.getAdminPassword());
         };
 
+        return rabbitmqContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
+                .map(containerAddress -> getRunningDevService(config, launchMode, containerAddress))
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(config.imageName, "rabbitmq"), RABBITMQ_PORT, launchMode.getLaunchMode())
+                        .map(this::getRunningDevService))
+                .orElseGet(defaultRabbitMQBrokerSupplier);
+    }
+
+    private RunningDevService getRunningDevService(RabbitMQDevServiceCfg config, LaunchModeBuildItem launchMode,
+            ContainerAddress containerAddress) {
         Integer httpPort = rabbitmqContainerLocator
                 .locatePublicPort(config.serviceName, config.shared, launchMode.getLaunchMode(), RABBITMQ_HTTP_PORT)
                 .orElse(0);
+        return getRunningDevService(containerAddress.getId(), null, containerAddress.getHost(),
+                containerAddress.getPort(), httpPort, RABBITMQ_DEFAULT_USER_PASS, RABBITMQ_DEFAULT_USER_PASS);
+    }
 
-        return rabbitmqContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> getRunningDevService(containerAddress.getId(), null, containerAddress.getHost(),
-                        containerAddress.getPort(), httpPort, container.getAdminUsername(),
-                        container.getAdminPassword()))
-                .orElseGet(defaultRabbitMQBrokerSupplier);
+    private RunningDevService getRunningDevService(ContainerAddress address) {
+        RunningContainer container = address.getRunningContainer();
+        if (container == null) {
+            return null;
+        }
+        return getRunningDevService(address.getId(), null,
+                address.getHost(),
+                address.getPort(),
+                container.getPortMapping(RABBITMQ_HTTP_PORT).orElse(0),
+                container.tryGetEnv("RABBITMQ_DEFAULT_USER").orElse(RABBITMQ_DEFAULT_USER_PASS),
+                container.tryGetEnv("RABBITMQ_DEFAULT_PASS").orElse(RABBITMQ_DEFAULT_USER_PASS));
     }
 
     private RunningDevService getRunningDevService(String containerId, Closeable closeable, String host, int port, int httpPort,
@@ -218,8 +248,7 @@ public class RabbitMQDevServicesProcessor {
         configMap.put(RABBITMQ_HTTP_PORT_PROP, String.valueOf(httpPort));
         configMap.put(RABBITMQ_USERNAME_PROP, username);
         configMap.put(RABBITMQ_PASSWORD_PROP, password);
-        return new RunningDevService(Feature.MESSAGING_RABBITMQ.getName(),
-                containerId, closeable, configMap);
+        return new RunningDevService(Feature.MESSAGING_RABBITMQ.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasRabbitMQChannelWithoutHostAndPort() {

@@ -10,6 +10,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.Labels;
 
 public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer> {
 
@@ -30,6 +31,7 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
         this.useSharedNetwork = useSharedNetwork;
         if (serviceName != null) {
             withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
+            withLabel(Labels.QUARKUS_DEV_SERVICE, serviceName);
         }
         String cmd = String.format("while [ ! -f %s ]; do sleep 0.1; done; sleep 0.1; %s", STARTER_SCRIPT, STARTER_SCRIPT);
         withCommand("sh", "-c", cmd);

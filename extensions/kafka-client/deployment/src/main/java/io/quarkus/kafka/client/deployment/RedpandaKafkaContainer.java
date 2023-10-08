@@ -12,6 +12,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.Labels;
 
 /**
  * Container configuring and starting the Redpanda broker.
@@ -38,6 +39,7 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
 
         if (serviceName != null) { // Only adds the label in dev mode.
             withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
+            withLabel(Labels.QUARKUS_DEV_SERVICE, serviceName);
         }
 
         // For redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/

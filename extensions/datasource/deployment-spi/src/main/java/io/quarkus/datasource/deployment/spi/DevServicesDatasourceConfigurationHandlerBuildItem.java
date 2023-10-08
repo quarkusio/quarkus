@@ -58,7 +58,7 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
-                        String jdbcUrl = runningDevDb.getJdbcUrl();
+                        String jdbcUrl = runningDevDb.jdbcUrl();
                         // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
                         // because depending on whether a user configured other JDBC properties
                         // one of the URLs may be ignored
@@ -85,7 +85,7 @@ public final class DevServicesDatasourceConfigurationHandlerBuildItem extends Mu
                     @Override
                     public Map<String, String> apply(String dsName,
                             DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevDb) {
-                        String reactiveUrl = runningDevDb.getReactiveUrl();
+                        String reactiveUrl = runningDevDb.reactiveUrl();
                         // we use datasourceURLPropNames to generate quoted and unquoted versions of the property key,
                         // because depending on whether a user configured other reactive properties
                         // one of the URLs may be ignored

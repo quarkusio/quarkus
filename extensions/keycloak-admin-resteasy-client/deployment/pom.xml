@@ -41,6 +41,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devservices-keycloak</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-deployment</artifactId>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

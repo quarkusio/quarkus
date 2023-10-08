@@ -1,0 +1,25 @@
+{
+  "users": [
+    {
+      "name": "admin",
+      "password_hash": "qPmODBw13vRJqI7+/X81ABjTzraRpB30+o6UuzXTNfidYQhD",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts":[
+    {"name":"/"}
+  ],
+  "queues":[
+    {"name":"test","vhost":"/","durable":true,"auto_delete":false,"arguments":{}}
+  ],
+  "permissions": [
+    {
+      "user": "admin",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ]
+}

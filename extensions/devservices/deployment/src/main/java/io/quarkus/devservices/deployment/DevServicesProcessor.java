@@ -73,7 +73,7 @@ public class DevServicesProcessor {
 
         for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
             if (devService.hasContainerInfo()) {
-                containerLogForwarders.compute(devService.getContainerInfo().getId(),
+                containerLogForwarders.compute(devService.getContainerInfo().id(),
                         (id, forwarder) -> Objects.requireNonNullElseGet(forwarder,
                                 () -> new ContainerLogForwarder(devService)));
             }
@@ -91,7 +91,7 @@ public class DevServicesProcessor {
         for (DevServiceDescriptionBuildItem service : serviceDescriptions) {
             if (service.getContainerInfo() != null) {
                 footerLogProducer.produce(new FooterLogBuildItem(service.getName(), () -> {
-                    return createLogPublisher(service.getContainerInfo().getId());
+                    return createLogPublisher(service.getContainerInfo().id());
                 }));
             }
         }
@@ -249,10 +249,10 @@ public class DevServicesProcessor {
 
         if (devService.hasContainerInfo()) {
             builder.append(String.format("  %-18s", "Container: "))
-                    .append(devService.getContainerInfo().getId(), 0, 12)
+                    .append(devService.getContainerInfo().id(), 0, 12)
                     .append(devService.getContainerInfo().formatNames())
                     .append("  ")
-                    .append(devService.getContainerInfo().getImageName())
+                    .append(devService.getContainerInfo().imageName())
                     .append("\n");
             builder.append(String.format("  %-18s", "Network: "))
                     .append(devService.getContainerInfo().formatNetworks())

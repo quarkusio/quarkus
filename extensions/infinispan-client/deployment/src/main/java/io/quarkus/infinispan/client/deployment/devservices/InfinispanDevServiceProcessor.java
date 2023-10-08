@@ -1,7 +1,9 @@
 package io.quarkus.infinispan.client.deployment.devservices;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 import static org.infinispan.server.test.core.InfinispanContainer.DEFAULT_USERNAME;
+import static org.infinispan.server.test.core.InfinispanContainer.IMAGE_BASENAME;
 
 import java.io.Closeable;
 import java.time.Duration;
@@ -25,6 +27,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
@@ -33,8 +36,11 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
@@ -53,8 +59,8 @@ public class InfinispanDevServiceProcessor {
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-infinispan";
     public static final int DEFAULT_INFINISPAN_PORT = ConfigurationProperties.DEFAULT_HOTROD_PORT;
-    private static final ContainerLocator infinispanContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
-            DEFAULT_INFINISPAN_PORT);
+    private static final ContainerLocator infinispanContainerLocator = locateContainerWithLabels(DEFAULT_INFINISPAN_PORT,
+            DEV_SERVICE_LABEL);
 
     private static final String DEFAULT_PASSWORD = "password";
     private static final String QUARKUS = "quarkus.";
@@ -70,6 +76,7 @@ public class InfinispanDevServiceProcessor {
             DockerStatusBuildItem dockerStatusBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             InfinispanClientsBuildTimeConfig config,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
@@ -116,13 +123,15 @@ public class InfinispanDevServiceProcessor {
                 loggingSetupBuildItem);
 
         runInfinispanDevService(InfinispanClientUtil.DEFAULT_INFINISPAN_CLIENT_NAME, launchMode,
-                compressor, dockerStatusBuildItem, devServicesSharedNetworkBuildItem, config.defaultInfinispanClient(),
+                compressor, dockerStatusBuildItem, composeProjectBuildItem,
+                devServicesSharedNetworkBuildItem, config.defaultInfinispanClient(),
                 devServicesConfig, newDevServices,
                 properties);
 
         config.namedInfinispanClients().entrySet().forEach(dServ -> {
             runInfinispanDevService(dServ.getKey(), launchMode,
-                    compressor, dockerStatusBuildItem, devServicesSharedNetworkBuildItem, dServ.getValue(),
+                    compressor, dockerStatusBuildItem, composeProjectBuildItem,
+                    devServicesSharedNetworkBuildItem, dServ.getValue(),
                     devServicesConfig,
                     newDevServices, properties);
         });
@@ -154,6 +163,7 @@ public class InfinispanDevServiceProcessor {
             LaunchModeBuildItem launchMode,
             StartupLogCompressor compressor,
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             InfinispanClientBuildTimeConfig config,
             DevServicesConfig devServicesConfig,
@@ -162,7 +172,8 @@ public class InfinispanDevServiceProcessor {
         try {
 
             InfinispanDevServicesConfig namedDevServiceConfig = config.devservices().devservices();
-            RunningDevService devService = startContainer(clientName, dockerStatusBuildItem, namedDevServiceConfig,
+            RunningDevService devService = startContainer(clientName, dockerStatusBuildItem, composeProjectBuildItem,
+                    namedDevServiceConfig,
                     launchMode.getLaunchMode(),
                     !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout(), properties);
             if (devService == null) {
@@ -180,8 +191,12 @@ public class InfinispanDevServiceProcessor {
     }
 
     private RunningDevService startContainer(String clientName, DockerStatusBuildItem dockerStatusBuildItem,
-            InfinispanDevServicesConfig devServicesConfig, LaunchMode launchMode,
-            boolean useSharedNetwork, Optional<Duration> timeout, Map<String, String> properties) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            InfinispanDevServicesConfig devServicesConfig,
+            LaunchMode launchMode,
+            boolean useSharedNetwork,
+            Optional<Duration> timeout,
+            Map<String, String> properties) {
         if (!devServicesConfig.enabled()) {
             // explicitly disabled
             log.debug("Not starting Dev Services for Infinispan as it has been disabled in the config");
@@ -223,7 +238,21 @@ public class InfinispanDevServiceProcessor {
                 .locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
                 .map(containerAddress -> getRunningDevService(clientName, containerAddress.getId(), null,
                         containerAddress.getUrl(), DEFAULT_USERNAME, DEFAULT_PASSWORD, properties)) // TODO can this be always right ?
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(devServicesConfig.imageName().orElse(IMAGE_BASENAME), "infinispan"),
+                        DEFAULT_INFINISPAN_PORT, launchMode)
+                        .map(address -> getRunningDevService(clientName, address, properties)))
                 .orElseGet(infinispanServerSupplier);
+    }
+
+    private RunningDevService getRunningDevService(String clientName, ContainerAddress address, Map<String, String> config) {
+        RunningContainer container = address.getRunningContainer();
+        if (container == null) {
+            return null;
+        }
+        return getRunningDevService(clientName, address.getId(), null, address.getUrl(),
+                container.tryGetEnv("USER").orElse(DEFAULT_USERNAME),
+                container.tryGetEnv("PASS").orElse(DEFAULT_PASSWORD), config);
     }
 
     private RunningDevService getRunningDevService(String clientName, String containerId, Closeable closeable, String hosts,

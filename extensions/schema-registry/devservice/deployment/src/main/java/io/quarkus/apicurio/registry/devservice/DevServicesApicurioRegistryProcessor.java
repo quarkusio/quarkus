@@ -1,5 +1,8 @@
 package io.quarkus.apicurio.registry.devservice;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
@@ -27,6 +31,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
@@ -50,8 +55,8 @@ public class DevServicesApicurioRegistryProcessor {
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-apicurio-registry";
 
-    private static final ContainerLocator apicurioRegistryContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL,
-            APICURIO_REGISTRY_PORT);
+    private static final ContainerLocator apicurioRegistryContainerLocator = locateContainerWithLabels(APICURIO_REGISTRY_PORT,
+            DEV_SERVICE_LABEL);
 
     static volatile RunningDevService devService;
     static volatile ApicurioRegistryDevServiceCfg cfg;
@@ -60,6 +65,7 @@ public class DevServicesApicurioRegistryProcessor {
     @BuildStep
     public DevServicesResultBuildItem startApicurioRegistryDevService(LaunchModeBuildItem launchMode,
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             ApicurioRegistryBuildTimeConfig apicurioRegistryConfiguration,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -82,7 +88,7 @@ public class DevServicesApicurioRegistryProcessor {
         try {
             boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                     devServicesSharedNetworkBuildItem);
-            devService = startApicurioRegistry(dockerStatusBuildItem, configuration, launchMode,
+            devService = startApicurioRegistry(dockerStatusBuildItem, composeProjectBuildItem, configuration, launchMode,
                     useSharedNetwork, devServicesConfig.timeout());
             compressor.close();
         } catch (Throwable t) {
@@ -139,6 +145,7 @@ public class DevServicesApicurioRegistryProcessor {
     }
 
     private RunningDevService startApicurioRegistry(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             ApicurioRegistryDevServiceCfg config, LaunchModeBuildItem launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
@@ -170,6 +177,9 @@ public class DevServicesApicurioRegistryProcessor {
 
         // Starting the broker
         return apicurioRegistryContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(config.imageName, "apicurio"),
+                        APICURIO_REGISTRY_PORT, launchMode.getLaunchMode()))
                 .map(address -> new RunningDevService(Feature.APICURIO_REGISTRY_AVRO.getName(),
                         address.getId(), null,
                         // address does not have the URL Scheme - just the host:port, so prepend http://
@@ -267,6 +277,7 @@ public class DevServicesApicurioRegistryProcessor {
 
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
+                withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
             withEnv("QUARKUS_PROFILE", "prod");
             if (!dockerImageName.getRepository().endsWith("apicurio/apicurio-registry-mem")) {

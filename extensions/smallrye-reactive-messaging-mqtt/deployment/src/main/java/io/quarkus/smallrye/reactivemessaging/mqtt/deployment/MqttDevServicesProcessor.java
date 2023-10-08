@@ -1,8 +1,13 @@
 package io.quarkus.smallrye.reactivemessaging.mqtt.deployment;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+
 import java.io.Closeable;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -11,6 +16,7 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -21,6 +27,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
@@ -29,6 +36,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -48,8 +56,9 @@ public class MqttDevServicesProcessor {
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-mqtt";
 
     private static final int MQTT_PORT = 1883;
+    private static final int MQTT_TLS_PORT = 8883;
 
-    private static final ContainerLocator mqttContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, MQTT_PORT);
+    private static final ContainerLocator mqttContainerLocator = locateContainerWithLabels(MQTT_PORT, DEV_SERVICE_LABEL);
     static volatile RunningDevService devService;
     static volatile MqttDevServiceCfg cfg;
     static volatile boolean first = true;
@@ -57,6 +66,7 @@ public class MqttDevServicesProcessor {
     @BuildStep
     public DevServicesResultBuildItem startMqttDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             LaunchModeBuildItem launchMode,
             MqttBuildTimeConfig mqttClientBuildTimeConfig,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -78,8 +88,8 @@ public class MqttDevServicesProcessor {
                 (launchMode.isTest() ? "(test) " : "") + "MQTT Dev Services Starting:", consoleInstalledBuildItem,
                 loggingSetupBuildItem);
         try {
-            RunningDevService newDevService = startMqttBroker(dockerStatusBuildItem, configuration, launchMode,
-                    devServicesConfig.timeout());
+            RunningDevService newDevService = startMqttBroker(dockerStatusBuildItem, composeProjectBuildItem,
+                    configuration, launchMode, devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
 
@@ -135,6 +145,7 @@ public class MqttDevServicesProcessor {
     }
 
     private RunningDevService startMqttBroker(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             MqttDevServiceCfg config, LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
@@ -172,16 +183,22 @@ public class MqttDevServicesProcessor {
                     container.getPort());
         };
 
-        return mqttContainerLocator
-                .locateContainer(
-                        config.serviceName,
-                        config.shared,
-                        launchMode.getLaunchMode())
+        return mqttContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .map(containerAddress -> getRunningDevService(
                         containerAddress.getId(),
                         null,
                         containerAddress.getHost(),
                         containerAddress.getPort()))
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(config.imageName, "hivemq", "eclipse-mosquitto"),
+                        launchMode.getLaunchMode()).stream()
+                        .filter(r -> Arrays.stream(r.containerInfo().exposedPorts())
+                                .anyMatch(c -> c.privatePort() == MQTT_PORT || c.privatePort() == MQTT_TLS_PORT))
+                        .findFirst().map(r -> getRunningDevService(
+                                r.containerInfo().id(),
+                                null,
+                                DockerClientFactory.instance().dockerHostIpAddress(),
+                                r.getPortMapping(MQTT_PORT).or(() -> r.getPortMapping(MQTT_TLS_PORT)).orElse(0))))
                 .orElseGet(defaultMqttBrokerSupplier);
     }
 
@@ -193,8 +210,7 @@ public class MqttDevServicesProcessor {
         Map<String, String> configMap = new HashMap<>();
         configMap.put("mp.messaging.connector.smallrye-mqtt.host", host);
         configMap.put("mp.messaging.connector.smallrye-mqtt.port", String.valueOf(port));
-        return new RunningDevService(Feature.MESSAGING_MQTT.getName(),
-                containerId, closeable, configMap);
+        return new RunningDevService(Feature.MESSAGING_MQTT.getName(), containerId, closeable, configMap);
     }
 
     private boolean hasMqttChannelWithoutHostAndPort() {
@@ -277,6 +293,7 @@ public class MqttDevServicesProcessor {
             withNetwork(Network.SHARED);
             if (serviceName != null) { // Only adds the label in dev mode.
                 withLabel(DEV_SERVICE_LABEL, serviceName);
+                withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
             withClasspathResourceMapping("mosquitto.conf",
                     "/mosquitto/config/mosquitto.conf",

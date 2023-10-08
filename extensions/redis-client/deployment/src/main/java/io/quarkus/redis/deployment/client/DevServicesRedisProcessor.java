@@ -1,5 +1,7 @@
 package io.quarkus.redis.deployment.client;
 
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
 import java.io.Closeable;
@@ -23,6 +25,7 @@ import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
@@ -32,6 +35,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.redis.deployment.client.RedisBuildTimeConfig.DevServiceConfiguration;
@@ -52,7 +56,8 @@ public class DevServicesRedisProcessor {
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
 
-    private static final ContainerLocator redisContainerLocator = new ContainerLocator(DEV_SERVICE_LABEL, REDIS_EXPOSED_PORT);
+    private static final ContainerLocator redisContainerLocator = locateContainerWithLabels(REDIS_EXPOSED_PORT,
+            DEV_SERVICE_LABEL);
 
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
@@ -63,6 +68,7 @@ public class DevServicesRedisProcessor {
     @BuildStep
     public List<DevServicesResultBuildItem> startRedisContainers(LaunchModeBuildItem launchMode,
             DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             RedisBuildTimeConfig config,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
@@ -102,7 +108,8 @@ public class DevServicesRedisProcessor {
                 String connectionName = entry.getKey();
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
-                RunningDevService devService = startContainer(dockerStatusBuildItem, connectionName,
+                RunningDevService devService = startContainer(dockerStatusBuildItem, composeProjectBuildItem,
+                        connectionName,
                         entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
                         useSharedNetwork, devServicesConfig.timeout());
@@ -147,7 +154,9 @@ public class DevServicesRedisProcessor {
         return devServices.stream().map(RunningDevService::toBuildItem).collect(Collectors.toList());
     }
 
-    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem, String name,
+    private RunningDevService startContainer(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            String name,
             io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig, LaunchMode launchMode,
             boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!devServicesConfig.enabled()) {
@@ -188,6 +197,9 @@ public class DevServicesRedisProcessor {
         };
 
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
+                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
+                        List.of(devServicesConfig.imageName().orElse("redis")),
+                        REDIS_EXPOSED_PORT, launchMode))
                 .map(containerAddress -> {
                     String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
                     return new RunningDevService(Feature.REDIS_CLIENT.getName(), containerAddress.getId(),
@@ -218,6 +230,7 @@ public class DevServicesRedisProcessor {
 
             if (serviceName != null) {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
+                withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
         }
 

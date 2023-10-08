@@ -12,6 +12,7 @@ import org.testcontainers.utility.DockerImageName;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.Labels;
 
 /**
  * Container configuring and starting the Redpanda broker.
@@ -24,13 +25,13 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
     private final boolean useSharedNetwork;
     private final RedpandaBuildTimeConfig redpandaConfig;
 
-    private String hostName = null;
+    private final String hostName;
 
     private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
     private static final int PANDAPROXY_PORT = 8082;
 
     RedpandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-            boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
+            String defaultNetworkId, boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
         super(dockerImageName);
         this.fixedExposedPort = fixedExposedPort;
         this.useSharedNetwork = useSharedNetwork;
@@ -38,6 +39,7 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
 
         if (serviceName != null) { // Only adds the label in dev mode.
             withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
+            withLabel(Labels.QUARKUS_DEV_SERVICE, serviceName);
         }
 
         // For redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
@@ -47,6 +49,7 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
         withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; sleep 0.1; " +
                 STARTER_SCRIPT);
         waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
+        this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redpanda");
     }
 
     @Override
@@ -98,7 +101,6 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
         super.configure();
 
         addExposedPort(DevServicesKafkaProcessor.KAFKA_PORT);
-        hostName = ConfigureUtil.configureSharedNetwork(this, "kafka");
 
         if (fixedExposedPort != null) {
             addFixedExposedPort(fixedExposedPort, DevServicesKafkaProcessor.KAFKA_PORT);

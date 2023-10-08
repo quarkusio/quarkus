@@ -32,6 +32,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
@@ -53,6 +54,7 @@ public class StartupActionImpl implements StartupAction {
     private final String mainClassName;
     private final String applicationClassName;
     private final Map<String, String> devServicesProperties;
+    private final String devServicesNetworkId;
     private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
     private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
 
@@ -62,6 +64,7 @@ public class StartupActionImpl implements StartupAction {
         this.mainClassName = buildResult.consume(MainClassBuildItem.class).getClassName();
         this.applicationClassName = buildResult.consume(ApplicationClassNameBuildItem.class).getClassName();
         this.devServicesProperties = extractDevServicesProperties(buildResult);
+        this.devServicesNetworkId = extractDevServicesNetworkId(buildResult);
         this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
@@ -367,6 +370,11 @@ public class StartupActionImpl implements StartupAction {
         return devServicesProperties;
     }
 
+    @Override
+    public String getDevServicesNetworkId() {
+        return devServicesNetworkId;
+    }
+
     private static Map<String, String> extractDevServicesProperties(BuildResult buildResult) {
         DevServicesLauncherConfigResultBuildItem result = buildResult
                 .consumeOptional(DevServicesLauncherConfigResultBuildItem.class);
@@ -374,6 +382,14 @@ public class StartupActionImpl implements StartupAction {
             return Map.of();
         }
         return new HashMap<>(result.getConfig());
+    }
+
+    private static String extractDevServicesNetworkId(BuildResult buildResult) {
+        DevServicesNetworkIdBuildItem networkId = buildResult.consumeOptional(DevServicesNetworkIdBuildItem.class);
+        if (networkId == null || networkId.getNetworkId() == null) {
+            return null;
+        }
+        return networkId.getNetworkId();
     }
 
     private static Map<String, byte[]> extractTransformedClasses(BuildResult buildResult) {

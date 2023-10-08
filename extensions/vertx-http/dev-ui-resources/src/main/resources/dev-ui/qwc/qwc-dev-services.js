@@ -137,8 +137,16 @@ export class QwcDevServices extends observeState(QwcHotReloadElement) {
 
     _getNetwork(devService) {
         if (devService.containerInfo.networks) {
+            const networks = Object.entries(devService.containerInfo.networks)
+                .map(([key, aliases]) => {
+                    if (!aliases || aliases.length === 0) {
+                        return key;
+                    }
+                    return `${key} (${aliases.join(", ")})`;
+                })
+                .join(", ");
             return html`<span class="row"><vaadin-icon
-                    icon="font-awesome-solid:network-wired"></vaadin-icon>${devService.containerInfo.networks.join(', ')}</span>`;
+                    icon="font-awesome-solid:network-wired"></vaadin-icon>${networks}</span>`;
         }
     }
 

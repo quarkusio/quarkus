@@ -19,6 +19,8 @@ public interface StartupAction {
 
     Map<String, String> getDevServicesProperties();
 
+    String getDevServicesNetworkId();
+
     /**
      * Runs the application by running the main method of the main class. As this is a blocking method a new
      * thread is created to run this task.

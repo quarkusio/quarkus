@@ -1,0 +1,14 @@
+services:
+  service3:
+    image: test/service3:latest
+    ports:
+      - "8082:8082"
+    environment:
+      KEY3: value3
+
+  service4:
+    image: test/service4:latest
+    ports:
+      - "8083:8083"
+    labels:
+      custom.label: value

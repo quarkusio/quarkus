@@ -25,7 +25,7 @@ image::dev-ui-overview-v2.png[alt=Dev UI overview,role="center"]
 It allows you to:
 
 - quickly visualize all the extensions currently loaded
-- view extension statuses and go directly to extension documentation 
+- view extension statuses and go directly to extension documentation
 - view and change `Configuration`
 - manage and visualize `Continuous Testing`
 - view `Dev Services` information
@@ -44,7 +44,7 @@ So you can always start with that :)
 
 Extensions can:
 
-- <<add-links-to-an-extension-card,Add links to an extension card>> 
+- <<add-links-to-an-extension-card,Add links to an extension card>>
 - <<add-full-pages,Add full custom pages>>
 - <<add-a-log-file,Add a log stream>>
 - <<add-a-section-menu,Add a section menu>>
@@ -97,7 +97,7 @@ public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRoo
 [NOTE]
 .Note about icons
 
-If you find your icon at https://fontawesome.com/search?o=r&m=free[Font awesome], you can map as follow: Example `<i class="fa-solid fa-house"></i>` will map to `font-awesome-solid:house`, so `fa` becomes `font-awesome` and for the icon name, remove the `fa-`; 
+If you find your icon at https://fontawesome.com/search?o=r&m=free[Font awesome], you can map as follow: Example `<i class="fa-solid fa-house"></i>` will map to `font-awesome-solid:house`, so `fa` becomes `font-awesome` and for the icon name, remove the `fa-`;
 
 ==== Embedding external content
 
@@ -107,13 +107,13 @@ image::dev-ui-extension-openapi-embed-v2.png[alt=Dev UI embedded page,role="cent
 
 If you do not want to embed the content, you can use the `.doNotEmbed()` on the Page Builder, this will then open the link in a new tab.
 
-==== Runtime external links 
+==== Runtime external links
 
-The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case you can use a <<JsonRPC>> Method that returns the link to add, and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`. 
+The example above assumes you know the link to use at build time. There might be cases where you only know this at runtime. In that case you can use a <<JsonRPC>> Method that returns the link to add, and use that when creating the link. Rather than using the `.url` method on the page builder, use the `.dynamicUrlJsonRPCMethodName("yourJsonRPCMethodName")`.
 
 ==== Adding labels
 
-You can add an option label to the link in the card using one of the builder methods on the page builder. These labels can be 
+You can add an option label to the link in the card using one of the builder methods on the page builder. These labels can be
 
 - static (known at build time) `.staticLabel("staticLabelValue")`
 - dynamic (loaded at runtime) `.dynamicLabelJsonRPCMethodName("yourJsonRPCMethodName")`
@@ -145,7 +145,7 @@ There are a few options to add full page content in Dev UI. Starting from the mo
 
 If you have some data that is known at build time that you want to display you can use one of the following builders in `Page`:
 
-- <<raw-data,Raw data>> 
+- <<raw-data,Raw data>>
 - <<table-data,Table data>>
 - <<qute-data,Qute data>>
 - <<web-component-page,Web Component page>>
@@ -291,7 +291,7 @@ export class QwcArcBeans extends LitElement { // <3>
 customElements.define('qwc-arc-beans', QwcArcBeans); // <10>
 ----
 
-<1> You can import Classes and/or functions from other libraries. 
+<1> You can import Classes and/or functions from other libraries.
 In this case we use the `LitElement` class and `html` & `css` functions from `Lit`
 <2> Build time data as defined in the Build step and can be imported using the key and always from `build-time-data`. All keys added in your Build step will be available.
 <3> The component should be named in the following format: Qwc (stands for Quarkus Web Component) then Extension Name then Page Title, all concatenated with Camel Case. This will also match the file name format as described earlier. The component should also extend `LitComponent`.
@@ -305,7 +305,7 @@ In this case we use the `LitElement` class and `html` & `css` functions from `Li
 
 ===== Using Vaadin UI components for rendering
 
-Dev UI makes extensive usage of https://vaadin.com/docs/latest/components[Vaadin web components] as UI Building blocks. 
+Dev UI makes extensive usage of https://vaadin.com/docs/latest/components[Vaadin web components] as UI Building blocks.
 
 As an example, the Arc Beans are rendered using a https://vaadin.com/docs/latest/components/grid[Vaadin Grid]:
 
@@ -374,7 +374,7 @@ export class QwcArcBeans extends LitElement {
                         resizable>
                     </vaadin-grid-column>
                 </vaadin-grid>`;
-            
+
         } else {
             return html`No beans found`;
         }
@@ -412,10 +412,10 @@ export class QwcArcBeans extends LitElement {
       }else if(bean.kind.toLowerCase() === "synthetic"){
         level = "contrast";
       }
-      
+
       return html`
         ${level
-          ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>` 
+          ? html`<qui-badge level='${level}' small><span>${kind}</span></qui-badge>`
           : html`<qui-badge small><span>${kind}</span></qui-badge>`
         }`;
     }
@@ -434,7 +434,7 @@ export class QwcArcBeans extends LitElement {
             return html`<vaadin-vertical-layout>
                           ${bean.interceptorInfos.map(interceptor =>
                               html`<div>
-                                    <code>${interceptor.interceptorClass.name}</code> 
+                                    <code>${interceptor.interceptorClass.name}</code>
                                     <qui-badge class="${bean.kind.toLowerCase()}" small pill><span>${interceptor.priority}</span></qui-badge>
                                   </div>`
                           )}
@@ -522,7 +522,7 @@ You can use any combination of small, primary, pill, with icon and clickable wit
                     <qui-badge background="pink" color="purple" small><span>Custom colours</span></qui-badge>
                 </div>
             </div>
-        </qui-card> 
+        </qui-card>
         <qui-card title="Primary">
             <div slot="content">
                 <div class="cardcontents">
@@ -548,7 +548,7 @@ You can use any combination of small, primary, pill, with icon and clickable wit
             </div>
         </qui-card>
         <qui-card title="With icon">
-            <div slot="content">            
+            <div slot="content">
                 <div class="cardcontents">
                     <qui-badge text="Default" icon="font-awesome-solid:circle-info">
                         <span>Default icon</span>
@@ -689,7 +689,7 @@ import 'qui-code-block';
 [source,html]
 ----
 <div class="codeBlock">
-    <qui-code-block 
+    <qui-code-block
         mode='yaml'
         content='${yaml}'>
     </qui-code-block>
@@ -703,7 +703,7 @@ or fetching the contents from a URL:
 [source,html]
 ----
 <div class="codeBlock">
-    <qui-code-block 
+    <qui-code-block
         mode='${this._mode}'
         src='${this._externalUrl}'>
     </qui-code-block>
@@ -723,7 +723,7 @@ import 'qui-ide-link';
 
 [source,html]
 ----
-<qui-ide-link title='Source full class name' 
+<qui-ide-link title='Source full class name'
                         class='text-source'
                         fileName='${sourceClassNameFull}'
                         lineNumber=${sourceLineNumber}>[${sourceClassNameFull}]</qui-ide-link>;
@@ -868,7 +868,7 @@ Now, in your Runtime module create the JsonRPC Service. This class will default 
 
 The return object in these methods can be:
 
-- primitives or `String`, 
+- primitives or `String`,
 - `io.vertx.core.json.JsonArray`
 - `io.vertx.core.json.JsonObject`
 - any other POJO that can be serializable to Json
@@ -903,7 +903,7 @@ https://github.com/quarkusio/quarkus/blob/main/extensions/cache/runtime/src/main
 
 *Webcomponent (Javascript) part*
 
-Now you can use the JsonRPC controller to access the `getAll` method (and any other methods in you JsonRPC Service) 
+Now you can use the JsonRPC controller to access the `getAll` method (and any other methods in you JsonRPC Service)
 
 [source,javascript]
 ----
@@ -975,7 +975,7 @@ Java side of streaming data:
 public class JokesJsonRPCService {
 
     private final BroadcastProcessor<Joke> jokeStream = BroadcastProcessor.create();
-    
+
     @PostConstruct
     void init() {
         Multi.createFrom().ticks().every(Duration.ofHours(4)).subscribe().with((item) -> {
@@ -1007,7 +1007,7 @@ this._observer = this.jsonRpc.streamJokes().onNext(jsonRpcResponse => { //<1>
 
 this._observer.cancel(); //<2>
 ----
-<1> You can call the method (optionally passing in parameters) and then provide the code that will be called on the next event. 
+<1> You can call the method (optionally passing in parameters) and then provide the code that will be called on the next event.
 <2> Make sure to keep an instance of the observer to cancel later if needed.
 
 https://github.com/phillip-kruger/quarkus-jokes/blob/main/deployment/src/main/resources/dev-ui/qwc-jokes-web-components.js[Example code]
@@ -1076,7 +1076,7 @@ static properties = {
     extensionName: {type: String},
     description: {type: String},
     guide: {type: String},
-    namespace: {type: String}    
+    namespace: {type: String}
 }
 ----
 

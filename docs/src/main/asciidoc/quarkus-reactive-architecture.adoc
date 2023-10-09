@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about Quarkus reactive architecture.
+:topics: internals,reactive
 
 Quarkus is reactive.
 It's even more than this: Quarkus unifies reactive and imperative programming.

@@ -11,6 +11,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: cdi,arc,injection,interceptor,observer
+:extensions: io.quarkus:quarkus-arc
 
 In this guide we're going to describe the basic principles of the Quarkus programming model that is based on the https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html[Jakarta Contexts and Dependency Injection 4.0, window="_blank"] specification.
 

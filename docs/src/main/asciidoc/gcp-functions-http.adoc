@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as a Google Cloud Function.
+:topics: google,gcp,serverless,function,cloud
+:extensions: io.quarkus:quarkus-google-cloud-functions-http
 
 The `quarkus-google-cloud-functions-http` extension allows you to write microservices with RESTEasy Reactive (Jakarta REST),
 Undertow (Servlet), Reactive Routes, or xref:funqy-http.adoc[Funqy HTTP], and make these microservices deployable to the Google Cloud Functions runtime.

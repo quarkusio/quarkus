@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :summary: Use Apache Kafka, Avro serialized records, and connect to a schema registry.
+:topics: messaging,kafka,apicurio,registry
+:extensions: io.quarkus:quarkus-apicurio-registry-avro,io.quarkus:quarkus-smallrye-reactive-messaging-kafka
 
 This guide shows how your Quarkus application can use Apache Kafka, https://avro.apache.org/docs/current/[Avro] serialized
 records, and connect to a schema registry (such as the https://docs.confluent.io/platform/current/schema-registry/index.html[Confluent Schema Registry] or https://www.apicur.io/registry/[Apicurio Registry]).

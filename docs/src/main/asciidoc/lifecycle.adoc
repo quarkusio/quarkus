@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: core
 :keywords: lifecycle event
 :summary: You often need to execute custom actions when the application starts and clean up everything when the application stops. This guide explains how to be notified when an application stops or starts.
+:topics: lifecycle,observers
+:extensions: io.quarkus:quarkus-core,io.quarkus:quarkus-arc
 
 You often need to execute custom actions when the application starts and clean up everything when the application stops.
 This guide explains how to:

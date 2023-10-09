@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: getting-started
 :summary: Explore the Quarkus developer toolchain which makes Quarkus development so fast and enjoyable.
+:topics: tooling
 
 Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application. In addition, there are plugins and extensions to all major IDEs.
 

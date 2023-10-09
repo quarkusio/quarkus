@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: tooling
 
 This guide covers packaging and releasing CLI applications using the link:https://jreleaser.org[JReleaser] tool.
 

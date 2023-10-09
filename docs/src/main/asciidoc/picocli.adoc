@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: command-line
 :summary: Simplify command line applications creation with the Picocli extension.
+:topics: command-line,cli,picocli
+:extensions: io.quarkus:quarkus-picocli
 
 https://picocli.info/[Picocli] is an open source tool for creating rich command line applications.
 
@@ -202,7 +204,7 @@ This event will be generated in `QuarkusApplication` class created by this exten
 ----
 @CommandLine.Command
 public class EntryCommand implements Runnable {
-    
+
     @CommandLine.Option(names = "-c", description = "JDBC connection string")
     String connectionString;
 

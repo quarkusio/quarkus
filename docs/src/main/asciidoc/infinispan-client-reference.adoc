@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Infinispan is an in memory distributed data store and cache server that offers flexible deployment options and robust capabilities for storing, managing, and processing data.
+:topics: data,infinispan
+:extensions: io.quarkus:quarkus-infinispan-client
 
 Infinispan is a distributed, in-memory key/value store that provides Quarkus applications with a highly configurable
 and independently scalable data layer.

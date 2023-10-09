@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: This guide explains how to start using gRPC in your Quarkus application.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc
 
 This page explains how to start using gRPC in your Quarkus application.
 While this page describes how to configure it with Maven, it is also possible to use Gradle.
@@ -229,7 +231,7 @@ Further docs explain how to enable and use each of them.
 
 Now that we have the generated classes let's implement our _hello_ service.
 
-With Quarkus, implementing a service requires to implement the generated service interface based on Mutiny, a Reactive Programming API integrated in Quarkus, and expose it as a CDI bean. 
+With Quarkus, implementing a service requires to implement the generated service interface based on Mutiny, a Reactive Programming API integrated in Quarkus, and expose it as a CDI bean.
 Learn more about Mutiny on the xref:mutiny-primer.adoc[Mutiny guide].
 The service class must be annotated with the `@io.quarkus.grpc.GrpcService` annotation.
 

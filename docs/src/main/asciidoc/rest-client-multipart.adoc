@@ -6,7 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using the legacy REST Client with Multipart
 include::_attributes.adoc[]
 :categories: web
-:summary: This guide explains how to use the RESTEasy REST Client to send multipart REST requests, typically to upload documents.
+:summary: This guide explains how to use the RESTEasy Classic REST Client to send multipart REST requests, typically to upload documents.
+:topics: rest,rest-client,multipart,resteasy-classic
+:extensions: io.quarkus:quarkus-rest-client,io.quarkus:quarkus-resteasy-multipart
 
 [WARNING]
 ====

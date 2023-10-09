@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains how to deploy a Quarkus application to Google Cloud.
+:topics: devops,google,gcp,cloud,deployment
 
 This guide covers:
 

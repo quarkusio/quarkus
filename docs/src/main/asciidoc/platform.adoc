@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: architecture
 :summary: Learn more about what we call a Platform in the Quarkus world.
+:topics: internals,platform
 
 The Quarkus extension ecosystem consists of the Quarkus extensions developed and maintained by the community, including the Quarkus core development team. While the Quarkus ecosystem (sometimes also referred to as the "Quarkus universe") includes all the Quarkus extensions ever developed, there is also a concept of a Quarkus platform.
 

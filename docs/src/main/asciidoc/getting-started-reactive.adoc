@@ -5,8 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Getting Started With Reactive
 include::_attributes.adoc[]
-:categories: getting-started
+:categories: getting-started,reactive
 :summary: Learn more about developing reactive applications with Quarkus.
+:topics: getting-started,reactive
 
 _Reactive_ is a set of principles to build robust, efficient, and concurrent applications and systems.
 These principles let you handle more load than traditional approaches while using the resources (CPU and memory) more efficiently while also reacting to failures gracefully.

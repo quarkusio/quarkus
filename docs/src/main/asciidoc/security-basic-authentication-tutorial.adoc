@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: security,getting-started
+:topics: security,authentication,basic-authentication,http
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
 
 Secure your Quarkus application endpoints by combining the built-in Quarkus xref:security-basic-authentication.adoc[Basic authentication] with the Jakarta Persistence identity provider to enable role-based access control (RBAC).
 The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance, which is used during user authentication to verify and authorize access requests making your Quarkus application secure.

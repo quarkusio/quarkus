@@ -11,6 +11,7 @@ import jakarta.enterprise.event.Observes;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
@@ -27,6 +28,7 @@ public class OidcDbTokenStateManagerInitializer {
      * Extra 30 seconds before we delete expired tokens.
      */
     private static final long EXPIRED_EXTRA_GRACE = 30;
+    private static volatile Long timerId = null;
 
     void initialize(@Observes StartupEvent event, OidcDbTokenStateManagerRunTimeConfig config, Vertx vertx, Pool pool,
             OidcDbTokenStateManagerInitializerProperties initializerProps) {
@@ -36,8 +38,14 @@ public class OidcDbTokenStateManagerInitializer {
         periodicallyDeleteExpiredTokens(vertx, pool, config.deleteExpiredDelay().toMillis());
     }
 
+    void shutdown(@Observes ShutdownEvent event, Vertx vertx) {
+        if (timerId != null) {
+            vertx.cancelTimer(timerId);
+        }
+    }
+
     private static void periodicallyDeleteExpiredTokens(Vertx vertx, Pool pool, long delayBetweenChecks) {
-        vertx
+        timerId = vertx
                 .setPeriodic(5000, delayBetweenChecks, new Handler<Long>() {
 
                     private final AtomicBoolean deleteInProgress = new AtomicBoolean(false);

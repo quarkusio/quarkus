@@ -302,11 +302,17 @@ public final class OidcUtils {
         }
     }
 
-    private static Permission[] transformScopesToPermissions(Collection<String> scopes) {
+    static Permission[] transformScopesToPermissions(Collection<String> scopes) {
         final Permission[] permissions = new Permission[scopes.size()];
         int i = 0;
         for (String scope : scopes) {
-            permissions[i++] = new StringPermission(scope);
+            int semicolonIndex = scope.indexOf(':');
+            if (semicolonIndex > 0 && semicolonIndex < scope.length() - 1) {
+                permissions[i++] = new StringPermission(scope.substring(0, semicolonIndex),
+                        scope.substring(semicolonIndex + 1));
+            } else {
+                permissions[i++] = new StringPermission(scope);
+            }
         }
         return permissions;
     }

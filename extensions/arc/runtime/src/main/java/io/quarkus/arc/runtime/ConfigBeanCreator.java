@@ -32,6 +32,8 @@ public class ConfigBeanCreator implements BeanCreator<Object> {
             throw new IllegalStateException("No current injection point found");
         }
 
+        ConfigStaticInitCheckInterceptor.recordConfigValue(injectionPoint, null);
+
         try {
             return ConfigProducerUtil.getValue(injectionPoint, ConfigProvider.getConfig());
         } catch (Exception e) {

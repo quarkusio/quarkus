@@ -27,6 +27,7 @@ import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ExcludeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathAggregateBuildItem;
@@ -360,6 +361,22 @@ public class NativeImageBuildStep {
     public NativeImageRunnerBuildItem dummyNativeImageBuildRunner(NativeConfig nativeConfig) {
         boolean explicitContainerBuild = nativeConfig.isExplicitContainerBuild();
         return new NativeImageRunnerBuildItem(new NoopNativeImageBuildRunner(explicitContainerBuild));
+    }
+
+    @BuildStep
+    public void ignoreBuildPropertyChanges(BuildProducer<SuppressNonRuntimeConfigChangedWarningBuildItem> producer) {
+        // Don't produce warnings on static init for properties that are overridden through environment variables
+        // if they are clearly only relevant when building.
+        for (String propertyKey : new String[] {
+                "quarkus.native.container-build",
+                "quarkus.native.remote-container-build",
+                "quarkus.native.builder-image.image",
+                "quarkus.native.builder-image.pull",
+                "quarkus.native.container-runtime",
+                "quarkus.native.container-runtime-options"
+        }) {
+            producer.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem(propertyKey));
+        }
     }
 
     private void copyJarSourcesToLib(OutputTargetBuildItem outputTargetBuildItem,

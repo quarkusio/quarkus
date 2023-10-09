@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Build, Sign and Encrypt JSON Web Tokens
 include::_attributes.adoc[]
+:categories: security
+:topics: security,jwt
+:extensions: io.quarkus:quarkus-smallrye-jwt-build
 
 According to link:https://datatracker.ietf.org/doc/html/rfc7519[RFC7519], JSON Web Token (JWT) is a compact, URL-safe means of representing claims which are encoded as a JSON object that is used as the payload of a JSON Web Signature (JWS) structure or as the plaintext of a JSON Web Encryption (JWE) structure, enabling the claims to be digitally signed or integrity protected with a Message Authentication Code(MAC) and/or encrypted.
 

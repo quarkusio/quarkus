@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core
 :summary: A list of all extensions that support Dev Services and their configuration options.
+:topics: devservices,tooling,testing,devmode
 
 Quarkus supports the automatic provisioning of unconfigured services in development and test mode. We refer to this capability
 as Dev Services. From a developer's perspective this means that if you include an extension and don't configure it then
@@ -77,7 +78,7 @@ include::{generated-dir}/config/quarkus-keycloak-devservices-keycloak-keycloak-b
 
 == Kubernetes
 
-The Kubernetes Dev Service will be enabled when `kubernetes-client` extension is present in your application, and 
+The Kubernetes Dev Service will be enabled when `kubernetes-client` extension is present in your application, and
 the API server address has not been explicitly configured. More information can be found in the
 xref:kubernetes-dev-services.adoc[Kubernetes Dev Services Guide].
 

@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Simplified reactive ORM layer based on Hibernate Reactive.
 :config-file: application.properties
+:topics: data,hibernate-reactive,panache,sql
+:extensions: io.quarkus:quarkus-hibernate-reactive-panache,io.quarkus:quarkus-hibernate-reactive
 
 link:https://hibernate.org/reactive/[Hibernate Reactive] is the only reactive Jakarta Persistence (formerly known as JPA) implementation and offers you the full
 breadth of an Object Relational Mapper allowing you to access your database over reactive drivers.

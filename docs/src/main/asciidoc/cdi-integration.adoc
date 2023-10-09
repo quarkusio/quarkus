@@ -9,6 +9,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :numbered:
 :toclevels: 2
+:topics: cdi,arc,injection
+:extensions: io.quarkus:quarkus-arc
 
 ArC, the CDI container in Quarkus, is bootstrapped at build time.
 To integrate with the container, https://jakarta.ee/specifications/cdi/4.0/jakarta-cdi-spec-4.0.html#spi_lite[CDI Build Compatible Extensions, window="_blank"] can be used, as well as a Quarkus-specific extension API.
@@ -19,7 +21,7 @@ The container is bootstrapped in multiple phases.
 From a high level perspective these phases go as follows:
 
 1. Initialization
-2. Bean discovery 
+2. Bean discovery
 3. Registration of synthetic components
 4. Validation
 
@@ -40,7 +42,7 @@ In the following sections we will describe all the relevant build items and comm
 Classes and annotations are the primary source of bean-level metadata.
 The initial metadata are read from the _bean archive index_, an immutable https://github.com/wildfly/jandex[Jandex index, window="_blank"] which is built from various sources during <<cdi-reference.adoc#bean_discovery,bean discovery>>.
 However, extensions can add, remove or transform the metadata at certain stages of the bootstrap.
-Moreover, extensions can also register <<synthetic_beans,synthetic components>>. 
+Moreover, extensions can also register <<synthetic_beans,synthetic components>>.
 This is an important aspect to realize when integrating CDI components in Quarkus.
 
 This way, extensions can turn classes, that would be otherwise ignored, into beans and vice versa.
@@ -57,14 +59,14 @@ There are several reasons why a class is not recognized and also several ways to
 In the first step we should identify the _reason_.
 
 [[additional_bean_build_item]]
-=== _Reason 1_: Class Is Not discovered 
+=== _Reason 1_: Class Is Not discovered
 
 Quarkus has a <<cdi-reference.adoc#bean_discovery,simplified discovery>>.
 It might happen that the class is not part of the application index.
 For example, classes from the _runtime module_ of a Quarkus extension are not indexed automatically.
 
-_Solution_: Use the `AdditionalBeanBuildItem`. 
-This build item can be used to specify one or more additional classes to be analyzed during the discovery. 
+_Solution_: Use the `AdditionalBeanBuildItem`.
+This build item can be used to specify one or more additional classes to be analyzed during the discovery.
 Additional bean classes are transparently added to the application index processed by the container.
 
 IMPORTANT: It is not possible to conditionally enable/disable additional beans via the `@IfBuildProfile`, `@UnlessBuildProfile`, `@IfBuildProperty` and `@UnlessBuildProperty` annotations as described in <<cdi-reference.adoc#enable_build_profile>> and <<cdi-reference.adoc#enable_build_properties>>. Extensions should inspect the configuration or the current profile and only produce an `AdditionalBeanBuildItem` if really needed.
@@ -85,7 +87,7 @@ However, you can use `AdditionalBeanBuildItem.Builder.setUnremovable()` method t
 See also <<cdi-reference.adoc#remove_unused_beans,Removing Unused Beans>> and <<unremovable_builditem>> for more details.
 
 It is aso possible to set the default scope via `AdditionalBeanBuildItem.Builder#setDefaultScope()`.
-The default scope is only used if there is no scope declared on the bean class. 
+The default scope is only used if there is no scope declared on the bean class.
 
 NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
 
@@ -127,7 +129,7 @@ However, you can change the default behavior.
 See also <<cdi-reference.adoc#remove_unused_beans,Removing Unused Beans>> and <<unremovable_builditem>> for more details.
 
 It is also possible to specify the default scope.
-The default scope is only used if there is no scope declared on the bean class. 
+The default scope is only used if there is no scope declared on the bean class.
 
 NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
 
@@ -136,7 +138,7 @@ NOTE: If no default scope is specified the `@Dependent` pseudo-scope is used.
 
 The container attempts to <<cdi-reference.adoc#remove_unused_beans,remove all unused beans>> during the build by default.
 This optimization allows for _framework-level dead code elimination_.
-In few special cases, it's not possible to correctly identify an unused bean. 
+In few special cases, it's not possible to correctly identify an unused bean.
 In particular, Quarkus is not able to detect the usage of the `CDI.current()` static method yet.
 Extensions can eliminate possible false positives by producing an `UnremovableBeanBuildItem`.
 
@@ -155,7 +157,7 @@ UnremovableBeanBuildItem unremovableBeans() {
 It is likely that the annotation class is not part of the application index.
 For example, classes from the _runtime module_ of a Quarkus extension are not indexed automatically.
 
-_Solution_: Use the `AdditionalBeanBuildItem` as described in <<additional_bean_build_item>>. 
+_Solution_: Use the `AdditionalBeanBuildItem` as described in <<additional_bean_build_item>>.
 
 [[annotations_transformer_build_item]]
 == Use Case - I Need To Transform Annotation Metadata
@@ -297,8 +299,8 @@ SyntheticBeanBuildItem syntheticBean() {
 ----
 <1> Generate the bytecode of the `jakarta.enterprise.context.spi.Contextual#create(CreationalContext<T>)` implementation.
 
-The output of a bean configurator is recorded as bytecode. 
-Therefore, there are some limitations in how a synthetic bean instance is created at runtime. 
+The output of a bean configurator is recorded as bytecode.
+Therefore, there are some limitations in how a synthetic bean instance is created at runtime.
 You can:
 
 1. Generate the bytecode of the `Contextual#create(CreationalContext<T>)` method directly via `ExtendedBeanConfigurator.creator(Consumer<MethodCreator>)`.
@@ -344,7 +346,7 @@ Synthetic beans initialized during `RUNTIME_INIT` must not be accessed during `S
 [source,java]
 ----
 @BuildStep
-@Record(RUNTIME_INIT) 
+@Record(RUNTIME_INIT)
 @Consume(SyntheticBeansRuntimeInitBuildItem.class) <1>
 void accessFoo(TestRecorder recorder) {
    recorder.foo(); <2>
@@ -411,7 +413,7 @@ IMPORTANT: A build step that consumes the `ObserverRegistrationPhaseBuildItem` s
 ----
 @BuildStep
 void syntheticObserver(ObserverRegistrationPhaseBuildItem observerRegistrationPhase,
-            BuildProducer<MyBuildItem> myBuildItem, 
+            BuildProducer<MyBuildItem> myBuildItem,
             BuildProducer<ObserverConfiguratorBuildItem> observerConfigurationRegistry) {
    observerConfigurationRegistry.produce(new ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext()
        .configure()
@@ -424,8 +426,8 @@ void syntheticObserver(ObserverRegistrationPhaseBuildItem observerRegistrationPh
 }
 ----
 
-The output of a `ObserverConfigurator` is recorded as bytecode. 
-Therefore, there are some limitations in how a synthetic observer is invoked at runtime. 
+The output of a `ObserverConfigurator` is recorded as bytecode.
+Therefore, there are some limitations in how a synthetic observer is invoked at runtime.
 Currently, you must generate the bytecode of the method body directly.
 
 [[generated_beans]]
@@ -462,7 +464,7 @@ IMPORTANT: A build step that consumes the `ValidationPhaseBuildItem` should alwa
 ----
 @BuildStep
 void validate(ValidationPhaseBuildItem validationPhase,
-            BuildProducer<MyBuildItem> myBuildItem, 
+            BuildProducer<MyBuildItem> myBuildItem,
             BuildProducer<ValidationErrorBuildItem> errors) {
    if (someCondition) {
      errors.produce(new ValidationErrorBuildItem(new IllegalStateException()));
@@ -606,7 +608,7 @@ NOTE: In theory, you can use <<annotations_transformer_build_item,an `Annotation
 == Use Case - Resource Annotations and Injection
 
 The `ResourceAnnotationBuildItem` can be used to specify resource annotations that make it possible to resolve non-CDI injection points, such as Jakarta EE resources.
-An integrator must also provide a corresponding `io.quarkus.arc.ResourceReferenceProvider` service provider implementation. 
+An integrator must also provide a corresponding `io.quarkus.arc.ResourceReferenceProvider` service provider implementation.
 
 .`ResourceAnnotationBuildItem` Example
 [source,java]

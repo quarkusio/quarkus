@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide covers the usage of MongoDB using active records and repositories.
 :config-file: application.properties
 :mongodb-doc-root-url: https://www.mongodb.com/docs/drivers/java/sync/current
+:topics: data,mongodb,nosql,panache,kotlin
+:extensions: io.quarkus:quarkus-mongodb-panache,io.quarkus:quarkus-mongodb-client
 
 MongoDB is a well known NoSQL Database that is widely used, but using its raw API can be cumbersome as you need to express your entities and your queries as a MongoDB link:{mongodb-doc-root-url}/fundamentals/data-formats/documents/#document[`Document`].
 
@@ -1260,14 +1262,14 @@ this file manually in some cases.
 
 == Multitenancy
 
-"Multitenancy is a software architecture where a single software instance can serve multiple, distinct user groups. Software-as-a-service (SaaS) 
+"Multitenancy is a software architecture where a single software instance can serve multiple, distinct user groups. Software-as-a-service (SaaS)
 offerings are an example of multitenant architecture." (link:https://www.redhat.com/en/topics/cloud-computing/what-is-multitenancy#:~:text=Multitenancy%20is%20a%20software%20architecture,an%20example%20of%20multitenant%20architecture.[Red Hat]).
 
 MongoDB with Panache currently supports the database per tenant approach, it's similar to schema per tenant approach when compared to SQL databases.
 
 === Writing the application
 
-In order to resolve the tenant from incoming requests and map it to a specific database, you must create an implementation 
+In order to resolve the tenant from incoming requests and map it to a specific database, you must create an implementation
 of the `io.quarkus.mongodb.panache.common.MongoDatabaseResolver` interface.
 
 [source,java]
@@ -1280,26 +1282,26 @@ public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
 
     @Inject
     RoutingContext context;
-   
+
     @Override
     public String resolve() {
         return context.request().getHeader("X-Tenant");
     }
-    
+
 }
 ----
 <1> The bean is made `@RequestScoped` as the tenant resolution depends on the incoming request.
 
 [IMPORTANT]
 ====
-The database selection priority order is as follow: `@MongoEntity(database="mizain")`, `MongoDatabaseResolver`, 
+The database selection priority order is as follow: `@MongoEntity(database="mizain")`, `MongoDatabaseResolver`,
 and then `quarkus.mongodb.database` property.
 ====
 
 [NOTE]
 ====
-If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy], then if the OIDC tenantID and MongoDB 
-database are the same and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC `TenantResolver` 
+If you also use xref:security-openid-connect-multitenancy.adoc[OIDC multitenancy], then if the OIDC tenantID and MongoDB
+database are the same and must be extracted from the Vert.x `RoutingContext` you can pass the tenant id from the OIDC `TenantResolver`
 to the MongoDB with Panache `MongoDatabaseResolver` as a `RoutingContext` attribute, for example:
 
 [source,java]
@@ -1367,7 +1369,7 @@ public class PersonResource {
 }
 ----
 
-From the classes above, we have enough to persist and fetch persons from different databases, so it's possible to see how it works. 
+From the classes above, we have enough to persist and fetch persons from different databases, so it's possible to see how it works.
 
 === Configuring the application
 
@@ -1424,7 +1426,7 @@ public class PanacheMongoMultiTenancyTest {
         // creating person 1
         Response createPerson1Response = callCreatePersonEndpoint(endpoint, TENANT_1, person1);
         assertResponse(createPerson1Response, 201);
-        
+
         // checking person 1 creation
         Response getPerson1ByIdResponse = callGetPersonByIdEndpoint(endpoint, person1.id, TENANT_1);
         assertResponse(getPerson1ByIdResponse, 200, person1);

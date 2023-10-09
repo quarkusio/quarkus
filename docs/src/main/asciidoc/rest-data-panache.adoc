@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: Hibernate ORM REST Data with Panache simplifies the creation of CRUD applications based on Jakarta REST and Hibernate ORM.
+:topics: rest,hibernate-orm,panache,mongodb,sql,jdbc,nosql
+:extensions: io.quarkus:quarkus-hibernate-orm-rest-data-panache,io.quarkus:quarkus-hibernate-reactive-rest-data-panache,io.quarkus:quarkus-mongodb-rest-data-panache
 
 A lot of web applications are monotonous CRUD applications with REST APIs that are tedious to write.
 To streamline this task, REST Data with Panache extension can generate the basic CRUD endpoints for your entities and repositories.
@@ -425,7 +427,7 @@ public class Person extends PanacheEntity {
 }
 ----
 
-In this example, we have added a named query to list all the persons that contains some text in the `name` field. 
+In this example, we have added a named query to list all the persons that contains some text in the `name` field.
 
 Next, we can set a query param `namedQuery` when listing the entities using the generated resource with the name of the named query that we want to use, for example, calling `http://localhost:8080/people?namedQuery=Person.containsInName&name=ter` would return all the persons which name contains the text "ter".
 
@@ -433,7 +435,7 @@ For more information about how named queries work, go to the xref:hibernate-orm-
 
 == Resource Method Before/After Listeners
 
-REST Data with Panache supports the subscription to the following resource method hooks: 
+REST Data with Panache supports the subscription to the following resource method hooks:
 
 * Before/After add resource
 * Before/After update resource

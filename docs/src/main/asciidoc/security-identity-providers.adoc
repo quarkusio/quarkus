@@ -7,6 +7,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security
+:topics: security,identity-providers
+:extensions: io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
+
 
 In the Quarkus Security framework, identity providers play a crucial role in authentication and authorization by  verifying user identities.
 `IdentityProvider` creates a `SecurityIdentity` instance, which gets used during user authentication to verify and authorize access requests to your Quarkus application.

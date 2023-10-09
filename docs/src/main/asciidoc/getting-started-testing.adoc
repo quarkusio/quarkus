@@ -11,6 +11,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: getting-started,testing,tooling
 
 
 Learn how to test your Quarkus Application.
@@ -426,7 +427,7 @@ Alternatively or additionally to an interceptor, you can enrich *all* your `@Qua
 * `io.quarkus.test.junit.callback.QuarkusTestAfterTestExecutionCallback`
 * `io.quarkus.test.junit.callback.QuarkusTestAfterEachCallback`
 
-Optionally, you can enable these callbacks also for the `@QuarkusIntegrationTest` tests if the property `quarkus.test.enable-callbacks-for-integration-tests` is `true`. 
+Optionally, you can enable these callbacks also for the `@QuarkusIntegrationTest` tests if the property `quarkus.test.enable-callbacks-for-integration-tests` is `true`.
 
 Such a callback implementation has to be registered as a "service provider" as defined by `java.util.ServiceLoader`.
 
@@ -1536,8 +1537,8 @@ public class Foo {
 
     @Inject
     Charlie charlie; <2>
-    
-    @ConfigProperty(name = "bar") 
+
+    @ConfigProperty(name = "bar")
     boolean bar; <3>
 
     public String ping() {
@@ -1622,16 +1623,16 @@ public class FooTest {
 
 So what exactly does the `QuarkusComponentTest` do?
 It starts the CDI container and registers a dedicated xref:config-reference.adoc[configuration object].
-If the test instance lifecycle is `Lifecycle#PER_METHOD` (default) then the container is started during the `before each` test phase and stopped during the `after each` test phase. 
-However, if  the test instance lifecycle is `Lifecycle#PER_CLASS` then the container is started during the `before all` test phase and stopped during the `after all` test phase. 
+If the test instance lifecycle is `Lifecycle#PER_METHOD` (default) then the container is started during the `before each` test phase and stopped during the `after each` test phase.
+However, if  the test instance lifecycle is `Lifecycle#PER_CLASS` then the container is started during the `before all` test phase and stopped during the `after all` test phase.
 The fields annotated with `@Inject` and `@InjectMock` are injected after a test instance is created.
 Finally, the CDI request context is activated and terminated per each test method.
 
 === Auto Mocking Unsatisfied Dependencies
 
-Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency. 
+Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency.
 Instead, a synthetic bean is registered automatically for each combination of required type and qualifiers of an injection point that resolves to an unsatisfied dependency.
-The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers. 
+The bean has the `@Singleton` scope so it's shared across all injection points with the same required type and qualifiers.
 The injected reference is an _unconfigured_ Mockito mock.
 You can inject the mock in your test and leverage the Mockito API to configure the behavior.
 
@@ -1672,17 +1673,17 @@ public class FooTest {
     public void testPing() {
         assertEquals("OK", foo.ping());
     }
-    
+
     @ApplicationScoped
     static class Foo {
-       
+
        @SimpleBinding <1>
        String ping() {
          return "ok";
        }
-    
+
     }
-    
+
     @SimpleBinding
     @Interceptor
     static class SimpleInterceptor { <2>
@@ -1730,14 +1731,14 @@ public class FooTest {
 
     @ApplicationScoped
     static class Foo {
-       
+
        @SimpleBinding <1>
        String ping() {
          return "ok";
        }
-    
+
     }
 }
 ----
-<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types. 
+<1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types.
 <2> Defines the interception type.

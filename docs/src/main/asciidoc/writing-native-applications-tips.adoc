@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core, writing-extensions, native
 :summary: This guide is a collection of tips to help you solve the problems you encounter when compiling applications to native executable.
+:topics: native,extensions
 
 This guide contains various tips and tricks for getting around problems that might arise when attempting to run Java applications as native executables.
 

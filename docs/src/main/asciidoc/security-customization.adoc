@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Security Tips and Tricks
 include::_attributes.adoc[]
+:categories: security
+:topics: security
+:extensions: io.quarkus:quarkus-security
 
 == Quarkus Security Dependency
 

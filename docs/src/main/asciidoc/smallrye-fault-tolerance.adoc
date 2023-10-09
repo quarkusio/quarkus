@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web, observability
 :summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Fault Tolerance specification through the SmallRye Fault Tolerance extension.
+:topics: fault-tolerance,resiliency
+:extensions: io.quarkus:quarkus-smallrye-fault-tolerance
 
 One of the challenges brought by the distributed nature of microservices is that communication with external systems is
 inherently unreliable. This increases demand on resiliency of applications. To simplify making more resilient

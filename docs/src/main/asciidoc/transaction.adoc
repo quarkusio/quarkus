@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications. Each extension dealing with persistence will integrate with it for you, and you will explicitly interact with transactions via CDI. This guide will walk you through all that.
+:topics: data,jpa,jta,transactions,narayana
+:extensions: io.quarkus:quarkus-narayana-jta
 
 Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications.
 Each extension dealing with persistence will integrate with it for you.

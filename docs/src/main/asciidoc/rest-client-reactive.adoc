@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to use the RESTEasy Reactive REST Client.
+:topics: rest,rest-client,resteasy-reactive
+:extensions: io.quarkus:quarkus-rest-client-reactive,io.quarkus:quarkus-rest-client-reactive-jackson,io.quarkus:quarkus-rest-client-reactive-jsonb
 
 This guide explains how to use the REST Client Reactive in order to interact with REST APIs.
 REST Client Reactive is the REST Client implementation compatible with RESTEasy Reactive.
@@ -1103,7 +1105,7 @@ public class TestClientRequestFilter implements ResteasyReactiveClientRequestFil
 
 == Customizing the ObjectMapper in REST Client Reactive Jackson
 
-The REST Client Reactive supports adding a custom ObjectMapper to be used only the Client using the annotation `@ClientObjectMapper`. 
+The REST Client Reactive supports adding a custom ObjectMapper to be used only the Client using the annotation `@ClientObjectMapper`.
 
 A simple example is to provide a custom ObjectMapper to the REST Client Reactive Jackson extension by doing:
 
@@ -1127,7 +1129,7 @@ public interface ExtensionsService {
 
 <1> The method must be annotated with `@ClientObjectMapper`.
 <2> It's must be a static method. Also, the parameter `defaultObjectMapper` will be resolved via CDI. If not found, it will throw an exception at runtime.
-<3> In this example, we're creating a copy of the default object mapper. You should *NEVER* modify the default object mapper, but create a copy instead. 
+<3> In this example, we're creating a copy of the default object mapper. You should *NEVER* modify the default object mapper, but create a copy instead.
 
 == Exception handling
 

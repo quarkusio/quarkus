@@ -8,6 +8,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
+:categories: data
+:topics: data,redis,nosql
+:extensions: io.quarkus:quarkus-redis-client
 
 Redis is an in-memory data store used as a database, cache, streaming engine, and message broker.
 The Quarkus Redis extension allows integrating Quarkus applications with Redis.

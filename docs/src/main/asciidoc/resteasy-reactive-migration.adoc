@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Migrating to RESTEasy Reactive
 include::_attributes.adoc[]
+:categories: web
+:topics: rest,rest-client,resteasy-reactive
+:extensions: io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy-reactive-jackson,io.quarkus:quarkus-resteasy-reactive-jsonb,io.quarkus:quarkus-rest-client-reactive,io.quarkus:quarkus-rest-client-reactive-jackson,io.quarkus:quarkus-rest-client-reactive-jsonb
 
 Migrating from RESTEasy Classic to RESTEasy Reactive is straightforward in most cases, however there are a few cases that require some attention.
 This document provides a list of issues users attempting the migration should be aware of.

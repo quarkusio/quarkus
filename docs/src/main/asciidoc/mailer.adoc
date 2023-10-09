@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: Learn more about how you can send email from a Quarkus application with our reactive email client.
+:topics: mail,mailer
+:extensions: io.quarkus:quarkus-mailer
 
 This guide demonstrates how your Quarkus application can send emails using an SMTP server.
 This is a getting started guide.

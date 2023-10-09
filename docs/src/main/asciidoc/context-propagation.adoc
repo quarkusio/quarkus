@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: core
 :summary: Learn more about how you can pass contextual information with SmallRye Context Propagation.
+:topics: context-propagation
+:extensions: io.quarkus:quarkus-core
 
 Traditional blocking code uses link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ThreadLocal.html[`ThreadLocal`]
  variables to store contextual objects in order to avoid

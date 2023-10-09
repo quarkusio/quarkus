@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = RESTEasy Classic
 include::_attributes.adoc[]
+:categories: web
+:topics: rest,resteasy-classic
+:extensions: io.quarkus:quarkus-resteasy,io.quarkus:quarkus-resteasy-jackson,io.quarkus:quarkus-resteasy-jsonb
 
 [WARNING]
 ====

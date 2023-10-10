@@ -1648,6 +1648,8 @@ If you only need to use the default values for missing config properties, then t
 It is also possible to set configuration properties for a test method with the `@io.quarkus.test.component.TestConfigProperty` annotation.
 However, if the test instance lifecycle is `Lifecycle#_PER_CLASS` this annotation can only be used on the test class and is ignored on test methods.
 
+CDI beans are also automatically registered for all injected https://smallrye.io/smallrye-config/Main/config/mappings/[Config Mappings]. The mappings are populated with the test configuration properties.
+
 === Mocking CDI Interceptors
 
 If a tested component class declares an interceptor binding then you might need to mock the interception too.

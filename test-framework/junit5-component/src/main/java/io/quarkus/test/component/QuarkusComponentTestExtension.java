@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -48,6 +49,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -95,6 +97,8 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSourceLoader;
 import io.quarkus.test.InjectMock;
 import io.smallrye.common.annotation.Experimental;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.ConfigMappings.ConfigClassWithPrefix;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -150,6 +154,7 @@ public class QuarkusComponentTestExtension
     private static final String KEY_TEST_INSTANCE = "testInstance";
     private static final String KEY_CONFIG = "config";
     private static final String KEY_TEST_CLASS_CONFIG = "testClassConfig";
+    private static final String KEY_CONFIG_MAPPINGS = "configMappings";
 
     private static final String QUARKUS_TEST_COMPONENT_OUTPUT_DIRECTORY = "quarkus.test.component.output-directory";
 
@@ -229,7 +234,7 @@ public class QuarkusComponentTestExtension
     private void cleanup(ExtensionContext context) {
         ClassLoader oldTccl = context.getRoot().getStore(NAMESPACE).get(KEY_OLD_TCCL, ClassLoader.class);
         Thread.currentThread().setContextClassLoader(oldTccl);
-
+        context.getRoot().getStore(NAMESPACE).remove(KEY_CONFIG_MAPPINGS);
         Set<Path> generatedResources = context.getRoot().getStore(NAMESPACE).get(KEY_GENERATED_RESOURCES, Set.class);
         for (Path path : generatedResources) {
             try {
@@ -285,15 +290,24 @@ public class QuarkusComponentTestExtension
 
             // TCCL is now the QuarkusComponentTestClassLoader set during initialization
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-            SmallRyeConfig config = new SmallRyeConfigBuilder().forClassLoader(tccl)
+            SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl)
                     .addDefaultInterceptors()
                     .addDefaultSources()
                     .withSources(new ApplicationPropertiesConfigSourceLoader.InFileSystem())
                     .withSources(new ApplicationPropertiesConfigSourceLoader.InClassPath())
                     .withSources(
                             new QuarkusComponentTestConfigSource(configuration.configProperties,
-                                    configuration.configSourceOrdinal))
-                    .build();
+                                    configuration.configSourceOrdinal));
+            @SuppressWarnings("unchecked")
+            Set<ConfigClassWithPrefix> configMappings = context.getRoot().getStore(NAMESPACE).get(KEY_CONFIG_MAPPINGS,
+                    Set.class);
+            if (configMappings != null) {
+                // Register the mappings found during bean discovery
+                for (ConfigClassWithPrefix mapping : configMappings) {
+                    configBuilder.withMapping(mapping.getKlass(), mapping.getPrefix());
+                }
+            }
+            SmallRyeConfig config = configBuilder.build();
             smallRyeConfigProviderResolver.registerConfig(config, tccl);
             context.getRoot().getStore(NAMESPACE).put(KEY_CONFIG, config);
             ConfigBeanCreator.setClassLoader(tccl);
@@ -503,17 +517,15 @@ public class QuarkusComponentTestExtension
                     Set<TypeAndQualifiers> unsatisfiedInjectionPoints = new HashSet<>();
                     boolean configInjectionPoint = false;
                     Set<TypeAndQualifiers> configPropertyInjectionPoints = new HashSet<>();
+                    Map<String, Set<String>> prefixToConfigMappings = new HashMap<>();
                     DotName configDotName = DotName.createSimple(Config.class);
                     DotName configPropertyDotName = DotName.createSimple(ConfigProperty.class);
+                    DotName configMappingDotName = DotName.createSimple(ConfigMapping.class);
 
                     // Analyze injection points
-                    // - find Config and @ConfigProperty injection points
+                    // - find Config, @ConfigProperty and config mappings injection points
                     // - find unsatisfied injection points
                     for (InjectionPointInfo injectionPoint : registrationContext.getInjectionPoints()) {
-                        BuiltinBean builtin = BuiltinBean.resolve(injectionPoint);
-                        if (builtin != null && builtin != BuiltinBean.INSTANCE && builtin != BuiltinBean.LIST) {
-                            continue;
-                        }
                         if (injectionPoint.getRequiredType().name().equals(configDotName)
                                 && injectionPoint.hasDefaultedQualifier()) {
                             configInjectionPoint = true;
@@ -522,6 +534,10 @@ public class QuarkusComponentTestExtension
                         if (injectionPoint.getRequiredQualifier(configPropertyDotName) != null) {
                             configPropertyInjectionPoints.add(new TypeAndQualifiers(injectionPoint.getRequiredType(),
                                     injectionPoint.getRequiredQualifiers()));
+                            continue;
+                        }
+                        BuiltinBean builtin = BuiltinBean.resolve(injectionPoint);
+                        if (builtin != null && builtin != BuiltinBean.INSTANCE && builtin != BuiltinBean.LIST) {
                             continue;
                         }
                         Type requiredType = injectionPoint.getRequiredType();
@@ -533,6 +549,19 @@ public class QuarkusComponentTestExtension
                             requiredQualifiers.removeIf(q -> q.name().equals(DotNames.ALL));
                             if (requiredQualifiers.isEmpty()) {
                                 requiredQualifiers.add(AnnotationInstance.builder(DotNames.DEFAULT).build());
+                            }
+                        }
+                        if (requiredType.kind() == Kind.CLASS) {
+                            ClassInfo clazz = computingIndex.getClassByName(requiredType.name());
+                            if (clazz != null && clazz.isInterface()) {
+                                AnnotationInstance configMapping = clazz.declaredAnnotation(configMappingDotName);
+                                if (configMapping != null) {
+                                    AnnotationValue prefixValue = configMapping.value("prefix");
+                                    String prefix = prefixValue == null ? "" : prefixValue.asString();
+                                    Set<String> mappingClasses = prefixToConfigMappings.computeIfAbsent(prefix,
+                                            k -> new HashSet<>());
+                                    mappingClasses.add(clazz.name().toString());
+                                }
                             }
                         }
                         if (isSatisfied(requiredType, requiredQualifiers, injectionPoint, beans, beanDeployment,
@@ -589,6 +618,24 @@ public class QuarkusComponentTestExtension
                             configPropertyConfigurator.addType(configPropertyInjectionPoint.type);
                         }
                         configPropertyConfigurator.done();
+                    }
+
+                    if (!prefixToConfigMappings.isEmpty()) {
+                        Set<ConfigClassWithPrefix> configMappings = new HashSet<>();
+                        for (Entry<String, Set<String>> e : prefixToConfigMappings.entrySet()) {
+                            for (String mapping : e.getValue()) {
+                                DotName mappingName = DotName.createSimple(mapping);
+                                registrationContext.configure(mappingName)
+                                        .addType(mappingName)
+                                        .creator(ConfigMappingBeanCreator.class)
+                                        .param("mappingClass", mapping)
+                                        .param("prefix", e.getKey())
+                                        .done();
+                                configMappings.add(ConfigClassWithPrefix
+                                        .configClassWithPrefix(ConfigMappingBeanCreator.tryLoad(mapping), e.getKey()));
+                            }
+                        }
+                        extensionContext.getRoot().getStore(NAMESPACE).put(KEY_CONFIG_MAPPINGS, configMappings);
                     }
 
                     LOG.debugf("Test injection points analyzed in %s ms [found: %s, mocked: %s]",

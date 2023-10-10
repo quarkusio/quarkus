@@ -11,7 +11,10 @@ metadata:
   categories:
   - "data"
   status: "stable"
-  redhat-support: "stable"
+  support: 
+  - id: redhat
+    status: 
+    - stable
   config:
   - "quarkus.datasource."
   built-with-quarkus-core: "999-SNAPSHOT"

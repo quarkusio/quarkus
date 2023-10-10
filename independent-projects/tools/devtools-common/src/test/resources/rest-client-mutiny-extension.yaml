@@ -12,11 +12,10 @@ metadata:
   - "web"
   - "reactive"
   status: "deprecated"
-  supported-by: 
-      - "xyz"
-  xyz-support:
-      - "techpreview"
-      - "deprecated"
+  support: 
+  - id: xyz
+    name: Xyz
+    status: [techpreview, deprecated]
   built-with-quarkus-core: "999-SNAPSHOT"
   extension-dependencies:
   - "io.quarkus:quarkus-rest-client"

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 final class MetadataValue {
     private static final MetadataValue EMPTY_METADATA_VALUE = new MetadataValue(null);
@@ -59,6 +60,14 @@ final class MetadataValue {
         } else if (val instanceof List && !((List<?>) val).isEmpty()
                 && ((List<?>) val).get(0) instanceof String) {
             return (List<String>) val;
+        } else if (val instanceof List && !((List<?>) val).isEmpty()
+                && ((List<?>) val).get(0) instanceof Map) {
+            return ((List<Map>) val).stream()
+                    .map((entry) -> {
+                        // crude, but effective
+                        return entry.toString();
+                    })
+                    .collect(Collectors.toList());
         }
         return Collections.emptyList();
     }

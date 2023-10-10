@@ -5,9 +5,11 @@ import static java.util.stream.Collectors.toMap;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -145,30 +147,55 @@ public final class ExtensionProcessor {
         if (getMetadataValue(extension, "status").isEmpty()) {
             extendedMetadata.put("status", "stable");
         }
+
+        // existing support metadata
         @SuppressWarnings("unchecked")
-        final Collection<String> supporters = (Collection<String>) extendedMetadata.getOrDefault("supported-by",
-                new ArrayList<String>());
-        final Map<String, Object> supportStatuses = extendedMetadata.entrySet().stream()
-                .filter(e -> e.getKey().endsWith("-support"))
-                .collect(Collectors.toMap(
-                        k -> k.getKey(),
-                        v -> v.getValue()));
+        final Collection<Map<String, Object>> supportList = (Collection<Map<String, Object>>) extendedMetadata
+                .getOrDefault("support", new ArrayList<>());
 
-        supportStatuses.entrySet().forEach((e) -> {
-            String supporter = e.getKey().replace("-support", "");
+        /*
+         * map legacy style
+         *
+         * x-support: stable
+         * y-support:
+         * - stable
+         *
+         * to
+         *
+         * support:
+         * - id: x
+         * status: [stable]
+         * - id: y
+         * status: [stable]
+         */
+        final List<Map<String, Object>> supportStatuses = extendedMetadata.entrySet().stream()
+                .filter(entry -> entry.getKey().endsWith("-support"))
+                .map((entry) -> {
+                    final Map<String, Object> supporter = new LinkedHashMap<>();
 
-            if (!supporters.contains(supporter)) {
-                supporters.add(supporter);
-            }
-        });
-        extendedMetadata.put("supported-by", supporters);
+                    supporter.put("id", entry.getKey().replace("-support", ""));
 
-        for (String s : supporters) {
-            if (!supportStatuses.keySet().contains(s + "-support")) {
-                supportStatuses.put(s + "-support", "stable");
-            }
-        }
-        extendedMetadata.putAll(supportStatuses);
+                    if (entry.getValue() instanceof List) {
+                        supporter.put("status", entry.getValue());
+                    } else {
+                        supporter.put("status", Arrays.asList(entry.getValue()));
+                    }
+
+                    return supporter;
+                })
+                .collect(Collectors.toList());
+
+        // merge them together - do we need to worry about duplicates?
+        supportList.addAll(supportStatuses);
+
+        // make sure we have a default status for each supporter
+        supportList.stream()
+                .filter((map) -> !map.containsKey("status"))
+                .forEach((map) -> {
+                    map.put("status", Arrays.asList("stable"));
+                });
+
+        extendedMetadata.put("support", supportList);
 
         return extendedMetadata.entrySet().stream()
                 .map(e -> new AbstractMap.SimpleImmutableEntry<>(e.getKey(), (new MetadataValue(e.getValue()).asStringList())))

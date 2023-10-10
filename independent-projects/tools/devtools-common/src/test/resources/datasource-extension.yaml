@@ -10,9 +10,12 @@ metadata:
   status: "stable"
   supported-by: 
       - "Red Hat"
-  Red Hat-support:
-      - "stable"
-      - "awesome"
+  support: 
+  - id: redhat
+    name: Red Hat
+    status: 
+    - stable
+    - awesome
   xyz-support:
       - "none"
   unlisted: true

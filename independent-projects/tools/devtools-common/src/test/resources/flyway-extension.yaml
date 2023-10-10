@@ -10,9 +10,11 @@ metadata:
   categories:
   - "data"
   status: "stable"
-  supported-by: 
-  - "xyz"
-  - "abc"
+  support: 
+  - id: xyz
+    name: Xyz Co.
+  - id: abc
+    name: Abc, LLC
   config:
   - "quarkus.flyway."
   built-with-quarkus-core: "999-SNAPSHOT"

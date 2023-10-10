@@ -695,8 +695,8 @@ triage:
     - id: mailer
       labels: [area/mailer]
       expression: |
-        match("\\bmail\\b", title)
-        || match("mailer", title)
+        matches("\\bmail\\b", title)
+        || matches("mailer", title)
       notify: [cescoffier]
       directories:
         - extensions/mailer/

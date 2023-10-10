@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import jakarta.inject.Inject;
 
@@ -22,6 +23,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
+import org.assertj.core.api.Assert;
 import org.assertj.core.groups.Tuple;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -40,7 +42,9 @@ import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.kafka.client.serialization.JsonbSerializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
@@ -63,7 +67,16 @@ public class DefaultSerdeConfigTest {
     }
 
     private static void doTest(Config customConfig, Tuple[] expectations, Class<?>... classesToIndex) {
+        doTest(customConfig, expectations, Collections.emptyList(), Collections.emptyList(), classesToIndex);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static void doTest(Config customConfig, Tuple[] expectations,
+            List<Function<String, Assert>> generatedNames,
+            List<Function<String, Assert>> reflectiveNames, Class<?>... classesToIndex) {
         List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
+        List<GeneratedClassBuildItem> generated = new ArrayList<>();
+        List<ReflectiveClassBuildItem> reflective = new ArrayList<>();
 
         List<Class<?>> classes = new ArrayList<>(Arrays.asList(classesToIndex));
         classes.add(Incoming.class);
@@ -81,17 +94,49 @@ public class DefaultSerdeConfigTest {
         };
         try {
             new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
-                    configs::add, null, null);
+                    configs::add,
+                    (generatedNames == null) ? null : generated::add,
+                    (reflectiveNames == null) ? null : reflective::add);
 
             assertThat(configs)
                     .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
-                    .containsExactlyInAnyOrder(expectations);
+                    .allSatisfy(tuple -> {
+                        Object[] e = tuple.toArray();
+                        String key = (String) e[0];
+                        String value = (String) e[1];
+                        assertThat(Arrays.stream(expectations).filter(t -> key.equals(t.toArray()[0])))
+                                .hasSize(1)
+                                .satisfiesOnlyOnce(t -> {
+                                    Object o = t.toArray()[1];
+                                    if (o instanceof String) {
+                                        assertThat(value).isEqualTo((String) o);
+                                    } else {
+                                        ((Function<String, Assert>) o).apply(value);
+                                    }
+                                });
+                    });
+
+            assertThat(generated)
+                    .extracting(GeneratedClassBuildItem::getName)
+                    .allSatisfy(s -> assertThat(generatedNames).satisfiesOnlyOnce(c -> c.apply(s)));
+
+            assertThat(reflective)
+                    .flatExtracting(ReflectiveClassBuildItem::getClassNames)
+                    .allSatisfy(s -> assertThat(reflectiveNames).satisfiesOnlyOnce(c -> c.apply(s)));
         } finally {
             // must not leak the Config instance associated to the system classloader
             if (customConfig == null) {
                 ConfigProviderResolver.instance().releaseConfig(discovery.getConfig());
             }
         }
+    }
+
+    Function<String, Assert> assertMatches(String regex) {
+        return s -> assertThat(s).matches(regex);
+    }
+
+    Function<String, Assert> assertStartsWith(String starts) {
+        return s -> assertThat(s).startsWith(starts);
     }
 
     private static IndexView index(List<Class<?>> classes) {
@@ -2570,10 +2615,13 @@ public class DefaultSerdeConfigTest {
 
         Tuple[] expectations1 = {
                 tuple("mp.messaging.outgoing.channel1.value.serializer", "org.apache.kafka.common.serialization.LongSerializer"),
-
                 tuple("mp.messaging.incoming.channel2.key.deserializer", "org.apache.kafka.common.serialization.LongDeserializer"),
+                tuple("mp.messaging.incoming.channel3.value.deserializer", assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
                 tuple("mp.messaging.incoming.channel2.value.deserializer", "io.quarkus.kafka.client.serialization.JsonObjectDeserializer"),
         };
+
+        var generated1 = List.of(assertStartsWith("io/quarkus/smallrye/reactivemessaging/kafka/deployment/DefaultSerdeConfigTest$CustomDto_Deserializer_"));
+        var reflective1 = List.of(assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_"));
 
         Tuple[] expectations2 = {
                 tuple("mp.messaging.outgoing.channel1.value.serializer", "io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$MySerializer"),
@@ -2602,7 +2650,7 @@ public class DefaultSerdeConfigTest {
         };
         // @formatter:on
 
-        doTest(expectations1, CustomSerdeImplementation.class, CustomDto.class);
+        doTest(null, expectations1, generated1, reflective1, CustomSerdeImplementation.class, CustomDto.class);
 
         doTest(expectations2, CustomSerdeImplementation.class, CustomDto.class,
                 MySerializer.class,
@@ -2792,6 +2840,52 @@ public class DefaultSerdeConfigTest {
 
         @Channel("new.channel.out")
         KafkaTransactions<ProducerRecord<Long, JsonObject>> transactions;
+
+    }
+
+    @Test
+    void deadLetterQueue() {
+        Tuple[] expectations = {
+                tuple("mp.messaging.incoming.channel1.value.deserializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
+                tuple("mp.messaging.incoming.channel1.dead-letter-queue.value.serializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")),
+                tuple("mp.messaging.incoming.channel2.key.deserializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
+                tuple("mp.messaging.incoming.channel2.value.deserializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_")),
+                tuple("mp.messaging.incoming.channel2.dead-letter-queue.key.serializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")),
+                tuple("mp.messaging.incoming.channel2.dead-letter-queue.value.serializer",
+                        assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")),
+        };
+        var generated = List.of(
+                assertStartsWith("io/quarkus/smallrye/reactivemessaging/kafka/deployment/DefaultSerdeConfigTest$CustomDto_Deserializer_"),
+                assertStartsWith("io/quarkus/smallrye/reactivemessaging/kafka/deployment/DefaultSerdeConfigTest$CustomDto_Serializer_")
+        );
+        var reflective = List.of(
+                assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Deserializer_"),
+                assertStartsWith("io.quarkus.smallrye.reactivemessaging.kafka.deployment.DefaultSerdeConfigTest$CustomDto_Serializer_")
+        );
+        doTest(new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test", Map.of(
+                        "mp.messaging.incoming.channel1.failure-strategy", "dead-letter-queue",
+                        "mp.messaging.incoming.channel2.failure-strategy", "delayed-retry-topic")) {
+                })
+                .build(), expectations, generated, reflective, DeadLetterQueue.class);
+    }
+
+    private static class DeadLetterQueue {
+
+        @Incoming("channel1")
+        void method1(CustomDto msg) {
+
+        }
+
+        @Incoming("channel2")
+        void method2(Record<CustomDto, CustomDto> msg) {
+
+        }
 
     }
 

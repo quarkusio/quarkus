@@ -693,6 +693,13 @@ Now, if you decided to use OIDC Database Token State Manager, you need to add fo
 </dependency>
 ----
 
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-oidc-db-token-state-manager")
+implementation("io.quarkus:quarkus-reactive-pg-client")
+----
+
 [source, properties]
 ----
 quarkus.datasource.reactive.url=postgresql://localhost:5432/quarkus_test

@@ -80,7 +80,12 @@ It will either reduce the chance for the other virtual thread to run or will sta
 
 In Quarkus, the support of virtual thread is implemented using the link:{runonvthread}[@RunOnVirtualThread] annotation.
 This section briefly overviews the rationale and how to use it.
-There are dedicated guides for extensions supporting that annotation, such as // TODO.
+There are dedicated guides for extensions supporting that annotation, such as:
+
+- xref:./resteasy-reactive-virtual-threads.adoc[Virtual threads in REST applications]
+- xref:./messaging-virtual-threads.adoc[Virtual threads in reactive messaging applications]
+- xref:./grpc-virtual-threads.adoc[Virtual threads in gRPC services]
+- xref:./scheduler-reference.adoc#virtual_threads[Execute periodic tasks on virtual threads]
 
 [[why-not]]
 === Why not run everything on virtual threads?

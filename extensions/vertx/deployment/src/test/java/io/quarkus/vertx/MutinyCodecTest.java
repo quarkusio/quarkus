@@ -1,6 +1,7 @@
 package io.quarkus.vertx;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.inject.Inject;
 
@@ -54,10 +55,10 @@ public class MutinyCodecTest {
 
     @Test
     public void testWithUserCodecNonLocal() {
-        Greeting hello = vertx.eventBus().<Greeting> request("nl-pet", new Pet("neo", "rabbit"))
+        String hello = vertx.eventBus().<String> request("nl-pet", new Pet("neo", "rabbit"))
                 .onItem().transform(Message::body)
                 .await().indefinitely();
-        assertThat(hello.getMessage()).isEqualTo("Non Local Hello NEO");
+        assertEquals("Non Local Hello NEO", hello);
     }
 
     static class Greeting {
@@ -90,9 +91,9 @@ public class MutinyCodecTest {
 
     static class MyNonLocalBean {
         @ConsumeEvent(value = "nl-pet", codec = MyPetCodec.class, local = false)
-        public Uni<Greeting> hello(Pet p) {
+        public Uni<String> hello(Pet p) {
             return Uni.createFrom().item(
-                    () -> new Greeting("Non Local Hello " + p.getName()))
+                    () -> "Non Local Hello " + p.getName())
                     .emitOn(Infrastructure.getDefaultExecutor());
         }
     }

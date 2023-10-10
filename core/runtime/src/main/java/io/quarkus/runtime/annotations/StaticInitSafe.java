@@ -9,8 +9,6 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 /**
  * Used to mark a configuration object as safe to be initialized during the STATIC INIT phase.
  * <p>

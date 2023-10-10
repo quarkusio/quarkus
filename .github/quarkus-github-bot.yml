@@ -754,7 +754,7 @@ triage:
         - jakarta/
     - id: virtual-threads
       labels: [area/virtual-threads]
-      title: "(virtual.thread|RunOnVirtualThread"
+      title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
   qe:
     notify: [rsvoboda, mjurc]

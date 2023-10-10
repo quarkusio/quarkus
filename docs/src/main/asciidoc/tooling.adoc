@@ -27,7 +27,7 @@ In this guide, we will explore:
 
 Quarkus comes with a toolchain to help you at all development stages.
 You can use Maven or Gradle as build tool.
-And we offer a CLI that is convenient to use (coming soon).
+And we offer a CLI that is convenient to use.
 
 * xref:maven-tooling.adoc[Maven]
 * xref:gradle-tooling.adoc[Gradle]

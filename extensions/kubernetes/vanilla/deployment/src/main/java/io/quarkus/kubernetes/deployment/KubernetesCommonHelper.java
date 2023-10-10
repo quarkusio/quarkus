@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import io.dekorate.kubernetes.config.Annotation;
 import io.dekorate.kubernetes.config.ConfigMapVolumeBuilder;
 import io.dekorate.kubernetes.config.EnvBuilder;
@@ -106,6 +108,7 @@ import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
 
 public class KubernetesCommonHelper {
+    private static final Logger LOG = Logger.getLogger(KubernetesCommonHelper.class);
     private static final String ANY = null;
     private static final String OUTPUT_ARTIFACT_FORMAT = "%s%s.jar";
     private static final String[] PROMETHEUS_ANNOTATION_TARGETS = { "Service",
@@ -125,9 +128,10 @@ public class KubernetesCommonHelper {
     public static Optional<Project> createProject(ApplicationInfoBuildItem app,
             Optional<CustomProjectRootBuildItem> customProjectRoot, Path artifactPath) {
         //Let dekorate create a Project instance and then override with what is found in ApplicationInfoBuildItem.
+        final var name = app.getName();
         try {
             Project project = FileProjectFactory.create(artifactPath.toFile());
-            BuildInfo buildInfo = new BuildInfo(app.getName(), app.getVersion(),
+            BuildInfo buildInfo = new BuildInfo(name, app.getVersion(),
                     "jar", project.getBuildInfo().getBuildTool(),
                     project.getBuildInfo().getBuildToolVersion(),
                     artifactPath.toAbsolutePath(),
@@ -139,6 +143,7 @@ public class KubernetesCommonHelper {
                             buildInfo, project.getScmInfo()));
 
         } catch (Exception e) {
+            LOG.debugv(e, "Couldn't create project for {0} application", name);
             return Optional.empty();
         }
     }

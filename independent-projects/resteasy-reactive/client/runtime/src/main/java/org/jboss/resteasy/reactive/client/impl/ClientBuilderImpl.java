@@ -75,7 +75,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private MultiQueryParamMode multiQueryParamMode;
 
     private ClientLogger clientLogger = new DefaultClientLogger();
-    private String userAgent = "Resteasy Reactive Client";
+    private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
 
     private boolean enableCompression;
 

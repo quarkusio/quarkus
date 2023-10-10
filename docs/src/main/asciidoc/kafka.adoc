@@ -2259,8 +2259,8 @@ You need to configure
 
 [source, properties]
 ----
-mp.messaging.outgoing.kafka.connector=smallrye-kafka
-mp.messaging.outgoing.kafka.auto.offset.reset=earliest
+mp.messaging.incoming.orders.connector=smallrye-kafka
+mp.messaging.incoming.orders.auto.offset.reset=earliest
 ----
 
 otherwise you will get an `java.lang.AssertionError: No completion (or failure) event received in the last 10000 ms` in <4>

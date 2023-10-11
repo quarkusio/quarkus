@@ -92,6 +92,8 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.infinispan.client.InfinispanClientName;
 import io.quarkus.infinispan.client.Remote;
+import io.quarkus.infinispan.client.deployment.spi.InfinispanClientBuildItem;
+import io.quarkus.infinispan.client.deployment.spi.InfinispanClientNameBuildItem;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
@@ -623,9 +625,9 @@ class InfinispanClientProcessor {
             List<InfinispanClientNameBuildItem> infinispanClientNames,
             // make sure all beans have been initialized
             @SuppressWarnings("unused") BeanContainerBuildItem beanContainer) {
-        List<InfinispanClientBuildItem> result = new ArrayList<>(infinispanClientNames.size());
-        for (InfinispanClientNameBuildItem ic : infinispanClientNames) {
-            String name = ic.getName();
+        Set<String> names = infinispanClientNames.stream().map(icn -> icn.getName()).collect(Collectors.toSet());
+        List<InfinispanClientBuildItem> result = new ArrayList<>(names.size());
+        for (String name : names) {
             result.add(new InfinispanClientBuildItem(recorder.getClient(name), name));
         }
         return result;

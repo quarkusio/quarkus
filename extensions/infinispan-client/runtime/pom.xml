@@ -42,6 +42,10 @@
             <artifactId>quarkus-elytron-security-common</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-infinispan-client-runtime-spi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron-sasl-plain</artifactId>
         </dependency>
@@ -75,9 +79,7 @@
                 </exclusion>
                 <exclusion>
                     <groupId>org.jboss.spec.javax.transaction</groupId>
-                    <artifactId>
-                        jboss-transaction-api_1.2_spec
-                    </artifactId>
+                    <artifactId>jboss-transaction-api_1.2_spec</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>io.netty</groupId>

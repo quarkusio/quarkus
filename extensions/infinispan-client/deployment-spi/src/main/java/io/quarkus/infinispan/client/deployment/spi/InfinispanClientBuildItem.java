@@ -1,4 +1,4 @@
-package io.quarkus.infinispan.client.deployment;
+package io.quarkus.infinispan.client.deployment.spi;
 
 import org.infinispan.client.hotrod.RemoteCacheManager;
 
@@ -12,8 +12,7 @@ public final class InfinispanClientBuildItem extends MultiBuildItem {
     private final RuntimeValue<RemoteCacheManager> client;
     private final String name;
 
-    public InfinispanClientBuildItem(RuntimeValue<RemoteCacheManager> client,
-            String name) {
+    public InfinispanClientBuildItem(RuntimeValue<RemoteCacheManager> client, String name) {
         this.client = client;
         this.name = name;
     }

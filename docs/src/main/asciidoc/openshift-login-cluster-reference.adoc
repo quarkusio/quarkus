@@ -1,0 +1,53 @@
+[id="openshift-login-cluster"]
+= OpenShift cluster login
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: cloud, native
+
+Before you can build and deploy a Quarkus application on OpenShift, you must log in to an OpenShift cluster.
+
+The preferred method for logging in to the OpenShift cluster is by using the link:https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI].
+However, alternative methods are also available.
+
+== Prerequisites
+
+* An IDE
+* Access to an OpenShift cluster and the latest compatible version of the `oc` tool installed.
+For more information, see
+* Optional: Access to the link:https://docs.openshift.com/container-platform/4.9/cli_reference/openshift_cli/getting-started-cli.html[OpenShift CLI] (Optional as is required only for manual deployment)
+
+==  Log in by using the OpenShift CLI
+To log in by using the OpenShift CLI, enter the following command:
+
+[source,bash]
+----
+oc login -u myUsername <1>
+----
+<1> You will be prompted for required information, such as the server URL and password.
+
+== Log in by using the OpenShift CLI and API token
+
+You can also choose to log in by using the OpenShift CLI and an API token.
+Enter the following command:
+
+[source,bash]
+----
+oc login --token=myToken --server=myServerUrl
+----
+[TIP]
+====
+You can request the token by using the _Copy Login Command_ link in the OpenShift web console.
+====
+
+== Log in by setting the `quarkus.kubernetes-client.api-server-url`configuration property
+
+Alternatively, you can choose not to use the OpenShift CLI and instead log in by setting the `quarkus.kubernetes-client.api-server-url` configuration property.
+After setting the property, you authenticate by using the `quarkus.kubernetes-client.token`, or `quarkus.kubernetes-client.username` and `quarkus.kubernetes-client.password` respectively:
+
+:build-additional-parameters: -Dquarkus.kubernetes-client.api-server-url=myServerUrl -Dquarkus.kubernetes-client.token=myToken
+include::{includes}/devtools/build.adoc[]
+:!build-additional-parameters:
+
+== References
+
+* xref:deploying-to-openshift.adoc[Deploy Quarkus applications to OpenShift]

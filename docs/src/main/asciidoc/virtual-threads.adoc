@@ -17,7 +17,7 @@ include::_attributes.adoc[]
 :topics: virtual-threads
 :extensions: io.quarkus:quarkus-core
 
-This guide explains how to benefit from Java 19+ virtual threads in Quarkus application.
+This guide explains how to benefit from Java 21+ virtual threads in Quarkus application.
 
 == What are virtual threads?
 
@@ -40,7 +40,8 @@ It isn't a class distinct from link:{Thread}[Thread] or `VirtualThread` but rath
 === Differences between virtual threads and platform threads
 We will give a brief overview of the topic here; please refer to the link:{vthreadjep}[JEP 425] for more information.
 
-Virtual threads are a feature available since Java 19, aiming at providing a cheap alternative to platform threads for I/O-bound workloads.
+Virtual threads are a feature available since Java 19 (Java 21 is the first LTS version including virtual threads),
+aiming at providing a cheap alternative to platform threads for I/O-bound workloads.
 
 Until now, platform threads were the concurrency unit of the JVM.
 They are a wrapper over OS structures.
@@ -165,7 +166,7 @@ Quarkus handles the creation of the virtual thread and the offloading.
 Since virtual threads are disposable entities, the fundamental idea of `@RunOnVirtualThread` is to offload the execution of an endpoint handler on a new virtual thread instead of running it on an event-loop or worker thread (in the case of RESTEasy Reactive).
 
 To do so, it suffices to add the link:{runonvthread}[@RunOnVirtualThread] annotation to the endpoint.
-If the Java Virtual Machine used to **run** the application provides virtual thread support (so, Java 19 or later versions), then the endpoint execution is offloaded to a virtual thread.
+If the Java Virtual Machine used to **run** the application provides virtual thread support (so Java 21 or later versions), then the endpoint execution is offloaded to a virtual thread.
 It will then be possible to perform blocking operations without blocking the platform thread upon which the virtual thread is mounted.
 
 In the case of RESTEasy Reactive, this annotation can only be used on endpoints annotated with link:{blockingannotation}[@Blocking] or
@@ -192,32 +193,15 @@ Add the following dependency to your build file:
 implementation("io.quarkus:quarkus-resteasy-reactive")
 ----
 
-Then, you also need to make sure that you are using the version 19+ of Java, this can be enforced in your pom.xml file with the following:
+Then, you also need to make sure that you are using Java 21+, this can be enforced in your pom.xml file with the following:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
 ----
 <properties>
-    <maven.compiler.source>19</maven.compiler.source>
-    <maven.compiler.target>19</maven.compiler.target>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
 </properties>
-----
-
-Finally, until Java 21, you need to configure your compiler plugin with the `--enable-preview` flag.
-If you use Maven, make sure that the configuration of the Maven compiler plugin is the following:
-
-[source, xml]
-----
-<plugin>
-  <artifactId>maven-compiler-plugin</artifactId>
-  <version>${compiler-plugin.version}</version>
-  <configuration>
-    <compilerArgs>
-      <arg>--enable-preview</arg>
-      <arg>-parameters</arg>
-    </compilerArgs>
-  </configuration>
-</plugin>
 ----
 
 ==== Three development and execution models
@@ -382,14 +366,7 @@ mvn package
 
 === Using a local GraalVM installation
 
-To compile a Quarkus applications leveraging `@RunOnVirtualThread` into native executable, you must be sure to use a GraalVM / Mandrel `native-image` supporting virtual threads, so providing at least Java 19+.
-
-Then, until Java 21, you need to add the following property to your `application.properties` file:
-
-[source, properties]
-----
-quarkus.native.additional-build-args=--enable-preview
-----
+To compile a Quarkus applications leveraging `@RunOnVirtualThread` into a native executable, you must be sure to use a GraalVM / Mandrel `native-image` supporting virtual threads, so providing at least Java 21.
 
 Build the native executable as indicated on xref:./building-native-image.adoc[the native compilation guide].
 For example, with Maven, run:

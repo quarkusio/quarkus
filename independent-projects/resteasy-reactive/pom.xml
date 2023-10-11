@@ -51,7 +51,7 @@
         <jandex.version>3.1.5</jandex.version>
         <bytebuddy.version>1.12.12</bytebuddy.version>
         <junit5.version>5.10.0</junit5.version>
-        <maven.version>3.9.3</maven.version>
+        <maven.version>3.9.5</maven.version>
         <assertj.version>3.24.2</assertj.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>

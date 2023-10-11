@@ -1,4 +1,4 @@
-package io.quarkus.redis.deployment.client;
+package io.quarkus.redis.deployment.client.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

@@ -30,6 +30,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.codecs.Codec;
+import io.quarkus.redis.deployment.client.spi.RequestedRedisClientBuildItem;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 

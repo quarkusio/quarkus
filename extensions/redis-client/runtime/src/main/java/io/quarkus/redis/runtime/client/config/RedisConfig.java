@@ -2,6 +2,7 @@ package io.quarkus.redis.runtime.client.config;
 
 import java.util.Map;
 
+import io.quarkus.redis.runtime.spi.RedisConstants;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -12,9 +13,9 @@ import io.smallrye.config.WithParentName;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface RedisConfig {
 
-    public final static String REDIS_CONFIG_ROOT_NAME = "redis";
-    public final static String HOSTS_CONFIG_NAME = "hosts";
-    public static final String DEFAULT_CLIENT_NAME = "<default>";
+    public final static String REDIS_CONFIG_ROOT_NAME = RedisConstants.REDIS_CONFIG_ROOT_NAME;
+    public final static String HOSTS_CONFIG_NAME = RedisConstants.HOSTS_CONFIG_NAME;
+    public static final String DEFAULT_CLIENT_NAME = RedisConstants.DEFAULT_CLIENT_NAME;
 
     /**
      * The default redis client

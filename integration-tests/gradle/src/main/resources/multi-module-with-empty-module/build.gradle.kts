@@ -12,6 +12,7 @@ allprojects {
     mavenLocal {
       content {
         includeGroupByRegex("io.quarkus.*")
+        includeGroup("org.hibernate.orm")
       }
     }
     mavenCentral()

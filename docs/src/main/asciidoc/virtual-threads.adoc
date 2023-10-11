@@ -14,6 +14,8 @@ include::_attributes.adoc[]
 :vthreadjep: https://openjdk.org/jeps/425
 :thread: https://docs.oracle.com/en/java/javase/18/docs/api/java.base/java/lang/Thread.html
 :pgsql-driver: https://javadoc.io/doc/org.postgresql/postgresql/latest/index.html
+:topics: virtual-threads
+:extensions: io.quarkus:quarkus-core
 
 This guide explains how to benefit from Java 19+ virtual threads in Quarkus application.
 

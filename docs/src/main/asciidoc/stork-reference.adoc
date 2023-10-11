@@ -6,6 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Stork Reference Guide
 :extension-status: preview
 include::_attributes.adoc[]
+:categories: cloud
+:topics: service-discovery,load-balancing,stork
+:extensions: io.quarkus:quarkus-smallrye-stork
 
 This guide is the companion from the xref:stork.adoc[Stork Getting Started Guide].
 It explains the configuration and usage of SmallRye Stork integration in Quarkus.
@@ -69,8 +72,3 @@ To learn about custom service discovery and service selection, check:
 
 - https://smallrye.io/smallrye-stork/latest/service-discovery/custom-service-discovery/[Implement a custom service discover provider]
 - https://smallrye.io/smallrye-stork/latest/load-balancer/custom-load-balancer/[Implement a custom service selection provider]
-
-
-
-
-

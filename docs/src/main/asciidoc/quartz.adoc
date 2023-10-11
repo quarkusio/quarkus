@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: You need clustering support for your scheduled tasks? This guide explains how to use the Quartz extension for that.
 :extension-status: preview
+:topics: scheduling,cronjob,quartz
+:extensions: io.quarkus:quarkus-quartz
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic clustered tasks using the http://www.quartz-scheduler.org/[Quartz] extension.
@@ -154,7 +156,7 @@ public class TaskBean {
 
     @Inject
     org.quartz.Scheduler quartz; <1>
-    
+
     void onStart(@Observes StartupEvent event) throws SchedulerException {
        JobDetail job = JobBuilder.newJob(MyJob.class)
                          .withIdentity("myJob", "myGroup")
@@ -169,23 +171,23 @@ public class TaskBean {
                             .build();
        quartz.scheduleJob(job, trigger); <2>
     }
-    
+
     @Transactional
     void performTask() {
         Task task = new Task();
         task.persist();
     }
-    
+
     // A new instance of MyJob is created by Quartz for every job execution
     public static class MyJob implements Job {
 
        @Inject
        TaskBean taskBean;
-    
+
        public void execute(JobExecutionContext context) throws JobExecutionException {
           taskBean.performTask(); <3>
        }
-    
+
     }
 }
 ----
@@ -193,7 +195,7 @@ public class TaskBean {
 <2> Schedule a new job using the Quartz API.
 <3> Invoke the `TaskBean#performTask()` method from the job. Jobs are also xref:cdi.adoc[container-managed] beans if they belong to a link:cdi-reference[bean archive].
 
-NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.  
+NOTE: By default, the scheduler is not started unless a `@Scheduled` business method is found. You may need to force the start of the scheduler for "pure" programmatic scheduling. See also <<quartz-configuration-reference>>.
 
 == Updating the application configuration file
 

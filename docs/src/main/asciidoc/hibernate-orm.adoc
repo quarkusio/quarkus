@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: data
 :summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breath of an Object Relational Mapper. It works beautifully in Quarkus.
 :config-file: application.properties
+:topics: data,hibernate-orm,sql,jdbc
+:extensions: io.quarkus:quarkus-hibernate-orm
 
 Hibernate ORM is the de facto standard Jakarta Persistence (formerly known as JPA) implementation and offers you the full breadth of an Object Relational Mapper.
 It works beautifully in Quarkus.
@@ -944,7 +946,7 @@ public class FruitResource {
         return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
                 .getResultList().toArray(new Fruit[0]);
     }
-    
+
 }
 ----
 
@@ -968,7 +970,7 @@ public class CustomTenantResolver implements TenantResolver {
     public String getDefaultTenantId() {
         return "base";
     }
-    
+
     @Override
     public String resolveTenantId() {
         String path = context.request().path();
@@ -981,7 +983,7 @@ public class CustomTenantResolver implements TenantResolver {
 
         return parts[1];
     }
-    
+
 }
 ----
 <1> Annotate the TenantResolver implementation with the `@PersistenceUnitExtension` qualifier
@@ -1026,7 +1028,7 @@ The following setup will use the xref:flyway.adoc[Flyway] extension to achieve t
 ==== SCHEMA approach
 
 The same data source will be used for all tenants and a schema has to be created for every tenant inside that data source.
-CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the DATABASE approach below. 
+CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the DATABASE approach below.
 
 [source,properties]
 ----
@@ -1035,7 +1037,7 @@ quarkus.hibernate-orm.database.generation=none
 
 # Enable SCHEMA approach and use default datasource
 quarkus.hibernate-orm.multitenant=SCHEMA
-# You could use a non-default datasource by using the following setting 
+# You could use a non-default datasource by using the following setting
 # quarkus.hibernate-orm.multitenant-schema-datasource=other
 
 # The default data source used for all tenant schemas
@@ -1081,7 +1083,7 @@ INSERT INTO mycompany.known_fruits(id, name) VALUES (3, 'Blackberries');
 
 ==== DATABASE approach
 
-For every tenant you need to create a named data source with the same identifier that is returned by the `TenantResolver`. 
+For every tenant you need to create a named data source with the same identifier that is returned by the `TenantResolver`.
 
 [source,properties]
 ----

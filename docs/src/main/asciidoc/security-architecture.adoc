@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security
+:topics: security
 
 The Quarkus Security architecture provides several built-in authentication mechanisms and is highly customizable.
 The primary mechanism for securing HTTP applications in Quarkus is the `HttpAuthenticationMechanism` interface.

@@ -4,6 +4,10 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Pulsar
+include::_attributes.adoc[]
+:categories: messaging
+:topics: messaging,reactive-messaging,pulsar,devservices,tooling,testing,devmode
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-pulsar
 
 With Quarkus Smallrye Reactive Messaging Pulsar extension (`quarkus-smallrye-reactive-messaging-pulsar`)
 Dev Services for Pulsar automatically starts a Pulsar broker in dev mode and when running tests.

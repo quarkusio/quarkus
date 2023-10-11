@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: security,web
+:topics: security,oidc,keycloak,authorization
+:extensions: io.quarkus:quarkus-oidc
 
 With the Quarkus OpenID Connect (OIDC) extension, you can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism.
 

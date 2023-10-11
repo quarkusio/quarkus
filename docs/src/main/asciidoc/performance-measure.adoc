@@ -7,6 +7,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: miscellaneous
 :summary: This guide explains how to best measure the footprint of a Quarkus application.
+:topics: internals,performance
 
 This guide covers:
 
@@ -54,7 +55,7 @@ it is very misleading in environments like Kubernetes/OpenShift.
 
 === Measuring Memory Correctly on Docker
 
-In order to measure memory correctly **DO NOT use docker stat or anything derived from it** (e.g. ctop). This approach only measures a subset of the in-use resident pages, while the Linux Kernel, cgroups and cloud orchestration providers will utilize the full resident set in their accounting (determining whether a process is over the limits and should be killed). 
+In order to measure memory correctly **DO NOT use docker stat or anything derived from it** (e.g. ctop). This approach only measures a subset of the in-use resident pages, while the Linux Kernel, cgroups and cloud orchestration providers will utilize the full resident set in their accounting (determining whether a process is over the limits and should be killed).
 
 To measure accurately, a similar set of steps for measuring RSS on Linux should be performed. The docker `top` command allows running a `ps` command on the container host machine against the processes in the container instance. By utilizing this in combination with formatting output parameters, the rss value can be returned:
 
@@ -69,7 +70,7 @@ For example:
 PID                 RSS                 COMMAND
 2531                27m                 ./application -Dquarkus.http.host=0.0.0.0
 ----
- 
+
 Alternatively, one can jump directly into a privileged shell (root on the host), and execute a `ps` command directly:
 
 [source,shell]

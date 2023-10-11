@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: data
 :summary: This guides covers the usage of Software Transactional Memory (STM).
 :extension-status: preview
+:topics: narayana,stm,transactions
+:extensions: io.quarkus:quarkus-narayana-stm
 
 Software Transactional Memory (STM) has been around in research environments since the late
 1990's and has relatively recently started to appear in products and various programming
@@ -137,7 +139,7 @@ public class FlightServiceImpl implements FlightService {
     @ReadLock
     public int getNumberOfBookings() { ... }
     public void makeBooking(String details) {...}
-    
+
     @NotState
     private int timesCalled;
 }

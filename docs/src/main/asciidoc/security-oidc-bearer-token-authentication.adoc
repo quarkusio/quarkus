@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
+:topics: security,oidc,bearer-token,keycloak,authentication
+:extensions: io.quarkus:quarkus-oidc
 
 Secure HTTP access to Jakarta REST (formerly known as JAX-RS) endpoints in your application with Bearer token authentication by using the Quarkus OpenID Connect (OIDC) extension.
 

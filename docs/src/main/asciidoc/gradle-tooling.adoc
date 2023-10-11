@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :categories: tooling, native
 :summary: Develop and build your Quarkus application with Gradle
 :devtools-no-maven:
+:topics: gradle,tooling
 
 Use Gradle to create a new project, add or remove extensions, launch development mode, debug your application, and build your application into a jar, native executable, or container-friendly executable. Import your project into your favorite IDE using Gradle project metadata.
 

@@ -8,6 +8,8 @@ include::_attributes.adoc[]
 :categories: security
 :keywords: sso oidc security keycloak
 :summary: This guide demonstrates how your Quarkus application can authorize access to protected resources using Keycloak Authorization Services.
+:topics: security,authentication,authorization,keycloak,sso,oidc
+:extensions: io.quarkus:quarkus-oidc,io.quarkus:quarkus-keycloak-authorization
 
 This guide demonstrates how your Quarkus application can authorize a bearer token access to protected resources using https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services].
 

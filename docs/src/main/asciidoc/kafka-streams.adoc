@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: messaging
 :summary: This guide demonstrates how your Quarkus application can utilize the Apache Kafka Streams API to implement stream processing applications based on Apache Kafka.
+:topics: messaging,kafka,kafka-streams
+:extensions: io.quarkus:quarkus-kafka-streams
 
 This guide demonstrates how your Quarkus application can utilize the Apache Kafka Streams API to implement stream processing applications based on Apache Kafka.
 
@@ -466,7 +468,7 @@ TIP: Alternatively, you can use `kafka.bootstrap.servers` instead of `quarkus.ka
 
 [NOTE]
 ====
-Once you are ready to promote your application into production, consider changing the above configuration values. While `cache.max.bytes.buffering=10240` will move your records faster through the topology, the default value of `10485760` is more throughput-friendly. Also condider increasing `metadata.max.age.ms` from `500`, which will update cluster metadata quickly, but will generate a lot of redundant requests, to a value closer to the default of `300000`. A `commit.interval.ms` of `1000` is good for exactly-once processing, but might generate excessive load for  the default at-least-once processing with the default value of `30000`.   
+Once you are ready to promote your application into production, consider changing the above configuration values. While `cache.max.bytes.buffering=10240` will move your records faster through the topology, the default value of `10485760` is more throughput-friendly. Also condider increasing `metadata.max.age.ms` from `500`, which will update cluster metadata quickly, but will generate a lot of redundant requests, to a value closer to the default of `300000`. A `commit.interval.ms` of `1000` is good for exactly-once processing, but might generate excessive load for  the default at-least-once processing with the default value of `30000`.
 ====
 
 All the properties within the `kafka-streams` namespace are passed through as-is to the Kafka Streams engine.

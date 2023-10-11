@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to interact with an Elasticsearch cluster using the low level REST client or the Elasticsearch Java client.
+:topics: data,search,elasticsearch,nosql
+:extensions: io.quarkus:quarkus-elasticsearch-java-client,io.quarkus:quarkus-elasticsearch-rest-client
 
 Elasticsearch is a well known full text search engine and NoSQL datastore.
 

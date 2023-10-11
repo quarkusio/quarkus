@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: observability
 :summary: This guide demonstrates how your Quarkus application can utilize the SmallRye Metrics extension.
+:topics: metrics,observability
+:extensions: io.quarkus:quarkus-smallrye-metrics
 
 The following guide demonstrates how a Quarkus application can use link:https://github.com/smallrye/smallrye-metrics/[SmallRye Metrics],
 an implementation of the link:https://github.com/eclipse/microprofile-metrics/[MicroProfile Metrics] specification.

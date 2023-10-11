@@ -10,7 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
+:topics: http,web,webjars,vertx,servlet,undertow
+:extensions: io.quarkus:quarkus-vertx-http
 
 This document explains various HTTP features that you can use in Quarkus.
 

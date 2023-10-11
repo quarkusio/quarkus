@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains Funqy's AWS Lambda HTTP binding.
+:topics: aws,lambda,serverless,function,cloud,funqy
+:extensions: io.quarkus:quarkus-funqy-http,io.quarkus:quarkus-amazon-lambda-http
 
 If you want to allow HTTP clients to invoke on your Funqy functions on AWS Lambda, Quarkus allows you to expose multiple
 Funqy functions through HTTP deployed as one AWS Lambda.  This approach does add overhead over the

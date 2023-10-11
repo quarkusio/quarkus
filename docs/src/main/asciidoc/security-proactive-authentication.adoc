@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
+:topics: security,authentication
+:extensions: io.quarkus:quarkus-vertx-http
 
 Proactive authentication is enabled in Quarkus by default. This means that if an incoming request has a credential then that request will always be authenticated, even if the target page does not require authentication.
 

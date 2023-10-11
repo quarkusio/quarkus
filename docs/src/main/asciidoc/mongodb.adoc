@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: data
 :summary: This guide covers how to use MongoDB in Quarkus.
+:topics: data,mongodb,nosql
+:extensions: io.quarkus:quarkus-mongodb-client
 
 MongoDB is a well known NoSQL Database that is widely used.
 

@@ -4,6 +4,7 @@ import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Produces;
 
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.Session;
 
 @RequestScoped
 public class CurrentVertxRequest {
@@ -15,6 +16,16 @@ public class CurrentVertxRequest {
     @RequestScoped
     public RoutingContext getCurrent() {
         return current;
+    }
+
+    @Produces
+    @RequestScoped
+    public Session getCurrentSession() {
+        Session result = current.session();
+        if (result == null) {
+            throw new UnsupportedOperationException("No active session or support for sessions disabled");
+        }
+        return result;
     }
 
     public CurrentVertxRequest setCurrent(RoutingContext current) {

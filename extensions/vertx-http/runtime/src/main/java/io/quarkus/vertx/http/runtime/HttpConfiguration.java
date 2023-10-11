@@ -265,6 +265,11 @@ public class HttpConfiguration {
     @ConfigItem
     public Map<String, FilterConfig> filter;
 
+    /**
+     * Configuration of Vert.x Web sessions.
+     */
+    public SessionsConfig sessions;
+
     public ProxyConfig proxy;
 
     public int determinePort(LaunchMode launchMode) {

@@ -21,6 +21,9 @@
         <module>deployment-spi</module>
         <module>runtime</module>
         <module>runtime-spi</module>
+
+        <module>sessions/deployment</module>
+        <module>sessions/runtime</module>
     </modules>
 
 

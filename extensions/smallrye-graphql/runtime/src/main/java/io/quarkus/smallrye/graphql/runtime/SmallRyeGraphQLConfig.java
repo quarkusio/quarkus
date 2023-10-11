@@ -28,6 +28,12 @@ public class SmallRyeGraphQLConfig {
     public Optional<Boolean> federationEnabled;
 
     /**
+     * Enable batch resolving for federation. Disabled by default.
+     */
+    @ConfigItem(name = "federation.batch-resolving-enabled")
+    public Optional<Boolean> federationBatchResolvingEnabled;
+
+    /**
      * Enable metrics. By default, this is false. If set to true, a metrics extension is required.
      */
     @ConfigItem(name = "metrics.enabled")

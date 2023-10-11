@@ -3,7 +3,7 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Extension build steps can produce this if preloading classes is enabled
+ * Extension build steps can produce this if preloading classes is enabled.
  */
 public final class PreloadClassesEnabledBuildItem extends SimpleBuildItem {
     private final boolean initialize;

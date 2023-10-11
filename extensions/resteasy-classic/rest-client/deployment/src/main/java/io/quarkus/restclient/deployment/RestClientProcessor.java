@@ -19,6 +19,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.client.ClientRequestFilter;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.ext.Providers;
+import jakarta.ws.rs.sse.SseEventSource;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -48,6 +49,7 @@ import org.jboss.resteasy.microprofile.client.DefaultResponseExceptionMapper;
 import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.async.AsyncInterceptorRxInvokerProvider;
 import org.jboss.resteasy.microprofile.client.publisher.MpPublisherMessageBodyReader;
+import org.jboss.resteasy.plugins.providers.sse.client.SseEventSourceImpl;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.arc.BeanDestroyer;
@@ -122,8 +124,11 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources) {
+    void setupClientBuilder(BuildProducer<NativeImageResourceBuildItem> resources,
+            BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         resources.produce(new NativeImageResourceBuildItem("META-INF/services/jakarta.ws.rs.client.ClientBuilder"));
+        serviceProviders.produce(new ServiceProviderBuildItem(SseEventSource.Builder.class.getName(),
+                SseEventSourceImpl.SourceBuilder.class.getName()));
     }
 
     @BuildStep

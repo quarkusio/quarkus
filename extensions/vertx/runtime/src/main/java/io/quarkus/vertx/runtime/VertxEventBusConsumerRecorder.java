@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
@@ -22,6 +23,7 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ProfileManager;
 import io.quarkus.vertx.ConsumeEvent;
+import io.quarkus.vertx.LocalEventBusCodec;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
@@ -44,12 +46,13 @@ public class VertxEventBusConsumerRecorder {
     static volatile List<MessageConsumer<?>> messageConsumers;
 
     public void configureVertx(Supplier<Vertx> vertx, Map<String, ConsumeEvent> messageConsumerConfigurations,
-            LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass) {
+            LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass,
+            List<Class<?>> selectorTypes) {
         VertxEventBusConsumerRecorder.vertx = vertx.get();
         VertxEventBusConsumerRecorder.messageConsumers = new CopyOnWriteArrayList<>();
 
         registerMessageConsumers(messageConsumerConfigurations);
-        registerCodecs(codecByClass);
+        registerCodecs(codecByClass, selectorTypes);
 
         if (launchMode == LaunchMode.DEVELOPMENT) {
             shutdown.addShutdownTask(new Runnable() {
@@ -244,7 +247,7 @@ public class VertxEventBusConsumerRecorder {
     }
 
     @SuppressWarnings("unchecked")
-    private void registerCodecs(Map<Class<?>, Class<?>> codecByClass) {
+    private void registerCodecs(Map<Class<?>, Class<?>> codecByClass, List<Class<?>> selectorTypes) {
         EventBus eventBus = vertx.eventBus();
         boolean isDevMode = ProfileManager.getLaunchMode() == LaunchMode.DEVELOPMENT;
         for (Map.Entry<Class<?>, Class<?>> codecEntry : codecByClass.entrySet()) {
@@ -252,6 +255,7 @@ public class VertxEventBusConsumerRecorder {
             Class<?> codec = codecEntry.getValue();
             try {
                 if (MessageCodec.class.isAssignableFrom(codec)) {
+                    @SuppressWarnings("rawtypes")
                     MessageCodec messageCodec = (MessageCodec) codec.getDeclaredConstructor().newInstance();
                     if (isDevMode) {
                         // we need to unregister the codecs because in dev mode vert.x is not reloaded
@@ -267,6 +271,23 @@ public class VertxEventBusConsumerRecorder {
                 LOGGER.error("Cannot instantiate the MessageCodec " + target.toString(), e);
             }
         }
+
+        String localCodecName = "quarkus_default_local_codec";
+        if (isDevMode) {
+            eventBus.unregisterCodec(localCodecName);
+        }
+        eventBus.registerCodec(new LocalEventBusCodec<>(localCodecName));
+        eventBus.codecSelector(new Function<Object, String>() {
+            @Override
+            public String apply(Object messageBody) {
+                for (Class<?> selectorType : selectorTypes) {
+                    if (selectorType.isAssignableFrom(messageBody.getClass())) {
+                        return localCodecName;
+                    }
+                }
+                return null;
+            }
+        });
     }
 
     public RuntimeValue<Vertx> forceStart(Supplier<Vertx> vertx) {

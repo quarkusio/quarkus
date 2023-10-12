@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>quarkus-resteasy-mutiny</artifactId>
-    <name>Quarkus - RESTEasy - Mutiny - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - Mutiny - Runtime</name>
     <description>Mutiny support for RESTEasy Classic server</description>
     <dependencies>
         <dependency>

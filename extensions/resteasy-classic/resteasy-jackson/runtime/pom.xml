@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-jackson</artifactId>
-    <name>Quarkus - RESTEasy - Jackson - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - Jackson - Runtime</name>
     <description>Jackson serialization support for RESTEasy Classic</description>
     <dependencies>
         <dependency>

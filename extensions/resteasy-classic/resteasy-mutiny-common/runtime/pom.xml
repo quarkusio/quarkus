@@ -10,9 +10,9 @@
     </parent>
 
     <artifactId>quarkus-resteasy-mutiny-common</artifactId>
-    <name>Quarkus - RESTEasy - Mutiny - Common - Runtime</name>
+    <name>Quarkus - RESTEasy Classic - Mutiny - Common - Runtime</name>
     <description>Mutiny components common to the RESTEasy server and the REST Client</description>
-    
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

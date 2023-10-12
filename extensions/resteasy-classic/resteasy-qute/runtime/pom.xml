@@ -10,8 +10,8 @@
     </parent>
 
     <artifactId>quarkus-resteasy-qute</artifactId>
-    <name>Quarkus - RESTEasy - Qute - Runtime</name>
-    <description>Qute Templating integration for RESTEasy</description>
+    <name>Quarkus - RESTEasy Classic - Qute - Runtime</name>
+    <description>Qute Templating integration for RESTEasy Classic</description>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

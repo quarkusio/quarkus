@@ -108,6 +108,7 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.runtime.HttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceConfiguration;
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -222,15 +223,15 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig openApiConfig,
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
-            OpenApiRecorder recorder) {
+            OpenApiRecorder recorder,
+            HttpBuildTimeConfig httpConfig) {
+
         OASFilter autoSecurityFilter = null;
-        if (openApiConfig.autoAddSecurity) {
+
+        if (openApiConfig.autoAddSecurity
+                && hasEnabledAuthPermission(httpConfig, openApiConfig, apiFilteredIndexViewBuildItem)) {
             // Only add the security if there are secured endpoints
-            OASFilter autoRolesAllowedFilter = getAutoRolesAllowedFilter(openApiConfig.securitySchemeName,
-                    apiFilteredIndexViewBuildItem, openApiConfig);
-            if (autoRolesAllowedFilter != null) {
-                autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig);
-            }
+            autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig);
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(OASFilter.class).setRuntimeInit()
@@ -541,6 +542,20 @@ public class SmallRyeOpenApiProcessor {
             }
         }
         return null;
+    }
+
+    private boolean hasEnabledAuthPermission(HttpBuildTimeConfig httpConfig,
+            SmallRyeOpenApiConfig openApiConfig,
+            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem) {
+        return httpConfig.auth.permissions.values()
+                .stream()
+                .map(mapping -> mapping.enabled)
+                // By default, if the permission set is defined, it is enabled.
+                .map(enabled -> enabled.orElse(Boolean.TRUE))
+                .filter(Boolean.TRUE::equals)
+                .findFirst()
+                .orElseGet(() -> getAutoRolesAllowedFilter(openApiConfig.securitySchemeName,
+                        apiFilteredIndexViewBuildItem, openApiConfig) != null);
     }
 
     private OASFilter getAutoRolesAllowedFilter(String securitySchemeName,

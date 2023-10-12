@@ -155,7 +155,7 @@ public final class GraalVM {
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", Distribution.GRAALVM);
 
         public static final Version MINIMUM = VERSION_22_2_0;
-        public static final Version CURRENT = VERSION_23_0_0;
+        public static final Version CURRENT = VERSION_23_1_0;
         public static final int UNDEFINED = -1;
 
         final String fullVersion;

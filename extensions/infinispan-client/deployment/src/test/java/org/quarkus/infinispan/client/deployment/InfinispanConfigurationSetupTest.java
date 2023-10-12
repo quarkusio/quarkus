@@ -43,6 +43,8 @@ public class InfinispanConfigurationSetupTest {
         assertThat(configuration.security().ssl().provider()).isEqualTo("SSL_prov");
         assertThat(configuration.security().ssl().protocol()).isEqualTo("SSL_protocol");
         assertThat(configuration.security().ssl().ciphers()).containsExactlyInAnyOrder("SSL_cipher1", "SSL_cipher2");
+        assertThat(configuration.security().ssl().hostnameValidation()).isTrue();
+        assertThat(configuration.security().ssl().sniHostName()).isEqualTo("sniHostName");
         assertThat(configuration.clusters()).extracting("clusterName", "clientIntelligence")
                 .containsExactly(tuple("bsite", ClientIntelligence.BASIC));
         assertThat(configuration.clusters()).hasSize(1);

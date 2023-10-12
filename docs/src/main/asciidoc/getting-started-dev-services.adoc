@@ -78,7 +78,7 @@ Once the application is up, visit http://localhost:8080/hello. It should show a 
 === Accepting user input
 
 Let's make the application a bit more interactive.
-Open the project in your IDE and navigate to `src/main/java/org/acme/GreetingResource.java'
+Open the project in your IDE and navigate to `src/main/java/org/acme/GreetingResource.java`
 Add a query param in the `hello` method.
 (The `org.jboss.resteasy.reactive.RestQuery` annotation is like the Jakarta REST `@QueryParam`
 annotation, except you don't need to duplicate the parameter name.)

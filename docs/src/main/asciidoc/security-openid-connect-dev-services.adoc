@@ -6,6 +6,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services and UI for OpenID Connect (OIDC)
 include::_attributes.adoc[]
 :categories: security
+:keywords: sso oidc security keycloak
 :summary: Start Keycloak or other providers automatically in dev and test modes.
 
 This guide covers the Dev Services and UI for OpenID Connect (OIDC) Keycloak provider and explains how to support Dev Services and UI for other OpenID Connect providers.

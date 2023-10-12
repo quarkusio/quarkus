@@ -1,3 +1,8 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
 = Automate Quarkus deployment with Ansible
 include::_attributes.adoc[]
 :categories: command-line

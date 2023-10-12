@@ -50,7 +50,8 @@ public class SseParser implements Handler<Buffer> {
      */
     private String contentType;
     /**
-     * The content type we're reading. Defaults to the X-Sse-Element-Type header
+     * The content type we're reading. If the X-Sse-Element-Type header is not set, then it defaults to the declared @Produces
+     * (if any)
      */
     private String contentTypeHeader;
     /**
@@ -67,8 +68,9 @@ public class SseParser implements Handler<Buffer> {
     private long eventReconnectTime = SseEvent.RECONNECT_NOT_SET;
     private SseEventSourceImpl sseEventSource;
 
-    public SseParser(SseEventSourceImpl sseEventSource) {
+    public SseParser(SseEventSourceImpl sseEventSource, String defaultContentType) {
         this.sseEventSource = sseEventSource;
+        this.contentTypeHeader = defaultContentType;
     }
 
     public void setSseContentTypeHeader(String sseContentTypeHeader) {

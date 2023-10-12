@@ -19,10 +19,12 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
         // todo: replace with {@code provider()} post-Java 11
     }
 
+    @Override
     public SmallRyeConfig getConfigFor(final SmallRyeConfigProviderResolver configProviderResolver,
             final ClassLoader classLoader) {
         if (config == null) {
-            return ConfigUtils.configBuilder(true, true, LaunchMode.NORMAL).build();
+            // Remember the config so that we can uninstall it when "setConfig" is next called
+            config = ConfigUtils.configBuilder(true, true, LaunchMode.NORMAL).build();
         }
         return config;
     }
@@ -30,10 +32,26 @@ public final class QuarkusConfigFactory extends SmallRyeConfigFactory {
     public static void setConfig(SmallRyeConfig config) {
         SmallRyeConfigProviderResolver configProviderResolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
                 .instance();
-        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
-        QuarkusConfigFactory.config = config;
+        // Uninstall previous config
         if (QuarkusConfigFactory.config != null) {
+            configProviderResolver.releaseConfig(QuarkusConfigFactory.config);
+            QuarkusConfigFactory.config = null;
+        }
+        // Also release the TCCL config, in case that config was not QuarkusConfigFactory.config
+        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
+        // Install new config
+        if (config != null) {
+            QuarkusConfigFactory.config = config;
+            // Register the new config for the TCCL,
+            // just in case the TCCL was using a different config
+            // than the one we uninstalled above.
             configProviderResolver.registerConfig(config, Thread.currentThread().getContextClassLoader());
         }
+    }
+
+    public static void releaseTCCLConfig() {
+        SmallRyeConfigProviderResolver configProviderResolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+                .instance();
+        configProviderResolver.releaseConfig(Thread.currentThread().getContextClassLoader());
     }
 }

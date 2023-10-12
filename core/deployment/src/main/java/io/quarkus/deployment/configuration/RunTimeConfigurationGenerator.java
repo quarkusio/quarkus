@@ -20,9 +20,7 @@ import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.Assert;
@@ -122,13 +120,6 @@ public final class RunTimeConfigurationGenerator {
             "maximumValueStringConverter", Converter.class, Converter.class, String.class, boolean.class);
     static final MethodDescriptor CONVS_PATTERN_CONVERTER = MethodDescriptor.ofMethod(Converters.class,
             "patternConverter", Converter.class, Converter.class, Pattern.class);
-
-    static final MethodDescriptor CPR_GET_CONFIG = MethodDescriptor.ofMethod(ConfigProviderResolver.class, "getConfig",
-            Config.class);
-    static final MethodDescriptor CPR_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class, "instance",
-            ConfigProviderResolver.class);
-    static final MethodDescriptor CPR_RELEASE_CONFIG = MethodDescriptor.ofMethod(ConfigProviderResolver.class, "releaseConfig",
-            void.class, Config.class);
 
     static final MethodDescriptor CU_LIST_FACTORY = MethodDescriptor.ofMethod(ConfigUtils.class, "listFactory",
             IntFunction.class);
@@ -595,17 +586,7 @@ public final class RunTimeConfigurationGenerator {
         }
 
         private void installConfiguration(ResultHandle config, MethodCreator methodCreator) {
-            // install config
             methodCreator.invokeStaticMethod(QCF_SET_CONFIG, config);
-            // now invalidate the cached config, so the next one to load the config gets the new one
-            final ResultHandle configProviderResolver = methodCreator.invokeStaticMethod(CPR_INSTANCE);
-            try (TryBlock getConfigTry = methodCreator.tryBlock()) {
-                final ResultHandle initialConfigHandle = getConfigTry.invokeVirtualMethod(CPR_GET_CONFIG,
-                        configProviderResolver);
-                getConfigTry.invokeVirtualMethod(CPR_RELEASE_CONFIG, configProviderResolver, initialConfigHandle);
-                // ignore
-                getConfigTry.addCatch(IllegalStateException.class);
-            }
         }
 
         private MethodDescriptor generateInitGroup(ClassDefinition definition) {

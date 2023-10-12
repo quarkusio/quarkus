@@ -100,7 +100,7 @@
         <classmate.version>1.5.1</classmate.version>
         <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below),
              as well as hibernate-orm.version-for-documentation in docs/pom.xml -->
-        <hibernate-orm.version>6.2.11.Final</hibernate-orm.version>
+        <hibernate-orm.version>6.2.13.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
         <hibernate-reactive.version>2.0.6.Final</hibernate-reactive.version>

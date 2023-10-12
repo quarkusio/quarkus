@@ -41,7 +41,8 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
     public void initExchangeTokenClient() {
         if (exchangeToken) {
             OidcClients clients = Arc.container().instance(OidcClients.class).get();
-            exchangeTokenClient = oidcClientName.isPresent() ? clients.getClient(oidcClientName.get()) : clients.getClient();
+            String clientName = getClientName();
+            exchangeTokenClient = clientName != null ? clients.getClient(clientName) : clients.getClient();
             Grant.Type exchangeTokenGrantType = ConfigProvider.getConfig()
                     .getValue(
                             "quarkus.oidc-client." + (oidcClientName.isPresent() ? oidcClientName.get() + "." : "")
@@ -73,5 +74,9 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
         } else {
             return token;
         }
+    }
+
+    protected String getClientName() {
+        return oidcClientName.orElse(null);
     }
 }

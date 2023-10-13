@@ -163,7 +163,10 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         sseSource.register(event -> {
             // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
             // the content-type SSE field
-            multiRequest.emit(event.readData(responseType));
+            R item = event.readData(responseType);
+            if (item != null) { // we don't emit null because it breaks Multi (by design)
+                multiRequest.emit(item);
+            }
         }, multiRequest::fail, multiRequest::complete);
         // watch for user cancelling
         sseSource.registerAfterRequest(vertxResponse);

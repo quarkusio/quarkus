@@ -5,6 +5,7 @@ import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 
 @Path("/")
@@ -16,7 +17,7 @@ public class RestClientResource {
 
     @GET
     public Greeting test() {
-        AssertHelper.assertEverything();
+        VirtualThreadsAssertions.assertEverything();
         return client.hello();
     }
 

@@ -10,6 +10,7 @@ import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.MailTemplate;
 import io.quarkus.mailer.Mailer;
 import io.quarkus.qute.CheckedTemplate;
+import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 
 @Path("/")
@@ -21,7 +22,7 @@ public class MailerResource {
 
     @GET
     public String send() {
-        AssertHelper.assertEverything();
+        VirtualThreadsAssertions.assertEverything();
         mailer.send(Mail.withText("roger-the-robot@quarkus.io", "test simple", "This email is sent from a virtual thread"));
         return "OK";
     }
@@ -29,7 +30,7 @@ public class MailerResource {
     @GET
     @Path("/template")
     public String sendWithTemplate() {
-        AssertHelper.assertEverything();
+        VirtualThreadsAssertions.assertEverything();
         Templates.hello("virtual threads").to("roger-the-robot@quarkus.io").subject("test template").send().await()
                 .atMost(Duration.ofSeconds(3));
         return "OK";

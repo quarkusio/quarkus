@@ -35,8 +35,8 @@
         <module>vertx-event-bus-virtual-threads</module>
         <module>scheduler-virtual-threads</module>
         <module>quartz-virtual-threads</module>
-	<module>virtual-threads-disabled</module>
-	<module>reactive-routes-virtual-threads</module>
+        <module>virtual-threads-disabled</module>
+        <module>reactive-routes-virtual-threads</module>
     </modules>
 
     <build>

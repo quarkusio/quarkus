@@ -1,4 +1,4 @@
-package io.quarkus.it.vthreads.jms;
+package io.quarkus.test.vertx;
 
 import java.lang.reflect.Method;
 
@@ -6,7 +6,7 @@ import io.quarkus.arc.Arc;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Vertx;
 
-public class AssertHelper {
+public class VirtualThreadsAssertions {
 
     /**
      * Asserts that the current method:
@@ -18,6 +18,12 @@ public class AssertHelper {
         assertThatTheRequestScopeIsActive();
         assertThatItRunsOnVirtualThread();
         assertThatItRunsOnADuplicatedContext();
+    }
+
+    public static void assertWorkerOrEventLoopThread() {
+        assertThatTheRequestScopeIsActive();
+        assertThatItRunsOnADuplicatedContext();
+        assertNotOnVirtualThread();
     }
 
     public static void assertThatTheRequestScopeIsActive() {
@@ -51,7 +57,7 @@ public class AssertHelper {
         }
     }
 
-    public static void assertThatItDoesNotRunOnVirtualThread() {
+    public static void assertNotOnVirtualThread() {
         // We cannot depend on a Java 20.
         try {
             Method isVirtual = Thread.class.getMethod("isVirtual");
@@ -61,8 +67,11 @@ public class AssertHelper {
                 throw new AssertionError("Thread " + Thread.currentThread() + " is a virtual thread");
             }
         } catch (Exception e) {
-            throw new AssertionError(
-                    "Thread " + Thread.currentThread() + " is a virtual thread - but cannot invoke Thread.isVirtual()", e);
+            // Trying using Thread name.
+            var name = Thread.currentThread().toString();
+            if (name.toLowerCase().contains("virtual")) {
+                throw new AssertionError("Thread " + Thread.currentThread() + " seems to be a virtual thread");
+            }
         }
     }
 }

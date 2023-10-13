@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-common-parent</artifactId>
-    <name>Quarkus - RESTEasy - Common</name>
+    <name>Quarkus - RESTEasy Classic - Common</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

@@ -1,4 +1,4 @@
-name: "Quarkus RESTEasy Reactive Servlet"
+name: "RESTEasy Reactive Servlet"
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 metadata:
   unlisted: true

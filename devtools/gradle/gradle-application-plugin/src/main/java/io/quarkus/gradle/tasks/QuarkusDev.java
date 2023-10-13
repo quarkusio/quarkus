@@ -605,7 +605,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     private void addLocalProject(ResolvedDependency project, GradleDevModeLauncher.Builder builder, Set<ArtifactKey> addeDeps,
-                                 boolean root) {
+            boolean root) {
         addeDeps.add(project.getKey());
 
         final ArtifactSources sources = project.getSources();
@@ -685,7 +685,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             }
             Path testClassesDir = testClassesDirs.isEmpty() ? null
                     : QuarkusGradleUtils.mergeClassesDirs(testClassesDirs, project.getWorkspaceModule().getBuildDir(), root,
-                    root);
+                            root);
 
             final Set<Path> testResourcesSrcDirs = new LinkedHashSet<>();
             // resourcesSrcDir may exist but if it's empty the resources output dir won't be created

@@ -1,0 +1,24 @@
+name: Develocity - Publish Maven Build Scans
+
+on:
+  workflow_run:
+    workflows: [ "Quarkus CI" ]
+    types: [ completed ]
+
+jobs:
+  publish-build-scans:
+    if: github.repository == 'quarkusio/quarkus'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Verify Terms of Service acceptance job passed
+        uses: gradle/github-actions/terms-of-service-acceptance/verify@v1-beta
+        with:
+          terms-of-service-acceptance-workflow-job-name: 'run-terms-of-service-acceptance'
+      - name: Publish Maven Build Scans
+        uses: gradle/github-actions/maven-build-scan/publish@v1-beta
+        with:
+          develocity-url: 'https://ge.quarkus.io'
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          skip-comment: true

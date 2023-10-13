@@ -1,4 +1,4 @@
-package io.quarkus.virtual.mail;
+package io.quarkus.virtual.scheduler;
 
 import java.time.Duration;
 import java.util.List;

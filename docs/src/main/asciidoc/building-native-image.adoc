@@ -428,17 +428,6 @@ The reason for this is that the local build driver invoked through `-Dquarkus.na
 
 [TIP]
 ====
-The builder image used by default supports Java 17 as it is the latest LTS version.
-
-If your application uses Java 18 or later, you need to specify a builder image supporting Java 20:
-
-:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-20
-include::{includes}/devtools/build-native-container-parameters.adoc[]
-:!build-additional-parameters:
-====
-
-[TIP]
-====
 Building with GraalVM instead of Mandrel requires a custom builder image parameter to be passed additionally:
 
 :build-additional-parameters: -Dquarkus.native.builder-image=graalvm

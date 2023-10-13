@@ -407,15 +407,10 @@ Then, add to your `application.properties` file:
 
 [source, properties]
 ----
-quarkus.native.additional-build-args=--enable-preview <1>
-
 # In-container build to get a linux 64 executable
-quarkus.native.container-build=true <2>
-quarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-20 <3>
+quarkus.native.container-build=true <1>
 ----
-<1> The `enable-preview` flag in only necessary until Java 21.
-<2> Enables the in-container build
-<3> The builder container to use. Make sure it supports virtual threads
+<1> Enables the in-container build
 
 [IMPORTANT]
 .From ARM/64 to AMD/64

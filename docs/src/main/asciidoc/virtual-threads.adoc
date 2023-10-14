@@ -79,6 +79,7 @@ In this scenario, it is worse than useless to have thousands of threads if we ha
 Even worse, when running a CPU-bound workload on a virtual thread, the virtual thread monopolizes the carrier thread on which it is mounted.
 It will either reduce the chance for the other virtual thread to run or will start creating new carrier threads, leading to high memory usage.
 
+[[run-code-on-virtual-threads-using-runonvirtualthread]]
 == Run code on virtual threads using @RunOnVirtualThread
 
 In Quarkus, the support of virtual thread is implemented using the link:{runonvthread}[@RunOnVirtualThread] annotation.

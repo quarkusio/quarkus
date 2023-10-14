@@ -138,7 +138,7 @@ public void blocking(RoutingContext rc) {
     // ...
 }
 ----
-When `@Blocking` is used, it ignores the `type` attribute of `@Route`.
+When `@Blocking` is used, the `type` attribute of the `@Route` is ignored.
 ====
 
 The `@Route` annotation is repeatable and so you can declare several routes for a single method:
@@ -163,6 +163,12 @@ String person() {
 }
 ----
 <1> If the `accept` header matches `text/html`, we set the content type automatically to `text/html`.
+
+=== Executing route on a virtual thread
+
+You can annotate a route method with `@io.smallrye.common.annotation.RunOnVirtualThread` in order to execute it on a virtual thread.
+However, keep in mind that not everything can run safely on virtual threads.
+You should read the xref:virtual-threads.adoc#run-code-on-virtual-threads-using-runonvirtualthread[Virtual thread support reference] carefully and get acquainted with all the details.
 
 === Handling conflicting routes
 

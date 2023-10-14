@@ -6,7 +6,6 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
-import io.quarkus.vertx.http.runtime.HandlerType;
 
 /**
  * Describe a request handler.
@@ -15,15 +14,15 @@ class HandlerDescriptor {
 
     private final MethodInfo method;
     private final BeanValidationAnnotationsBuildItem validationAnnotations;
-    private final HandlerType handlerType;
+    private final boolean failureHandler;
     private final Type payloadType;
     private final String[] contentTypes;
 
-    HandlerDescriptor(MethodInfo method, BeanValidationAnnotationsBuildItem bvAnnotations, HandlerType handlerType,
+    HandlerDescriptor(MethodInfo method, BeanValidationAnnotationsBuildItem bvAnnotations, boolean failureHandler,
             String[] producedTypes) {
         this.method = method;
         this.validationAnnotations = bvAnnotations;
-        this.handlerType = handlerType;
+        this.failureHandler = failureHandler;
         Type returnType = method.returnType();
         if (returnType.kind() == Kind.VOID) {
             payloadType = null;
@@ -120,8 +119,8 @@ class HandlerDescriptor {
         return type.name().equals(DotNames.MUTINY_BUFFER);
     }
 
-    HandlerType getHandlerType() {
-        return handlerType;
+    boolean isFailureHandler() {
+        return failureHandler;
     }
 
 }

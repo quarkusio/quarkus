@@ -212,12 +212,9 @@ quarkus:
 
 YAML `null` keys are not included in the assembly of the configuration property name, allowing them to be used at any level for disambiguating configuration keys.
 
-== Current Limitation
-The smallrye-config library can only retrieve a single value at a time using a string representation of the path, and it does not provide a built-in way to retrieve complex nested structures in configuration files.  To work around this limitation, sources need to provide a single string representation of each value, effectively flattening the structure to a key-value pair of type `String -> String` . This means that nested structures in JSON or YAML files need to be represented in a flat format.
-
 Although Quarkus primarily uses `.properties` file extension for configuration, the snakeyaml library, which is used for parsing YAML in Quarkus, can also parse JSON structures. This means you can use YAML files with JSON content inside.
 
-To take advantage of this, you can use the application.yaml file (with the .yaml extension) and include JSON structures inside it. Snakeyaml will read both YAML and JSON formats within this file. This allows you to structure your configuration in a more hierarchical manner using JSON inside a YAML file.
+YAML and JSON structures can be read in an application.yaml file.
 
 Certainly, here's a step-by-step guide on how to use complex configuration structures with Quarkus:
 
@@ -237,17 +234,7 @@ public interface ServiceConfig {
 }
 ----
 
-2. Install the YAML Extension
-
-3. Configure Configuration Sources
-
-Add the following line to your application.properties or application.yml file:
-
-----
-quarkus.config.locations=path_to_yaml_file
-----
-
-4. Create the appropriate JSON structure and store it in a YAML file
+2. Create the appropriate JSON structure and store it in a YAML file
 
 [source,yaml]
 ----

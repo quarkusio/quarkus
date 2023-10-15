@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.not;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -46,6 +47,13 @@ class JsonViewOnClassTest {
                 .then()
                 .statusCode(200)
                 .body(containsString("1"), containsString("test"));
+
+        given().accept("application/json").contentType("application/json")
+                .body(User.testUser())
+                .post("param")
+                .then()
+                .statusCode(200)
+                .body(not(containsString("1")), containsString("test"));
     }
 
     @JsonView(Views.Public.class)
@@ -66,6 +74,11 @@ class JsonViewOnClassTest {
         public User get() {
             return User.testUser();
         }
+
+        @POST
+        public User post(@JsonView(Views.Public.class) User user) {
+            return user;
+        }
     }
 
     @JsonView(Views.Public.class)
@@ -76,6 +89,15 @@ class JsonViewOnClassTest {
         @JsonView(Views.Private.class)
         public User get() {
             return User.testUser();
+        }
+    }
+
+    @Path("param")
+    public static class Param {
+
+        @POST
+        public User get(@JsonView(Views.Public.class) User user) {
+            return user;
         }
     }
 }

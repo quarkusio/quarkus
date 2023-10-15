@@ -23,6 +23,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
@@ -410,10 +411,16 @@ public class ResteasyReactiveJacksonProcessor {
             return getClassId(target.asClass());
         } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
             return getMethodId(target.asMethod());
+        } else if (target.kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+            return getMethodParameterId(target.asMethodParameter());
         }
 
         throw new UnsupportedOperationException("The `@CustomSerialization` and `@CustomDeserialization` annotations can only "
-                + "be used in methods or classes.");
+                + "be used in methods, classes or method parameters.");
+    }
+
+    private String getMethodParameterId(MethodParameterInfo methodParameterInfo) {
+        return getMethodId(methodParameterInfo.method(), methodParameterInfo.method().declaringClass());
     }
 
     private String getClassId(ClassInfo classInfo) {

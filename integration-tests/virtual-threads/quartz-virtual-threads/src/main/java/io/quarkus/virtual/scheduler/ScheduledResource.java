@@ -10,6 +10,7 @@ import jakarta.ws.rs.Path;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.Scheduler;
+import io.quarkus.test.vertx.VirtualThreadsAssertions;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 
 @Path("/")
@@ -22,7 +23,7 @@ public class ScheduledResource {
         scheduler.newJob("my-programmatic-job")
                 .setInterval("1s")
                 .setTask(ex -> {
-                    AssertHelper.assertEverything();
+                    VirtualThreadsAssertions.assertEverything();
                     // Quarkus specific - each VT has a unique name
                     programmaticExecutions.add(Thread.currentThread().getName());
                 }, true)
@@ -32,7 +33,7 @@ public class ScheduledResource {
     @Scheduled(every = "1s")
     @RunOnVirtualThread
     void run() {
-        AssertHelper.assertEverything();
+        VirtualThreadsAssertions.assertEverything();
         // Quarkus specific - each VT has a unique name
         executions.add(Thread.currentThread().getName());
     }

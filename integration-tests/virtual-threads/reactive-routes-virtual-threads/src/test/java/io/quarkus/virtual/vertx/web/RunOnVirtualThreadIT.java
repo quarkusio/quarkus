@@ -1,4 +1,4 @@
-package io.quarkus.virtual.mail;
+package io.quarkus.virtual.vertx.web;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 

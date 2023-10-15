@@ -74,11 +74,6 @@ class JsonViewOnClassTest {
         public User get() {
             return User.testUser();
         }
-
-        @POST
-        public User post(@JsonView(Views.Public.class) User user) {
-            return user;
-        }
     }
 
     @JsonView(Views.Public.class)
@@ -96,7 +91,7 @@ class JsonViewOnClassTest {
     public static class Param {
 
         @POST
-        public User get(@JsonView(Views.Public.class) User user) {
+        public User post(@JsonView(Views.Public.class) User user) {
             return user;
         }
     }

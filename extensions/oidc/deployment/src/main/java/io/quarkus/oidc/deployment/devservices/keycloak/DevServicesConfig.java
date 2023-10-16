@@ -85,6 +85,20 @@ public class DevServicesConfig {
     public Optional<List<String>> realmPath;
 
     /**
+     * Aliases to additional class or file system resources which will be used to initialize Keycloak.
+     * Each map entry represents a mapping between an alias and a class or file system resource path.
+     */
+    @ConfigItem
+    public Map<String, String> resourceAliases;
+    /**
+     * Additional class or file system resources which will be used to initialize Keycloak.
+     * Each map entry represents a mapping between a class or file system resource path alias and the Keycloak container
+     * location.
+     */
+    @ConfigItem
+    public Map<String, String> resourceMappings;
+
+    /**
      * The JAVA_OPTS passed to the keycloak JVM
      */
     @ConfigItem

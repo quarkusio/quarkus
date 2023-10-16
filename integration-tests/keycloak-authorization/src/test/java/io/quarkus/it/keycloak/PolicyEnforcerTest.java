@@ -10,7 +10,6 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-import org.keycloak.representations.AccessTokenResponse;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.SilentCssErrorHandler;
@@ -22,7 +21,7 @@ import com.gargoylesoftware.htmlunit.util.Cookie;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.restassured.RestAssured;
+import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClient;
@@ -34,10 +33,11 @@ import io.vertx.ext.web.client.WebClient;
 @QuarkusTestResource(KeycloakLifecycleManager.class)
 public class PolicyEnforcerTest {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
-    private static final String KEYCLOAK_REALM = "quarkus";
 
     @TestHTTPResource
     URL url;
+
+    final KeycloakTestClient keycloakClient = new KeycloakTestClient();
 
     static Vertx vertx = Vertx.vertx();
     static WebClient client = WebClient.create(vertx);
@@ -239,17 +239,7 @@ public class PolicyEnforcerTest {
     }
 
     protected String getAccessToken(String userName) {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", "quarkus-app")
-                .param("client_secret", "secret")
-                .when()
-                .post(KeycloakLifecycleManager.KEYCLOAK_SERVER_URL + "/realms/" + KEYCLOAK_REALM
-                        + "/protocol/openid-connect/token")
-                .as(AccessTokenResponse.class).getToken();
+        return keycloakClient.getAccessToken(userName);
     }
 
     private void assureGetPath(String path, int expectedStatusCode, String token, String body) {

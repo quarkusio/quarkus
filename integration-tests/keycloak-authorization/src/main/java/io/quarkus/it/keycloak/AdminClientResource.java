@@ -10,7 +10,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.CredentialRepresentation;
@@ -21,9 +20,6 @@ import org.keycloak.representations.idm.UserRepresentation;
 
 @Path("/admin-client")
 public class AdminClientResource {
-
-    @ConfigProperty(name = "admin-url")
-    String url;
 
     @Inject
     Keycloak keycloak;

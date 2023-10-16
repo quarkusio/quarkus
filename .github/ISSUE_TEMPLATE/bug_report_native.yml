@@ -1,6 +1,8 @@
-name: Bug Report
-description: Report a bug in Quarkus
-labels: kind/bug
+name: Bug Report for Quarkus native executables
+description: Report a bug in Quarkus that only appears when building a native executable
+labels:
+  - kind/bug
+  - area/native-image
 body:
   - type: textarea
     id: description
@@ -11,6 +13,9 @@ body:
       description: >-
         Describe the issue you are experiencing here to communicate to the
         maintainers. Tell us what you were trying to do and what happened.
+
+        Make sure the issue is not reproducible in JVM mode. If the
+        issue is reproducible in JVM mode please open a "Bug Report".
 
         Provide a clear and concise description of what the problem is.
   - type: textarea
@@ -35,8 +40,8 @@ body:
         Reproducer:
 
         Steps to reproduce the behavior:
-        1. 
-        2. 
+        1.
+        2.
         3.
   - type: markdown
     id: environment
@@ -51,6 +56,10 @@ body:
     id: java_version
     attributes:
       label:  Output of `java -version`
+  - type: input
+    id: graalvm_version
+    attributes:
+      label:  Mandrel or GraalVM version (if different from Java)
   - type: input
     id: quarkus_version
     attributes:

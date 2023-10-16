@@ -1889,6 +1889,19 @@ For example, when registering types and methods for reflection access,
 the analysis can’t easily see what’s behind those types or methods,
 so it has to do more work to complete the analysis step.
 
+[[native-faq-experimental-options]]
+=== I get a warning about using experimental options, what can I do?
+
+Starting with Mandrel 23.1 and GraalVM for JDK 21, the native executable generation process will warn about the use of experimental options with a message like this:
+
+[source,bash]
+----
+Warning: The option '-H:ReflectionConfigurationResources=META-INF/native-image/io.micrometer/micrometer-core/reflect-config.json' is experimental and must be enabled via '-H:+UnlockExperimentalVMOptions' in the future.
+----
+
+If the mentioned option is added by a third party library like in the example above, you should consider opening an issue in the library's repository to ask for the option to be removed.
+If the option is added by your application, you should consider either removing it (if it's not necessary) or wrapping it between `-H:+UnlockExperimentalVMOptions` and `-H:-UnlockExperimentalVMOptions`.
+
 === I get a `AnalysisError\$ParsingError` when building a native executable due to an `UnresolvedElementException`, what can I do?
 
 When building a native executable Quarkus requires all classes being referenced by the code, no matter if they are build-time or run-time initialized, to be present in the classpath.

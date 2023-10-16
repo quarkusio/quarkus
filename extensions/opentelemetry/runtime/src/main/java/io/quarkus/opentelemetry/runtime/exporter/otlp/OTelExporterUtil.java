@@ -3,9 +3,9 @@ package io.quarkus.opentelemetry.runtime.exporter.otlp;
 import java.net.URI;
 import java.util.Locale;
 
-final class OtlpExporterUtil {
+final class OTelExporterUtil {
 
-    private OtlpExporterUtil() {
+    private OTelExporterUtil() {
     }
 
     static int getPort(URI uri) {

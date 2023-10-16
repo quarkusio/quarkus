@@ -38,7 +38,7 @@ import io.vertx.core.net.PemTrustOptions;
 
 @SuppressWarnings("deprecation")
 @Recorder
-public class OtlpRecorder {
+public class OTelExporterRecorder {
 
     public Function<SyntheticCreationalContext<LateBoundBatchSpanProcessor>, LateBoundBatchSpanProcessor> batchSpanProcessorForOtlp(
             OTelRuntimeConfig otelRuntimeConfig,
@@ -174,11 +174,11 @@ public class OtlpRecorder {
 
     static String resolveEndpoint(final OtlpExporterRuntimeConfig runtimeConfig) {
         String endpoint = runtimeConfig.traces().legacyEndpoint()
-                .filter(OtlpRecorder::excludeDefaultEndpoint)
+                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                 .orElse(runtimeConfig.traces().endpoint()
-                        .filter(OtlpRecorder::excludeDefaultEndpoint)
+                        .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                         .orElse(runtimeConfig.endpoint()
-                                .filter(OtlpRecorder::excludeDefaultEndpoint)
+                                .filter(OTelExporterRecorder::excludeDefaultEndpoint)
                                 .orElse(DEFAULT_GRPC_BASE_URI)));
         return endpoint.trim();
     }
@@ -208,7 +208,7 @@ public class OtlpRecorder {
             options.setKeyCertOptions(toPemKeyCertOptions());
             options.setPemTrustOptions(toPemTrustOptions());
 
-            if (OtlpExporterUtil.isHttps(baseUri)) {
+            if (OTelExporterUtil.isHttps(baseUri)) {
                 options.setSsl(true);
                 options.setUseAlpn(true);
             }

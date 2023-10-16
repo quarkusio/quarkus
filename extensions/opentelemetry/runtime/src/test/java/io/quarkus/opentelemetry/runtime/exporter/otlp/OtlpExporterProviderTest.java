@@ -18,7 +18,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveEndpoint_legacyWins() {
         assertEquals("http://localhost:1111/",
-                OtlpRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
+                OTelExporterRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
                         DEFAULT_GRPC_BASE_URI,
                         "http://localhost:1111/",
                         "http://localhost:2222/")));
@@ -27,7 +27,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveEndpoint_newWins() {
         assertEquals("http://localhost:2222/",
-                OtlpRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
+                OTelExporterRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
                         DEFAULT_GRPC_BASE_URI,
                         "http://localhost:2222/")));
@@ -36,7 +36,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveEndpoint_globalWins() {
         assertEquals("http://localhost:1111/",
-                OtlpRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
+                OTelExporterRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
                         DEFAULT_GRPC_BASE_URI,
                         DEFAULT_GRPC_BASE_URI)));
@@ -45,7 +45,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveEndpoint_legacyTraceWins() {
         assertEquals("http://localhost:2222/",
-                OtlpRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
+                OTelExporterRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
                         DEFAULT_GRPC_BASE_URI,
                         null,
                         "http://localhost:2222/")));
@@ -54,7 +54,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveEndpoint_legacyGlobalWins() {
         assertEquals(DEFAULT_GRPC_BASE_URI,
-                OtlpRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
+                OTelExporterRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
                         DEFAULT_GRPC_BASE_URI,
                         null,
                         null)));
@@ -63,7 +63,7 @@ class OtlpExporterProviderTest {
     @Test
     public void resolveEndpoint_testIsSet() {
         assertEquals(DEFAULT_GRPC_BASE_URI,
-                OtlpRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
+                OTelExporterRecorder.resolveEndpoint(createOtlpExporterRuntimeConfig(
                         null,
                         null,
                         null)));

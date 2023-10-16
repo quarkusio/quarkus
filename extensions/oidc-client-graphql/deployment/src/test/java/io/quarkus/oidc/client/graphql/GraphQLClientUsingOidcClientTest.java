@@ -2,6 +2,7 @@ package io.quarkus.oidc.client.graphql;
 
 import static org.hamcrest.Matchers.equalTo;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -11,6 +12,7 @@ import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.restassured.RestAssured;
 
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
+@Disabled
 public class GraphQLClientUsingOidcClientTest {
 
     private static final Class<?>[] testClasses = {

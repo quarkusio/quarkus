@@ -38,8 +38,8 @@
 # alpine           3.14        0a97eee8041e   2 months ago   5.6MB
 # ubuntu           16.04       b6f507652425   4 months ago   135MB
 
-time docker rmi node:12 node:14 node:16 buildpack-deps:stretch buildpack-deps:buster buildpack-deps:bullseye
-# That is 4.07 GB
+time sudo docker image prune --all --force || true
+# That is 979M
 time sudo rm -rf /usr/share/dotnet
 # That is 1.78 GB
 time sudo rm -rf /usr/share/swift

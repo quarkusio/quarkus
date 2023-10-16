@@ -271,6 +271,7 @@ After you have completed this tutorial, explore xref:security-oidc-bearer-token-
 * xref:security-authentication-mechanisms.adoc#oidc-jwt-oauth2-comparison[Choosing between OpenID Connect, SmallRye JWT, and OAuth2 authentication mechanisms]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]
 * https://www.keycloak.org/documentation.html[Keycloak Documentation]
+* xref:security-oidc-auth0-tutorial.adoc[Protect Quarkus web application by using Auth0 OpenID Connect provider]
 * https://openid.net/connect/[OpenID Connect]
 * https://tools.ietf.org/html/rfc7519[JSON Web Token]
 

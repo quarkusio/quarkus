@@ -139,6 +139,8 @@ results in frequent pinning.
 Most JDBC drivers still pin the carrier thread.
 Even worse, lots of widespread libraries are pinning and would require code changes.
 
+For more information, see link:https://quarkus.io/blog/virtual-thread-1/[When Quarkus meets Virtual Threads]
+
 [[pooling]]
 ==== The pooling case
 Some libraries are using `ThreadLocal` as an object pooling mechanism.

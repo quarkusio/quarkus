@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus.arc</groupId>
         <artifactId>arc-parent</artifactId>
-        <version>2.16.999-SNAPSHOT</version>
+        <version>2.16.12.Final</version>
     </parent>
 
     <artifactId>arc</artifactId>

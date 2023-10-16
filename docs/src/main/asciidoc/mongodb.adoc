@@ -746,6 +746,55 @@ quarkus.mongodb.native.dns.use-vertx-dns-resolver=true
 quarkus.mongodb.native.dns.lookup-timeout=10s # the default is 5s
 ----
 
+== Customize the Mongo client configuration programmatically
+
+If you need to customize the Mongo client configuration programmatically, you need to implement the `io.quarkus.mongodb.runtime.MongoClientCustomizer` interface and expose it as a CDI _application scoped_ bean:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyCustomizer implements MongoClientCustomizer {
+
+    @Override
+    public MongoClientSettings.Builder customize(MongoClientSettings.Builder builder) {
+        return builder.applicationName("my-app");
+    }
+}
+----
+
+The bean can customize a specific client using the `@MongoClientName` qualifier to indicate the client name.
+When there is no qualifier, it customizes the default client.
+At most one customizer can be used per client.
+If multiple customizers targeting the same client are detected, an exception is thrown at build time.
+
+This feature can be used to configure client-side field level encryption (CSFLE).
+Follows the instructions from https://www.mongodb.com/docs/manual/core/csfle/[the Mongo web site] to configure CSFLE:
+
+[source, java]
+----
+@ApplicationScoped
+public class MyCustomizer implements MongoClientCustomizer {
+    @Override
+    public MongoClientSettings.Builder customize(MongoClientSettings.Builder builder) {
+        Map<String, Map<String, Object>> kmsProviders = getKmsProviders();
+        String dek = getDataEncryptionKey();
+        Map<String, BsonDocument> schema = getSchema(dek);
+
+        Map<String, Object> extraOptions = new HashMap<>();
+        extraOptions.put("cryptSharedLibPath", "<path to crypt shared library>");
+
+        return builder.autoEncryptionSettings(AutoEncryptionSettings.builder()
+                .keyVaultNamespace(KEY_VAULT_NAMESPACE)
+                .kmsProviders(kmsProviders)
+                .schemaMap(schemaMap)
+                .extraOptions(extraOptions)
+                .build());
+    }
+}
+----
+
+IMPORTANT: Client-side field level encryption, and feature relying on https://github.com/mongodb/libmongocrypt[Mongo Crypt] in general, are not supported in native mode.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-mongodb.adoc[opts=optional, leveloffset=+1]

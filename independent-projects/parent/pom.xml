@@ -552,6 +552,9 @@
                                                 <name>baseDir</name>
                                                 <excludes>
                                                     <exclude>.idea/*</exclude>
+                                                    <exclude>.classpath</exclude>
+                                                    <exclude>.project</exclude>
+                                                    <exclude>.settings/*</exclude>
                                                     <exclude>target/*</exclude>
                                                 </excludes>
                                                 <normalization>

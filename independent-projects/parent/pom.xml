@@ -420,6 +420,11 @@
                                         <ignore>maven.settings</ignore>
                                     </ignoredKeys>
                                 </systemProperties>
+                                <runtimeClassPath>
+                                    <ignoredFiles>
+                                        <ignoredFile>**/quarkus-ide-launcher-*.jar</ignoredFile>
+                                    </ignoredFiles>
+                                </runtimeClassPath>
                             </normalization>
                             <plugins>
                                 <plugin>

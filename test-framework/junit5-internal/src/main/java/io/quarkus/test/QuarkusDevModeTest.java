@@ -292,6 +292,7 @@ public class QuarkusDevModeTest
             Path projectSourceParent = projectSourceRoot.getParent();
 
             DevModeContext context = exportArchive(deploymentDir, projectSourceRoot, projectSourceParent);
+            context.setBaseName(extensionContext.getDisplayName() + " (QuarkusDevModeTest)");
             context.setArgs(commandLineArgs);
             context.setTest(true);
             context.setAbortOnFailedStart(!allowFailedStart);

@@ -617,6 +617,7 @@ public class QuarkusUnitTest
                 final Path testLocation = PathTestHelper.getTestClassesLocation(testClass);
                 final Path projectDir = Path.of("").normalize().toAbsolutePath();
                 QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
+                        .setBaseName(extensionContext.getDisplayName() + " (QuarkusUnitTest)")
                         .setApplicationRoot(deploymentDir.resolve(APP_ROOT))
                         .setMode(QuarkusBootstrap.Mode.TEST)
                         .addExcludedPath(testLocation)
@@ -635,7 +636,8 @@ public class QuarkusUnitTest
                 }
                 if (!allowTestClassOutsideDeployment) {
                     quarkusUnitTestClassLoader = QuarkusClassLoader
-                            .builder("QuarkusUnitTest ClassLoader", getClass().getClassLoader(), false)
+                            .builder("QuarkusUnitTest ClassLoader for " + extensionContext.getDisplayName(),
+                                    getClass().getClassLoader(), false)
                             .addClassLoaderEventListeners(this.classLoadListeners)
                             .addBannedElement(ClassPathElement.fromPath(testLocation, true)).build();
                     builder.setBaseClassLoader(quarkusUnitTestClassLoader);

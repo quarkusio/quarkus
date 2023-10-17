@@ -178,6 +178,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         } else {
             curatedApplication = QuarkusBootstrap.builder()
                     //.setExistingModel(gradleAppModel) unfortunately this model is not re-usable due to PathTree serialization by Gradle
+                    .setBaseName(context.getDisplayName() + " (QuarkusTest)")
                     .setIsolateDeployment(true)
                     .setMode(QuarkusBootstrap.Mode.TEST)
                     .setTest(true)

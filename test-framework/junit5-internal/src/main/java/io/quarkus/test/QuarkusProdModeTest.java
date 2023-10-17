@@ -434,9 +434,8 @@ public class QuarkusProdModeTest
                     .setProjectRoot(testLocation)
                     .setTargetDirectory(buildDir)
                     .setForcedDependencies(forcedDependencies);
-            if (applicationName != null) {
-                builder.setBaseName(applicationName);
-            }
+            builder.setBaseName(applicationName != null ? applicationName
+                    : extensionContext.getDisplayName() + " (QuarkusProdModeTest)");
 
             Map<String, Object> buildContext = new HashMap<>();
             buildContext.put(BUILD_CONTEXT_CUSTOM_SOURCES_PATH_KEY, customSourcesDir);

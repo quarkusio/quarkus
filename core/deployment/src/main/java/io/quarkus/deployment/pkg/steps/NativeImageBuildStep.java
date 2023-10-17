@@ -814,9 +814,12 @@ public class NativeImageBuildStep {
                             "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }
 
-                // only available in GraalVM 23.1.0+. Expected to become the default in GraalVM 24.0.0.
+                // only available in GraalVM 23.1.0+
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
-                    nativeImageArgs.add("--strict-image-heap");
+                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {
+                        // Enabled by default in GraalVM 24.0.0.
+                        nativeImageArgs.add("--strict-image-heap");
+                    }
                 }
 
                 /*

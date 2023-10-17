@@ -153,6 +153,7 @@ public final class GraalVM {
         public static final Version VERSION_22_2_0 = new Version("GraalVM 22.2.0", "22.2.0", Distribution.GRAALVM);
         public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", Distribution.GRAALVM);
         public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", Distribution.GRAALVM);
+        public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", Distribution.GRAALVM);
 
         public static final Version MINIMUM = VERSION_22_2_0;
         public static final Version CURRENT = VERSION_23_1_0;

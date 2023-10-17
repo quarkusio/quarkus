@@ -1867,7 +1867,7 @@ allows restricted resources on a web page to be requested from another domain ou
 was served.
 
 Quarkus comes with a CORS filter at the HTTP layer level.
-Read the xref:http-reference.adoc#cors-filter[HTTP Reference Documentation] to learn
+Read the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide to learn
 how to use it.
 
 == More advanced usage

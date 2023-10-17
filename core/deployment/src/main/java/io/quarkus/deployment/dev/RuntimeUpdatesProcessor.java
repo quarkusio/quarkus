@@ -944,9 +944,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             }
 
-            for (String watchedFilePath : timestampSet.watchedFilePaths.keySet()) {
-                Path watchedFile = Paths.get(watchedFilePath);
-                boolean isAbsolute = watchedFile.isAbsolute();
+            for (Path watchedFilePath : timestampSet.watchedFileTimestamps.keySet()) {
+                boolean isAbsolute = watchedFilePath.isAbsolute();
                 List<Path> watchedRoots = roots;
                 if (isAbsolute) {
                     // absolute files are assumed to be read directly from the project root.
@@ -961,7 +960,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 boolean pathPreviouslyExisting = false;
                 for (Path root : watchedRoots) {
                     Path file = root.resolve(watchedFilePath);
-                    if (file.toFile().exists()) {
+                    if (Files.exists(file)) {
                         pathCurrentlyExisting = true;
                         try {
                             long value = Files.getLastModifiedTime(file).toMillis();
@@ -969,7 +968,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             //existing can be null when running tests
                             //as there is both normal and test resources, but only one set of watched timestampts
                             if (existing != null && value > existing) {
-                                ret.add(watchedFilePath);
+                                ret.add(file.toString());
                                 //a write can be a 'truncate' + 'write'
                                 //if the file is empty we may be seeing the middle of a write
                                 if (Files.size(file) == 0) {
@@ -1004,7 +1003,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
                 if (!pathCurrentlyExisting) {
                     if (pathPreviouslyExisting) {
-                        ret.add(watchedFilePath);
+                        ret.add(watchedFilePath.toString());
                     }
 
                     if (!isAbsolute) {
@@ -1085,19 +1084,22 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             List<Entry<Predicate<String>, Boolean>> watchedFilePredicates, boolean isTest) {
         if (isTest) {
             setWatchedFilePathsInternal(watchedFilePaths, test,
-                    s -> s.getTest().isPresent() ? asList(s.getTest().get(), s.getMain()) : singletonList(s.getMain()));
+                    s -> s.getTest().isPresent() ? asList(s.getTest().get(), s.getMain()) : singletonList(s.getMain()),
+                    watchedFilePredicates);
         } else {
             main.watchedFileTimestamps.clear();
             main.watchedFilePredicates = watchedFilePredicates;
-            setWatchedFilePathsInternal(watchedFilePaths, main, s -> singletonList(s.getMain()));
+            setWatchedFilePathsInternal(watchedFilePaths, main, s -> singletonList(s.getMain()), watchedFilePredicates);
         }
         return this;
     }
 
     private RuntimeUpdatesProcessor setWatchedFilePathsInternal(Map<String, Boolean> watchedFilePaths,
-            TimestampSet timestamps, Function<DevModeContext.ModuleInfo, List<DevModeContext.CompilationUnit>> cuf) {
+            TimestampSet timestamps, Function<DevModeContext.ModuleInfo, List<DevModeContext.CompilationUnit>> cuf,
+            List<Entry<Predicate<String>, Boolean>> watchedFilePredicates) {
         timestamps.watchedFilePaths = watchedFilePaths;
         Map<String, Boolean> extraWatchedFilePaths = new HashMap<>();
+        Set<String> watchedRootPaths = new HashSet<>();
         for (DevModeContext.ModuleInfo module : context.getAllModules()) {
             List<DevModeContext.CompilationUnit> compilationUnits = cuf.apply(module);
             for (DevModeContext.CompilationUnit unit : compilationUnits) {
@@ -1110,24 +1112,48 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     rootPaths = PathList.of(Path.of(rootPath));
                 }
                 for (Path root : rootPaths) {
-                    for (String path : watchedFilePaths.keySet()) {
-                        Path config = root.resolve(path);
-                        if (config.toFile().exists()) {
-                            try {
-                                FileTime lastModifiedTime = Files.getLastModifiedTime(config);
-                                timestamps.watchedFileTimestamps.put(config, lastModifiedTime.toMillis());
-                            } catch (IOException e) {
-                                throw new UncheckedIOException(e);
+                    // First find all matching paths from the root
+                    try (final Stream<Path> walk = Files.walk(root)) {
+                        walk.forEach(path -> {
+                            if (path.equals(root)) {
+                                return;
                             }
-                        } else {
-                            timestamps.watchedFileTimestamps.put(config, 0L);
-                            Map<Path, Long> extraWatchedFileTimestamps = expandGlobPattern(root, config);
-                            timestamps.watchedFileTimestamps.putAll(extraWatchedFileTimestamps);
-                            for (Path extraPath : extraWatchedFileTimestamps.keySet()) {
-                                extraWatchedFilePaths.put(root.relativize(extraPath).toString(),
-                                        timestamps.watchedFilePaths.get(path));
+                            // Use the relative path to match the watched file
+                            // /some/more/complex/path/src/main/resources/foo/bar.txt -> foo/bar.txt
+                            Path relativePath = root.relativize(path);
+                            String relativePathStr = relativePath.toString();
+                            if (watchedFilePaths.containsKey(relativePathStr)
+                                    || watchedFilePredicates.stream().anyMatch(e -> e.getKey().test(relativePathStr))) {
+                                log.debugf("Watch %s from: %s", relativePathStr, root);
+                                watchedRootPaths.add(relativePathStr);
+                                putLastModifiedTime(path, relativePath, timestamps);
                             }
-                            timestamps.watchedFileTimestamps.putAll(extraWatchedFileTimestamps);
+                        });
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+
+                    // Then process watched paths that are not matched with a path from a resource root,
+                    // for example absolute paths and glob patterns
+                    for (String watchedFilePath : watchedFilePaths.keySet()) {
+                        Path path = Paths.get(watchedFilePath);
+                        if (path.isAbsolute()) {
+                            if (Files.exists(path)) {
+                                log.debugf("Watch %s", path);
+                                putLastModifiedTime(path, path, timestamps);
+                            }
+                        } else if (!watchedRootPaths.contains(watchedFilePath) && maybeGlobPattern(watchedFilePath)) {
+                            Path resolvedPath = root.resolve(watchedFilePath);
+                            Map<Path, Long> extraWatchedFileTimestamps = expandGlobPattern(root, resolvedPath, watchedFilePath);
+                            if (!extraWatchedFileTimestamps.isEmpty()) {
+                                timestamps.watchedFileTimestamps.put(resolvedPath, 0L);
+                                timestamps.watchedFileTimestamps.putAll(extraWatchedFileTimestamps);
+                                for (Path extraPath : extraWatchedFileTimestamps.keySet()) {
+                                    extraWatchedFilePaths.put(extraPath.toString(),
+                                            timestamps.watchedFilePaths.get(watchedFilePath));
+                                }
+                                timestamps.watchedFileTimestamps.putAll(extraWatchedFileTimestamps);
+                            }
                         }
                     }
                 }
@@ -1135,6 +1161,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
         timestamps.watchedFilePaths.putAll(extraWatchedFilePaths);
         return this;
+    }
+
+    private boolean maybeGlobPattern(String path) {
+        return path.contains("*") || path.contains("?");
+    }
+
+    private void putLastModifiedTime(Path filePath, Path keyPath, TimestampSet timestamps) {
+        try {
+            FileTime lastModifiedTime = Files.getLastModifiedTime(filePath);
+            timestamps.watchedFileTimestamps.put(keyPath, lastModifiedTime.toMillis());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public void addHotReplacementSetup(HotReplacementSetup service) {
@@ -1171,15 +1210,17 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         }
     }
 
-    private Map<Path, Long> expandGlobPattern(Path root, Path configFile) {
-        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + configFile.toString());
+    private Map<Path, Long> expandGlobPattern(Path root, Path path, String pattern) {
+        PathMatcher pathMatcher = FileSystems.getDefault().getPathMatcher("glob:" + path.toString());
         Map<Path, Long> files = new HashMap<>();
         try {
             Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     if (pathMatcher.matches(file)) {
-                        files.put(file, attrs.lastModifiedTime().toMillis());
+                        Path relativePath = root.relativize(file);
+                        log.debugf("Glob pattern [%s] matched %s from %s", pattern, relativePath, root);
+                        files.put(relativePath, attrs.lastModifiedTime().toMillis());
                     }
                     return FileVisitResult.CONTINUE;
                 }

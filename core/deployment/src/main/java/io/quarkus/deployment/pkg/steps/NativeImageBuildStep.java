@@ -749,22 +749,6 @@ public class NativeImageBuildStep {
                 }
                 nativeImageArgs.add("--features=" + String.join(",", featuresList));
 
-                if (graalVMVersion.isOlderThan(GraalVM.Version.VERSION_22_2_0)) {
-                    /*
-                     * Instruct GraalVM / Mandrel parse compiler graphs twice, once for the static analysis and once again
-                     * for the AOT compilation.
-                     *
-                     * We do this because single parsing significantly increases memory usage at build time
-                     * see https://github.com/oracle/graal/issues/3435 and
-                     * https://github.com/graalvm/mandrel/issues/304#issuecomment-952070568 for more details.
-                     *
-                     * Note: This option must come before the invocation of
-                     * {@code handleAdditionalProperties(nativeImageArgs)} to ensure that devs and advanced users can
-                     * override it by passing -Dquarkus.native.additional-build-args=-H:+ParseOnce
-                     */
-                    addExperimentalVMOption(nativeImageArgs, "-H:-ParseOnce");
-                }
-
                 if (nativeConfig.debug().enabled() && graalVMVersion.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
                     /*
                      * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
@@ -814,9 +798,12 @@ public class NativeImageBuildStep {
                             "-H:BuildOutputJSONFile=" + nativeImageName + "-build-output-stats.json");
                 }
 
-                // only available in GraalVM 23.1.0+. Expected to become the default in GraalVM 24.0.0.
+                // only available in GraalVM 23.1.0+
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_23_1_0) >= 0) {
-                    nativeImageArgs.add("--strict-image-heap");
+                    if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_0_0) < 0) {
+                        // Enabled by default in GraalVM 24.0.0.
+                        nativeImageArgs.add("--strict-image-heap");
+                    }
                 }
 
                 /*

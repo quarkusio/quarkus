@@ -59,7 +59,7 @@ public final class CapabilityBuildItem extends MultiBuildItem {
     /**
      * <b>IMPORTANT:</b> in most cases, capability build items should not be produced by build steps of specific
      * extensions but be configured in their extension descriptors instead. Capabilities produced from
-     * extension build steps aren't available for the Quarkus dev tools. As a consequences, such capabilities
+     * extension build steps aren't available for the Quarkus dev tools. As a consequence, such capabilities
      * can not be taken into account when analyzing extension compatibility during project creation or when
      * adding new extensions to a project.
      *

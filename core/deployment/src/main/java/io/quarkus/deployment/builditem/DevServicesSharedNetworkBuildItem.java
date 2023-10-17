@@ -11,16 +11,16 @@ import io.quarkus.builder.BuildStepBuilder;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A marker build item that, if any instances are provided during the build, the containers started by DevServices
+ * A marker build item that indicates, if any instances are provided during the build, the containers started by DevServices
  * will use a shared network.
  * This is mainly useful in integration tests where the application container needs to be able
- * to communicate with the services containers
+ * to communicate with the service containers.
  */
 public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
 
     /**
      * Generates a {@code List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
-     * producing the {@link DevServicesSharedNetworkBuildItem} build item
+     * producing the {@link DevServicesSharedNetworkBuildItem} build item.
      */
     public static final class Factory implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 

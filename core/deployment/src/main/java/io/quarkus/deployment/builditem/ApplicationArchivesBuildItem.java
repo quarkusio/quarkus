@@ -24,7 +24,7 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
 
     /**
      * Returns an {@link ApplicationArchive} that represents the classes and resources that are part of the current
-     * project
+     * project.
      *
      * @return The root archive
      */
@@ -52,7 +52,7 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Returns the archive that contains the given class name, or null if the class cannot be found
+     * Returns the archive that contains the given class name, or null if the class cannot be found.
      *
      * @param className The class name
      * @return The application archive

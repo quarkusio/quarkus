@@ -4,7 +4,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.common.constraint.Assert;
 
 /**
- * Class to be preloaded in static initialization phase of Quarkus
+ * Class to be preloaded in static initialization phase of Quarkus.
  */
 public final class PreloadClassBuildItem extends MultiBuildItem {
     private final String className;

@@ -33,8 +33,8 @@ class VirtualThreadExecutorSupplierTest {
 
     @Test
     @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
-    void execute() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutor();
+    void execute() throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutorWithName(null);
         var assertSubscriber = Uni.createFrom().emitter(e -> {
             assertThat(Thread.currentThread().getName()).isEmpty();
             assertThatItRunsOnVirtualThread();

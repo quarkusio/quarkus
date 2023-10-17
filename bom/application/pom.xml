@@ -170,7 +170,7 @@
         <flyway.version>9.22.2</flyway.version>
         <yasson.version>3.0.3</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
-        <liquibase.version>4.23.2</liquibase.version>
+        <liquibase.version>4.24.0</liquibase.version>
         <liquibase-mongodb.version>4.23.1</liquibase-mongodb.version>
         <snakeyaml.version>2.1</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>

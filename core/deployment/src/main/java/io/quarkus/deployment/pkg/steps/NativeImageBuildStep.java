@@ -808,6 +808,8 @@ public class NativeImageBuildStep {
                     // This feature will become available as non-experimental in the next release (GraalVM for Java 22,
                     // GraalVM 24.0.0), and will be promoted to the default behavior as the community adopts it.
                     addExperimentalVMOption(nativeImageArgs, "-H:ThrowMissingRegistrationErrors=");
+                    // TODO remove this. It's only for testing.
+                    addExperimentalVMOption(nativeImageArgs, "-H:MissingRegistrationReportingMode=Exit");
                 }
 
                 /*

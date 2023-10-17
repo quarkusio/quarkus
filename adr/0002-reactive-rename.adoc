@@ -1,0 +1,75 @@
+= Rename Reactive extensions
+
+* Status: proposed
+* Date: 2023-10-17
+
+== Context and Problem Statement
+
+RESTEasy Reactive is the preferred REST stack in Quarkus, however in the almost 3 years since its release, we have seen
+folks of all experience misunderstand its capabilities and being led to believe that it forces reactive programming on them.
+
+With the advent of Virtual Threads in Java 19+, the problem becomes larger since in the minds of users, Reactive and Virtual Threads
+are two different worlds.
+
+The same problem applies to other extensions as well:
+
+* Reactive Messaging
+* Reactive Routes
+* REST Client Reactive
+
+The common theme here is that these extensions can work equally well with reactive and blocking code, but their name confuses users.
+
+We have tried to clarify the situation with blog posts, talks and on the various communication channels, but there seems to be
+no escaping the fact that "reactive" in the name primes people in a non-desirable way.
+
+
+== Considered options
+
+=== Do nothing
+
+We can continue with the current situation, but that feels less than ideal given the recurrence of the problem.
+
+=== Break users
+
+We could simply rename the extensions without providing any backward compatibility with the old maven modules.
+This would likely cause a lot of pain - even in the presence of the Quarkus CLI update process, a lot of users won't use it.
+
+=== Maintain compatibility
+
+We can come up with new names for the Quarkus extensions while also providing Maven relocations for the existing artifacts.
+This way users will be able to adapt to the new names at their own pace.
+
+Another option would be to create new extensions that simply include the existing ones, but this does not seem to provide
+any real benefit over relocations.
+
+==== REST Client
+
+The Reactive REST Client is a special case, because although clearly the best name to use is `quarkus-rest-client`, unfortunately
+that name is already taken by the legacy REST Client implemented in RESTEasy Classic.
+If however, we choose a name like `quarkus-restful-client` no special considerations apply.
+
+
+== Decision
+
+* Rename all `quarkus-resteasy-reactive*` maven modules to `quarkus-rest*`
+* Rename all `quarkus-rest-client-reactive*` maven modules to `quarkus-restful-client*`
+** Also rename the extensions that rely on the REST Clients (like Keycloak Admin Client extensions)
+* Rename all `quarkus-smallrye-reactive-messaging-` maven modules to `quarkus-messaging-`
+* Rename all `quarkus-reactive-routes-` maven modules to `quarkus-http-routes-`
+* No Java code changes should be made - all code should continue to reside in the same packages
+* Introduce Maven relocations to allow for users not updating their poms
+* Introduce a recipe that the Quarkus CLI can use during update
+* Update quickstarts
+* Update codestarts
+* Update tooling to indicate proper older / newer relationship
+* Write a new blog post explaining why we made the change
+* Update old blog posts to mention the new name
+* Update prominent Quarkus demo application and workshops
+* Update GitHub labels
+* Update bot configuration
+
+== Consequences
+
+* On the plus side, conveying the actual capabilities (blocking, non-blocking, Virtual Threads) of our stack should become easier.
+** Furthermore, the new name aligns quite nicely with Java EE's Jakarta REST
+* On the minus side, renaming is always confusing for users.

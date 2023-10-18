@@ -527,6 +527,8 @@ public class RuntimeResourceDeployment {
                     Type genericType = genericArguments[0];
                     if (genericType instanceof Class) {
                         genericTypeClassName = ((Class<?>) genericType).getName();
+                    } else if (genericType instanceof ParameterizedType) {
+                        genericTypeClassName = ((ParameterizedType) genericType).getRawType().getTypeName();
                     } else if (genericType instanceof WildcardType) {
                         WildcardType genericTypeWildcardType = (WildcardType) genericType;
                         Type[] upperBounds = genericTypeWildcardType.getUpperBounds();

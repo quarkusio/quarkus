@@ -131,6 +131,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private volatile boolean driverLoaded;
 
     private QuarkusClassLoader(Builder builder) {
+        // Not passing the name to the parent constructor on purpose:
+        // stacktraces become very ugly if we do that.
         super(builder.parent);
         this.name = builder.name;
         this.elements = builder.elements;

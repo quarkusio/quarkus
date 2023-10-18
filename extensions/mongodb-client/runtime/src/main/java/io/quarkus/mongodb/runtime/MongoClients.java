@@ -30,10 +30,9 @@ import jakarta.inject.Singleton;
 import org.bson.codecs.configuration.CodecProvider;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.ClassModel;
-import org.bson.codecs.pojo.Conventions;
+import org.bson.codecs.pojo.Convention;
 import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.codecs.pojo.PropertyCodecProvider;
-import org.jboss.logging.Logger;
 
 import com.mongodb.AuthenticationMechanism;
 import com.mongodb.Block;
@@ -76,7 +75,6 @@ import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 @Singleton
 public class MongoClients {
 
-    private static final Logger LOGGER = Logger.getLogger(MongoClients.class.getName());
     private static final Pattern COLON_PATTERN = Pattern.compile(":");
 
     private final MongodbConfig mongodbConfig;
@@ -84,6 +82,7 @@ public class MongoClients {
     private final Instance<CodecProvider> codecProviders;
     private final Instance<PropertyCodecProvider> propertyCodecProviders;
     private final Instance<CommandListener> commandListeners;
+    private final List<Convention> codecsConventions;
 
     private final Map<String, MongoClient> mongoclients = new HashMap<>();
     private final Map<String, ReactiveMongoClient> reactiveMongoClients = new HashMap<>();
@@ -91,12 +90,14 @@ public class MongoClients {
     public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
             Instance<CodecProvider> codecProviders,
             Instance<PropertyCodecProvider> propertyCodecProviders,
-            Instance<CommandListener> commandListeners) {
+            Instance<CommandListener> commandListeners,
+            List<Convention> codecsConventions) {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
         this.propertyCodecProviders = propertyCodecProviders;
         this.commandListeners = commandListeners;
+        this.codecsConventions = codecsConventions;
 
         try {
             //JDK bug workaround
@@ -339,7 +340,7 @@ public class MongoClients {
         // it always needs to be the last codec provided
         PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder()
                 .automatic(true)
-                .conventions(Conventions.DEFAULT_CONVENTIONS);
+                .conventions(codecsConventions);
         // register bson discriminators
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         for (String bsonDiscriminator : mongoClientSupport.getBsonDiscriminators()) {

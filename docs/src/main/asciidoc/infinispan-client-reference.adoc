@@ -805,7 +805,6 @@ quarkus.infinispan-client.cache.books.near-cache-mode=INVALIDATED <1>
 quarkus.infinispan-client.cache.books.near-cache-max-entries=200 <2>
 quarkus.infinispan-client.cache.books.near-cache-use-bloom-filter=true <3>
 ----
-
 <1> Enables near caching for the 'books' cache by setting the mode to `INVALIDATED`
 <2> Sets the maximum number of entries that the near cache of the 'books' cache can hold before eviction occurs
 <3> Enables bloom filter for the 'books' cache
@@ -824,11 +823,30 @@ They cannot be used with unbounded near cache: maximum number of entries must be
 
 Encryption at this point requires additional steps to get working.
 
-The first step is to configure the `hotrod-client.properties` file to point to your truststore
+The first step is to configure the `application.properties` file to point to your truststore
 and/or keystore. This is further detailed https://infinispan.org/docs/stable/titles/hotrod_java/hotrod_java.html#hotrod_encryption[here].
 
 The Infinispan Client extension enables SSL/TLS by default. You can read more about this
 at xref:native-and-ssl.adoc[Using SSL With Native Executables].
+
+== SSL Host Name Validation
+
+To prevent MITM attacks, when SSL is enabled, SSL host name validation is enabled by default in Infinispan.
+In this case, configuring the SNI host name is mandatory to start the client.
+
+[source,properties]
+----
+quarkus.infinispan-client.sni-host-name=localhost <1>
+----
+<1> Sets the SNI host name
+
+This behaviour can be changed by disabling the validation.
+
+[source,properties]
+----
+quarkus.infinispan-client.ssl-host-name-validation=false <1>
+----
+<1> Disables ssl host name validation
 
 == Additional Features
 

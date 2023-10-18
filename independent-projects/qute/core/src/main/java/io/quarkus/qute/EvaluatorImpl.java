@@ -87,6 +87,11 @@ class EvaluatorImpl implements Evaluator {
         }
     }
 
+    @Override
+    public boolean strictRendering() {
+        return strictRendering;
+    }
+
     private CompletionStage<Object> resolveNamespace(EvalContext context, ResolutionContext resolutionContext,
             List<Part> parts, NamespaceResolver[] resolvers, int resolverIndex, Expression expression) {
         // Use the next matching namespace resolver

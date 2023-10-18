@@ -63,7 +63,7 @@
         <version.surefire.plugin>3.1.2</version.surefire.plugin>
         <mutiny.version>2.5.1</mutiny.version>
         <smallrye-common.version>2.1.2</smallrye-common.version>
-        <vertx.version>4.4.5</vertx.version>
+        <vertx.version>4.4.6</vertx.version>
         <rest-assured.version>5.3.2</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.15.2</jackson-bom.version>

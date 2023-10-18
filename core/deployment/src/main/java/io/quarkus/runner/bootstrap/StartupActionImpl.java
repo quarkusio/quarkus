@@ -186,6 +186,9 @@ public class StartupActionImpl implements StartupAction {
 
     @Override
     public int runMainClassBlocking(String... args) throws Exception {
+        //first we hack around class loading in the fork join pool
+        ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
+
         //we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
@@ -252,7 +255,7 @@ public class StartupActionImpl implements StartupAction {
      * Runs the application, and returns a handle that can be used to shut it down.
      */
     public RunningQuarkusApplication run(String... args) throws Exception {
-        //first
+        //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
         //we have our class loaders

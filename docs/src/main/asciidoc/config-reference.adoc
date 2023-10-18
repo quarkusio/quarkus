@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: configuration
+:extensions: io.quarkus:quarkus-core
 
 IMPORTANT: The content of this guide has been revised and split into additional topics. Please check the <<additional-information,Additional Information>> section.
 

@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: While you are encouraged to use the Cache extension for your application-level caching, Quarkus provides a compatibility layer for Spring Cache in the form of the spring-cache extension.
+:topics: spring,cache,compatibility
+:extensions: io.quarkus:quarkus-spring-cache
 
 While users are encouraged to use xref:cache.adoc[Quarkus annotations for caching], Quarkus nevertheless provides a compatibility layer for Spring Cache annotations in the form of the `spring-cache` extension.
 

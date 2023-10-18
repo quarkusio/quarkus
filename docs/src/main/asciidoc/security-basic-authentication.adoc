@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
+:topics: security,authentication,basic-authentication,http
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
 
 HTTP Basic authentication is one of the least resource-demanding techniques that enforce access controls to web resources.
 You can secure your Quarkus application endpoints with HTTP Basic authentication.

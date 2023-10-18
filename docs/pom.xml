@@ -17,10 +17,10 @@
     <properties>
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-community.version-for-documentation>for JDK 17</graal-community.version-for-documentation>
-        <graal-community.tag-for-documentation>jdk17</graal-community.tag-for-documentation>
-        <graal-community.image-tag-for-documentation>jdk-17</graal-community.image-tag-for-documentation>
-        <mandrel.image-tag-for-documentation>jdk-17</mandrel.image-tag-for-documentation>
+        <graal-community.version-for-documentation>for JDK 21</graal-community.version-for-documentation>
+        <graal-community.tag-for-documentation>jdk21</graal-community.tag-for-documentation>
+        <graal-community.image-tag-for-documentation>jdk-21</graal-community.image-tag-for-documentation>
+        <mandrel.image-tag-for-documentation>jdk-21</mandrel.image-tag-for-documentation>
 
         <assembly-maven-plugin.version>3.5.0</assembly-maven-plugin.version>
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>

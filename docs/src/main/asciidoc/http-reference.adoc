@@ -10,7 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-
+:topics: http,web,webjars,vertx,servlet,undertow
+:extensions: io.quarkus:quarkus-vertx-http
 
 This document explains various HTTP features that you can use in Quarkus.
 
@@ -182,7 +183,7 @@ As with the certificate/key file combination, Quarkus will first try to resolve 
 
 Add the following property to your `application.properties`:
 
-[source,bash]
+[source,properties]
 ----
 quarkus.http.ssl.certificate.key-store-file=/path/to/keystore
 ----
@@ -306,9 +307,8 @@ quarkus.http.handle-100-continue-automatically=true
 
 == HTTP/2 Support
 
-HTTP/2 is enabled by default, and will be used by browsers if SSL is in use on JDK11 or higher. JDK8 does not support
-ALPN so cannot be used to run HTTP/2 over SSL. Even if SSL is not in use HTTP/2 via cleartext upgrade is supported,
-and may be used by non-browser clients.
+HTTP/2 is enabled by default, and will be used by browsers if SSL is in use. Even if SSL is not in use
+HTTP/2 via cleartext upgrade is supported, and may be used by non-browser clients.
 
 If you want to disable HTTP/2 you can set:
 

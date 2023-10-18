@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
 :toclevels: 4
+:topics: security,oidc,keycloak,authentication
+:extensions: io.quarkus:quarkus-oidc
 
 To protect your web applications, you can use the industry-standard OpenID Connect (OIDC) Authorization Code Flow mechanism provided by the Quarkus OIDC extension.
 
@@ -17,7 +19,7 @@ To protect your web applications, you can use the industry-standard OpenID Conne
 The Quarkus OpenID Connect (OIDC) extension can protect application HTTP endpoints by using the OIDC Authorization Code Flow mechanism supported by OIDC-compliant authorization servers, such as link:https://www.keycloak.org[Keycloak].
 
 The Authorization Code Flow mechanism authenticates users of your web application by redirecting them to an OIDC provider, such as Keycloak, to log in.
-After authentication, the OIDC provider redirects the user back to the application with an authorization code that confirms that authentication was successful. 
+After authentication, the OIDC provider redirects the user back to the application with an authorization code that confirms that authentication was successful.
 Then, the application exchanges this code with the OIDC provider for an ID token (which represents the authenticated user), an access token, and a refresh token to authorize the user's access to the application.
 
 The following diagram outlines the Authorization Code Flow mechanism in Quarkus.
@@ -74,7 +76,7 @@ quarkus.oidc.introspection-path=/protocol/openid-connect/token/introspect
 quarkus.oidc.end-session-path=/protocol/openid-connect/logout
 ----
 
-Some OIDC providers support metadata discovery but do not return all the endpoint URL values required for the authorization code flow to complete or to support application functions, for example, user logout. 
+Some OIDC providers support metadata discovery but do not return all the endpoint URL values required for the authorization code flow to complete or to support application functions, for example, user logout.
 To work around this limitation, you can configure the missing endpoint URL values locally, as outlined in the following example:
 
 [source, properties]
@@ -87,8 +89,8 @@ quarkus.oidc.auth-server-url=http://localhost:8180/oidcprovider/account
 quarkus.oidc.end-session-path=logout
 ----
 
-You can use this same configuration to override a discovered endpoint URL if that URL does not work for the local Quarkus endpoint and a more specific value is required. 
-For example, a provider that supports both global and application-specific end-session endpoints returns a global end-session URL such as `http://localhost:8180/oidcprovider/account/global-logout`. 
+You can use this same configuration to override a discovered endpoint URL if that URL does not work for the local Quarkus endpoint and a more specific value is required.
+For example, a provider that supports both global and application-specific end-session endpoints returns a global end-session URL such as `http://localhost:8180/oidcprovider/account/global-logout`.
 This URL will log the user out of all of the applications that the user is currently logged into.
 However, if the requirement is for the current application to log the user out of only the specific application, you can override the global end-session URL, by setting the `quarkus.oidc.end-session-path=logout` parameter.
 
@@ -282,8 +284,8 @@ quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 When a user is redirected to the OpenID Connect provider to authenticate, the redirect URL includes a `redirect_uri` query parameter, which indicates to the provider where the user has to be redirected to when the authentication is complete.
 In our case, this is the Quarkus application.
 
-Quarkus sets this parameter to the current application request URL by default. 
-For example, if a user is trying to access a Quarkus service endpoint at `http://localhost:8080/service/1` then the `redirect_uri` parameter is set to `http://localhost:8080/service/1`. 
+Quarkus sets this parameter to the current application request URL by default.
+For example, if a user is trying to access a Quarkus service endpoint at `http://localhost:8080/service/1` then the `redirect_uri` parameter is set to `http://localhost:8080/service/1`.
 Similarly, if the request URL is `http://localhost:8080/service/2` then the `redirect_uri` parameter is set to `http://localhost:8080/service/2`.
 
 Some OIDC providers require the `redirect_uri` to have the same value for a given application, for example, `http://localhost:8080/service/callback`, for all the redirect URLs.
@@ -296,7 +298,7 @@ This will restore the request URL such as `http://localhost:8080/service/1`.
 
 By default, only the `response_type` (set to `code`), `scope` (set to 'openid'), `client_id`, `redirect_uri` and `state` properties are passed as HTTP query parameters to the OpenID Connect provider's authorization endpoint when the user is redirected to it to authenticate.
 
-You can add more properties to it with `quarkus.oidc.authentication.extra-params`. 
+You can add more properties to it with `quarkus.oidc.authentication.extra-params`.
 For example, some OIDC providers might choose to return the authorization code as part of the redirect URI's fragment, which would break the authentication process.
 The following example shows how you can work around this issue:
 
@@ -310,7 +312,7 @@ quarkus.oidc.authentication.extra-params.response_mode=query
 If the user authentication fails at the OIDC authorization endpoint, then the provider will redirect the user back to Quarkus with `error` and `error_description` parameters instead of `code`.
 For example, this can happen when an invalid scope or other invalid parameters are included in the redirect to the provider.
 
-In such cases, an HTTP `401`error will be returned by default. 
+In such cases, an HTTP `401`error will be returned by default.
 However, you can instead request that a custom public error endpoint is called to return a more user-friendly HTML error page.
 To do this, set the `quarkus.oidc.authentication.error-path` property, as shown in the following example:
 
@@ -466,7 +468,7 @@ It applies to ID tokens but also to access tokens in a JWT format if the `web-ap
 
 link:https://datatracker.ietf.org/doc/html/rfc7636[Proof Key for Code Exchange] (PKCE) minimizes the risk of authorization code interception.
 
-While PKCE is of primary importance to public OpenID Connect clients, such as SPA scripts running in a browser, it can also provide an extra level of protection to Quarkus OIDC `web-app` applications. 
+While PKCE is of primary importance to public OpenID Connect clients, such as SPA scripts running in a browser, it can also provide an extra level of protection to Quarkus OIDC `web-app` applications.
 With PKCE, Quarkus OIDC `web-app` applications are confidential OpenID Connect clients capable of securely storing the client secret and using it to exchange the code for the tokens.
 
 You can enable `PKCE` for your OIDC `web-app` endpoint with a `quarkus.oidc.authentication.pkce-required` property and a 32-character secret which is required to encrypt the PKCE code verifier in the state cookie, as shown in the following example:
@@ -480,7 +482,7 @@ quarkus.oidc.authentication.state-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 If you already have a 32-characters client secret then you do not need to set the  `quarkus.oidc.authentication.pkce-secret` property unless you prefer to use a different secret key. This secret will be auto-generated if it is not configured and if the fallback to the client secret is not possible in case of the client secret being less than 16 characters long.
 
 The secret key is required for encrypting a randomly generated `PKCE` `code_verifier` while the user is being redirected with the `code_challenge` query parameter to an OIDC provider to authenticate.
-The `code_verifier` is decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret, and other parameters to complete the code exchange. 
+The `code_verifier` is decrypted when the user is redirected back to Quarkus and sent to the token endpoint alongside the `code`, client secret, and other parameters to complete the code exchange.
 The provider will fail the code exchange if a `SHA256` digest of the `code_verifier` does not match the `code_challenge` that was provided during the authentication request.
 
 
@@ -535,14 +537,14 @@ An access token is only required if the endpoint needs to:
 * Use the roles associated with the access token, which are checked by default
 
 In such cases, use the `quarkus.oidc.token-state-manager.strategy` property to configure the token state strategy as follows:
- 
-|===
-|To... |Set the property to ... 
-  
-|Keep the ID and refresh tokens only
-|`quarkus.oidc.token-state-manager.strategy=id-refresh-token` 
 
-|Keep the ID token only 
+|===
+|To... |Set the property to ...
+
+|Keep the ID and refresh tokens only
+|`quarkus.oidc.token-state-manager.strategy=id-refresh-token`
+
+|Keep the ID token only
 |`quarkus.oidc.token-state-manager.strategy=id-token`
 
 |===
@@ -564,7 +566,7 @@ quarkus.oidc.token-state-manager.split-tokens=true
 quarkus.oidc.token-state-manager.encryption-secret=eUk1p7UB3nFiXZGUXi0uph1Y9p34YhBU
 ----
 
-The token encryption secret must be at least 32 characters long. 
+The token encryption secret must be at least 32 characters long.
 If this key is not configured then either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.jwt.secret` will be hashed to create an encryption key.
 
 Configure the `quarkus.oidc.token-state-manager.encryption-secret` property if Quarkus authenticates to the OpenId Connect Provider by using one of the following authentication methods:
@@ -790,7 +792,7 @@ For more information, see the <<oidc-cookies,Cookies>> section.
 
 [NOTE]
 ====
-Some OIDC providers do not support link:https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-initiated logout] specification and do not return an OpenID Connect well-known `end_session_endpoint` metadata property. 
+Some OIDC providers do not support link:https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-initiated logout] specification and do not return an OpenID Connect well-known `end_session_endpoint` metadata property.
 However, this is not a problem for Quarkus because the specific logout mechanisms of such OIDC providers only differ in how the logout URL query parameters are named.
 
 According to the https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-initiated logout] specification, the `quarkus.oidc.logout.post-logout-path` property is represented as a `post_logout_redirect_uri` query parameter, which is not recognized by the providers that do not support this specification.
@@ -838,7 +840,7 @@ quarkus.oidc.application-type=web-app
 quarkus.oidc.logout.backchannel.path=/back-channel-logout
 ----
 
-The absolute `back-channel logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`. 
+The absolute `back-channel logout` URL is calculated by adding `quarkus.oidc.back-channel-logout.path` to the current endpoint URL, for example, `http://localhost:8080/back-channel-logout`.
 You will need to configure this URL in the admin console of your OIDC provider.
 
 You will also need to configure a token age property for the logout token verification to succeed if your OpenID Connect Provider does not set an expiry claim in the current logout token.
@@ -906,10 +908,10 @@ More useful methods will be added to it over time.
 
 ==== Session management
 
-By default, logout is based on the expiration time of the ID token issued by the OIDC provider. When the ID token expires, the current user session at the Quarkus endpoint is invalidated and the user is redirected to the OIDC provider again to authenticate. 
+By default, logout is based on the expiration time of the ID token issued by the OIDC provider. When the ID token expires, the current user session at the Quarkus endpoint is invalidated and the user is redirected to the OIDC provider again to authenticate.
 If the session at the OIDC provider is still active, users are automatically re-authenticated without needing to provide their credentials again.
 
-The current user session can be automatically extended by enabling the `quarkus.oidc.token.refresh-expired` property. 
+The current user session can be automatically extended by enabling the `quarkus.oidc.token.refresh-expired` property.
 If set to `true`, when the current ID token expires, a refresh token grant will be used to refresh the ID token as well as access and refresh tokens.
 
 [TIP]
@@ -922,25 +924,25 @@ If you work with a Quarkus OIDC `web-app` application, then it is the Quarkus OI
 To use the refresh token, you should carefully configure the session cookie age.
 The session age should be longer than the ID token lifespan and close to or equal to the refresh token lifespan.
 
-You calculate the session age by adding the lifespan value of the current ID token and the values of the `quarkus.oidc.authentication.session-age-extension` and `quarkus.oidc.token.lifespan-grace` properties. 
+You calculate the session age by adding the lifespan value of the current ID token and the values of the `quarkus.oidc.authentication.session-age-extension` and `quarkus.oidc.token.lifespan-grace` properties.
 [TIP]
 --
-You use only the `quarkus.oidc.authentication.session-age-extension` property to significantly extend the session lifespan, if required. 
+You use only the `quarkus.oidc.authentication.session-age-extension` property to significantly extend the session lifespan, if required.
 You use the `quarkus.oidc.token.lifespan-grace` property only for taking some small clock skews into consideration.
 --
 
-When the current authenticated user returns to the protected Quarkus endpoint and the ID token associated with the session cookie has expired, then, by default, the user is automatically redirected to the OIDC Authorization endpoint to re-authenticate. 
+When the current authenticated user returns to the protected Quarkus endpoint and the ID token associated with the session cookie has expired, then, by default, the user is automatically redirected to the OIDC Authorization endpoint to re-authenticate.
 The OIDC provider might challenge the user again if the session between the user and this OIDC provider is still active, which might happen if the session is configured to last longer than the ID token.
 
-If the `quarkus.oidc.token.refresh-expired` is set to `true`, then the expired ID token (as well as the access token) is refreshed by using the refresh token returned with the initial authorization code grant response. 
-This refresh token might also be recycled (refreshed) itself as part of this process. 
+If the `quarkus.oidc.token.refresh-expired` is set to `true`, then the expired ID token (as well as the access token) is refreshed by using the refresh token returned with the initial authorization code grant response.
+This refresh token might also be recycled (refreshed) itself as part of this process.
 As a result, the new session cookie is created and the session is extended.
 
 [NOTE]
 --
-In instances where the user is not very active, you can use the `quarkus.oidc.authentication.session-age-extension` property to help handle expired ID tokens. 
-If the ID token expires, the session cookie might not be returned to the Quarkus endpoint during the next user request as the cookie lifespan would have elapsed. 
-Quarkus assumes that this request is the first authentication request. 
+In instances where the user is not very active, you can use the `quarkus.oidc.authentication.session-age-extension` property to help handle expired ID tokens.
+If the ID token expires, the session cookie might not be returned to the Quarkus endpoint during the next user request as the cookie lifespan would have elapsed.
+Quarkus assumes that this request is the first authentication request.
 Set `quarkus.oidc.authentication.session-age-extension` to be _reasonably_ long for your barely-active users and in accordance with your security policies.
 --
 
@@ -975,8 +977,8 @@ To support the integration with such OAuth2 servers, `quarkus-oidc` needs to be 
 
 [NOTE]
 --
-Even though you configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` is generated to standardize the way `quarkus-oidc` operates. 
-You use an `IdToken` to support the authentication session and to avoid redirecting the user to the provider,  such as GitHub, on every request. 
+Even though you configure the extension to support the authorization code flows without `IdToken`, an internal `IdToken` is generated to standardize the way `quarkus-oidc` operates.
+You use an `IdToken` to support the authentication session and to avoid redirecting the user to the provider,  such as GitHub, on every request.
 In this case, the session lifespan is set to 5 minutes, which you can can extend further as described in the <<session-management,session management>> section.
 
 This simplifies how you handle an application that supports multiple OIDC providers.
@@ -985,7 +987,7 @@ This simplifies how you handle an application that supports multiple OIDC provid
 The next step is to ensure that the returned access token can be useful and is valid to the current Quarkus endpoint.
 The first way is to call the OAuth2 provider introspection endpoint by configuring `quarkus.oidc.introspection-path`, if the provider offers such an endpoint.
 In this case you can use the access token as a source of roles using `quarkus.oidc.roles.source=accesstoken`.
-If no introspection endpoint is present, you can attempt instead to request <<user-info,UserInfo>> from the provider as it will at least validate the access token. 
+If no introspection endpoint is present, you can attempt instead to request <<user-info,UserInfo>> from the provider as it will at least validate the access token.
 To do so, specify `quarkus.oidc.token.verify-access-token-with-user-info=true`.
 You also need to set the `quarkus.oidc.user-info-path` property to a URL endpoint that fetches the user info (or to an endpoint protected by the access token).
 For GitHub, since it does not have an introspection endpoint, requesting the UserInfo is required.
@@ -1138,8 +1140,8 @@ You must ensure that the callback path you enter in the GitHub OAuth application
 === Listening to important authentication events
 
 You can register the `@ApplicationScoped` bean which will observe important OIDC authentication events.
-When a user logs in for the first time, reauthenticates, or refreshes the session, the listener is updated.  
-In the future, more events might be reported. 
+When a user logs in for the first time, reauthenticates, or refreshes the session, the listener is updated.
+In the future, more events might be reported.
 For example:
 
 [source, java]
@@ -1171,14 +1173,14 @@ For information about Authorization Code Flow access token propagation to downst
 == Integration considerations
 
 Your application secured by OIDC integrates in an environment where it can be called from single-page applications, needs to work with well-known OIDC providers, run behind HTTP Reverse Proxy, require external and internal access, etc.
- 
+
 This section discusses these considerations.
 
 === Single-page applications
 
 You can check if implementing single-page applications (SPAs) the way it is suggested in the xref:security-oidc-bearer-token-authentication.adoc#single-page-applications[Single-page applications] section of the "OpenID Connect (OIDC) Bearer token authentication" guide meets your requirements.
 
-If you prefer to use SPAs and JavaScript APIs such as `Fetch` or `XMLHttpRequest`(XHR) with Quarkus web applications, be aware that OpenID Connect providers might not support cross-origin resource sharing (CORS) for authorization endpoints where the users are authenticated after a redirect from Quarkus. 
+If you prefer to use SPAs and JavaScript APIs such as `Fetch` or `XMLHttpRequest`(XHR) with Quarkus web applications, be aware that OpenID Connect providers might not support cross-origin resource sharing (CORS) for authorization endpoints where the users are authenticated after a redirect from Quarkus.
 This will lead to authentication failures if the Quarkus application and the OpenID Connect provider are hosted on different HTTP domains, ports, or both.
 
 In such cases, set the `quarkus.oidc.authentication.java-script-auto-redirect` property to `false`, which will instruct Quarkus to return a `499` status code and a `WWW-Authenticate` header with the `OIDC` value.
@@ -1227,7 +1229,7 @@ Future<void> callQuarkusService() async {
 
 === Cross-origin resource sharing
 
-If you plan to consume this application from a single-page application running on a different domain, you need to configure cross-origin resource sharing (CORS). 
+If you plan to consume this application from a single-page application running on a different domain, you need to configure cross-origin resource sharing (CORS).
 For more information, see the xref:http-reference.adoc#cors-filter[CORS filter] section of the "HTTP reference" guide.
 
 === Calling Cloud provider services
@@ -1334,7 +1336,7 @@ Next, if you would like, you can register this Keycloak SAML Provider as a Defau
 
 Now configure the Quarkus OIDC `web-app` application to point to the Keycloak `quarkus` realm, `quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus` and you are ready to start authenticating your Quarkus users to the Okta SAML 2.0 provider using an OIDC to SAML bridge provided by Keycloak OIDC and Okta SAML 2.0 providers.
 
-You can configure other OIDC providers to provide a SAML bridge similarly to how it can be done for Keycloak. 
+You can configure other OIDC providers to provide a SAML bridge similarly to how it can be done for Keycloak.
 
 [[integration-testing]]
 == Testing

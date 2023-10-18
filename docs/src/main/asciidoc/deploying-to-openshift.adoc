@@ -8,6 +8,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: cloud, native
 :summary: This guide covers how to deploy a native application on OpenShift.
+:topics: devops,kubernetes,openshift,cloud,deployment
+:extensions: io.quarkus:quarkus-openshift
 
 This guide covers generating and deploying OpenShift resources based on sane default and user supplied configuration.
 

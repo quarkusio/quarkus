@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: concept
 :categories: security,web
+:topics: security,authentication
 
 The Quarkus Security framework supports multiple authentication mechanisms, which you can use to secure your applications.
 You can also combine authentication mechanisms.

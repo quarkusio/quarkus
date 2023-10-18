@@ -9,6 +9,7 @@ include::_attributes.adoc[]
 :categories: tooling, native
 :summary: Develop and build your Quarkus application with Gradle
 :devtools-no-maven:
+:topics: gradle,tooling
 
 Use Gradle to create a new project, add or remove extensions, launch development mode, debug your application, and build your application into a jar, native executable, or container-friendly executable. Import your project into your favorite IDE using Gradle project metadata.
 
@@ -620,7 +621,7 @@ There are multiple configuration sources that influence Quarkus builds, mentione
 The Quarkus build uses the `prod` configuration profile:
 
 1. System properties (for example `./gradlew -Dquarkus.package.type=fast-jar ...`)
-2. System environment (for example `QUARKUS_PACAKGE_TYPE=fast-jar ./gradlew ...`)
+2. System environment (for example `QUARKUS_PACKAGE_TYPE=fast-jar ./gradlew ...`)
 3. Configuration via the `quarkus` extensions's `quarkusBuildProperties` For example:
 
    quarkus {
@@ -748,7 +749,7 @@ TIP: The Quarkus Gradle plugin detects a _CI environment_, if the `CI` environme
 How the various Quarkus package types are cached in non-CI and CI environments is described in the following table.
 Note that even if a task's output is not _cached_, the _up-to-date_ checks still apply.
 
-NOTE: The Quarkus application build is split across three tasks. The `quarkusBuild` taskl is responsible to _provide_
+NOTE: The Quarkus application build is split across three tasks. The `quarkusBuild` task is responsible to _provide_
 a built Quarkus application. The tasks `quarkusDependenciesBuild` and `quarkusAppPartsBuild` are considered internal
 tasks (may change at any time w/o prior notice). See below for details.
 

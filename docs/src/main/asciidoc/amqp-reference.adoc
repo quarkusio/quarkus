@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive Messaging AMQP 1.0 Connector Reference Documentation
 include::_attributes.adoc[]
+:categories: messaging
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-amqp
+:topics: messaging,amqp
 
 This guide is the companion from the xref:amqp.adoc[Getting Started with AMQP 1.0].
 It explains in more details the configuration and usage of the AMQP connector for reactive messaging.

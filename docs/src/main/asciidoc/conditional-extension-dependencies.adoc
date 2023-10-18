@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: writing-extensions
 :summary: Trigger the inclusion on additional extensions based on certain conditions.
+:topics: extensions
+:extensions: io.quarkus:quarkus-core
 
 Quarkus extension dependencies are usually configured in the same way as any other project dependencies in the project's build file, e.g. the Maven `pom.xml` or the Gradle build scripts. However, there are dependency types that aren't yet supported out-of-the-box by Maven and Gradle. What we refer here to as "conditional dependencies" is one example.
 
@@ -37,7 +39,7 @@ The condition which triggers activation of an extension is configured in the ext
   <!-- SKIPPED CONTENT -->
 
   <build>
-    <plugins>  
+    <plugins>
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-extension-maven-plugin</artifactId>
@@ -148,7 +150,7 @@ Conditional dependencies can also be configured in the Quarkus extension descrip
   <!-- SKIPPED CONTENT -->
 
   <build>
-    <plugins>  
+    <plugins>
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-extension-maven-plugin</artifactId>

@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: security,web
+:topics: security,authorization,http,rest
+:extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy
 
 Quarkus has an integrated pluggable web security layer.
 If security is enabled, all HTTP requests have a permission check performed to verify that they are allowed to continue.
@@ -725,7 +727,7 @@ CAUTION: Annotation permissions do not work with the custom xref:security-custom
 == References
 
 * xref:security-overview.adoc[Quarkus Security overview]
-* xref:security-architecture.adoc[Quarkus Security architecture] 
+* xref:security-architecture.adoc[Quarkus Security architecture]
 * xref:security-authentication-mechanisms.adoc#other-supported-authentication-mechanisms[Authentication mechanisms in Quarkus]
 * xref:security-basic-authentication.adoc[Basic authentication]
 * xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]

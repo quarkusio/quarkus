@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: alt-languages
 :summary: This guide explains how to use Kotlin.
+:topics: kotlin
+:extensions: io.quarkus:quarkus-kotlin
 
 https://kotlinlang.org/[Kotlin] is a very popular programming language that targets the JVM (amongst other environments). Kotlin has experienced a surge in popularity the last few years making it the most popular JVM language, except for Java of course.
 

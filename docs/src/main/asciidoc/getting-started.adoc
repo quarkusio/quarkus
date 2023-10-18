@@ -10,6 +10,7 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: getting-started
 
 Learn how to create a Hello World Quarkus app.
 This guide covers:

@@ -99,7 +99,7 @@
         <classmate.version>1.5.1</classmate.version>
         <!-- When updating, align bytebuddy.version to Hibernate needs as well (just below),
              as well as hibernate-orm.version-for-documentation in docs/pom.xml -->
-        <hibernate-orm.version>6.2.11.Final</hibernate-orm.version>
+        <hibernate-orm.version>6.2.13.Final</hibernate-orm.version>
         <bytebuddy.version>1.14.7</bytebuddy.version> <!-- Version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>6.0.6.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM -->
         <hibernate-reactive.version>2.0.6.Final</hibernate-reactive.version>
@@ -132,17 +132,17 @@
         <mysql-jdbc.version>8.0.30</mysql-jdbc.version>
         <mssql-jdbc.version>12.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
-        <oracle-jdbc.version>23.2.0.0</oracle-jdbc.version>
+        <oracle-jdbc.version>23.3.0.23.09</oracle-jdbc.version>
         <derby-jdbc.version>10.14.2.0</derby-jdbc.version>
         <db2-jdbc.version>11.5.8.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>5.3.0</rest-assured.version>
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
         <junit-pioneer.version>1.5.0</junit-pioneer.version>
-        <infinispan.version>14.0.17.Final</infinispan.version>
+        <infinispan.version>14.0.19.Final</infinispan.version>
         <infinispan.protostream.version>4.6.5.Final</infinispan.protostream.version>
         <caffeine.version>3.1.5</caffeine.version>
-        <netty.version>4.1.97.Final</netty.version>
+        <netty.version>4.1.100.Final</netty.version>
         <brotli4j.version>1.12.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
@@ -180,7 +180,7 @@
         <okhttp.version>3.14.9</okhttp.version><!-- keep in sync with okio -->
         <okio.version>1.17.2</okio.version><!-- keep in sync with okhttp -->
         <hibernate-quarkus-local-cache.version>0.2.1</hibernate-quarkus-local-cache.version>
-        <flapdoodle.mongo.version>4.7.0</flapdoodle.mongo.version>
+        <flapdoodle.mongo.version>4.9.2</flapdoodle.mongo.version>
         <quarkus-spring-api.version>5.2.SP7</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>2.1.SP2</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>5.4.Final</quarkus-spring-security-api.version>

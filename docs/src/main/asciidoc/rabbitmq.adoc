@@ -6,6 +6,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Getting Started to SmallRye Reactive Messaging with RabbitMQ
 :extension-status: preview
 include::_attributes.adoc[]
+:categories: messaging
+:topics: messaging,reactive-messaging,rabbitmq,devservices,tooling,testing,devmode
+:extensions: io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq
 
 This guide demonstrates how your Quarkus application can utilize SmallRye Reactive Messaging to interact with RabbitMQ.
 
@@ -58,7 +61,33 @@ include::{includes}/devtools/create-app.adoc[]
 This command creates the project structure and select the two Quarkus extensions we will be using:
 
 1. The Reactive Messaging RabbitMQ connector
-2. RESTEasy Reactive and it's Jackson support to handle JSON payloads
+2. RESTEasy Reactive and its Jackson support to handle JSON payloads
+
+[TIP]
+====
+If you already have your Quarkus project configured, you can add the `smallrye-reactive-messaging-rabbitmq` extension
+to your project by running the following command in your project base directory:
+
+:add-extension-extensions: smallrye-reactive-messaging-rabbitmq
+include::{includes}/devtools/extension-add.adoc[]
+
+This will add the following to your `pom.xml`:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging-rabbitmq</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-smallrye-reactive-messaging-rabbitmq")
+----
+====
 
 To create the _processor_ project, from the same directory, run:
 

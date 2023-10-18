@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :diataxis-type: howto
 :categories: web, core
 :summary: How to use virtual threads in a REST application
+:topics: rest,resteasy-reactive,virtual-threads
+:extensions: io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy-reactive-jackson,io.quarkus:quarkus-resteasy-reactive-jsonb,io.quarkus:quarkus-rest-client-reactive,io.quarkus:quarkus-rest-client-reactive-jackson,io.quarkus:quarkus-rest-client-reactive-jsonb
 
 In this guide, we see how you can use virtual threads in a REST application.
 Because virtual threads are all about I/O, we will also use the REST client.

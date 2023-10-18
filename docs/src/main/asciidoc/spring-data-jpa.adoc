@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: While you are encouraged to use Hibernate ORM with Panache for your data layer, Quarkus provides a compatibility layer for Spring Data JPA in the form of the spring-data-jpa extension.
+:topics: spring,data,hibernate-orm,jpa,compatibility
+:extensions: io.quarkus:quarkus-spring-data-jpa
 
 While users are encouraged to use Hibernate ORM with Panache for Relational Database access, Quarkus provides a compatibility layer for
 Spring Data JPA repositories in the form of the `spring-data-jpa` extension.

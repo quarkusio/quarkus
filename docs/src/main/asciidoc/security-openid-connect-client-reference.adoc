@@ -5,6 +5,9 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = OpenID Connect (OIDC) and OAuth2 Client and Filters Reference Guide
 include::_attributes.adoc[]
+:categories: security
+:topics: security,oidc,client
+:extensions: io.quarkus:quarkus-oidc-client
 
 This reference guide explains how to use:
 

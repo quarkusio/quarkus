@@ -8,6 +8,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: reference
 :categories: contributing
+:topics: internals,documentation
 
 Guidelines are provided to help you to contribute clear and consistent content that is also sourced in the required diataxis structure and composition of Quarkus documentation.
 
@@ -137,7 +138,7 @@ Suffix:: Use a suffix that reflects the document type (optional):
 
 - `-concept.adoc` for concept documents
 - `-howto.adoc` for how-to guides
-- `-reference.adoc` for references 
+- `-reference.adoc` for references
 - `-tutorial.adoc` for tutorials
 
 [[doc-structure]]

@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: compatibility
 :summary: While you are encouraged to use Jakarta REST annotations for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the spring-web extension.
+:topics: spring,rest,compatibility
+:extensions: io.quarkus:quarkus-spring-web
 
 While users are encouraged to use Jakarta REST (formerly known as JAX-RS) annotations for defining REST endpoints, Quarkus provides a compatibility layer for Spring Web in the form of the `spring-web` extension.
 

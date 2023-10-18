@@ -6,6 +6,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Writing REST Services with RESTEasy Reactive
 include::_attributes.adoc[]
 :categories: web
+:topics: rest,resteasy-reactive,virtual-threads
+:extensions: io.quarkus:quarkus-resteasy-reactive,io.quarkus:quarkus-resteasy-reactive-jackson,io.quarkus:quarkus-resteasy-reactive-jsonb,io.quarkus:quarkus-rest-client-reactive,io.quarkus:quarkus-rest-client-reactive-jackson,io.quarkus:quarkus-rest-client-reactive-jsonb
 :summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and RESTEasy Reactive.
 :jaxrsapi: https://javadoc.io/doc/jakarta.ws.rs/jakarta.ws.rs-api/3.1.0/jakarta.ws.rs
 :jaxrsspec: https://jakarta.ee/specifications/restful-ws/3.1/jakarta-restful-ws-spec-3.1.html

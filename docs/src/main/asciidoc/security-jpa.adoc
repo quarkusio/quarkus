@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus Security with Jakarta Persistence
 include::_attributes.adoc[]
 :categories: security
+:topics: security,identity-providers,sql,database,jpa,jdbc
+:extensions: io.quarkus:quarkus-security-jpa-reactive
 
 Quarkus provides a Jakarta Persistence (formerly known as JPA) identity provider, similar to the xref:security-jdbc.adoc[JDBC identity provider], suitable for use with the xref:security-basic-authentication.adoc[Basic] and xref:security-authentication-mechanisms.adoc#form-auth[Form-based] Quarkus Security mechanisms, which require a combination of username and password credentials.
 

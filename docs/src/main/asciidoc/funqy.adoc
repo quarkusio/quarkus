@@ -8,6 +8,7 @@ include::_attributes.adoc[]
 :categories: cloud
 :summary: This guide explains basics of the Funqy framework, a simple portable cross-provider cloud function API.
 :extension-status: preview
+:topics: serverless,function,cloud,funqy
 
 Quarkus Funqy is part of Quarkus's serverless strategy and aims to provide a portable Java API to write functions
 deployable to various FaaS environments like AWS Lambda, Azure Functions, Google Cloud Functions, Knative, and Knative Events (Cloud Events).
@@ -72,7 +73,7 @@ public class GreetingFunction {
 
 == Async Reactive Types
 
-Funqy supports the https://smallrye.io/smallrye-mutiny[Smallrye Mutiny] `Uni` reactive type as a return type.  The only requirement is that
+Funqy supports the https://smallrye.io/smallrye-mutiny[SmallRye Mutiny] `Uni` reactive type as a return type.  The only requirement is that
 the `Uni` must fill out the generic type.
 
 [source, java]

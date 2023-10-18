@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: getting-started, native
 :summary: Build native executables with GraalVM or Mandrel.
+:topics: native,graalvm,mandrel
+:extensions: io.quarkus:quarkus-core
 
 This guide covers:
 
@@ -424,17 +426,6 @@ Caused by: java.nio.file.NoSuchFileException: /project/getting-started-1.0.0-SNA
 In this case, use the parameter `-Dquarkus.native.remote-container-build=true` instead of `-Dquarkus.native.container-build=true`.
 
 The reason for this is that the local build driver invoked through `-Dquarkus.native.container-build=true` uses volume mounts to make the JAR available in the build container, but volume mounts do not work with remote daemons. The remote container build driver copies the necessary files instead of mounting them. Note that even though the remote driver also works with local daemons, the local driver should be preferred in the local case because mounting is usually more performant than copying.
-====
-
-[TIP]
-====
-The builder image used by default supports Java 17 as it is the latest LTS version.
-
-If your application uses Java 18 or later, you need to specify a builder image supporting Java 20:
-
-:build-additional-parameters: -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-20
-include::{includes}/devtools/build-native-container-parameters.adoc[]
-:!build-additional-parameters:
 ====
 
 [TIP]

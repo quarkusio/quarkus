@@ -47,7 +47,7 @@
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.5.3.Final</jboss-logging.version>
         <junit.jupiter.version>5.10.0</junit.jupiter.version>
-        <maven-core.version>3.9.3</maven-core.version><!-- Keep in sync with sisu.version -->
+        <maven-core.version>3.9.5</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.3.5</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.7.1</maven-plugin-annotations.version>
         <maven-resolver.version>1.9.13</maven-resolver.version>
@@ -70,7 +70,7 @@
         <jboss-logmanager.version>3.0.2.Final</jboss-logmanager.version>
         <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
         <slf4j-api.version>1.7.36</slf4j-api.version>
-        <graal-sdk.version>23.0.1</graal-sdk.version>
+        <graal-sdk.version>23.1.0</graal-sdk.version>
         <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
         <plexus-cipher.version>2.0</plexus-cipher.version>
         <plexus-interpolation.version>1.26</plexus-interpolation.version>

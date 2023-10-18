@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: web
 :summary: This guide explains how to use the OpenAPI extension to generate an OpenAPI descriptor and get a Swagger UI frontend to test your REST endpoints.
+:topics: rest,openapi,swagger-ui,dev-ui
+:extensions: io.quarkus:quarkus-smallrye-openapi
 
 This guide explains how your Quarkus application can expose its API description through an OpenAPI specification and
 how you can test it via a user-friendly UI named Swagger UI.
@@ -511,7 +513,7 @@ To supply your own logo, you need to place a file called `logo.png` in `src/main
 
 This will set the logo for all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
 
-If you only want to apply this logo to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.png` 
+If you only want to apply this logo to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.png`
 rather than `logo.png`.
 
 ==== CSS
@@ -520,7 +522,7 @@ To supply your own css that override/enhance style in the html, you need to plac
 
 This will add that css to all UIs (not just swagger ui), so in this case also GraphQL-UI and Health-UI (if included).
 
-If you only want to apply this style to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.css` 
+If you only want to apply this style to swagger-ui (and not globally to all UIs) call the file `smallrye-open-api-ui.css`
 rather than `style.css`.
 
 For more information on styling, read this blog entry: https://quarkus.io/blog/stylish-api/

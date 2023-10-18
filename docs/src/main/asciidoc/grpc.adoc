@@ -7,6 +7,8 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :categories: serialization
 :summary: Entry point for everything gRPC.
+:topics: grpc
+:extensions: io.quarkus:quarkus-grpc,io.quarkus:quarkus-grpc-xds
 
 https://grpc.io/[gRPC] is a high-performance RPC framework.
 It can efficiently connect services implemented using various languages and frameworks.

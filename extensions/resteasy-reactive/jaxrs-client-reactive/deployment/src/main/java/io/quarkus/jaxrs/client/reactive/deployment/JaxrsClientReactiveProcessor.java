@@ -65,6 +65,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.ParamConverter;
 import jakarta.ws.rs.ext.ParamConverterProvider;
+import jakarta.ws.rs.sse.SseEventSource;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -86,6 +87,7 @@ import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
 import org.jboss.resteasy.reactive.client.impl.MultiInvoker;
+import org.jboss.resteasy.reactive.client.impl.SseEventSourceBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.StorkClientRequestFilter;
 import org.jboss.resteasy.reactive.client.impl.UniInvoker;
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
@@ -226,6 +228,8 @@ public class JaxrsClientReactiveProcessor {
         serviceProviders.produce(new ServiceProviderBuildItem(ClientBuilder.class.getName(),
                 ClientBuilderImpl.class.getName()));
 
+        serviceProviders.produce(new ServiceProviderBuildItem(SseEventSource.Builder.class.getName(),
+                SseEventSourceBuilderImpl.class.getName()));
     }
 
     @BuildStep

@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :categories: security,web
 :keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch
 :toclevels: 3
+:topics: security,oidc,github,twitter,google,facebook,mastodon,microsoft,apple,spotify,twitch
+:extensions: io.quarkus:quarkus-oidc
 
 This document explains how to configure well-known social OIDC and OAuth2 providers.
 

@@ -9,6 +9,8 @@ include::_attributes.adoc[]
 :summary: This guide covers how to use the Liquibase extension to manage your schema migrations.
 :change-log: src/main/resources/db/changeLog.xml
 :config-file: application.properties
+:topics: data,schema-migration,liquibase
+:extensions: io.quarkus:quarkus-liquibase
 
 https://www.liquibase.org/[Liquibase] is an open source tool for database schema change management.
 

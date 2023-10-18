@@ -10,6 +10,8 @@ include::_attributes.adoc[]
 :numbered:
 :sectnums:
 :sectnumlevels: 4
+:topics: management,observability
+:extensions: io.quarkus:quarkus-vertx-http
 
 By default, Quarkus exposes the _management_ endpoints under `/q` on the main HTTP server.
 The same HTTP server provides the application endpoints and the management endpoints.

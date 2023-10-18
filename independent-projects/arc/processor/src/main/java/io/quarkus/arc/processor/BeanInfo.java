@@ -417,7 +417,7 @@ public class BeanInfo implements InjectionTargetInfo {
      * @return {@code true} if the bean requires some customized destroy logic
      */
     public boolean hasDestroyLogic() {
-        if (isInterceptor() || isDecorator()) {
+        if (isInterceptor()) {
             return false;
         }
         if (disposer != null || destroyerConsumer != null) {

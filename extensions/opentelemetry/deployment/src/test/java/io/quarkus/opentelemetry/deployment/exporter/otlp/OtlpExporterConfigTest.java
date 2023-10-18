@@ -17,6 +17,7 @@ public class OtlpExporterConfigTest {
             .withEmptyApplication()
             .overrideConfigKey("otel.traces.exporter", "cdi")
             .overrideConfigKey("otel.exporter.otlp.traces.protocol", "http/protobuf")
+            .overrideConfigKey("quarkus.otel.exporter.otlp.experimental.dependent.default.enable", "true")
             .overrideConfigKey("quarkus.opentelemetry.tracer.exporter.otlp.endpoint", "http://localhost ")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50")
             .overrideConfigKey("quarkus.otel.bsp.export.timeout", "PT1S");
@@ -28,5 +29,6 @@ public class OtlpExporterConfigTest {
     void config() {
         assertTrue(config.traces().legacyEndpoint().isPresent());
         assertEquals("http://localhost", config.traces().legacyEndpoint().get().trim());
+        assertTrue(config.activateDefaultExporter());
     }
 }

@@ -78,6 +78,11 @@ class OtlpExporterProviderTest {
             }
 
             @Override
+            public boolean activateDefaultExporter() {
+                return false;
+            }
+
+            @Override
             public OtlpExporterTracesConfig traces() {
                 return new OtlpExporterTracesConfig() {
                     @Override

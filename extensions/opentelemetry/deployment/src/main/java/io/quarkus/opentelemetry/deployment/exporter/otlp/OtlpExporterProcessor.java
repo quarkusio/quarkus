@@ -68,8 +68,8 @@ public class OtlpExporterProcessor {
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        if (!externalOtelExporterBuildItem.isEmpty()) {
-            // if there is an external exporter, we don't want to create the default one
+        if (!exporterRuntimeConfig.activateDefaultExporter() && !externalOtelExporterBuildItem.isEmpty()) {
+            // unless explicitly configured, if there is an external exporter we don't want to create the default one
             return;
         }
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem

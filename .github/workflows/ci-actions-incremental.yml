@@ -714,7 +714,8 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         if: startsWith(matrix.os-name, 'windows')
         with:
-          version: 'mandrel-latest'
+          distribution: 'mandrel'
+          version: 'mandrel-22.3.2.1-Final'
           java-version: '17'
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -478,8 +478,8 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         }
 
         @Override
-        public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
-            return delegate.getProtectionDomain(classLoader);
+        public ProtectionDomain getProtectionDomain() {
+            return delegate.getProtectionDomain();
         }
 
         @Override

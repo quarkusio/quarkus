@@ -506,7 +506,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
                         byte[] data = classPathElementResource.getData();
                         definePackage(name, classPathElement);
                         Class<?> cl = defineClass(name, data, 0, data.length,
-                                protectionDomains.computeIfAbsent(classPathElement, (ce) -> ce.getProtectionDomain(this)));
+                                protectionDomains.computeIfAbsent(classPathElement, ClassPathElement::getProtectionDomain));
                         if (Driver.class.isAssignableFrom(cl)) {
                             driverLoaded = true;
                         }

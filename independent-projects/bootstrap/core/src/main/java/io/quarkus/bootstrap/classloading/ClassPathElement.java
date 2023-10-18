@@ -65,7 +65,7 @@ public interface ClassPathElement extends Closeable {
      *
      * @return The protection domain that should be used to define classes from this element
      */
-    ProtectionDomain getProtectionDomain(ClassLoader classLoader);
+    ProtectionDomain getProtectionDomain();
 
     Manifest getManifest();
 
@@ -115,7 +115,7 @@ public interface ClassPathElement extends Closeable {
         }
 
         @Override
-        public ProtectionDomain getProtectionDomain(ClassLoader classLoader) {
+        public ProtectionDomain getProtectionDomain() {
             return null;
         }
 

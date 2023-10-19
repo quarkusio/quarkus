@@ -103,6 +103,65 @@ implementation("io.quarkus:quarkus-hibernate-orm-panache-kotlin") <1>
 <1>  Note the addition of `-kotlin` on the end. Generally you'll only need this version but if your project will be using
 both Java and Kotlin code, you can safely include both artifacts.
 
+Additionally, you need to configure the Kotlin `all-open` plugin according to your build tool:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<plugin>
+  <groupId>org.jetbrains.kotlin</groupId>
+  <artifactId>kotlin-maven-plugin</artifactId>
+  <version>${kotlin.version}</version>
+  <executions>
+    <execution>
+      <id>compile</id>
+      <goals>
+        <goal>compile</goal>
+      </goals>
+    </execution>
+    <execution>
+      <id>test-compile</id>
+      <goals>
+        <goal>test-compile</goal>
+      </goals>
+    </execution>
+  </executions>
+  <dependencies>
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-maven-allopen</artifactId>
+      <version>${kotlin.version}</version>
+    </dependency>
+  </dependencies>
+  <configuration>
+    <javaParameters>true</javaParameters>
+    <jvmTarget>${maven.compiler.release}</jvmTarget>
+    <compilerPlugins>
+      <plugin>all-open</plugin>
+    </compilerPlugins>
+    <pluginOptions>
+      <option>all-open:annotation=jakarta.ws.rs.Path</option>
+      <option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>
+      <option>all-open:annotation=jakarta.persistence.Entity</option> <1>
+      <option>all-open:annotation=io.quarkus.test.junit.QuarkusTest</option>
+    </pluginOptions>
+  </configuration>
+</plugin>
+----
+<1>  Note the addition of the `all-open:annotation=jakarta.persistence.Entity` option.
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+allOpen {
+  annotation("jakarta.ws.rs.Path")
+  annotation("jakarta.enterprise.context.ApplicationScoped")
+  annotation("jakarta.persistence.Entity") <1>
+  annotation("io.quarkus.test.junit.QuarkusTest")
+}
+----
+<1>  Note the addition of the `jakarta.persistence.Entity` annotation.
+
 == Using the repository pattern
 
 

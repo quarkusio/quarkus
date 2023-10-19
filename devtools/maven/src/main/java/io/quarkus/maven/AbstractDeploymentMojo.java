@@ -15,8 +15,6 @@ import io.quarkus.runtime.LaunchMode;
 
 public class AbstractDeploymentMojo extends BuildMojo {
 
-    Optional<String> deployer = Optional.empty();
-
     @Parameter(property = "quarkus.deployment.dry-run")
     boolean dryRun;
 
@@ -34,9 +32,7 @@ public class AbstractDeploymentMojo extends BuildMojo {
             getLog().info("Deployment configuration:");
             systemProperties.entrySet().stream()
                     .filter(e -> e.getKey().contains("quarkus.deployment"))
-                    .forEach(e -> {
-                        getLog().info(" - " + e.getKey() + ": " + e.getValue());
-                    });
+                    .forEach(e -> getLog().info(" - " + e.getKey() + ": " + e.getValue()));
         } else {
             super.doExecute();
         }
@@ -58,13 +54,13 @@ public class AbstractDeploymentMojo extends BuildMojo {
         List<Dependency> dependencies = new ArrayList<>();
         MavenProject project = mavenProject();
         Deployer deployer = getDeployer();
-        deployer.getExtensionArtifact(project).ifPresent(d -> dependencies.add(d));
+        deployer.getExtensionArtifact(project).ifPresent(dependencies::add);
         if (this.imageBuild || this.imageBuilder != null) {
             Set<ImageBuilder> projectBuilders = ImageBuilder.getProjectBuilder(project).stream().map(ImageBuilder::valueOf)
                     .collect(Collectors.toSet());
             Optional<ImageBuilder> imageBuilder = ImageBuilder.getBuilder(this.imageBuilder, projectBuilders);
             imageBuilder.filter(b -> !projectBuilders.contains(b)).flatMap(b -> b.getExtensionArtifact(project))
-                    .ifPresent(d -> dependencies.add(d));
+                    .ifPresent(dependencies::add);
         }
         return dependencies;
     }

@@ -40,6 +40,18 @@
 
 time sudo docker image prune --all --force || true
 # That is 979M
-time sudo rm -rf /usr/share/dotnet
-# That is 1.78 GB
-time sudo rm -rf /usr/share/swift
+time sudo rm -rf /usr/share/dotnet || true
+# That is 1.7G
+time sudo rm -rf /usr/share/swift || true
+# Remove Android
+time sudo rm -rf /usr/local/lib/android || true
+# Remove Haskell
+time sudo rm -rf /opt/ghc || true
+# Remove pipx
+time sudo rm -rf /opt/pipx || true
+
+# Remove infrastructure things that are unused and take a lot of space
+time sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+time sudo rm -rf /imagegeneration/installers/go-* || true
+time sudo rm -rf /imagegeneration/installers/node-* || true
+time sudo rm -rf /imagegeneration/installers/python-* || true

@@ -42,6 +42,10 @@ public class ProjectExtensionsUpdateInfo {
         return streamExtensions().filter(ExtensionUpdateInfo::isSimpleVersionUpdate).collect(Collectors.toList());
     }
 
+    public List<ExtensionUpdateInfo> getVersionUpdates() {
+        return streamExtensions().filter(ExtensionUpdateInfo::isVersionUpdate).collect(Collectors.toList());
+    }
+
     public boolean shouldUpdateExtensions() {
         return streamExtensions().anyMatch(ExtensionUpdateInfo::shouldUpdateExtension);
     }

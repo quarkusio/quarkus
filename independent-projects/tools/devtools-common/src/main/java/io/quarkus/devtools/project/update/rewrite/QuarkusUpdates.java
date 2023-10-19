@@ -30,7 +30,7 @@ public final class QuarkusUpdates {
                 request.currentVersion,
                 request.targetVersion,
                 request.projectExtensionsUpdateInfo
-                        .getSimpleVersionUpdates());
+                        .getVersionUpdates());
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
                 .buildTool(request.buildTool);
         if (request.updateJavaVersion.isPresent()) {

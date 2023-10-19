@@ -5,8 +5,10 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -34,8 +36,11 @@ import com.mongodb.spi.dns.DnsClientProvider;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
@@ -60,6 +65,7 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.mongodb.MongoClientName;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
+import io.quarkus.mongodb.runtime.MongoClientCustomizer;
 import io.quarkus.mongodb.runtime.MongoClientRecorder;
 import io.quarkus.mongodb.runtime.MongoClientSupport;
 import io.quarkus.mongodb.runtime.MongoClients;
@@ -78,6 +84,8 @@ public class MongoClientProcessor {
 
     private static final DotName MONGO_CLIENT = DotName.createSimple(MongoClient.class.getName());
     private static final DotName REACTIVE_MONGO_CLIENT = DotName.createSimple(ReactiveMongoClient.class.getName());
+
+    private static final DotName MONGO_CLIENT_CUSTOMIZER = DotName.createSimple(MongoClientCustomizer.class.getName());
 
     private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
 
@@ -432,5 +440,38 @@ public class MongoClientProcessor {
     void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
         runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem(ObjectId.class.getName()));
         runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("com.mongodb.internal.dns.DefaultDnsResolver"));
+    }
+
+    /**
+     * Ensure we have at most one customizer per Mongo client.
+     *
+     * @param beans the beans
+     * @param validation the producer used to report issues
+     */
+    @BuildStep
+    void validateMongoConfigCustomizers(BeanDiscoveryFinishedBuildItem beans,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validation) {
+        HashMap<String, List<String>> customizers = new HashMap<>();
+
+        for (BeanInfo bean : beans.getBeans()) {
+            if (bean.hasType(MONGO_CLIENT_CUSTOMIZER)) {
+                var name = bean.getQualifier(MONGO_CLIENT_ANNOTATION);
+                if (name.isPresent()) {
+                    String clientName = name.get().value().asString();
+                    customizers.computeIfAbsent(clientName, k -> new ArrayList<>()).add(bean.getBeanClass().toString());
+                } else {
+                    customizers.computeIfAbsent(MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME, k -> new ArrayList<>())
+                            .add(bean.getBeanClass().toString());
+                }
+            }
+        }
+
+        for (Map.Entry<String, List<String>> entry : customizers.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                validation.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
+                        new IllegalStateException("Multiple Mongo client customizers found for client " + entry.getKey() + ": "
+                                + String.join(", ", entry.getValue()))));
+            }
+        }
     }
 }

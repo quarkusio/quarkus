@@ -48,12 +48,12 @@ public final class Arc {
 
     public static void setExecutor(ExecutorService executor) {
         System.out.println(INSTANCE.get() + "HOLLY FUNQ trying to set the executor " + Arc.class.getClassLoader());
-        if (INSTANCE.get() == null) {
-            // TODO this happens because we tear things down and don't put them back properly
-            // Can we just ... init ourselves?
-            System.out.println("TODO HACK just putting it back");
-            initialize();
-        }
+        //        if (INSTANCE.get() == null) {
+        //            // TODO this happens because we tear things down and don't put them back properly
+        //            // Can we just ... init ourselves?
+        //            System.out.println("TODO HACK just putting it back");
+        //            initialize();
+        //        }
         INSTANCE.get().setExecutor(executor);
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.test.junit.launcher;
 
 import static io.quarkus.deployment.dev.testing.PathTestHelper.getTestClassLocationForRootLocation;
+import static org.junit.platform.engine.discovery.ClassNameFilter.includeClassNamePatterns;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -13,6 +14,10 @@ import org.junit.platform.launcher.LauncherDiscoveryListener;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.LauncherInterceptor;
 import org.junit.platform.launcher.LauncherSession;
+import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -34,6 +39,8 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
     private final ClassLoader customClassLoader;
 
+    private static volatile boolean looped = false;
+
     public CustomLauncherInterceptor() throws Exception {
         System.out.println("HOLLY interceipt construct" + getClass().getClassLoader());
         ClassLoader parent = Thread.currentThread()
@@ -46,13 +53,38 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
     @Override
     public <T> T intercept(Invocation<T> invocation) {
-        if (System.getProperty("prod.mode.tests") != null) {
-            return invocation.proceed();
+        //        if (!looped) {
+        //            looped = true;
+        //            triggerNewDiscovery();
+        //            return invocation.proceed();
+        //
+        //        } else {
+        return nintercept(invocation);
+        //        }
 
-        } else {
-            return nintercept(invocation);
+    }
+
+    private void triggerNewDiscovery() {
+        System.out.println("HOLLY triggering discovery");
+        //       infinite loop, this is what triggers this method LauncherDiscoveryRequest
+        LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
+                .filters(
+                        includeClassNamePatterns(
+                                ".*"))
+                .build();
+
+        System.out.println("HOLLY request is " + request);
+
+        TestPlan plan = LauncherFactory.create()
+                .discover(request);
+
+        for (TestIdentifier root : plan.getRoots()) {
+            System.out.println("Root: " + root.toString());
+
+            for (TestIdentifier test : plan.getChildren(root)) {
+                System.out.println("Found test: " + test.toString());
+            }
         }
-
     }
 
     public <T> T nintercept(Invocation<T> invocation) {
@@ -80,21 +112,25 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
         // this interceptor doesn't need to do anything.
         // TODO what if we removed the changes in the runner code?
 
-        // Bypass all this in continuous testing mode, where the custom runner will have already initialised things before we hit this class; the startup action holder is our best way
+        // Bypass all this in continuous testing mode, where the custom runner will have already
+        // initialised things before we hit this class; the startup action holder is our best way
         // of detecting it
 
         // TODO alternate way of detecting it ? Needs the build item, though
-        // TODO could the extension pass this through to us? no, I think we're invoked before anything quarkusy, and junit5 isn't even an extension
+        // TODO could the extension pass this through to us? no, I think we're invoked before
+        //  anything quarkusy, and junit5 isn't even an extension
         //        DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
         //        if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
         //            return;
         //        }
 
-        // Some places do this, but that assumes we already have a classloader!         boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
+        // Some places do this, but that assumes we already have a classloader!         boolean
+        // isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
 
         if (StartupActionHolder.getStored() == null) {
             if (invocation instanceof LauncherSession) {
                 LauncherSession sess = (LauncherSession) invocation;
+                System.out.println("HOLLY registering the listener using that ancient code path");
                 sess.getLauncher()
                         .registerLauncherDiscoveryListeners(new LauncherDiscoveryListener() {
                             @Override
@@ -107,21 +143,6 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
             Thread currentThread = Thread.currentThread();
             ClassLoader originalClassLoader = currentThread.getContextClassLoader();
-
-            //       infinite loop, this is what triggers this method LauncherDiscoveryRequest
-            //       request = LauncherDiscoveryRequestBuilder.request()
-            //                .filters(includeClassNamePatterns(".*"))
-            //                .build();
-            //
-            //        TestPlan plan = LauncherFactory.create().discover(request);
-            //
-            //        for (TestIdentifier root : plan.getRoots()) {
-            //            System.out.println("Root: " + root.toString());
-            //
-            //            for (TestIdentifier test : plan.getChildren(root)) {
-            //                System.out.println("Found test: " + test.toString());
-            //            }
-            //        }
 
             System.out.println("HOLLY before launch mode is " + LaunchMode.current());
             System.out.println("HOLLY other way us " + ConfigProvider.getConfig()
@@ -136,7 +157,8 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                         .toAbsolutePath();
 
                 // Why do we do this rather than just using the project root?
-                // BootstrapConstants.OUTPUT_SOURCES_DIR does not have gradle additional source sets, but the classpath does
+                // BootstrapConstants.OUTPUT_SOURCES_DIR does not have gradle additional source
+                // sets, but the classpath does
                 //  Path applicationRoot = getTestClassesLocationWithNoContext();
                 Path applicationRoot = getTestClassLocationForRootLocation(projectRoot.toString());
 
@@ -144,8 +166,10 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
                 if (CurrentTestApplication.curatedApplication != null) {
                     System.out.println("Re-using curated application");
-                    // TODO does this re-use mean we get interference between test runs in a way we didn't before?
-                    // No, it used to preserve the instance between runs unless the profile had changed
+                    // TODO does this re-use mean we get interference between test runs in a way
+                    //  we didn't before?
+                    // No, it used to preserve the instance between runs unless the profile had
+                    // changed
                     curatedApplication = CurrentTestApplication.curatedApplication;
                 } else {
 
@@ -197,7 +221,8 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
 
                     // TODO   move this to close     shutdownTasks.add(curatedApplication::close);
 
-                    var appModelFactory = curatedApplication.getQuarkusBootstrap().newAppModelFactory();
+                    var appModelFactory = curatedApplication.getQuarkusBootstrap()
+                            .newAppModelFactory();
                     appModelFactory.setBootstrapAppModelResolver(null);
                     appModelFactory.setTest(true);
                     appModelFactory.setLocalArtifacts(Set.of());
@@ -206,16 +231,22 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                     appModelFactory.setProjectRoot(projectRoot);
                     //   }
 
-                    // To do this deserialization, we need to have an app root, so we can't use it to find the application model
+                    // To do this deserialization, we need to have an app root, so we can't use
+                    // it to find the application model
 
-                    final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
+                    final ApplicationModel testModel = appModelFactory.resolveAppModel()
+                            .getApplicationModel();
                     System.out.println("HOLLY test model is " + testModel);
                     //                    System.out.println(
-                    //                            "module dir is " + Arrays.toString(testModel.getWorkspaceModules().toArray()));
+                    //                            "module dir is " + Arrays.toString(testModel
+                    //                            .getWorkspaceModules().toArray()));
                     //                    System.out.println(
-                    //                            "module dir is " + ((WorkspaceModule) testModel.getWorkspaceModules().toArray()[0]).getModuleDir());
+                    //                            "module dir is " + ((WorkspaceModule) testModel
+                    //                            .getWorkspaceModules().toArray()[0])
+                    //                            .getModuleDir());
                     System.out.println(
-                            "app dir is " + testModel.getApplicationModule().getModuleDir());
+                            "app dir is " + testModel.getApplicationModule()
+                                    .getModuleDir());
                 }
 
                 System.out.println("HOLLY after launch mode is " + LaunchMode.current());
@@ -224,8 +255,10 @@ public class CustomLauncherInterceptor implements LauncherInterceptor {
                 ClassLoader loader = coreQuarkusTestExtension.doJavaStart(applicationRoot,
                         curatedApplication, false);
                 currentThread.setContextClassLoader(loader);
-                Consumer currentTestAppConsumer = (Consumer) loader.loadClass(CurrentTestApplication.class.getName())
-                        .getDeclaredConstructor().newInstance();
+                Consumer currentTestAppConsumer = (Consumer) loader.loadClass(
+                        CurrentTestApplication.class.getName())
+                        .getDeclaredConstructor()
+                        .newInstance();
                 currentTestAppConsumer.accept(curatedApplication);
 
                 System.out.println("HOLLY did set to " + currentThread.getContextClassLoader());

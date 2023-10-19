@@ -69,6 +69,14 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
+import org.junit.platform.engine.discovery.DiscoverySelectors;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.LauncherSession;
+import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
 import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
@@ -220,6 +228,38 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             //            PrepareResult result = createAugmentor(context, profile, shutdownTasks);
             //            AugmentAction augmentAction = result.augmentAction;
             //            QuarkusTestProfile profileInstance = result.profileInstance;
+            if (false) {
+                LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
+                        .selectors(DiscoverySelectors.selectClass(context.getRequiredTestClass().getName()))
+                        //                    .filters(
+                        //                            includeClassNamePatterns(
+                        //                                    context.getRequiredTestClass().getName()))
+                        .build();
+
+                System.out.println("HOLLY request is " + request);
+
+                TestPlan testPlan = LauncherFactory.create()
+                        .discover(request);
+
+                System.out.println("HOLLY made test plan " + testPlan + testPlan.containsTests());
+
+                for (TestIdentifier root : testPlan.getRoots()) {
+                    System.out.println("Root: " + root.toString());
+
+                    for (TestIdentifier test : testPlan.getChildren(root)) {
+                        System.out.println("Found test: " + test.toString());
+                    }
+                }
+                try (LauncherSession session = LauncherFactory.openSession()) {
+                    Launcher launcher = session.getLauncher();
+                    // Register a listener of your choice
+                    // Execute test plan
+                    launcher.execute(testPlan);
+                    // Alternatively, execute the request directly
+                    launcher.execute(request);
+                }
+            }
+
             QuarkusTestProfile profileInstance = null;
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();

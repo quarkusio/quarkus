@@ -27,7 +27,7 @@ It doesn't matter if you use profiles or any other way to override the propertie
 == When is re-augmentation useful?
 
 Re-augmentation is useful in case the users of your application want to be able to change some of its build time properties.
-For instance changing the database driver or switching features on or off (e.g. xref:opentracing.adoc[OpenTracing] or link:{config-consul-guide}[Config Consul]).
+For instance changing the database driver or switching features on or off (e.g. xref:opentelemetry.adoc[OpenTelemetry] or link:{config-consul-guide}[Config Consul]).
 If there are only two or three build time properties that depend on the user environment, you may consider providing alternative builds of the application. However, in case there are more such properties you may prefer shipping a mutable jar instead and let your users re-augment the application for their environment.
 Please notice that you won't be able to use native images with the package type `mutable-jar`.
 Think of the consequences and what other options you have!

@@ -33,7 +33,6 @@
         <opentracing-mongo.version>0.1.5</opentracing-mongo.version>
         <opentelemetry.version>1.30.1</opentelemetry.version>
         <opentelemetry-alpha.version>1.30.0-alpha</opentelemetry-alpha.version>
-        <jaeger.version>1.8.1</jaeger.version>
         <quarkus-http.version>5.0.3.Final</quarkus-http.version>
         <micrometer.version>1.11.5</micrometer.version><!-- keep in sync with hdrhistogram -->
         <hdrhistogram.version>2.1.12</hdrhistogram.version><!-- keep in sync with micrometer -->
@@ -56,7 +55,6 @@
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>3.7.0</smallrye-open-api.version>
         <smallrye-graphql.version>2.5.1</smallrye-graphql.version>
-        <smallrye-opentracing.version>3.0.3</smallrye-opentracing.version>
         <smallrye-fault-tolerance.version>6.2.6</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.3.1</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.1.0</smallrye-context-propagation.version>
@@ -1231,16 +1229,6 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jaeger</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jaeger-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-db2</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1604,16 +1592,6 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-graphql-client-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-opentracing</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -3390,52 +3368,6 @@
                 <version>${angus-activation.version}</version>
             </dependency>
             <dependency>
-                <groupId>io.jaegertracing</groupId>
-                <artifactId>jaeger-core</artifactId>
-                <version>${jaeger.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.jaegertracing</groupId>
-                <artifactId>jaeger-thrift</artifactId>
-                <version>${jaeger.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.tomcat.embed</groupId>
-                        <artifactId>tomcat-embed-core</artifactId>
-                    </exclusion>
-                    <!-- jaeger-thrift 3.43.3 pulls in a banned version of annotation-api -->
-                    <exclusion>
-                        <groupId>javax.annotation</groupId>
-                        <artifactId>javax.annotation-api</artifactId>
-                    </exclusion>
-                    <!-- it also pulls in the jakarta annotations via the 'org.apache.tomcat:tomcat-annotations-api' which seems to be a copy of 'jakarta.annotation:jakarta.annotation-api'-->
-                    <!-- https://mvnrepository.com/artifact/org.apache.tomcat/tomcat-annotations-api -->
-                    <exclusion>
-                        <groupId>org.apache.tomcat</groupId>
-                        <artifactId>tomcat-annotations-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.jaegertracing</groupId>
-                <artifactId>jaeger-zipkin</artifactId>
-                <version>${jaeger.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.annotation</groupId>
-                        <artifactId>javax.annotation-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.tomcat.embed</groupId>
-                        <artifactId>tomcat-embed-core</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
                 <version>${h2.version}</version>
@@ -3954,22 +3886,6 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-graphql-client-implementation-vertx</artifactId>
                 <version>${smallrye-graphql.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-opentracing</artifactId>
-                <version>${smallrye-opentracing.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.eclipse.microprofile.config</groupId>
-                        <artifactId>microprofile-config-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-opentracing-contrib</artifactId>
-                <version>${smallrye-opentracing.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
@@ -6305,6 +6221,26 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-opentelemetry-exporter-otlp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jaeger</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jaeger-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-opentracing</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

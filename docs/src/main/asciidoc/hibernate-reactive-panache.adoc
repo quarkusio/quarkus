@@ -690,6 +690,37 @@ PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
 <1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
+In case you want to project an entity in a class with nested classes, you can use the `@NestedProjectedClass` annotation on those nested classes.
+
+[source,java]
+----
+
+@RegisterForReflection
+public class DogDto {
+    public String name;
+    public PersonDto owner;
+
+    public DogDto(String name, PersonDto owner) {
+        this.name = name;
+        this.owner = owner;
+    }
+
+    @NestedProjectedClass // <1>
+    public static class PersonDto {
+        public String name;
+
+        public PersonDto(String name) {
+            this.name = name;
+        }
+    }
+}
+
+PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
+----
+
+<1> This annotation can be used when you want to project `@Embedded` entity or `@ManyToOne`, `@OneToOne` relation.
+It does not support `@OneToMany` or `@ManyToMany` relation.
+
 It is also possible to specify a HQL query with a select clause. In this case, the projection class must have a constructor
 matching the values returned by the select clause:
 

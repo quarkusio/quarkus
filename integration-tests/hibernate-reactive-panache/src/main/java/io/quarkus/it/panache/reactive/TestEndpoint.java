@@ -1718,6 +1718,69 @@ public class TestEndpoint {
 
     @WithTransaction
     @GET
+    @Path("projection-nested")
+    public Uni<String> testNestedProjection() {
+        Person person = new Person();
+        person.name = "1";
+        person.uniqueName = "1";
+        Person person3 = new Person();
+        Person hum = new Person();
+        return person.persist()
+                .chain(() -> Person.find("select name from Person2 where name = ?1", "1")
+                        .project(String.class)
+                        .firstResult()
+
+                )
+                .invoke(personName -> Assertions.assertEquals("1", personName))
+                .chain(() -> {
+                    person3.name = "3";
+                    person3.uniqueName = "3";
+                    person3.address = new Address("street 3");
+                    person3.description = new PersonDescription();
+                    person3.description.weight = 75;
+                    person3.description.size = 170;
+                    return person3.persist();
+                })
+                .chain(() -> Person.find(" name = ?1", "3")
+                        .project(PersonDTO.class)
+                        .<PersonDTO> firstResult())
+                .invoke(
+                        personDTO -> {
+                            Assertions.assertEquals("3", personDTO.name);
+                            Assertions.assertEquals("street 3", personDTO.address.street);
+                            Assertions.assertEquals(170, personDTO.directHeight);
+                            Assertions.assertEquals(170, personDTO.description.height);
+                            Assertions.assertEquals("Height: 170, weight: 75", personDTO.description.getGeneratedDescription());
+                        })
+                .chain(() -> {
+                    hum.name = "hum";
+                    hum.uniqueName = "hum";
+                    Dog kit = new Dog("kit", "bulldog");
+                    hum.dogs.add(kit);
+                    kit.owner = hum;
+                    return hum.persist();
+                })
+                .chain(() -> Dog.find(" name = ?1", "kit")
+                        .project(DogDto.class)
+                        .<DogDto> firstResult())
+                .invoke(
+                        dogDto -> {
+                            Assertions.assertNotNull(dogDto);
+                            Assertions.assertEquals("kit", dogDto.name);
+                            Assertions.assertEquals("hum", dogDto.owner.name);
+                        })
+                .flatMap(v -> person.delete())
+                .flatMap(v -> person3.delete())
+                .flatMap(v -> hum.delete())
+                .flatMap(v -> Person.count())
+                .map(count -> {
+                    Assertions.assertEquals(1, count);
+                    return "OK";
+                });
+    }
+
+    @WithTransaction
+    @GET
     @Path("model3")
     public Uni<String> testModel3() {
         return Person.count()

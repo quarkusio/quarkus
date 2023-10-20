@@ -190,4 +190,8 @@ public abstract class UniAsserterInterceptor implements UniAsserter {
         delegate.clearData();
     }
 
+    @Override
+    public Uni<?> asUni() {
+        return delegate.asUni();
+    }
 }

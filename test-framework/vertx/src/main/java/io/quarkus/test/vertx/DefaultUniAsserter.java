@@ -22,6 +22,11 @@ public final class DefaultUniAsserter implements UniAsserter {
         this.data = new ConcurrentHashMap<>();
     }
 
+    @Override
+    public Uni<?> asUni() {
+        return execution;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> UniAsserter assertThat(Supplier<Uni<T>> uni, Consumer<T> asserter) {

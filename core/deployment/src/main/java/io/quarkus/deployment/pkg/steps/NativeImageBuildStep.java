@@ -299,7 +299,7 @@ public class NativeImageBuildStep {
             return new NativeImageBuildItem(finalExecutablePath,
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.fullVersion,
                             graalVMVersion.getVersionAsString(),
-                            graalVMVersion.javaFeatureVersion,
+                            graalVMVersion.javaVersion.feature(),
                             graalVMVersion.distribution.name()));
         } catch (ImageGenerationFailureException e) {
             throw e;
@@ -477,7 +477,7 @@ public class NativeImageBuildStep {
 
     private void checkGraalVMVersion(GraalVM.Version version) {
         log.info("Running Quarkus native-image plugin on " + version.distribution.name() + " " + version.getVersionAsString()
-                + " JDK " + version.javaFeatureVersion + "." + version.javaUpdateVersion);
+                + " JDK " + version.javaVersion);
         if (version.isObsolete()) {
             throw new IllegalStateException("Out of date version of GraalVM detected: " + version.getVersionAsString() + "."
                     + " Quarkus currently supports " + GraalVM.Version.CURRENT.getVersionAsString()
@@ -968,17 +968,10 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeMinimalJavaVersions != null && !nativeMinimalJavaVersions.isEmpty()) {
-                    if (graalVMVersion.javaUpdateVersion == GraalVM.Version.UNDEFINED) {
-                        log.warnf(
-                                "Unable to parse used Java version from native-image version string `%s'. Java version checks will be skipped.",
-                                graalVMVersion.fullVersion);
-                    } else {
-                        nativeMinimalJavaVersions.stream()
-                                .filter(a -> !graalVMVersion.jdkVersionGreaterOrEqualTo(a.minFeature, a.minUpdate))
-                                .forEach(a -> log.warnf("Expected: Java %d, update %d, Actual: Java %d, update %d. %s",
-                                        a.minFeature, a.minUpdate, graalVMVersion.javaFeatureVersion,
-                                        graalVMVersion.javaUpdateVersion, a.warning));
-                    }
+                    nativeMinimalJavaVersions.stream()
+                            .filter(a -> !graalVMVersion.jdkVersionGreaterOrEqualTo(a))
+                            .forEach(a -> log.warnf("Expected: Java %s, Actual: Java %s. %s",
+                                    a.minVersion, graalVMVersion.javaVersion, a.warning));
                 }
 
                 if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {

@@ -78,6 +78,7 @@ public class BeanProcessor {
     private final boolean generateSources;
     private final boolean allowMocking;
     private final boolean transformUnproxyableClasses;
+    private final boolean optimizeContexts;
     private final List<Function<BeanInfo, Consumer<BytecodeCreator>>> suppressConditionGenerators;
 
     // This predicate is used to filter annotations for InjectionPoint metadata
@@ -107,6 +108,7 @@ public class BeanProcessor {
                 applicationClassPredicate);
         this.generateSources = builder.generateSources;
         this.allowMocking = builder.allowMocking;
+        this.optimizeContexts = builder.optimizeContexts;
         this.transformUnproxyableClasses = builder.transformUnproxyableClasses;
         this.suppressConditionGenerators = builder.suppressConditionGenerators;
 
@@ -189,6 +191,7 @@ public class BeanProcessor {
         // These maps are precomputed and then used in the ComponentsProviderGenerator which is generated first
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
+        Map<DotName, String> scopeToGeneratedName = new HashMap<>();
 
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers,
                 generateSources, refReg, existingClasses, beanToGeneratedName,
@@ -229,6 +232,13 @@ public class BeanProcessor {
             observerGenerator.precomputeGeneratedName(observer);
         }
 
+        ContextInstancesGenerator contextInstancesGenerator = new ContextInstancesGenerator(generateSources,
+                reflectionRegistration, beanDeployment, scopeToGeneratedName);
+        if (optimizeContexts) {
+            contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.APPLICATION.getName());
+            contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.REQUEST.getName());
+        }
+
         CustomAlterableContextsGenerator alterableContextsGenerator = new CustomAlterableContextsGenerator(generateSources);
         List<CustomAlterableContextInfo> alterableContexts = customAlterableContexts.getRegistered();
 
@@ -251,7 +261,8 @@ public class BeanProcessor {
                                     name,
                                     beanDeployment,
                                     beanToGeneratedName,
-                                    observerToGeneratedName);
+                                    observerToGeneratedName,
+                                    scopeToGeneratedName);
                 }
             }));
 
@@ -350,6 +361,20 @@ public class BeanProcessor {
                 }));
             }
 
+            if (optimizeContexts) {
+                // Generate _ContextInstances
+                primaryTasks.add(executor.submit(new Callable<Collection<Resource>>() {
+
+                    @Override
+                    public Collection<Resource> call() throws Exception {
+                        Collection<Resource> resources = new ArrayList<>();
+                        resources.addAll(contextInstancesGenerator.generate(BuiltinScope.APPLICATION.getName()));
+                        resources.addAll(contextInstancesGenerator.generate(BuiltinScope.REQUEST.getName()));
+                        return resources;
+                    }
+                }));
+            }
+
             for (Future<Collection<Resource>> future : primaryTasks) {
                 resources.addAll(future.get());
             }
@@ -419,7 +444,14 @@ public class BeanProcessor {
                             name,
                             beanDeployment,
                             beanToGeneratedName,
-                            observerToGeneratedName));
+                            observerToGeneratedName,
+                            scopeToGeneratedName));
+
+            if (optimizeContexts) {
+                // Generate _ContextInstances
+                resources.addAll(contextInstancesGenerator.generate(BuiltinScope.APPLICATION.getName()));
+                resources.addAll(contextInstancesGenerator.generate(BuiltinScope.REQUEST.getName()));
+            }
         }
 
         // Generate AnnotationLiterals - at this point all annotation literals must be processed
@@ -469,7 +501,7 @@ public class BeanProcessor {
         initialize(unsupportedBytecodeTransformer, Collections.emptyList());
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);
-        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, true, null);
+        generateResources(null, new HashSet<>(), unsupportedBytecodeTransformer, beanDeployment.removeUnusedBeans, null);
         return beanDeployment;
     }
 
@@ -510,6 +542,7 @@ public class BeanProcessor {
         boolean failOnInterceptedPrivateMethod;
         boolean allowMocking;
         boolean strictCompatibility;
+        boolean optimizeContexts;
 
         AlternativePriorities alternativePriorities;
         final List<Predicate<ClassInfo>> excludeTypes;
@@ -545,6 +578,7 @@ public class BeanProcessor {
             failOnInterceptedPrivateMethod = false;
             allowMocking = false;
             strictCompatibility = false;
+            optimizeContexts = false;
 
             excludeTypes = new ArrayList<>();
 
@@ -777,6 +811,16 @@ public class BeanProcessor {
          */
         public Builder setStrictCompatibility(boolean strictCompatibility) {
             this.strictCompatibility = strictCompatibility;
+            return this;
+        }
+
+        /**
+         *
+         * @param value
+         * @return self
+         */
+        public Builder setOptimizeContexts(boolean value) {
+            this.optimizeContexts = value;
             return this;
         }
 

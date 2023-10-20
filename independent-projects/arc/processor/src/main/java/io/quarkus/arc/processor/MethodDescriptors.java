@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -306,6 +307,9 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor INTERCEPT_FUNCTION_INTERCEPT = MethodDescriptor.ofMethod(InterceptFunction.class,
             "intercept", Object.class, ArcInvocationContext.class);
+
+    public static final MethodDescriptor LOCK_LOCK = MethodDescriptor.ofMethod(Lock.class, "lock", void.class);
+    public static final MethodDescriptor LOCK_UNLOCK = MethodDescriptor.ofMethod(Lock.class, "unlock", void.class);
 
     private MethodDescriptors() {
     }

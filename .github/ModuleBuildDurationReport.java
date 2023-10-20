@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,6 +29,20 @@ import java.util.regex.Pattern;
     description = "Analyzes JVM build logs and outputs module build times.")
 public class ModuleBuildDurationReport implements Runnable {
 
+  private static final DateTimeFormatter TIMESTAMP_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSX");
+
+  private static final String TIMESTAMP = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+Z";
+
+  private static final Pattern TIMESTAMP_PATTERN =
+      Pattern.compile("^(" + TIMESTAMP + ") \\[INFO\\].*");
+
+  // we will assume the previous module ends on this and a new one begins
+  private static final Pattern BUILD_START_PATTERN =
+      Pattern.compile("^" + TIMESTAMP + " \\[INFO\\] Building (.+?) (\\S+-SNAPSHOT).* \\[([0-9]+)/[0-9]+\\]");
+
+  private static final Pattern BUILD_END_PATTERN = Pattern.compile("^" + TIMESTAMP + " \\[INFO\\] Reactor Summary");
+
   @Option(
       names = {"-f", "--file"},
       description = "Path to the raw log file",
@@ -37,26 +51,13 @@ public class ModuleBuildDurationReport implements Runnable {
 
   @CommandLine.Option(names = { "-s",
       "--sort" }, description = "Sort order"
-          + "%Possible values: ${COMPLETION-CANDIDATES}", defaultValue = "name")
+          + "%Possible values: ${COMPLETION-CANDIDATES}", defaultValue = "execution")
   private Sort sort;
 
   public static void main(String... args) {
     int exitCode = new CommandLine(new ModuleBuildDurationReport()).execute(args);
     System.exit(exitCode);
   }
-
-  private static final Pattern TIMESTAMP_PATTERN =
-      Pattern.compile("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d+Z \\[INFO\\].*");
-
-  // we will assume the previous module ends on this and a new one begins
-  private static final Pattern BUILD_START_PATTERN =
-      Pattern.compile(".*\\[INFO] Building Quarkus - (.+?) (\\S+-SNAPSHOT).*", Pattern.DOTALL);
-
-  // we need two separate patterns as they are sequential, and we want the timestamp of the first
-  private static final Pattern POTENTIAL_BUILD_END_PATTERN =
-      Pattern.compile(
-          ".*\\[INFO] ------------------------------------------------------------------------");
-  private static final Pattern BUILD_END_PATTERN = Pattern.compile("\\[[INFO] Reactor Summary");
 
   @Override
   public void run() {
@@ -67,67 +68,50 @@ public class ModuleBuildDurationReport implements Runnable {
     }
   }
 
-  private static final DateTimeFormatter TIMESTAMP_FORMATTER =
-      DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSX");
-
-  private Optional<LocalDateTime> getTimestamp(String line) {
-    int timestampEndIndex = line.indexOf(" [INFO]");
-    return (timestampEndIndex != -1)
-        ? Optional.of(
-            LocalDateTime.parse(line.substring(0, timestampEndIndex), TIMESTAMP_FORMATTER))
-        : Optional.empty();
-  }
-
   private void analyzeLogFile(String logFilePath) throws IOException {
-    Map<String, Optional<Duration>> moduleDurations = new HashMap<>();
+    Map<String, Optional<Duration>> moduleDurations = new LinkedHashMap<>();
+    Optional<LocalDateTime> previousTimestamp = Optional.empty();
+    LocalDateTime timestamp = null;
     Optional<LocalDateTime> startingTimestamp = Optional.empty();
     Optional<String> previousModule = Optional.empty();
 
     try (BufferedReader reader = new BufferedReader(new FileReader(logFilePath))) {
       String line;
       while ((line = reader.readLine()) != null) {
-        // line contains timestamp
-        if (TIMESTAMP_PATTERN.matcher(line).matches()) {
+        Matcher timestampMatcher = TIMESTAMP_PATTERN.matcher(line);
+        if (timestampMatcher.matches()) {
+          timestamp = LocalDateTime.parse(timestampMatcher.group(1), TIMESTAMP_FORMATTER);
           Matcher buildStart = BUILD_START_PATTERN.matcher(line);
 
-          // TODO missing logic when log ends abruptly
           if (buildStart.matches()) {
-            String moduleName = buildStart.group(1);
-            String moduleVersion = buildStart.group(2);
+            String moduleName = buildStart.group(1) + " [" + buildStart.group(3) + "]";
 
-            var timestamp = getTimestamp(line);
             if (startingTimestamp.isPresent() && previousModule.isPresent()) {
-              moduleDurations.put(
-                  previousModule.get(), calculateDuration(startingTimestamp, timestamp));
+              moduleDurations.put(previousModule.get(), Optional.of(Duration.between(startingTimestamp.get(), timestamp)));
             }
-            startingTimestamp = timestamp;
+            startingTimestamp = Optional.of(timestamp);
             previousModule = Optional.of(moduleName);
           } else {
-            Matcher potentialBuildEnd = POTENTIAL_BUILD_END_PATTERN.matcher(line);
-            if (potentialBuildEnd.matches()) {
-              // we will need to look ahead at the next line to see if is the log end
-              reader.mark(1);
-              var nextLine = reader.readLine();
-              reader.reset();
-
-              // TODO actual logic
-              if (BUILD_END_PATTERN.matcher(nextLine).matches()) {
-                String moduleName = "Unfinished Module";
-                String moduleVersion = "N/A";
-                String moduleKey = moduleName + " " + moduleVersion;
-              }
+            if (BUILD_END_PATTERN.matcher(line).matches() && previousModule.isPresent() && previousTimestamp.isPresent()) {
+              moduleDurations.put(previousModule.get(), Optional.of(Duration.between(startingTimestamp.get(), previousTimestamp.get())));
+              previousModule = Optional.empty();
+              break;
             }
           }
+          previousTimestamp = Optional.of(timestamp);
         }
+      }
+      if (previousModule.isPresent() && timestamp != null && startingTimestamp.isPresent()) {
+        moduleDurations.put(previousModule.get() + " - /!\\ unfinished", Optional.of(Duration.between(startingTimestamp.get(), timestamp)));
       }
     }
 
     // Print the results
-    System.out.printf("%-80s | %s\n", "Name of Module", "Time");
+    System.out.printf("%-85s | %s\n", "Name of Module", "Time");
     System.out.println(separator());
 
     moduleDurations.entrySet().stream()
-        .sorted(sort == Sort.name ? Map.Entry.comparingByKey() : Map.Entry.comparingByValue(OptionalDurationComparator.INSTANCE))
+        .sorted(sort == Sort.execution ? ((a1, a2) -> 0) : (sort == Sort.name ? Map.Entry.comparingByKey() : Map.Entry.comparingByValue(OptionalDurationComparator.INSTANCE)))
         .forEach(
             entry -> {
                 if (!entry.getValue().isPresent()) {
@@ -136,7 +120,7 @@ public class ModuleBuildDurationReport implements Runnable {
 
                 Duration duration = entry.getValue().get();
                 System.out.printf(
-                    "%-80s | %02d:%02d:%02d:%03d\n",
+                    "%-85s | %02d:%02d:%02d:%03d\n",
                     entry.getKey(),
                     duration.toHoursPart(),
                     duration.toMinutesPart(),
@@ -150,7 +134,7 @@ public class ModuleBuildDurationReport implements Runnable {
         .reduce(Duration.ZERO, (d1, d2) -> d1.plus(d2));
 
     System.out.println(separator());
-    System.out.printf("%-80s | %02d:%02d:%02d:%03d\n", "Total duration",
+    System.out.printf("%-85s | %02d:%02d:%02d:%03d\n", "Total duration for " + moduleDurations.size() + " modules",
         totalDuration.toHoursPart(),
         totalDuration.toMinutesPart(),
         totalDuration.toSecondsPart(),
@@ -158,18 +142,12 @@ public class ModuleBuildDurationReport implements Runnable {
     System.out.println(separator());
   }
 
-  private Optional<Duration> calculateDuration(
-      Optional<LocalDateTime> start, Optional<LocalDateTime> end) {
-    if (start.isPresent() && end.isPresent())
-      return Optional.of(Duration.between(start.get(), end.get()));
-    else return Optional.empty();
-  }
-
   private String separator() {
-    return "-----------------------------------------------------------------------------------------------";
+    return "----------------------------------------------------------------------------------------------------";
   }
 
   public enum Sort {
+    execution,
     name,
     duration
   }

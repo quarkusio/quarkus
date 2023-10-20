@@ -276,7 +276,6 @@ public class KafkaProcessor {
                 .produce(ReflectiveClassBuildItem.builder(StickyAssignor.class.getName()).build());
 
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
-        handleOpenTracing(reflectiveClass, capabilities);
 
     }
 
@@ -315,18 +314,6 @@ public class KafkaProcessor {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             recorder.checkBoostrapServers();
         }
-    }
-
-    private void handleOpenTracing(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, Capabilities capabilities) {
-        //opentracing contrib kafka interceptors: https://github.com/opentracing-contrib/java-kafka-client
-        if (!capabilities.isPresent(Capability.OPENTRACING)
-                || !QuarkusClassLoader.isClassPresentAtRuntime("io.opentracing.contrib.kafka.TracingProducerInterceptor")) {
-            return;
-        }
-
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.opentracing.contrib.kafka.TracingProducerInterceptor",
-                "io.opentracing.contrib.kafka.TracingConsumerInterceptor").methods()
-                .build());
     }
 
     private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

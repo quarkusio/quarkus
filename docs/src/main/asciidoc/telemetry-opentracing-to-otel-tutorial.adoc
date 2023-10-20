@@ -11,7 +11,7 @@ include::_attributes.adoc[]
 :topics: observability,opentracing,opentelemetry,tracing,migration
 :extensions: io.quarkus:quarkus-smallrye-opentracing,io.quarkus:quarkus-opentelemetry
 
-Migrate an application from xref:opentracing.adoc[OpenTracing] to xref:opentelemetry.adoc[OpenTelemetry tracing] in Quarkus 3.x.
+Migrate an application from https://docs.quarkiverse.io/quarkus-smallrye-opentracing/dev/index.html[OpenTracing] to xref:opentelemetry.adoc[OpenTelemetry tracing] in Quarkus 3.x.
 
 The legacy OpenTracing framework has been deprecated in favor of the new OpenTelemetry tracing framework. We announced the https://quarkus.io/blog/quarkus-observability-roadmap-2023/#opentracing-archived[OpenTracing deprecation on November 2022], and we are dropping the extension from Quarkus core repository and moving it to the Quarkiverse Hub.
 

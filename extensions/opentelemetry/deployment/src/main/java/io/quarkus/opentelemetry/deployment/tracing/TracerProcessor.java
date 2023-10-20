@@ -26,7 +26,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -36,7 +35,6 @@ import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.TracerProducer;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
 import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 
@@ -54,12 +52,6 @@ public class TracerProcessor {
             CombinedIndexBuildItem indexBuildItem,
             Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-
-        if (capabilities.isPresent(Capability.OPENTRACING) ||
-                capabilities.isPresent(Capability.SMALLRYE_OPENTRACING)) {
-            throw new ConfigurationException("The OpenTelemetry extension tracer can not be used in " +
-                    "conjunction with either the SmallRye OpenTracing or Jaeger extensions.");
-        }
 
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .setUnremovable()

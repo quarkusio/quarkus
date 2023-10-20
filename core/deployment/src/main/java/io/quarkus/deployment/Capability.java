@@ -113,16 +113,8 @@ public interface Capability {
 
     String KEYCLOAK_AUTHORIZATION = QUARKUS_PREFIX + ".keycloak.authorization";
 
-    /**
-     * Presence of an io.opentracing tracer (for example, Jaeger).
-     */
-    String OPENTRACING = QUARKUS_PREFIX + ".opentracing";
-    /**
-     * Presence of SmallRye OpenTracing.
-     */
     String SCHEDULER = QUARKUS_PREFIX + ".scheduler";
 
-    String SMALLRYE_OPENTRACING = QUARKUS_PREFIX + ".smallrye.opentracing";
     String SMALLRYE_HEALTH = QUARKUS_PREFIX + ".smallrye.health";
     String SMALLRYE_OPENAPI = QUARKUS_PREFIX + ".smallrye.openapi";
     String SMALLRYE_GRAPHQL = QUARKUS_PREFIX + ".smallrye.graphql";

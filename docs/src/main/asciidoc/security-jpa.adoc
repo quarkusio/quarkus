@@ -187,6 +187,6 @@ However, it is possible to store passwords as plain text with the `@Password(Pas
 
 == References
 
-* xref:security-basic-authentication-tutorial.adoc[Secure a Quarkus application with Basic authentication and Jakarta Persistence]
+* xref:security-getting-started-tutorial.adoc[Getting Started with Security using Basic authentication and Jakarta Persistence]
 * xref:security-identity-providers.adoc[Identity providers]
 * xref:security-overview.adoc[Quarkus Security overview]

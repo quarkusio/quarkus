@@ -393,7 +393,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
 
         // @Incoming @Outgoing
-        if (method.hasAnnotation(DotNames.OUTGOING)) {
+        if (method.hasAnnotation(DotNames.OUTGOING) || method.hasAnnotation(DotNames.OUTGOINGS)) {
             if ((isCompletionStage(returnType) && parametersCount >= 1)
                     || (isUni(returnType) && parametersCount >= 1)
                     || (isPublisher(returnType) && parametersCount == 1)
@@ -452,7 +452,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         }
 
         // @Incoming @Outgoing
-        if (method.hasAnnotation(DotNames.INCOMING)) {
+        if (method.hasAnnotation(DotNames.INCOMING) || method.hasAnnotation(DotNames.INCOMINGS)) {
             if ((isCompletionStage(returnType) && parametersCount == 1)
                     || (isUni(returnType) && parametersCount == 1)
                     || (isPublisher(returnType) && parametersCount == 1)
@@ -463,10 +463,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
             } else if ((isProcessor(returnType) && parametersCount == 0)
                     || (isProcessorBuilder(returnType) && parametersCount == 0)) {
                 outgoingType = returnType.asParameterizedType().arguments().get(1);
-            } else if (parametersCount == 1) {
-                outgoingType = returnType;
             } else if (KotlinUtils.isKotlinSuspendMethod(method)) {
                 outgoingType = getReturnTypeFromKotlinSuspendMethod(method);
+            } else {
+                outgoingType = returnType;
             }
 
             // @Incoming @Outgoing stream manipulation
@@ -517,6 +517,10 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
 
     private void extractKeyValueType(Type type, TriConsumer<Type, Type, Boolean> keyValueTypeAcceptor) {
         if (type == null) {
+            return;
+        }
+
+        if (isTargeted(type)) {
             return;
         }
 
@@ -702,6 +706,11 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         return DotNames.CONSUMER_RECORDS.equals(type.name())
                 && type.kind() == Type.Kind.PARAMETERIZED_TYPE
                 && type.asParameterizedType().arguments().size() == 2;
+    }
+
+    private static boolean isTargeted(Type type) {
+        return DotNames.TARGETED.equals(type.name())
+                || DotNames.TARGETED_MESSAGES.equals(type.name());
     }
 
     private static boolean isRawMessage(Type type) {

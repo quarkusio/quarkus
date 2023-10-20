@@ -1,5 +1,5 @@
 //usr/bin/env jbang "$0" "$@" ; exit $?
-//DEPS io.quarkus:quarkus-bom:2.3.1.Final@pom
+//DEPS io.quarkus:quarkus-bom:3.4.3@pom
 //DEPS io.quarkus:quarkus-picocli
 
 import picocli.CommandLine;
@@ -12,8 +12,12 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +34,11 @@ public class ModuleBuildDurationReport implements Runnable {
       description = "Path to the raw log file",
       required = true)
   private String logFilePath;
+
+  @CommandLine.Option(names = { "-s",
+      "--sort" }, description = "Sort order"
+          + "%Possible values: ${COMPLETION-CANDIDATES}", defaultValue = "name")
+  private Sort sort;
 
   public static void main(String... args) {
     int exitCode = new CommandLine(new ModuleBuildDurationReport()).execute(args);
@@ -115,25 +124,38 @@ public class ModuleBuildDurationReport implements Runnable {
 
     // Print the results
     System.out.printf("%-80s | %s\n", "Name of Module", "Time");
-    System.out.println("------------------------------------------------------");
+    System.out.println(separator());
 
     moduleDurations.entrySet().stream()
-        .sorted(Map.Entry.comparingByKey())
+        .sorted(sort == Sort.name ? Map.Entry.comparingByKey() : Map.Entry.comparingByValue(OptionalDurationComparator.INSTANCE))
         .forEach(
-            entry ->
-                entry
-                    .getValue()
-                    .ifPresent(
-                        value ->
-                            System.out.printf(
-                                "%-80s | %02d:%02d:%02d:%03d\n",
-                                entry.getKey(),
-                                value.toHoursPart(),
-                                value.toMinutesPart(),
-                                value.toSecondsPart(),
-                                value.toMillisPart())));
+            entry -> {
+                if (!entry.getValue().isPresent()) {
+                  return;
+                }
 
-    // TODO print total duration
+                Duration duration = entry.getValue().get();
+                System.out.printf(
+                    "%-80s | %02d:%02d:%02d:%03d\n",
+                    entry.getKey(),
+                    duration.toHoursPart(),
+                    duration.toMinutesPart(),
+                    duration.toSecondsPart(),
+                    duration.toMillisPart());
+            });
+
+    Duration totalDuration = moduleDurations.values().stream()
+        .filter(d -> d.isPresent())
+        .map(d -> d.get())
+        .reduce(Duration.ZERO, (d1, d2) -> d1.plus(d2));
+
+    System.out.println(separator());
+    System.out.printf("%-80s | %02d:%02d:%02d:%03d\n", "Total duration",
+        totalDuration.toHoursPart(),
+        totalDuration.toMinutesPart(),
+        totalDuration.toSecondsPart(),
+        totalDuration.toMillisPart());
+    System.out.println(separator());
   }
 
   private Optional<Duration> calculateDuration(
@@ -141,6 +163,34 @@ public class ModuleBuildDurationReport implements Runnable {
     if (start.isPresent() && end.isPresent())
       return Optional.of(Duration.between(start.get(), end.get()));
     else return Optional.empty();
+  }
+
+  private String separator() {
+    return "-----------------------------------------------------------------------------------------------";
+  }
+
+  public enum Sort {
+    name,
+    duration
+  }
+
+  private static class OptionalDurationComparator implements Comparator<Optional<Duration>> {
+
+    private static final OptionalDurationComparator INSTANCE = new OptionalDurationComparator();
+
+    public int compare(Optional<Duration> value1, Optional<Duration> value2) {
+      if (value1.isEmpty() && value2.isEmpty()) {
+        return 0;
+      }
+      if (value1.isEmpty()) {
+        return 1;
+      }
+      if (value2.isEmpty()) {
+        return -1;
+      }
+
+      return value1.get().compareTo(value2.get());
+    }
   }
 }
 

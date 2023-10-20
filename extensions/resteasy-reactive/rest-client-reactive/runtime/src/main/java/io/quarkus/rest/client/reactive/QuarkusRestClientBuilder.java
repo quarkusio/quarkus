@@ -269,6 +269,12 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
     QuarkusRestClientBuilder loggingScope(LoggingScope loggingScope);
 
     /**
+     * How many characters of the body should be logged. Message body can be large and can easily pollute the logs.
+     *
+     */
+    QuarkusRestClientBuilder loggingBodyLimit(Integer limit);
+
+    /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls
      * against.
      *

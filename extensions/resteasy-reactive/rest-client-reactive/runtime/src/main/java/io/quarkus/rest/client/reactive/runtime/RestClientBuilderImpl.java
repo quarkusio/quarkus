@@ -71,6 +71,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     private ClientLogger clientLogger;
     private LoggingScope loggingScope;
+    private Integer loggingBodyLimit;
 
     @Override
     public RestClientBuilderImpl baseUrl(URL url) {
@@ -170,6 +171,11 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     public RestClientBuilderImpl loggingScope(LoggingScope loggingScope) {
         this.loggingScope = loggingScope;
+        return this;
+    }
+
+    public RestClientBuilderImpl loggingBodyLimit(Integer limit) {
+        this.loggingBodyLimit = limit;
         return this;
     }
 
@@ -346,9 +352,12 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                     : LoggingScope.NONE;
         }
 
-        Integer loggingBodySize = logging != null ? logging.bodyLimit : 100;
+        Integer effectiveLoggingBodyLimit = loggingBodyLimit; // if a limit was specified programmatically, it takes precedence
+        if (effectiveLoggingBodyLimit == null) {
+            effectiveLoggingBodyLimit = logging != null ? logging.bodyLimit : 100;
+        }
         clientBuilder.loggingScope(effectiveLoggingScope);
-        clientBuilder.loggingBodySize(loggingBodySize);
+        clientBuilder.loggingBodySize(effectiveLoggingBodyLimit);
         if (clientLogger != null) {
             clientBuilder.clientLogger(clientLogger);
         } else {
@@ -438,4 +447,5 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         }
         return null;
     }
+
 }

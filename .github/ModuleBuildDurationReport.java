@@ -84,7 +84,7 @@ public class ModuleBuildDurationReport implements Runnable {
           Matcher buildStart = BUILD_START_PATTERN.matcher(line);
 
           if (buildStart.matches()) {
-            String moduleName = buildStart.group(1) + " [" + buildStart.group(3) + "]";
+            String moduleName = "[" + buildStart.group(3) + "] " + buildStart.group(1);
 
             if (startingTimestamp.isPresent() && previousModule.isPresent()) {
               moduleDurations.put(previousModule.get(), Optional.of(Duration.between(startingTimestamp.get(), timestamp)));

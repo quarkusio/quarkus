@@ -872,6 +872,42 @@ quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".level=T
 quarkus.log.category."io.quarkus.oidc.client.runtime.OidcClientRecorder".min-level=TRACE
 ----
 
+[[oidc-client-filters]]
+== Client request customization
+
+You can customize OIDC client requests by registering one or more `OidcClientRequestFiler` implementations which can update or add new request headers, for example, a filter can analyze the request body and add its digest as a new header value:
+
+[source,java]
+----
+package io.quarkus.it.keycloak;
+
+import jakarta.enterprise.context.ApplicationScoped;
+
+import io.quarkus.arc.Unremovable;
+import io.quarkus.oidc.common.OidcClientRequestFilter;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpRequest;
+
+@ApplicationScoped
+@Unremovable
+public class OidcClientRequestCustomizer implements OidcClientRequestFilter {
+
+    @Override
+    public void filter(HttpRequest<Buffer> request, Buffer buffer) {
+        HttpMethod method = request.method();
+        String uri = request.uri();
+        if (method == HttpMethod.POST && uri.endsWith("/service") && buffer != null) {
+            request.putHeader("Digest", calculateDigest(buffer.toString()));
+        }
+    }
+
+    private String calculateDigest(String bodyString) {
+        // Apply the required digest algorithm to the body string
+    }
+}
+----
+
 [[token-propagation-reactive]]
 == Token Propagation Reactive
 

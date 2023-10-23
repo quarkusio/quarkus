@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import jakarta.enterprise.inject.Instance;
 
 import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import io.opentelemetry.semconv.SemanticAttributes;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest

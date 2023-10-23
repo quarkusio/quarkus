@@ -64,7 +64,9 @@ public class CodeGenerator {
             PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
             String launchMode, boolean test) throws CodeGenException {
-        final List<CodeGenData> generators = init(classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
+        Map<String, String> props = new HashMap<>();
+        properties.entrySet().stream().forEach(e -> props.put((String) e.getKey(), (String) e.getValue()));
+        final List<CodeGenData> generators = init(appModel, props, classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
                 sourceRegistrar);
         if (generators.isEmpty()) {
             return;
@@ -77,7 +79,10 @@ public class CodeGenerator {
         }
     }
 
-    private static List<CodeGenData> init(ClassLoader deploymentClassLoader,
+    private static List<CodeGenData> init(
+            ApplicationModel model,
+            Map<String, String> properties,
+            ClassLoader deploymentClassLoader,
             PathCollection sourceParentDirs,
             Path generatedSourcesDir,
             Path buildDir,
@@ -89,24 +94,29 @@ public class CodeGenerator {
             }
             final List<CodeGenData> result = new ArrayList<>(codeGenProviders.size());
             for (CodeGenProvider provider : codeGenProviders) {
+                provider.init(model, properties);
                 Path outputDir = codeGenOutDir(generatedSourcesDir, provider, sourceRegistrar);
                 for (Path sourceParentDir : sourceParentDirs) {
+                    Path in = provider.getInputDirectory();
+                    if (in == null) {
+                        in = sourceParentDir.resolve(provider.inputDirectory());
+                    }
                     result.add(
-                            new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()), buildDir));
+                            new CodeGenData(provider, outputDir, in, buildDir));
                 }
             }
             return result;
         });
     }
 
-    public static List<CodeGenData> init(ClassLoader deploymentClassLoader, Collection<ModuleInfo> modules)
+    public static List<CodeGenData> init(ApplicationModel model, Map<String, String> properties,
+            ClassLoader deploymentClassLoader, Collection<ModuleInfo> modules)
             throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
             List<CodeGenProvider> codeGenProviders = null;
             List<CodeGenData> codeGens = List.of();
             for (DevModeContext.ModuleInfo module : modules) {
                 if (!module.getSourceParents().isEmpty() && module.getPreBuildOutputDir() != null) { // it's null for remote dev
-
                     if (codeGenProviders == null) {
                         codeGenProviders = loadCodeGenProviders(deploymentClassLoader);
                         if (codeGenProviders.isEmpty()) {
@@ -115,14 +125,19 @@ public class CodeGenerator {
                     }
 
                     for (CodeGenProvider provider : codeGenProviders) {
+                        provider.init(model, properties);
                         Path outputDir = codeGenOutDir(Path.of(module.getPreBuildOutputDir()), provider,
                                 sourcePath -> module.addSourcePathFirst(sourcePath.toAbsolutePath().toString()));
                         for (Path sourceParentDir : module.getSourceParents()) {
                             if (codeGens.isEmpty()) {
                                 codeGens = new ArrayList<>();
                             }
+                            Path in = provider.getInputDirectory();
+                            if (in == null) {
+                                in = sourceParentDir.resolve(provider.inputDirectory());
+                            }
                             codeGens.add(
-                                    new CodeGenData(provider, outputDir, sourceParentDir.resolve(provider.inputDirectory()),
+                                    new CodeGenData(provider, outputDir, in,
                                             Path.of(module.getTargetDir())));
                         }
 

@@ -34,3 +34,4 @@ Quarkus gRPC is based on https://vertx.io/docs/vertx-grpc/java/[Vert.x gRPC].
 * xref:grpc-service-consumption.adoc[Consuming a gRPC Service]
 * xref:grpc-kubernetes.adoc[Deploying your gRPC Service in Kubernetes]
 * xref:grpc-xds.adoc[Enabling xDS gRPC support]
+* xref:grpc-generation-reference.adoc[gRPC code generation reference guide]

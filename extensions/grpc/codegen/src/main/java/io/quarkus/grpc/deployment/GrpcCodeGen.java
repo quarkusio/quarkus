@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,6 +58,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String POST_PROCESS_SKIP = "quarkus.generate.code.grpc-post-processing.skip";
 
     private Executables executables;
+    private String input;
 
     @Override
     public String providerId() {
@@ -74,10 +76,23 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     @Override
+    public Path getInputDirectory() {
+        if (input != null) {
+            return Path.of(input);
+        }
+        return null;
+    }
+
+    @Override
+    public void init(ApplicationModel model, Map<String, String> properties) {
+        this.input = properties.get("quarkus.grpc.codegen.proto-directory");
+    }
+
+    @Override
     public boolean trigger(CodeGenContext context) throws CodeGenException {
         if (TRUE.toString().equalsIgnoreCase(System.getProperties().getProperty("grpc.codegen.skip", "false"))
                 || context.config().getOptionalValue("quarkus.grpc.codegen.skip", Boolean.class).orElse(false)) {
-            log.info("Skipping " + this.getClass() + " invocation on user's request");
+            log.info("Skipping gRPC code generation on user's request");
             return false;
         }
         Path outDir = context.outDir();

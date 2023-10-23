@@ -279,6 +279,11 @@ quarkus.oidc.introspection-credentials.name=introspection-user-name
 quarkus.oidc.introspection-credentials.secret=introspection-user-secret
 ----
 
+[[oidc-client-filters]]
+==== OIDC client request customization
+
+You can customize OIDC client requests by registering one or more `OidcClientRequestFiler` implementations which can update or add new request headers, please see xref:security-openid-connect-client-reference#oidc-client-filters[Client request customization] for more information.
+
 ==== Redirecting to and from the OIDC provider
 
 When a user is redirected to the OpenID Connect provider to authenticate, the redirect URL includes a `redirect_uri` query parameter, which indicates to the provider where the user has to be redirected to when the authentication is complete.

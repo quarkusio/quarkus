@@ -49,6 +49,7 @@ public class BearerTokenAuthorizationTest {
     public void testAccessResourceAzure() throws Exception {
         String azureJwk = readFile("jwks.json");
         wireMockServer.stubFor(WireMock.get("/auth/azure/jwk")
+                .withHeader("Authorization", matching("ID token"))
                 .willReturn(WireMock.aResponse().withBody(azureJwk)));
         String azureToken = readFile("token.txt");
         RestAssured.given().auth().oauth2(azureToken)

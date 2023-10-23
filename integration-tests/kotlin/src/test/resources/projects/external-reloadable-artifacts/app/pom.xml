@@ -82,6 +82,7 @@
                         <!-- Each annotation is placed on its own line -->
                         <option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>
                         <option>all-open:annotation=jakarta.ws.rs.Path</option>
+                        <option>all-open:annotation=jakarta.persistence.Entity</option>
                     </pluginOptions>
                 </configuration>
                 <dependencies>

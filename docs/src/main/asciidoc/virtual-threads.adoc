@@ -477,7 +477,10 @@ When it happens, the test fails.
 The `@ShouldNotPin` can also be used on methods directly.
 
 The _junit5-virtual-threads_ also provides a `@ShouldPin` annotation for cases where pinning is unavoidable.
-The following snippet demonstrates the `@ShouldPin` annotation usage and the possibility to inject a `ThreadPinnedEvents` instance in your test to verify when the carrier thread was pinned manually.
+The following snippet demonstrates the `@ShouldPin` annotation usage.
+
+// This is not possible because of a classloading issue - See https://github.com/quarkusio/quarkus/issues/36569 :
+// and the possibility to inject a `ThreadPinnedEvents` instance in your test to verify when the carrier thread was pinned manually.
 
 [source, java]
 ----
@@ -496,14 +499,6 @@ public class LoomUnitExampleTest {
     @ShouldPin(atMost = 1)
     public void testThatShouldPinAtMostOnce() {
         codeUnderTest.pin();
-    }
-
-    @Test
-    public void testThatShouldNotPin(ThreadPinnedEvents events) { // Inject an object to check the pin events
-        Assertions.assertTrue(events.getEvents().isEmpty());
-        codeUnderTest.pin();
-        await().until(() -> events.getEvents().size() > 0);
-        Assertions.assertEquals(events.getEvents().size(), 1);
     }
 
 }

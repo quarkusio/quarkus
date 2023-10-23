@@ -15,6 +15,7 @@
 
     <properties>
         <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
+        <!-- Careful: SQL Server refuses to work with trivial passwords. -->
         <mssqldb.sa-password>yourStrong(!)Password</mssqldb.sa-password>
     </properties>
 
@@ -184,11 +185,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <mssqldb.url>jdbc:sqlserver://localhost:1433;databaseName=tempdb</mssqldb.url>
-                <!-- Careful: SQL Server refuses to work with trivial passwords. -->
-                <mssqldb.sa-password>yourStrong(!)Password</mssqldb.sa-password>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

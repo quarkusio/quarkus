@@ -13,7 +13,7 @@
     <name>Quarkus - Integration Tests - Hibernate Reactive with Panache and Kotlin</name>
 
     <properties>
-        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5432/hibernate_orm_test</postgres.reactive.url>
+        <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
     </properties>
 
     <dependencies>
@@ -281,9 +281,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

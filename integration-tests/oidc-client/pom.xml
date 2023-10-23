@@ -192,10 +192,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <keycloak.url>http://localhost:8180/auth</keycloak.url>
-                <keycloak.ssl.url>https://localhost:8543/auth</keycloak.ssl.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

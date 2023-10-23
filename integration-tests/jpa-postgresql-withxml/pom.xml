@@ -13,6 +13,10 @@
     <name>Quarkus - Integration Tests - JPA - PostgreSQL</name>
     <description>Module that contains JPA related tests running with the PostgreSQL database</description>
 
+    <properties>
+        <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -148,9 +152,6 @@
                     <name>start-containers</name>
                 </property>
             </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
-            </properties>
             <build>
                 <plugins>
                     <plugin>

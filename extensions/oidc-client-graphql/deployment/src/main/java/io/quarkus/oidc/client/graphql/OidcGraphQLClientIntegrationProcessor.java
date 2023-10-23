@@ -19,6 +19,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.oidc.client.graphql.runtime.OidcClientGraphQLConfig;
 import io.quarkus.oidc.client.graphql.runtime.OidcGraphQLClientIntegrationRecorder;
+import io.quarkus.smallrye.graphql.client.deployment.GraphQLClientConfigInitializedBuildItem;
 
 public class OidcGraphQLClientIntegrationProcessor {
 
@@ -37,7 +38,8 @@ public class OidcGraphQLClientIntegrationProcessor {
     void initialize(BeanContainerBuildItem containerBuildItem,
             OidcGraphQLClientIntegrationRecorder recorder,
             OidcClientGraphQLConfig config,
-            BeanArchiveIndexBuildItem index) {
+            BeanArchiveIndexBuildItem index,
+            GraphQLClientConfigInitializedBuildItem configInitialized) {
         Map<String, String> configKeysToOidcClients = new HashMap<>();
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
             ClassInfo clazz = annotation.target().asClass();

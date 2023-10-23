@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -33,8 +32,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBui
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientConfigurationMergerBean;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
@@ -157,7 +154,7 @@ public class SmallRyeGraphQLClientProcessor {
      */
     @BuildStep
     @Record(RUNTIME_INIT)
-    void initializeClientSupport(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    GraphQLClientConfigInitializedBuildItem mergeClientConfigurations(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SmallRyeGraphQLClientRecorder recorder,
             GraphQLClientsConfig quarkusConfig,
             BeanArchiveIndexBuildItem index) {
@@ -182,33 +179,12 @@ public class SmallRyeGraphQLClientProcessor {
             knownConfigKeys.add(configKey);
         }
 
-        RuntimeValue<GraphQLClientSupport> support = recorder.clientSupport(shortNamesToQualifiedNames,
-                knownConfigKeys);
+        GraphQLClientSupport support = new GraphQLClientSupport();
+        support.setShortNamesToQualifiedNamesMapping(shortNamesToQualifiedNames);
+        support.setKnownConfigKeys(knownConfigKeys);
 
-        DotName supportClassName = DotName.createSimple(GraphQLClientSupport.class.getName());
-        SyntheticBeanBuildItem bean = SyntheticBeanBuildItem
-                .configure(supportClassName)
-                .addType(supportClassName)
-                .scope(Singleton.class)
-                .runtimeValue(support)
-                .setRuntimeInit()
-                .unremovable()
-                .done();
-        syntheticBeans.produce(bean);
-    }
-
-    @BuildStep
-    AdditionalBeanBuildItem configurationMergerBean() {
-        return AdditionalBeanBuildItem.unremovableOf(GraphQLClientConfigurationMergerBean.class);
-    }
-
-    // FIXME: this seems unnecessary, but is needed to make sure that the GraphQLClientConfigurationMergerBean
-    // gets initialized, can this be done differently?
-    @BuildStep
-    @Record(RUNTIME_INIT)
-    void initializeConfigMergerBean(BeanContainerBuildItem containerBuildItem,
-            SmallRyeGraphQLClientRecorder recorder) {
-        recorder.initializeConfigurationMergerBean();
+        recorder.mergeClientConfigurations(support, quarkusConfig);
+        return new GraphQLClientConfigInitializedBuildItem();
     }
 
     @BuildStep

@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.Vertx;
@@ -17,6 +18,8 @@ import io.vertx.core.impl.ContextInternal;
  * Shutdown methods are no-op as the executor service is a wrapper around these previous execute methods.
  */
 class FallbackVirtualThreadsExecutorService extends AbstractExecutorService {
+
+    private AtomicBoolean shutdown = new AtomicBoolean();
 
     @Override
     public void execute(Runnable command) {
@@ -33,26 +36,28 @@ class FallbackVirtualThreadsExecutorService extends AbstractExecutorService {
 
     @Override
     public void shutdown() {
-        // no-op
+        shutdown.compareAndSet(false, true);
     }
 
     @Override
     public List<Runnable> shutdownNow() {
+        shutdown.compareAndSet(false, true);
         return Collections.EMPTY_LIST;
     }
 
     @Override
     public boolean isShutdown() {
-        return false;
+        return shutdown.get();
     }
 
     @Override
     public boolean isTerminated() {
-        return false;
+        return shutdown.get();
     }
 
     @Override
     public boolean awaitTermination(long timeout, TimeUnit unit) {
-        return false;
+        shutdown.compareAndSet(false, true);
+        return true;
     }
 }

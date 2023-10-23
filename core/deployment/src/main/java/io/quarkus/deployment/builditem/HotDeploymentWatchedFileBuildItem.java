@@ -14,8 +14,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  *
  * The location may be:
  * <ul>
- * <li>a relative file path; e.g. {@code foo/bar.sample}</li>
- * <li>an absolute file path; e.g. {@code /home/foo/bar.sample}</li>
+ * <li>a relative OS-agnostic file path where {@code /} is used as a separator; e.g. {@code foo/bar.txt}</li>
+ * <li>an absolute OS-specific file path; e.g. {@code /home/foo/bar.txt}</li>
  * <li>a glob pattern as defined in {@link java.nio.file.FileSystem#getPathMatcher(String)}; e.g. {@code *.sample}</li>
  * </ul>
  * <p>

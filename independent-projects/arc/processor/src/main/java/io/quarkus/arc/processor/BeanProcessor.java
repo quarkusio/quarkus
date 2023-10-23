@@ -201,8 +201,14 @@ public class BeanProcessor {
             beanGenerator.precomputeGeneratedName(bean);
         }
 
+        CustomAlterableContextsGenerator alterableContextsGenerator = new CustomAlterableContextsGenerator(generateSources);
+        List<CustomAlterableContextInfo> alterableContexts = customAlterableContexts.getRegistered();
+
+        // Set of normal scopes for which the client proxy delegate can be optimized
+        Set<DotName> singleContextNormalScopes = findSingleContextNormalScopes();
+
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate, generateSources,
-                allowMocking, refReg, existingClasses);
+                allowMocking, refReg, existingClasses, singleContextNormalScopes);
 
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
                 privateMembers, generateSources, refReg, existingClasses, beanToGeneratedName,
@@ -233,14 +239,11 @@ public class BeanProcessor {
         }
 
         ContextInstancesGenerator contextInstancesGenerator = new ContextInstancesGenerator(generateSources,
-                reflectionRegistration, beanDeployment, scopeToGeneratedName);
+                refReg, beanDeployment, scopeToGeneratedName);
         if (optimizeContexts) {
             contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.APPLICATION.getName());
             contextInstancesGenerator.precomputeGeneratedName(BuiltinScope.REQUEST.getName());
         }
-
-        CustomAlterableContextsGenerator alterableContextsGenerator = new CustomAlterableContextsGenerator(generateSources);
-        List<CustomAlterableContextInfo> alterableContexts = customAlterableContexts.getRegistered();
 
         List<Resource> resources = new ArrayList<>();
 
@@ -507,6 +510,34 @@ public class BeanProcessor {
 
     public Predicate<DotName> getInjectionPointAnnotationsPredicate() {
         return injectionPointAnnotationsPredicate;
+    }
+
+    private Set<DotName> findSingleContextNormalScopes() {
+        Set<DotName> ret = new HashSet<>();
+        Set<DotName> builtinScopes = Set.of(BuiltinScope.REQUEST.getName());
+        Set<DotName> customScopes = beanDeployment.getCustomContexts().keySet().stream().filter(ScopeInfo::isNormal)
+                .map(ScopeInfo::getDotName)
+                .collect(Collectors.toSet());
+        Set<DotName> alterableScopes = customAlterableContexts.getRegistered().stream()
+                .filter(cac -> Boolean.TRUE.equals(cac.isNormal)).map(cac -> cac.scopeAnnotation)
+                .map(DotName::createSimple)
+                .collect(Collectors.toSet());
+        for (DotName s : builtinScopes) {
+            if (!customScopes.contains(s) && !alterableScopes.contains(s)) {
+                ret.add(s);
+            }
+        }
+        for (DotName s : customScopes) {
+            if (!builtinScopes.contains(s) && !alterableScopes.contains(s)) {
+                ret.add(s);
+            }
+        }
+        for (DotName s : alterableScopes) {
+            if (!builtinScopes.contains(s) && !customScopes.contains(s)) {
+                ret.add(s);
+            }
+        }
+        return ret;
     }
 
     public static class Builder {

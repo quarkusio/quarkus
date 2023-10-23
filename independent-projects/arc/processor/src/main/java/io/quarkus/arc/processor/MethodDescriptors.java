@@ -240,6 +240,9 @@ public final class MethodDescriptors {
     public static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor.ofMethod(ArcContainer.class,
             "getActiveContext", InjectableContext.class, Class.class);
 
+    public static final MethodDescriptor ARC_CONTAINER_GET_CONTEXTS = MethodDescriptor.ofMethod(ArcContainer.class,
+            "getContexts", List.class, Class.class);
+
     public static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class,
             Contextual.class,
             CreationalContext.class);
@@ -272,6 +275,10 @@ public final class MethodDescriptors {
 
     public static final MethodDescriptor CLIENT_PROXIES_GET_APP_SCOPED_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
             "getApplicationScopedDelegate", Object.class, InjectableContext.class, InjectableBean.class);
+
+    public static final MethodDescriptor CLIENT_PROXIES_GET_SINGLE_CONTEXT_DELEGATE = MethodDescriptor.ofMethod(
+            ClientProxies.class,
+            "getSingleContextDelegate", Object.class, InjectableContext.class, InjectableBean.class);
 
     public static final MethodDescriptor CLIENT_PROXIES_GET_DELEGATE = MethodDescriptor.ofMethod(ClientProxies.class,
             "getDelegate", Object.class, InjectableBean.class);

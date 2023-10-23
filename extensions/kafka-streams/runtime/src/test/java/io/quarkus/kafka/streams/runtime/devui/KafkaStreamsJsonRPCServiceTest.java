@@ -40,8 +40,8 @@ public class KafkaStreamsJsonRPCServiceTest {
         assertEquals("[temperatures-aggregated]", actual.getString("sinks"));
         assertEquals("[weather-stations-STATE-STORE-0000000000, weather-stations-store]", actual.getString("stores"));
         assertEquals("digraph {\n" +
-                " fontname=\"Segoe UI\";\n" +
-                " node [style=filled fillcolor=white color=\"#C9B7DD\" shape=box fontname=\"Segoe UI\"];\n" +
+                " fontname=\"Helvetica\"; fontsize=\"10\";\n" +
+                " node [style=filled fillcolor=white color=\"#C9B7DD\" shape=box fontname=\"Helvetica\" fontsize=\"10\"];\n" +
                 " weather_stations [label=\"weather\\nstations\" shape=invhouse margin=\"0,0\"];\n" +
                 " KSTREAM_SOURCE_0000000001 [label=\"KSTREAM\\nSOURCE\\n0000000001\"];\n" +
                 " KTABLE_SOURCE_0000000002 [label=\"KTABLE\\nSOURCE\\n0000000002\"];\n" +

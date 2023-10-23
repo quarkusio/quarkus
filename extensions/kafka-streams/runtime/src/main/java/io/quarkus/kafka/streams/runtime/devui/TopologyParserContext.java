@@ -71,8 +71,8 @@ final class TopologyParserContext {
             final var res = new ArrayList<String>();
 
             res.add("digraph {");
-            res.add(" fontname=\"Segoe UI\";");
-            res.add(" node [style=filled fillcolor=white color=\"#C9B7DD\" shape=box fontname=\"Segoe UI\"];");
+            res.add(" fontname=\"Helvetica\"; fontsize=\"10\";");
+            res.add(" node [style=filled fillcolor=white color=\"#C9B7DD\" shape=box fontname=\"Helvetica\" fontsize=\"10\"];");
             nodes.forEach(n -> res.add(' ' + n + ';'));
             subGraphs.entrySet().forEach(e -> {
                 res.add(" subgraph cluster" + e.getKey() + " {");

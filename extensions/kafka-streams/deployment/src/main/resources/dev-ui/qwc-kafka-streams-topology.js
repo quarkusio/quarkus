@@ -7,6 +7,7 @@ import { Graphviz } from "https://cdn.jsdelivr.net/npm/@hpcc-js/wasm/dist/graphv
 import '@vaadin/details';
 import '@vaadin/tabsheet';
 import '@vaadin/tabs';
+import '@vaadin/vertical-layout';
 import 'qui-badge';
 import 'qui-code-block';
 
@@ -18,35 +19,23 @@ export class QwcKafkaStreamsTopology extends QwcHotReloadElement {
     jsonRpc = new JsonRpc(this);
 
     static styles = css`
-        .itemHead {
-            margin-left: 25px;
-            width:100em;
-            border-bottom: 1px solid var(--lumo-contrast-30pct)
-        }
-        .itemLabel {
-            display: inline-block;
-            width: 125px;
-        }
-        .itemDetails {
-            margin-left: 25px;
-        }
-        .tabMargin {
-            margin-left: 25px;
-        }
         .codeBlock {
-            height: 100%;
+            width: 100%;
+            height: auto;
         }
     `;
 
     static properties = {
         _topology: {state: true},
-        _graphviz: {state: true}
+        _graphviz: {state: true},
+        _tabContent: {state: true}
     };
 
     constructor() {
         super();
         this._topology = null;
         this._graphviz = null;
+        this._tabContent = '';
     }
 
     connectedCallback() {
@@ -57,8 +46,14 @@ export class QwcKafkaStreamsTopology extends QwcHotReloadElement {
 
     render() {
         if (this._topology) {
-            return html`${this._renderDetails()}
-                        ${this._renderDescription()}`;
+            return html`<vaadin-tabs @selected-changed="${(e) => this._tabSelectedChanged(e.detail.value)}">
+                          <vaadin-tab id="graphTab">Graph</vaadin-tab>
+                          <vaadin-tab id="detailsTab">Details</vaadin-tab>
+                          <vaadin-tab id="describeTab">Describe</vaadin-tab>
+                          <vaadin-tab id="graphvizTab">Graphviz</vaadin-tab>
+                          <vaadin-tab id="mermaidTab">Mermaid</vaadin-tab>
+                        </vaadin-tabs>
+                        <vaadin-vertical-layout theme="padding"><p>${this._tabContent}</p></vaadin-vertical-layout>`;
         }
 
         return html`<qwc-no-data message="You do not have any Topology."
@@ -74,67 +69,56 @@ export class QwcKafkaStreamsTopology extends QwcHotReloadElement {
         });
     }
 
-    _renderDetails() {
-        return html`<h3>Details</h3>
-                    <vaadin-details theme="reverse">
-                      <vaadin-details-summary slot="summary" style="width:100em">
-                        <div class="itemHead"><span class="itemLabel">Sub-topologies:</span>
-                        <qui-badge>${this._topology.subTopologies.length}</qui-badge></div>
-                      </vaadin-details-summary>
-                      <div class="itemDetails">${this._topology.subTopologies.map((subTopology) => html`<qui-badge level="contrast" icon="font-awesome-solid:diagram-project" style="margin-right:5px">${subTopology}</qui-badge>`)}</div>
-                    </vaadin-details>
-                    <vaadin-details opened theme="reverse">
-                      <vaadin-details-summary slot="summary" style="width:100em">
-                        <div class="itemHead"><span class="itemLabel">Topic sources:</span>
-                        <qui-badge>${this._topology.sources.length}</qui-badge></div>
-                      </vaadin-details-summary>
-                      <div class="itemDetails">${this._topology.sources.map((source) => html`<qui-badge level="contrast" icon="font-awesome-solid:right-to-bracket" style="margin-right:5px"><span>${source}</span></qui-badge>`)}</div>
-                    </vaadin-details>
-                    <vaadin-details opened theme="reverse">
-                      <vaadin-details-summary slot="summary" style="width:100em">
-                        <div class="itemHead"><span class="itemLabel">Topic sinks:</span>
-                        <qui-badge>${this._topology.sinks.length}</qui-badge></div>
-                      </vaadin-details-summary>
-                      <div class="itemDetails">${this._topology.sinks.map((sink) => html`<qui-badge level="contrast" icon="font-awesome-solid:right-from-bracket" style="margin-right:5px">${sink}</qui-badge>`)}</div>
-                    </vaadin-details>
-                    <vaadin-details opened theme="reverse">
-                      <vaadin-details-summary slot="summary" style="width:100em">
-                        <div class="itemHead"><span class="itemLabel">State stores:</span>
-                        <qui-badge>${this._topology.stores.length}</qui-badge></div>
-                      </vaadin-details-summary>
-                      <div class="itemDetails">${this._topology.stores.map((store) => html`<qui-badge level="contrast" icon="font-awesome-solid:database" style="margin-right:5px">${store}</qui-badge>`)}</div>
-                    </vaadin-details>`;
+    _tabSelectedChanged(n) {
+      switch(n) {
+        case 1 : this._selectDetailsTab(); break;
+        case 2 : this._selectDescribeTab(); break;
+        case 3 : this._selectGraphvizTab(); break;
+        case 4 : this._selectMermaidTab(); break;
+        default : this._selectGraphTab();
+      }
     }
 
-    _renderDescription() {
-        return html`<h3>Description</h3>
-                    <vaadin-tabsheet class="tabMargin">
-                      <vaadin-tabs slot="tabs">
-                        <vaadin-tab id="graphTab">Graph</vaadin-tab>
-                        <vaadin-tab id="describeTab">Describe</vaadin-tab>
-                        <vaadin-tab id="graphvizTab">Graphviz</vaadin-tab>
-                        <vaadin-tab id="mermaidTab">Mermaid</vaadin-tab>
-                      </vaadin-tabs>
-                      <div tab="graphTab">${this._renderGraph()}</div>
-                      <div tab="describeTab" class="codeBlock">
-                        <qui-code-block mode='text' content='${this._topology.describe}'></qui-code-block>
-                      </div>
-                      <div tab="graphvizTab" class="codeBlock">
-                        <qui-code-block mode='gv' content='${this._topology.graphviz}'></qui-code-block>
-                      </div>
-                      <div tab="mermaidTab" class="codeBlock">
-                        <qui-code-block mode='mermaid' content='${this._topology.mermaid}' class="codeBlock"></qui-code-block>
-                      </div>
-                    </vaadin-tabsheet>`;
+    _selectGraphTab() {
+      if (this._graphviz) {
+        let g = this._graphviz.dot(this._topology.graphviz);
+        this._tabContent = html`${unsafeHTML(g)}`;
+      } else {
+        this._tabContent = html`Graph engine not started.`;
+      }
     }
 
-    _renderGraph() {
-        if (this._graphviz) {
-            let g = this._graphviz.dot(this._topology.graphviz);
-            return html`${unsafeHTML(g)}`;
-        }
+    _selectDetailsTab() {
+      this._tabContent = html`<table>
+                                <tr>
+                                  <td>Sub-topologies</td><td><qui-badge>${this._topology.subTopologies.length}</qui-badge></td>
+                                  <td>${this._topology.subTopologies.map((subTopology) => html`<qui-badge level="contrast" icon="font-awesome-solid:diagram-project" style="margin-right:5px">${subTopology}</qui-badge>`)}</td>
+                                </tr>
+                                <tr>
+                                  <td>Sources</td><td><qui-badge>${this._topology.sources.length}</qui-badge></td>
+                                  <td>${this._topology.sources.map((source) => html`<qui-badge level="contrast" icon="font-awesome-solid:right-to-bracket" style="margin-right:5px">${source}</qui-badge>`)}</td>
+                                </tr>
+                                <tr>
+                                  <td>Sinks</td><td><qui-badge>${this._topology.sinks.length}</qui-badge></td>
+                                  <td>${this._topology.sinks.map((sink) => html`<qui-badge level="contrast" icon="font-awesome-solid:right-from-bracket" style="margin-right:5px">${sink}</qui-badge>`)}</td>
+                                </tr>
+                                <tr>
+                                  <td>Stores</td><td><qui-badge>${this._topology.stores.length}</qui-badge></td>
+                                  <td>${this._topology.stores.map((store) => html`<qui-badge level="contrast" icon="font-awesome-solid:database" style="margin-right:5px">${store}</qui-badge>`)}</td>
+                                </tr>
+                              </table>`;
+    }
 
-        return html`Graph engine not started.`;
+    _selectDescribeTab() {
+      this._tabContent = html`<qui-code-block mode='text' content='${this._topology.describe}' class="codeBlock"></qui-code-block>`;
+    }
+
+    _selectGraphvizTab() {
+      this._tabContent = html`<qui-code-block mode='gv' content='${this._topology.graphviz}' class="codeBlock"></qui-code-block>`;
+    }
+
+    _selectMermaidTab() {
+      this._tabContent = html`<qui-code-block mode='mermaid' content='${this._topology.mermaid}' class="codeBlock"></qui-code-block>`;
     }
 }
 customElements.define('qwc-kafka-streams-topology', QwcKafkaStreamsTopology);

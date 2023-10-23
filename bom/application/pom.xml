@@ -6046,6 +6046,20 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
+                <classifier>linux-ppcle_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
+                <classifier>linux-s390_64</classifier>
+                <type>exe</type>
+                <version>${protoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protoc</artifactId>
                 <classifier>linux-x86_32</classifier>
                 <type>exe</type>
                 <version>${protoc.version}</version>
@@ -6060,14 +6074,14 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
-                <classifier>osx-x86_64</classifier>
+                <classifier>osx-aarch_64</classifier>
                 <type>exe</type>
                 <version>${protoc.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protoc</artifactId>
-                <classifier>osx-aarch_64</classifier>
+                <classifier>osx-x86_64</classifier>
                 <type>exe</type>
                 <version>${protoc.version}</version>
             </dependency>
@@ -6096,6 +6110,20 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>protoc-gen-grpc-java</artifactId>
                 <type>exe</type>
+                <classifier>linux-ppcle_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
+                <classifier>linux-s390_64</classifier>
+                <version>${grpc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <type>exe</type>
                 <classifier>linux-x86_32</classifier>
                 <version>${grpc.version}</version>
             </dependency>
@@ -6110,14 +6138,14 @@
                 <groupId>io.grpc</groupId>
                 <artifactId>protoc-gen-grpc-java</artifactId>
                 <type>exe</type>
-                <classifier>osx-x86_64</classifier>
+                <classifier>osx-aarch_64</classifier>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>protoc-gen-grpc-java</artifactId>
                 <type>exe</type>
-                <classifier>osx-aarch_64</classifier>
+                <classifier>osx-x86_64</classifier>
                 <version>${grpc.version}</version>
             </dependency>
             <dependency>

@@ -43,6 +43,7 @@ public class StorkMetricsLoadBalancerFailTest {
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.type", "static")
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.address-list", "${test.url}")
             .overrideConfigKey("quarkus.stork.greeting-service.load-balancer.type", "mock")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class,
                             MockServiceSelectorProvider.class, MockServiceSelectorConfiguration.class,

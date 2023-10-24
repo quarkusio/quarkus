@@ -13,11 +13,13 @@ include::_attributes.adoc[]
 :topics: http,web,webjars,vertx,servlet,undertow
 :extensions: io.quarkus:quarkus-vertx-http
 
-This document explains various HTTP features that you can use in Quarkus.
+This document clarifies different HTTP functionalities available in Quarkus.
 
-HTTP is provided using Eclipse Vert.x as the base HTTP layer. Servlet's are supported using a modified version of Undertow that
-runs on top of Vert.x, and RESTEasy is used to provide Jakarta REST support. If Undertow is present RESTEasy will run as a
-Servlet filter, otherwise it will run directly on top of Vert.x with no Servlet involvement.
+Eclipse Vert.x supplies the fundamental HTTP layer.
+For Servlet support, Quarkus employs a customized Undertow version that operates on top of Vert.x, while Jakarta REST support is delivered through RESTEasy.
+
+When Undertow is present, RESTEasy functions as a Servlet filter.
+In its absence, RESTEasy operates directly on Vert.x without involving Servlets.
 
 == Serving Static Resources
 

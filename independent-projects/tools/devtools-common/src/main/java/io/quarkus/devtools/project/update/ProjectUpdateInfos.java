@@ -86,12 +86,6 @@ public final class ProjectUpdateInfos {
         if (currentState.getPlatformBoms().isEmpty()) {
             throw new IllegalStateException("The project does not import any Quarkus platform BOM");
         }
-        if (currentState.getExtensions().isEmpty()) {
-            throw new IllegalStateException("Quarkus extension were not found among the project dependencies");
-        }
-        if (currentState == recommendedState) {
-            throw new IllegalStateException("The project is up-to-date");
-        }
     }
 
     public static ProjectState resolveRecommendedState(ProjectState currentState, ExtensionCatalog recommendedCatalog,

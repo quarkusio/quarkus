@@ -174,7 +174,7 @@ Thus, the `all-open` Kotlin compiler plugin allows us to configure the compiler 
 we have specified that classes annotated with `jakarta.ws.rs.Path` should not be `final`.
 
 If your application contains Kotlin classes annotated with `jakarta.enterprise.context.ApplicationScoped`
-for example, then `<option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime.
+for example, then `<option>all-open:annotation=jakarta.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime, like a JPA Entity class.
 
 Future versions of Quarkus will configure the Kotlin compiler plugin in a way that will make it unnecessary to alter this configuration.
 
@@ -228,6 +228,7 @@ java {
 allOpen { // <2>
     annotation("jakarta.ws.rs.Path")
     annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.persistence.Entity")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 
@@ -296,6 +297,7 @@ java {
 allOpen { // <2>
     annotation("jakarta.ws.rs.Path")
     annotation("jakarta.enterprise.context.ApplicationScoped")
+    annotation("jakarta.persistence.Entity")
     annotation("io.quarkus.test.junit.QuarkusTest")
 }
 

@@ -703,8 +703,8 @@ link:https://en.wikipedia.org/wiki/Cross-origin_resource_sharing[Cross-origin re
 allows restricted resources on a web page to be requested from another domain outside the domain from which the first resource
 was served.
 
-Quarkus comes with a CORS filter. Read the xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide to learn
-how to use it.
+Quarkus includes a CORS filter at the HTTP layer level.
+For more information about the CORS filters and their usage, see the xref:security-cors.adoc#cors-filter[CORS filter] section of the Quarkus "Cross-origin resource sharing" guide.
 
 == GZip Support
 

@@ -46,6 +46,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
+    protected static final String TEST_PROFILE = "test-profile";
 
     protected ClassLoader originalCl;
 
@@ -202,6 +203,9 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         final Map<String, Object> props = new HashMap<>();
         props.put(TEST_LOCATION, testClassLocation);
         props.put(TEST_CLASS, requiredTestClass);
+        if (profile != null) {
+            props.put(TEST_PROFILE, profile.getName());
+        }
         quarkusTestProfile = profile;
         return new PrepareResult(curatedApplication
                 .createAugmentor(QuarkusTestExtension.TestBuildChainFunction.class.getName(), props), profileInstance,

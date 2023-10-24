@@ -36,6 +36,7 @@ public class StorkMetricsTest {
             .overrideConfigKey("greeting/mp-rest/url", "stork://greeting-service/greeting")
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.type", "static")
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.address-list", "${test.url}")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class, GreetingResource.class,
                             GreetingResource.GreetingRestClient.class, Util.class));

@@ -41,6 +41,7 @@ public class StorkMetricsServiceDiscoveryFailTest {
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("greeting/mp-rest/url", "stork://greeting-service/greeting")
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.type", "mock")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class,
                             MockServiceDiscoveryProvider.class, MockServiceDiscoveryConfiguration.class,
